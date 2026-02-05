@@ -1,0 +1,26 @@
+"use client";
+
+import dynamic from "next/dynamic";
+
+import { Skeleton } from "~/ui/primitives/skeleton";
+
+const SecurityPageClient = dynamic(
+  () => import("./page.client").then((m) => m.SecurityPageClient),
+  {
+    loading: () => (
+      <div className="container max-w-2xl space-y-6 p-4 md:p-8">
+        <Skeleton className="h-8 w-48" />
+        <div className="space-y-4">
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+        </div>
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+export function SecurityLoader() {
+  return <SecurityPageClient />;
+}

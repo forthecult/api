@@ -1,0 +1,5 @@
+<svg width="108" height="108" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <!-- Solid gold so it always renders correctly when used as img src -->
+  <circle cx="54" cy="54" r="45" fill="#D4AF37"/>
+  <circle cx="54" cy="54" r="40" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="2"/>
+</svg>

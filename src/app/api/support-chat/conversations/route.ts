@@ -1,0 +1,195 @@
+import { desc, eq, sql } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { db } from "~/db";
+import { supportChatConversationTable } from "~/db/schema";
+import { auth } from "~/lib/auth";
+
+const DEFAULT_LIMIT = 20;
+const MAX_LIMIT = 50;
+const GUEST_RATE_LIMIT_PER_MIN = 3;
+const guestRateLimit = new Map<string, { count: number; resetAt: number }>();
+
+function getClientIp(request: NextRequest): string {
+  return (
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+function checkGuestRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const windowMs = 60_000;
+  const entry = guestRateLimit.get(ip);
+  if (!entry) {
+    guestRateLimit.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (now > entry.resetAt) {
+    guestRateLimit.set(ip, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= GUEST_RATE_LIMIT_PER_MIN) return false;
+  entry.count++;
+  return true;
+}
+
+const GUEST_ID_HEADER = "x-support-guest-id";
+const GUEST_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * GET /api/support-chat/conversations
+ * Returns conversations for the current user (session) or guest (X-Support-Guest-Id).
+ * Query params: page (default 1), limit (default 20, max 50)
+ */
+export async function GET(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  const { searchParams } = request.nextUrl;
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+  const limit = Math.min(
+    MAX_LIMIT,
+    Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT),
+  );
+  const offset = (page - 1) * limit;
+
+  try {
+    if (session?.user?.id) {
+      const [list, countResult] = await Promise.all([
+        db
+          .select({
+            id: supportChatConversationTable.id,
+            status: supportChatConversationTable.status,
+            takenOverBy: supportChatConversationTable.takenOverBy,
+            createdAt: supportChatConversationTable.createdAt,
+            updatedAt: supportChatConversationTable.updatedAt,
+          })
+          .from(supportChatConversationTable)
+          .where(eq(supportChatConversationTable.userId, session.user.id))
+          .orderBy(desc(supportChatConversationTable.updatedAt))
+          .limit(limit)
+          .offset(offset),
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(supportChatConversationTable)
+          .where(eq(supportChatConversationTable.userId, session.user.id)),
+      ]);
+      const total = countResult[0]?.count ?? 0;
+      const totalPages = Math.ceil(total / limit) || 1;
+      return NextResponse.json({
+        conversations: list,
+        pagination: { page, limit, total, totalPages },
+      });
+    }
+
+    const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
+    if (guestId && GUEST_ID_REGEX.test(guestId)) {
+      const [list, countResult] = await Promise.all([
+        db
+          .select({
+            id: supportChatConversationTable.id,
+            status: supportChatConversationTable.status,
+            takenOverBy: supportChatConversationTable.takenOverBy,
+            createdAt: supportChatConversationTable.createdAt,
+            updatedAt: supportChatConversationTable.updatedAt,
+          })
+          .from(supportChatConversationTable)
+          .where(eq(supportChatConversationTable.guestId, guestId))
+          .orderBy(desc(supportChatConversationTable.updatedAt))
+          .limit(limit)
+          .offset(offset),
+        db
+          .select({ count: sql<number>`count(*)::int` })
+          .from(supportChatConversationTable)
+          .where(eq(supportChatConversationTable.guestId, guestId)),
+      ]);
+      const total = countResult[0]?.count ?? 0;
+      const totalPages = Math.ceil(total / limit) || 1;
+      return NextResponse.json({
+        conversations: list,
+        pagination: { page, limit, total, totalPages },
+      });
+    }
+
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  } catch (err) {
+    console.error("Support chat conversations GET:", err);
+    return NextResponse.json(
+      { error: "Failed to load conversations." },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * POST /api/support-chat/conversations
+ * Create a new conversation. Auth: session user or guest (X-Support-Guest-Id, rate-limited).
+ */
+export async function POST(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+
+  if (session?.user?.id) {
+    const id = crypto.randomUUID();
+    const now = new Date();
+    try {
+      await db.insert(supportChatConversationTable).values({
+        id,
+        userId: session.user.id,
+        status: "open",
+        createdAt: now,
+        updatedAt: now,
+      });
+      return NextResponse.json({
+        id,
+        status: "open",
+        takenOverBy: null,
+        createdAt: now.toISOString(),
+        updatedAt: now.toISOString(),
+      });
+    } catch (err) {
+      console.error("Support chat conversation create:", err);
+      return NextResponse.json(
+        { error: "Failed to create conversation." },
+        { status: 500 },
+      );
+    }
+  }
+
+  const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
+  if (!guestId || !GUEST_ID_REGEX.test(guestId)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const ip = getClientIp(request);
+  if (!checkGuestRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Too many requests. Try again in a minute." },
+      { status: 429 },
+    );
+  }
+
+  const id = crypto.randomUUID();
+  const now = new Date();
+  try {
+    await db.insert(supportChatConversationTable).values({
+      id,
+      guestId,
+      status: "open",
+      createdAt: now,
+      updatedAt: now,
+    });
+    return NextResponse.json({
+      id,
+      status: "open",
+      takenOverBy: null,
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString(),
+    });
+  } catch (err) {
+    console.error("Support chat conversation create (guest):", err);
+    return NextResponse.json(
+      { error: "Failed to create conversation." },
+      { status: 500 },
+    );
+  }
+}

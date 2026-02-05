@@ -1,0 +1,266 @@
+import { createId } from "@paralleldrive/cuid2";
+import { inArray } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { db } from "~/db";
+import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
+import { deriveDepositAddress } from "~/lib/solana-deposit";
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
+import {
+  getSolanaPayLabel,
+  USDC_MINT_MAINNET,
+  usdcAmountFromUsd,
+} from "~/lib/solana-pay";
+
+const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
+
+type CheckoutBody = {
+  items: Array<{ productId: string; quantity: number }>;
+  email: string;
+  payment: { chain: string; token: string; tokenMint?: string | null };
+  shipping?: {
+    address1?: string;
+    address2?: string;
+    city?: string;
+    countryCode?: string;
+    name?: string;
+    phone?: string;
+    stateCode?: string;
+    zip?: string;
+  };
+};
+
+/**
+ * Agent-friendly checkout: create order and return Solana Pay payment details.
+ * POST /api/checkout
+ * Supports USDC; poll GET /api/orders/{orderId}/status until paid.
+ */
+export async function POST(request: NextRequest) {
+  // Rate limit checkout to prevent order spam and abuse
+  const ip = getClientIp(request.headers);
+  const rateLimitResult = checkRateLimit(
+    `checkout:${ip}`,
+    RATE_LIMITS.checkout,
+  );
+  if (!rateLimitResult.success) {
+    return rateLimitResponse(rateLimitResult);
+  }
+
+  try {
+    const body = (await request.json()) as CheckoutBody;
+    const { items: rawItems, email, payment } = body;
+    if (!email || typeof email !== "string" || !email.trim()) {
+      return NextResponse.json(
+        { error: { code: "INVALID_REQUEST", message: "email required" } },
+        { status: 400 },
+      );
+    }
+    if (!Array.isArray(rawItems) || rawItems.length === 0) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "INVALID_REQUEST",
+            message: "items required (non-empty array)",
+          },
+        },
+        { status: 400 },
+      );
+    }
+    if (!payment || payment.chain !== "solana") {
+      return NextResponse.json(
+        {
+          error: {
+            code: "INVALID_REQUEST",
+            message: "payment.chain must be 'solana'",
+          },
+        },
+        { status: 400 },
+      );
+    }
+    if (payment.token !== "USDC") {
+      return NextResponse.json(
+        {
+          error: {
+            code: "INVALID_REQUEST",
+            message:
+              "Only USDC is supported for agent checkout; use payment.token: 'USDC'",
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    const productIds = [
+      ...new Set(rawItems.map((i) => i?.productId).filter(Boolean)),
+    ] as string[];
+    const products =
+      productIds.length > 0
+        ? await db
+            .select({
+              id: productsTable.id,
+              name: productsTable.name,
+              priceCents: productsTable.priceCents,
+              published: productsTable.published,
+            })
+            .from(productsTable)
+            .where(inArray(productsTable.id, productIds))
+        : [];
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
+    const orderItems: Array<{
+      productId: string;
+      name: string;
+      priceCents: number;
+      quantity: number;
+    }> = [];
+    for (const item of rawItems) {
+      if (
+        typeof item?.productId !== "string" ||
+        typeof item?.quantity !== "number" ||
+        item.quantity < 1
+      )
+        continue;
+      const product = productMap.get(item.productId);
+      if (!product || !product.published) continue;
+      orderItems.push({
+        productId: product.id,
+        name: product.name,
+        priceCents: product.priceCents,
+        quantity: item.quantity,
+      });
+    }
+    if (orderItems.length === 0) {
+      return NextResponse.json(
+        {
+          error: {
+            code: "INVALID_REQUEST",
+            message: "No valid published products in items",
+          },
+        },
+        { status: 400 },
+      );
+    }
+
+    const subtotalCents = orderItems.reduce(
+      (sum, i) => sum + i.priceCents * i.quantity,
+      0,
+    );
+    const shippingFeeCents = 0;
+    const totalCents = subtotalCents + shippingFeeCents;
+    const subtotalUsd = subtotalCents / 100;
+    const totalUsd = totalCents / 100;
+
+    const orderId = createId();
+    const now = new Date();
+    const depositAddress = deriveDepositAddress(orderId);
+    const expiresAt = new Date(now.getTime() + PAYMENT_WINDOW_MS).toISOString();
+
+    const shipping = body.shipping;
+    if (shipping?.countryCode?.trim()) {
+      const { isShippingExcluded } = await import(
+        "~/lib/shipping-restrictions"
+      );
+      if (isShippingExcluded(shipping.countryCode)) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message: "We do not ship to this country.",
+            },
+          },
+          { status: 400 },
+        );
+      }
+    }
+    await db.insert(ordersTable).values({
+      id: orderId,
+      createdAt: now,
+      email: email.trim(),
+      fulfillmentStatus: "unfulfilled",
+      paymentMethod: "solana_pay",
+      paymentStatus: "pending",
+      shippingFeeCents,
+      solanaPayDepositAddress: depositAddress,
+      status: "pending",
+      totalCents,
+      updatedAt: now,
+      ...(shipping?.name && { shippingName: shipping.name }),
+      ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
+      ...(shipping?.address2 && { shippingAddress2: shipping.address2 }),
+      ...(shipping?.city && { shippingCity: shipping.city }),
+      ...(shipping?.stateCode && { shippingStateCode: shipping.stateCode }),
+      ...(shipping?.zip && { shippingZip: shipping.zip }),
+      ...(shipping?.countryCode && {
+        shippingCountryCode: shipping.countryCode,
+      }),
+      ...(shipping?.phone && { shippingPhone: shipping.phone }),
+    });
+
+    await db.insert(orderItemsTable).values(
+      orderItems.map((item) => ({
+        id: createId(),
+        name: item.name,
+        orderId,
+        priceCents: item.priceCents,
+        productId: item.productId,
+        quantity: item.quantity,
+      })),
+    );
+
+    const token = payment.token === "USDC" ? "USDC" : payment.token;
+    const tokenMint =
+      token === "USDC" ? USDC_MINT_MAINNET : (payment.tokenMint ?? null);
+    const decimals = token === "USDC" ? 6 : 9;
+    const amountBn = usdcAmountFromUsd(totalUsd);
+    const amountBaseUnits = amountBn.toFixed(0);
+    const label = getSolanaPayLabel();
+    const message = "Thank you for your order.";
+
+    const params = new URLSearchParams();
+    params.set("amount", amountBaseUnits);
+    if (tokenMint) params.set("spl-token", tokenMint);
+    params.set("label", `Order ${orderId}`);
+    params.set("message", message);
+    const solanaPayUrl = `solana:${depositAddress}?${params.toString()}`;
+
+    return NextResponse.json(
+      {
+        orderId,
+        status: "awaiting_payment",
+        expiresAt,
+        payment: {
+          chain: "solana",
+          method: "solana_pay",
+          url: solanaPayUrl,
+          recipient: depositAddress,
+          amount: amountBaseUnits,
+          amountHuman: totalUsd.toFixed(2),
+          token,
+          tokenMint: tokenMint ?? undefined,
+          decimals,
+          label: `Order ${orderId}`,
+          message,
+        },
+        totals: {
+          subtotalUsd,
+          shippingUsd: 0,
+          totalUsd,
+        },
+      },
+      { status: 201 },
+    );
+  } catch (err) {
+    console.error("Checkout error:", err);
+    return NextResponse.json(
+      {
+        error: { code: "INTERNAL_ERROR", message: "Failed to create checkout" },
+      },
+      { status: 500 },
+    );
+  }
+}

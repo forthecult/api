@@ -1,0 +1,98 @@
+import { eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { db } from "~/db";
+import { userTable } from "~/db/schema/users/tables";
+import { auth } from "~/lib/auth";
+
+/**
+ * GET /api/user/profile
+ * Returns current user's profile (firstName, lastName, image) for display/edit.
+ */
+export async function GET(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const [user] = await db
+    .select({
+      id: userTable.id,
+      firstName: userTable.firstName,
+      lastName: userTable.lastName,
+      name: userTable.name,
+      image: userTable.image,
+      email: userTable.email,
+    })
+    .from(userTable)
+    .where(eq(userTable.id, session.user.id))
+    .limit(1);
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    id: user.id,
+    firstName: user.firstName ?? "",
+    lastName: user.lastName ?? "",
+    name: user.name ?? "",
+    image: user.image ?? null,
+    email: user.email ?? "",
+  });
+}
+
+/**
+ * PATCH /api/user/profile
+ * Update current user's firstName, lastName, and/or image (URL).
+ * Body: { firstName?: string, lastName?: string, image?: string | null }
+ */
+export async function PATCH(request: NextRequest) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: { firstName?: string; lastName?: string; image?: string | null };
+  try {
+    body = (await request.json()) as typeof body;
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const updates: Record<string, string | null> = {};
+  if (typeof body.firstName === "string") {
+    updates.firstName = body.firstName.trim() || null;
+  }
+  if (typeof body.lastName === "string") {
+    updates.lastName = body.lastName.trim() || null;
+  }
+  if (body.image !== undefined) {
+    updates.image = typeof body.image === "string" && body.image.trim() ? body.image.trim() : null;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+  }
+
+  const [updated] = await db
+    .update(userTable)
+    .set({ ...updates, updatedAt: new Date() })
+    .where(eq(userTable.id, session.user.id))
+    .returning({
+      id: userTable.id,
+      firstName: userTable.firstName,
+      lastName: userTable.lastName,
+      image: userTable.image,
+    });
+
+  if (!updated) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    firstName: updated.firstName ?? "",
+    lastName: updated.lastName ?? "",
+    image: updated.image ?? null,
+  });
+}

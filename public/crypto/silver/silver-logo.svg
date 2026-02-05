@@ -1,0 +1,11 @@
+<svg width="108" height="108" viewBox="0 0 108 108" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <circle cx="54" cy="54" r="45" fill="url(#silver-gradient)"/>
+  <circle cx="54" cy="54" r="40" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"/>
+  <defs>
+    <linearGradient id="silver-gradient" x1="20%" y1="20%" x2="80%" y2="80%">
+      <stop offset="0%" stop-color="#E8E8E8"/>
+      <stop offset="50%" stop-color="#C0C0C0"/>
+      <stop offset="100%" stop-color="#A8A8A8"/>
+    </linearGradient>
+  </defs>
+</svg>

@@ -1,0 +1,65 @@
+import { type NextRequest, NextResponse } from "next/server";
+
+import { auth } from "~/lib/auth";
+import { resolveCouponForCheckout } from "~/lib/coupon";
+
+const validateSchema = {
+  code: (v: unknown) =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : null,
+  subtotalCents: (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
+  productIds: (v: unknown) =>
+    Array.isArray(v)
+      ? (v as unknown[])
+          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      : [],
+};
+
+/**
+ * POST /api/checkout/coupons/validate
+ * Public API: validate a coupon code for checkout. Returns discount info if valid.
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    const body = (await request.json()) as Record<string, unknown>;
+    const code = validateSchema.code(body?.code);
+    if (!code) {
+      return NextResponse.json(
+        { valid: false, error: "Discount code is required." },
+        { status: 400 },
+      );
+    }
+    const subtotalCents = validateSchema.subtotalCents(body?.subtotalCents);
+    const productIds = validateSchema.productIds(body?.productIds);
+    const shippingFeeCents = validateSchema.subtotalCents(body?.shippingFeeCents);
+
+    const result = await resolveCouponForCheckout(
+      code,
+      subtotalCents,
+      shippingFeeCents,
+      {
+        userId: session?.user?.id ?? undefined,
+        productIds: productIds.length > 0 ? productIds : undefined,
+      },
+    );
+
+    if (!result) {
+      return NextResponse.json({
+        valid: false,
+        error: "This discount code is invalid or expired.",
+      });
+    }
+
+    return NextResponse.json({
+      valid: true,
+      ...result,
+    });
+  } catch (err) {
+    console.error("Coupon validate error:", err);
+    return NextResponse.json(
+      { valid: false, error: "Failed to validate discount code." },
+      { status: 500 },
+    );
+  }
+}

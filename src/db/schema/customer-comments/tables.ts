@@ -1,0 +1,16 @@
+import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+
+import { userTable } from "../users/tables";
+
+/** Internal admin-only comments on a customer record. */
+export const customerCommentsTable = pgTable("customer_comment", {
+  id: text("id").primaryKey(),
+  customerId: text("customer_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  authorId: text("author_id")
+    .notNull()
+    .references(() => userTable.id, { onDelete: "cascade" }),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+});

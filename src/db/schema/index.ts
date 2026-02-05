@@ -1,0 +1,75 @@
+export * from "./addresses/relations";
+export * from "./addresses/tables";
+export * from "./addresses/types";
+
+export * from "./affiliates/relations";
+export * from "./affiliates/tables";
+export * from "./affiliates/types";
+
+export * from "./brands/relations";
+export * from "./brands/tables";
+export * from "./brands/types";
+
+export * from "./categories/relations";
+export * from "./categories/tables";
+export * from "./categories/types";
+
+export * from "./coupons/relations";
+export * from "./coupons/tables";
+export * from "./coupons/types";
+
+export * from "./customer-comments/relations";
+export * from "./customer-comments/tables";
+export * from "./customer-comments/types";
+
+export * from "./notifications/relations";
+export * from "./notifications/tables";
+export * from "./notifications/types";
+
+export * from "./uploads/relations";
+export * from "./uploads/tables";
+export * from "./uploads/types";
+
+export * from "./orders/relations";
+export * from "./orders/tables";
+export * from "./orders/types";
+
+export * from "./payments/relations";
+export * from "./payments/tables";
+export * from "./payments/types";
+
+export * from "./reviews/relations";
+export * from "./reviews/tables";
+export * from "./reviews/types";
+
+export * from "./shipping/tables";
+export * from "./shipping/types";
+
+export * from "./support-chat/relations";
+export * from "./support-chat/tables";
+export * from "./support-chat/types";
+
+export * from "./support-tickets/relations";
+export * from "./support-tickets/tables";
+export * from "./support-tickets/types";
+
+export * from "./token-gate/tables";
+
+export * from "./wishlist/relations";
+export * from "./wishlist/tables";
+export * from "./wishlist/types";
+
+export * from "./wallets/relations";
+export * from "./wallets/tables";
+export * from "./wallets/types";
+
+export * from "./webhooks/tables";
+export * from "./webhooks/types";
+
+// relations
+export * from "./users/relations";
+
+// schema
+export * from "./users/tables";
+// types
+export * from "./users/types";

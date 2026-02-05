@@ -1,0 +1,300 @@
+"use client";
+
+import { Check, Copy, Link2, ShoppingBag } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { SEO_CONFIG } from "~/app";
+import { Button } from "~/ui/primitives/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/primitives/card";
+
+const X_ICON = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="currentColor"
+    aria-hidden
+  >
+    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+  </svg>
+);
+
+function paymentMethodLabel(method: string | undefined): string {
+  const m = (method ?? "").toLowerCase();
+  if (m === "stripe") return "Credit / Debit card";
+  if (m === "solana_pay") return "Solana";
+  if (m === "eth_pay") return "Ethereum";
+  if (m === "btcpay") return "Bitcoin";
+  if (m === "ton_pay") return "TON";
+  if (m === "crypto") return "Crypto";
+  return method ?? "—";
+}
+
+type OrderDetails = {
+  orderId: string;
+  email?: string;
+  paymentMethod?: string;
+  totalCents: number;
+  createdAt: string;
+  items: Array<{
+    name: string;
+    quantity: number;
+    priceUsd?: number;
+    subtotalUsd?: number;
+  }>;
+};
+
+export function SuccessPageClient() {
+  const searchParams = useSearchParams();
+  const orderIdParam = searchParams.get("orderId");
+  const sessionIdParam = searchParams.get("session_id");
+
+  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function fetchOrder() {
+      if (sessionIdParam) {
+        const res = await fetch(
+          `/api/orders/by-session?session_id=${encodeURIComponent(sessionIdParam)}`,
+        );
+        if (!cancelled && res.ok) {
+          const data = (await res.json()) as OrderDetails;
+          setOrder(data);
+        }
+      } else if (orderIdParam) {
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderIdParam)}`, {
+          credentials: "include",
+        });
+        if (!cancelled && res.ok) {
+          const data = (await res.json()) as {
+            orderId: string;
+            email?: string;
+            createdAt: string;
+            items: Array<{
+              name: string;
+              quantity: number;
+              priceUsd?: number;
+              subtotalUsd?: number;
+            }>;
+            totals?: { totalUsd: number };
+          };
+          setOrder({
+            orderId: data.orderId,
+            email: data.email,
+            paymentMethod: undefined,
+            totalCents: (data.totals?.totalUsd ?? 0) * 100,
+            createdAt: data.createdAt,
+            items: data.items ?? [],
+          });
+        }
+      }
+      if (!cancelled) setLoading(false);
+    }
+
+    void fetchOrder();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderIdParam, sessionIdParam]);
+
+  const displayOrderId = order?.orderId ?? orderIdParam;
+  const shareUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/checkout/success${orderIdParam ? `?orderId=${encodeURIComponent(orderIdParam)}` : sessionIdParam ? `?session_id=${encodeURIComponent(sessionIdParam)}` : ""}`
+      : "";
+  const shareText = `I just ordered from ${SEO_CONFIG.name}!`;
+
+  const copyLink = useCallback(() => {
+    if (!shareUrl) return;
+    navigator.clipboard.writeText(shareUrl).then(
+      () => toast.success("Link copied"),
+      () => toast.error("Could not copy"),
+    );
+  }, [shareUrl]);
+
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(shareText);
+  const xShareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
+  const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
+
+  return (
+    <div className="container flex min-h-[60vh] flex-col items-center py-16">
+      <div className="flex w-full max-w-2xl flex-col gap-8 md:flex-row md:gap-10">
+        {/* Left: Success message + actions */}
+        <div className="flex flex-1 flex-col items-center text-center md:items-start md:text-left">
+          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/15">
+            <Check className="h-10 w-10 text-green-600 dark:text-green-400" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Order completed</h1>
+          <p className="mt-1 text-muted-foreground">
+            Thank you for your purchase.
+          </p>
+
+          <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:min-w-[200px]">
+            <Button asChild className="w-full" size="lg">
+              <Link href="/products">
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Shop more
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full" size="lg">
+              <Link href="/">Back to home</Link>
+            </Button>
+          </div>
+
+          {/* Share */}
+          <div className="mt-8 w-full">
+            <p className="text-sm font-medium text-muted-foreground">Share</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <a
+                href={xShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Share on X (Twitter)"
+              >
+                {X_ICON}
+              </a>
+              <a
+                href={facebookShareUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="Share on Facebook"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                </svg>
+              </a>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9"
+                onClick={copyLink}
+                aria-label="Copy link"
+              >
+                <Link2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {/* Referral */}
+          <p className="mt-6 text-sm text-muted-foreground">
+            Share with a friend for 10% off your next purchase.
+          </p>
+        </div>
+
+        {/* Right: Order details */}
+        <Card className="w-full flex-shrink-0 md:max-w-sm">
+          <CardHeader>
+            <CardTitle>Order details</CardTitle>
+            {loading ? (
+              <CardDescription>Loading…</CardDescription>
+            ) : (
+              <CardDescription>
+                {displayOrderId
+                  ? `Order #${displayOrderId.slice(0, 8)}`
+                  : "Your order has been received."}
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {order && (
+              <>
+                {order.email && (
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">
+                      Email:{" "}
+                    </span>
+                    <span>{order.email}</span>
+                  </div>
+                )}
+                {order.paymentMethod && (
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">
+                      Payment method:{" "}
+                    </span>
+                    <span>
+                      {paymentMethodLabel(order.paymentMethod)}
+                    </span>
+                  </div>
+                )}
+                {order.createdAt && (
+                  <div className="text-sm">
+                    <span className="font-medium text-muted-foreground">
+                      Date:{" "}
+                    </span>
+                    <span>
+                      {new Date(order.createdAt).toLocaleString(undefined, {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </span>
+                  </div>
+                )}
+                {order.items && order.items.length > 0 && (
+                  <div className="space-y-2 border-t pt-4">
+                    {order.items.map((item, i) => (
+                      <div
+                        key={i}
+                        className="flex justify-between text-sm"
+                      >
+                        <span>
+                          {item.name}
+                          {item.quantity > 1 ? ` × ${item.quantity}` : ""}
+                        </span>
+                        {item.subtotalUsd != null && (
+                          <span>
+                            ${item.subtotalUsd.toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between border-t pt-4 font-medium">
+                  <span>Total</span>
+                  <span>
+                    ${(order.totalCents / 100).toFixed(2)}
+                  </span>
+                </div>
+              </>
+            )}
+            {!loading && !order && displayOrderId && (
+              <p className="text-sm text-muted-foreground">
+                Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a
+                confirmation to your email.
+              </p>
+            )}
+            {!loading && !order && !displayOrderId && (
+              <p className="text-sm text-muted-foreground">
+                Your payment was successful. We&apos;ll send a confirmation
+                email if we have your address.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,118 @@
+import { desc, sql } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+
+import { db } from "~/db";
+import { productReviewsTable } from "~/db/schema";
+import { auth, isAdminUser } from "~/lib/auth";
+import { getReviewDisplayName } from "~/lib/reviews";
+
+const DEFAULT_PAGE_SIZE = 10;
+const MAX_PAGE_SIZE = 100;
+
+export async function GET(request: NextRequest) {
+  try {
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!isAdminUser(session.user)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const page = Math.max(
+      1,
+      Number.parseInt(request.nextUrl.searchParams.get("page") ?? "1", 10),
+    );
+    const limit = Math.min(
+      MAX_PAGE_SIZE,
+      Math.max(
+        1,
+        Number.parseInt(
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
+          10,
+        ),
+      ),
+    );
+    const offset = (page - 1) * limit;
+
+    const [reviews, countResult] = await Promise.all([
+      db.query.productReviewsTable.findMany({
+        orderBy: [desc(productReviewsTable.createdAt)],
+        with: {
+          product: {
+            columns: { id: true, name: true, imageUrl: true },
+          },
+          user: {
+            columns: { id: true, email: true, name: true },
+          },
+        },
+        limit,
+        offset,
+      }),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(productReviewsTable),
+    ]);
+
+    const totalCount = countResult[0]?.count ?? 0;
+    const totalPages = Math.ceil(totalCount / limit) || 1;
+
+    const items = reviews.map((r) => {
+      const author = (r as { author?: string | null }).author ?? null;
+      const title = (r as { title?: string | null }).title ?? null;
+      const location = (r as { location?: string | null }).location ?? null;
+      const createdAt = r.createdAt;
+      return {
+        id: r.id,
+        productId: r.productId,
+        productName: r.product?.name ?? null,
+        productImageUrl: r.product?.imageUrl ?? null,
+        customerName: r.customerName,
+        displayName: getReviewDisplayName({
+          id: r.id,
+          customerName: r.customerName,
+          showName: r.showName,
+          author,
+        }),
+        showName: r.showName,
+        userId: r.userId ?? null,
+        customerEmail: r.user?.email ?? null,
+        title,
+        author,
+        location,
+        comment: r.comment,
+        rating: r.rating,
+        visible: r.visible,
+        createdAt:
+          createdAt instanceof Date
+            ? createdAt.toISOString()
+            : String(createdAt ?? ""),
+      };
+    });
+
+    return NextResponse.json({
+      items,
+      page,
+      limit,
+      totalCount,
+      totalPages,
+    });
+  } catch (err) {
+    console.error("Admin reviews list error:", err);
+    const message = err instanceof Error ? err.message : "";
+    const hint =
+      message && /column.*does not exist|Unknown column/i.test(message)
+        ? " Run: bun run db:push (adds author, title, location to product_review if missing)."
+        : "";
+    return NextResponse.json(
+      {
+        error: "Failed to load reviews",
+        ...(process.env.NODE_ENV === "development" && message
+          ? { detail: message + hint }
+          : {}),
+      },
+      { status: 500 },
+    );
+  }
+}
