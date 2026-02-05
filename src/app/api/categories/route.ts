@@ -81,6 +81,17 @@ export async function GET() {
     );
   } catch (err) {
     console.error("Categories list error:", err);
+    if (isMissingTableError(err)) {
+      return NextResponse.json(
+        { categories: [] },
+        {
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=60, stale-while-revalidate=120",
+          },
+        },
+      );
+    }
     return NextResponse.json(
       { error: "Failed to load categories" },
       { status: 500 },

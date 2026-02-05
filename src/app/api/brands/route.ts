@@ -11,6 +11,14 @@ import {
 /** Cache for 5 minutes (public data) */
 export const revalidate = 300;
 
+function isMissingTableError(err: unknown): boolean {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? (err as { code: string }).code
+      : (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42P01";
+}
+
 /**
  * List all brands: curated brands from brand table + product-derived brands.
  * GET /api/brands
@@ -142,6 +150,17 @@ export async function GET() {
     );
   } catch (err) {
     console.error("Brands list error:", err);
+    if (isMissingTableError(err)) {
+      return NextResponse.json(
+        { brands: [] },
+        {
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=60, stale-while-revalidate=120",
+          },
+        },
+      );
+    }
     return NextResponse.json(
       { error: "Failed to load brands" },
       { status: 500 },
