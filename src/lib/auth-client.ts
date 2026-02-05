@@ -4,14 +4,22 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 // baseURL must match the app origin so get-session etc. hit the right API.
-// fallback to window.location.origin in browser when env is missing (e.g. wrong build).
-const baseURL =
-  typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
-  process.env.NEXT_PUBLIC_APP_URL.length > 0
-    ? process.env.NEXT_PUBLIC_APP_URL
-    : typeof window !== "undefined"
-      ? window.location.origin
-      : "";
+// Fallback to window.location.origin in browser when env is missing.
+// Ensure protocol (https://) so Railway/env without protocol doesn't cause Invalid URL.
+function getBaseUrl(): string {
+  const raw =
+    typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
+    process.env.NEXT_PUBLIC_APP_URL.length > 0
+      ? process.env.NEXT_PUBLIC_APP_URL.trim()
+      : typeof window !== "undefined"
+        ? window.location.origin
+        : "";
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw.replace(/^\/+/, "")}`;
+}
+
+const baseURL = getBaseUrl();
 
 export const authClient = createAuthClient({
   baseURL: baseURL || undefined,

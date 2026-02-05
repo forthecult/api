@@ -23,6 +23,15 @@ import {
   verificationTable,
 } from "~/db/schema";
 
+/** Ensure URL has a protocol so Better Auth and redirects don't throw Invalid URL (e.g. Railway env without https://). */
+function ensureAbsoluteUrl(value: string | undefined): string | undefined {
+  if (!value || typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, "")}`;
+}
+
 interface GitHubProfile {
   [key: string]: unknown;
   email?: string;
@@ -108,13 +117,16 @@ export const auth = betterAuth({
     },
   },
   // Local: use localhost. Production: set NEXT_SERVER_APP_URL or VERCEL_URL so auth has a valid base URL.
-  baseURL:
-    process.env.NEXT_SERVER_APP_URL ||
-    (typeof process.env.VERCEL_URL === "string"
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : (process.env.NEXT_PUBLIC_APP_URL ?? undefined)),
+  baseURL: (() => {
+    if (process.env.NODE_ENV === "development")
+      return "http://localhost:3000";
+    if (typeof process.env.VERCEL_URL === "string" && process.env.VERCEL_URL)
+      return `https://${process.env.VERCEL_URL}`;
+    const server = ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL);
+    if (server) return server;
+    const publicUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
+    return publicUrl ?? undefined;
+  })(),
 
   // Trusted origins for CORS/auth - use explicit allowlist for security (never throw)
   trustedOrigins: () => {
@@ -130,18 +142,10 @@ export const auth = betterAuth({
         );
       }
 
-      const appUrl =
-        typeof process.env.NEXT_PUBLIC_APP_URL === "string"
-          ? process.env.NEXT_PUBLIC_APP_URL
-          : "";
+      const appUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL) ?? "";
       const adminUrl =
-        typeof process.env.NEXT_PUBLIC_ADMIN_APP_URL === "string"
-          ? process.env.NEXT_PUBLIC_ADMIN_APP_URL
-          : "";
-      const serverUrl =
-        typeof process.env.NEXT_SERVER_APP_URL === "string"
-          ? process.env.NEXT_SERVER_APP_URL
-          : "";
+        ensureAbsoluteUrl(process.env.NEXT_PUBLIC_ADMIN_APP_URL) ?? "";
+      const serverUrl = ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL) ?? "";
       if (appUrl) origins.push(appUrl);
       if (adminUrl) origins.push(adminUrl);
       if (serverUrl && serverUrl !== appUrl) origins.push(serverUrl);
