@@ -9,11 +9,15 @@ import {
 } from "~/ui/components/page-header";
 import { Shell } from "~/ui/primitives/shell";
 
+function signOutBaseUrl(): string {
+  const raw = process.env.NEXT_SERVER_APP_URL || "http://localhost:3000";
+  if (/^https?:\/\//i.test(raw.trim())) return raw.trim();
+  return `https://${raw.trim().replace(/^\/+/, "")}`;
+}
+
 export const metadata: Metadata = {
   description: "Sign out of your account",
-  metadataBase: new URL(
-    process.env.NEXT_SERVER_APP_URL || "http://localhost:3000",
-  ),
+  metadataBase: new URL(signOutBaseUrl()),
   title: "Sign out",
 };
 

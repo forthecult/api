@@ -35,7 +35,12 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+// Ensure full URL (https://) so metadataBase doesn't throw Invalid URL when env is host-only (e.g. Railway)
+const siteUrlRaw = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+const siteUrl =
+  /^https?:\/\//i.test(siteUrlRaw.trim()) ?
+    siteUrlRaw.trim()
+  : `https://${siteUrlRaw.trim().replace(/^\/+/, "")}`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

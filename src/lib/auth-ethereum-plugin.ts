@@ -33,30 +33,33 @@ type UserRecord = {
   updatedAt: Date;
 };
 
-function getDomain(): string {
-  const base =
+function ensureProtocol(url: string): string {
+  const t = url.trim();
+  if (/^https?:\/\//i.test(t)) return t;
+  return `https://${t.replace(/^\/+/, "")}`;
+}
+
+function getBase(): string {
+  const raw =
     process.env.NEXT_SERVER_APP_URL ||
     (typeof process.env.VERCEL_URL === "string"
       ? `https://${process.env.VERCEL_URL}`
       : process.env.NODE_ENV === "development"
         ? "http://localhost:3000"
         : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
+  return ensureProtocol(raw);
+}
+
+function getDomain(): string {
   try {
-    return new URL(base).host;
+    return new URL(getBase()).host;
   } catch {
     return "localhost";
   }
 }
 
 function getUri(): string {
-  const base =
-    process.env.NEXT_SERVER_APP_URL ||
-    (typeof process.env.VERCEL_URL === "string"
-      ? `https://${process.env.VERCEL_URL}`
-      : process.env.NODE_ENV === "development"
-        ? "http://localhost:3000"
-        : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
-  return base;
+  return getBase();
 }
 
 // Lazy public client for verifySiweMessage (needs a viem Client)
