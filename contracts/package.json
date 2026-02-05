@@ -1,0 +1,27 @@
+{
+  "name": "payment-contracts",
+  "version": "1.0.0",
+  "description": "EVM Payment Receiver smart contracts for Culture Store",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:local": "hardhat run scripts/deploy.ts --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia",
+    "deploy:base-sepolia": "hardhat run scripts/deploy.ts --network baseSepolia",
+    "deploy:ethereum": "hardhat run scripts/deploy.ts --network ethereum",
+    "deploy:arbitrum": "hardhat run scripts/deploy.ts --network arbitrum",
+    "deploy:base": "hardhat run scripts/deploy.ts --network base",
+    "deploy:polygon": "hardhat run scripts/deploy.ts --network polygon",
+    "deploy:bnb": "hardhat run scripts/deploy.ts --network bnb",
+    "deploy:optimism": "hardhat run scripts/deploy.ts --network optimism",
+    "verify": "hardhat verify",
+    "node": "hardhat node",
+    "export-abi": "node scripts/export-abi.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.0.2",
+    "dotenv": "^16.4.5",
+    "hardhat": "^2.22.3"
+  }
+}

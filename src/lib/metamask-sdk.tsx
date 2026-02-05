@@ -34,14 +34,14 @@ const defaultSdkOptions: MetaMaskSDKOptions = {
 /** wrap EVM checkout or any subtree that needs MetaMask (ETH/EVM) */
 export function MetaMaskProvider({
   children,
-  sdkOptions,
+  sdkOptions: overrides,
 }: MetaMaskProviderProps) {
-  const options: MetaMaskSDKOptions = {
+  const opts: MetaMaskSDKOptions = {
     ...defaultSdkOptions,
-    ...sdkOptions,
+    ...overrides,
   };
   return (
-    <SDKMetaMaskProvider sdkOptions={options}>{children}</SDKMetaMaskProvider>
+    <SDKMetaMaskProvider sdkOptions={opts}>{children}</SDKMetaMaskProvider>
   );
 }
 
