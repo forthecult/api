@@ -915,7 +915,7 @@ export default function AdminCustomerDetailPage() {
                         <TableCell className="text-center">
                           <input
                             type="checkbox"
-                            checked={prefs.transactional[id]}
+                            checked={prefs?.transactional[id] ?? false}
                             disabled={disabled}
                             onChange={(e) =>
                               updateNotifPref("transactional", id, e.target.checked)
@@ -927,7 +927,7 @@ export default function AdminCustomerDetailPage() {
                         <TableCell className="text-center">
                           <input
                             type="checkbox"
-                            checked={prefs.marketing[id]}
+                            checked={prefs?.marketing[id] ?? false}
                             disabled={disabled}
                             onChange={(e) =>
                               updateNotifPref("marketing", id, e.target.checked)

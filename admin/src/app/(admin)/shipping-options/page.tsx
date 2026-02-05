@@ -75,7 +75,8 @@ function formatRange(
   if (min == null && max == null) return "—";
   if (min != null && max == null) return `${formatter(min)}+`;
   if (min == null && max != null) return `≤ ${formatter(max)}`;
-  return `${formatter(min)} – ${formatter(max)}`;
+  if (min != null && max != null) return `${formatter(min)} – ${formatter(max)}`;
+  return "—";
 }
 
 export default function AdminShippingOptionsPage() {

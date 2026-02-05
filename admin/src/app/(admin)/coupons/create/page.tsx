@@ -369,7 +369,7 @@ export default function AdminDiscountCreatePage() {
                     placeholder={
                       discountType === "percent" ? "e.g. 20" : "e.g. 10.00"
                     }
-                    required={discountKind !== "free_shipping"}
+                    required
                   />
                 </div>
               </div>

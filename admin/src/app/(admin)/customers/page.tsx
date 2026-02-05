@@ -30,6 +30,7 @@ interface CustomerRow {
   phone: string | null;
   tokenBalanceCents: number | null;
   orderCount: number;
+  amountSpentCents: number | null;
   city: string | null;
   country: string | null;
   receiveMarketing: boolean;

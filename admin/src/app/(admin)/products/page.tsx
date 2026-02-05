@@ -25,6 +25,7 @@ const API_BASE = getMainAppUrl();
 interface ProductRow {
   id: string;
   name: string;
+  slug?: string | null;
   imageUrl: string | null;
   priceCents: number;
   published: boolean;

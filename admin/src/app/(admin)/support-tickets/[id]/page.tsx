@@ -310,7 +310,7 @@ export default function AdminSupportTicketDetailPage() {
                 Conversation
               </h3>
               <div className="max-h-[400px] space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-3">
-                {ticket.messages.map((msg) => (
+                {(ticket.messages ?? []).map((msg) => (
                   <div
                     key={msg.id}
                     className={cn(

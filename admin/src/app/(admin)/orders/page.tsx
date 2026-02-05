@@ -340,7 +340,7 @@ export default function AdminOrdersPage() {
                           key={col.key}
                           className={cn(
                             "whitespace-nowrap p-4 font-medium",
-                            col.key === "amount" && "text-right",
+                            col.key === "total" && "text-right",
                             col.key === "action" && "text-right",
                           )}
                           scope="col"
