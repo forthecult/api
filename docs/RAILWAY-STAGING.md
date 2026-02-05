@@ -27,6 +27,16 @@ Railway will assign a URL like `https://your-app.up.railway.app`. That’s your 
 - `NEXT_PUBLIC_ADMIN_APP_URL` = leave empty if you’re not deploying admin; if you do deploy admin, set it to the admin service URL (see below).
 - `DATABASE_URL`, `AUTH_SECRET`, and any other env your app needs.
 
+**Database schema (required):** The app expects tables such as `brand`, `category`, `product`, etc. If you see errors like `relation "brand" does not exist` (PostgreSQL 42P01), run migrations against the **staging** `DATABASE_URL` from your machine (or a one-off deploy step), for example:
+
+```bash
+# From repo root, with DATABASE_URL pointing at Railway Postgres
+bun run db:push
+# or: npx drizzle-kit push
+```
+
+Use the same `DATABASE_URL` you set on the Railway service. After the schema exists, build and runtime will succeed.
+
 ---
 
 ## Two services (customer + admin)
