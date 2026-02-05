@@ -355,6 +355,7 @@ export async function runShippingCalculate(
     priceCents: number;
   }> = [];
   let allOptions: (typeof shippingOptionsTable.$inferSelect)[] = [];
+  let brandNameToId = new Map<string, string>();
 
   try {
     const [productsResult, variantsResult, optionsResult, brandsResult] =
@@ -393,7 +394,7 @@ export async function runShippingCalculate(
     products = productsResult;
     variants = variantsResult;
     allOptions = optionsResult;
-    const brandNameToId = new Map<string, string>(
+    brandNameToId = new Map<string, string>(
       (
         brandsResult as Array<{ id: string; name: string | null }>
       ).filter((b) => (b.name ?? "").trim().length > 0).map((b) => [

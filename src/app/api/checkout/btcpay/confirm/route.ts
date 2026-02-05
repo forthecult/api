@@ -17,6 +17,7 @@ import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
 } from "~/lib/printful-orders";
+import { onOrderCreated } from "~/lib/create-user-notification";
 import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,

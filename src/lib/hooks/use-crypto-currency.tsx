@@ -45,6 +45,7 @@ const DECIMAL_MAP: Record<CryptoCode, number> = {
   CRUST: 6,
   XMR: 6,
   XAU: 2,
+  XAG: 2,
 };
 
 /** Fallback when API fails; also used as initial state so consumers never see empty rates. */

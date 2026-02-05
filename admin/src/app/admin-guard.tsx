@@ -4,11 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 import { useSession } from "~/lib/auth-client";
+import { getMainAppUrl } from "~/lib/env";
 
-const MAIN_APP =
-  typeof process.env.NEXT_PUBLIC_MAIN_APP_URL === "string"
-    ? process.env.NEXT_PUBLIC_MAIN_APP_URL
-    : "http://localhost:3000";
+const MAIN_APP = getMainAppUrl();
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const { data, isPending } = useSession();

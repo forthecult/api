@@ -308,16 +308,15 @@ export function AuthWalletModal({
         let eth: typeof raw = undefined;
         if (raw) {
           if (Array.isArray(raw.providers) && raw.providers.length > 0) {
-            const metaMask = raw.providers.find(
-              (p: { isMetaMask?: boolean }) => p?.isMetaMask,
-            );
-            const nonPhantom = raw.providers.find(
-              (p: unknown) => p !== win?.phantom?.ethereum,
+            const providers = raw.providers as Array<{ isMetaMask?: boolean }>;
+            const metaMask = providers.find((p) => p?.isMetaMask);
+            const nonPhantom = (raw.providers as unknown[]).find(
+              (p) => p !== win?.phantom?.ethereum,
             );
             eth = (metaMask ?? nonPhantom ?? raw.providers[0]) as typeof raw;
-          } else if (raw !== win?.phantom?.ethereum && raw.request) {
+          } else if (raw !== win?.phantom?.ethereum) {
             eth = raw;
-          } else if (raw.request) {
+          } else {
             eth = raw;
           }
         }

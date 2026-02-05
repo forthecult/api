@@ -1,5 +1,6 @@
 "use client";
 
+import { getMainAppUrl } from "~/lib/env";
 import {
   ChevronDown,
   ChevronLeft,
@@ -322,10 +323,7 @@ export function AdminSidebar() {
 }
 
 export function BrowseWebsiteLink() {
-  const mainAppUrl =
-    typeof process.env.NEXT_PUBLIC_MAIN_APP_URL === "string"
-      ? process.env.NEXT_PUBLIC_MAIN_APP_URL
-      : "http://localhost:3000";
+  const mainAppUrl = getMainAppUrl();
 
   return (
     <a

@@ -10,6 +10,7 @@ import {
 import { useCallback, useEffect, useState } from "react";
 
 import { useSession } from "~/lib/auth-client";
+import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import {
   Card,
@@ -19,10 +20,7 @@ import {
   CardTitle,
 } from "~/ui/card";
 
-const API_BASE =
-  typeof process.env.NEXT_PUBLIC_MAIN_APP_URL === "string"
-    ? process.env.NEXT_PUBLIC_MAIN_APP_URL
-    : "http://localhost:3000";
+const API_BASE = getMainAppUrl();
 
 type Range = "daily" | "monthly" | "yearly";
 

@@ -1,16 +1,9 @@
 "use client";
 
 import React from "react";
+import { getMainAppUrl } from "~/lib/env";
 
-const API_BASE =
-  typeof process.env.NEXT_PUBLIC_MAIN_APP_URL === "string" &&
-  process.env.NEXT_PUBLIC_MAIN_APP_URL.trim() !== ""
-    ? process.env.NEXT_PUBLIC_MAIN_APP_URL.trim()
-    : (typeof window !== "undefined"
-        ? "http://localhost:3000"
-        : process.env.NODE_ENV === "development"
-          ? "http://localhost:3000"
-          : "");
+const API_BASE = getMainAppUrl();
 
 type Template = {
   id: string;
@@ -33,13 +26,6 @@ export default function AdminNotificationsPage() {
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    if (!API_BASE) {
-      setError(
-        "NEXT_PUBLIC_MAIN_APP_URL not set. Set it in .env (e.g. http://localhost:3000 for the main app).",
-      );
-      setLoading(false);
-      return;
-    }
     fetch(`${API_BASE}/api/admin/notification-templates`, {
       credentials: "include",
     })

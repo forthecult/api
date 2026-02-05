@@ -60,7 +60,7 @@ const COUNTRY_CURRENCY_COOKIE = "country-currency";
 // Simple in-memory rate limit for proxy (edge-compatible)
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 
-export function proxy(request: NextRequest) {
+function proxyHandler(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthApi = path.startsWith("/api/auth/");
   const isAdminApi = path.startsWith("/api/admin/");
@@ -144,6 +144,9 @@ export function proxy(request: NextRequest) {
 
   return res;
 }
+
+/** Next.js proxy: default export (replaces deprecated middleware.ts). */
+export default proxyHandler;
 
 export const config = {
   matcher: [

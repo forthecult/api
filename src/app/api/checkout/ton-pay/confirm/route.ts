@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { onOrderCreated } from "~/lib/create-user-notification";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,

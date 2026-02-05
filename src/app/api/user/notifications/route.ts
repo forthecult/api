@@ -4,31 +4,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { accountTable, userTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import type {
+  ChannelPreferences,
+  NotificationPreferences,
+} from "~/lib/user-notification-preferences";
 
 const TELEGRAM_PROVIDER_ID = "telegram";
-
-// Notification channels
-export const NOTIFICATION_CHANNELS = ["email", "website", "sms", "telegram", "aiCompanion"] as const;
-export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
-
-// Notification types
-export const NOTIFICATION_TYPES = ["transactional", "marketing"] as const;
-export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
-
-// Channel preferences for a single notification type
-export type ChannelPreferences = {
-  [K in NotificationChannel]: boolean;
-};
-
-// Full notification preferences structure
-export type NotificationPreferences = {
-  hasTelegramLinked: boolean;
-  transactional: ChannelPreferences;
-  marketing: ChannelPreferences;
-  // Legacy fields for backward compatibility
-  receiveOrderNotificationsViaTelegram: boolean;
-  receiveMarketing: boolean;
-};
 
 /**
  * GET /api/user/notifications

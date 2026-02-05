@@ -6,13 +6,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { cn } from "~/lib/cn";
+import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
-const API_BASE =
-  typeof process.env.NEXT_PUBLIC_MAIN_APP_URL === "string"
-    ? process.env.NEXT_PUBLIC_MAIN_APP_URL
-    : "http://localhost:3000";
+const API_BASE = getMainAppUrl();
 
 interface Message {
   id: string;
