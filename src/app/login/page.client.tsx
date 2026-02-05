@@ -3,7 +3,7 @@
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 
 import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
 import { signIn, useCurrentUserOrRedirect } from "~/lib/auth-client";
@@ -18,7 +18,7 @@ import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
-export function LoginPageClient() {
+function LoginPageClientInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -173,5 +173,13 @@ export function LoginPageClient() {
         </CardContent>
       </Card>
     </AuthFormLayout>
+  );
+}
+
+export function LoginPageClient() {
+  return (
+    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">Loading…</div>}>
+      <LoginPageClientInner />
+    </Suspense>
   );
 }

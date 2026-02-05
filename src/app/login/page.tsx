@@ -1,6 +1,10 @@
+import { Suspense } from "react";
+
 import { SEO_CONFIG } from "~/app";
 
 import { LoginLoader } from "./login-loader";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   description: `Sign in to your ${SEO_CONFIG.name} account.`,
@@ -12,5 +16,9 @@ export const metadata = {
  * Session check and redirect handled client-side.
  */
 export default function LoginPage() {
-  return <LoginLoader />;
+  return (
+    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">Loading…</div>}>
+      <LoginLoader />
+    </Suspense>
+  );
 }

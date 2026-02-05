@@ -1,4 +1,18 @@
+import path from "node:path";
+
 import type { NextConfig } from "next";
+
+const wagmiStub = path.resolve(process.cwd(), "src/lib/wagmi-connector-stub.js");
+
+function resolveWalletConnect(): string {
+  try {
+    return require.resolve("@walletconnect/ethereum-provider", {
+      paths: [process.cwd()],
+    });
+  } catch {
+    return wagmiStub;
+  }
+}
 
 /** Legacy category slugs (tickers) → SEO-friendly full names. 301 so search and bookmarks land on canonical URLs. */
 const CATEGORY_REDIRECTS: [string, string][] = [
@@ -123,15 +137,22 @@ const config = {
     ];
   },
 
-  // Suppress optional/peer dependency resolution (wagmi, WalletConnect/pino)
+  // Optional wagmi connectors + pino: alias/stub so build always resolves (Railway, strict installs)
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
       porto: false,
       "@safe-global/safe-apps-provider": false,
       "@safe-global/safe-apps-sdk": false,
-      // pino (from @walletconnect/logger) optionally uses pino-pretty; we don't need it in the bundle
       "pino-pretty": false,
+    };
+    // Stub optional connectors we don't use; WalletConnect we use so resolve real package when present
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@base-org/account": wagmiStub,
+      "@coinbase/wallet-sdk": wagmiStub,
+      "@gemini-wallet/core": wagmiStub,
+      "@walletconnect/ethereum-provider": resolveWalletConnect(),
     };
     return config;
   },

@@ -2,6 +2,8 @@ import { SEO_CONFIG } from "~/app";
 
 import { SignupLoader } from "./signup-loader";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   description: `Create a new ${SEO_CONFIG.name} account.`,
   title: `Sign Up | ${SEO_CONFIG.name}`,

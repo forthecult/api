@@ -33,6 +33,7 @@
   },
   "include": [
     "next-env.d.ts",
+    "cheerio.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
@@ -43,6 +44,7 @@
   "exclude": [
     "node_modules",
     "admin",
-    "contracts"
+    "contracts",
+    "scripts"
   ]
 }

@@ -40,8 +40,11 @@ export function MetaMaskProvider({
     ...defaultSdkOptions,
     ...overrides,
   };
+  // SDKMetaMaskProvider (sdk-react) uses a nested @metamask/sdk; types differ by path but are compatible at runtime
   return (
-    <SDKMetaMaskProvider sdkOptions={opts}>{children}</SDKMetaMaskProvider>
+    <SDKMetaMaskProvider sdkOptions={opts as Parameters<typeof SDKMetaMaskProvider>[0]["sdkOptions"]}>
+      {children}
+    </SDKMetaMaskProvider>
   );
 }
 
