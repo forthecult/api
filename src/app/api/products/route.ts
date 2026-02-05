@@ -25,6 +25,7 @@ export type ProductsSort =
  * Query: page, limit, category (optional).
  * No auth required. Cached for 60s.
  */
+export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export async function GET(request: NextRequest) {

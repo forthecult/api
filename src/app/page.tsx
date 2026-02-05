@@ -18,6 +18,9 @@ import {
 
 import { testimonials } from "./mocks";
 
+// Avoid build-time SSG timeout when API/DB unreachable (e.g. Railway build)
+export const dynamic = "force-dynamic";
+
 async function fetchCategories(): Promise<
   Array<{ id: string; name: string; slug?: string; productCount: number }>
 > {
