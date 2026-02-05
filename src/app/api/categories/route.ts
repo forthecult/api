@@ -11,6 +11,14 @@ import {
 /** Cache for 5 minutes (public data) */
 export const revalidate = 300;
 
+function isMissingTableError(err: unknown): boolean {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? (err as { code: string }).code
+      : (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42P01";
+}
+
 /**
  * List all categories with subcategories and product counts.
  * GET /api/categories
