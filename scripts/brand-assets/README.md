@@ -27,6 +27,16 @@ scripts/brand-assets/
 
 Supported extensions: `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`.
 
+## Fetching logos automatically
+
+To pull logos from each brand’s website into this folder (og:image, favicon, or common logo paths):
+
+```bash
+bun run fetch-brand-assets
+```
+
+Then run `bun run db:upload-brand-assets` to upload to UploadThing. If a brand’s site blocks requests (e.g. Berkey), add its logo manually to `scripts/brand-assets/<slug>/logo.png`.
+
 ## Usage
 
 1. Add image files under `scripts/brand-assets/<brand-slug>/` (create the folder if needed).

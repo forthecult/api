@@ -15,6 +15,7 @@
     "db:seed-categories": "bun run scripts/seed-categories.ts",
     "db:seed-brands": "bun run scripts/seed-brands.ts",
     "db:upload-brand-assets": "bun run scripts/upload-brand-assets.ts",
+    "fetch-brand-assets": "bun run scripts/fetch-brand-assets.ts",
     "db:seed-reviews": "bun run scripts/seed-reviews.ts",
     "db:link-orphan-reviews": "bun run scripts/link-orphan-reviews.ts",
     "db:migrate-reviews": "psql $DATABASE_URL -f scripts/migrate-reviews-standalone.sql",
