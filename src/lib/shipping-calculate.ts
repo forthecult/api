@@ -518,7 +518,7 @@ export async function runShippingCalculate(
           item.productVariantId,
         );
         if (variantExternalId) {
-          catalogVariantId = Number.parseInt(variantExternalId, 10);
+          catalogVariantId = Number.parseInt(String(variantExternalId), 10);
         }
       }
 
@@ -541,7 +541,7 @@ export async function runShippingCalculate(
       // Printify shipping: need blueprint_id (externalId), print_provider_id (printifyPrintProviderId), variant_id (variant externalId)
       const blueprintId =
         product.externalId != null
-          ? Number.parseInt(product.externalId, 10)
+          ? Number.parseInt(String(product.externalId), 10)
           : NaN;
       const printProviderId = product.printifyPrintProviderId ?? NaN;
       const hasBlueprintAndProvider =
@@ -556,7 +556,7 @@ export async function runShippingCalculate(
         );
         variantId =
           variantExternalId != null
-            ? Number.parseInt(variantExternalId, 10)
+            ? Number.parseInt(String(variantExternalId), 10)
             : null;
         if (variantId !== null && isNaN(variantId)) variantId = null;
       } else {
@@ -564,7 +564,7 @@ export async function runShippingCalculate(
         const defaultExternalId =
           printifyDefaultVariantByProductId.get(item.productId);
         if (defaultExternalId != null) {
-          const parsed = Number.parseInt(defaultExternalId, 10);
+          const parsed = Number.parseInt(String(defaultExternalId), 10);
           if (!isNaN(parsed)) variantId = parsed;
         }
       }
