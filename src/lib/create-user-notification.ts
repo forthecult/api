@@ -111,13 +111,20 @@ const ORDER_STATUS_NOTIFICATION_KINDS = [
   "order_cancelled",
 ] as const;
 
+/** Order status kinds that trigger notifications. */
+export type OrderStatusKind =
+  | "order_processing"
+  | "order_shipped"
+  | "order_on_hold"
+  | "order_cancelled";
+
 /**
  * Called when order status changes (processing, shipped, on_hold, cancelled). Sends Telegram,
  * website notification, and transactional email (for order_shipped) when preferences allow.
  */
 export async function onOrderStatusUpdate(
   orderId: string,
-  kind: "order_processing" | "order_shipped" | "order_on_hold" | "order_cancelled",
+  kind: OrderStatusKind,
   options?: { trackingNumber?: string; trackingUrl?: string },
 ): Promise<void> {
   const [order] = await db

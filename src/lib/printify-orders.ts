@@ -23,7 +23,10 @@ import {
   type PrintifyOrderLineItem,
   type PrintifyOrderRecipient,
 } from "~/lib/printify";
-import { onOrderStatusUpdate } from "~/lib/create-user-notification";
+import {
+  onOrderStatusUpdate,
+  type OrderStatusKind,
+} from "~/lib/create-user-notification";
 
 export type PrintifyOrderResult = {
   success: boolean;

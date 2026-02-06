@@ -22,7 +22,10 @@ import {
   type PrintfulOrderItem,
   type PrintfulRecipient,
 } from "~/lib/printful";
-import { onOrderStatusUpdate } from "~/lib/create-user-notification";
+import {
+  onOrderStatusUpdate,
+  type OrderStatusKind,
+} from "~/lib/create-user-notification";
 
 export type PrintfulOrderResult = {
   success: boolean;

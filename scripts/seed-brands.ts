@@ -1,6 +1,9 @@
 /**
  * Seeds the database with curated product brands (website URL, description).
- * Logo and assets can be added in Admin → Product Brands (upload or paste URLs).
+ * To add logos and assets for production: place images in scripts/brand-assets/<slug>/
+ * (e.g. logo.png, banner.png), then run: bun run db:upload-brand-assets
+ * (uploads to UploadThing and sets brand.logoUrl + brand_asset rows).
+ * Alternatively add logos in Admin → Product Brands (upload or paste URLs).
  *
  * Run: bun run db:seed-brands
  */

@@ -1,9 +1,11 @@
 /**
- * Seeds shipping options by brand:
- * - PacSafe: US free over $49, US $8.99 under $49
- * - All other brands: US $3, International $8
+ * Seeds shipping options by brand from scripts/seed-data/shipping-rules.ts.
+ * Used for production/staging so shipping rules are in the DB after seeding.
+ * - Brands with an override (e.g. pacsafe) get slug-specific rules.
+ * - All other brands get default: US $3, International $8.
  *
  * Run: bun run db:seed-shipping-by-brand
+ * (Also run as part of db:seed:staging and db:seed:production.)
  *
  * Options (env):
  *   DRY_RUN=1  - Log what would be created, do not insert.
@@ -16,15 +18,49 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { brandTable, shippingOptionsTable } from "../src/db/schema";
+import {
+  BRAND_SHIPPING_OVERRIDES,
+  DEFAULT_SHIPPING_OPTIONS,
+  type ShippingOptionSeed,
+} from "./seed-data/shipping-rules";
 
 const DRY_RUN = process.env.DRY_RUN === "1";
 
-const PACSAFE_NAME_PATTERN = "pacsafe"; // match PacSafe, pacsafe, etc.
+function buildRow(
+  opt: ShippingOptionSeed,
+  brandId: string,
+  displayName: string,
+  now: Date,
+) {
+  return {
+    id: createId(),
+    name: displayName,
+    countryCode: opt.countryCode,
+    minOrderCents: opt.minOrderCents,
+    maxOrderCents: opt.maxOrderCents,
+    minQuantity: null,
+    maxQuantity: null,
+    minWeightGrams: null,
+    maxWeightGrams: null,
+    type: opt.type,
+    amountCents: opt.amountCents,
+    priority: opt.priority,
+    brandId,
+    sourceUrl: null,
+    estimatedDaysText: null,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
 
 async function main() {
   console.log(DRY_RUN ? "[DRY RUN] No rows will be inserted.\n" : "");
 
-  const brands = await db.select({ id: brandTable.id, name: brandTable.name }).from(brandTable);
+  const brands = await db.select({
+    id: brandTable.id,
+    name: brandTable.name,
+    slug: brandTable.slug,
+  }).from(brandTable);
 
   if (brands.length === 0) {
     console.log("No brands found. Run db:seed-brands first if needed.");
@@ -34,114 +70,29 @@ async function main() {
   const now = new Date();
 
   for (const brand of brands) {
-    const isPacSafe =
-      typeof brand.name === "string" &&
-      brand.name.trim().toLowerCase().includes(PACSAFE_NAME_PATTERN);
+    const options: ShippingOptionSeed[] =
+      BRAND_SHIPPING_OVERRIDES[brand.slug] ?? DEFAULT_SHIPPING_OPTIONS;
 
-    // Remove existing shipping options for this brand so we replace with fixed rules
     if (!DRY_RUN) {
       await db.delete(shippingOptionsTable).where(eq(shippingOptionsTable.brandId, brand.id));
     } else {
       console.log(`[${brand.name}] Would delete existing shipping options.`);
     }
 
-    if (isPacSafe) {
-      // PacSafe: US free over $49, US $8.99 under $49
-      const options = [
-        {
-          id: createId(),
-          name: "PacSafe US Free over $49",
-          countryCode: "US",
-          minOrderCents: 4900,
-          maxOrderCents: null,
-          type: "free" as const,
-          amountCents: null,
-          priority: 1,
-        },
-        {
-          id: createId(),
-          name: "PacSafe US Under $49",
-          countryCode: "US",
-          minOrderCents: null,
-          maxOrderCents: 4899,
-          type: "flat" as const,
-          amountCents: 899,
-          priority: 0,
-        },
-      ];
-      for (const opt of options) {
-        const row = {
-          id: opt.id,
-          name: opt.name,
-          countryCode: opt.countryCode,
-          minOrderCents: opt.minOrderCents,
-          maxOrderCents: opt.maxOrderCents,
-          minQuantity: null,
-          maxQuantity: null,
-          minWeightGrams: null,
-          maxWeightGrams: null,
-          type: opt.type,
-          amountCents: opt.amountCents,
-          priority: opt.priority,
-          brandId: brand.id,
-          sourceUrl: null,
-          estimatedDaysText: null,
-          createdAt: now,
-          updatedAt: now,
-        };
-        if (DRY_RUN) {
-          console.log(`  Would create: ${row.name} (${opt.type}${opt.amountCents != null ? ` $${(opt.amountCents / 100).toFixed(2)}` : ""})`);
-        } else {
-          await db.insert(shippingOptionsTable).values(row);
-          console.log(`  Created: ${row.name}`);
-        }
-      }
-    } else {
-      // Other brands: US $3, International $8 (countryCode null = worldwide)
-      const options = [
-        {
-          id: createId(),
-          name: `${brand.name} US`,
-          countryCode: "US",
-          type: "flat" as const,
-          amountCents: 300,
-          priority: 1,
-        },
-        {
-          id: createId(),
-          name: `${brand.name} International`,
-          countryCode: null,
-          type: "flat" as const,
-          amountCents: 800,
-          priority: 0,
-        },
-      ];
-      for (const opt of options) {
-        const row = {
-          id: opt.id,
-          name: opt.name,
-          countryCode: opt.countryCode,
-          minOrderCents: null,
-          maxOrderCents: null,
-          minQuantity: null,
-          maxQuantity: null,
-          minWeightGrams: null,
-          maxWeightGrams: null,
-          type: opt.type,
-          amountCents: opt.amountCents,
-          priority: opt.priority,
-          brandId: brand.id,
-          sourceUrl: null,
-          estimatedDaysText: null,
-          createdAt: now,
-          updatedAt: now,
-        };
-        if (DRY_RUN) {
-          console.log(`  Would create: ${row.name} $${(opt.amountCents / 100).toFixed(2)}`);
-        } else {
-          await db.insert(shippingOptionsTable).values(row);
-          console.log(`  Created: ${row.name}`);
-        }
+    for (const opt of options) {
+      const displayName =
+        BRAND_SHIPPING_OVERRIDES[brand.slug] != null
+          ? opt.name
+          : `${brand.name} ${opt.name}`;
+      const row = buildRow(opt, brand.id, displayName, now);
+
+      if (DRY_RUN) {
+        const amount =
+          opt.amountCents != null ? ` $${(opt.amountCents / 100).toFixed(2)}` : "";
+        console.log(`  Would create: ${row.name} (${opt.type}${amount})`);
+      } else {
+        await db.insert(shippingOptionsTable).values(row);
+        console.log(`  Created: ${row.name}`);
       }
     }
   }
