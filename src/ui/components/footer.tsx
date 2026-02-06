@@ -248,6 +248,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground
                     hover:text-foreground
                   `}
+                  href="/track-order"
+                >
+                  Track order
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground
+                    hover:text-foreground
+                  `}
                   href="/contact"
                 >
                   Contact Us
