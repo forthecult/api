@@ -151,7 +151,11 @@ function proxyHandler(request: NextRequest) {
   const res = NextResponse.next();
   const existing = request.cookies.get(COUNTRY_CURRENCY_COOKIE)?.value;
   if (!existing) {
-    const geo = request.headers.get("x-vercel-ip-country");
+    // Try multiple geo header sources (Vercel, Cloudflare, generic)
+    const vercelGeo = request.headers.get("x-vercel-ip-country");
+    const cloudflareGeo = request.headers.get("cf-ipcountry");
+    const genericGeo = request.headers.get("x-country");
+    const geo = vercelGeo || cloudflareGeo || genericGeo;
     const country = geo ? GEO_TO_COUNTRY[geo.toUpperCase()] : null;
     if (country) {
       res.cookies.set(COUNTRY_CURRENCY_COOKIE, country, {

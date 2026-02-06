@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { useCurrentUserOrRedirect, updateUser } from "~/lib/auth-client";
+import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
@@ -18,22 +18,41 @@ export function ProfilePageClient() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
 
+  // Load profile data from API to get firstName/lastName separately
   useEffect(() => {
-    if (user) {
-      const u = user as {
-        firstName?: string;
-        lastName?: string;
-        phone?: string;
-      };
-      setFirstName(u.firstName ?? "");
-      setLastName(u.lastName ?? "");
-      setEmail(user.email ?? "");
-      setPhone(u.phone ?? "");
-    }
+    if (!user) return;
+    
+    const loadProfile = async () => {
+      try {
+        const res = await fetch("/api/user/profile", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json() as {
+            firstName?: string;
+            lastName?: string;
+            email?: string;
+            phone?: string;
+          };
+          setFirstName(data.firstName ?? "");
+          setLastName(data.lastName ?? "");
+          setEmail(data.email ?? user.email ?? "");
+        } else {
+          // Fallback to session data
+          setEmail(user.email ?? "");
+        }
+      } catch {
+        // Fallback to session data
+        setEmail(user.email ?? "");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    void loadProfile();
   }, [user]);
 
-  if (isPending) {
+  if (isPending || loading) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <p className="text-muted-foreground">Loading...</p>
@@ -45,11 +64,21 @@ export function ProfilePageClient() {
     e.preventDefault();
     setSaving(true);
     try {
-      await updateUser({
-        name:
-          [firstName.trim(), lastName.trim()].filter(Boolean).join(" ") ||
-          undefined,
-      } as Parameters<typeof updateUser>[0]);
+      const res = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+        }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({})) as { error?: string };
+        throw new Error(data.error ?? "Failed to save");
+      }
+      
       toast.success("Profile updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");

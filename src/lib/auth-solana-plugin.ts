@@ -272,6 +272,20 @@ export function solanaAuthPlugin() {
                     emailVerified: true,
                     createdAt: now,
                     updatedAt: now,
+                    // Notification preferences - required fields with defaults (snake_case for DB)
+                    transactional_email: true,
+                    transactional_website: true,
+                    transactional_sms: false,
+                    transactional_telegram: false,
+                    transactional_ai_companion: false,
+                    marketing_email: true,
+                    marketing_website: false,
+                    marketing_sms: false,
+                    marketing_telegram: false,
+                    marketing_ai_companion: false,
+                    receive_marketing: false,
+                    receive_sms_marketing: false,
+                    receive_order_notifications_via_telegram: false,
                   },
                 });
               } catch (createUserErr) {

@@ -10,10 +10,6 @@ import {
 } from "~/app/checkout/crypto/open-wallet-modal";
 import { SolanaWalletProvider } from "~/app/checkout/crypto/SolanaWalletProvider";
 import { SuiWalletProvider } from "~/app/checkout/crypto/SuiWalletProvider";
-import {
-  AuthWalletModal,
-  OPEN_AUTH_WALLET_MODAL,
-} from "~/ui/components/auth/auth-wallet-modal";
 
 export default function SignupLayout({
   children,
@@ -21,7 +17,6 @@ export default function SignupLayout({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
-  const [authWalletOpen, setAuthWalletOpen] = useState(false);
   const openModal = useCallback(() => setOpen(true), []);
 
   useEffect(() => {
@@ -38,12 +33,8 @@ export default function SignupLayout({
       window.removeEventListener(OPEN_CONNECT_WALLET_MODAL, handleOpen);
   }, []);
 
-  useEffect(() => {
-    const handleAuthWallet = () => setAuthWalletOpen(true);
-    window.addEventListener(OPEN_AUTH_WALLET_MODAL, handleAuthWallet);
-    return () =>
-      window.removeEventListener(OPEN_AUTH_WALLET_MODAL, handleAuthWallet);
-  }, []);
+  // Note: AuthWalletModal is provided by AuthWalletModalProvider in root layout
+  // Don't add another one here to avoid duplicate modals
 
   return (
     <OpenConnectWalletModalProvider openModal={openModal}>
@@ -51,10 +42,6 @@ export default function SignupLayout({
         <SolanaWalletProvider>
           {children}
           <ConnectWalletModal open={open} onOpenChange={setOpen} />
-          <AuthWalletModal
-            open={authWalletOpen}
-            onOpenChange={setAuthWalletOpen}
-          />
         </SolanaWalletProvider>
       </SuiWalletProvider>
     </OpenConnectWalletModalProvider>

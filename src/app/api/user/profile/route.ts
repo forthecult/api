@@ -75,6 +75,21 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
   }
 
+  // Also update the combined 'name' field for Better Auth session compatibility
+  if (updates.firstName !== undefined || updates.lastName !== undefined) {
+    // Get current values to combine with updates
+    const [currentUser] = await db
+      .select({ firstName: userTable.firstName, lastName: userTable.lastName })
+      .from(userTable)
+      .where(eq(userTable.id, session.user.id))
+      .limit(1);
+    
+    const newFirstName = updates.firstName !== undefined ? updates.firstName : currentUser?.firstName;
+    const newLastName = updates.lastName !== undefined ? updates.lastName : currentUser?.lastName;
+    const combinedName = [newFirstName, newLastName].filter(Boolean).join(" ") || "User";
+    updates.name = combinedName;
+  }
+
   const [updated] = await db
     .update(userTable)
     .set({ ...updates, updatedAt: new Date() })
@@ -83,6 +98,7 @@ export async function PATCH(request: NextRequest) {
       id: userTable.id,
       firstName: userTable.firstName,
       lastName: userTable.lastName,
+      name: userTable.name,
       image: userTable.image,
     });
 
@@ -93,6 +109,7 @@ export async function PATCH(request: NextRequest) {
   return NextResponse.json({
     firstName: updated.firstName ?? "",
     lastName: updated.lastName ?? "",
+    name: updated.name ?? "",
     image: updated.image ?? null,
   });
 }
