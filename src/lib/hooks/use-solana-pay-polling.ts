@@ -27,6 +27,8 @@ interface UseSolanaPayPollingOptions {
   successUrl?: string;
   /** Polling interval in ms (default: 1500) */
   pollInterval?: number;
+  /** Payer wallet address (so we can link order to user when they sign up later) */
+  payerWalletAddress?: string | null;
 }
 
 interface UseSolanaPayPollingResult {
@@ -48,6 +50,7 @@ export function useSolanaPayPolling({
   onConfirmed,
   successUrl,
   pollInterval = 1500,
+  payerWalletAddress,
 }: UseSolanaPayPollingOptions): UseSolanaPayPollingResult {
   const router = useRouter();
   const [status, setStatus] = useState<SolanaPayStatus>("idle");
@@ -103,6 +106,9 @@ export function useSolanaPayPolling({
                 signature: data.signature,
                 amount,
                 splToken,
+                ...(payerWalletAddress?.trim()
+                  ? { payerWalletAddress: payerWalletAddress.trim() }
+                  : {}),
               }),
             });
           } catch {

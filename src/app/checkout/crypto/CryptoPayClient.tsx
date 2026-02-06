@@ -447,6 +447,7 @@ export function CryptoPayClient() {
                 signature: data.signature,
                 amount: amountStr,
                 splToken: splTokenMint,
+                ...(publicKey ? { payerWalletAddress: publicKey.toBase58() } : {}),
               }),
             });
           } catch {
@@ -476,6 +477,7 @@ export function CryptoPayClient() {
     crustSolPerToken,
     rate,
     router,
+    publicKey,
   ]);
 
   useEffect(() => {

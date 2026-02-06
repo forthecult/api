@@ -50,9 +50,18 @@ export async function POST(request: NextRequest) {
       signature?: string;
       amount?: string;
       splToken?: string;
+      /** Payer wallet address (from connected wallet) so we can link order to user when they sign up later */
+      payerWalletAddress?: string;
     };
-    const { depositAddress, orderId, reference, signature, amount, splToken } =
-      body;
+    const {
+      depositAddress,
+      orderId,
+      reference,
+      signature,
+      amount,
+      splToken,
+      payerWalletAddress: payerWalletFromBody,
+    } = body;
 
     const byDeposit =
       depositAddress &&
@@ -150,6 +159,10 @@ export async function POST(request: NextRequest) {
         paymentStatus: "paid",
         status: "paid",
         updatedAt: new Date(),
+        ...(typeof payerWalletFromBody === "string" &&
+        payerWalletFromBody.trim()
+          ? { payerWalletAddress: payerWalletFromBody.trim() }
+          : {}),
       })
       .where(eq(ordersTable.id, order.id));
 

@@ -14,6 +14,8 @@ import { setSessionCookie } from "better-auth/cookies";
 import { randomBytes } from "node:crypto";
 import { PublicKey } from "@solana/web3.js";
 
+import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
+
 const SOLANA_PROVIDER_ID = "solana";
 const MESSAGE_PREFIX = "Sign this message to sign in to";
 const NONCE_EXPIRY_SEC = 300; // 5 minutes
@@ -45,6 +47,33 @@ function extractNonceFromMessage(message: string): string | null {
   const lines = rest.split("\n");
   const lastLine = lines[lines.length - 1]?.trim();
   return lastLine ?? null;
+}
+
+/** Collect error message from error and its cause chain (e.g. Postgres wraps in cause). */
+function getFullErrorMessage(err: unknown): string {
+  const parts: string[] = [];
+  let current: unknown = err;
+  while (current) {
+    if (current instanceof Error) {
+      if (current.message) parts.push(current.message);
+      current = current.cause;
+    } else {
+      parts.push(String(current));
+      break;
+    }
+  }
+  return parts.join(" ");
+}
+
+/** True if this error is a DB unique constraint on user email (duplicate signup). */
+function isDuplicateUserEmailError(err: unknown): boolean {
+  const msg = getFullErrorMessage(err);
+  if (/user_email_unique/i.test(msg) && /duplicate key|unique constraint/i.test(msg)) return true;
+  const code = err && typeof err === "object" && "code" in err ? String((err as { code: string }).code) : "";
+  if (code === "23505") return true; // PostgreSQL unique_violation
+  const cause = err && typeof err === "object" && "cause" in err ? (err as { cause: unknown }).cause : null;
+  if (cause && typeof cause === "object" && "code" in cause && String((cause as { code: string }).code) === "23505") return true;
+  return false;
 }
 
 function getSignatureBytes(params: {
@@ -364,6 +393,13 @@ export function solanaAuthPlugin() {
                 message: "Failed to create session",
               });
             }
+
+            // Link any guest orders paid with this wallet to this user
+            void linkOrdersToUserByWallet(user.id, addressTrim, {
+              isEvm: false,
+            }).catch((err) =>
+              console.warn("[solana-auth] linkOrdersToUserByWallet failed:", err),
+            );
 
             await setSessionCookie(ctx, { session, user } as Parameters<typeof setSessionCookie>[1], false as boolean | undefined);
             return ctx.json({

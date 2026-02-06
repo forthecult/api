@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { db } from "~/db";
 import { formatCents, formatDateShort } from "~/lib/format";
+import { linkOrdersToUserByEmail } from "~/lib/link-orders-to-user";
 import { ordersTable } from "~/db/schema";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -48,6 +49,13 @@ const STATUS_CLASS: Record<string, string> = {
 export default async function OrdersPage() {
   const user = await getCurrentUserOrRedirect();
   if (!user) return null;
+
+  // If email is verified, claim any guest orders placed with this email so they show in My Orders
+  const emailVerified = (user as { emailVerified?: boolean }).emailVerified;
+  if (emailVerified && user.email?.trim()) {
+    await linkOrdersToUserByEmail(user.id, user.email);
+  }
+
   const orders = await db.query.ordersTable.findMany({
     orderBy: [desc(ordersTable.createdAt)],
     where: eq(ordersTable.userId, user.id),

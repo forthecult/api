@@ -18,6 +18,8 @@ import { z } from "zod";
 import { setSessionCookie } from "better-auth/cookies";
 import { randomBytes } from "node:crypto";
 
+import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
+
 const ETHEREUM_PROVIDER_ID = "ethereum";
 const NONCE_EXPIRY_SEC = 300; // 5 minutes
 
@@ -322,6 +324,13 @@ export function ethereumAuthPlugin() {
                 message: "Failed to create session",
               });
             }
+
+            // Link any guest orders paid with this wallet to this user
+            void linkOrdersToUserByWallet(user.id, addressTrim.toLowerCase(), {
+              isEvm: true,
+            }).catch((err) =>
+              console.warn("[ethereum-auth] linkOrdersToUserByWallet failed:", err),
+            );
 
             await setSessionCookie(ctx, { session, user } as Parameters<typeof setSessionCookie>[1], false as boolean | undefined);
             return ctx.json({

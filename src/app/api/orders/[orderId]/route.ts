@@ -64,10 +64,14 @@ export async function GET(
       // Admin: allow full access
     } else {
       const session = await auth.api.getSession({ headers: request.headers });
+      const emailVerified = (session?.user as { emailVerified?: boolean })
+        ?.emailVerified;
       const isOwner =
         session?.user &&
         (order.userId === session.user.id ||
-          normalizeEmail(order.email) === normalizeEmail(session.user.email));
+          (emailVerified &&
+            normalizeEmail(order.email) ===
+              normalizeEmail(session.user.email)));
       if (!isOwner) {
         return NextResponse.json(
           { error: { code: "UNAUTHORIZED", message: "Not authorized to view this order" } },
