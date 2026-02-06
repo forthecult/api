@@ -126,10 +126,17 @@ export const metadata: Metadata = {
 };
 
 export default async function LookbookPage() {
+  const cookieStore = await cookies();
+  const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
+  const passed = hasValidTokenGateCookie(tgCookie, "page", "lookbook");
+
+  if (!passed) {
+    return <TokenGateGuard resourceType="page" resourceId="lookbook" />;
+  }
+
   const images = getLookbookImages();
   return (
-    <TokenGateGuard resourceType="page" resourceId="lookbook">
-      <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
+    <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <header className="mb-12 border-b border-border pb-10">
         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Lookbook
@@ -186,6 +193,5 @@ export default async function LookbookPage() {
         <p className="mt-1 text-sm text-muted-foreground">{PHOTOGRAPHER.bio}</p>
       </footer>
     </div>
-    </TokenGateGuard>
   );
 }

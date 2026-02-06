@@ -40,11 +40,12 @@ function parseAndVerify(cookieValue: string): Entry[] | null {
   if (!payloadBuf || !sigBuf) return null;
   let entries: Entry[];
   try {
-    entries = JSON.parse(payloadBuf.toString("utf8"));
+    const parsed: unknown = JSON.parse(payloadBuf.toString("utf8"));
+    if (!Array.isArray(parsed)) return null;
+    entries = parsed as Entry[];
   } catch {
     return null;
   }
-  if (!Array.isArray(entries)) return null;
   const payload = JSON.stringify(entries);
   const expected = createHmac("sha256", SECRET).update(payload).digest();
   if (expected.length !== sigBuf.length) return null;

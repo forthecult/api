@@ -31,6 +31,7 @@ export async function getCategoryBySlug(
       title: categoriesTable.title,
       description: categoriesTable.description,
       parentId: categoriesTable.parentId,
+      tokenGated: categoriesTable.tokenGated,
     })
     .from(categoriesTable)
     .where(eq(categoriesTable.slug, slug.trim()))
@@ -43,6 +44,7 @@ export async function getCategoryBySlug(
     title: row.title ?? null,
     description: row.description ?? null,
     parentId: row.parentId ?? null,
+    tokenGated: row.tokenGated ?? false,
   };
 }
 

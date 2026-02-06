@@ -449,6 +449,20 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
+  if (category.tokenGated) {
+    const cookieStore = await cookies();
+    const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
+    const passed = hasValidTokenGateCookie(tgCookie, "category", category.id);
+    if (!passed) {
+      return (
+        <TokenGateGuard
+          resourceType="category"
+          resourceId={category.id}
+        />
+      );
+    }
+  }
+
   const resolvedSearchParams = (await searchParams) as {
     page?: string;
     sort?: string;
