@@ -1,17 +1,26 @@
+import { createId } from "@paralleldrive/cuid2";
 import { and, eq, gt } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { verificationTable } from "~/db/schema";
+import {
+  accountTable,
+  userTable,
+  verificationTable,
+} from "~/db/schema";
 import { auth } from "~/lib/auth";
 
 const ADD_EMAIL_PREFIX = "add-email:";
+const CREDENTIAL_PROVIDER_ID = "credential";
 
 /**
  * POST /api/auth/add-email/verify
  * Body: { email: string, code: string }
- * Requires session. Verifies the code sent to the email. If valid, deletes the code and returns { ok: true }.
- * The client should then call updateUser({ email }) and setPassword({ newPassword }) to complete adding email & password.
+ * Requires session. Verifies the code sent to the email. If valid, deletes the code,
+ * updates the user's email (and emailVerified) in the DB, and ensures a credential
+ * account exists so email OTP sign-in works. Returns { ok: true }.
+ * Better-auth's updateUser() does not allow updating email, so we do it here after OTP verification.
+ * The client should then call setPassword({ newPassword }) only if the user chose password sign-in.
  */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -67,6 +76,53 @@ export async function POST(request: NextRequest) {
   await db
     .delete(verificationTable)
     .where(eq(verificationTable.id, row.id));
+
+  // Ensure email is not already used by another user
+  const [existingByEmail] = await db
+    .select({ id: userTable.id })
+    .from(userTable)
+    .where(eq(userTable.email, email))
+    .limit(1);
+
+  if (existingByEmail && existingByEmail.id !== session.user.id) {
+    return NextResponse.json(
+      { error: "This email is already used by another account." },
+      { status: 400 },
+    );
+  }
+
+  // Update user email and emailVerified (better-auth updateUser blocks email updates)
+  await db
+    .update(userTable)
+    .set({
+      email,
+      emailVerified: true,
+      updatedAt: now,
+    })
+    .where(eq(userTable.id, session.user.id));
+
+  // Ensure a credential account exists so email OTP sign-in can link to this user
+  const [existingCredential] = await db
+    .select({ id: accountTable.id })
+    .from(accountTable)
+    .where(
+      and(
+        eq(accountTable.userId, session.user.id),
+        eq(accountTable.providerId, CREDENTIAL_PROVIDER_ID),
+      ),
+    )
+    .limit(1);
+
+  if (!existingCredential) {
+    await db.insert(accountTable).values({
+      id: createId(),
+      userId: session.user.id,
+      accountId: email,
+      providerId: CREDENTIAL_PROVIDER_ID,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
 
   return NextResponse.json({ ok: true });
 }

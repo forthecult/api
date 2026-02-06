@@ -252,21 +252,11 @@ export function SecurityPageClient() {
   };
 
   const handleAddEmailCodeOnly = async () => {
-    const trimmed = addEmailPassword.email.trim();
-    if (!trimmed) {
-      setAddEmailError("Email is required.");
-      return;
-    }
+    // Email was already set on the user when they verified the OTP (add-email/verify).
+    // Better-auth's updateUser() does not allow updating email, so we don't call it here.
     setAddEmailError("");
     setAddEmailCodeOnlyLoading(true);
     try {
-      const updateRes = await authClient.updateUser({
-        email: trimmed,
-      } as Record<string, unknown>);
-      if (updateRes.error) {
-        setAddEmailError(updateRes.error.message ?? "Failed to add email.");
-        return;
-      }
       setAddEmailPassword({ email: "", password: "", confirm: "" });
       setAddEmailStep("email");
       setAddEmailCode("");
@@ -301,13 +291,7 @@ export function SecurityPageClient() {
     setAddEmailError("");
     setAddEmailLoading(true);
     try {
-      const updateRes = await authClient.updateUser({
-        email: trimmed,
-      } as Record<string, unknown>);
-      if (updateRes.error) {
-        setAddEmailError(updateRes.error.message ?? "Failed to set email.");
-        return;
-      }
+      // Email was already set when they verified the OTP (add-email/verify). Only set password.
       const setPassRes = await (authClient as { setPassword?: (opts: { newPassword: string }) => Promise<{ error?: { message?: string } }> }).setPassword?.({
         newPassword: password,
       });
