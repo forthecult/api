@@ -90,5 +90,8 @@ If you don’t set the token, upload buttons in the app will fail; you can still
   - Ensure `UPLOADTHING_TOKEN` is set and is the **raw token** (no single or double quotes around it).  
   - In the UploadThing dashboard, confirm the token is for the correct app and not revoked.
 
+- **Seed staging runs but nothing is uploaded to UploadThing**  
+  - Add the **`UPLOADTHING_TOKEN`** repo secret in GitHub: **Settings → Secrets and variables → Actions → New repository secret**, name `UPLOADTHING_TOKEN`, value = your UploadThing API token. Re-run the “Seed staging” workflow. Check the step “Check UploadThing token” in the run log: it will say whether the token is set. The step “Upload brand logos to UploadThing” will then upload from `scripts/brand-assets/<slug>/` for each seeded brand that has a matching folder and logo file.
+
 - **Seed taking a long time**  
   UploadThing is only used in the optional final step (“Upload brand logos”). The main seed (categories, brands, products, reviews) does not call UploadThing. If seed is slow, the cause is elsewhere (e.g. products/reviews); the pre-extracted `data/reviews-seed.json` keeps review seeding fast.

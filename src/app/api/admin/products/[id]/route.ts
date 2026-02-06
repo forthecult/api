@@ -559,27 +559,31 @@ export async function PATCH(
     }
 
     // Push product changes to Printful when product is a Printful sync product
+    let printfulExportError: string | null = null;
     if (
       updated.source === "printful" &&
       updated.printfulSyncProductId != null
     ) {
       const exportResult = await exportProductToPrintful(id);
       if (!exportResult.success) {
+        printfulExportError = exportResult.error ?? "Printful export failed";
         console.warn(
-          `Printful export after admin save failed: ${exportResult.error}`,
+          `Printful export after admin save failed: ${printfulExportError}`,
         );
       }
     }
 
     // Push product changes to Printify when product is a Printify product
+    let printifyExportError: string | null = null;
     if (
       updated.source === "printify" &&
       updated.printifyProductId != null
     ) {
       const exportResult = await exportProductToPrintify(id);
       if (!exportResult.success) {
+        printifyExportError = exportResult.error ?? "Printify export failed";
         console.warn(
-          `Printify export after admin save failed: ${exportResult.error}`,
+          `Printify export after admin save failed: ${printifyExportError}`,
         );
       }
     }
@@ -615,6 +619,12 @@ export async function PATCH(
       published: updated.published,
       priceCents: updated.priceCents,
       tokenGates,
+      ...(printfulExportError != null && {
+        printfulExportError,
+      }),
+      ...(printifyExportError != null && {
+        printifyExportError,
+      }),
     });
   } catch (err) {
     console.error("Admin product update error:", err);

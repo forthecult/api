@@ -216,11 +216,16 @@ function buildOptionDefinitionsFromVariants(
 
 /** Get variant image URL: prefer preview/mockup from files, fallback to catalog variant image. */
 function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | null {
-  const previewFile = syncVariant.files?.find(
-    (f) => f.type === "preview" || f.type === "mockup",
-  );
+  const previewFile =
+    syncVariant.files?.find(
+      (f) =>
+        f.type === "preview" || f.type === "mockup" || f.type === "default",
+    ) ?? syncVariant.files?.[0];
   const fromFile =
-    previewFile?.preview_url || previewFile?.thumbnail_url || null;
+    previewFile?.preview_url ||
+    previewFile?.thumbnail_url ||
+    previewFile?.url ||
+    null;
   if (fromFile) return fromFile;
   return syncVariant.product?.image ?? null;
 }
@@ -703,24 +708,35 @@ export async function exportProductToPrintful(
     .from(productVariantsTable)
     .where(eq(productVariantsTable.productId, productId));
 
+  const storeId = (() => {
+    const raw = process.env.PRINTFUL_STORE_ID?.trim();
+    if (!raw) return undefined;
+    const n = Number.parseInt(raw, 10);
+    return Number.isNaN(n) ? undefined : n;
+  })();
+
   try {
     // Update product-level fields (name, thumbnail)
     // Note: Printful V1 Sync Products API only supports: name, thumbnail, external_id, is_ignored
-    await updateSyncProduct(product.printfulSyncProductId, {
-      sync_product: {
-        name: product.name,
-        ...(product.imageUrl && { thumbnail: product.imageUrl }),
+    await updateSyncProduct(
+      product.printfulSyncProductId,
+      {
+        sync_product: {
+          name: product.name,
+          ...(product.imageUrl && { thumbnail: product.imageUrl }),
+        },
+        // When updating sync_variants, we must include all variant IDs to keep them
+        // Only specify IDs of existing variants to prevent deletion
+        sync_variants: variants
+          .filter((v) => v.printfulSyncVariantId)
+          .map((v) => ({
+            id: v.printfulSyncVariantId!,
+            retail_price: (v.priceCents / 100).toFixed(2),
+            sku: v.sku || undefined,
+          })),
       },
-      // When updating sync_variants, we must include all variant IDs to keep them
-      // Only specify IDs of existing variants to prevent deletion
-      sync_variants: variants
-        .filter((v) => v.printfulSyncVariantId)
-        .map((v) => ({
-          id: v.printfulSyncVariantId!,
-          retail_price: (v.priceCents / 100).toFixed(2),
-          sku: v.sku || undefined,
-        })),
-    });
+      storeId,
+    );
 
     // Update product last synced timestamp
     await db

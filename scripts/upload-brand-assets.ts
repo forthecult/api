@@ -55,7 +55,7 @@ async function main() {
   const token = getToken();
   if (!token) {
     console.log(
-      "UPLOADTHING_TOKEN not set; skipping brand asset upload. Add it in .env (local) or as a repo secret (CI). Use the raw token with no quotes around it.",
+      "UPLOADTHING_TOKEN not set; skipping brand asset upload. Add it in .env (local) or in GitHub Settings → Secrets (UPLOADTHING_TOKEN) for staging seed. Use the raw token with no quotes.",
     );
     process.exit(0);
   }
@@ -66,6 +66,12 @@ async function main() {
   }
 
   const brands = await db.select({ id: brandTable.id, slug: brandTable.slug, logoUrl: brandTable.logoUrl }).from(brandTable);
+  const brandsWithAssets = brands.filter((b) => existsSync(join(ASSETS_DIR, b.slug)));
+  if (brandsWithAssets.length === 0) {
+    console.log("No brand-assets folders match seeded brand slugs. Add e.g. scripts/brand-assets/<slug>/logo.png for brands you want logos uploaded.");
+    process.exit(0);
+  }
+  console.log(`Found ${brandsWithAssets.length} brand(s) with assets to upload (${brandsWithAssets.map((b) => b.slug).join(", ")})`);
 
   const utapi = new UTApi({ token });
   let uploaded = 0;

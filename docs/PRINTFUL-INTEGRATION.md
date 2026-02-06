@@ -80,7 +80,7 @@ Our product and variant fields align with Printful so we don't need unique table
 - **Variant** (product_variants table): size, color, quantity/stock, price, SKU, **label** (Printful sync variant “name”, e.g. “Product / Color / Size”), externalId (Printful: catalog_variant_id), printfulSyncVariantId, weight, image, **imageAlt**, **imageTitle** (SEO), **availabilityStatus** (e.g. in_stock, out_of_stock; synced on product_updated).
 - **Size guide**: stored on product (e.g. sizeGuideJson from Printful GET catalog-products/{id}/sizes).
 - **Shipping time**: per order/shipment from Printful; we can show estimates when we have them.
-- **Shipping countries**: On import we call Catalog v2 `GET /catalog-products/{id}/shipping-countries` when we have a catalog product ID; if it returns a list of country codes we populate `product_available_country` so the admin Markets section and checkout know where the product ships. If the endpoint is unavailable or returns nothing we fall back to a static list of common Printful shipping countries. Validation also happens at checkout when we call Printful’s shipping-rates API.
+- **Shipping countries (Markets)**: On import we call Catalog v2 `GET /catalog-products/{id}/shipping-countries` when we have a catalog product ID; if it returns a list of country codes we populate `product_available_country` so the admin **Markets** section and the **shipping calculator** know where the product ships. If the endpoint is unavailable or returns nothing we fall back to a static list of common Printful shipping countries. **Admin Markets**: When you edit a product in admin and use the "Markets" section (country checkboxes), saving sends `availableCountryCodes` to the backend and overwrites the product’s allowed countries. Leave all unchecked for "available everywhere". The shipping calculator uses this table to decide if we can ship to the selected country and to request Printful rates; if no countries are stored, the product is treated as available everywhere.
 
 Sync pulls from Printful into this schema. You create the product in Printful, then it syncs to the store. Data is mapped to match our backend product/variant variables (description, title, price, etc.).
 
@@ -101,9 +101,11 @@ Sync pulls from Printful into this schema. You create the product in Printful, t
 - We **do not** pass every Printful status through to the customer. Only expose what's relevant (e.g. **partial shipment**, **shipped**).
 - For things like refund, delay, or fulfillment issues, we may contact the customer first and **manually update** the status in our system after that—rather than auto-syncing as soon as Printful changes status.
 
-## Shipping
+## Shipping and shipping calculator
 
 - For orders that include Printful items, we take **Printful's shipping rates** as the base.
+- **Shipping calculator** needs each Printful item’s **catalog variant ID** (stored in variant `externalId`). If the cart sends only a product ID (no variant), or the variant has no `externalId`, we use the product’s first variant so a rate can still be returned. Ensure products are synced so variants have `externalId` set.
+- **$0 or no rate**: Check that the product has at least one variant with `externalId` (catalog_variant_id), that the shipping country is in the product’s allowed countries (or leave Markets “available everywhere”), and that the request includes a valid `countryCode` (and `stateCode` for US/CA).
 - We then apply **our rules** on top: e.g. free shipping over $100, reduced shipping, or extra shipping on top of Printful's rate. So: Printful rates + our modifiers before showing options to the customer.
 
 ## Orders (summary)
@@ -115,8 +117,10 @@ Sync pulls from Printful into this schema. You create the product in Printful, t
 ## Environment
 
 - `PRINTFUL_API_TOKEN` – Private token for API v2 (Bearer). Required for catalog, shipping, and orders.
-- Optional: `PRINTFUL_STORE_ID` – If using account-level token, set per request via `X-PF-Store-Id`.
+- Optional: `PRINTFUL_STORE_ID` – If you have multiple stores, set this to the store’s numeric ID so product export (admin → Printful) and sync use the correct store. Sent as `X-PF-Store-Id` on Sync Products API requests.
 - `PRINTFUL_WEBHOOK_SECRET` – Secret for verifying Printful webhook signatures (from Printful dashboard when registering webhook URL).
+
+If **admin changes don’t appear in Printful** after save: the app pushes name, thumbnail, and variant prices/SKU to Printful when you save a Printful product. If the push fails, the admin UI shows “Product saved, but changes were not pushed to Printful: &lt;error&gt;”. Check that `PRINTFUL_API_TOKEN` is valid, and if you use multiple stores, set `PRINTFUL_STORE_ID`. Common API errors (e.g. invalid thumbnail URL format) will appear in that message.
 
 ## Files
 

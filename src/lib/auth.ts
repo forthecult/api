@@ -15,6 +15,11 @@ import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
 import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
 import { db } from "~/db";
 import { sendResetPasswordEmail } from "~/lib/send-reset-password";
+import {
+  createUserNotification,
+  userWantsTransactionalWebsite,
+} from "~/lib/create-user-notification";
+import { getNotificationTemplate } from "~/lib/notification-templates";
 import { sendWelcomeEmail } from "~/lib/send-welcome-email";
 import {
   accountTable,
@@ -406,11 +411,21 @@ export const auth = betterAuth({
           };
         },
         after: async (user) => {
-          // Send welcome email after user is created
+          // Send welcome email after user is created (only if they have a real email)
           void sendWelcomeEmail({
             to: user.email,
             user: { name: user.name, email: user.email, id: user.id },
           });
+          // In-app welcome notification for first-time signup (when transactional website is enabled)
+          if (await userWantsTransactionalWebsite(user.id)) {
+            const template = getNotificationTemplate("welcome_email");
+            void createUserNotification({
+              userId: user.id,
+              type: "welcome_email",
+              title: template.title,
+              description: template.body,
+            });
+          }
         },
       },
     },

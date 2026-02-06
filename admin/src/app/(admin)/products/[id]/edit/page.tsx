@@ -563,12 +563,25 @@ export default function AdminProductEditPage() {
             network: string | null;
             contractAddress: string | null;
           }>;
+          printfulExportError?: string;
+          printifyExportError?: string;
         };
         if (Array.isArray(saved.tokenGates)) {
           if (saved.tokenGates.length > 0 || tokenGatesRef.current.length === 0) {
             setTokenGates(saved.tokenGates);
           }
           skipNextTokenGatesFromFetch.current = true;
+        }
+        if (saved.printfulExportError) {
+          setError(
+            `Product saved, but changes were not pushed to Printful: ${saved.printfulExportError}`,
+          );
+        } else if (saved.printifyExportError) {
+          setError(
+            `Product saved, but changes were not pushed to Printify: ${saved.printifyExportError}`,
+          );
+        } else {
+          setError(null);
         }
         void fetchProduct();
       } catch (err) {

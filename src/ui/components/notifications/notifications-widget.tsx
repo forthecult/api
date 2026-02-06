@@ -21,6 +21,7 @@ function mapTypeToNotificationType(
 ): "error" | "info" | "success" | "warning" {
   if (type.includes("cancelled") || type.includes("refund")) return "error";
   if (type.includes("placed") || type.includes("confirmed")) return "success";
+  if (type.includes("welcome")) return "success";
   if (type.includes("shipped") || type.includes("on_hold")) return "info";
   if (type.includes("support_ticket")) return "info";
   return "info";

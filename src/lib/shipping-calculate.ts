@@ -423,12 +423,15 @@ export async function runShippingCalculate(
   let allOptions: (typeof shippingOptionsTable.$inferSelect)[] = [];
   let brandNameToId = new Map<string, string>();
   let printifyDefaultVariantByProductId = new Map<string, string>();
+  /** First variant externalId per product (for Printful/Printify when item has no variant or variant has no externalId). */
+  let firstVariantExternalIdByProductId = new Map<string, string>();
 
   try {
     const [
       productsResult,
       variantsResult,
       defaultVariantsForPrintifyResult,
+      firstVariantPerProductResult,
       optionsResult,
       brandsResult,
     ] = await Promise.all([
@@ -475,6 +478,21 @@ export async function runShippingCalculate(
               asc(productVariantsTable.id),
             )
         : Promise.resolve([]),
+      productIds.length > 0
+        ? db
+            .select({
+              productId: productVariantsTable.productId,
+              externalId: productVariantsTable.externalId,
+            })
+            .from(productVariantsTable)
+            .where(
+              inArray(productVariantsTable.productId, productIds),
+            )
+            .orderBy(
+              asc(productVariantsTable.productId),
+              asc(productVariantsTable.id),
+            )
+        : Promise.resolve([]),
       db
         .select()
         .from(shippingOptionsTable)
@@ -489,6 +507,15 @@ export async function runShippingCalculate(
       for (const row of defaultVariantsForPrintifyResult) {
         if (row.productId && row.externalId && !printifyDefaultVariantByProductId.has(row.productId)) {
           printifyDefaultVariantByProductId.set(row.productId, row.externalId);
+        }
+      }
+    }
+    // First variant externalId for every product in cart (fallback when variant lookup fails for Printful/Printify)
+    firstVariantExternalIdByProductId = new Map<string, string>();
+    if (firstVariantPerProductResult.length > 0) {
+      for (const row of firstVariantPerProductResult) {
+        if (row.productId && row.externalId && !firstVariantExternalIdByProductId.has(row.productId)) {
+          firstVariantExternalIdByProductId.set(row.productId, row.externalId);
         }
       }
     }
@@ -575,10 +602,11 @@ export async function runShippingCalculate(
           catalogVariantId = Number.parseInt(String(variantExternalId), 10);
         }
       }
-      // When cart has no variant selected (e.g. single-variant or fallback), use first variant so we still get a rate
+      // When cart has no variant or variant has no externalId, use first variant for this product so we still get a rate
       if ((!catalogVariantId || isNaN(catalogVariantId)) && item.productId) {
         const firstVariantExternalId =
-          printifyDefaultVariantByProductId.get(item.productId);
+          printifyDefaultVariantByProductId.get(item.productId) ??
+          firstVariantExternalIdByProductId.get(item.productId);
         if (firstVariantExternalId != null) {
           const parsed = Number.parseInt(String(firstVariantExternalId), 10);
           if (!isNaN(parsed)) catalogVariantId = parsed;

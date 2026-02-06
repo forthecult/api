@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useConnectors, useSignMessage } from "wagmi";
 
 import { SYSTEM_CONFIG } from "~/app";
+import { Button } from "~/ui/primitives/button";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import { cn } from "~/lib/cn";
 
@@ -181,6 +182,12 @@ export function AuthWalletModal({
   const [selectedEthereumOption, setSelectedEthereumOption] = useState<
     "walletconnect" | "injected" | null
   >(null);
+  /** Solana: challenge ready; sign is triggered by user click so the wallet shows the sign popup. */
+  const [solanaChallengePending, setSolanaChallengePending] = useState<{
+    message: string;
+    messageBytes: Uint8Array;
+  } | null>(null);
+  const [solanaSigning, setSolanaSigning] = useState(false);
 
   const [isMetaMaskDetected, setIsMetaMaskDetected] = useState(false);
   useEffect(() => {
@@ -306,14 +313,12 @@ export function AuthWalletModal({
       connected &&
       publicKey &&
       signMessage &&
-      !signFlowStarted.current
+      !signFlowStarted.current &&
+      !solanaChallengePending
     ) {
       signFlowStarted.current = true;
       let cancelled = false;
       (async () => {
-        const isDev =
-          typeof process !== "undefined" &&
-          process.env.NODE_ENV === "development";
         try {
           console.info("[auth] Solana: requesting challenge…");
           const res = await fetch(
@@ -334,113 +339,12 @@ export function AuthWalletModal({
           }
           const { message } = (await res.json()) as { message: string };
           if (cancelled) return;
-
           const messageBytes = new TextEncoder().encode(message);
-          const rawResult = await signMessage(messageBytes);
-          if (cancelled) return;
-
-          // Wallets may return Uint8Array or { signature: Uint8Array } or { signature: string } (base58)
-          const sig: Uint8Array | string =
-            rawResult &&
-            typeof rawResult === "object" &&
-            "signature" in rawResult &&
-            (rawResult as { signature: unknown }).signature !== undefined
-              ? (rawResult as { signature: Uint8Array | string }).signature
-              : (rawResult as unknown as Uint8Array);
-          const isBase58 =
-            typeof sig === "string" &&
-            /^[1-9A-HJ-NP-Za-km-z]+$/.test(sig) &&
-            sig.length >= 80;
-          const bytes: Uint8Array | null =
-            typeof sig === "string"
-              ? null
-              : sig instanceof ArrayBuffer
-                ? new Uint8Array(sig)
-                : sig instanceof Uint8Array
-                  ? sig
-                  : ArrayBuffer.isView(sig)
-                    ? new Uint8Array((sig as Uint8Array).buffer, (sig as Uint8Array).byteOffset, (sig as Uint8Array).byteLength)
-                    : null;
-          const signatureBase64 =
-            bytes != null
-              ? typeof Buffer !== "undefined"
-                ? Buffer.from(bytes).toString("base64")
-                : btoa(String.fromCharCode.apply(null, Array.from(bytes)))
-              : undefined;
-          const signatureBase58 =
-            isBase58 && typeof sig === "string" ? sig : undefined;
-          if (!signatureBase64 && !signatureBase58) {
-            throw new Error("Could not read signature from wallet. Try again.");
-          }
-          console.info("[auth] Solana: verifying signature…");
-          const verifyRes = await fetch(
-            `${API_BASE}/api/auth/sign-in/solana/verify`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({
-                address: publicKey.toBase58(),
-                message,
-                ...(signatureBase64 ? { signature: signatureBase64 } : {}),
-                ...(signatureBase58 ? { signatureBase58 } : {}),
-                link: link || undefined,
-              }),
-            },
-          );
-          if (!verifyRes.ok) {
-            const data = await verifyRes.json().catch(() => ({}));
-            const msg =
-              (data as { message?: string }).message ?? "Verification failed";
-            if (isDev) console.error("[auth] Solana verify failed:", msg);
-            throw new Error(msg);
-          }
-          console.info("[auth] Solana sign-in succeeded");
-          if (cancelled) return;
-          // Move focus out of modal before closing to avoid "Blocked aria-hidden" and flash
-          (document.activeElement as HTMLElement)?.blur?.();
-          onOpenChange(false);
-          if (link) {
-            // Dispatch event so security page can refresh accounts list
-            window.dispatchEvent(new CustomEvent(WALLET_LINKED_EVENT));
-            router.refresh();
-          } else {
-            // Full page nav so the next request includes the new session cookie.
-            // Brief delay so the browser persists Set-Cookie before we leave the page.
-            const url = SYSTEM_CONFIG.redirectAfterSignIn;
-            setTimeout(() => {
-              window.location.href = url;
-            }, 150);
-          }
+          setSolanaChallengePending({ message, messageBytes });
         } catch (err) {
           if (!cancelled) {
-            // Always log the error for debugging
-            console.error("[auth] Solana sign-in error:", err);
-            
-            const rawMessage =
-              err instanceof Error ? err.message : "Something went wrong";
-            const isUserRejection =
-              /disconnect|wallet.*closed|user.*reject|rejected|not been authorized|not authorized by the user|denied|declined/i.test(
-                rawMessage,
-              ) ||
-              (err instanceof Error &&
-                err.constructor?.name === "WalletDisconnectedError");
-            const isChallengeError = /challenge|expired|invalid/i.test(rawMessage);
-            const isSignatureError = /signature/i.test(rawMessage);
-
-            let message: string;
-            if (isUserRejection) {
-              message =
-                "You declined to sign. Please try again and approve the message in your wallet to complete sign-in.";
-            } else if (isChallengeError) {
-              message = "Session expired. Please try again.";
-            } else if (isSignatureError) {
-              message = "Signature verification failed. Please try again.";
-            } else {
-              message = rawMessage;
-            }
-            
-            setError(message);
+            console.error("[auth] Solana challenge error:", err);
+            setError(err instanceof Error ? err.message : "Failed to get challenge");
             setStep("error");
             signFlowStarted.current = false;
           }
@@ -455,6 +359,120 @@ export function AuthWalletModal({
     selectedChain,
     step,
     connected,
+    publicKey,
+    signMessage,
+    solanaChallengePending,
+  ]);
+
+  const handleSolanaSignClick = useCallback(async () => {
+    if (!solanaChallengePending || !publicKey || !signMessage) return;
+    setSolanaSigning(true);
+    setError("");
+    const isDev =
+      typeof process !== "undefined" &&
+      process.env.NODE_ENV === "development";
+    try {
+      const rawResult = await signMessage(solanaChallengePending.messageBytes);
+
+      // Wallets may return Uint8Array or { signature: Uint8Array } or { signature: string } (base58)
+      const sig: Uint8Array | string =
+        rawResult &&
+        typeof rawResult === "object" &&
+        "signature" in rawResult &&
+        (rawResult as { signature: unknown }).signature !== undefined
+          ? (rawResult as { signature: Uint8Array | string }).signature
+          : (rawResult as unknown as Uint8Array);
+      const isBase58 =
+        typeof sig === "string" &&
+        /^[1-9A-HJ-NP-Za-km-z]+$/.test(sig) &&
+        sig.length >= 80;
+      const bytes: Uint8Array | null =
+        typeof sig === "string"
+          ? null
+          : sig instanceof ArrayBuffer
+            ? new Uint8Array(sig)
+            : sig instanceof Uint8Array
+              ? sig
+              : ArrayBuffer.isView(sig)
+                ? new Uint8Array((sig as Uint8Array).buffer, (sig as Uint8Array).byteOffset, (sig as Uint8Array).byteLength)
+                : null;
+      const signatureBase64 =
+        bytes != null
+          ? typeof Buffer !== "undefined"
+            ? Buffer.from(bytes).toString("base64")
+            : btoa(String.fromCharCode.apply(null, Array.from(bytes)))
+          : undefined;
+      const signatureBase58 =
+        isBase58 && typeof sig === "string" ? sig : undefined;
+      if (!signatureBase64 && !signatureBase58) {
+        throw new Error("Could not read signature from wallet. Try again.");
+      }
+      console.info("[auth] Solana: verifying signature…");
+      const verifyRes = await fetch(
+        `${API_BASE}/api/auth/sign-in/solana/verify`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({
+            address: publicKey.toBase58(),
+            message: solanaChallengePending.message,
+            ...(signatureBase64 ? { signature: signatureBase64 } : {}),
+            ...(signatureBase58 ? { signatureBase58 } : {}),
+            link: link || undefined,
+          }),
+        },
+      );
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => ({}));
+        const msg =
+          (data as { message?: string }).message ?? "Verification failed";
+        if (isDev) console.error("[auth] Solana verify failed:", msg);
+        throw new Error(msg);
+      }
+      console.info("[auth] Solana sign-in succeeded");
+      (document.activeElement as HTMLElement)?.blur?.();
+      onOpenChange(false);
+      if (link) {
+        window.dispatchEvent(new CustomEvent(WALLET_LINKED_EVENT));
+        router.refresh();
+      } else {
+        const url = SYSTEM_CONFIG.redirectAfterSignIn;
+        setTimeout(() => {
+          window.location.href = url;
+        }, 150);
+      }
+    } catch (err) {
+      console.error("[auth] Solana sign-in error:", err);
+      const rawMessage =
+        err instanceof Error ? err.message : "Something went wrong";
+      const isUserRejection =
+        /disconnect|wallet.*closed|user.*reject|rejected|not been authorized|not authorized by the user|denied|declined/i.test(
+          rawMessage,
+        ) ||
+        (err instanceof Error &&
+          err.constructor?.name === "WalletDisconnectedError");
+      const isChallengeError = /challenge|expired|invalid/i.test(rawMessage);
+      const isSignatureError = /signature/i.test(rawMessage);
+      let message: string;
+      if (isUserRejection) {
+        message =
+          "You declined to sign. Please try again and approve the message in your wallet to complete sign-in.";
+      } else if (isChallengeError) {
+        message = "Session expired. Please try again.";
+      } else if (isSignatureError) {
+        message = "Signature verification failed. Please try again.";
+      } else {
+        message = rawMessage;
+      }
+      setError(message);
+      setStep("error");
+      signFlowStarted.current = false;
+    } finally {
+      setSolanaSigning(false);
+    }
+  }, [
+    solanaChallengePending,
     publicKey,
     signMessage,
     link,
@@ -723,6 +741,8 @@ export function AuthWalletModal({
       setSelectedWallet(null);
       setSelectedChain(null);
       setSelectedEthereumOption(null);
+      setSolanaChallengePending(null);
+      setSolanaSigning(false);
       signFlowStarted.current = false;
       wcSignDoneRef.current = false;
     }
@@ -732,6 +752,8 @@ export function AuthWalletModal({
     setError("");
     signFlowStarted.current = false;
     wcSignDoneRef.current = false;
+    setSolanaChallengePending(null);
+    setSolanaSigning(false);
     if (selectedWallet && isMultiChainWallet(selectedWallet.adapter.name ?? "")) {
       setStep("network");
     } else {
@@ -889,8 +911,22 @@ export function AuthWalletModal({
                       ? selectedEthereumOption === "walletconnect"
                         ? "Complete connection in WalletConnect, then sign the message to finish."
                         : "Open your Ethereum wallet (e.g. MetaMask) to sign and complete sign-in."
-                      : `Open ${selectedWallet?.adapter.name ?? "your wallet"} to sign and complete sign-in.`}
+                      : selectedChain === "solana" && solanaChallengePending
+                        ? "Click the button below to open your wallet and sign the message."
+                        : selectedChain === "solana"
+                          ? "Preparing message…"
+                          : `Open ${selectedWallet?.adapter.name ?? "your wallet"} to sign and complete sign-in.`}
                   </p>
+                  {selectedChain === "solana" && solanaChallengePending != null && (
+                    <Button
+                      type="button"
+                      className="mt-4"
+                      disabled={solanaSigning}
+                      onClick={handleSolanaSignClick}
+                    >
+                      {solanaSigning ? "Signing…" : "Sign message in your wallet"}
+                    </Button>
+                  )}
                 </>
               )}
               {step === "error" && (
