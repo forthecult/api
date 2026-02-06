@@ -51,6 +51,7 @@ export default function AdminShippingOptionEditPage() {
     "flat" | "per_item" | "free" | "flat_plus_per_item"
   >("flat");
   const [amountCents, setAmountCents] = useState<string>("");
+  const [additionalItemCents, setAdditionalItemCents] = useState<string>("");
   const [priority, setPriority] = useState<string>("0");
   const [speed, setSpeed] = useState<"standard" | "express">("standard");
 
@@ -100,6 +101,11 @@ export default function AdminShippingOptionEditPage() {
       setType(row.type);
       setAmountCents(
         row.amountCents != null ? (row.amountCents / 100).toFixed(2) : "",
+      );
+      setAdditionalItemCents(
+        row.additionalItemCents != null
+          ? (row.additionalItemCents / 100).toFixed(2)
+          : "",
       );
       setPriority(String(row.priority));
       setSpeed(row.speed ?? "standard");
