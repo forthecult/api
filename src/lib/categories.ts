@@ -14,6 +14,7 @@ export type CategoryBySlug = {
   title: string | null;
   description: string | null;
   parentId: string | null;
+  tokenGated: boolean;
 };
 
 /**
