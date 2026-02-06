@@ -27,7 +27,8 @@ type TokenGateConfig = {
 type TokenGateGuardProps = {
   resourceType: TokenGateResourceType;
   resourceId: string;
-  children: React.ReactNode;
+  /** When omitted or null, only the gate UI is shown (e.g. product page when not passed). */
+  children?: React.ReactNode;
   /** Optional class for the gated overlay container */
   className?: string;
 };

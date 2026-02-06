@@ -425,7 +425,11 @@ function formatSlugAsName(slug: string): string {
     .join(" ");
 }
 
-seed().catch((err) => {
-  console.error("Seed reviews failed:", err);
-  process.exit(1);
-});
+seed()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Seed reviews failed:", err);
+    process.exit(1);
+  });

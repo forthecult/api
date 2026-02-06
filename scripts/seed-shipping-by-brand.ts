@@ -103,7 +103,11 @@ async function main() {
   console.log(`\nDone. Seeded ${totalOptions} shipping option(s) for ${brands.length} brand(s).`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
