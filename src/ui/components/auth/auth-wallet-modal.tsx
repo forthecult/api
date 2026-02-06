@@ -30,6 +30,14 @@ const SOLANA_WALLET_NAMES_TO_SKIP = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Bra
 /** Wallets that support both Solana and EVM; after selecting one we show "Choose network" step. */
 const MULTI_CHAIN_WALLET_NAMES = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
 
+/** Return true if this wallet should see the "Choose network" (Solana vs EVM) step. */
+function isMultiChainWallet(name: string): boolean {
+  const lower = name.toLowerCase();
+  if (MULTI_CHAIN_WALLET_NAMES.some((n) => n.toLowerCase() === lower)) return true;
+  if (lower.includes("ctrl")) return true; // e.g. "Ctrl", "Ctrl Wallet", any variant
+  return false;
+}
+
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
 
 function EthereumOptionButton({
@@ -207,10 +215,7 @@ export function AuthWalletModal({
       setError("");
       setSelectedWallet(wallet);
       const name = wallet.adapter.name;
-      const isMultiChain = MULTI_CHAIN_WALLET_NAMES.some(
-        (n) => n.toLowerCase() === name.toLowerCase(),
-      );
-      if (isMultiChain) {
+      if (isMultiChainWallet(name)) {
         setStep("network");
         return;
       }
@@ -414,18 +419,19 @@ export function AuthWalletModal({
             
             const rawMessage =
               err instanceof Error ? err.message : "Something went wrong";
-            const isDisconnect =
-              /disconnect|wallet.*closed|user.*reject|rejected/i.test(
+            const isUserRejection =
+              /disconnect|wallet.*closed|user.*reject|rejected|not been authorized|not authorized by the user|denied|declined/i.test(
                 rawMessage,
               ) ||
               (err instanceof Error &&
                 err.constructor?.name === "WalletDisconnectedError");
             const isChallengeError = /challenge|expired|invalid/i.test(rawMessage);
             const isSignatureError = /signature/i.test(rawMessage);
-            
+
             let message: string;
-            if (isDisconnect) {
-              message = "Wallet disconnected or signing was cancelled. Please try again and sign the message in your wallet.";
+            if (isUserRejection) {
+              message =
+                "You declined to sign. Please try again and approve the message in your wallet to complete sign-in.";
             } else if (isChallengeError) {
               message = "Session expired. Please try again.";
             } else if (isSignatureError) {
@@ -726,13 +732,7 @@ export function AuthWalletModal({
     setError("");
     signFlowStarted.current = false;
     wcSignDoneRef.current = false;
-    if (
-      selectedWallet &&
-      MULTI_CHAIN_WALLET_NAMES.some(
-        (n) =>
-          n.toLowerCase() === selectedWallet?.adapter.name?.toLowerCase(),
-      )
-    ) {
+    if (selectedWallet && isMultiChainWallet(selectedWallet.adapter.name ?? "")) {
       setStep("network");
     } else {
       setStep(selectedChain === "ethereum" ? "signing" : "wallet");

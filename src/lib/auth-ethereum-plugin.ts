@@ -21,6 +21,33 @@ import { randomBytes } from "node:crypto";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
 const ETHEREUM_PROVIDER_ID = "ethereum";
+
+/** Collect error message from error and its cause chain (e.g. Postgres wraps in cause). */
+function getFullErrorMessage(err: unknown): string {
+  const parts: string[] = [];
+  let current: unknown = err;
+  while (current) {
+    if (current instanceof Error) {
+      if (current.message) parts.push(current.message);
+      current = current.cause;
+    } else {
+      parts.push(String(current));
+      break;
+    }
+  }
+  return parts.join(" ");
+}
+
+/** True if this error is a DB unique constraint on user email (duplicate signup). */
+function isDuplicateUserEmailError(err: unknown): boolean {
+  const msg = getFullErrorMessage(err);
+  if (/user_email_unique/i.test(msg) && /duplicate key|unique constraint/i.test(msg)) return true;
+  const code = err && typeof err === "object" && "code" in err ? String((err as { code: string }).code) : "";
+  if (code === "23505") return true; // PostgreSQL unique_violation
+  const cause = err && typeof err === "object" && "cause" in err ? (err as { cause: unknown }).cause : null;
+  if (cause && typeof cause === "object" && "code" in cause && String((cause as { code: string }).code) === "23505") return true;
+  return false;
+}
 const NONCE_EXPIRY_SEC = 300; // 5 minutes
 
 type VerificationRecord = { id: string; expiresAt: Date; value: string };
@@ -267,45 +294,90 @@ export function ethereumAuthPlugin() {
             }
 
             if (!user) {
-              const userId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "user" });
               const email = `ethereum_${addressTrim.slice(2, 10)}@wallet.local`;
               const now = new Date();
-              await adapter.create({
-                model: "user",
-                data: {
-                  id: userId,
-                  email,
-                  name: "Ethereum User",
-                  emailVerified: true,
+              const userId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "user" });
+              try {
+                await adapter.create({
+                  model: "user",
+                  data: {
+                    id: userId,
+                    email,
+                    name: "Ethereum User",
+                    emailVerified: true,
+                    createdAt: now,
+                    updatedAt: now,
+                    // Notification preferences are set by databaseHooks.user.create.before in auth.ts
+                  },
+                });
+              } catch (createUserErr) {
+                if (isDuplicateUserEmailError(createUserErr)) {
+                  const existingUser = (await adapter.findOne({
+                    model: "user",
+                    where: [{ field: "email", value: email }],
+                  })) as UserRecord | null;
+                  if (existingUser) {
+                    user = existingUser;
+                    const existingAccountForWallet = (await adapter.findOne({
+                      model: "account",
+                      where: [
+                        { field: "providerId", value: ETHEREUM_PROVIDER_ID },
+                        { field: "accountId", value: addressTrim.toLowerCase() },
+                      ],
+                    })) as AccountRecord | null;
+                    if (!existingAccountForWallet) {
+                      const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
+                      try {
+                        await (ctx.context.internalAdapter as {
+                          createAccount: (data: {
+                            id: string;
+                            userId: string;
+                            accountId: string;
+                            providerId: string;
+                            createdAt: Date;
+                            updatedAt: Date;
+                          }) => Promise<unknown>;
+                        }).createAccount({
+                          id: accountRowId,
+                          userId: existingUser.id,
+                          accountId: addressTrim.toLowerCase(),
+                          providerId: ETHEREUM_PROVIDER_ID,
+                          createdAt: now,
+                          updatedAt: now,
+                        });
+                      } catch (linkErr) {
+                        console.error("[ethereum-auth] createAccount (link existing user) failed:", linkErr);
+                        throw linkErr;
+                      }
+                    }
+                  }
+                }
+                if (!user) throw createUserErr;
+              }
+              if (!user) {
+                const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
+                await (ctx.context.internalAdapter as {
+                  createAccount: (data: {
+                    id: string;
+                    userId: string;
+                    accountId: string;
+                    providerId: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                  }) => Promise<unknown>;
+                }).createAccount({
+                  id: accountRowId,
+                  userId,
+                  accountId: addressTrim.toLowerCase(),
+                  providerId: ETHEREUM_PROVIDER_ID,
                   createdAt: now,
                   updatedAt: now,
-                  // Notification preferences are set by databaseHooks.user.create.before in auth.ts
-                },
-              });
-              // Use internalAdapter.createAccount so the account row goes through Better Auth's
-              // createWithHooks; pass id explicitly because the account table requires a primary key.
-              const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
-              await (ctx.context.internalAdapter as {
-                createAccount: (data: {
-                  id: string;
-                  userId: string;
-                  accountId: string;
-                  providerId: string;
-                  createdAt: Date;
-                  updatedAt: Date;
-                }) => Promise<unknown>;
-              }).createAccount({
-                id: accountRowId,
-                userId,
-                accountId: addressTrim.toLowerCase(),
-                providerId: ETHEREUM_PROVIDER_ID,
-                createdAt: now,
-                updatedAt: now,
-              });
-              user = (await adapter.findOne({
-                model: "user",
-                where: [{ field: "id", value: userId }],
-              })) as UserRecord | null;
+                });
+                user = (await adapter.findOne({
+                  model: "user",
+                  where: [{ field: "id", value: userId }],
+                })) as UserRecord | null;
+              }
             }
 
             if (!user) {
