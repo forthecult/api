@@ -51,12 +51,18 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const body = (await JSON.parse(raw).catch(() => ({}))) as {
+    type Body = {
       orderId?: string;
       email?: string;
       paymentAddress?: string;
       refundAddress?: string;
     };
+    let body: Body;
+    try {
+      body = JSON.parse(raw) as Body;
+    } catch {
+      body = {};
+    }
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
     const email = typeof body.email === "string" ? body.email : undefined;
     const paymentAddress =

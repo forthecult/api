@@ -445,13 +445,13 @@ export default function AdminCustomerDetailPage() {
 
       // If the lookup/editable address form has content, persist it to the customer's saved addresses
       const addr = editableAddress;
-      if (
+      const hasAllRequired =
         addr &&
         addr.address1.trim() &&
         addr.city.trim() &&
         addr.zip.trim() &&
-        addr.countryCode.trim()
-      ) {
+        addr.countryCode.trim();
+      if (hasAllRequired) {
         const addrRes = await fetch(
           `${API_BASE}/api/admin/customers/${id}/addresses`,
           {
@@ -459,17 +459,18 @@ export default function AdminCustomerDetailPage() {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              address1: addr.address1.trim(),
-              address2: addr.address2?.trim() || null,
-              city: addr.city.trim(),
-              stateCode: addr.stateCode?.trim() || null,
-              countryCode: addr.countryCode.trim().toUpperCase().slice(0, 2),
-              zip: addr.zip.trim(),
+              address1: addr!.address1.trim(),
+              address2: addr!.address2?.trim() || null,
+              city: addr!.city.trim(),
+              stateCode: addr!.stateCode?.trim() || null,
+              countryCode: addr!.countryCode.trim().toUpperCase().slice(0, 2),
+              zip: addr!.zip.trim(),
             }),
           },
         );
         if (addrRes.ok) {
           await fetchCustomer();
+          setSaveMessage({ type: "success", text: "Saved." });
         } else {
           const errData = (await addrRes.json().catch(() => ({}))) as {
             error?: string;
@@ -478,11 +479,18 @@ export default function AdminCustomerDetailPage() {
             type: "error",
             text: errData.error ?? "Profile saved; address could not be saved.",
           });
-          setSaveLoading(false);
-          return;
         }
+        setSaveLoading(false);
+        return;
       }
-
+      if (addr && (addr.address1.trim() || addr.city.trim() || addr.zip.trim() || addr.countryCode.trim())) {
+        setSaveMessage({
+          type: "error",
+          text: "Profile saved. To save the address, fill in address line 1, city, zip, and country.",
+        });
+        setSaveLoading(false);
+        return;
+      }
       setSaveMessage({ type: "success", text: "Saved." });
     } catch {
       setSaveMessage({ type: "error", text: "Failed to save" });

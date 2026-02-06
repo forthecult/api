@@ -4,7 +4,19 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { addressesTable } from "~/db/schema";
+import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 import { auth, isAdminUser } from "~/lib/auth";
+
+/**
+ * OPTIONS for CORS preflight when admin app (different origin) calls this API.
+ */
+export async function OPTIONS(request: NextRequest) {
+  const res = new NextResponse(null, { status: 204 });
+  res.headers.set("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.headers.set("Access-Control-Allow-Headers", "Content-Type");
+  res.headers.set("Access-Control-Max-Age", "86400");
+  return addCorsIfAdminOrigin(request, res);
+}
 
 /**
  * POST /api/admin/customers/[id]/addresses
@@ -18,10 +30,16 @@ export async function POST(
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
+      );
     }
     if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+      );
     }
 
     const { id: userId } = await params;
@@ -35,9 +53,12 @@ export async function POST(
       typeof body.countryCode === "string" ? body.countryCode.trim().toUpperCase().slice(0, 2) : "";
 
     if (!address1 || !city || !zip || !countryCode) {
-      return NextResponse.json(
-        { error: "address1, city, zip, and countryCode are required" },
-        { status: 400 },
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json(
+          { error: "address1, city, zip, and countryCode are required" },
+          { status: 400 },
+        ),
       );
     }
 
@@ -70,21 +91,27 @@ export async function POST(
       updatedAt: now,
     });
 
-    return NextResponse.json({
-      id,
-      address1,
-      city,
-      stateCode:
-        typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
-      countryCode,
-      zip,
-      isDefault,
-    });
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json({
+        id,
+        address1,
+        city,
+        stateCode:
+          typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
+        countryCode,
+        zip,
+        isDefault,
+      }),
+    );
   } catch (err) {
     console.error("Admin customer address create error:", err);
-    return NextResponse.json(
-      { error: "Failed to create address" },
-      { status: 500 },
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json(
+        { error: "Failed to create address" },
+        { status: 500 },
+      ),
     );
   }
 }
