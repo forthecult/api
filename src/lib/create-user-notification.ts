@@ -94,10 +94,23 @@ export async function onOrderCreated(orderId: string): Promise<void> {
 
   void notifyOrderUpdate(orderId, { kind: "order_placed" });
 
-  if (order.userId && (await userWantsTransactionalWebsite(order.userId))) {
+  // Resolve userId for web notification: use order's userId, or look up by order email for guest orders
+  let webNotificationUserId: string | null = order.userId;
+  if (!webNotificationUserId && order.email?.trim()) {
+    const [userByEmail] = await db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.email, order.email.trim()))
+      .limit(1);
+    webNotificationUserId = userByEmail?.id ?? null;
+  }
+  if (
+    webNotificationUserId &&
+    (await userWantsTransactionalWebsite(webNotificationUserId))
+  ) {
     const shortId = orderId.slice(0, 8);
     await createUserNotification({
-      userId: order.userId,
+      userId: webNotificationUserId,
       type: "order_placed",
       title: "Order confirmed",
       description: `Order ${shortId} has been received. We'll notify you when it ships.`,

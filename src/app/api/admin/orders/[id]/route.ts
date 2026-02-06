@@ -306,19 +306,20 @@ export async function PATCH(
       if (allowed.includes(body.status)) updates.status = body.status;
     }
     const paymentAllowed = ["pending", "paid", "refunded", "cancelled"];
-    if (
-      typeof body.paymentStatus === "string" &&
-      paymentAllowed.includes(body.paymentStatus)
-    ) {
-      updates.paymentStatus = body.paymentStatus;
+    const rawPayment =
+      typeof body.paymentStatus === "string"
+        ? body.paymentStatus.trim().toLowerCase()
+        : undefined;
+    if (rawPayment && paymentAllowed.includes(rawPayment)) {
+      updates.paymentStatus = rawPayment;
       // Keep legacy status in sync so customer dashboard (which uses status) reflects payment
-      if (body.paymentStatus === "paid") updates.status = "paid";
+      if (rawPayment === "paid") updates.status = "paid";
       else if (
-        body.paymentStatus === "cancelled" ||
-        body.paymentStatus === "refunded"
+        rawPayment === "cancelled" ||
+        rawPayment === "refunded"
       )
-        updates.status = body.paymentStatus;
-      else if (body.paymentStatus === "pending") updates.status = "pending";
+        updates.status = rawPayment;
+      else if (rawPayment === "pending") updates.status = "pending";
     }
     const fulfillmentAllowed = [
       "unfulfilled",
@@ -462,11 +463,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    // Trigger transactional notifications when admin marks order paid (website "Order confirmed")
-    if (
-      updates.paymentStatus === "paid" &&
-      existing.paymentStatus !== "paid"
-    ) {
+    // Trigger transactional notifications when admin marks order paid (website "Order confirmed", email)
+    const nowPaid =
+      (updates.paymentStatus as string | undefined) === "paid" ||
+      updated.paymentStatus === "paid";
+    const wasNotPaid =
+      existing.paymentStatus !== "paid" && existing.paymentStatus !== "confirmed";
+    if (nowPaid && wasNotPaid) {
       void onOrderCreated(updated.id);
     }
     // Trigger transactional notifications (Telegram, website widget, email) when admin marks order fulfilled

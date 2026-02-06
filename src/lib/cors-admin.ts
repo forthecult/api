@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 /**
  * Allowed origins for CORS when the admin app (different origin) calls main app APIs.
  * Must match auth trustedOrigins for credentialled requests.
+ * NEXT_PUBLIC_ADMIN_APP_URL: single URL or comma-separated list (e.g. for staging + prod).
  */
 export function getAdminAllowedOrigins(): string[] {
   if (process.env.NODE_ENV === "development") {
@@ -12,7 +13,15 @@ export function getAdminAllowedOrigins(): string[] {
     ];
   }
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_APP_URL;
-  return adminUrl ? [adminUrl] : [];
+  if (!adminUrl?.trim()) return [];
+  return adminUrl
+    .split(",")
+    .map((u) => u.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+}
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/+$/, "");
 }
 
 /**
@@ -23,11 +32,13 @@ export function addCorsIfAdminOrigin<T extends Response>(
   request: NextRequest,
   response: T,
 ): T {
-  const origin = request.headers.get("origin");
-  const allowed = getAdminAllowedOrigins();
-  if (!origin || !allowed.includes(origin)) return response;
+  const rawOrigin = request.headers.get("origin");
+  if (!rawOrigin) return response;
+  const origin = normalizeOrigin(rawOrigin);
+  const allowed = getAdminAllowedOrigins().map(normalizeOrigin);
+  if (!allowed.includes(origin)) return response;
 
-  response.headers.set("Access-Control-Allow-Origin", origin);
+  response.headers.set("Access-Control-Allow-Origin", rawOrigin);
   response.headers.set("Access-Control-Allow-Credentials", "true");
   response.headers.append("Vary", "Origin");
   return response;
