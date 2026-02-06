@@ -11,15 +11,20 @@ interface ErrorPageProps {
   reset: () => void;
 }
 
+const isChunkLoadError = (err: Error) =>
+  err.name === "ChunkLoadError" ||
+  (err.message && /loading chunk .* failed/i.test(err.message));
+
 /**
  * Root error boundary for the application.
  * Catches errors in the entire app and displays a user-friendly error page.
  */
 export default function RootError({ error, reset }: ErrorPageProps) {
   useEffect(() => {
-    // Log error to error reporting service
     console.error("Application error:", error);
   }, [error]);
+
+  const isChunk = isChunkLoadError(error);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
@@ -31,8 +36,18 @@ export default function RootError({ error, reset }: ErrorPageProps) {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Something went wrong</h1>
           <p className="max-w-md text-muted-foreground">
-            We apologize for the inconvenience. An unexpected error occurred.
-            Please try again or return to the homepage.
+            {isChunk ? (
+              <>
+                The page could not load. This often happens after we deploy an
+                update. Please do a <strong>full refresh</strong> (Ctrl+Shift+R
+                or Cmd+Shift+R) or clear your browser cache and try again.
+              </>
+            ) : (
+              <>
+                We apologize for the inconvenience. An unexpected error occurred.
+                Please try again or return to the homepage.
+              </>
+            )}
           </p>
         </div>
 

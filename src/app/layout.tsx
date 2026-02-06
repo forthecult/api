@@ -157,7 +157,8 @@ export default function RootLayout({
             </AuthWalletModalProvider>
           </WagmiProvider>
         </ThemeProvider>
-        <SpeedInsights />
+        {/* SpeedInsights only on Vercel; script 404s on other hosts (e.g. Railway) and can cause console noise */}
+        {process.env.NEXT_PUBLIC_VERCEL === "1" ? <SpeedInsights /> : null}
         {/* Structured data for search engines */}
         <OrganizationStructuredData />
         <WebSiteStructuredData />

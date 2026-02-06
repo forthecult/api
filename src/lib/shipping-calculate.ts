@@ -71,6 +71,35 @@ function matches(
   return true;
 }
 
+/** Strip third-party vendor names and normalize to "Standard" or "Express" when not carrier-specific (e.g. FedEx Overnight). */
+function normalizeThirdPartyShippingLabel(
+  name: string,
+  options?: { isExpress?: boolean },
+): string {
+  const raw = (name ?? "").trim();
+  if (!raw) return "Standard";
+
+  const lower = raw.toLowerCase();
+  const withoutVendor = raw
+    .replace(/^printify\s+/i, "")
+    .replace(/^printful\s+/i, "")
+    .trim();
+  const rest = withoutVendor.toLowerCase();
+
+  const isExpressKeyword =
+    /\b(express|overnight|rush|2-?day|priority\s+express)\b/i.test(lower) ||
+    options?.isExpress === true;
+
+  if (!withoutVendor) return isExpressKeyword ? "Express" : "Standard";
+
+  const looksSpecific =
+    /\b(fedex|usps|ups|dhl|dpd|royal\s+mail|carrier)\b/i.test(rest) ||
+    /\b(overnight|priority\s+mail|ground|first\s+class)\b/i.test(rest);
+  if (looksSpecific) return withoutVendor;
+
+  return isExpressKeyword ? "Express" : "Standard";
+}
+
 export const ZERO_SHIPPING = {
   shippingCents: 0,
   label: null as string | null,
@@ -698,18 +727,27 @@ export async function runShippingCalculate(
   const totalShippingCents =
     printfulResult.shippingCents + printifyShippingCents + adminShippingCents;
 
-  // Determine label
+  // Determine label: strip third-party vendor names; use "Standard" or "Express" when not carrier-specific; aggregate -> "Standard" when multiple
   const labels: string[] = [];
   if (printfulResult.rate) {
-    labels.push(printfulResult.rate.shipping_method_name);
+    labels.push(
+      normalizeThirdPartyShippingLabel(
+        printfulResult.rate.shipping_method_name,
+      ),
+    );
   }
   if (printifyShippingCents > 0) {
-    labels.push("Printify Standard");
+    labels.push("Standard");
   }
   if (adminLabel) {
     labels.push(adminLabel);
   }
-  const finalLabel = labels.length > 0 ? labels.join(" + ") : null;
+  const finalLabel =
+    labels.length > 1
+      ? "Standard"
+      : labels.length > 0
+        ? labels[0]
+        : null;
 
   // Check for free shipping (only if entire order qualifies)
   const isFreeShipping =
