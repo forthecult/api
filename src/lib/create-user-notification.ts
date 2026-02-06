@@ -105,18 +105,19 @@ export async function onOrderCreated(orderId: string): Promise<void> {
 
 /** Kinds that create a website notification when order status changes. */
 const ORDER_STATUS_NOTIFICATION_KINDS = [
+  "order_processing",
   "order_shipped",
   "order_on_hold",
   "order_cancelled",
 ] as const;
 
 /**
- * Called when order status changes (shipped, on_hold, cancelled). Sends Telegram,
+ * Called when order status changes (processing, shipped, on_hold, cancelled). Sends Telegram,
  * website notification, and transactional email (for order_shipped) when preferences allow.
  */
 export async function onOrderStatusUpdate(
   orderId: string,
-  kind: "order_shipped" | "order_on_hold" | "order_cancelled",
+  kind: "order_processing" | "order_shipped" | "order_on_hold" | "order_cancelled",
   options?: { trackingNumber?: string; trackingUrl?: string },
 ): Promise<void> {
   const [order] = await db
@@ -129,8 +130,18 @@ export async function onOrderStatusUpdate(
     .limit(1);
   if (!order) return;
 
-  const telegramKind =
-    kind === "order_shipped" ? "fulfilled" : kind === "order_on_hold" ? "on_hold" : "cancelled";
+  // Map to Telegram notification kind
+  let telegramKind: "processing" | "fulfilled" | "on_hold" | "cancelled";
+  if (kind === "order_processing") {
+    telegramKind = "processing";
+  } else if (kind === "order_shipped") {
+    telegramKind = "fulfilled";
+  } else if (kind === "order_on_hold") {
+    telegramKind = "on_hold";
+  } else {
+    telegramKind = "cancelled";
+  }
+
   void notifyOrderUpdate(orderId, {
     kind: telegramKind,
     trackingNumber: options?.trackingNumber,
@@ -142,7 +153,10 @@ export async function onOrderStatusUpdate(
       const shortId = orderId.slice(0, 8);
       let title: string;
       let description: string;
-      if (kind === "order_shipped") {
+      if (kind === "order_processing") {
+        title = "Order in production";
+        description = `Order ${shortId} is being produced. We'll notify you when it ships.`;
+      } else if (kind === "order_shipped") {
         title = "Order shipped";
         description = options?.trackingNumber
           ? `Order ${shortId} has shipped. Tracking: ${options.trackingNumber}`

@@ -18,6 +18,7 @@ const TELEGRAM_PROVIDER_ID = "telegram";
 
 export type OrderNotificationKind =
   | "order_placed"
+  | "processing"
   | "shipped"
   | "fulfilled"
   | "on_hold"
@@ -47,6 +48,8 @@ function buildMessage(
   switch (options.kind) {
     case "order_placed":
       return `✅ Order ${shortId} confirmed. We'll notify you when it ships.`;
+    case "processing":
+      return `🏭 Order ${shortId} is in production. We'll notify you when it ships.`;
     case "shipped":
     case "fulfilled":
       if (options.trackingNumber) {
