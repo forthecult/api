@@ -76,7 +76,7 @@ Our product and variant fields align with Printful so we don't need unique table
 - **Variant** (product_variants table): size, color, quantity/stock, price, SKU, externalId (Printful: catalog_variant_id), printfulSyncVariantId, weight, image.
 - **Size guide**: stored on product (e.g. sizeGuideJson from Printful GET catalog-products/{id}/sizes).
 - **Shipping time**: per order/shipment from Printful; we can show estimates when we have them.
-- **Shipping countries**: The current Printful store/sync API does not expose a per-product list of ship-to countries. Printful products are left with no entries in `product_available_country` (treated as available everywhere in our store). Validation still happens at checkout when we call Printful’s shipping-rates API; orders to unsupported destinations will fail at that step. If Printful adds a Catalog v2 or other endpoint that returns shipping countries per product, we can sync them the same way as Printify.
+- **Shipping countries**: On import we call Catalog v2 `GET /catalog-products/{id}/shipping-countries` when we have a catalog product ID; if it returns a list of country codes we populate `product_available_country` so the admin Markets section and checkout know where the product ships. If the endpoint is unavailable or returns nothing we fall back to a static list of common Printful shipping countries. Validation also happens at checkout when we call Printful’s shipping-rates API.
 
 Sync pulls from Printful into this schema. You create the product in Printful, then it syncs to the store. Data is mapped to match our backend product/variant variables (description, title, price, etc.).
 

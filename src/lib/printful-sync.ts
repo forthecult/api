@@ -24,6 +24,7 @@ import {
   fetchSyncProducts,
   fetchSyncProduct,
   fetchCatalogProduct,
+  fetchCatalogProductShippingCountries,
   updateSyncProduct,
   updateSyncVariant,
   getPrintfulIfConfigured,
@@ -304,6 +305,17 @@ async function createLocalProductFromPrintful(
     syncProduct.thumbnail_url ||
     (firstVariant ? getPrintfulVariantImageUrl(firstVariant) : null);
 
+  // Shipping countries from Printful API when available; else static list
+  let marketCountryCodes = PRINTFUL_SHIPPING_COUNTRY_CODES;
+  if (catalogProductId != null) {
+    const apiCountries = await fetchCatalogProductShippingCountries(
+      catalogProductId,
+    );
+    if (apiCountries && apiCountries.length > 0) {
+      marketCountryCodes = apiCountries;
+    }
+  }
+
   // Create product (vendor, page title, description, brand, sku from catalog/sync)
   // Printful fulfillment typically 2–5 business days; default transit 3–7 for estimates
   await db.insert(productsTable).values({
@@ -324,6 +336,7 @@ async function createLocalProductFromPrintful(
     vendor: "Printful",
     brand,
     sku: productSku,
+    countryOfOrigin: null, // Printful catalog API does not expose; set in admin if needed
     createdAt: now,
     updatedAt: now,
     lastSyncedAt: now,
@@ -348,15 +361,22 @@ async function createLocalProductFromPrintful(
     await createLocalVariantFromPrintful(productId, syncVariant);
   }
 
-  // Product media: primary + additional from thumbnail and unique variant images
-  const imageUrls = new Set<string>();
-  if (syncProduct.thumbnail_url) imageUrls.add(syncProduct.thumbnail_url);
+  // Product media: prefer mockups first (variant preview/mockup), then thumbnail (raw product)
+  const imageUrlsOrdered: string[] = [];
+  const seen = new Set<string>();
   for (const v of syncVariants) {
     const url = getPrintfulVariantImageUrl(v);
-    if (url) imageUrls.add(url);
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      imageUrlsOrdered.push(url);
+    }
+  }
+  if (syncProduct.thumbnail_url && !seen.has(syncProduct.thumbnail_url)) {
+    seen.add(syncProduct.thumbnail_url);
+    imageUrlsOrdered.push(syncProduct.thumbnail_url);
   }
   let sortOrder = 0;
-  for (const url of imageUrls) {
+  for (const url of imageUrlsOrdered) {
     await db.insert(productImagesTable).values({
       id: nanoid(),
       productId,
@@ -366,8 +386,8 @@ async function createLocalProductFromPrintful(
     });
   }
 
-  // Markets: where Printful ships (so admin "Markets" and shipping calculator know)
-  for (const code of PRINTFUL_SHIPPING_COUNTRY_CODES) {
+  // Markets: where Printful ships (from API or static list; admin "Markets" and shipping use this)
+  for (const code of marketCountryCodes) {
     await db.insert(productAvailableCountryTable).values({
       productId,
       countryCode: code,
@@ -419,11 +439,11 @@ async function updateLocalProductFromPrintful(
   const optionDefs = buildOptionDefinitionsFromVariants(syncVariants);
   const optionDefinitionsJson =
     optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
+  // Prefer mockup over raw thumbnail
   const productImageUrl =
-    syncProduct.thumbnail_url ||
     (syncVariants[0]
       ? getPrintfulVariantImageUrl(syncVariants[0])
-      : undefined);
+      : undefined) ?? syncProduct.thumbnail_url;
 
   await db
     .update(productsTable)
@@ -445,18 +465,25 @@ async function updateLocalProductFromPrintful(
     })
     .where(eq(productsTable.id, productId));
 
-  // Sync product images: replace with thumbnail + unique variant images
+  // Sync product images: mockups first, then thumbnail
   await db
     .delete(productImagesTable)
     .where(eq(productImagesTable.productId, productId));
-  const imageUrls = new Set<string>();
-  if (syncProduct.thumbnail_url) imageUrls.add(syncProduct.thumbnail_url);
+  const imageUrlsOrdered: string[] = [];
+  const seen = new Set<string>();
   for (const v of syncVariants) {
     const url = getPrintfulVariantImageUrl(v);
-    if (url) imageUrls.add(url);
+    if (url && !seen.has(url)) {
+      seen.add(url);
+      imageUrlsOrdered.push(url);
+    }
+  }
+  if (syncProduct.thumbnail_url && !seen.has(syncProduct.thumbnail_url)) {
+    seen.add(syncProduct.thumbnail_url);
+    imageUrlsOrdered.push(syncProduct.thumbnail_url);
   }
   let sortOrder = 0;
-  for (const url of imageUrls) {
+  for (const url of imageUrlsOrdered) {
     await db.insert(productImagesTable).values({
       id: nanoid(),
       productId,
@@ -466,11 +493,21 @@ async function updateLocalProductFromPrintful(
     });
   }
 
-  // Sync markets (Printful shipping countries)
+  // Sync markets (Printful shipping countries from API or static list)
+  const catalogProductId = syncVariants[0]?.product?.product_id;
+  let marketCountryCodes = PRINTFUL_SHIPPING_COUNTRY_CODES;
+  if (catalogProductId != null) {
+    const apiCountries = await fetchCatalogProductShippingCountries(
+      catalogProductId,
+    );
+    if (apiCountries && apiCountries.length > 0) {
+      marketCountryCodes = apiCountries;
+    }
+  }
   await db
     .delete(productAvailableCountryTable)
     .where(eq(productAvailableCountryTable.productId, productId));
-  for (const code of PRINTFUL_SHIPPING_COUNTRY_CODES) {
+  for (const code of marketCountryCodes) {
     await db.insert(productAvailableCountryTable).values({
       productId,
       countryCode: code,

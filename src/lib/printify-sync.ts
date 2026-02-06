@@ -405,6 +405,7 @@ async function createLocalProductFromPrintify(
     vendor: "Printify",
     brand: null, // Printify product API does not expose brand
     sku: productSku,
+    countryOfOrigin: null, // Printify API does not expose; set in admin if needed
     handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
     handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
     createdAt: now,

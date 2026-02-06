@@ -175,6 +175,33 @@ export function fetchCatalogProduct(catalogProductId: number) {
   );
 }
 
+/**
+ * GET /v2/catalog-products/{id}/shipping-countries – countries this product can ship to.
+ * Returns ISO 3166-1 alpha-2 codes. On 404 or error, returns null (caller can fall back to static list).
+ */
+export async function fetchCatalogProductShippingCountries(
+  catalogProductId: number,
+): Promise<string[] | null> {
+  try {
+    const res = await pfFetch<{
+      data?: Array<{ country_code?: string }> | { country_codes?: string[] };
+    }>(`/catalog-products/${catalogProductId}/shipping-countries`);
+    if (!res?.data) return null;
+    const arr = Array.isArray(res.data)
+      ? res.data
+      : (res.data as { country_codes?: string[] }).country_codes;
+    if (!Array.isArray(arr)) return null;
+    const codes = arr
+      .map((x) =>
+        typeof x === "string" ? x : (x as { country_code?: string }).country_code,
+      )
+      .filter((c): c is string => typeof c === "string" && c.length === 2);
+    return codes.length > 0 ? codes.map((c) => c.toUpperCase()) : null;
+  } catch {
+    return null;
+  }
+}
+
 // --- Shipping rates ---
 
 export type PrintfulRecipient = {
