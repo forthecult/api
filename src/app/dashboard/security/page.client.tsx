@@ -967,37 +967,45 @@ export function SecurityPageClient() {
             <p className="mb-3 text-sm text-muted-foreground">
               Use an app like Google Authenticator or Authy to get 6-digit codes when you sign in.
             </p>
-            <div className="grid gap-2">
-              <Label htmlFor="security-password">Your Password</Label>
-              <Input
-                id="security-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPasswordInput(e.target.value)}
-                placeholder="Enter your password"
-              />
-              <p className="text-sm text-muted-foreground">
-                Required to enable or disable authenticator app 2FA
+            {!accounts.some((a) => a.providerId === "credential") ? (
+              <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+                To use authenticator app (OTP) 2FA, add an email and password to your account first (in the section above). You can use security key (U2F) below without a password.
               </p>
-            </div>
-            <div className="mt-3 flex flex-wrap gap-4">
-              <Button disabled={loading} onClick={handleEnableTwoFactor}>
-                {loading ? "Processing..." : "Enable with authenticator app"}
-              </Button>
-              <Button
-                disabled={loading}
-                variant="destructive"
-                onClick={handleDisableTwoFactor}
-              >
-                {loading ? "Processing..." : "Disable authenticator app"}
-              </Button>
-            </div>
+            ) : (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="security-password">Your Password</Label>
+                  <Input
+                    id="security-password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPasswordInput(e.target.value)}
+                    placeholder="Enter your password"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Required to enable or disable authenticator app 2FA
+                  </p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  <Button disabled={loading} onClick={handleEnableTwoFactor}>
+                    {loading ? "Processing..." : "Enable with authenticator app"}
+                  </Button>
+                  <Button
+                    disabled={loading}
+                    variant="destructive"
+                    onClick={handleDisableTwoFactor}
+                  >
+                    {loading ? "Processing..." : "Disable authenticator app"}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
 
           <div className="border-t pt-6">
             <h3 className="mb-2 text-sm font-medium">Security key (U2F / passkey)</h3>
             <p className="mb-3 text-sm text-muted-foreground">
-              Register a hardware security key or device passkey. You can then sign in with it from the sign-in page (no password or OTP needed).
+              Register a hardware security key or device passkey. You can then sign in with it from the sign-in page (no password or OTP needed). Works even if you signed up with a wallet and don&apos;t have a password.
             </p>
             {passkeysLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
