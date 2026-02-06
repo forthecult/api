@@ -101,7 +101,7 @@ export async function GET(
       _actions: {
         next: `Poll GET /api/orders/${order.id}/status every 5s until status changes`,
         cancel: `POST /api/orders/${order.id}/cancel (only before payment)`,
-        help: "Contact support@culturestore.com",
+        help: "Contact support@forthecut.store",
       },
     });
   } catch (err) {

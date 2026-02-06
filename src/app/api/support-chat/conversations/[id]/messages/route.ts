@@ -162,7 +162,7 @@ export async function POST(
 
       const aiReply = await generateSupportChatReply({
         recentMessages: recentRows.map((r) => ({ role: r.role, content: r.content })),
-        storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "Culture",
+        storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Culture",
       });
 
       const aiMessageId = crypto.randomUUID();

@@ -73,10 +73,10 @@ const RETURNS_COPY = (
     <p>
       You can contact us by emailing at{" "}
       <a
-        href="mailto:support@culture.store"
+        href="mailto:support@forthecult.store"
         className="underline hover:no-underline"
       >
-        support@culture.store
+        support@forthecult.store
       </a>{" "}
       or visiting our{" "}
       <Link href="/contact" className="underline hover:no-underline">

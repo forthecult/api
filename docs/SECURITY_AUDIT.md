@@ -1,4 +1,4 @@
-# Security Audit Report - Culture Store Web3 eCommerce Platform
+# Security Audit Report - For the Cult Web3 eCommerce Platform
 
 **Audit Date:** February 4, 2026  
 **Auditor:** Automated Security Analysis  

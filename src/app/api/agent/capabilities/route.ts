@@ -12,7 +12,7 @@ export async function GET() {
 
   return NextResponse.json(
     {
-      name: "Culture Store",
+      name: "For the Cult",
       description:
         "AI-friendly eCommerce API for purchasing goods with cryptocurrency. Designed for seamless agent integration.",
       version: "1.0.0",
@@ -171,7 +171,7 @@ export async function GET() {
 
       // Support
       support: {
-        email: "support@culturestore.com",
+        email: "support@forthecut.store",
         documentation: `${baseUrl}/api/docs`,
         openApiSpec: `${baseUrl}/api/openapi.json`,
       },

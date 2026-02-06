@@ -20,7 +20,7 @@ interface ProductStructuredDataProps {
  * Renders as a script tag that search engines parse.
  */
 export function ProductStructuredData({ product }: ProductStructuredDataProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -69,7 +69,7 @@ export function ProductStructuredData({ product }: ProductStructuredDataProps) {
  * Include in root layout or footer.
  */
 export function OrganizationStructuredData() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -131,7 +131,7 @@ export function BreadcrumbStructuredData({
  * WebSite structured data for sitelinks search box.
  */
 export function WebSiteStructuredData() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -160,7 +160,7 @@ export function WebSiteStructuredData() {
  * AboutPage structured data for about pages.
  */
 export function AboutPageStructuredData() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -174,7 +174,7 @@ export function AboutPageStructuredData() {
       url: siteUrl,
       foundingDate: "2015",
       description:
-        "Culture is the lifestyle brand for the age of decentralization. Premium gear, toxin-free apparel, crypto-native since 2015.",
+        "For the Cult is the lifestyle brand for the age of decentralization. Premium gear, toxin-free apparel, crypto-native since 2015.",
     },
   };
 

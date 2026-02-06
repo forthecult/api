@@ -37,7 +37,7 @@ const geistMono = Geist_Mono({
 });
 
 // Ensure full URL (https://) so metadataBase doesn't throw Invalid URL when env is host-only (e.g. Railway)
-const siteUrlRaw = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+const siteUrlRaw = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 const siteUrl =
   /^https?:\/\//i.test(siteUrlRaw.trim()) ?
     siteUrlRaw.trim()

@@ -89,7 +89,7 @@ export async function GET(
       actions.retry = "POST /api/checkout to create a new order";
     }
 
-    actions.help = "Email support@culturestore.com for assistance";
+    actions.help = "Email support@forthecut.store for assistance";
 
     return apiSuccess({
       orderId: order.id,

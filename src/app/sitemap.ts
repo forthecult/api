@@ -4,7 +4,7 @@ import type { MetadataRoute } from "next";
 export const dynamic = "force-dynamic";
 
 function getSiteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+  const raw = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
   if (/^https?:\/\//i.test(raw.trim())) return raw.trim();
   return `https://${raw.trim().replace(/^\/+/, "")}`;
 }

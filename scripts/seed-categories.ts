@@ -1,5 +1,5 @@
 /**
- * Seeds the database with Culture store categories (Shop + Shop by Crypto).
+ * Seeds the database with For the Cult categories (Shop + Shop by Crypto).
  *
  * Slugs = what people search. SEO-first: full names (bitcoin, ethereum, dogecoin, monero, uniswap)
  * not tickers (btc, eth, doge). Parent slugs: currency, network, dapps (short and clear).

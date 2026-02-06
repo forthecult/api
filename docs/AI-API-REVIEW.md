@@ -1,4 +1,4 @@
-# AI Customer API Review: Making Culture Store the Best AI eCommerce API
+# AI Customer API Review: Making For the Cult the Best AI eCommerce API
 
 **Reviewer:** AI Customer Perspective  
 **Date:** February 2026  
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-The Culture Store API is **well-designed** with strong foundations for AI-agent use. The `/api/agent/capabilities` endpoint, semantic search, and `_actions` hints are excellent AI-first features. However, several improvements would make this truly world-class.
+For the Cult API is **well-designed** with strong foundations for AI-agent use. The `/api/agent/capabilities` endpoint, semantic search, and `_actions` hints are excellent AI-first features. However, several improvements would make this truly world-class.
 
 **Current Grade: B+**  
 **Target Grade: A+**
@@ -55,7 +55,7 @@ The Culture Store API is **well-designed** with strong foundations for AI-agent 
   "currency": "USD",
   "shippingCountries": ["US", "CA", "GB", "AU", "DE", ...],
   "storeHours": "24/7 online",
-  "supportContact": "support@culturestore.com",
+  "supportContact": "support@forthecut.store",
   "estimatedShippingDays": {
     "US": "3-5 business days",
     "international": "7-14 business days"
@@ -540,7 +540,7 @@ Verify store legitimacy for cautious agents:
 ```json
 {
   "verified": true,
-  "businessName": "Culture Store Inc.",
+  "businessName": "For the Cult Inc.",
   "verifiedBy": "Stripe",
   "since": "2024-01-01",
   "totalOrders": 15000,
@@ -584,7 +584,7 @@ Verify store legitimacy for cautious agents:
 
 ## Conclusion
 
-The Culture Store API has excellent foundations for AI agents. The semantic search, capabilities endpoint, and `_actions` hints show clear AI-first thinking. 
+For the Cult API has excellent foundations for AI agents. The semantic search, capabilities endpoint, and `_actions` hints show clear AI-first thinking. 
 
 With the improvements outlined above — especially consistent errors, variant support, and shipping estimation — this would genuinely be the best AI eCommerce API available.
 

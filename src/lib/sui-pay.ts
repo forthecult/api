@@ -19,7 +19,7 @@ export function getSuiPayRecipient(): string | undefined {
 export function getSuiPayLabel(): string {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_LABEL === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_LABEL.trim()
-    : "Culture";
+    : "For the Culture";
 }
 
 /**

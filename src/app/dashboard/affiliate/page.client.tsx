@@ -180,7 +180,7 @@ export function AffiliatePageClient() {
       const baseUrl =
         typeof process.env.NEXT_PUBLIC_APP_URL === "string"
           ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
-          : "https://culture.store";
+          : "https://forthecult.store";
       const referralUrl =
         data?.affiliate?.status === "approved"
           ? `${baseUrl}?ref=${encodeURIComponent(newCode)}`

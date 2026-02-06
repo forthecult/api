@@ -183,7 +183,7 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_APP_URL?.trim() ||
       request.headers.get("x-forwarded-proto") && request.headers.get("x-forwarded-host")
         ? `${request.headers.get("x-forwarded-proto")}://${request.headers.get("x-forwarded-host")}`
-        : "https://culture.store";
+        : "https://forthecult.store";
 
     let btcpayInvoiceId: string | null = null;
     let btcpayInvoiceUrl: string | null = null;
@@ -304,7 +304,7 @@ export async function POST(request: NextRequest) {
       _actions: {
         next: "Redirect to /checkout/{orderId}#bitcoin (or #doge, #monero) and poll status until paid.",
         cancel: `POST /api/orders/${orderId}/cancel (only before payment)`,
-        help: "Contact support@culturestore.com",
+        help: "Contact support@forthecut.store",
       },
     });
   } catch (err) {

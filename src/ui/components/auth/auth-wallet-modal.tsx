@@ -17,10 +17,12 @@ import { cn } from "~/lib/cn";
 const ETHEREUM_WALLET_OPTIONS = [
   { id: "walletconnect" as const, name: "WalletConnect", icon: "https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue/Logo.svg" },
   { id: "injected" as const, name: "MetaMask", icon: "https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg" },
-  { id: "injected" as const, name: "Brave Wallet", icon: "https://brave.com/static-assets/images/brave-logo-splash.svg" },
-  { id: "injected" as const, name: "Coinbase Wallet", icon: "https://cdn.coinbase.com/wallet-sdk-common/logo.png" },
-  { id: "injected" as const, name: "Ctrl Wallet", icon: "https://ctrl.fun/favicon.ico" },
+  { id: "injected" as const, name: "Brave Wallet", icon: "https://brave.com/static-assets/images/brave-logo-sans-text.svg" },
+  { id: "injected" as const, name: "Coinbase Wallet", icon: "https://www.coinbase.com/img/favicon/favicon-256.png" },
 ] as const;
+
+/** Names of wallets that appear in both Solana adapters and Ethereum options - show only once from Solana */
+const SOLANA_ONLY_WALLET_NAMES = ["Ctrl Wallet", "Ctrl"];
 
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
 
@@ -209,6 +211,20 @@ export function AuthWalletModal({
     [select, connect],
   );
 
+  // If Solana wallet disconnects while we're on "Sign the message", show error so user isn't stuck
+  useEffect(() => {
+    if (
+      !open ||
+      selectedChain !== "solana" ||
+      step !== "signing" ||
+      (connected && publicKey)
+    )
+      return;
+    signFlowStarted.current = false;
+    setError("Wallet disconnected. Please try again and sign the message in your wallet.");
+    setStep("error");
+  }, [open, selectedChain, step, connected, publicKey]);
+
   // Solana: run sign flow when wallet is connected and step is signing
   useEffect(() => {
     if (!open || selectedChain !== "solana") return;
@@ -325,17 +341,27 @@ export function AuthWalletModal({
           }
         } catch (err) {
           if (!cancelled) {
-            const message =
+            const rawMessage =
               err instanceof Error ? err.message : "Something went wrong";
+            const isDisconnect =
+              /disconnect|wallet.*closed|user.*reject|rejected/i.test(
+                rawMessage,
+              ) ||
+              (err instanceof Error &&
+                err.constructor?.name === "WalletDisconnectedError");
+            const message = isDisconnect
+              ? "Wallet disconnected or signing was cancelled. Please try again and sign the message in your wallet."
+              : rawMessage;
             if (
               isDev &&
               typeof console !== "undefined" &&
               typeof console.error === "function"
             ) {
-              console.error("[auth] Solana sign-in error:", message);
+              console.error("[auth] Solana sign-in error:", rawMessage);
             }
             setError(message);
             setStep("error");
+            signFlowStarted.current = false;
           }
         }
       })();
@@ -694,21 +720,23 @@ export function AuthWalletModal({
                       }
                     />
                   ))}
-                {ETHEREUM_WALLET_OPTIONS.filter((o) => o.name !== "MetaMask").map(
-                  (opt) => (
-                    <EthereumOptionButton
-                      key={opt.name}
-                      name={opt.name}
-                      icon={opt.icon}
-                      onClick={() =>
-                        handleSelectEthereumOption(
-                          opt.id === "walletconnect" ? "walletconnect" : "injected",
-                        )
-                      }
-                      disabled={connecting}
-                    />
-                  ),
-                )}
+                {ETHEREUM_WALLET_OPTIONS.filter(
+                  (o) =>
+                    o.name !== "MetaMask" &&
+                    !SOLANA_ONLY_WALLET_NAMES.includes(o.name),
+                ).map((opt) => (
+                  <EthereumOptionButton
+                    key={opt.name}
+                    name={opt.name}
+                    icon={opt.icon}
+                    onClick={() =>
+                      handleSelectEthereumOption(
+                        opt.id === "walletconnect" ? "walletconnect" : "injected",
+                      )
+                    }
+                    disabled={connecting}
+                  />
+                ))}
               </div>
             </div>
           )}

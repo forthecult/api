@@ -69,7 +69,7 @@ export const wagmiConfig = createConfig({
           walletConnect({
             projectId,
             metadata: {
-              name: "Culture",
+              name: "For the Culture",
               description: "Checkout with crypto",
               url: typeof window !== "undefined" ? window.location.origin : "",
               icons: [],

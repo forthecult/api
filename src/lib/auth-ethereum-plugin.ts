@@ -279,17 +279,25 @@ export function ethereumAuthPlugin() {
                   updatedAt: now,
                 },
               });
-              const accountId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
-              await adapter.create({
-                model: "account",
-                data: {
-                  id: accountId,
-                  userId,
-                  accountId: addressTrim.toLowerCase(),
-                  providerId: ETHEREUM_PROVIDER_ID,
-                  createdAt: now,
-                  updatedAt: now,
-                },
+              // Use internalAdapter.createAccount so the account row goes through Better Auth's
+              // createWithHooks; pass id explicitly because the account table requires a primary key.
+              const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
+              await (ctx.context.internalAdapter as {
+                createAccount: (data: {
+                  id: string;
+                  userId: string;
+                  accountId: string;
+                  providerId: string;
+                  createdAt: Date;
+                  updatedAt: Date;
+                }) => Promise<unknown>;
+              }).createAccount({
+                id: accountRowId,
+                userId,
+                accountId: addressTrim.toLowerCase(),
+                providerId: ETHEREUM_PROVIDER_ID,
+                createdAt: now,
+                updatedAt: now,
               });
               user = (await adapter.findOne({
                 model: "user",
@@ -329,9 +337,13 @@ export function ethereumAuthPlugin() {
           } catch (err) {
             console.error("[ethereum-auth] Verify error:", err);
             if (err instanceof APIError) throw err;
+            // Don't expose raw DB/query errors to the client
+            const raw = err instanceof Error ? err.message : "Verification failed";
+            const isDbError = /insert into|update.*set|Failed query|relation .* does not exist/i.test(raw);
             throw new APIError("INTERNAL_SERVER_ERROR", {
-              message:
-                err instanceof Error ? err.message : "Verification failed",
+              message: isDbError
+                ? "Something went wrong on our end. Please try again or contact support."
+                : raw,
             });
           }
         },

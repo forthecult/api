@@ -1,16 +1,16 @@
 /**
- * OpenAPI 3.0 spec for Culture Store API (agent discovery + checkout/orders).
+ * OpenAPI 3.0 spec for For the Cult API (agent discovery + checkout/orders).
  * Served at GET /api/openapi.json and used by Swagger UI at /api/docs.
  */
 
 export const openApiSpec = {
   openapi: "3.0.3",
   info: {
-    title: "Culture Store API",
+    title: "For the Cult API",
     description:
       "AI-agent-friendly eCommerce API for purchasing with cryptocurrency. Agents discover products, create orders, and pay with Solana (SOL, USDC, SPL).",
     version: "1.0.0",
-    contact: { name: "Culture Store" },
+    contact: { name: "For the Cult" },
   },
   servers: [{ url: "/api", description: "API base (relative)" }],
   tags: [
@@ -67,7 +67,7 @@ export const openApiSpec = {
                 schema: {
                   type: "object",
                   properties: {
-                    name: { type: "string", example: "Culture Store" },
+                    name: { type: "string", example: "For the Cult" },
                     capabilities: {
                       type: "array",
                       items: { type: "string" },

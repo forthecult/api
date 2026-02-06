@@ -1,12 +1,12 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "Culture Store API",
+    "title": "For the Cult API",
     "description": "The most AI-agent-friendly eCommerce API. Designed for seamless integration with AI assistants, chatbots, and autonomous agents. Features semantic search, structured errors with suggestions, and multi-chain crypto payments.",
     "version": "1.1.0",
     "contact": {
-      "name": "Culture Store",
-      "email": "support@culturestore.com"
+      "name": "For the Cult",
+      "email": "support@forthecut.store"
     },
     "x-ai-friendly": true,
     "x-quick-start": "Call GET /api/agent/capabilities first to understand the API"
@@ -94,7 +94,7 @@
                   "properties": {
                     "name": {
                       "type": "string",
-                      "example": "Culture Store"
+                      "example": "For the Cult"
                     },
                     "capabilities": {
                       "type": "array",

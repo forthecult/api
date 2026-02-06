@@ -6,7 +6,7 @@ import { SEO_CONFIG } from "~/app";
 import { AboutPageStructuredData } from "~/ui/components/structured-data";
 import { Button } from "~/ui/primitives/button";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
 export const metadata: Metadata = {
   description:

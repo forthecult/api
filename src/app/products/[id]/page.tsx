@@ -236,7 +236,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
       )
     : 0;
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
   const breadcrumbTrail = await getProductBreadcrumbTrail(
     product.id,
     product.name,

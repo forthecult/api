@@ -100,7 +100,7 @@ async function fetchFeaturedProducts(): Promise<
   }
 }
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
 export const metadata: Metadata = {
   description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,

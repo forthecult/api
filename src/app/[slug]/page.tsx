@@ -264,7 +264,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
             100,
         )
       : 0;
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://culture.store";
+    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
     const canonicalSlug = product.slug ?? product.id;
     const breadcrumbTrail = await getProductBreadcrumbTrail(
       product.id,

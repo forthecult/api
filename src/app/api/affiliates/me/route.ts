@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     .where(eq(ordersTable.affiliateId, affiliate.id));
 
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://culture.store";
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://forthecult.store";
   const referralUrl =
     affiliate.status === "approved"
       ? `${baseUrl.replace(/\/$/, "")}?ref=${encodeURIComponent(affiliate.code)}`

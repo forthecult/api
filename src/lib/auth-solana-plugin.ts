@@ -31,7 +31,7 @@ type UserRecord = {
 };
 
 function getAppName(): string {
-  return process.env.NEXT_PUBLIC_APP_NAME ?? "Culture";
+  return process.env.NEXT_PUBLIC_APP_NAME ?? "For the Culture";
 }
 
 function makeMessage(nonce: string): string {

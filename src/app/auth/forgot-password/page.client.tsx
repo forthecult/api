@@ -5,8 +5,12 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { requestPasswordReset } from "~/lib/auth-client";
+import {
+  AuthFormHeader,
+  AuthFormLayout,
+} from "~/ui/components/auth/auth-form-layout";
 import { Button } from "~/ui/primitives/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
+import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
@@ -46,75 +50,66 @@ export function ForgotPasswordClient() {
 
   if (sent) {
     return (
-      <div className="container flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-6 p-4">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5" />
-              Check your email
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              If an account exists for {email.trim()}, you will receive a link to
-              reset your password. In development without an email provider, the
-              link is also printed in the server terminal.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/login">Back to sign in</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <AuthFormLayout>
+        <div className="space-y-4">
+          <AuthFormHeader
+            title="Check your email"
+            subtitle={`If an account exists for ${email.trim()}, you will receive a link to reset your password. In development without an email provider, the link is also printed in the server terminal.`}
+          />
+          <Card>
+            <CardContent className="pt-6">
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/login">Back to sign in</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthFormLayout>
     );
   }
 
   return (
-    <div className="container flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-6 p-4">
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5" />
-            Forgot password?
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Enter your email and we&apos;ll send you a link to set a new
-            password.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                autoComplete="email"
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                type="email"
-                value={email}
-              />
-            </div>
-            {error && (
-              <div className="text-sm font-medium text-destructive">
-                {error}
+    <AuthFormLayout>
+      <div className="space-y-4">
+        <AuthFormHeader
+          title="Forgot password?"
+          subtitle="Enter your email and we'll send you a link to set a new password."
+        />
+        <Card>
+          <CardContent className="pt-6">
+            <form className="space-y-4" onSubmit={handleSubmit}>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  autoComplete="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  type="email"
+                  value={email}
+                />
               </div>
-            )}
-            <Button className="w-full" disabled={loading} type="submit">
-              {loading ? "Sending…" : "Send reset link"}
-            </Button>
-          </form>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            <Link
-              className="text-primary underline-offset-4 hover:underline"
-              href="/login"
-            >
-              Back to sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+              {error && (
+                <div className="text-sm font-medium text-destructive">
+                  {error}
+                </div>
+              )}
+              <Button className="w-full" disabled={loading} type="submit">
+                {loading ? "Sending…" : "Send reset link"}
+              </Button>
+            </form>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              <Link
+                className="text-primary underline-offset-4 hover:underline"
+                href="/login"
+              >
+                Back to sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    </AuthFormLayout>
   );
 }

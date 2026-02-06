@@ -5,7 +5,7 @@ Lifestyle brand
 CHANNELS
 - Web / mobile
 	URL ideas:
-	- culture.store -> taken, need something else
+	- forthecult.store -> taken, need something else
 	- forthecult.store -> good play on words for pump.fun
 	- culturevibe.store (although culturevibes.store is taken
 - AI
@@ -251,7 +251,7 @@ EMAIL
 
 
 
-Culture
+For the Cult
 $CULT
 
 Features:

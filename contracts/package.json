@@ -1,7 +1,7 @@
 {
   "name": "payment-contracts",
   "version": "1.0.0",
-  "description": "EVM Payment Receiver smart contracts for Culture Store",
+  "description": "EVM Payment Receiver smart contracts for For the Cult",
   "scripts": {
     "compile": "hardhat compile",
     "test": "hardhat test",

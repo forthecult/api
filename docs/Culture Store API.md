@@ -1,4 +1,4 @@
-# Culture Store API
+# For the Cult API
 
 **The most AI-agent-friendly eCommerce API.** Designed for seamless integration with AI assistants, chatbots, and autonomous agents. Purchase goods with cryptocurrency in 3 API calls.
 
