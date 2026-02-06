@@ -25,6 +25,7 @@ import { getNotificationTemplate } from "~/lib/notification-templates";
 import { sendWelcomeEmail } from "~/lib/send-welcome-email";
 import {
   accountTable,
+  passkeyTable,
   sessionTable,
   twoFactorTable,
   userTable,
