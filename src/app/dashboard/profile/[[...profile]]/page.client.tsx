@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
+import { isRealEmail } from "~/lib/is-real-email";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
