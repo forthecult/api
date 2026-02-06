@@ -1,3 +1,4 @@
+import { passkeyClient } from "@better-auth/passkey/client";
 import { emailOTPClient, twoFactorClient } from "better-auth/client/plugins";
 import { createAuthClient } from "better-auth/react";
 import { useRouter } from "next/navigation";
@@ -31,6 +32,7 @@ export const authClient = createAuthClient({
       },
     }),
     emailOTPClient(),
+    passkeyClient(),
   ],
 });
 

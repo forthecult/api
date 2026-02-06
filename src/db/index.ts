@@ -38,6 +38,7 @@ const schemaWithAuthQueryKeys = {
   session: schema.sessionTable,
   verification: schema.verificationTable,
   twoFactor: schema.twoFactorTable,
+  passkey: schema.passkeyTable,
 };
 
 // Database connection instance

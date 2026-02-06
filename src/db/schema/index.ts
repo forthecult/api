@@ -34,6 +34,8 @@ export * from "./orders/relations";
 export * from "./orders/tables";
 export * from "./orders/types";
 
+export * from "./passkey-auth/tables";
+
 export * from "./payments/relations";
 export * from "./payments/tables";
 export * from "./payments/types";

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, KeyRound, Link2, Shield, Wallet } from "lucide-react";
+import { ChevronLeft, KeyRound, Link2, Shield, Trash2, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -86,6 +86,31 @@ export function SecurityPageClient() {
   useEffect(() => {
     if (user) void fetchAccounts();
   }, [user, fetchAccounts]);
+
+  const fetchPasskeys = useCallback(async () => {
+    setPasskeysLoading(true);
+    try {
+      const res = await authClient.passkey.listUserPasskeys();
+      if (res.data && Array.isArray(res.data)) {
+        setPasskeys(
+          res.data.map((p: { id: string; name?: string | null }) => ({
+            id: p.id,
+            name: p.name ?? null,
+          })),
+        );
+      } else {
+        setPasskeys([]);
+      }
+    } catch {
+      setPasskeys([]);
+    } finally {
+      setPasskeysLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (user) void fetchPasskeys();
+  }, [user, fetchPasskeys]);
 
   // Render QR code from otpauth URL (browsers cannot load otpauth:// as img src)
   useEffect(() => {
@@ -412,6 +437,57 @@ export function SecurityPageClient() {
       .finally(() => setLoading(false));
   };
 
+  const handleAddPasskey = async () => {
+    setError("");
+    setPasskeyAddLoading(true);
+    try {
+      const result = await authClient.passkey.addPasskey({
+        name: "Security key",
+        authenticatorAttachment: "cross-platform",
+      });
+      if (result?.error) {
+        setError(
+          typeof result.error.message === "string"
+            ? result.error.message
+            : "Failed to add security key",
+        );
+        return;
+      }
+      setMessage("Security key added. You can sign in with it from the sign-in page.");
+      void fetchPasskeys();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to add security key",
+      );
+    } finally {
+      setPasskeyAddLoading(false);
+    }
+  };
+
+  const handleDeletePasskey = async (id: string) => {
+    setPasskeyDeleteId(id);
+    setError("");
+    try {
+      const result = await authClient.passkey.deletePasskey({ id });
+      if (result?.error) {
+        setError(
+          typeof result.error.message === "string"
+            ? result.error.message
+            : "Failed to remove security key",
+        );
+        return;
+      }
+      setMessage("Security key removed.");
+      void fetchPasskeys();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to remove security key",
+      );
+    } finally {
+      setPasskeyDeleteId(null);
+    }
+  };
+
   const handleSendChangePasswordEmail = () => {
     const email = user?.email?.trim();
     if (!email) {
@@ -604,8 +680,8 @@ export function SecurityPageClient() {
               Add email & password
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Add an email to sign in in addition to your wallet. We’ll send a
-              verification code to confirm it’s yours. Then choose to sign in
+              Add an email to your account. We’ll send a
+              verification code to confirm it’s yours. Choose to sign in
               with a <strong>password</strong> or with an <strong>email code</strong> (no
               password).
             </p>
@@ -882,32 +958,82 @@ export function SecurityPageClient() {
             <Shield className="h-5 w-5" />
             Two-Factor Authentication
           </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Add a second factor when signing in. Choose <strong>authenticator app (OTP)</strong> for 6-digit codes, or <strong>security key (U2F)</strong> to use a hardware key or device passkey.
+          </p>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-2">
-            <Label htmlFor="security-password">Your Password</Label>
-            <Input
-              id="security-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPasswordInput(e.target.value)}
-              placeholder="Enter your password"
-            />
-            <p className="text-sm text-muted-foreground">
-              Required to change your two-factor authentication settings
+        <CardContent className="space-y-6">
+          <div>
+            <h3 className="mb-2 text-sm font-medium">Authenticator app (OTP)</h3>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Use an app like Google Authenticator or Authy to get 6-digit codes when you sign in.
             </p>
+            <div className="grid gap-2">
+              <Label htmlFor="security-password">Your Password</Label>
+              <Input
+                id="security-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="Enter your password"
+              />
+              <p className="text-sm text-muted-foreground">
+                Required to enable or disable authenticator app 2FA
+              </p>
+            </div>
+            <div className="mt-3 flex flex-wrap gap-4">
+              <Button disabled={loading} onClick={handleEnableTwoFactor}>
+                {loading ? "Processing..." : "Enable with authenticator app"}
+              </Button>
+              <Button
+                disabled={loading}
+                variant="destructive"
+                onClick={handleDisableTwoFactor}
+              >
+                {loading ? "Processing..." : "Disable authenticator app"}
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-4">
-            <Button disabled={loading} onClick={handleEnableTwoFactor}>
-              {loading ? "Processing..." : "Enable Two-Factor"}
-            </Button>
-            <Button
-              disabled={loading}
-              variant="destructive"
-              onClick={handleDisableTwoFactor}
-            >
-              {loading ? "Processing..." : "Disable Two-Factor"}
-            </Button>
+
+          <div className="border-t pt-6">
+            <h3 className="mb-2 text-sm font-medium">Security key (U2F / passkey)</h3>
+            <p className="mb-3 text-sm text-muted-foreground">
+              Register a hardware security key or device passkey. You can then sign in with it from the sign-in page (no password or OTP needed).
+            </p>
+            {passkeysLoading ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : (
+              <>
+                {passkeys.length > 0 && (
+                  <ul className="mb-3 space-y-2">
+                    {passkeys.map((p) => (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm"
+                      >
+                        <span>{p.name || "Security key"}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          disabled={passkeyDeleteId === p.id}
+                          onClick={() => handleDeletePasskey(p.id)}
+                        >
+                          {passkeyDeleteId === p.id ? "Removing…" : <Trash2 className="h-4 w-4" />}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <Button
+                  variant="outline"
+                  disabled={passkeyAddLoading}
+                  onClick={handleAddPasskey}
+                >
+                  {passkeyAddLoading ? "Adding…" : "Add security key"}
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>

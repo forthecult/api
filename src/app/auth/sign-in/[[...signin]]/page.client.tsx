@@ -8,6 +8,7 @@ import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
 import { authClient, signIn } from "~/lib/auth-client";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { GoogleIcon } from "~/ui/components/icons/google";
+import { KeyRound } from "lucide-react";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
@@ -25,6 +26,7 @@ export function SignInPageClient() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [sendCodeLoading, setSendCodeLoading] = useState(false);
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
 
   const handleEmailPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -151,6 +153,39 @@ export function SignInPageClient() {
       setError("Failed to sign in with Google");
       console.error(err);
       setLoading(false);
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setError("");
+    setPasskeyLoading(true);
+    try {
+      const result = await authClient.signIn.passkey({
+        fetchOptions: {
+          onSuccess: () => {
+            window.location.href = SYSTEM_CONFIG.redirectAfterSignIn;
+          },
+          onError: (_ctx) => {
+            setError("Sign in with security key failed or was cancelled.");
+            setPasskeyLoading(false);
+          },
+        },
+      });
+      if (result?.error) {
+        setError(
+          typeof result.error.message === "string"
+            ? result.error.message
+            : "Sign in with security key failed",
+        );
+      } else if (result?.data && !result.error) {
+        window.location.href = SYSTEM_CONFIG.redirectAfterSignIn;
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Sign in with security key failed",
+      );
+    } finally {
+      setPasskeyLoading(false);
     }
   };
 
@@ -403,6 +438,7 @@ export function SignInPageClient() {
                   <GoogleIcon className="h-5 w-5" />
                   Google
                 </Button>
+                </div>
               </div>
               <div className="mt-6 text-center text-sm text-muted-foreground">
                 Don't have an account?{" "}

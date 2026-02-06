@@ -1,6 +1,7 @@
 // note: run `bun db:auth` to generate the `users.ts`
 // schema after making breaking changes to this file
 
+import { passkey } from "@better-auth/passkey";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { emailOTP, twoFactor } from "better-auth/plugins";
@@ -9,7 +10,7 @@ import { redirect } from "next/navigation";
 
 import type { UserDbType } from "~/lib/auth-types";
 
-import { SYSTEM_CONFIG } from "~/app";
+import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
 import { ethereumAuthPlugin } from "~/lib/auth-ethereum-plugin";
 import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
 import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
@@ -188,6 +189,7 @@ export const auth = betterAuth({
     provider: "pg",
     schema: {
       account: accountTable,
+      passkey: passkeyTable,
       session: sessionTable,
       twoFactor: twoFactorTable,
       user: userTable,
@@ -254,6 +256,16 @@ export const auth = betterAuth({
 
   plugins: [
     twoFactor(),
+    passkey({
+      rpName: SEO_CONFIG.name ?? "For the Culture",
+      origin:
+        typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
+        process.env.NEXT_PUBLIC_APP_URL.length > 0
+          ? process.env.NEXT_PUBLIC_APP_URL.startsWith("http")
+            ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
+            : `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}`
+          : undefined,
+    }),
     emailOTP({
       disableSignUp: true, // Only existing users (e.g. wallet users who added email) can sign in with email code
       async sendVerificationOTP({ email, otp, type }) {
