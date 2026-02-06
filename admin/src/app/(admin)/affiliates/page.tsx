@@ -221,13 +221,29 @@ export default function AdminAffiliatesPage() {
                             </span>
                           </td>
                           <td className="p-4">
-                            <span className="font-medium">
-                              {row.userName ?? row.userEmail ?? "—"}
-                            </span>
-                            {row.userEmail && row.userName && (
-                              <span className="block text-xs text-muted-foreground">
-                                {row.userEmail}
-                              </span>
+                            {row.userId ? (
+                              <Link
+                                href={`/customers/${row.userId}`}
+                                className="font-medium text-primary underline-offset-4 hover:underline"
+                              >
+                                {row.userName ?? row.userEmail ?? "—"}
+                                {row.userEmail && row.userName && (
+                                  <span className="block text-xs font-normal text-muted-foreground">
+                                    {row.userEmail}
+                                  </span>
+                                )}
+                              </Link>
+                            ) : (
+                              <>
+                                <span className="font-medium">
+                                  {row.userName ?? row.userEmail ?? "—"}
+                                </span>
+                                {row.userEmail && row.userName && (
+                                  <span className="block text-xs text-muted-foreground">
+                                    {row.userEmail}
+                                  </span>
+                                )}
+                              </>
                             )}
                           </td>
                           <td className="whitespace-nowrap p-4 text-right tabular-nums">

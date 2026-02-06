@@ -277,20 +277,7 @@ export function ethereumAuthPlugin() {
                   emailVerified: true,
                   createdAt: now,
                   updatedAt: now,
-                  // Notification preferences - required fields with defaults (camelCase for adapter)
-                  transactionalEmail: true,
-                  transactionalWebsite: true,
-                  transactionalSms: false,
-                  transactionalTelegram: false,
-                  transactionalAiCompanion: false,
-                  marketingEmail: true,
-                  marketingWebsite: false,
-                  marketingSms: false,
-                  marketingTelegram: false,
-                  marketingAiCompanion: false,
-                  receiveMarketing: false,
-                  receiveSmsMarketing: false,
-                  receiveOrderNotificationsViaTelegram: false,
+                  // Notification preferences are set by databaseHooks.user.create.before in auth.ts
                 },
               });
               // Use internalAdapter.createAccount so the account row goes through Better Auth's

@@ -461,7 +461,7 @@ export async function updateOrderFromPrintifyWebhook(
       `Updated order ${order.id} from Printify webhook: ${event.type}`,
     );
 
-    // Notify Telegram user (vendor → our backend → Telegram; never vendor → Telegram directly)
+    // Notify user of order status changes
     const shipment = event.data.shipment;
     const trackingNumber = shipment?.number;
     const trackingUrl = shipment?.url ?? undefined;
@@ -484,6 +484,11 @@ export async function updateOrderFromPrintifyWebhook(
       if (isCanceled) {
         void onOrderStatusUpdate(order.id, "order_cancelled");
       }
+    } else if (
+      updates.fulfillmentStatus === "partially_fulfilled" &&
+      event.type === "order:sent-to-production"
+    ) {
+      void onOrderStatusUpdate(order.id, "order_processing");
     }
   }
 

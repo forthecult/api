@@ -13,10 +13,12 @@ export const NOTIFICATION_CLASSIFICATION = {
   transactional: [
     "password_reset",
     "order_placed",
+    "order_processing",
     "order_shipped",
     "order_on_hold",
     "order_cancelled",
     "refund",
+    "support_ticket_reply",
   ] as const,
   marketing: [
     "welcome_email",
@@ -66,6 +68,14 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     emailBody: "Thanks for your order. We'll send another email when it ships.",
     transactional: true,
   },
+  order_processing: {
+    id: "order_processing",
+    title: "Order in production",
+    body: "Your order is being produced. We'll notify you when it ships.",
+    emailSubject: "Your order is being made",
+    emailBody: "Your order is now in production. We'll send another email when it ships.",
+    transactional: true,
+  },
   order_shipped: {
     id: "order_shipped",
     title: "Order shipped",
@@ -96,6 +106,14 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: "Your refund has been processed. It may take a few days to appear on your statement.",
     emailSubject: "Refund processed",
     emailBody: "Your refund has been processed. It may take a few business days to appear on your statement.",
+    transactional: true,
+  },
+  support_ticket_reply: {
+    id: "support_ticket_reply",
+    title: "Support ticket update",
+    body: "You have a new reply on your support ticket.",
+    emailSubject: "New reply on your support ticket",
+    emailBody: "Our support team has replied to your ticket. Log in to view the response.",
     transactional: true,
   },
   // ---- Marketing ----
@@ -139,7 +157,7 @@ export function getAllNotificationTemplates(): NotificationTemplate[] {
 
 /** Templates for order-related Telegram/widget (orderId + optional tracking). */
 export function buildOrderNotificationCopy(
-  type: "order_placed" | "order_shipped" | "order_on_hold" | "order_cancelled",
+  type: "order_placed" | "order_processing" | "order_shipped" | "order_on_hold" | "order_cancelled",
   orderId: string,
   options?: { trackingNumber?: string; trackingUrl?: string },
 ): { title: string; body: string } {
@@ -149,6 +167,11 @@ export function buildOrderNotificationCopy(
       return {
         title: "Order confirmed",
         body: `Order ${shortId} has been received. We'll notify you when it ships.`,
+      };
+    case "order_processing":
+      return {
+        title: "Order in production",
+        body: `Order ${shortId} is being produced. We'll notify you when it ships.`,
       };
     case "order_shipped":
       if (options?.trackingNumber) {

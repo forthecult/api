@@ -7,6 +7,7 @@ import {
   supportTicketTable,
 } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { onSupportTicketReply } from "~/lib/create-user-notification";
 
 /**
  * POST /api/admin/support-tickets/[id]/messages
@@ -87,6 +88,9 @@ export async function POST(
       .update(supportTicketTable)
       .set({ updatedAt: now })
       .where(eq(supportTicketTable.id, ticketId));
+
+    // Notify customer of staff reply (if they have web notifications enabled)
+    void onSupportTicketReply(ticketId, { messagePreview: content });
 
     return NextResponse.json({
       id: messageId,

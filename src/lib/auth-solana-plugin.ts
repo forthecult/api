@@ -272,20 +272,7 @@ export function solanaAuthPlugin() {
                     emailVerified: true,
                     createdAt: now,
                     updatedAt: now,
-                    // Notification preferences - required fields with defaults (camelCase for adapter)
-                    transactionalEmail: true,
-                    transactionalWebsite: true,
-                    transactionalSms: false,
-                    transactionalTelegram: false,
-                    transactionalAiCompanion: false,
-                    marketingEmail: true,
-                    marketingWebsite: false,
-                    marketingSms: false,
-                    marketingTelegram: false,
-                    marketingAiCompanion: false,
-                    receiveMarketing: false,
-                    receiveSmsMarketing: false,
-                    receiveOrderNotificationsViaTelegram: false,
+                    // Notification preferences are set by databaseHooks.user.create.before in auth.ts
                   },
                 });
               } catch (createUserErr) {

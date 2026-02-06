@@ -271,9 +271,8 @@ export const auth = betterAuth({
   socialProviders,
 
   user: {
-    // Only identity/profile fields used by auth (sign-up, OAuth, session).
-    // Business fields like receiveMarketing/receiveSmsMarketing live only in DB + admin/checkout;
-    // they are added to the user table by auth-db.ts after codegen.
+    // Identity/profile fields used by auth (sign-up, OAuth, session).
+    // Notification preference fields are also included so Better Auth adapter knows about them.
     additionalFields: {
       age: {
         input: true,
@@ -295,6 +294,87 @@ export const auth = betterAuth({
         required: false,
         type: "string",
       },
+      // Notification preferences - transactional (per channel)
+      transactionalEmail: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: true,
+      },
+      transactionalWebsite: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: true,
+      },
+      transactionalSms: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      transactionalTelegram: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      transactionalAiCompanion: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      // Notification preferences - marketing (per channel)
+      marketingEmail: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: true,
+      },
+      marketingWebsite: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      marketingSms: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      marketingTelegram: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      marketingAiCompanion: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      // Legacy fields
+      receiveMarketing: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      receiveSmsMarketing: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
+      receiveOrderNotificationsViaTelegram: {
+        input: false,
+        required: false,
+        type: "boolean",
+        defaultValue: false,
+      },
     },
   },
 
@@ -302,6 +382,29 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          // Ensure notification preference defaults are set for all user creation paths
+          // (email signup, OAuth, wallet auth, etc.)
+          return {
+            data: {
+              ...user,
+              // Only set defaults if not already provided
+              transactionalEmail: user.transactionalEmail ?? true,
+              transactionalWebsite: user.transactionalWebsite ?? true,
+              transactionalSms: user.transactionalSms ?? false,
+              transactionalTelegram: user.transactionalTelegram ?? false,
+              transactionalAiCompanion: user.transactionalAiCompanion ?? false,
+              marketingEmail: user.marketingEmail ?? true,
+              marketingWebsite: user.marketingWebsite ?? false,
+              marketingSms: user.marketingSms ?? false,
+              marketingTelegram: user.marketingTelegram ?? false,
+              marketingAiCompanion: user.marketingAiCompanion ?? false,
+              receiveMarketing: user.receiveMarketing ?? false,
+              receiveSmsMarketing: user.receiveSmsMarketing ?? false,
+              receiveOrderNotificationsViaTelegram: user.receiveOrderNotificationsViaTelegram ?? false,
+            },
+          };
+        },
         after: async (user) => {
           // Send welcome email after user is created
           void sendWelcomeEmail({

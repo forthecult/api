@@ -105,6 +105,16 @@ export const Notifications: React.FC<NotificationsProps> = ({
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               )}
+              {typeof notification.metadata?.ticketPath === "string" && (
+                <Link
+                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  href={notification.metadata.ticketPath as string}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  View ticket
+                  <ExternalLink className="h-3 w-3" />
+                </Link>
+              )}
             </div>
             <div className="flex flex-shrink-0 gap-1">
               {!notification.read && (

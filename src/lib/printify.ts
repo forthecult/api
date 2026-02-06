@@ -646,6 +646,7 @@ export type PrintifyWebhookEventType =
   | "shop:disconnected"
   | "product:deleted"
   | "product:publish:started"
+  | "product:published"
   | "order:created"
   | "order:updated"
   | "order:sent-to-production"

@@ -1,6 +1,6 @@
 /**
  * Seeds the database with demo products. Categories must exist (run seed-categories first).
- * Real reviews live in the DB (imported from CSV once); no mock reviews seeded here.
+ * Real reviews are seeded separately via seed-reviews.ts (from data/reviews.csv).
  * Run: bun run scripts/seed-products.ts
  */
 

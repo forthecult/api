@@ -451,10 +451,12 @@ export async function updateOrderFromPrintfulWebhook(
   };
 
   // Map Printful events to our fulfillment status
+  // Note: Printful v1 API uses "package_shipped", v2 uses "shipment_sent"
+  // We handle both for compatibility
   switch (event.type) {
+    case "package_shipped":
     case "shipment_sent":
-      // Check if this is partial or full shipment
-      // For now, mark as fulfilled - could be enhanced with shipment tracking
+      // Package/shipment has shipped
       updates.fulfillmentStatus = "fulfilled";
       updates.status = "fulfilled";
       break;
@@ -462,6 +464,13 @@ export async function updateOrderFromPrintfulWebhook(
     case "shipment_delivered":
       updates.fulfillmentStatus = "fulfilled";
       updates.status = "fulfilled";
+      break;
+
+    case "order_created":
+      // Order created at Printful - mark as processing
+      if (order.fulfillmentStatus === "unfulfilled") {
+        updates.fulfillmentStatus = "partially_fulfilled";
+      }
       break;
 
     case "order_updated":
@@ -491,9 +500,23 @@ export async function updateOrderFromPrintfulWebhook(
       // Note: Don't change payment status - that's a separate concern
       break;
 
+    case "package_returned":
     case "shipment_returned":
       // Package returned
       updates.fulfillmentStatus = "on_hold";
+      break;
+
+    case "order_put_hold":
+    case "order_put_hold_approval":
+      // Order put on hold
+      updates.fulfillmentStatus = "on_hold";
+      break;
+
+    case "order_remove_hold":
+      // Order removed from hold - back to processing
+      if (order.fulfillmentStatus === "on_hold") {
+        updates.fulfillmentStatus = "partially_fulfilled";
+      }
       break;
 
     default:
@@ -512,7 +535,7 @@ export async function updateOrderFromPrintfulWebhook(
       `Updated order ${order.id} from Printful webhook: ${event.type}`,
     );
 
-    // Notify Telegram user (vendor → our backend → Telegram; never vendor → Telegram directly)
+    // Notify user of order status changes
     const shipment = event.data.shipment;
     const trackingNumber = shipment?.tracking_number;
     const trackingUrl = shipment?.tracking_url ?? undefined;
@@ -531,6 +554,11 @@ export async function updateOrderFromPrintfulWebhook(
       event.type === "order_canceled"
     ) {
       void onOrderStatusUpdate(order.id, "order_cancelled");
+    } else if (
+      updates.fulfillmentStatus === "partially_fulfilled" &&
+      event.type === "order_created"
+    ) {
+      void onOrderStatusUpdate(order.id, "order_processing");
     }
   }
 

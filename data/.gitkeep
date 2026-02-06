@@ -1,0 +1,2 @@
+# Data files for seeding
+# reviews.csv - Real product reviews from legacy store (imported to DB via seed-reviews.ts)

@@ -7,7 +7,12 @@
 import { eq } from "drizzle-orm";
 
 import { db } from "~/db";
-import { userNotificationTable, userTable, ordersTable } from "~/db/schema";
+import {
+  userNotificationTable,
+  userTable,
+  ordersTable,
+  supportTicketTable,
+} from "~/db/schema";
 import type { NotificationType } from "~/lib/notification-templates";
 import { createId } from "@paralleldrive/cuid2";
 import { sendOrderShippedEmail } from "~/lib/send-order-shipped-email";
@@ -174,6 +179,54 @@ export async function onOrderStatusUpdate(
       orderId,
       trackingNumber: options?.trackingNumber,
       trackingUrl: options?.trackingUrl,
+    });
+  }
+}
+
+/**
+ * Called when staff replies to a support ticket. Creates a website notification
+ * for the customer if they have transactional website notifications enabled.
+ */
+export async function onSupportTicketReply(
+  ticketId: string,
+  options?: { messagePreview?: string },
+): Promise<void> {
+  const [ticket] = await db
+    .select({
+      userId: supportTicketTable.userId,
+      subject: supportTicketTable.subject,
+    })
+    .from(supportTicketTable)
+    .where(eq(supportTicketTable.id, ticketId))
+    .limit(1);
+
+  if (!ticket?.userId) return;
+
+  if (await userWantsTransactionalWebsite(ticket.userId)) {
+    const subjectPreview =
+      ticket.subject.length > 30
+        ? `${ticket.subject.slice(0, 30)}...`
+        : ticket.subject;
+
+    let description = `New reply on "${subjectPreview}"`;
+    if (options?.messagePreview) {
+      const preview =
+        options.messagePreview.length > 50
+          ? `${options.messagePreview.slice(0, 50)}...`
+          : options.messagePreview;
+      description = `${description}: "${preview}"`;
+    }
+
+    await createUserNotification({
+      userId: ticket.userId,
+      type: "support_ticket_reply",
+      title: "Support ticket update",
+      description,
+      metadata: {
+        ticketId,
+        ticketPath: `/dashboard/support/${ticketId}`,
+        subject: ticket.subject,
+      },
     });
   }
 }
