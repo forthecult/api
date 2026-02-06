@@ -196,9 +196,26 @@ export const auth = betterAuth({
     },
   },
 
-  // Use default cookie settings (sameSite: "lax") which work reliably for same-origin requests.
-  // Cross-origin admin app (3001) redirects to main app (3000) for login, so cookies are set in same-origin context.
-  // For production with HTTPS on different subdomains, configure domain attribute if needed.
+  // Cross-subdomain cookie sharing for admin app on different subdomain
+  // In production, both apps should be on same parent domain (e.g., forthecult.store and admin.forthecult.store)
+  // For Railway staging with different subdomains, we need sameSite: "none" with secure: true
+  advanced: {
+    crossSubDomainCookies: {
+      enabled: !!process.env.NEXT_PUBLIC_ADMIN_APP_URL,
+      // For same parent domain (e.g., .forthecult.store), set domain here
+      // For Railway staging with different domains, this won't help - use sameSite: "none" instead
+      domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
+    },
+    defaultCookieAttributes: {
+      // For cross-origin admin app, we need sameSite: "none" (requires secure: true / HTTPS)
+      // Only enable this when admin app is on a different origin
+      ...(process.env.NEXT_PUBLIC_ADMIN_APP_URL &&
+        !process.env.NEXT_PUBLIC_ADMIN_APP_URL.includes("localhost") && {
+          sameSite: "none" as const,
+          secure: true,
+        }),
+    },
+  },
 
   emailAndPassword: {
     enabled: true,
