@@ -93,7 +93,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="satoshi@nakamoto.com"
                   className={inputClass}
                   required
                 />

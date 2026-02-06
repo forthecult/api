@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { SEO_CONFIG } from "~/app";
@@ -23,6 +24,7 @@ import { ProductImageGallery } from "./product-image-gallery";
 import { ProductShare } from "./product-share";
 import { ProductVariantSection } from "./product-variant-section";
 import { RelatedProductsSection } from "./related-products-section";
+import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
 /* -------------------------------------------------------------------------- */
@@ -236,6 +238,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
       )
     : 0;
 
+  const cookieStore = await cookies();
+  const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
+  const passed = hasValidTokenGateCookie(tgCookie, "product", product.id);
+
+  if (!passed) {
+    return <TokenGateGuard resourceType="product" resourceId={product.id} />;
+  }
+
   const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
   const breadcrumbTrail = await getProductBreadcrumbTrail(
     product.id,
@@ -265,7 +275,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
         }))}
       />
 
-      <TokenGateGuard resourceType="product" resourceId={product.id}>
       <div className="flex min-h-screen flex-col">
         <main className="flex-1 py-10">
           <div className="container px-4 md:px-6">
@@ -410,7 +419,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
         </main>
       </div>
-      </TokenGateGuard>
     </>
   );
 }

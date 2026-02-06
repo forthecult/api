@@ -84,7 +84,7 @@ export function ForgotPasswordClient() {
                   id="email"
                   autoComplete="email"
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="satoshi@nakamoto.com"
                   required
                   type="email"
                   value={email}

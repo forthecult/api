@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 
 import { SEO_CONFIG } from "~/app";
+import { hasValidTokenGateCookie, COOKIE_NAME } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { StatsPageClient } from "./page.client";
 
@@ -10,9 +12,13 @@ export const metadata: Metadata = {
   robots: "noindex, nofollow",
 };
 
-export default function StatsPage() {
-  return (
-    <TokenGateGuard resourceType="page" resourceId="stats">
+export default async function StatsPage() {
+  const cookieStore = await cookies();
+  const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
+  const passed = hasValidTokenGateCookie(tgCookie, "page", "stats");
+
+  if (passed) {
+    return (
       <div
         className={`
           container mx-auto flex min-h-0 flex-1 flex-col
@@ -29,6 +35,8 @@ export default function StatsPage() {
         </header>
         <StatsPageClient />
       </div>
-    </TokenGateGuard>
-  );
+    );
+  }
+
+  return <TokenGateGuard resourceType="page" resourceId="stats" />;
 }

@@ -260,7 +260,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
         `}
       >
         <div className="flex h-16 items-center justify-between">
-          {/* Left: desktop = logo + nav; mobile = hamburger + logo */}
+          {/* Left: desktop = logo + nav; mobile = hamburger + logo. Same container padding as dashboard so content aligns. */}
           <div className="flex items-center gap-4 md:gap-6">
             {!isCheckout && (
               <Button

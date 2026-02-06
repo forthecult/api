@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
@@ -37,6 +38,7 @@ import type {
   ProductVariantOption,
 } from "~/app/products/[id]/page";
 import { ProductsClient } from "~/app/products/products-client";
+import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
 /* -------------------------------------------------------------------------- */
@@ -257,6 +259,20 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   const product = await fetchProductBySlug(slug);
 
   if (product) {
+    const canonicalSlug = product.slug ?? product.id;
+    const cookieStore = await cookies();
+    const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
+    const passed = hasValidTokenGateCookie(tgCookie, "product", canonicalSlug);
+
+    if (!passed) {
+      return (
+        <TokenGateGuard
+          resourceType="product"
+          resourceId={canonicalSlug}
+        />
+      );
+    }
+
     const relatedProducts = await fetchRelatedProducts(slug);
     const discountPercentage = product.originalPrice
       ? Math.round(
@@ -265,7 +281,6 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         )
       : 0;
     const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
-    const canonicalSlug = product.slug ?? product.id;
     const breadcrumbTrail = await getProductBreadcrumbTrail(
       product.id,
       product.name,
@@ -293,10 +308,6 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
             url: `${siteUrl}${item.href}`,
           }))}
         />
-        <TokenGateGuard
-          resourceType="product"
-          resourceId={canonicalSlug}
-        >
         <div className="flex min-h-screen flex-col">
           <main className="flex-1 py-10">
             <div className="container px-4 md:px-6">
@@ -495,22 +506,20 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         </div>
       }
     >
-      <TokenGateGuard resourceType="category" resourceId={category.id}>
-        <ProductsClient
-          initialProducts={products}
-          initialCategories={categories}
-          initialPage={page}
-          initialTotalPages={data.totalPages ?? 1}
-          initialTotal={data.total ?? 0}
-          initialCategory={slug}
-          title={category.name}
-          description={categoryDescription}
-          categoryDescriptionFull={category.description ?? undefined}
-          subcategories={subcategories}
-          initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating"}
-          initialSubcategory={subcategoryParam || undefined}
-        />
-      </TokenGateGuard>
+      <ProductsClient
+        initialProducts={products}
+        initialCategories={categories}
+        initialPage={page}
+        initialTotalPages={data.totalPages ?? 1}
+        initialTotal={data.total ?? 0}
+        initialCategory={slug}
+        title={category.name}
+        description={categoryDescription}
+        categoryDescriptionFull={category.description ?? undefined}
+        subcategories={subcategories}
+        initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating"}
+        initialSubcategory={subcategoryParam || undefined}
+      />
     </Suspense>
     </>
   );

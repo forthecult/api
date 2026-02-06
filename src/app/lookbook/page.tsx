@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { cookies } from "next/headers";
 
 import { SEO_CONFIG } from "~/app";
 import { getLookbookImages } from "~/lib/get-lookbook-images";
+import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
 const PHOTOGRAPHER = {
@@ -184,6 +186,5 @@ export default async function LookbookPage() {
         <p className="mt-1 text-sm text-muted-foreground">{PHOTOGRAPHER.bio}</p>
       </footer>
     </div>
-    </TokenGateGuard>
   );
 }

@@ -4,6 +4,10 @@ import nacl from "tweetnacl";
 import { NextResponse } from "next/server";
 
 import {
+  buildTokenGateSetCookie,
+  COOKIE_NAME as TOKEN_GATE_COOKIE_NAME,
+} from "~/lib/token-gate-cookie";
+import {
   getTokenGateConfig,
   walletPassesTokenGates,
   type TokenGateResourceType,
@@ -211,7 +215,22 @@ export async function POST(request: Request) {
       });
     }
 
-    return NextResponse.json({
+    const currentCookie = request.headers.get("cookie") ?? "";
+    const cookieMatch = currentCookie
+      .split(";")
+      .map((s) => s.trim())
+      .find((s) => s.startsWith(`${TOKEN_GATE_COOKIE_NAME}=`));
+    const currentValue = cookieMatch
+      ? decodeURIComponent(cookieMatch.slice(TOKEN_GATE_COOKIE_NAME.length + 1).trim())
+      : undefined;
+
+    const setCookie = buildTokenGateSetCookie(
+      currentValue,
+      resourceType as TokenGateResourceType,
+      resourceId,
+    );
+
+    const res = NextResponse.json({
       valid: true,
       passedGate: passedGate
         ? {
@@ -220,6 +239,8 @@ export async function POST(request: Request) {
           }
         : null,
     });
+    res.headers.append("Set-Cookie", setCookie);
+    return res;
   } catch (err) {
     console.error("Token gate validate error:", err);
     return NextResponse.json(

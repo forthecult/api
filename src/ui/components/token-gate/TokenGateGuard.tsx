@@ -4,7 +4,8 @@ import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
 import type { Wallet } from "@solana/wallet-adapter-react";
 import { Lock, Wallet as WalletIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "~/ui/primitives/button";
 import { cn } from "~/lib/cn";
@@ -74,12 +75,14 @@ export function TokenGateGuard({
   children,
   className,
 }: TokenGateGuardProps) {
+  const router = useRouter();
   const [config, setConfig] = useState<TokenGateConfig | null>(null);
   const [validated, setValidated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [step, setStep] = useState<"connect" | "signing" | "error">("connect");
   const [error, setError] = useState("");
   const signFlowStarted = useRef(false);
+  const hasChildren = React.Children.count(children) > 0;
 
   const {
     wallets,
@@ -240,6 +243,13 @@ export function TokenGateGuard({
       </div>
     );
   }
+
+  // When we were rendered without children (server sent gate shell only), after validation refresh so server can send content.
+  useEffect(() => {
+    if (validated && !hasChildren) {
+      router.refresh();
+    }
+  }, [validated, hasChildren, router]);
 
   if (!config?.tokenGated || validated) {
     return <>{children}</>;

@@ -154,7 +154,11 @@ async function main() {
   console.log(`Done. Inserted ${inserted} brands (${BRANDS.length} total). Add logos/assets in Admin → Product Brands.`);
 }
 
-main().catch((err) => {
-  console.error("Seed failed:", err);
-  process.exit(1);
-});
+main()
+  .then(() => {
+    process.exit(0);
+  })
+  .catch((err) => {
+    console.error("Seed failed:", err);
+    process.exit(1);
+  });

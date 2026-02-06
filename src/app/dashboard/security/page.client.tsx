@@ -722,7 +722,7 @@ export function SecurityPageClient() {
                         email: e.target.value,
                       }))
                     }
-                    placeholder="you@example.com"
+                    placeholder="satoshi@nakamoto.com"
                   />
                 </div>
                 <Button

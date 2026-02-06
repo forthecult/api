@@ -47,11 +47,12 @@ jobs:
         working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:push
 
-      - name: Seed categories and brands
+      - name: Seed categories
         working-directory: ${{ steps.wd.outputs.dir }}
-        run: |
-          bun run db:seed-categories
-          bun run db:seed-brands
+        run: bun run db:seed-categories
+      - name: Seed brands
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun run db:seed-brands
 
       - name: Seed brand shipping options (US / International)
         working-directory: ${{ steps.wd.outputs.dir }}

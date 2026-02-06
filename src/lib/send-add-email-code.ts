@@ -22,7 +22,7 @@ export async function sendAddEmailVerificationCode(params: {
       await resend.emails.send({
         from,
         to,
-        subject: `Your verification code for ${appName}`,
+        subject: `Your verification code ${appName}`,
         html: `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111;">Verify your email</h1>
   <p style="color: #333; font-size: 16px; line-height: 1.6;">You requested to add this email to your ${appName} account. Use this code to verify you own this address:</p>
