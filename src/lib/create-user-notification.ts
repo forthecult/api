@@ -15,6 +15,7 @@ import {
 } from "~/db/schema";
 import type { NotificationType } from "~/lib/notification-templates";
 import { createId } from "@paralleldrive/cuid2";
+import { sendOrderConfirmationEmail } from "~/lib/send-order-confirmation-email";
 import { sendOrderShippedEmail } from "~/lib/send-order-shipped-email";
 import { notifyOrderUpdate } from "~/lib/telegram-notify";
 
@@ -77,13 +78,15 @@ export async function userWantsTransactionalEmail(
 }
 
 /**
- * Called when an order is created (Stripe checkout complete or crypto create-order).
- * Sends Telegram "order placed" if user has it enabled, and creates website notification
- * if user has transactional website enabled.
+ * Called when an order is created (Stripe checkout complete, crypto create-order, or admin marks paid).
+ * Sends Telegram "order placed", website notification, and order-confirmation email when preferences allow.
  */
 export async function onOrderCreated(orderId: string): Promise<void> {
   const [order] = await db
-    .select({ userId: ordersTable.userId })
+    .select({
+      userId: ordersTable.userId,
+      email: ordersTable.email,
+    })
     .from(ordersTable)
     .where(eq(ordersTable.id, orderId))
     .limit(1);
@@ -99,6 +102,16 @@ export async function onOrderCreated(orderId: string): Promise<void> {
       title: "Order confirmed",
       description: `Order ${shortId} has been received. We'll notify you when it ships.`,
       metadata: { orderId },
+    });
+  }
+
+  if (
+    order.email?.trim() &&
+    (await userWantsTransactionalEmail(order.userId))
+  ) {
+    void sendOrderConfirmationEmail({
+      to: order.email.trim(),
+      orderId,
     });
   }
 }

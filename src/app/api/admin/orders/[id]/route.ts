@@ -3,7 +3,12 @@ import { eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
+import {
+  orderItemsTable,
+  ordersTable,
+  productAvailableCountryTable,
+  productsTable,
+} from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
 import { auth, isAdminUser } from "~/lib/auth";
 import {
@@ -82,6 +87,43 @@ export async function GET(
           .filter((pid): pid is string => pid != null),
       ),
     ];
+
+    let allowedCountryCodes: string[] | null = null;
+    if (productIds.length > 0) {
+      const restrictions = await db
+        .select({
+          productId: productAvailableCountryTable.productId,
+          countryCode: productAvailableCountryTable.countryCode,
+        })
+        .from(productAvailableCountryTable)
+        .where(inArray(productAvailableCountryTable.productId, productIds));
+      const byProduct = new Map<string, Set<string>>();
+      for (const r of restrictions) {
+        if (!byProduct.has(r.productId)) {
+          byProduct.set(r.productId, new Set());
+        }
+        byProduct.get(r.productId)!.add(r.countryCode);
+      }
+      const productsWithRestrictions = productIds.filter(
+        (id) => (byProduct.get(id)?.size ?? 0) > 0,
+      );
+      if (productsWithRestrictions.length > 0) {
+        const intersection = productsWithRestrictions.reduce<Set<string>>(
+          (acc, id) => {
+            const set = byProduct.get(id)!;
+            if (acc.size === 0) return new Set(set);
+            const next = new Set<string>();
+            for (const c of set) {
+              if (acc.has(c)) next.add(c);
+            }
+            return next;
+          },
+          new Set(),
+        );
+        allowedCountryCodes = Array.from(intersection);
+      }
+    }
+
     const productMap = new Map<
       string,
       { id: string; name: string; imageUrl: string | null }
@@ -190,6 +232,7 @@ export async function GET(
       subtotalCents,
       totalComputedCents: Math.round(afterDiscount),
       paymentMethod,
+      allowedCountryCodes,
     });
   } catch (err) {
     console.error("Admin order get error:", err);

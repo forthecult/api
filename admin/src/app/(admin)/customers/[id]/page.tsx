@@ -3,8 +3,10 @@
 import {
   Bell,
   ChevronLeft,
+  Copy,
   KeyRound,
   Link2,
+  MapPin,
   MessageSquarePlus,
   Save,
   Shield,
@@ -12,10 +14,11 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
+import { mapRetrieveToShipping } from "~/lib/loqate";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 import {
@@ -28,6 +31,8 @@ import {
 } from "~/ui/table";
 
 const API_BASE = getMainAppUrl();
+
+type LoqateFindItem = { Id: string; Text: string; Description?: string };
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
@@ -186,6 +191,19 @@ export default function AdminCustomerDetailPage() {
   const [newComment, setNewComment] = useState("");
   const [addCommentLoading, setAddCommentLoading] = useState(false);
 
+  const [addressFindQuery, setAddressFindQuery] = useState("");
+  const [addressFindResults, setAddressFindResults] = useState<
+    LoqateFindItem[]
+  >([]);
+  const [addressFindOpen, setAddressFindOpen] = useState(false);
+  const [addressFindLoading, setAddressFindLoading] = useState(false);
+  const [addressLookupResult, setAddressLookupResult] = useState<string | null>(
+    null,
+  );
+  const addressFindDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
   const fetchCustomer = useCallback(async () => {
     if (!id) return;
     setLoading(true);
@@ -219,6 +237,78 @@ export default function AdminCustomerDetailPage() {
   useEffect(() => {
     void fetchCustomer();
   }, [fetchCustomer]);
+
+  useEffect(() => {
+    const q = addressFindQuery.trim();
+    if (!q) {
+      setAddressFindResults([]);
+      setAddressFindOpen(false);
+      return;
+    }
+    if (addressFindDebounceRef.current) {
+      clearTimeout(addressFindDebounceRef.current);
+    }
+    addressFindDebounceRef.current = setTimeout(async () => {
+      setAddressFindLoading(true);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/loqate/find?text=${encodeURIComponent(q)}&limit=8`,
+          { credentials: "include" },
+        );
+        if (!res.ok) {
+          setAddressFindResults([]);
+          return;
+        }
+        const data = (await res.json()) as { Items?: LoqateFindItem[] };
+        const items = data.Items ?? [];
+        setAddressFindResults(items);
+        setAddressFindOpen(items.length > 0);
+      } catch {
+        setAddressFindResults([]);
+      } finally {
+        setAddressFindLoading(false);
+      }
+    }, 300);
+    return () => {
+      if (addressFindDebounceRef.current) {
+        clearTimeout(addressFindDebounceRef.current);
+      }
+    };
+  }, [addressFindQuery]);
+
+  const selectAddressFromLoqate = useCallback(async (loqateId: string) => {
+    setAddressFindOpen(false);
+    setAddressFindQuery("");
+    setAddressFindResults([]);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/loqate/retrieve?id=${encodeURIComponent(loqateId)}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) return;
+      const addr = (await res.json()) as Parameters<
+        typeof mapRetrieveToShipping
+      >[0];
+      const mapped = mapRetrieveToShipping(addr);
+      const line = [
+        mapped.street,
+        mapped.apartment,
+        [mapped.city, mapped.state].filter(Boolean).join(", "),
+        mapped.zip,
+        mapped.country,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      setAddressLookupResult(line);
+    } catch {
+      setAddressLookupResult(null);
+    }
+  }, []);
+
+  const copyLookupAddress = useCallback(() => {
+    if (!addressLookupResult) return;
+    void navigator.clipboard.writeText(addressLookupResult);
+  }, [addressLookupResult]);
 
   const fetchOrders = useCallback(async () => {
     if (!id) return;
@@ -632,6 +722,67 @@ export default function AdminCustomerDetailPage() {
                 {[customer.city, customer.country].filter(Boolean).join(", ") ||
                   "—"}
               </p>
+            </div>
+            <div className="relative sm:col-span-2">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <MapPin className="mr-1 inline-block h-3.5 w-3.5" aria-hidden />
+                Look up address
+              </span>
+              <div className="mt-1 space-y-1">
+                <input
+                  type="text"
+                  placeholder="Type address or postcode…"
+                  value={addressFindQuery}
+                  onChange={(e) => setAddressFindQuery(e.target.value)}
+                  onFocus={() =>
+                    addressFindResults.length > 0 && setAddressFindOpen(true)
+                  }
+                  className={inputClass}
+                  autoComplete="off"
+                />
+                {addressFindLoading && (
+                  <span className="text-muted-foreground">Searching…</span>
+                )}
+                {addressFindOpen && addressFindResults.length > 0 && (
+                  <ul
+                    className="z-10 max-h-40 overflow-auto rounded-md border border-input bg-background py-1 shadow-md"
+                    role="listbox"
+                  >
+                    {addressFindResults.map((item) => (
+                      <li key={item.Id} role="option">
+                        <button
+                          type="button"
+                          className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
+                          onClick={() => selectAddressFromLoqate(item.Id)}
+                        >
+                          {item.Text}
+                          {item.Description ? (
+                            <span className="block text-muted-foreground text-xs">
+                              {item.Description}
+                            </span>
+                          ) : null}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {addressLookupResult && (
+                  <div className="flex items-center gap-2 rounded border border-input bg-muted/30 px-2 py-1.5 text-sm">
+                    <span className="flex-1 truncate">
+                      {addressLookupResult}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={copyLookupAddress}
+                    >
+                      <Copy className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
             <div className="sm:col-span-2">
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">

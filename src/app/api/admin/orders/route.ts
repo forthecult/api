@@ -364,10 +364,19 @@ export async function POST(request: NextRequest) {
       typeof body.email === "string" && body.email.trim()
         ? body.email.trim()
         : "draft@admin.local";
-    const userId =
+    let userId: string | null =
       typeof body.userId === "string" && body.userId.trim()
         ? body.userId.trim()
         : null;
+
+    if (!userId && email !== "draft@admin.local") {
+      const [user] = await db
+        .select({ id: userTable.id })
+        .from(userTable)
+        .where(eq(userTable.email, email))
+        .limit(1);
+      if (user) userId = user.id;
+    }
 
     const now = new Date();
     const orderId = createId();

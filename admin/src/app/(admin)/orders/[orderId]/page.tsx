@@ -1,12 +1,14 @@
 "use client";
 
-import { Loader2, Trash2, Undo2 } from "lucide-react";
+import { Loader2, MapPin, Trash2, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { COUNTRIES_BY_CONTINENT } from "~/lib/countries-by-continent";
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
+import { mapRetrieveToShipping } from "~/lib/loqate";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
@@ -16,15 +18,11 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-const COUNTRY_OPTIONS = [
+const ALL_COUNTRY_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Select country" },
-  { value: "US", label: "United States" },
-  { value: "CA", label: "Canada" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "AU", label: "Australia" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "OTHER", label: "Other" },
+  ...COUNTRIES_BY_CONTINENT.flatMap((c) =>
+    c.countries.map((x) => ({ value: x.code, label: x.name })),
+  ),
 ];
 
 const US_STATE_OPTIONS = [
@@ -91,6 +89,8 @@ type OrderDetail = {
   user: { id: string; name: string; email: string } | null;
   items: OrderItem[];
   paymentMethod: string;
+  /** When set, only these countries are shippable for this order (product restrictions). Empty or null = all countries. */
+  allowedCountryCodes?: string[] | null;
 };
 
 type ProductOption = {
@@ -151,6 +151,16 @@ export default function AdminOrderDetailsPage() {
   const [addingProductId, setAddingProductId] = useState<string | null>(null);
   const [refunding, setRefunding] = useState(false);
 
+  const [addressFindQuery, setAddressFindQuery] = useState("");
+  const [addressFindResults, setAddressFindResults] = useState<
+    Array<{ Id: string; Text: string; Description?: string }>
+  >([]);
+  const [addressFindOpen, setAddressFindOpen] = useState(false);
+  const [addressFindLoading, setAddressFindLoading] = useState(false);
+  const addressFindDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+
   const fetchOrder = useCallback(async () => {
     if (!orderId) return;
     setLoading(true);
@@ -197,6 +207,74 @@ export default function AdminOrderDetailsPage() {
   useEffect(() => {
     void fetchOrder();
   }, [fetchOrder]);
+
+  useEffect(() => {
+    const q = addressFindQuery.trim();
+    if (!q) {
+      setAddressFindResults([]);
+      setAddressFindOpen(false);
+      return;
+    }
+    if (addressFindDebounceRef.current) {
+      clearTimeout(addressFindDebounceRef.current);
+    }
+    addressFindDebounceRef.current = setTimeout(async () => {
+      setAddressFindLoading(true);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/loqate/find?text=${encodeURIComponent(q)}&limit=8`,
+          { credentials: "include" },
+        );
+        if (!res.ok) {
+          setAddressFindResults([]);
+          return;
+        }
+        const data = (await res.json()) as {
+          Items?: Array<{ Id: string; Text: string; Description?: string }>;
+        };
+        const items = data.Items ?? [];
+        setAddressFindResults(items);
+        setAddressFindOpen(items.length > 0);
+      } catch {
+        setAddressFindResults([]);
+      } finally {
+        setAddressFindLoading(false);
+      }
+    }, 300);
+    return () => {
+      if (addressFindDebounceRef.current) {
+        clearTimeout(addressFindDebounceRef.current);
+      }
+    };
+  }, [addressFindQuery]);
+
+  const selectAddressFromLoqate = useCallback(
+    async (id: string) => {
+      setAddressFindOpen(false);
+      setAddressFindQuery("");
+      setAddressFindResults([]);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/loqate/retrieve?id=${encodeURIComponent(id)}`,
+          { credentials: "include" },
+        );
+        if (!res.ok) return;
+        const addr = (await res.json()) as Parameters<
+          typeof mapRetrieveToShipping
+        >[0];
+        const mapped = mapRetrieveToShipping(addr);
+        setShippingAddress1(mapped.street);
+        setShippingAddress2(mapped.apartment);
+        setShippingCity(mapped.city);
+        setShippingStateCode(mapped.state);
+        setShippingZip(mapped.zip);
+        if (mapped.country) setShippingCountryCode(mapped.country);
+      } catch {
+        // ignore
+      }
+    },
+    [],
+  );
 
   const updateItemQty = useCallback((itemId: string, qty: number) => {
     setItemQuantities((prev) => ({ ...prev, [itemId]: Math.max(0, qty) }));
@@ -397,6 +475,23 @@ export default function AdminOrderDetailsPage() {
       (subtotalCents * discountPercent) / 100,
   );
   const isUS = shippingCountryCode === "US";
+
+  const countryOptions =
+    order?.allowedCountryCodes &&
+    order.allowedCountryCodes.length > 0
+      ? [
+          { value: "", label: "Select country" },
+          ...order.allowedCountryCodes
+            .map(
+              (code) =>
+                ALL_COUNTRY_OPTIONS.find((o) => o.value === code) ?? {
+                  value: code,
+                  label: code,
+                },
+            )
+            .filter((o) => o.value !== ""),
+        ]
+      : ALL_COUNTRY_OPTIONS;
 
   return (
     <div className="space-y-6">
@@ -765,6 +860,52 @@ export default function AdminOrderDetailsPage() {
                 className={inputClass}
               />
             </div>
+            <div className="relative">
+              <label htmlFor="address-finder" className={labelClass}>
+                <MapPin className="mr-1.5 inline-block h-4 w-4" aria-hidden />
+                Find address
+              </label>
+              <input
+                id="address-finder"
+                type="text"
+                placeholder="Start typing address or postcode…"
+                value={addressFindQuery}
+                onChange={(e) => setAddressFindQuery(e.target.value)}
+                onFocus={() =>
+                  addressFindResults.length > 0 && setAddressFindOpen(true)
+                }
+                className={inputClass}
+                autoComplete="off"
+              />
+              {addressFindLoading && (
+                <span className="absolute right-3 top-9 text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                </span>
+              )}
+              {addressFindOpen && addressFindResults.length > 0 && (
+                <ul
+                  className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-input bg-background py-1 shadow-md"
+                  role="listbox"
+                >
+                  {addressFindResults.map((item) => (
+                    <li key={item.Id} role="option">
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                        onClick={() => selectAddressFromLoqate(item.Id)}
+                      >
+                        {item.Text}
+                        {item.Description ? (
+                          <span className="block text-muted-foreground">
+                            {item.Description}
+                          </span>
+                        ) : null}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div>
               <label htmlFor="shipping-address1" className={labelClass}>
                 Address line 1
@@ -871,7 +1012,7 @@ export default function AdminOrderDetailsPage() {
                   onChange={(e) => setShippingCountryCode(e.target.value)}
                   className={inputClass}
                 >
-                  {COUNTRY_OPTIONS.map((opt) => (
+                  {countryOptions.map((opt) => (
                     <option key={opt.value || "empty"} value={opt.value}>
                       {opt.label}
                     </option>
