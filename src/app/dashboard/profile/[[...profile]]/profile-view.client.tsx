@@ -8,6 +8,15 @@ import { useCallback, useEffect, useState } from "react";
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { Card, CardContent } from "~/ui/primitives/card";
 
+/** Only show real emails; hide wallet placeholders (e.g. solana_xxx@wallet.local) */
+function showRealEmail(email: string | null | undefined): string {
+  if (!email || typeof email !== "string") return "—";
+  const t = email.trim();
+  if (!t || t.endsWith("@wallet.local") || /^(solana_|ethereum_)[^@]+@/i.test(t))
+    return "—";
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? email : "—";
+}
+
 type OrderStats = {
   all: number;
   awaitingPayment: number;
@@ -230,9 +239,7 @@ export function ProfileViewClient() {
                   Email
                 </span>
                 <span className="text-sm text-foreground truncate">
-                  {profile?.email && isRealEmail(profile.email)
-                    ? profile.email
-                    : "—"}
+                  {showRealEmail(profile?.email)}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
