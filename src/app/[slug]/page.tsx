@@ -440,7 +440,6 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
             </div>
           </main>
         </div>
-        </TokenGateGuard>
       </>
     );
   }

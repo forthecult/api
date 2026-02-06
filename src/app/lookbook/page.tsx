@@ -186,5 +186,6 @@ export default async function LookbookPage() {
         <p className="mt-1 text-sm text-muted-foreground">{PHOTOGRAPHER.bio}</p>
       </footer>
     </div>
+    </TokenGateGuard>
   );
 }
