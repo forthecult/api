@@ -7,11 +7,12 @@ import {
   ImageIcon,
   Plus,
   Trash2,
+  Upload,
   X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
@@ -238,6 +239,49 @@ export default function AdminProductsCreatePage() {
   const removeImage = useCallback((index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
+
+  const uploadImageInputRef = useRef<HTMLInputElement>(null);
+  const uploadImageTargetRef = useRef<null | "primary" | number>(null);
+  const [uploadImageLoading, setUploadImageLoading] = useState(false);
+  const handleUploadImage = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      const target = uploadImageTargetRef.current;
+      uploadImageTargetRef.current = null;
+      if (!file || target === null) return;
+      setUploadImageLoading(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`${API_BASE}/api/admin/upload`, {
+          method: "POST",
+          credentials: "include",
+          body: form,
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? "Upload failed");
+        }
+        const data = (await res.json()) as { url: string };
+        if (target === "primary") setImageUrl(data.url);
+        else if (typeof target === "number")
+          updateImage(target, "url", data.url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Upload failed");
+      } finally {
+        setUploadImageLoading(false);
+      }
+    },
+    [updateImage],
+  );
+  const triggerUploadImage = useCallback(
+    (target: "primary" | number) => {
+      uploadImageTargetRef.current = target;
+      uploadImageInputRef.current?.click();
+    },
+    [],
+  );
 
   // Option definitions handlers
   const addOption = useCallback(() => {
@@ -939,19 +983,39 @@ export default function AdminProductsCreatePage() {
         </Card>
 
         {/* Media */}
+        <input
+          ref={uploadImageInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          className="hidden"
+          aria-hidden
+          onChange={handleUploadImage}
+        />
         <Card>
           <CardHeader>
             <CardTitle>Media</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Primary image and gallery. Use image URL (e.g. from Uploadthing or
-              Printful).
+              Primary image and gallery. Upload to UploadThing or paste a URL.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="imageUrl" className={labelClass}>
-                Primary image URL
-              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <label htmlFor="imageUrl" className={labelClass}>
+                  Primary image URL
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  disabled={uploadImageLoading}
+                  onClick={() => triggerUploadImage("primary")}
+                >
+                  <Upload className="h-4 w-4" />
+                  {uploadImageLoading ? "Uploading…" : "Upload"}
+                </Button>
+              </div>
               <input
                 id="imageUrl"
                 type="url"
@@ -1001,6 +1065,17 @@ export default function AdminProductsCreatePage() {
                     onChange={(e) => updateImage(i, "url", e.target.value)}
                     className={cn(inputClass, "min-w-[200px] flex-1")}
                   />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1 shrink-0"
+                    disabled={uploadImageLoading}
+                    onClick={() => triggerUploadImage(i)}
+                  >
+                    <Upload className="h-4 w-4" />
+                    Upload
+                  </Button>
                   <input
                     type="text"
                     placeholder="Alt text (SEO)"

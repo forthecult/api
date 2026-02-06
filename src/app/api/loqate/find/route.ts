@@ -5,6 +5,7 @@
  */
 import { type NextRequest, NextResponse } from "next/server";
 
+import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 import {
   getClientIp,
   checkRateLimit,
@@ -52,14 +53,20 @@ export async function GET(request: NextRequest) {
     RATE_LIMITS.loqate,
   );
   if (!rateLimitResult.success) {
-    return rateLimitResponse(rateLimitResult);
+    return addCorsIfAdminOrigin(
+      request,
+      rateLimitResponse(rateLimitResult),
+    );
   }
 
   const apiKey = process.env.LOQATE_API_KEY;
   if (!apiKey?.trim()) {
-    return NextResponse.json(
-      { error: "Loqate is not configured" },
-      { status: 503 },
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json(
+        { error: "Loqate is not configured" },
+        { status: 503 },
+      ),
     );
   }
 
@@ -69,13 +76,16 @@ export async function GET(request: NextRequest) {
   const limit = request.nextUrl.searchParams.get("limit")?.trim() || "10";
 
   if (!text) {
-    return NextResponse.json({ Items: [] });
+    return addCorsIfAdminOrigin(request, NextResponse.json({ Items: [] }));
   }
 
   const cacheKey = getCacheKey(text, countries, limit);
   const cached = getCached(cacheKey);
   if (cached !== null) {
-    return NextResponse.json({ Items: cached });
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json({ Items: cached }),
+    );
   }
 
   const params = new URLSearchParams({
@@ -92,26 +102,38 @@ export async function GET(request: NextRequest) {
       next: { revalidate: 0 },
     });
     if (!res.ok) {
-      return NextResponse.json(
-        { error: "Address lookup failed" },
-        { status: 502 },
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json(
+          { error: "Address lookup failed" },
+          { status: 502 },
+        ),
       );
     }
     const data = (await res.json()) as { Items?: unknown[]; Error?: string };
     if (data.Error) {
-      return NextResponse.json(
-        { error: data.Error || "Address lookup failed" },
-        { status: 400 },
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json(
+          { error: data.Error || "Address lookup failed" },
+          { status: 400 },
+        ),
       );
     }
     const items = data.Items ?? [];
     setCache(cacheKey, items);
-    return NextResponse.json({ Items: items });
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json({ Items: items }),
+    );
   } catch (err) {
     console.error("Loqate Find error:", err);
-    return NextResponse.json(
-      { error: "Address lookup failed" },
-      { status: 502 },
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json(
+        { error: "Address lookup failed" },
+        { status: 502 },
+      ),
     );
   }
 }

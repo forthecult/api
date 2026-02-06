@@ -118,45 +118,47 @@ export function ProfileViewClient() {
     "User";
 
   return (
-    <div className="container max-w-4xl space-y-6 p-4 md:p-8">
+    <div className="container max-w-6xl space-y-6 p-4 md:p-8">
       <div className="flex items-center gap-2">
         <UserIcon className="h-7 w-7 text-muted-foreground" aria-hidden />
         <h1 className="text-2xl font-semibold tracking-tight">My Profile</h1>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* User summary card */}
-        <Card className="lg:col-span-1">
-          <CardContent className="flex flex-col items-center gap-4 p-6">
-            <div className="relative size-20 overflow-hidden rounded-full border-2 border-border bg-muted">
+      <div className="grid gap-6 lg:grid-cols-6">
+        {/* User summary card – wide, low height: avatar left, name+balance center, membership right */}
+        <Card className="lg:col-span-2">
+          <CardContent className="flex flex-row items-center gap-4 py-3 pl-3 pr-4">
+            <div className="relative size-14 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted">
               {profile?.image ? (
                 <Image
                   src={profile.image}
                   alt=""
                   fill
                   className="object-cover"
-                  sizes="80px"
+                  sizes="56px"
                 />
               ) : (
-                <span className="flex size-full items-center justify-center text-xl font-semibold text-muted-foreground">
+                <span className="flex size-full items-center justify-center text-lg font-semibold text-muted-foreground">
                   {(profile?.firstName?.[0] ?? profile?.lastName?.[0] ?? displayName[0] ?? "?").toUpperCase()}
                 </span>
               )}
             </div>
-            <div className="text-center">
-              <p className="font-medium text-foreground">{displayName}</p>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-foreground truncate">{displayName}</p>
               <p className="text-sm text-muted-foreground">
                 CULT Balance: {formatBalance(cultBalanceCents)}
               </p>
-              <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            </div>
+            <div className="shrink-0 text-right">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Silver user
-              </p>
+              </span>
             </div>
           </CardContent>
         </Card>
 
         {/* Order status cards */}
-        <div className="grid grid-cols-2 gap-4 lg:col-span-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:col-span-4 sm:grid-cols-4">
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-4 text-center">
               <span className="text-2xl font-bold tabular-nums text-foreground">
@@ -198,7 +200,7 @@ export function ProfileViewClient() {
         </div>
       </div>
 
-      {/* Personal information – clickable row */}
+      {/* Personal information – compact, low height */}
       <Card className="overflow-hidden">
         <Link
           href="/dashboard/profile/edit"
@@ -206,12 +208,12 @@ export function ProfileViewClient() {
           aria-label="Edit profile and personal details"
         >
           <CardContent className="p-0">
-            <div className="grid gap-4 p-4 sm:grid-cols-2 md:grid-cols-3 md:gap-6 md:p-6">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-3 px-4 sm:grid-cols-3 md:grid-cols-6 md:gap-x-6 md:px-5">
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   First Name
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-medium text-foreground truncate">
                   {profile?.firstName || "—"}
                 </span>
               </div>
@@ -219,7 +221,7 @@ export function ProfileViewClient() {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Last Name
                 </span>
-                <span className="text-sm font-medium text-foreground">
+                <span className="text-sm font-medium text-foreground truncate">
                   {profile?.lastName || "—"}
                 </span>
               </div>
@@ -227,7 +229,7 @@ export function ProfileViewClient() {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Email
                 </span>
-                <span className="text-sm text-foreground">
+                <span className="text-sm text-foreground truncate">
                   {profile?.email || "—"}
                 </span>
               </div>
@@ -235,7 +237,7 @@ export function ProfileViewClient() {
                 <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   Phone
                 </span>
-                <span className="text-sm text-foreground">
+                <span className="text-sm text-foreground truncate">
                   {profile?.phone || "—"}
                 </span>
               </div>
@@ -245,9 +247,9 @@ export function ProfileViewClient() {
                 </span>
                 <span className="text-sm text-foreground">—</span>
               </div>
-              <div className="flex items-center justify-end text-muted-foreground sm:col-span-2 md:col-span-1 md:justify-end">
+              <div className="flex items-center justify-end text-muted-foreground col-span-2 sm:col-span-1 md:col-span-1 md:justify-end">
                 <span className="text-sm">Edit</span>
-                <ChevronRight className="ml-1 h-4 w-4" aria-hidden />
+                <ChevronRight className="ml-1 h-4 w-4 shrink-0" aria-hidden />
               </div>
             </div>
           </CardContent>

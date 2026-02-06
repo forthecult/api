@@ -1,8 +1,9 @@
 "use client";
 
+import { Upload } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
@@ -104,6 +105,44 @@ export default function AdminBrandEditPage() {
     setAssets((prev) =>
       prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
     );
+  }, []);
+
+  const uploadAssetInputRef = useRef<HTMLInputElement>(null);
+  const uploadAssetTargetRef = useRef<number | null>(null);
+  const [uploadAssetLoading, setUploadAssetLoading] = useState(false);
+  const handleUploadAsset = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      e.target.value = "";
+      const target = uploadAssetTargetRef.current;
+      uploadAssetTargetRef.current = null;
+      if (!file || target === null) return;
+      setUploadAssetLoading(true);
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`${API_BASE}/api/admin/upload`, {
+          method: "POST",
+          credentials: "include",
+          body: form,
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(data.error ?? "Upload failed");
+        }
+        const data = (await res.json()) as { url: string };
+        updateAsset(target, "url", data.url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Upload failed");
+      } finally {
+        setUploadAssetLoading(false);
+      }
+    },
+    [updateAsset],
+  );
+  const triggerUploadAsset = useCallback((index: number) => {
+    uploadAssetTargetRef.current = index;
+    uploadAssetInputRef.current?.click();
   }, []);
 
   const handleSubmit = useCallback(
@@ -342,6 +381,14 @@ export default function AdminBrandEditPage() {
                   + Add asset
                 </Button>
               </div>
+              <input
+                ref={uploadAssetInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                aria-hidden
+                onChange={handleUploadAsset}
+              />
               {assets.length > 0 && (
                 <ul className="space-y-2">
                   {assets.map((a, i) => (
@@ -356,6 +403,17 @@ export default function AdminBrandEditPage() {
                         className={cn(inputClass, "min-w-[200px] flex-1")}
                         placeholder="Image URL"
                       />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 shrink-0"
+                        disabled={uploadAssetLoading}
+                        onClick={() => triggerUploadAsset(i)}
+                      >
+                        <Upload className="h-4 w-4" />
+                        Upload
+                      </Button>
                       <select
                         value={a.type}
                         onChange={(e) => updateAsset(i, "type", e.target.value)}

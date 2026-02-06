@@ -3,6 +3,7 @@
  */
 import { type NextRequest, NextResponse } from "next/server";
 
+import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 import {
   getClientIp,
   checkRateLimit,
@@ -20,22 +21,31 @@ export async function GET(request: NextRequest) {
     RATE_LIMITS.loqate,
   );
   if (!rateLimitResult.success) {
-    return rateLimitResponse(rateLimitResult);
+    return addCorsIfAdminOrigin(
+      request,
+      rateLimitResponse(rateLimitResult),
+    );
   }
 
   const key = process.env.LOQATE_API_KEY;
   if (!key?.trim()) {
-    return NextResponse.json(
-      { error: "Loqate is not configured" },
-      { status: 503 },
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json(
+        { error: "Loqate is not configured" },
+        { status: 503 },
+      ),
     );
   }
 
   const id = request.nextUrl.searchParams.get("id")?.trim() ?? "";
   if (!id) {
-    return NextResponse.json(
-      { error: "Address id is required" },
-      { status: 400 },
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json(
+        { error: "Address id is required" },
+        { status: 400 },
+      ),
     );
   }
 
@@ -72,22 +82,31 @@ export async function GET(request: NextRequest) {
       Error?: string;
     };
     if (data.Error) {
-      return NextResponse.json(
-        { error: data.Error || "Address retrieve failed" },
-        { status: 400 },
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json(
+          { error: data.Error || "Address retrieve failed" },
+          { status: 400 },
+        ),
       );
     }
     const items = data.Items ?? [];
     const first = items[0];
     if (!first) {
-      return NextResponse.json({ error: "Address not found" }, { status: 404 });
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json({ error: "Address not found" }, { status: 404 }),
+      );
     }
-    return NextResponse.json(first);
+    return addCorsIfAdminOrigin(request, NextResponse.json(first));
   } catch (err) {
     console.error("Loqate Retrieve error:", err);
-    return NextResponse.json(
-      { error: "Address retrieve failed" },
-      { status: 502 },
+    return addCorsIfAdminOrigin(
+      request,
+      NextResponse.json(
+        { error: "Address retrieve failed" },
+        { status: 502 },
+      ),
     );
   }
 }

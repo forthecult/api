@@ -153,7 +153,7 @@ export default function AdminOrderDetailsPage() {
 
   const [addressFindQuery, setAddressFindQuery] = useState("");
   const [addressFindResults, setAddressFindResults] = useState<
-    Array<{ Id: string; Text: string; Description?: string }>
+    Array<{ Id: string; Type?: string; Text: string; Description?: string }>
   >([]);
   const [addressFindOpen, setAddressFindOpen] = useState(false);
   const [addressFindLoading, setAddressFindLoading] = useState(false);
@@ -230,9 +230,11 @@ export default function AdminOrderDetailsPage() {
           return;
         }
         const data = (await res.json()) as {
-          Items?: Array<{ Id: string; Text: string; Description?: string }>;
+          Items?: Array<{ Id: string; Type?: string; Text: string; Description?: string }>;
         };
-        const items = data.Items ?? [];
+        const items = (data.Items ?? []).filter(
+          (i) => !i.Type || i.Type === "Address",
+        );
         setAddressFindResults(items);
         setAddressFindOpen(items.length > 0);
       } catch {
@@ -874,6 +876,9 @@ export default function AdminOrderDetailsPage() {
                 onFocus={() =>
                   addressFindResults.length > 0 && setAddressFindOpen(true)
                 }
+                onBlur={() =>
+                  setTimeout(() => setAddressFindOpen(false), 200)
+                }
                 className={inputClass}
                 autoComplete="off"
               />
@@ -892,7 +897,10 @@ export default function AdminOrderDetailsPage() {
                       <button
                         type="button"
                         className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                        onClick={() => selectAddressFromLoqate(item.Id)}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          selectAddressFromLoqate(item.Id);
+                        }}
                       >
                         {item.Text}
                         {item.Description ? (
