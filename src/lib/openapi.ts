@@ -580,6 +580,171 @@ export const openApiSpec = {
         },
       },
     },
+    "/cart/estimate": {
+      post: {
+        tags: ["Checkout"],
+        summary: "Preview cart totals",
+        description:
+          "Get itemized totals, shipping estimate, and crypto amounts before checkout. No auth required.",
+        operationId: "postCartEstimate",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["items"],
+                properties: {
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: ["productId", "quantity"],
+                      properties: {
+                        productId: { type: "string" },
+                        quantity: { type: "integer" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Cart estimate with subtotal, shipping, tax, total, and crypto amounts",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    items: { type: "array", items: { type: "object" } },
+                    subtotal: { type: "object" },
+                    shipping: { type: "object" },
+                    tax: { type: "object" },
+                    total: { type: "object" },
+                    crypto: { type: "object" },
+                    expiresAt: { type: "string", format: "date-time" },
+                  },
+                },
+              },
+            },
+          },
+          "400": { description: "Invalid items or product not found" },
+        },
+      },
+    },
+    "/shipping/estimate": {
+      post: {
+        tags: ["Checkout"],
+        summary: "Get shipping options and cost",
+        description:
+          "Estimate shipping for a country and optional line items. Same contract as /shipping/calculate. No auth required.",
+        operationId: "postShippingEstimate",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["countryCode"],
+                properties: {
+                  countryCode: {
+                    type: "string",
+                    description: "ISO 2–3 letter country code (e.g. US)",
+                  },
+                  items: {
+                    type: "array",
+                    default: [],
+                    items: {
+                      type: "object",
+                      properties: {
+                        productId: { type: "string" },
+                        quantity: { type: "integer" },
+                      },
+                    },
+                  },
+                  orderValueCents: { type: "integer", default: 0 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Shipping cost and options",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    shippingCents: { type: "integer" },
+                    canShipToCountry: { type: "boolean" },
+                    shippingSpeed: { type: "string" },
+                  },
+                },
+              },
+            },
+          },
+          "400": {
+            description: "Invalid request (countryCode required)",
+          },
+        },
+      },
+    },
+    "/shipping/calculate": {
+      post: {
+        tags: ["Checkout"],
+        summary: "Calculate shipping (with optional address)",
+        description:
+          "Calculate shipping; accepts same body as /shipping/estimate plus optional zip, stateCode, city for accurate rates.",
+        operationId: "postShippingCalculate",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["countryCode"],
+                properties: {
+                  countryCode: { type: "string" },
+                  zip: { type: "string" },
+                  stateCode: { type: "string" },
+                  city: { type: "string" },
+                  items: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        productId: { type: "string" },
+                        quantity: { type: "integer" },
+                      },
+                    },
+                  },
+                  orderValueCents: { type: "integer" },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Shipping cost and options",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    shippingCents: { type: "integer" },
+                    canShipToCountry: { type: "boolean" },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "/checkout": {
       post: {
         tags: ["Checkout"],
@@ -634,7 +799,7 @@ export const openApiSpec = {
                       },
                       phone: {
                         type: "string",
-                        description: "Required for Printful shipping",
+                        description: "Required for accurate shipping from some fulfillment providers",
                       },
                     },
                   },
@@ -728,7 +893,8 @@ export const openApiSpec = {
       get: {
         tags: ["Orders"],
         summary: "Get order details",
-        description: "Full order: items, shipping, payment summary.",
+        description:
+          "Full order: items, shipping, payment summary. Requires session (owner) or admin. Use GET /orders/{orderId}/status for unauthenticated polling.",
         operationId: "getOrderById",
         parameters: [
           {
@@ -773,6 +939,7 @@ export const openApiSpec = {
               },
             },
           },
+          "401": { description: "Not authorized (must be order owner or admin)" },
           "404": { description: "Order not found" },
         },
       },

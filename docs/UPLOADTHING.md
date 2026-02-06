@@ -12,6 +12,7 @@
 | **Brand logos / assets** | Seeding + Admin → Brands | Script `db:upload-brand-assets` uploads `scripts/brand-assets/<slug>/logo.*` (and optional banner) to UploadThing and sets `brand.logoUrl`. In admin you can also upload or paste URLs. |
 | **Logged-in user uploads** | App → Dashboard → Uploads | Users can upload images/videos via the UploadThing React component; files are stored in UploadThing and metadata in `uploads` table. |
 | **User avatar** | User profile | Avatar upload uses UploadThing (UTApi) and stores the file URL. |
+| **Lookbook** | `/lookbook` page | Optional: run `db:upload-lookbook` to upload `public/lookbook/` to UploadThing; commit `data/lookbook-images.json` so staging/prod serve from UploadThing. |
 
 So in practice:
 
@@ -55,6 +56,22 @@ So: **you’re supposed to use UploadThing** when you want the app to host the i
   The second command uploads those files to UploadThing and updates brand logo (and asset) URLs. Requires `UPLOADTHING_TOKEN` in `.env`.
 
 - In GitHub Actions, the “Upload brand logos to UploadThing” step is optional: if `UPLOADTHING_TOKEN` is set in repo secrets, it runs the same script after seeding; if not, the step is skipped and brands keep whatever logo URLs they already have (or none).
+
+### 4. Lookbook images (staging / production)
+
+The lookbook page (`/lookbook`) can serve images from UploadThing instead of `public/lookbook/`, so staging and production don’t need those files in the repo.
+
+- **One-time migration:** From the project root, with `UPLOADTHING_TOKEN` in `.env`:
+
+  ```bash
+  bun run db:upload-lookbook
+  ```
+
+  This uploads every image in `public/lookbook/` to UploadThing and writes **`data/lookbook-images.json`** with the same metadata and the new URLs.
+
+- **Deploy:** Commit **`data/lookbook-images.json`**. On build, the lookbook page will read that file and use the UploadThing URLs. If the file is missing, the page falls back to the static paths under `public/lookbook/`.
+
+- **Note:** The home and about pages still reference a couple of lookbook images by static path (`/lookbook/...`). If you remove `public/lookbook/` from the repo after migrating, update those references to use the URLs from `data/lookbook-images.json` or the same UploadThing URLs.
 
 ---
 

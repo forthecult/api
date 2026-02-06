@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { getUploadThingToken } from "~/lib/uploadthing-token";
 
 const MAX_SIZE = 4 * 1024 * 1024; // 4MB
 const ALLOWED_TYPES = [

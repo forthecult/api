@@ -1,21 +1,18 @@
-import type { Metadata } from "next";
-import Image from "next/image";
+/**
+ * Canonical lookbook image list (metadata + static paths).
+ * Used by the lookbook page and by scripts/upload-lookbook-to-uploadthing.ts
+ * to migrate images to UploadThing.
+ */
 
-import { SEO_CONFIG } from "~/app";
-import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
-
-const PHOTOGRAPHER = {
-  name: "George J. Patterson",
-  bio: "George is a freelance photographer residing in Syracuse, NY. He specializes in portrait, product, and lifestyle photography.",
-};
-
-const LOOKBOOK_IMAGES: Array<{
+export type LookbookImage = {
   src: string;
   alt: string;
   title: string;
   description: string;
   size: "large" | "medium" | "small";
-}> = [
+};
+
+export const LOOKBOOK_IMAGES: LookbookImage[] = [
   {
     src: "/lookbook/culture-brand-lifestyle-premium-apparel.jpg",
     alt: "Culture brand lifestyle shot — premium apparel and decentralized culture",
@@ -109,80 +106,3 @@ const LOOKBOOK_IMAGES: Array<{
     size: "medium",
   },
 ];
-
-export const metadata: Metadata = {
-  title: `Lookbook | ${SEO_CONFIG.name}`,
-  description:
-    "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography. Photos by George J. Patterson, Syracuse NY.",
-  openGraph: {
-    title: `Lookbook | ${SEO_CONFIG.name}`,
-    description:
-      "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography. Photos by George J. Patterson.",
-    type: "website",
-  },
-};
-
-export default async function LookbookPage() {
-  const images = getLookbookImages();
-  return (
-    <TokenGateGuard resourceType="page" resourceId="lookbook">
-      <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
-      <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Lookbook
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          Premium apparel, natural fibers, and lifestyle — how Culture looks in
-          the wild.
-        </p>
-      </header>
-
-      <div
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
-        role="list"
-      >
-        {images.map((img) => (
-          <figure
-            key={img.src}
-            className={`
-              relative overflow-hidden rounded-lg border border-border bg-muted/30
-              ${img.size === "large" ? "sm:col-span-2 lg:col-span-2" : ""}
-              ${img.size === "medium" ? "sm:col-span-2 lg:col-span-1" : ""}
-            `}
-          >
-            <Image
-              src={img.src}
-              alt={img.alt}
-              title={img.title}
-              width={
-                img.size === "large" ? 1200 : img.size === "medium" ? 800 : 600
-              }
-              height={
-                img.size === "large" ? 800 : img.size === "medium" ? 600 : 500
-              }
-              className="h-auto w-full object-cover"
-              sizes={
-                img.size === "large"
-                  ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
-                  : img.size === "medium"
-                    ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              }
-            />
-            <figcaption className="sr-only">
-              {img.title}. {img.description}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
-
-      <footer className="mt-12 border-t border-border pt-8">
-        <p className="text-sm font-medium text-foreground">
-          Photos by {PHOTOGRAPHER.name}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">{PHOTOGRAPHER.bio}</p>
-      </footer>
-    </div>
-    </TokenGateGuard>
-  );
-}
