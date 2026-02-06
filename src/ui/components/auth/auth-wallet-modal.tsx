@@ -15,14 +15,17 @@ import { cn } from "~/lib/cn";
 
 /** Ethereum / WalletConnect options shown in the wallet list (wallets-first flow). */
 const ETHEREUM_WALLET_OPTIONS = [
-  { id: "walletconnect" as const, name: "WalletConnect", icon: "https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue/Logo.svg" },
-  { id: "injected" as const, name: "MetaMask", icon: "https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg" },
-  { id: "injected" as const, name: "Brave Wallet", icon: "https://brave.com/static-assets/images/brave-logo-sans-text.svg" },
+  { id: "walletconnect" as const, name: "WalletConnect", icon: "https://avatars.githubusercontent.com/u/37784886?s=200&v=4" },
+  { id: "injected" as const, name: "MetaMask", icon: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" },
   { id: "injected" as const, name: "Coinbase Wallet", icon: "https://www.coinbase.com/img/favicon/favicon-256.png" },
 ] as const;
 
-/** Names of wallets that appear in both Solana adapters and Ethereum options - show only once from Solana */
-const SOLANA_ONLY_WALLET_NAMES = ["Ctrl Wallet", "Ctrl"];
+/** 
+ * Names of wallets that appear in both Solana adapters and Ethereum options.
+ * These are filtered out from ETHEREUM_WALLET_OPTIONS to avoid duplicates.
+ * They will only show once from the Solana wallet adapters list.
+ */
+const SOLANA_WALLET_NAMES_TO_SKIP = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
 
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
 
@@ -198,14 +201,23 @@ export function AuthWalletModal({
     async (wallet: Wallet) => {
       setError("");
       setSelectedWallet(wallet);
+      setSelectedChain("solana"); // Mark as Solana wallet
       try {
+        console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
         select(wallet.adapter.name);
-        await new Promise((r) => setTimeout(r, 150));
+        // Give the adapter time to initialize
+        await new Promise((r) => setTimeout(r, 200));
+        console.log("[auth] Connecting to Solana wallet...");
         await connect();
+        console.log("[auth] Solana wallet connected, moving to signing step");
+        // Additional delay to ensure wallet state is fully updated
+        await new Promise((r) => setTimeout(r, 100));
         setStep("signing");
       } catch (err) {
+        console.error("[auth] Solana wallet connection failed:", err);
         setError("Connection failed. Try again or use another wallet.");
         setStep("wallet");
+        setSelectedChain(null);
       }
     },
     [select, connect],
@@ -228,6 +240,20 @@ export function AuthWalletModal({
   // Solana: run sign flow when wallet is connected and step is signing
   useEffect(() => {
     if (!open || selectedChain !== "solana") return;
+    
+    // Debug: log state when in signing step
+    if (step === "signing") {
+      console.log("[auth] Solana signing state:", { connected, publicKey: publicKey?.toBase58(), hasSignMessage: !!signMessage, signFlowStarted: signFlowStarted.current });
+    }
+    
+    // If we're in signing step but signMessage is not available after connection, show error
+    if (step === "signing" && connected && publicKey && !signMessage && !signFlowStarted.current) {
+      console.error("[auth] Solana: signMessage not available from wallet adapter");
+      setError("This wallet doesn't support message signing. Please try another wallet.");
+      setStep("error");
+      return;
+    }
+    
     if (
       step === "signing" &&
       connected &&
@@ -242,7 +268,7 @@ export function AuthWalletModal({
           typeof process !== "undefined" &&
           process.env.NODE_ENV === "development";
         try {
-          if (isDev) console.info("[auth] Solana: requesting challenge…");
+          console.info("[auth] Solana: requesting challenge…");
           const res = await fetch(
             `${API_BASE}/api/auth/sign-in/solana/challenge`,
             {
@@ -299,7 +325,7 @@ export function AuthWalletModal({
           if (!signatureBase64 && !signatureBase58) {
             throw new Error("Could not read signature from wallet. Try again.");
           }
-          if (isDev) console.info("[auth] Solana: verifying signature…");
+          console.info("[auth] Solana: verifying signature…");
           const verifyRes = await fetch(
             `${API_BASE}/api/auth/sign-in/solana/verify`,
             {
@@ -322,7 +348,7 @@ export function AuthWalletModal({
             if (isDev) console.error("[auth] Solana verify failed:", msg);
             throw new Error(msg);
           }
-          if (isDev) console.info("[auth] Solana sign-in succeeded");
+          console.info("[auth] Solana sign-in succeeded");
           if (cancelled) return;
           // Move focus out of modal before closing to avoid "Blocked aria-hidden" and flash
           (document.activeElement as HTMLElement)?.blur?.();
@@ -341,6 +367,9 @@ export function AuthWalletModal({
           }
         } catch (err) {
           if (!cancelled) {
+            // Always log the error for debugging
+            console.error("[auth] Solana sign-in error:", err);
+            
             const rawMessage =
               err instanceof Error ? err.message : "Something went wrong";
             const isDisconnect =
@@ -349,16 +378,20 @@ export function AuthWalletModal({
               ) ||
               (err instanceof Error &&
                 err.constructor?.name === "WalletDisconnectedError");
-            const message = isDisconnect
-              ? "Wallet disconnected or signing was cancelled. Please try again and sign the message in your wallet."
-              : rawMessage;
-            if (
-              isDev &&
-              typeof console !== "undefined" &&
-              typeof console.error === "function"
-            ) {
-              console.error("[auth] Solana sign-in error:", rawMessage);
+            const isChallengeError = /challenge|expired|invalid/i.test(rawMessage);
+            const isSignatureError = /signature/i.test(rawMessage);
+            
+            let message: string;
+            if (isDisconnect) {
+              message = "Wallet disconnected or signing was cancelled. Please try again and sign the message in your wallet.";
+            } else if (isChallengeError) {
+              message = "Session expired. Please try again.";
+            } else if (isSignatureError) {
+              message = "Signature verification failed. Please try again.";
+            } else {
+              message = rawMessage;
             }
+            
             setError(message);
             setStep("error");
             signFlowStarted.current = false;
@@ -723,7 +756,7 @@ export function AuthWalletModal({
                 {ETHEREUM_WALLET_OPTIONS.filter(
                   (o) =>
                     o.name !== "MetaMask" &&
-                    !SOLANA_ONLY_WALLET_NAMES.includes(o.name),
+                    !SOLANA_WALLET_NAMES_TO_SKIP.includes(o.name),
                 ).map((opt) => (
                   <EthereumOptionButton
                     key={opt.name}

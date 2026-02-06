@@ -44,11 +44,11 @@ export async function sendWelcomeEmail(params: {
   </p>
   <p style="color: #666; font-size: 14px; margin-top: 32px;">
     Thanks for joining us!<br/>
-    — The Culture Team
+    — For the Culture
   </p>
 </body>
 </html>`,
-        text: `Welcome, ${userName}!\n\n${template.emailBody}\n\nStart shopping: ${appUrl}/shop\n\nThanks for joining us!\n— The Culture Team`,
+        text: `Welcome, ${userName}!\n\n${template.emailBody}\n\nStart shopping: ${appUrl}/shop\n\nThanks for joining us!\n— For the Culture`,
       });
 
       if (process.env.NODE_ENV === "development") {
