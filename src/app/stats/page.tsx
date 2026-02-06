@@ -13,12 +13,17 @@ export const metadata: Metadata = {
 export default function StatsPage() {
   return (
     <TokenGateGuard resourceType="page" resourceId="stats">
-      <div className="container mx-auto max-w-5xl px-4 py-10 sm:py-14">
-        <header className="mb-10 border-b border-border pb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+      <div
+        className={`
+          container mx-auto flex min-h-0 flex-1 flex-col
+          gap-4 px-4 py-6 md:gap-8 md:px-6
+        `}
+      >
+        <header className="border-b border-border pb-6">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
             Store statistics
           </h1>
-          <p className="mt-2 text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             Overview of orders, sales, support tickets, and chats.
           </p>
         </header>
