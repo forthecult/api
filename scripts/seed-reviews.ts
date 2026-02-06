@@ -1,12 +1,18 @@
 /**
- * Seeds the database with real product reviews from the CSV export.
+ * Seeds the database with real product reviews.
  *
- * Reviews are stored with productSlug for matching to products.
+ * Staging uses JSON format: data/reviews-seed.json (preferred; no CSV parsing in CI).
+ * Generate it with: bun run db:extract-reviews (from data/reviews.csv).
+ *
+ * Every review is seeded even when the referenced product does not exist (productId
+ * is set to null). Reviews are still visible on the front-end (e.g. homepage
+ * testimonials). When a product with matching productSlug is later created, run
+ * link-orphan-reviews or the review will sync when that product exists.
+ *
  * Reviews can exist independently of products (productId nullable) for:
  * - Homepage testimonials and site-wide social proof
  * - Products that no longer exist or haven't been created yet
- * Only published and approved reviews are imported.
- * If data/reviews.csv is missing, the script exits 0 so staging seed can complete (shipping, products, etc.).
+ * Only published and approved reviews are imported (from CSV path).
  *
  * Run: bun run db:seed-reviews
  */
@@ -219,11 +225,11 @@ async function insertReviewRows(rows: ReviewRow[]): Promise<{
   return { inserted, linked, unlinked, skipped };
 }
 
-/** Seed from pre-extracted JSON (fast path: no CSV parsing, one product query, bulk insert). */
+/** Seed from pre-extracted JSON (fast path: no CSV parsing, one product query, bulk insert). All reviews are inserted; productId is null when the product does not exist. */
 async function seedFromJson(): Promise<boolean> {
   if (!fs.existsSync(SEED_JSON_PATH)) return false;
 
-  console.log("Seeding product reviews from pre-extracted JSON…");
+  console.log("Seeding product reviews from data/reviews-seed.json (JSON)…");
 
   const raw = JSON.parse(
     fs.readFileSync(SEED_JSON_PATH, "utf-8"),
@@ -258,6 +264,7 @@ async function seedFromJson(): Promise<boolean> {
     if (p.slug) slugToProduct.set(p.slug, { id: p.id, name: p.name });
   }
 
+  // Map every review to a row; productId is null when product doesn't exist (review still seeded for front-end).
   const rows: ReviewRow[] = raw.map((r) => {
     const product = slugToProduct.get(r.productSlug);
     return {
