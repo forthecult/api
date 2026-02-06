@@ -296,16 +296,22 @@ export function solanaAuthPlugin() {
                     })) as AccountRecord | null;
                     if (!existingAccountForWallet) {
                       const accountId = generateId({ model: "account" });
-                      await adapter.create({
-                        model: "account",
-                        data: {
-                          id: accountId,
-                          userId: existingUser.id,
-                          accountId: addressTrim,
-                          providerId: SOLANA_PROVIDER_ID,
-                          createdAt: now,
-                          updatedAt: now,
-                        },
+                      await (ctx.context.internalAdapter as {
+                        createAccount: (data: {
+                          id: string;
+                          userId: string;
+                          accountId: string;
+                          providerId: string;
+                          createdAt: Date;
+                          updatedAt: Date;
+                        }) => Promise<unknown>;
+                      }).createAccount({
+                        id: accountId,
+                        userId: existingUser.id,
+                        accountId: addressTrim,
+                        providerId: SOLANA_PROVIDER_ID,
+                        createdAt: now,
+                        updatedAt: now,
                       });
                     }
                   }
@@ -314,16 +320,22 @@ export function solanaAuthPlugin() {
               }
               if (!user) {
                 const accountId = generateId({ model: "account" });
-                await adapter.create({
-                  model: "account",
-                  data: {
-                    id: accountId,
-                    userId,
-                    accountId: addressTrim,
-                    providerId: SOLANA_PROVIDER_ID,
-                    createdAt: now,
-                    updatedAt: now,
-                  },
+                await (ctx.context.internalAdapter as {
+                  createAccount: (data: {
+                    id: string;
+                    userId: string;
+                    accountId: string;
+                    providerId: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                  }) => Promise<unknown>;
+                }).createAccount({
+                  id: accountId,
+                  userId,
+                  accountId: addressTrim,
+                  providerId: SOLANA_PROVIDER_ID,
+                  createdAt: now,
+                  updatedAt: now,
                 });
                 user = (await adapter.findOne({
                   model: "user",
@@ -364,9 +376,17 @@ export function solanaAuthPlugin() {
           } catch (err) {
             console.error("[solana-auth] Verify error:", err);
             if (err instanceof APIError) throw err;
+            // Don't expose raw DB/query errors to the client
+            const raw =
+              err instanceof Error ? err.message : "Verification failed";
+            const isDbError =
+              /insert into|update.*set|Failed query|relation .* does not exist/i.test(
+                raw,
+              );
             throw new APIError("INTERNAL_SERVER_ERROR", {
-              message:
-                err instanceof Error ? err.message : "Verification failed",
+              message: isDbError
+                ? "Something went wrong on our end. Please try again or contact support."
+                : raw,
             });
           }
         },

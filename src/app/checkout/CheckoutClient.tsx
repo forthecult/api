@@ -3177,30 +3177,6 @@ export function CheckoutClient() {
                         ) : null}
                       </div>
                     )}
-                    {appliedCoupon ? (
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Discount</span>
-                        <span className="flex items-center gap-2 font-medium">
-                          {appliedCoupon.freeShipping ? (
-                            "Free shipping"
-                          ) : (
-                            <FiatPrice
-                              usdAmount={appliedCoupon.discountCents / 100}
-                            />
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAppliedCoupon(null);
-                              setCouponError("");
-                            }}
-                            className="text-xs text-primary underline-offset-4 hover:underline"
-                          >
-                            Remove
-                          </button>
-                        </span>
-                      </div>
-                    ) : null}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
@@ -3208,6 +3184,30 @@ export function CheckoutClient() {
                       <FiatPrice usdAmount={subtotal} />
                     </span>
                   </div>
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Discount</span>
+                      <span className="flex items-center gap-2 font-medium">
+                        {appliedCoupon.freeShipping ? (
+                          "Free shipping"
+                        ) : (
+                          <FiatPrice
+                            usdAmount={appliedCoupon.discountCents / 100}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAppliedCoupon(null);
+                            setCouponError("");
+                          }}
+                          className="text-xs text-primary underline-offset-4 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </span>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between gap-1">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                       Shipping

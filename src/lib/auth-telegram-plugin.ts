@@ -170,16 +170,22 @@ export function telegramAuthPlugin() {
               },
             });
             const newAccountId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
-            await adapter.create({
-              model: "account",
-              data: {
-                id: newAccountId,
-                userId,
-                accountId,
-                providerId: TELEGRAM_PROVIDER_ID,
-                createdAt: date,
-                updatedAt: date,
-              },
+            await (ctx.context.internalAdapter as {
+              createAccount: (data: {
+                id: string;
+                userId: string;
+                accountId: string;
+                providerId: string;
+                createdAt: Date;
+                updatedAt: Date;
+              }) => Promise<unknown>;
+            }).createAccount({
+              id: newAccountId,
+              userId,
+              accountId,
+              providerId: TELEGRAM_PROVIDER_ID,
+              createdAt: date,
+              updatedAt: date,
             });
             user = (await adapter.findOne({
               model: "user",
