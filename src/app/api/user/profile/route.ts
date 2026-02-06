@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       name: userTable.name,
       image: userTable.image,
       email: userTable.email,
+      phone: userTable.phone,
     })
     .from(userTable)
     .where(eq(userTable.id, session.user.id))
@@ -39,6 +40,7 @@ export async function GET(request: NextRequest) {
     name: user.name ?? "",
     image: user.image ?? null,
     email: user.email ?? "",
+    phone: user.phone ?? "",
   });
 }
 
@@ -53,7 +55,12 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { firstName?: string; lastName?: string; image?: string | null };
+  let body: {
+    firstName?: string;
+    lastName?: string;
+    image?: string | null;
+    phone?: string | null;
+  };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -69,6 +76,9 @@ export async function PATCH(request: NextRequest) {
   }
   if (body.image !== undefined) {
     updates.image = typeof body.image === "string" && body.image.trim() ? body.image.trim() : null;
+  }
+  if (body.phone !== undefined) {
+    updates.phone = typeof body.phone === "string" && body.phone.trim() ? body.phone.trim() : null;
   }
 
   if (Object.keys(updates).length === 0) {

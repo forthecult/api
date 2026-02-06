@@ -4,7 +4,29 @@ import dynamic from "next/dynamic";
 
 import { Skeleton } from "~/ui/primitives/skeleton";
 
-const ProfilePageClient = dynamic(
+const ProfileViewClient = dynamic(
+  () => import("./profile-view.client").then((m) => m.ProfileViewClient),
+  {
+    loading: () => (
+      <div className="container max-w-4xl space-y-6 p-4 md:p-8">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-48 rounded-lg" />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
+            <Skeleton className="h-24 rounded-lg" />
+          </div>
+        </div>
+        <Skeleton className="h-40 rounded-lg" />
+      </div>
+    ),
+    ssr: false,
+  },
+);
+
+const EditProfilePageClient = dynamic(
   () => import("./page.client").then((m) => m.ProfilePageClient),
   {
     loading: () => (
@@ -26,6 +48,16 @@ const ProfilePageClient = dynamic(
   },
 );
 
-export function ProfileLoader() {
-  return <ProfilePageClient />;
+export function ProfileLoader({
+  segment,
+}: {
+  segment?: string[];
+}) {
+  const isEdit = segment?.[0] === "edit";
+
+  if (isEdit) {
+    return <EditProfilePageClient />;
+  }
+
+  return <ProfileViewClient />;
 }

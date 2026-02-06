@@ -37,6 +37,7 @@ export function ProfilePageClient() {
           setFirstName(data.firstName ?? "");
           setLastName(data.lastName ?? "");
           setEmail(data.email ?? user.email ?? "");
+          setPhone(data.phone ?? "");
         } else {
           // Fallback to session data
           setEmail(user.email ?? "");
@@ -71,6 +72,7 @@ export function ProfilePageClient() {
         body: JSON.stringify({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
+          phone: phone.trim() || null,
         }),
       });
       
@@ -95,9 +97,9 @@ export function ProfilePageClient() {
           size="icon"
           variant="ghost"
           className="shrink-0"
-          aria-label="Back"
+          aria-label="Back to profile"
         >
-          <Link href="/dashboard">
+          <Link href="/dashboard/profile">
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>

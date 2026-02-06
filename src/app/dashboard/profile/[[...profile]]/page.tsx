@@ -7,6 +7,11 @@ export const metadata = {
   title: `Profile | ${SEO_CONFIG.name}`,
 };
 
-export default function ProfilePage() {
-  return <ProfileLoader />;
+export default async function ProfilePage({
+  params,
+}: {
+  params: Promise<{ profile?: string[] }>;
+}) {
+  const { profile: segment } = await params;
+  return <ProfileLoader segment={segment} />;
 }

@@ -1,7 +1,8 @@
 # Run from GitHub Actions so DATABASE_URL never touches your machine.
 # Required secrets: repo Settings → Secrets and variables → Actions:
 #   DATABASE_URL       - Railway (or other) Postgres URL
-#   UPLOADTHING_TOKEN  - UploadThing token (same as app). Required for brand logos to be uploaded; if missing, that step is skipped.
+#   UPLOADTHING_TOKEN  - UploadThing token (optional). If set, brand logos are uploaded; if missing, the upload step runs but the script exits 0 and skips.
+# Do NOT use "if: secrets.UPLOADTHING_TOKEN != ''" — the secrets context is not allowed in job/step if: conditions and causes "Unrecognized named-value: 'secrets'" failure.
 # Trigger: Actions tab → "Seed staging (DB schema + categories)" → Run workflow
 
 name: Seed staging (DB schema + categories)
@@ -46,6 +47,7 @@ jobs:
           bun run db:seed-products
           bun run db:seed-reviews
 
+      # Script skips upload and exits 0 when UPLOADTHING_TOKEN is unset; no workflow if: needed
       - name: Upload brand logos to UploadThing and update DB
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
