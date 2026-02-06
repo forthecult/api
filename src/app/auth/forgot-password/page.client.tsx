@@ -46,8 +46,8 @@ export function ForgotPasswordClient() {
 
   if (sent) {
     return (
-      <div className="container flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
-        <Card>
+      <div className="container flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-6 p-4">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <KeyRound className="h-5 w-5" />
@@ -70,8 +70,8 @@ export function ForgotPasswordClient() {
   }
 
   return (
-    <div className="container flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
-      <Card>
+    <div className="container flex min-h-[60vh] max-w-md flex-col items-center justify-center gap-6 p-4">
+      <Card className="w-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="h-5 w-5" />

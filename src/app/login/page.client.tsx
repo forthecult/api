@@ -75,7 +75,7 @@ function LoginPageClientInner() {
 
   if (isSessionPending) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
+      <div className="flex h-screen w-full max-w-[100vw] items-center justify-center overflow-x-hidden">
         <p className="text-muted-foreground">Checking session…</p>
       </div>
     );

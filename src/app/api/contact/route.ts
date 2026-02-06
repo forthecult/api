@@ -51,9 +51,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // In development, log the message; in production, integrate your email provider (Resend, SendGrid, etc.)
-    if (process.env.NODE_ENV === "development") {
-      console.log("[Contact form]", {
+    const to =
+      (typeof process.env.CONTACT_TO_EMAIL === "string" &&
+        process.env.CONTACT_TO_EMAIL.trim()) ||
+      "support@forthecult.store";
+
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const { Resend } = await import("resend");
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const from =
+          typeof process.env.RESEND_FROM_EMAIL === "string" &&
+          process.env.RESEND_FROM_EMAIL.length > 0
+            ? process.env.RESEND_FROM_EMAIL.trim()
+            : "onboarding@resend.dev";
+        const safeMessage = message.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeName = name.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeEmail = email.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeSubject = subject.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const { error } = await resend.emails.send({
+          from,
+          to,
+          replyTo: email.trim(),
+          subject: `[Contact] ${subject.trim()}`,
+          html: `<!DOCTYPE html><html><body><p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p><p><strong>Subject:</strong> ${safeSubject}</p><hr/><pre style="white-space:pre-wrap;font-family:inherit;">${safeMessage}</pre></body></html>`,
+          text: `From: ${name.trim()} <${email.trim()}>\nSubject: ${subject.trim()}\n\n${message.trim()}`,
+        });
+        if (error) {
+          console.error("[Contact form] Resend error:", error);
+          return NextResponse.json(
+            { error: "Failed to send message. Please try again." },
+            { status: 500 },
+          );
+        }
+      } catch (err) {
+        console.error("[Contact form] Resend send failed:", err);
+        return NextResponse.json(
+          { error: "Failed to send message. Please try again." },
+          { status: 500 },
+        );
+      }
+    } else if (process.env.NODE_ENV === "development") {
+      console.log("[Contact form] No RESEND_API_KEY - would send to", to, {
         name: name.trim(),
         email: email.trim(),
         subject: subject.trim(),
@@ -62,7 +101,6 @@ export async function POST(request: NextRequest) {
           (message.trim().length > 200 ? "…" : ""),
       });
     }
-    // TODO: In production, send email via Resend/SendGrid/etc. using CONTACT_TO_EMAIL or similar.
 
     return NextResponse.json({ success: true });
   } catch (err) {

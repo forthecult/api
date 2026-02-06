@@ -316,7 +316,7 @@ export function AffiliatePageClient() {
                     id="applyPayoutAddress"
                     placeholder={
                       applyPayoutMethod === "paypal"
-                        ? "your@email.com"
+                        ? "satoshi@nakamoto.com"
                         : "Wallet address"
                     }
                     value={applyPayoutAddress}
@@ -619,7 +619,7 @@ export function AffiliatePageClient() {
                         type={payoutMethod === "paypal" ? "email" : "text"}
                         placeholder={
                           payoutMethod === "paypal"
-                            ? "your@email.com"
+                            ? "satoshi@nakamoto.com"
                             : "Wallet address"
                         }
                         value={payoutAddress}

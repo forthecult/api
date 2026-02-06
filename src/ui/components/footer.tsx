@@ -95,20 +95,34 @@ export function Footer({ className }: { className?: string }) {
             </p>
             <div className="flex space-x-4">
               <Button
+                asChild
                 className="h-8 w-8 rounded-full"
                 size="icon"
                 variant="ghost"
               >
-                <XIcon className="h-4 w-4" />
-                <span className="sr-only">X</span>
+                <Link
+                  href="https://x.com/bytheculture"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  aria-label="X @bytheculture"
+                >
+                  <XIcon className="h-4 w-4" />
+                </Link>
               </Button>
               <Button
+                asChild
                 className="h-8 w-8 rounded-full"
                 size="icon"
                 variant="ghost"
               >
-                <TelegramIcon className="h-4 w-4" />
-                <span className="sr-only">Telegram</span>
+                <Link
+                  href="https://t.me/bytheculture"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  aria-label="Telegram @bytheculture"
+                >
+                  <TelegramIcon className="h-4 w-4" />
+                </Link>
               </Button>
               <Button
                 className="h-8 w-8 rounded-full"

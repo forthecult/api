@@ -1,8 +1,8 @@
 "use client";
 
-import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
   createAddress,
@@ -11,6 +11,9 @@ import {
   updateAddress,
 } from "~/app/dashboard/addresses/actions";
 import type { Address } from "~/db/schema/addresses/types";
+import type { LoqateFindItem } from "~/lib/loqate";
+import { mapRetrieveToShipping } from "~/lib/loqate";
+import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 import {
@@ -80,6 +83,8 @@ function formatAddress(addr: Address): string {
   return parts.join(", ");
 }
 
+const LOQATE_FIND_TIMEOUT_MS = 10_000;
+
 export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
@@ -87,12 +92,90 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const [editing, setEditing] = useState<Address | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [pending, setPending] = useState(false);
+  const [loqateSuggestions, setLoqateSuggestions] = useState<LoqateFindItem[]>(
+    [],
+  );
+  const [loqateLoading, setLoqateLoading] = useState(false);
+  const [loqateOpen, setLoqateOpen] = useState(false);
+  const loqateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextFindRef = useRef(false);
 
   const openAdd = () => {
     setEditing(null);
     setForm(emptyForm);
+    setLoqateSuggestions([]);
+    setLoqateOpen(false);
     setAddOpen(true);
   };
+
+  // Loqate address finder: debounced Find when Add modal is open and address1/countryCode change
+  useEffect(() => {
+    if (!addOpen) {
+      setLoqateSuggestions([]);
+      setLoqateOpen(false);
+      return;
+    }
+    const text = form.address1?.trim() ?? "";
+    if (text.length < 2) {
+      setLoqateSuggestions([]);
+      setLoqateOpen(false);
+      return;
+    }
+    if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
+    loqateDebounceRef.current = setTimeout(() => {
+      loqateDebounceRef.current = null;
+      if (skipNextFindRef.current) {
+        skipNextFindRef.current = false;
+        return;
+      }
+      setLoqateLoading(true);
+      const params = new URLSearchParams({ text });
+      if (form.countryCode?.trim())
+        params.set("countries", form.countryCode.trim());
+      const ac = new AbortController();
+      const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
+      fetch(`/api/loqate/find?${params.toString()}`, { signal: ac.signal })
+        .then((res) => (res.ok ? res.json() : { Items: [] }))
+        .then((data: { Items?: LoqateFindItem[] }) => {
+          setLoqateSuggestions(data.Items ?? []);
+          setLoqateOpen((data.Items?.length ?? 0) > 0);
+        })
+        .catch(() => setLoqateSuggestions([]))
+        .finally(() => {
+          clearTimeout(timeoutId);
+          setLoqateLoading(false);
+        });
+    }, 300);
+    return () => {
+      if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
+    };
+  }, [addOpen, form.address1, form.countryCode]);
+
+  const onSelectLoqateAddress = useCallback((id: string) => {
+    setLoqateLoading(true);
+    fetch(`/api/loqate/retrieve?id=${encodeURIComponent(id)}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Retrieve failed");
+        return res.json();
+      })
+      .then((addr) => {
+        const mapped = mapRetrieveToShipping(addr);
+        setForm((prev) => ({
+          ...prev,
+          address1: mapped.street,
+          address2: mapped.apartment || prev.address2,
+          city: mapped.city,
+          stateCode: mapped.state,
+          zip: mapped.zip,
+          countryCode: mapped.country || prev.countryCode,
+        }));
+        skipNextFindRef.current = true;
+        setLoqateOpen(false);
+        setLoqateSuggestions([]);
+      })
+      .catch(() => {})
+      .finally(() => setLoqateLoading(false));
+  }, []);
 
   const openEdit = (addr: Address) => {
     setEditing(addr);
@@ -201,14 +284,70 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="add-address1">Address line 1 *</Label>
-                  <Input
-                    id="add-address1"
-                    onChange={(e) =>
-                      setForm((f) => ({ ...f, address1: e.target.value }))
-                    }
-                    required
-                    value={form.address1}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="add-address1"
+                      aria-autocomplete="list"
+                      aria-expanded={loqateOpen}
+                      onChange={(e) =>
+                        setForm((f) => ({ ...f, address1: e.target.value }))
+                      }
+                      onFocus={() => {
+                        if (loqateSuggestions.length > 0) setLoqateOpen(true);
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => setLoqateOpen(false), 200);
+                      }}
+                      placeholder="Start typing to search address"
+                      required
+                      value={form.address1}
+                    />
+                    {loqateOpen &&
+                      (loqateSuggestions.length > 0 || loqateLoading) && (
+                        <div
+                          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
+                          role="listbox"
+                        >
+                          {loqateLoading &&
+                          loqateSuggestions.length === 0 ? (
+                            <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                              <Loader2
+                                className="h-4 w-4 shrink-0 animate-spin"
+                                aria-hidden
+                              />
+                              Finding addresses…
+                            </div>
+                          ) : (
+                            loqateSuggestions
+                              .filter((item) => item.Type === "Address")
+                              .map((item) => (
+                                <button
+                                  key={item.Id}
+                                  type="button"
+                                  className={cn(
+                                    "w-full cursor-pointer px-3 py-2 text-left text-sm",
+                                    "hover:bg-muted focus:bg-muted focus:outline-none",
+                                  )}
+                                  role="option"
+                                  onMouseDown={(e) => {
+                                    e.preventDefault();
+                                    onSelectLoqateAddress(item.Id);
+                                  }}
+                                >
+                                  <span className="font-medium">
+                                    {item.Text}
+                                  </span>
+                                  {item.Description ? (
+                                    <span className="ml-1 text-muted-foreground">
+                                      {item.Description}
+                                    </span>
+                                  ) : null}
+                                </button>
+                              ))
+                          )}
+                        </div>
+                      )}
+                  </div>
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="add-address2">
@@ -224,7 +363,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="add-phone">
-                    Phone (optional, required for Printful shipping)
+                    Phone (optional)
                   </Label>
                   <Input
                     id="add-phone"
@@ -417,7 +556,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="edit-phone">
-                  Phone (optional, required for Printful shipping)
+                  Phone (optional)
                 </Label>
                 <Input
                   id="edit-phone"

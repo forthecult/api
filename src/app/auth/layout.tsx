@@ -3,5 +3,9 @@ export default async function AuthLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <>{children}</>;
+  return (
+    <div className="min-w-0 overflow-x-hidden">
+      {children}
+    </div>
+  );
 }

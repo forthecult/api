@@ -136,7 +136,8 @@ export default function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          <AuthWalletModalProvider>
+          <WagmiProvider>
+            <AuthWalletModalProvider>
             <CriticalRoutePrefetcher />
             <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
             <CartProvider>
@@ -152,7 +153,8 @@ export default function RootLayout({
                 </Suspense>
               </CryptoCurrencyProvider>
             </CartProvider>
-          </AuthWalletModalProvider>
+            </AuthWalletModalProvider>
+          </WagmiProvider>
         </ThemeProvider>
         <SpeedInsights />
         {/* Structured data for search engines */}

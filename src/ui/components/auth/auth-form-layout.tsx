@@ -25,9 +25,9 @@ export function AuthFormLayout({
   const [imageError, setImageError] = useState(false);
 
   return (
-    <div className="grid h-screen w-screen md:grid-cols-2">
+    <div className="grid h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-2">
       {/* Left side - Image or gradient fallback */}
-      <div className="relative hidden md:block">
+      <div className="relative hidden min-w-0 md:block">
         {!imageError ? (
           <Image
             alt="Auth background image"
@@ -54,8 +54,8 @@ export function AuthFormLayout({
       </div>
 
       {/* Right side - Form content */}
-      <div className="flex items-center justify-center p-4 md:p-8">
-        <div className="w-full max-w-md space-y-4">{children}</div>
+      <div className="flex min-w-0 items-center justify-center p-4 md:p-8">
+        <div className="w-full min-w-0 max-w-md space-y-4">{children}</div>
       </div>
     </div>
   );

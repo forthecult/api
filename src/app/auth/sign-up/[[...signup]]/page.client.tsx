@@ -87,14 +87,14 @@ export function SignUpPageClient() {
   return (
     <div
       className={`
-        grid h-screen w-screen
+        grid h-screen w-full max-w-[100vw] overflow-x-hidden
         md:grid-cols-2
       `}
     >
       {/* Left side - Image */}
       <div
         className={`
-          relative hidden
+          relative hidden min-w-0
           md:block
         `}
       >
@@ -122,11 +122,11 @@ export function SignUpPageClient() {
       {/* Right side - Sign up form */}
       <div
         className={`
-          flex items-center justify-center p-4
+          flex min-w-0 items-center justify-center p-4
           md:p-8
         `}
       >
-        <div className="w-full max-w-md space-y-4">
+        <div className="w-full min-w-0 max-w-md space-y-4">
           <div
             className={`
               space-y-4 text-center

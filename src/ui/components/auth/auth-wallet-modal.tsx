@@ -7,10 +7,69 @@ import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAccount, useConnect, useConnectors, useSignMessage } from "wagmi";
 
 import { SYSTEM_CONFIG } from "~/app";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import { cn } from "~/lib/cn";
+
+/** Ethereum / WalletConnect options shown in the wallet list (wallets-first flow). */
+const ETHEREUM_WALLET_OPTIONS = [
+  { id: "walletconnect" as const, name: "WalletConnect", icon: "https://raw.githubusercontent.com/WalletConnect/walletconnect-assets/master/Logo/Blue/Logo.svg" },
+  { id: "injected" as const, name: "MetaMask", icon: "https://images.ctfassets.net/clixtyxoaeas/4rnpEzy1ATWRKVBOLxZ1Fm/a74dc1eed36d23d7ea6030383a4d5163/MetaMask-icon-fox.svg" },
+  { id: "injected" as const, name: "Brave Wallet", icon: "https://brave.com/static-assets/images/brave-logo-splash.svg" },
+  { id: "injected" as const, name: "Coinbase Wallet", icon: "https://cdn.coinbase.com/wallet-sdk-common/logo.png" },
+  { id: "injected" as const, name: "Ctrl Wallet", icon: "https://ctrl.fun/favicon.ico" },
+] as const;
+
+const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
+
+function EthereumOptionButton({
+  name,
+  icon,
+  isDetected,
+  onClick,
+  disabled,
+}: {
+  name: string;
+  icon: string;
+  isDetected?: boolean;
+  onClick: () => void;
+  disabled: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
+        "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+      )}
+    >
+      <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={icon}
+          alt=""
+          className="size-8 object-contain"
+          width={32}
+          height={32}
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      </div>
+      <span className="flex-1 font-medium">{name}</span>
+      {isDetected && (
+        <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+          Detected
+        </span>
+      )}
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+    </button>
+  );
+}
 
 const API_BASE =
   typeof window !== "undefined"
@@ -94,14 +153,28 @@ export function AuthWalletModal({
   } = useWallet();
 
   const signFlowStarted = useRef(false);
-  const [step, setStep] = useState<"chain" | "wallet" | "signing" | "error">(
-    "chain",
-  );
+  const [step, setStep] = useState<"wallet" | "signing" | "error">("wallet");
   const [error, setError] = useState("");
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [selectedChain, setSelectedChain] = useState<
     "solana" | "ethereum" | null
   >(null);
+  /** When user picks an Ethereum option: "walletconnect" or "injected" (MetaMask/Brave/etc.). */
+  const [selectedEthereumOption, setSelectedEthereumOption] = useState<
+    "walletconnect" | "injected" | null
+  >(null);
+
+  const [isMetaMaskDetected, setIsMetaMaskDetected] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setIsMetaMaskDetected(Boolean((window as unknown as { ethereum?: { isMetaMask?: boolean } }).ethereum?.isMetaMask));
+  }, []);
+
+  const connectors = useConnectors();
+  const { connectAsync } = useConnect();
+  const { address: evmAddress } = useAccount();
+  const { signMessageAsync } = useSignMessage();
+  const wcSignDoneRef = useRef(false);
 
   const solanaWallets = wallets.filter(
     (w) =>
@@ -109,17 +182,15 @@ export function AuthWalletModal({
       w.readyState === WalletReadyState.Loadable,
   );
 
-  const handleSelectSolana = useCallback(() => {
-    setError("");
-    setSelectedChain("solana");
-    setStep("wallet");
-  }, []);
-
-  const handleSelectEthereum = useCallback(() => {
-    setError("");
-    setSelectedChain("ethereum");
-    setStep("signing");
-  }, []);
+  const handleSelectEthereumOption = useCallback(
+    (option: "walletconnect" | "injected") => {
+      setError("");
+      setSelectedChain("ethereum");
+      setSelectedEthereumOption(option);
+      setStep("signing");
+    },
+    [],
+  );
 
   const handleSelectWallet = useCallback(
     async (wallet: Wallet) => {
@@ -237,6 +308,8 @@ export function AuthWalletModal({
           }
           if (isDev) console.info("[auth] Solana sign-in succeeded");
           if (cancelled) return;
+          // Move focus out of modal before closing to avoid "Blocked aria-hidden" and flash
+          (document.activeElement as HTMLElement)?.blur?.();
           onOpenChange(false);
           if (link) {
             // Dispatch event so security page can refresh accounts list
@@ -282,9 +355,146 @@ export function AuthWalletModal({
     router,
   ]);
 
-  // Ethereum (SIWE): use an EVM provider (prefer MetaMask so Phantom's ethereum doesn't intercept and show "Unsupported account")
+  // WalletConnect: connect first, then SIWE runs in the next effect when evmAddress is set
+  useEffect(() => {
+    if (
+      !open ||
+      selectedChain !== "ethereum" ||
+      step !== "signing" ||
+      selectedEthereumOption !== "walletconnect"
+    )
+      return;
+    if (signFlowStarted.current) return;
+    const wcConnector = connectors?.find(
+      (c) => (c as { type?: string }).type === "walletConnect",
+    );
+    if (!wcConnector) {
+      setError("WalletConnect is not available. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID.");
+      setStep("error");
+      return;
+    }
+    signFlowStarted.current = true;
+    let cancelled = false;
+    connectAsync({ connector: wcConnector })
+      .then(() => {
+        if (cancelled) return;
+        setWcConnectDone(true);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "WalletConnect failed");
+          setStep("error");
+          signFlowStarted.current = false;
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    open,
+    selectedChain,
+    step,
+    selectedEthereumOption,
+    connectors,
+    connectAsync,
+  ]);
+
+  // WalletConnect SIWE: once we have evmAddress after connect, do challenge + sign + verify
+  useEffect(() => {
+    if (
+      !open ||
+      selectedChain !== "ethereum" ||
+      selectedEthereumOption !== "walletconnect" ||
+      step !== "signing" ||
+      !evmAddress ||
+      wcSignDoneRef.current ||
+      !signMessageAsync
+    )
+      return;
+    wcSignDoneRef.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/auth/sign-in/ethereum/challenge`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ address: evmAddress }),
+          },
+        );
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(
+            (data as { message?: string }).message ?? "Failed to get challenge",
+          );
+        }
+        const { message } = (await res.json()) as { message: string };
+        if (cancelled) return;
+        const signature = await signMessageAsync({ message });
+        if (cancelled) return;
+        const verifyRes = await fetch(
+          `${API_BASE}/api/auth/sign-in/ethereum/verify`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              address: evmAddress,
+              message,
+              signature,
+              link: link || undefined,
+            }),
+          },
+        );
+        if (!verifyRes.ok) {
+          const data = await verifyRes.json().catch(() => ({}));
+          throw new Error(
+            (data as { message?: string }).message ?? "Verification failed",
+          );
+        }
+        if (cancelled) return;
+        (document.activeElement as HTMLElement)?.blur?.();
+        onOpenChange(false);
+        if (link) {
+          window.dispatchEvent(new CustomEvent(WALLET_LINKED_EVENT));
+          router.refresh();
+        } else {
+          const url = SYSTEM_CONFIG.redirectAfterSignIn;
+          setTimeout(() => {
+            window.location.href = url;
+          }, 150);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Something went wrong",
+          );
+          setStep("error");
+          signFlowStarted.current = false;
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    open,
+    selectedChain,
+    selectedEthereumOption,
+    step,
+    evmAddress,
+    signMessageAsync,
+    link,
+    onOpenChange,
+    router,
+  ]);
+
+  // Ethereum injected (SIWE): use window.ethereum (MetaMask, Brave, etc.)
   useEffect(() => {
     if (!open || selectedChain !== "ethereum" || step !== "signing") return;
+    if (selectedEthereumOption === "walletconnect") return;
     if (signFlowStarted.current) return;
     signFlowStarted.current = true;
     let cancelled = false;
@@ -375,6 +585,7 @@ export function AuthWalletModal({
           );
         }
         if (cancelled) return;
+        (document.activeElement as HTMLElement)?.blur?.();
         onOpenChange(false);
         if (link) {
           // Dispatch event so security page can refresh accounts list
@@ -400,11 +611,13 @@ export function AuthWalletModal({
 
   useEffect(() => {
     if (!open) {
-      setStep("chain");
+      setStep("wallet");
       setError("");
       setSelectedWallet(null);
       setSelectedChain(null);
+      setSelectedEthereumOption(null);
       signFlowStarted.current = false;
+      wcSignDoneRef.current = false;
     }
   }, [open]);
 
@@ -426,88 +639,77 @@ export function AuthWalletModal({
             </p>
           )}
 
-          {step === "chain" && (
-            <div className="flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={handleSelectSolana}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                  "text-left transition-colors hover:bg-muted/50",
-                )}
-              >
-                <Image
-                  src="/crypto/solana/solanaLogoMark.svg"
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="rounded-md object-contain"
-                />
-                <span className="flex-1 font-medium">Solana</span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </button>
-              <button
-                type="button"
-                onClick={handleSelectEthereum}
-                className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                  "text-left transition-colors hover:bg-muted/50",
-                )}
-              >
-                <Image
-                  src="/crypto/ethereum/ethereum-logo.svg"
-                  alt=""
-                  width={32}
-                  height={32}
-                  className="rounded-md object-contain"
-                />
-                <span className="flex-1 font-medium">Ethereum</span>
-                <ChevronRight className="size-4 text-muted-foreground" />
-              </button>
-            </div>
-          )}
-
           {step === "wallet" && (
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => setStep("chain")}
-                className="-ml-1 text-sm text-muted-foreground hover:text-foreground"
-              >
-                ← Back
-              </button>
+            <div className="space-y-4">
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Choose wallet
+                Suggested
               </p>
-              {solanaWallets.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  No Solana wallet detected. Install Phantom or another
-                  supported wallet.
-                </p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {solanaWallets
-                    .filter(
-                      (wallet, index, self) =>
-                        // Remove duplicates by adapter name
-                        index ===
+              <div className="flex flex-col gap-2">
+                {solanaWallets
+                  .filter(
+                    (w, i, self) =>
+                      SUGGESTED_SOLANA_NAMES.includes(w.adapter.name) &&
+                      i === self.findIndex((x) => x.adapter.name === w.adapter.name),
+                  )
+                  .map((wallet, index) => (
+                    <WalletOption
+                      key={`${wallet.adapter.name}-${index}`}
+                      wallet={wallet}
+                      onClick={() => handleSelectWallet(wallet)}
+                      disabled={connecting}
+                      isDetected={
+                        wallet.readyState === WalletReadyState.Installed
+                      }
+                    />
+                  ))}
+                <EthereumOptionButton
+                  name="MetaMask"
+                  icon={ETHEREUM_WALLET_OPTIONS[1].icon}
+                  isDetected={isMetaMaskDetected}
+                  onClick={() => handleSelectEthereumOption("injected")}
+                  disabled={connecting}
+                />
+              </div>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Others
+              </p>
+              <div className="flex flex-col gap-2">
+                {solanaWallets
+                  .filter(
+                    (wallet, index, self) =>
+                      !SUGGESTED_SOLANA_NAMES.includes(wallet.adapter.name) &&
+                      index ===
                         self.findIndex(
                           (w) => w.adapter.name === wallet.adapter.name,
                         ),
-                    )
-                    .map((wallet, index) => (
-                      <WalletOption
-                        key={`${wallet.adapter.name}-${index}`}
-                        wallet={wallet}
-                        onClick={() => handleSelectWallet(wallet)}
-                        disabled={connecting}
-                        isDetected={
-                          wallet.readyState === WalletReadyState.Installed
-                        }
-                      />
-                    ))}
-                </div>
-              )}
+                  )
+                  .map((wallet, index) => (
+                    <WalletOption
+                      key={`${wallet.adapter.name}-${index}`}
+                      wallet={wallet}
+                      onClick={() => handleSelectWallet(wallet)}
+                      disabled={connecting}
+                      isDetected={
+                        wallet.readyState === WalletReadyState.Installed
+                      }
+                    />
+                  ))}
+                {ETHEREUM_WALLET_OPTIONS.filter((o) => o.name !== "MetaMask").map(
+                  (opt) => (
+                    <EthereumOptionButton
+                      key={opt.name}
+                      name={opt.name}
+                      icon={opt.icon}
+                      onClick={() =>
+                        handleSelectEthereumOption(
+                          opt.id === "walletconnect" ? "walletconnect" : "injected",
+                        )
+                      }
+                      disabled={connecting}
+                    />
+                  ),
+                )}
+              </div>
             </div>
           )}
 
@@ -518,7 +720,9 @@ export function AuthWalletModal({
                   <p className="text-lg font-semibold">Sign the message</p>
                   <p className="mt-2 text-sm text-muted-foreground">
                     {selectedChain === "ethereum"
-                      ? "Open your Ethereum wallet (e.g. MetaMask) to sign and complete sign-in."
+                      ? selectedEthereumOption === "walletconnect"
+                        ? "Complete connection in WalletConnect, then sign the message to finish."
+                        : "Open your Ethereum wallet (e.g. MetaMask) to sign and complete sign-in."
                       : `Open ${selectedWallet?.adapter.name ?? "your wallet"} to sign and complete sign-in.`}
                   </p>
                 </>
@@ -528,6 +732,7 @@ export function AuthWalletModal({
                   type="button"
                   onClick={() => {
                     signFlowStarted.current = false;
+                    wcSignDoneRef.current = false;
                     setStep(
                       selectedChain === "ethereum" ? "signing" : "wallet",
                     );

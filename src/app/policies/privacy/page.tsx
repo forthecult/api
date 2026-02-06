@@ -45,40 +45,52 @@ export default function PrivacyPolicyPage() {
           <p className="mt-3 leading-relaxed text-muted-foreground">
             We collect only what we need to provide and improve our services:
           </p>
-          <ul className="mt-3 space-y-2 text-muted-foreground" role="list">
+          <ul className="mt-3 space-y-4 text-muted-foreground" role="list">
             <li className="flex gap-2 leading-relaxed">
               <span
                 className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
               />
-              <strong className="font-medium text-foreground">
-                Contact & account:
-              </strong>{" "}
-              name, email, password (hashed), and optional profile details you
-              provide.
+              <span className="min-w-0">
+                <strong className="block font-medium text-foreground">
+                  Contact & account:
+                </strong>
+                <span className="block mt-0.5">
+                  name, email, password (hashed), and optional profile details
+                  you provide.
+                </span>
+              </span>
             </li>
             <li className="flex gap-2 leading-relaxed">
               <span
                 className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
               />
-              <strong className="font-medium text-foreground">
-                Orders & shipping:
-              </strong>{" "}
-              billing and shipping addresses, phone (if provided), and order
-              history.
+              <span className="min-w-0">
+                <strong className="block font-medium text-foreground">
+                  Orders & shipping:
+                </strong>
+                <span className="block mt-0.5">
+                  billing and shipping addresses, phone (if provided), and order
+                  history.
+                </span>
+              </span>
             </li>
             <li className="flex gap-2 leading-relaxed">
               <span
                 className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
               />
-              <strong className="font-medium text-foreground">
-                Usage data:
-              </strong>{" "}
-              basic technical data (e.g. IP, device type) for security, fraud
-              prevention, and making the site work. We do not use this for
-              cross-site tracking or advertising.
+              <span className="min-w-0">
+                <strong className="block font-medium text-foreground">
+                  Usage data:
+                </strong>
+                <span className="block mt-0.5">
+                  basic technical data (e.g. IP, device type) for security,
+                  fraud prevention, and making the site work. We do not use this
+                  for cross-site tracking or advertising.
+                </span>
+              </span>
             </li>
           </ul>
         </section>
