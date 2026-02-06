@@ -13,15 +13,18 @@
 
 import "dotenv/config";
 
-import { eq } from "drizzle-orm";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
 import { db } from "../src/db";
 import { productReviewsTable, productsTable } from "../src/db/schema";
 
-// CSV file path (relative to project root)
-const CSV_PATH = path.join(__dirname, "../data/reviews.csv");
+// CSV path: prefer cwd (so CI with working-directory: relivator finds data/reviews.csv), else relative to script
+const CSV_PATH = (() => {
+  const fromCwd = path.join(process.cwd(), "data", "reviews.csv");
+  if (fs.existsSync(fromCwd)) return fromCwd;
+  return path.join(__dirname, "..", "data", "reviews.csv");
+})();
 
 interface CsvReview {
   product_handle: string;
@@ -152,10 +155,14 @@ function generateReviewId(
 async function seed() {
   console.log("Seeding product reviews from CSV…");
 
-  // If CSV is missing, skip so staging seed can complete (shipping, products, etc.)
   if (!fs.existsSync(CSV_PATH)) {
     console.warn(`Reviews CSV not found at: ${CSV_PATH}`);
     console.log("Skipping reviews seed. Add data/reviews.csv and re-run db:seed-reviews to import reviews.");
+    // In CI, fail so the workflow does not silently skip reviews
+    if (process.env.CI === "true") {
+      console.error("Failing in CI because data/reviews.csv is required for staging.");
+      process.exit(1);
+    }
     return;
   }
 
@@ -191,10 +198,26 @@ async function seed() {
 
   console.log(`Found ${slugToProduct.size} products with slugs in database`);
 
-  let inserted = 0;
+  // Build rows for batch insert (avoid one round-trip per review)
+  const BATCH_SIZE = 150;
+  const rows: Array<{
+    id: string;
+    productId: string | null;
+    productSlug: string;
+    productName: string;
+    rating: number;
+    title: string | null;
+    comment: string;
+    customerName: string;
+    author: string | null;
+    location: string | null;
+    showName: boolean;
+    visible: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    userId: null;
+  }> = [];
   let skipped = 0;
-  let linked = 0;
-  let unlinked = 0;
 
   for (const review of validReviews) {
     const rating = parseInt(review.rating, 10);
@@ -203,7 +226,6 @@ async function seed() {
       continue;
     }
 
-    // Parse the date
     let createdAt: Date;
     try {
       createdAt = new Date(review.created_at);
@@ -219,48 +241,65 @@ async function seed() {
       review.author,
       review.created_at,
     );
-
-    // Determine display name and anonymous flag
     const isAnonymous =
       review.author.toLowerCase() === "anonymous" || !review.author.trim();
     const customerName = isAnonymous ? "Anonymous" : review.author;
-
-    // Try to match to existing product (optional)
     const product = slugToProduct.get(review.product_handle);
     const productId = product?.id || null;
     const productName = product?.name || formatSlugAsName(review.product_handle);
 
+    rows.push({
+      id: reviewId,
+      productId,
+      productSlug: review.product_handle,
+      productName,
+      rating,
+      title: review.title || null,
+      comment: review.body || "Great product!",
+      customerName,
+      author: isAnonymous ? null : review.author,
+      location: review.location || null,
+      showName: !isAnonymous,
+      visible: true,
+      createdAt,
+      updatedAt: createdAt,
+      userId: null,
+    });
+  }
+
+  let inserted = 0;
+  let linked = 0;
+  let unlinked = 0;
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const chunk = rows.slice(i, i + BATCH_SIZE);
     try {
       await db
         .insert(productReviewsTable)
-        .values({
-          id: reviewId,
-          productId, // null if product doesn't exist
-          productSlug: review.product_handle, // always store for matching/display
-          productName, // snapshot for display
-          rating,
-          title: review.title || null,
-          comment: review.body || "Great product!",
-          customerName,
-          author: isAnonymous ? null : review.author,
-          location: review.location || null,
-          showName: !isAnonymous,
-          visible: true,
-          createdAt,
-          updatedAt: createdAt,
-          userId: null, // Imported reviews don't have user accounts
-        })
+        .values(chunk)
         .onConflictDoNothing({ target: productReviewsTable.id });
-
-      inserted++;
-      if (productId) {
-        linked++;
-      } else {
-        unlinked++;
+      inserted += chunk.length;
+      for (const r of chunk) {
+        if (r.productId) linked++;
+        else unlinked++;
       }
     } catch (err) {
-      console.error(`Failed to insert review ${reviewId}:`, err);
-      skipped++;
+      console.error(`Batch insert failed at offset ${i}:`, err);
+      // Fallback: insert one-by-one for this chunk so we don't lose progress
+      for (const row of chunk) {
+        try {
+          await db
+            .insert(productReviewsTable)
+            .values(row)
+            .onConflictDoNothing({ target: productReviewsTable.id });
+          inserted++;
+          if (row.productId) linked++;
+          else unlinked++;
+        } catch (e) {
+          console.error(`Failed to insert review ${row.id}:`, e);
+          skipped++;
+        }
+      }
     }
   }
 

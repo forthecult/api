@@ -22,6 +22,9 @@ export interface ProductForAutoAssign {
   tags?: string[];
 }
 
+/**
+ * Match is case-insensitive for title and tag (e.g. "Bitcoin" and "bitcoin" match the same).
+ */
 function productMatchesRule(
   product: ProductForAutoAssign,
   rule: {

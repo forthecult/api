@@ -5,6 +5,9 @@
 # Do NOT use "if: secrets.UPLOADTHING_TOKEN != ''" — the secrets context is not allowed in job/step if: conditions and causes "Unrecognized named-value: 'secrets'" failure.
 # Trigger: Actions tab → "Seed staging (DB schema + categories)" → Run workflow
 #
+# If the job is cancelled due to timeout, the database may still have been fully seeded
+# (schema, categories, brands, shipping, products, reviews). Check your DB before re-running.
+#
 # If this repo is a monorepo (e.g. repo root is Cult with relivator/ inside), each step
 # runs from relivator/ so that bun and db commands use the correct package.json and schema.
 
@@ -16,7 +19,8 @@ on:
 jobs:
   seed:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Seed should finish in a few minutes with batched inserts; 15m is a safe ceiling
+    timeout-minutes: 15
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:

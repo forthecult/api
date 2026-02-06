@@ -5,13 +5,22 @@
  * not tickers (btc, eth, doge). Parent slugs: currency, network, dapps (short and clear).
  *
  * Every category has title, metaDescription, and description for SEO and category pages.
- * Copy aligned with Culture Bible (four pillars, brand voice). Run: bun run db:seed-categories
+ * Also seeds "Bulk add products" auto-assign rules for crypto categories (title/tag contains
+ * full name or ticker) so products are auto-assigned when they match.
+ *
+ * Run: bun run db:seed-categories. Used as the first step of db:seed:staging and db:seed:production.
  */
 
 import "dotenv/config";
 
+import { createId } from "@paralleldrive/cuid2";
+import { inArray } from "drizzle-orm";
+
 import { db } from "../src/db";
-import { categoriesTable } from "../src/db/schema";
+import {
+  categoriesTable,
+  categoryAutoAssignRuleTable,
+} from "../src/db/schema";
 
 const now = new Date();
 
@@ -1010,6 +1019,46 @@ const APPLICATION_SUB: CategoryRow[] = [
   },
 ];
 
+/**
+ * Crypto categories get "Bulk add products" rules so products are auto-assigned when
+ * product title or product tag contains the crypto name or ticker (case-insensitive).
+ * Four rules per category: title contains full name, title contains ticker,
+ * tag contains full name (lowercase), tag contains ticker (lowercase).
+ */
+type CryptoBulkAddConfig = {
+  categoryId: string;
+  /** Display/full name (e.g. Bitcoin, Ethereum). Used for title + tag rules. */
+  fullName: string;
+  /** Ticker (e.g. BTC, ETH). Used for title + tag rules. */
+  ticker: string;
+};
+
+const CRYPTO_BULK_ADD_CONFIG: CryptoBulkAddConfig[] = [
+  // Currency
+  { categoryId: "bitcoin", fullName: "Bitcoin", ticker: "BTC" },
+  { categoryId: "dogecoin", fullName: "Dogecoin", ticker: "DOGE" },
+  { categoryId: "monero", fullName: "Monero", ticker: "XMR" },
+  { categoryId: "litecoin", fullName: "Litecoin", ticker: "LTC" },
+  { categoryId: "zcash", fullName: "Zcash", ticker: "ZEC" },
+  // Network
+  { categoryId: "avalanche", fullName: "Avalanche", ticker: "AVAX" },
+  { categoryId: "cosmos", fullName: "Cosmos", ticker: "ATOM" },
+  { categoryId: "ethereum", fullName: "Ethereum", ticker: "ETH" },
+  { categoryId: "filecoin", fullName: "Filecoin", ticker: "FIL" },
+  { categoryId: "toncoin", fullName: "Toncoin", ticker: "TON" },
+  // Application / dApp
+  { categoryId: "1inch", fullName: "1inch", ticker: "1INCH" },
+  { categoryId: "aave", fullName: "Aave", ticker: "AAVE" },
+  { categoryId: "compound", fullName: "Compound", ticker: "COMP" },
+  { categoryId: "decentraland", fullName: "Decentraland", ticker: "MANA" },
+  { categoryId: "maker", fullName: "Maker", ticker: "MKR" },
+  { categoryId: "storj", fullName: "Storj", ticker: "STORJ" },
+  { categoryId: "sushiswap", fullName: "SushiSwap", ticker: "SUSHI" },
+  { categoryId: "synthetix", fullName: "Synthetix", ticker: "SNX" },
+  { categoryId: "the-sandbox", fullName: "The Sandbox", ticker: "SAND" },
+  { categoryId: "uniswap", fullName: "Uniswap", ticker: "UNI" },
+];
+
 /** Not seeded to staging/production; use only in local dev if you need a "Testing" category. */
 const _DEMO_CATEGORY: CategoryRow[] = [
   {
@@ -1072,6 +1121,41 @@ async function seed() {
       });
   }
   console.log(`Done. ${ALL_CATEGORIES.length} categories seeded.`);
+
+  // Seed "Bulk add products" rules for crypto categories (title/tag contains full name or ticker; matching is case-insensitive).
+  const cryptoCategoryIds = CRYPTO_BULK_ADD_CONFIG.map((c) => c.categoryId);
+  await db
+    .delete(categoryAutoAssignRuleTable)
+    .where(inArray(categoryAutoAssignRuleTable.categoryId, cryptoCategoryIds));
+  for (const { categoryId, fullName, ticker } of CRYPTO_BULK_ADD_CONFIG) {
+    const tagFull = fullName.toLowerCase();
+    const tagTicker = ticker.toLowerCase();
+    const rules: Array<{
+      titleContains: string | null;
+      tagContains: string | null;
+    }> = [
+      { titleContains: fullName, tagContains: null },
+      { titleContains: ticker, tagContains: null },
+      { titleContains: null, tagContains: tagFull },
+      { titleContains: null, tagContains: tagTicker },
+    ];
+    for (const r of rules) {
+      await db.insert(categoryAutoAssignRuleTable).values({
+        id: createId(),
+        categoryId,
+        titleContains: r.titleContains,
+        tagContains: r.tagContains,
+        createdWithinDays: null,
+        brand: null,
+        enabled: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+  console.log(
+    `Seeded bulk-add rules for ${CRYPTO_BULK_ADD_CONFIG.length} crypto categories (4 rules each).`,
+  );
 }
 
 seed().catch((err) => {

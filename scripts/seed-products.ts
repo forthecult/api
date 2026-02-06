@@ -88,10 +88,10 @@ async function seed() {
   console.log(
     "Seeding products… (run seed-categories.ts first to create categories)",
   );
-  for (const p of DEMO_PRODUCTS) {
-    await db
-      .insert(productsTable)
-      .values({
+  await db
+    .insert(productsTable)
+    .values(
+      DEMO_PRODUCTS.map((p) => ({
         id: p.id,
         name: p.name,
         imageUrl: p.imageUrl,
@@ -102,26 +102,26 @@ async function seed() {
         published: true,
         createdAt: now,
         updatedAt: now,
-      })
-      .onConflictDoNothing({ target: productsTable.id });
-  }
+      })),
+    )
+    .onConflictDoNothing({ target: productsTable.id });
 
   console.log("Linking products to categories…");
-  for (const p of DEMO_PRODUCTS) {
-    await db
-      .insert(productCategoriesTable)
-      .values({
+  await db
+    .insert(productCategoriesTable)
+    .values(
+      DEMO_PRODUCTS.map((p) => ({
         productId: p.id,
         categoryId: p.categoryId,
         isMain: true,
-      })
-      .onConflictDoNothing({
-        target: [
-          productCategoriesTable.productId,
-          productCategoriesTable.categoryId,
-        ],
-      });
-  }
+      })),
+    )
+    .onConflictDoNothing({
+      target: [
+        productCategoriesTable.productId,
+        productCategoriesTable.categoryId,
+      ],
+    });
 
   console.log(
     "Done. Demo products are in the database. Reviews are production data only.",
