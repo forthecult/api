@@ -52,7 +52,11 @@ export function SecurityPageClient() {
     password: "",
     confirm: "",
   });
+  const [addEmailStep, setAddEmailStep] = useState<"email" | "code" | "password">("email");
+  const [addEmailCode, setAddEmailCode] = useState("");
   const [addEmailLoading, setAddEmailLoading] = useState(false);
+  const [addEmailSendCodeLoading, setAddEmailSendCodeLoading] = useState(false);
+  const [addEmailVerifyLoading, setAddEmailVerifyLoading] = useState(false);
   const [addEmailError, setAddEmailError] = useState("");
 
   const fetchAccounts = useCallback(async () => {
@@ -156,6 +160,64 @@ export function SecurityPageClient() {
     }
   };
 
+  const handleSendAddEmailCode = async () => {
+    const trimmed = addEmailPassword.email.trim();
+    if (!trimmed) {
+      setAddEmailError("Email is required.");
+      return;
+    }
+    setAddEmailError("");
+    setAddEmailSendCodeLoading(true);
+    try {
+      const res = await fetch("/api/auth/add-email/send-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmed }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setAddEmailError(data.error ?? "Failed to send code.");
+        return;
+      }
+      setAddEmailStep("code");
+      setAddEmailCode("");
+      setMessage("Check your inbox for the verification code.");
+    } finally {
+      setAddEmailSendCodeLoading(false);
+    }
+  };
+
+  const handleVerifyAddEmailCode = async () => {
+    const email = addEmailPassword.email.trim().toLowerCase();
+    const code = addEmailCode.replace(/\D/g, "");
+    if (!email) {
+      setAddEmailError("Email is required.");
+      return;
+    }
+    if (code.length < 6) {
+      setAddEmailError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setAddEmailError("");
+    setAddEmailVerifyLoading(true);
+    try {
+      const res = await fetch("/api/auth/add-email/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setAddEmailError(data.error ?? "Invalid or expired code.");
+        return;
+      }
+      setAddEmailStep("password");
+      setMessage("");
+    } finally {
+      setAddEmailVerifyLoading(false);
+    }
+  };
+
   const handleAddEmailPassword = async () => {
     const { email, password, confirm } = addEmailPassword;
     const trimmed = email.trim();
@@ -197,6 +259,8 @@ export function SecurityPageClient() {
         return;
       }
       setAddEmailPassword({ email: "", password: "", confirm: "" });
+      setAddEmailStep("email");
+      setAddEmailCode("");
       setMessage(
         "Email and password added. You can now sign in with email/password.",
       );
@@ -510,7 +574,8 @@ export function SecurityPageClient() {
             </CardTitle>
             <p className="text-sm text-muted-foreground">
               Add an email and password to sign in with email/password in
-              addition to your wallet.
+              addition to your wallet. We’ll send a verification code to your
+              email to confirm it’s yours, then you can set a password.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -519,54 +584,142 @@ export function SecurityPageClient() {
                 {addEmailError}
               </div>
             )}
-            <div className="grid gap-2">
-              <Label htmlFor="add-email">Email</Label>
-              <Input
-                id="add-email"
-                type="email"
-                value={addEmailPassword.email}
-                onChange={(e) =>
-                  setAddEmailPassword((prev) => ({
-                    ...prev,
-                    email: e.target.value,
-                  }))
-                }
-                placeholder="you@example.com"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="add-password">Password</Label>
-              <Input
-                id="add-password"
-                type="password"
-                value={addEmailPassword.password}
-                onChange={(e) =>
-                  setAddEmailPassword((prev) => ({
-                    ...prev,
-                    password: e.target.value,
-                  }))
-                }
-                placeholder="At least 8 characters"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="add-confirm">Confirm password</Label>
-              <Input
-                id="add-confirm"
-                type="password"
-                value={addEmailPassword.confirm}
-                onChange={(e) =>
-                  setAddEmailPassword((prev) => ({
-                    ...prev,
-                    confirm: e.target.value,
-                  }))
-                }
-                placeholder="Repeat password"
-              />
-            </div>
-            <Button disabled={addEmailLoading} onClick={handleAddEmailPassword}>
-              {addEmailLoading ? "Adding…" : "Add email & password"}
-            </Button>
+
+            {addEmailStep === "email" && (
+              <>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-email">Email</Label>
+                  <Input
+                    id="add-email"
+                    type="email"
+                    value={addEmailPassword.email}
+                    onChange={(e) =>
+                      setAddEmailPassword((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <Button
+                  disabled={addEmailSendCodeLoading}
+                  onClick={handleSendAddEmailCode}
+                >
+                  {addEmailSendCodeLoading ? "Sending…" : "Send verification code"}
+                </Button>
+              </>
+            )}
+
+            {addEmailStep === "code" && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  We sent a 6-digit code to{" "}
+                  <strong>{addEmailPassword.email}</strong>. Enter it below.
+                </p>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-code">Verification code</Label>
+                  <Input
+                    id="add-code"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={8}
+                    placeholder="000000"
+                    value={addEmailCode}
+                    onChange={(e) =>
+                      setAddEmailCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+                    }
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    disabled={addEmailVerifyLoading || addEmailCode.length < 6}
+                    onClick={handleVerifyAddEmailCode}
+                  >
+                    {addEmailVerifyLoading ? "Verifying…" : "Verify"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={addEmailSendCodeLoading}
+                    onClick={() => {
+                      setAddEmailCode("");
+                      setAddEmailError("");
+                      void handleSendAddEmailCode();
+                    }}
+                  >
+                    {addEmailSendCodeLoading ? "Sending…" : "Resend code"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAddEmailStep("email");
+                      setAddEmailCode("");
+                      setAddEmailError("");
+                    }}
+                  >
+                    Use a different email
+                  </Button>
+                </div>
+              </>
+            )}
+
+            {addEmailStep === "password" && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Email verified. Choose a password for{" "}
+                  <strong>{addEmailPassword.email}</strong>.
+                </p>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-password">Password</Label>
+                  <Input
+                    id="add-password"
+                    type="password"
+                    value={addEmailPassword.password}
+                    onChange={(e) =>
+                      setAddEmailPassword((prev) => ({
+                        ...prev,
+                        password: e.target.value,
+                      }))
+                    }
+                    placeholder="At least 8 characters"
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="add-confirm">Confirm password</Label>
+                  <Input
+                    id="add-confirm"
+                    type="password"
+                    value={addEmailPassword.confirm}
+                    onChange={(e) =>
+                      setAddEmailPassword((prev) => ({
+                        ...prev,
+                        confirm: e.target.value,
+                      }))
+                    }
+                    placeholder="Repeat password"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button disabled={addEmailLoading} onClick={handleAddEmailPassword}>
+                    {addEmailLoading ? "Adding…" : "Add email & password"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAddEmailStep("code");
+                      setAddEmailPassword((prev) => ({
+                        ...prev,
+                        password: "",
+                        confirm: "",
+                      }));
+                      setAddEmailError("");
+                    }}
+                  >
+                    Back to code
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
