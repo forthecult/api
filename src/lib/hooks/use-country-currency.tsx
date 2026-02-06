@@ -617,10 +617,12 @@ export function CountryCurrencyProvider({
   children,
   initialCountry,
 }: CountryCurrencyProviderProps) {
-  const geoCountry =
-    initialCountry != null && isValidCountryCode(initialCountry)
-      ? (initialCountry as CountryCode)
-      : DEFAULT_COUNTRY;
+  // Check if we have a valid initial country from cookie (set by middleware)
+  const hasValidInitialCountry =
+    initialCountry != null && isValidCountryCode(initialCountry);
+  const geoCountry = hasValidInitialCountry
+    ? (initialCountry as CountryCode)
+    : DEFAULT_COUNTRY;
   const geoCurrency = defaultCurrencyForCountry(geoCountry);
 
   const [selectedCountry, setSelectedCountryState] =
@@ -628,7 +630,46 @@ export function CountryCurrencyProvider({
   const [selectedCurrency, setSelectedCurrencyState] =
     React.useState<string>(geoCurrency);
   const [rates, setRates] = React.useState<Rates>(FALLBACK_RATES);
+  const [geoFetched, setGeoFetched] = React.useState(false);
 
+  // Fetch geo from API if no initial country was provided (first visit without middleware geo)
+  React.useEffect(() => {
+    // Skip if we already have a valid country from cookie/middleware or localStorage
+    if (hasValidInitialCountry || geoFetched) return;
+
+    // Check localStorage first - if user has saved preferences, don't override
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        setGeoFetched(true);
+        return; // User has saved preferences, don't fetch geo
+      }
+    } catch {
+      // ignore
+    }
+
+    // Fetch geo from API to detect user's country
+    fetch("/api/geo")
+      .then((res) => res.json())
+      .then((data: { country?: string | null }) => {
+        if (data.country && isValidCountryCode(data.country)) {
+          const detectedCountry = data.country as CountryCode;
+          const detectedCurrency = defaultCurrencyForCountry(detectedCountry);
+          setSelectedCountryState(detectedCountry);
+          setSelectedCurrencyState(detectedCurrency);
+          // Set cookie so next page load uses the detected country
+          document.cookie = `${COOKIE_NAME}=${detectedCountry}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+        }
+      })
+      .catch(() => {
+        // Ignore errors, keep default
+      })
+      .finally(() => {
+        setGeoFetched(true);
+      });
+  }, [hasValidInitialCountry, geoFetched]);
+
+  // Load preferences from localStorage (user's explicit choice takes priority)
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -655,14 +696,11 @@ export function CountryCurrencyProvider({
           document.cookie = `${COOKIE_NAME}=${country}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
         }
         if (currency) setSelectedCurrencyState(currency);
-      } else {
-        setSelectedCountryState(geoCountry);
-        setSelectedCurrencyState(geoCurrency);
       }
     } catch {
       // ignore
     }
-  }, [geoCountry, geoCurrency]);
+  }, []);
 
   const persist = React.useCallback(
     (country: CountryCode, currency: string) => {

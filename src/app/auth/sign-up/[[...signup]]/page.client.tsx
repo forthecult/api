@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { SEO_CONFIG } from "~/app";
+import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
 import { signIn, signUp } from "~/lib/auth-client";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { GoogleIcon } from "~/ui/components/icons/google";
@@ -51,7 +51,8 @@ export function SignUpPageClient() {
         ...(lastName && { lastName }),
       })
       .then(() => {
-        router.push("/login?registered=true");
+        // Auto sign-in is enabled, redirect to dashboard
+        router.push(SYSTEM_CONFIG.redirectAfterSignUp);
       })
       .catch((err: unknown) => {
         setError("Registration failed. Please try again.");

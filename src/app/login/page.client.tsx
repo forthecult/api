@@ -26,16 +26,21 @@ function LoginPageClientInner() {
   const callbackUrl = searchParams.get("callbackUrl");
   const redirectTarget = callbackUrl || SYSTEM_CONFIG.redirectAfterSignIn;
 
-  const { isPending: isSessionPending } = useCurrentUserOrRedirect(
-    undefined,
-    redirectTarget,
-    true,
-  );
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // Track if we're redirecting to prevent double redirects
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  // Only redirect if user is already logged in (not after form submission)
+  // Pass empty okUrl when redirecting to prevent hook from also redirecting
+  const { isPending: isSessionPending, user } = useCurrentUserOrRedirect(
+    undefined,
+    isRedirecting ? "" : redirectTarget,
+    true,
+  );
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,11 +58,16 @@ function LoginPageClientInner() {
             ? result.error.message
             : "Invalid email or password",
         );
+        setLoading(false);
         return;
       }
-      // Full page load so the session cookie is sent and dashboard sees the session
-      // Use callbackUrl if provided (e.g., from admin app), otherwise use default redirect
-      window.location.href = redirectTarget;
+      // Mark as redirecting to prevent useCurrentUserOrRedirect from also redirecting
+      setIsRedirecting(true);
+      // Small delay to ensure session cookie is fully set before redirect
+      // This prevents the dashboard from not seeing the session immediately
+      setTimeout(() => {
+        window.location.href = redirectTarget;
+      }, 100);
     } catch (err) {
       const message =
         err &&
@@ -68,15 +78,16 @@ function LoginPageClientInner() {
           : "Invalid email or password";
       setError(message);
       console.error(err);
-    } finally {
       setLoading(false);
     }
   };
 
-  if (isSessionPending) {
+  if (isSessionPending || isRedirecting || user) {
     return (
       <div className="flex h-screen w-full max-w-[100vw] items-center justify-center overflow-x-hidden">
-        <p className="text-muted-foreground">Checking session…</p>
+        <p className="text-muted-foreground">
+          {isRedirecting || user ? "Redirecting…" : "Checking session…"}
+        </p>
       </div>
     );
   }

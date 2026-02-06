@@ -15,6 +15,7 @@ import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
 import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
 import { db } from "~/db";
 import { sendResetPasswordEmail } from "~/lib/send-reset-password";
+import { sendWelcomeEmail } from "~/lib/send-welcome-email";
 import {
   accountTable,
   sessionTable,
@@ -201,8 +202,8 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
-    // Disable so user is sent to login after signup; avoids 401 from auto sign-in on staging (cookies/baseURL)
-    autoSignIn: false,
+    // Auto sign-in after signup so user doesn't have to enter credentials twice
+    autoSignIn: true,
     sendResetPassword: async ({ user, url }, _request) => {
       void sendResetPasswordEmail({ to: user.email, url, user });
     },
@@ -276,6 +277,21 @@ export const auth = betterAuth({
         input: true,
         required: false,
         type: "string",
+      },
+    },
+  },
+
+  // Hooks for lifecycle events
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          // Send welcome email after user is created
+          void sendWelcomeEmail({
+            to: user.email,
+            user: { name: user.name, email: user.email, id: user.id },
+          });
+        },
       },
     },
   },

@@ -60,7 +60,8 @@ export function SignupPageClient() {
         ...(lastName && { lastName }),
       })
       .then(() => {
-        router.push("/login?registered=true");
+        // Auto sign-in is enabled, redirect to dashboard
+        router.push(SYSTEM_CONFIG.redirectAfterSignUp);
       })
       .catch((err: unknown) => {
         setError("Registration failed. Please try again.");
