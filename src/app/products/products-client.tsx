@@ -268,15 +268,10 @@ export function ProductsClient({
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-              <p className="mt-1 text-lg text-muted-foreground">
-                {description}
+              {/* Show full category description if available, otherwise fall back to short description */}
+              <p className="mt-1 max-w-2xl text-muted-foreground">
+                {categoryDescriptionFull?.trim() || description}
               </p>
-              {categoryDescriptionFull != null &&
-                categoryDescriptionFull.trim() !== "" && (
-                  <div className="mt-3 max-w-2xl text-muted-foreground">
-                    {categoryDescriptionFull}
-                  </div>
-                )}
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
