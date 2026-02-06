@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 
 import { db } from "~/db";
+import { getUploadThingToken } from "~/lib/uploadthing-token";
 import { uploadsTable } from "~/db/schema/uploads/tables";
 import { auth } from "~/lib/auth";
 
@@ -33,8 +34,11 @@ export async function DELETE(request: Request) {
     }
 
     // Delete from UploadThing
-    const utapi = new UTApi();
-    await utapi.deleteFiles(mediaItem.key);
+    const token = getUploadThingToken();
+    if (token) {
+      const utapi = new UTApi({ token });
+      await utapi.deleteFiles(mediaItem.key);
+    }
 
     // Delete from database
     await db.delete(uploadsTable).where(eq(uploadsTable.id, body.id));

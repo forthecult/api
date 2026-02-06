@@ -56,8 +56,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const token = getUploadThingToken();
+  if (!token) {
+    return NextResponse.json(
+      { error: "UPLOADTHING_TOKEN not set. Add it in .env (no quotes around the value)." },
+      { status: 503 },
+    );
+  }
+
   try {
-    const utapi = new UTApi();
+    const utapi = new UTApi({ token });
     const result = await utapi.uploadFiles(file);
 
     const data = Array.isArray(result) ? result[0] : result;

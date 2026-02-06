@@ -42,12 +42,20 @@ function ext(name: string): string {
   return i === -1 ? "" : name.slice(i).toLowerCase();
 }
 
+/** Strip surrounding quotes from env value so UploadThing gets the raw token. */
+function getToken(): string | undefined {
+  const raw = process.env.UPLOADTHING_TOKEN;
+  if (raw == null || raw === "") return undefined;
+  return raw.trim().replace(/^['"]|['"]$/g, "");
+}
+
 async function main() {
   const force = process.argv.includes("--force");
 
-  if (!process.env.UPLOADTHING_TOKEN) {
+  const token = getToken();
+  if (!token) {
     console.log(
-      "UPLOADTHING_TOKEN not set; skipping brand asset upload. Add it in .env (local) or as a repo secret (CI) to upload logos.",
+      "UPLOADTHING_TOKEN not set; skipping brand asset upload. Add it in .env (local) or as a repo secret (CI). Use the raw token with no quotes around it.",
     );
     process.exit(0);
   }
@@ -59,7 +67,7 @@ async function main() {
 
   const brands = await db.select({ id: brandTable.id, slug: brandTable.slug, logoUrl: brandTable.logoUrl }).from(brandTable);
 
-  const utapi = new UTApi();
+  const utapi = new UTApi({ token });
   let uploaded = 0;
 
   for (const brand of brands) {

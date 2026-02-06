@@ -46,8 +46,16 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const token = getUploadThingToken();
+  if (!token) {
+    return NextResponse.json(
+      { error: "Upload not configured (UPLOADTHING_TOKEN missing)." },
+      { status: 503 },
+    );
+  }
+
   try {
-    const utapi = new UTApi();
+    const utapi = new UTApi({ token });
     const result = await utapi.uploadFiles(file);
 
     const data = Array.isArray(result) ? result[0] : result;
