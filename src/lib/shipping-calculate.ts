@@ -369,6 +369,7 @@ export async function runShippingCalculate(
   }> = [];
   let allOptions: (typeof shippingOptionsTable.$inferSelect)[] = [];
   let brandNameToId = new Map<string, string>();
+  let printifyDefaultVariantByProductId = new Map<string, string>();
 
   try {
     const [
@@ -430,7 +431,7 @@ export async function runShippingCalculate(
     products = productsResult;
     variants = variantsResult;
     // First variant per product (for Printify items that have no variant in cart)
-    const printifyDefaultVariantByProductId = new Map<string, string>();
+    printifyDefaultVariantByProductId = new Map<string, string>();
     if (defaultVariantsForPrintifyResult.length > 0) {
       for (const row of defaultVariantsForPrintifyResult) {
         if (row.productId && row.externalId && !printifyDefaultVariantByProductId.has(row.productId)) {
