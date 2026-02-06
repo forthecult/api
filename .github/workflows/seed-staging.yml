@@ -61,6 +61,11 @@ jobs:
         working-directory: ${{ steps.wd.outputs.dir }}
         run: |
           bun run db:seed-products
+          # Reviews are seeded from data/reviews-seed.json (JSON). File must be committed for staging.
+          if [ ! -f data/reviews-seed.json ]; then
+            echo "::error::data/reviews-seed.json is missing. Run locally: bun run db:extract-reviews (from data/reviews.csv), then commit data/reviews-seed.json"
+            exit 1
+          fi
           bun run db:seed-reviews
 
       # Optional: upload logos. Requires repo secret UPLOADTHING_TOKEN (Settings → Secrets and variables → Actions).

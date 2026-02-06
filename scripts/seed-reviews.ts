@@ -294,8 +294,15 @@ async function seedFromJson(): Promise<boolean> {
 }
 
 async function seed() {
-  // Fast path: pre-extracted JSON (e.g. in CI; run db:extract-reviews when CSV changes)
+  // Prefer JSON for staging (no CSV parsing in CI). All reviews are seeded even when product doesn't exist.
   if (await seedFromJson()) return;
+
+  if (process.env.CI === "true") {
+    console.error(
+      "Staging seed requires data/reviews-seed.json. Commit it (run locally: bun run db:extract-reviews from data/reviews.csv, then commit data/reviews-seed.json).",
+    );
+    process.exit(1);
+  }
 
   console.log("Seeding product reviews from CSV…");
 
@@ -304,12 +311,6 @@ async function seed() {
     console.log(
       "Skipping reviews seed. Use data/reviews-seed.json (run bun run db:extract-reviews from CSV) or add data/reviews.csv.",
     );
-    if (process.env.CI === "true") {
-      console.error(
-        "Failing in CI: need data/reviews-seed.json or data/reviews.csv for staging.",
-      );
-      process.exit(1);
-    }
     return;
   }
 

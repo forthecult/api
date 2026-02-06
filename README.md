@@ -87,7 +87,7 @@ After deploying (e.g. Vercel, Railway) and creating a **staging** (or production
    ```bash
    bun run db:seed:staging
    ```
-   Run this from your machine with `DATABASE_URL` set to the staging DB, or from CI (e.g. a deploy script or GitHub Action that has access to `DATABASE_URL`). Reviews are imported from `data/reviews.csv` if present; if the file is missing, the reviews step is skipped and the rest of the seed still completes.
+   Run this from your machine with `DATABASE_URL` set to the staging DB, or from CI (e.g. a deploy script or GitHub Action that has access to `DATABASE_URL`). Reviews are seeded from **data/reviews-seed.json** (JSON; generate with `bun run db:extract-reviews` from `data/reviews.csv` and commit the file). Reviews are always seeded even when the product they reference doesn't exist yet (they can sync when the product is created).
 
 To seed only categories and products (no brands): `bun run db:seed:all`.  
 To run seeds individually: `bun run db:seed-categories`, `bun run db:seed-brands`, `bun run db:seed-shipping-by-brand`, `bun run db:seed`, `bun run db:seed-reviews`.
