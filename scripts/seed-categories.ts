@@ -14,7 +14,7 @@
 import "dotenv/config";
 
 import { createId } from "@paralleldrive/cuid2";
-import { inArray } from "drizzle-orm";
+import { inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
@@ -1090,57 +1090,73 @@ const ALL_CATEGORIES: CategoryRow[] = [
 
 async function seed() {
   console.log("Seeding Culture categories…");
-  for (const c of ALL_CATEGORIES) {
+
+  // Bulk upsert in chunks to avoid driver/DB limits; ~4 round-trips instead of 81 (was ~14m over remote DB).
+  const BATCH = 25;
+  const conflictSet = {
+    name: sql.raw(`excluded.${categoriesTable.name.name}`),
+    slug: sql.raw(`excluded.${categoriesTable.slug.name}`),
+    title: sql.raw(`excluded.${categoriesTable.title.name}`),
+    metaDescription: sql.raw(
+      `excluded.${categoriesTable.metaDescription.name}`,
+    ),
+    description: sql.raw(`excluded.${categoriesTable.description.name}`),
+    level: sql.raw(`excluded.${categoriesTable.level.name}`),
+    parentId: sql.raw(`excluded.${categoriesTable.parentId.name}`),
+    updatedAt: sql.raw(`excluded.${categoriesTable.updatedAt.name}`),
+  };
+  for (let i = 0; i < ALL_CATEGORIES.length; i += BATCH) {
+    const chunk = ALL_CATEGORIES.slice(i, i + BATCH).map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      title: c.title,
+      metaDescription: c.metaDescription,
+      description: c.description,
+      level: c.level,
+      parentId: c.parentId,
+      featured: false,
+      createdAt: now,
+      updatedAt: now,
+    }));
     await db
       .insert(categoriesTable)
-      .values({
-        id: c.id,
-        name: c.name,
-        slug: c.slug,
-        title: c.title,
-        metaDescription: c.metaDescription,
-        description: c.description,
-        level: c.level,
-        parentId: c.parentId,
-        featured: false,
-        createdAt: now,
-        updatedAt: now,
-      })
+      .values(chunk)
       .onConflictDoUpdate({
         target: categoriesTable.id,
-        set: {
-          name: c.name,
-          slug: c.slug,
-          title: c.title,
-          metaDescription: c.metaDescription,
-          description: c.description,
-          level: c.level,
-          parentId: c.parentId,
-          updatedAt: now,
-        },
+        set: conflictSet,
       });
   }
   console.log(`Done. ${ALL_CATEGORIES.length} categories seeded.`);
 
-  // Seed "Bulk add products" rules for crypto categories (title/tag contains full name or ticker; matching is case-insensitive).
+  // Seed "Bulk add products" rules: one delete + one bulk insert instead of 80 round-trips.
   const cryptoCategoryIds = CRYPTO_BULK_ADD_CONFIG.map((c) => c.categoryId);
   await db
     .delete(categoryAutoAssignRuleTable)
     .where(inArray(categoryAutoAssignRuleTable.categoryId, cryptoCategoryIds));
+
+  const ruleRows: Array<{
+    id: string;
+    categoryId: string;
+    titleContains: string | null;
+    tagContains: string | null;
+    createdWithinDays: number | null;
+    brand: string | null;
+    enabled: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+  }> = [];
   for (const { categoryId, fullName, ticker } of CRYPTO_BULK_ADD_CONFIG) {
     const tagFull = fullName.toLowerCase();
     const tagTicker = ticker.toLowerCase();
-    const rules: Array<{
-      titleContains: string | null;
-      tagContains: string | null;
-    }> = [
+    const rules: Array<{ titleContains: string | null; tagContains: string | null }> = [
       { titleContains: fullName, tagContains: null },
       { titleContains: ticker, tagContains: null },
       { titleContains: null, tagContains: tagFull },
       { titleContains: null, tagContains: tagTicker },
     ];
     for (const r of rules) {
-      await db.insert(categoryAutoAssignRuleTable).values({
+      ruleRows.push({
         id: createId(),
         categoryId,
         titleContains: r.titleContains,
@@ -1152,6 +1168,11 @@ async function seed() {
         updatedAt: now,
       });
     }
+  }
+  for (let i = 0; i < ruleRows.length; i += 50) {
+    await db
+      .insert(categoryAutoAssignRuleTable)
+      .values(ruleRows.slice(i, i + 50));
   }
   console.log(
     `Seeded bulk-add rules for ${CRYPTO_BULK_ADD_CONFIG.length} crypto categories (4 rules each).`,
