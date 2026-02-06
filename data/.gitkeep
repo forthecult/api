@@ -1,2 +1,3 @@
 # Data files for seeding
-# reviews.csv - Real product reviews from legacy store (imported to DB via seed-reviews.ts)
+# reviews.csv - Source CSV for reviews (run "bun run db:extract-reviews" to regenerate reviews-seed.json)
+# reviews-seed.json - Pre-extracted review rows for fast CI seed (no CSV parsing in GitHub Actions)
