@@ -457,7 +457,7 @@ export async function runShippingCalculate(
             .from(productVariantsTable)
             .where(inArray(productVariantsTable.id, variantIds))
         : Promise.resolve([]),
-      printifyProductIdsWithoutVariant.length > 0
+      productIdsWithoutVariant.length > 0
         ? db
             .select({
               productId: productVariantsTable.productId,
@@ -467,7 +467,7 @@ export async function runShippingCalculate(
             .where(
               inArray(
                 productVariantsTable.productId,
-                printifyProductIdsWithoutVariant,
+                productIdsWithoutVariant,
               ),
             )
             .orderBy(
