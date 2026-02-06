@@ -259,6 +259,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground
                     hover:text-foreground
                   `}
+                  href="/refund"
+                >
+                  Request refund
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground
+                    hover:text-foreground
+                  `}
                   href="/contact"
                 >
                   Contact Us

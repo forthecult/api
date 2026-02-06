@@ -137,12 +137,19 @@ export default function RefundPolicyPage() {
             Questions
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
-            To start a return or ask about refunds, use our{" "}
+            To start a return or request a refund, use our{" "}
+            <Link
+              href="/refund"
+              className="font-medium text-primary underline-offset-4 hover:underline"
+            >
+              refund request page
+            </Link>
+            . For questions,{" "}
             <Link
               href="/contact"
               className="font-medium text-primary underline-offset-4 hover:underline"
             >
-              contact page
+              contact us
             </Link>
             . We are here to help.
           </p>
