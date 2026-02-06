@@ -27,6 +27,9 @@ const ETHEREUM_WALLET_OPTIONS = [
  */
 const SOLANA_WALLET_NAMES_TO_SKIP = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
 
+/** Wallets that support both Solana and EVM; after selecting one we show "Choose network" step. */
+const MULTI_CHAIN_WALLET_NAMES = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
+
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
 
 function EthereumOptionButton({
@@ -158,7 +161,9 @@ export function AuthWalletModal({
   } = useWallet();
 
   const signFlowStarted = useRef(false);
-  const [step, setStep] = useState<"wallet" | "signing" | "error">("wallet");
+  const [step, setStep] = useState<
+    "wallet" | "network" | "signing" | "error"
+  >("wallet");
   const [error, setError] = useState("");
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [selectedChain, setSelectedChain] = useState<
@@ -680,6 +685,23 @@ export function AuthWalletModal({
     }
   }, [open]);
 
+  const handleTryAgain = useCallback(() => {
+    setError("");
+    signFlowStarted.current = false;
+    wcSignDoneRef.current = false;
+    if (
+      selectedWallet &&
+      MULTI_CHAIN_WALLET_NAMES.some(
+        (n) =>
+          n.toLowerCase() === selectedWallet?.adapter.name?.toLowerCase(),
+      )
+    ) {
+      setStep("network");
+    } else {
+      setStep(selectedChain === "ethereum" ? "signing" : "wallet");
+    }
+  }, [selectedWallet, selectedChain]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -696,6 +718,52 @@ export function AuthWalletModal({
             <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
             </p>
+          )}
+
+          {step === "network" && selectedWallet && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {selectedWallet.adapter.name} supports multiple networks. Choose one to sign in with:
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSelectNetwork("solana")}
+                  disabled={connecting}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
+                    "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+                  )}
+                >
+                  <span className="flex-1 font-medium">Solana</span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectNetwork("ethereum")}
+                  disabled={connecting}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
+                    "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+                  )}
+                >
+                  <span className="flex-1 font-medium">Ethereum (EVM)</span>
+                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setStep("wallet");
+                  setSelectedWallet(null);
+                  setSelectedChain(null);
+                  setError("");
+                }}
+                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+              >
+                ← Back to wallet list
+              </button>
+            </div>
           )}
 
           {step === "wallet" && (
@@ -791,13 +859,7 @@ export function AuthWalletModal({
               {step === "error" && (
                 <button
                   type="button"
-                  onClick={() => {
-                    signFlowStarted.current = false;
-                    wcSignDoneRef.current = false;
-                    setStep(
-                      selectedChain === "ethereum" ? "signing" : "wallet",
-                    );
-                  }}
+                  onClick={handleTryAgain}
                   className="mt-2 text-sm text-primary hover:underline"
                 >
                   Try again

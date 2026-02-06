@@ -65,9 +65,14 @@ type ProductVariant = {
   size?: string;
   color?: string;
   sku?: string;
+  /** Display label (e.g. Printful variant name: "Product / Color / Size") */
+  label?: string;
   stockQuantity?: number;
   priceCents: number;
   imageUrl?: string;
+  imageAlt?: string;
+  imageTitle?: string;
+  availabilityStatus?: string | null;
   optionValues?: Record<string, string>;
 };
 type OptionDef = { name: string; values: string[]; isExpanded?: boolean };
@@ -78,6 +83,8 @@ type Product = {
   description: string | null;
   features?: string[];
   imageUrl: string | null;
+  mainImageAlt?: string | null;
+  mainImageTitle?: string | null;
   metaDescription: string | null;
   pageTitle: string | null;
   priceCents: number;
@@ -208,6 +215,8 @@ export default function AdminProductEditPage() {
   /** Kept for backwards compatibility; description is no longer in an accordion. */
   const descriptionAccordionOpen = false;
   const [imageUrl, setImageUrl] = useState("");
+  const [mainImageAlt, setMainImageAlt] = useState("");
+  const [mainImageTitle, setMainImageTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [pageTitle, setPageTitle] = useState("");
   const [priceCents, setPriceCents] = useState("");
@@ -335,6 +344,12 @@ export default function AdminProductEditPage() {
       setDescription(data.description ?? "");
       setFeatures(Array.isArray(data.features) ? data.features : []);
       setImageUrl(data.imageUrl ?? "");
+      setMainImageAlt(
+        (data as { mainImageAlt?: string | null }).mainImageAlt ?? "",
+      );
+      setMainImageTitle(
+        (data as { mainImageTitle?: string | null }).mainImageTitle ?? "",
+      );
       setMetaDescription(data.metaDescription ?? "");
       setPageTitle(data.pageTitle ?? "");
       setPriceCents(String(data.priceCents));
@@ -455,6 +470,8 @@ export default function AdminProductEditPage() {
           description: description.trim() || null,
           features: features.filter((f) => f.trim() !== ""),
           imageUrl: imageUrl.trim() || null,
+          mainImageAlt: mainImageAlt.trim() || null,
+          mainImageTitle: mainImageTitle.trim() || null,
           metaDescription: metaDescription.trim() || null,
           pageTitle: pageTitle.trim() || null,
           priceCents: cents,
@@ -508,9 +525,12 @@ export default function AdminProductEditPage() {
                 size: v.size ?? null,
                 color: v.color ?? null,
                 sku: v.sku ?? null,
+                label: v.label ?? null,
                 stockQuantity: v.stockQuantity ?? null,
                 priceCents: v.priceCents,
                 imageUrl: v.imageUrl ?? null,
+                imageAlt: v.imageAlt ?? null,
+                imageTitle: v.imageTitle ?? null,
               }))
             : undefined,
           tokenGated,
@@ -563,6 +583,8 @@ export default function AdminProductEditPage() {
       description,
       features,
       imageUrl,
+      mainImageAlt,
+      mainImageTitle,
       metaDescription,
       pageTitle,
       priceCents,
@@ -1304,6 +1326,40 @@ export default function AdminProductEditPage() {
                   />
                 </div>
               )}
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <div>
+                  <label
+                    htmlFor="mainImageAlt"
+                    className={labelClass}
+                  >
+                    Main image alt text (SEO)
+                  </label>
+                  <input
+                    id="mainImageAlt"
+                    type="text"
+                    placeholder="Alt text for main image"
+                    value={mainImageAlt}
+                    onChange={(e) => setMainImageAlt(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label
+                    htmlFor="mainImageTitle"
+                    className={labelClass}
+                  >
+                    Main image title (SEO)
+                  </label>
+                  <input
+                    id="mainImageTitle"
+                    type="text"
+                    placeholder="Title for main image"
+                    value={mainImageTitle}
+                    onChange={(e) => setMainImageTitle(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -1640,6 +1696,7 @@ export default function AdminProductEditPage() {
                               />
                             </th>
                             <th className="p-2 text-left">Variant</th>
+                            <th className="p-2 text-left">Label</th>
                             <th className="p-2 text-left">Price</th>
                             <th className="p-2 text-left">Quantity</th>
                             <th className="p-2 text-left">SKU</th>
@@ -1672,6 +1729,18 @@ export default function AdminProductEditPage() {
                                     {getVariantLabel(v, optionDefinitions)}
                                   </span>
                                 </div>
+                              </td>
+                              <td className="p-2">
+                                <input
+                                  type="text"
+                                  placeholder="Label (e.g. from Printful)"
+                                  value={v.label ?? ""}
+                                  onChange={(e) =>
+                                    updateVariant(vi, "label", e.target.value)
+                                  }
+                                  className={cn(inputClass, "w-40")}
+                                  title="Variant display name (e.g. Printful sync variant name)"
+                                />
                               </td>
                               <td className="p-2">
                                 <div className="flex items-center">
@@ -1811,6 +1880,18 @@ export default function AdminProductEditPage() {
                   />
                 </div>
                 <div>
+                  <label className={labelClass}>Label</label>
+                  <input
+                    type="text"
+                    placeholder="Variant display name (e.g. from Printful)"
+                    value={variants[editingVariantIndex]!.label ?? ""}
+                    onChange={(e) =>
+                      updateVariant(editingVariantIndex, "label", e.target.value)
+                    }
+                    className={inputClass}
+                  />
+                </div>
+                <div>
                   <label className={labelClass}>SKU</label>
                   <input
                     type="text"
@@ -1831,6 +1912,38 @@ export default function AdminProductEditPage() {
                       updateVariant(
                         editingVariantIndex,
                         "imageUrl",
+                        e.target.value,
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Image alt text (SEO)</label>
+                  <input
+                    type="text"
+                    placeholder="Alt text for variant image"
+                    value={variants[editingVariantIndex]!.imageAlt ?? ""}
+                    onChange={(e) =>
+                      updateVariant(
+                        editingVariantIndex,
+                        "imageAlt",
+                        e.target.value,
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Image title (SEO)</label>
+                  <input
+                    type="text"
+                    placeholder="Title for variant image"
+                    value={variants[editingVariantIndex]!.imageTitle ?? ""}
+                    onChange={(e) =>
+                      updateVariant(
+                        editingVariantIndex,
+                        "imageTitle",
                         e.target.value,
                       )
                     }

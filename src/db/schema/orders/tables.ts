@@ -31,6 +31,10 @@ export const productsTable = pgTable("product", {
   hsCode: text("hs_code"),
   id: text("id").primaryKey(),
   imageUrl: text("image_url"),
+  /** SEO: alt text for main product image */
+  mainImageAlt: text("main_image_alt"),
+  /** SEO: title for main product image */
+  mainImageTitle: text("main_image_title"),
   metaDescription: text("meta_description"),
   name: text("name").notNull(),
   optionDefinitionsJson: text("option_definitions_json"), // [{ name, values: string[] }]
@@ -92,10 +96,18 @@ export const productVariantsTable = pgTable(
     color: text("color"),
     colorCode: text("color_code"),
     sku: text("sku"),
+    /** Display label (e.g. Printful sync variant "name": "Product / Color / Size") */
+    label: text("label"),
     stockQuantity: integer("stock_quantity"),
     priceCents: integer("price_cents").notNull(),
     weightGrams: integer("weight_grams"),
     imageUrl: text("image_url"),
+    /** SEO: alt text for variant image */
+    imageAlt: text("image_alt"),
+    /** SEO: title for variant image */
+    imageTitle: text("image_title"),
+    /** Printful: "in_stock" | "out_of_stock" | etc. Synced on product_updated. */
+    availabilityStatus: text("availability_status"),
     createdAt: timestamp("created_at").notNull(),
     updatedAt: timestamp("updated_at").notNull(),
 

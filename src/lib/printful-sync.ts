@@ -25,6 +25,7 @@ import {
   fetchSyncProduct,
   fetchCatalogProduct,
   fetchCatalogProductShippingCountries,
+  fetchVariantPrices,
   updateSyncProduct,
   updateSyncVariant,
   getPrintfulIfConfigured,
@@ -305,6 +306,24 @@ async function createLocalProductFromPrintful(
     syncProduct.thumbnail_url ||
     (firstVariant ? getPrintfulVariantImageUrl(firstVariant) : null);
 
+  // Cost per item from first variant's catalog price (wholesale/technique price)
+  let costPerItemCents: number | null = null;
+  const catalogVariantId = firstVariant?.product?.variant_id;
+  if (catalogVariantId != null) {
+    try {
+      const priceRes = await fetchVariantPrices(catalogVariantId);
+      const firstTechnique = priceRes?.data?.variant?.techniques?.[0];
+      const priceStr =
+        firstTechnique?.discounted_price ?? firstTechnique?.price;
+      if (priceStr != null) {
+        const costDollars = Number.parseFloat(priceStr);
+        if (!Number.isNaN(costDollars)) costPerItemCents = Math.round(costDollars * 100);
+      }
+    } catch {
+      // Optional: continue without cost
+    }
+  }
+
   // Shipping countries from Printful API when available; else static list
   let marketCountryCodes = PRINTFUL_SHIPPING_COUNTRY_CODES;
   if (catalogProductId != null) {
@@ -327,6 +346,7 @@ async function createLocalProductFromPrintful(
     externalId: catalogProductId ? String(catalogProductId) : null,
     printfulSyncProductId: syncProduct.id,
     priceCents,
+    costPerItemCents,
     hasVariants,
     optionDefinitionsJson,
     published: !syncProduct.is_ignored, // is_ignored = hidden in store
@@ -445,6 +465,26 @@ async function updateLocalProductFromPrintful(
       ? getPrintfulVariantImageUrl(syncVariants[0])
       : undefined) ?? syncProduct.thumbnail_url;
 
+  // Cost per item from first variant's catalog price (optional update)
+  let costPerItemCents: number | null | undefined = undefined;
+  const firstVariant = syncVariants[0];
+  const catalogVariantId = firstVariant?.product?.variant_id;
+  if (catalogVariantId != null) {
+    try {
+      const priceRes = await fetchVariantPrices(catalogVariantId);
+      const firstTechnique = priceRes?.data?.variant?.techniques?.[0];
+      const priceStr =
+        firstTechnique?.discounted_price ?? firstTechnique?.price;
+      if (priceStr != null) {
+        const costDollars = Number.parseFloat(priceStr);
+        if (!Number.isNaN(costDollars))
+          costPerItemCents = Math.round(costDollars * 100);
+      }
+    } catch {
+      // keep existing cost
+    }
+  }
+
   await db
     .update(productsTable)
     .set({
@@ -460,6 +500,7 @@ async function updateLocalProductFromPrintful(
       ...(brand !== undefined && { brand }),
       ...(metaDescription !== undefined && { metaDescription }),
       ...(priceCents != null && { priceCents }),
+      ...(costPerItemCents !== undefined && { costPerItemCents }),
       updatedAt: now,
       lastSyncedAt: now,
     })
@@ -574,8 +615,10 @@ async function createLocalVariantFromPrintful(
     size: syncVariant.size,
     color: syncVariant.color,
     sku: syncVariant.sku,
+    label: syncVariant.name ?? null,
     priceCents,
     imageUrl,
+    availabilityStatus: syncVariant.availability_status ?? null,
     createdAt: now,
     updatedAt: now,
   });
@@ -605,8 +648,10 @@ async function updateLocalVariantFromPrintful(
       size: syncVariant.size,
       color: syncVariant.color,
       sku: syncVariant.sku,
+      label: syncVariant.name ?? undefined,
       priceCents,
       imageUrl: imageUrl ?? undefined,
+      availabilityStatus: syncVariant.availability_status ?? undefined,
       updatedAt: now,
     })
     .where(eq(productVariantsTable.id, variantId));

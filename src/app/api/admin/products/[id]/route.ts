@@ -14,6 +14,8 @@ import {
 } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import { syncProductCategoriesWithAutoRules } from "~/lib/category-auto-assign";
+import { exportProductToPrintful } from "~/lib/printful-sync";
+import { exportProductToPrintify } from "~/lib/printify-sync";
 
 /** Generate URL-safe slug from name when slug is empty. */
 function slugFromName(name: string): string {
@@ -132,6 +134,8 @@ export async function GET(
       description: product.description,
       features,
       imageUrl: product.imageUrl,
+      mainImageAlt: product.mainImageAlt ?? null,
+      mainImageTitle: product.mainImageTitle ?? null,
       metaDescription: product.metaDescription,
       pageTitle: product.pageTitle,
       priceCents: product.priceCents,
@@ -179,9 +183,13 @@ export async function GET(
         size: v.size,
         color: v.color,
         sku: v.sku,
+        label: v.label ?? null,
         stockQuantity: v.stockQuantity,
         priceCents: v.priceCents,
         imageUrl: v.imageUrl,
+        imageAlt: v.imageAlt ?? null,
+        imageTitle: v.imageTitle ?? null,
+        availabilityStatus: v.availabilityStatus ?? null,
       })),
     });
   } catch (err) {
@@ -219,6 +227,8 @@ export async function PATCH(
       name?: string;
       description?: string | null;
       imageUrl?: string | null;
+      mainImageAlt?: string | null;
+      mainImageTitle?: string | null;
       metaDescription?: string | null;
       pageTitle?: string | null;
       priceCents?: number;
@@ -263,9 +273,12 @@ export async function PATCH(
         size?: string | null;
         color?: string | null;
         sku?: string | null;
+        label?: string | null;
         stockQuantity?: number | null;
         priceCents: number;
         imageUrl?: string | null;
+        imageAlt?: string | null;
+        imageTitle?: string | null;
       }>;
       availableCountryCodes?: string[];
       tokenGates?: Array<{
@@ -294,6 +307,10 @@ export async function PATCH(
         arr.length > 0 ? JSON.stringify(arr) : null;
     }
     if (body.imageUrl !== undefined) updates.imageUrl = body.imageUrl ?? null;
+    if (body.mainImageAlt !== undefined)
+      updates.mainImageAlt = body.mainImageAlt?.trim() ?? null;
+    if (body.mainImageTitle !== undefined)
+      updates.mainImageTitle = body.mainImageTitle?.trim() ?? null;
     if (body.metaDescription !== undefined)
       updates.metaDescription = body.metaDescription ?? null;
     if (body.pageTitle !== undefined)
@@ -429,23 +446,72 @@ export async function PATCH(
     }
 
     if (body.variants !== undefined) {
-      await db
-        .delete(productVariantsTable)
-        .where(eq(productVariantsTable.productId, id));
       const now = new Date();
+      const existingVariants = await db
+        .select({
+          id: productVariantsTable.id,
+          printfulSyncVariantId: productVariantsTable.printfulSyncVariantId,
+          printifyVariantId: productVariantsTable.printifyVariantId,
+        })
+        .from(productVariantsTable)
+        .where(eq(productVariantsTable.productId, id));
+      const existingById = new Map(
+        existingVariants.map((row) => [row.id, row]),
+      );
+      const bodyVariantIds = new Set(
+        body.variants.map((v) => v.id ?? "").filter(Boolean),
+      );
+
       for (const v of body.variants) {
-        await db.insert(productVariantsTable).values({
-          id: v.id ?? crypto.randomUUID(),
-          productId: id,
-          size: v.size?.trim() ?? null,
-          color: v.color?.trim() ?? null,
-          sku: v.sku?.trim() ?? null,
-          stockQuantity: v.stockQuantity ?? null,
-          priceCents: v.priceCents,
-          imageUrl: v.imageUrl?.trim() ?? null,
-          createdAt: now,
-          updatedAt: now,
-        });
+        const variantId = v.id ?? crypto.randomUUID();
+        const existing = existingById.get(variantId);
+        if (existing) {
+          await db
+            .update(productVariantsTable)
+            .set({
+              size: v.size?.trim() ?? null,
+              color: v.color?.trim() ?? null,
+              sku: v.sku?.trim() ?? null,
+              label: v.label?.trim() ?? null,
+              stockQuantity: v.stockQuantity ?? null,
+              priceCents: v.priceCents,
+              imageUrl: v.imageUrl?.trim() ?? null,
+              imageAlt: v.imageAlt?.trim() ?? null,
+              imageTitle: v.imageTitle?.trim() ?? null,
+              updatedAt: now,
+            })
+            .where(eq(productVariantsTable.id, variantId));
+        } else {
+          await db.insert(productVariantsTable).values({
+            id: variantId,
+            productId: id,
+            size: v.size?.trim() ?? null,
+            color: v.color?.trim() ?? null,
+            sku: v.sku?.trim() ?? null,
+            label: v.label?.trim() ?? null,
+            stockQuantity: v.stockQuantity ?? null,
+            priceCents: v.priceCents,
+            imageUrl: v.imageUrl?.trim() ?? null,
+            imageAlt: v.imageAlt?.trim() ?? null,
+            imageTitle: v.imageTitle?.trim() ?? null,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
+
+      // Remove variants not in body only if they are not vendor-linked (Printful/Printify)
+      for (const row of existingVariants) {
+        if (
+          bodyVariantIds.has(row.id) ||
+          row.printfulSyncVariantId != null ||
+          row.printifyVariantId != null
+        ) {
+          continue;
+        }
+        await db
+          .delete(productVariantsTable)
+          .where(eq(productVariantsTable.id, row.id));
       }
     }
 
@@ -489,6 +555,32 @@ export async function PATCH(
           network: gate.network?.trim() || null,
           contractAddress: gate.contractAddress?.trim() || null,
         });
+      }
+    }
+
+    // Push product changes to Printful when product is a Printful sync product
+    if (
+      updated.source === "printful" &&
+      updated.printfulSyncProductId != null
+    ) {
+      const exportResult = await exportProductToPrintful(id);
+      if (!exportResult.success) {
+        console.warn(
+          `Printful export after admin save failed: ${exportResult.error}`,
+        );
+      }
+    }
+
+    // Push product changes to Printify when product is a Printify product
+    if (
+      updated.source === "printify" &&
+      updated.printifyProductId != null
+    ) {
+      const exportResult = await exportProductToPrintify(id);
+      if (!exportResult.success) {
+        console.warn(
+          `Printify export after admin save failed: ${exportResult.error}`,
+        );
       }
     }
 

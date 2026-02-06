@@ -45,12 +45,16 @@ POST /api/admin/printful/sync
 { "action": "export_single", "productId": "abc" }
 ```
 
-### Webhooks
+### Webhooks and re-synchronization
 
 Product sync events are handled automatically:
 - `product_synced` — New product created/synced in Printful → imported to backend
-- `product_updated` — Product updated in Printful → updates local product
+- `product_updated` — Product updated in Printful → **re-imports** that product into the backend (full sync). This includes:
+  - **Inventory / availability**: When Printful marks a variant as out of stock (`availability_status`), we update the local variant’s `availability_status` so the storefront can show “Out of stock” or hide the option.
+  - **Shipping and product data**: Any changes to the sync product or variants (name, price, thumbnail, etc.) are reflected in our DB after the webhook runs.
 - `product_deleted` — Product deleted in Printful → unpublishes local product
+
+So **re-synchronization from Printful → our system happens automatically** when Printful sends `product_updated` (e.g. after inventory or shipping updates). No separate polling is required.
 
 **Register the webhook** with Printful: Configure your webhook URL via the Printful API (see [developers.printful.com](https://developers.printful.com/)) or dashboard. URL: `https://your-store.com/api/webhooks/printful`. Set `PRINTFUL_WEBHOOK_SECRET` in .env to the secret Printful provides so we can verify signatures (HMAC-SHA256).
 
@@ -73,7 +77,7 @@ Product sync events are handled automatically:
 Our product and variant fields align with Printful so we don't need unique table elements. Same schema for all products (manual, Printful, Printify). Examples:
 
 - **Product**: brand, description, title (name), category, SEO (slug, metaDescription), image, price (default/min), weight, source, externalId (Printful: catalog_product_id), printfulSyncProductId.
-- **Variant** (product_variants table): size, color, quantity/stock, price, SKU, externalId (Printful: catalog_variant_id), printfulSyncVariantId, weight, image.
+- **Variant** (product_variants table): size, color, quantity/stock, price, SKU, **label** (Printful sync variant “name”, e.g. “Product / Color / Size”), externalId (Printful: catalog_variant_id), printfulSyncVariantId, weight, image, **imageAlt**, **imageTitle** (SEO), **availabilityStatus** (e.g. in_stock, out_of_stock; synced on product_updated).
 - **Size guide**: stored on product (e.g. sizeGuideJson from Printful GET catalog-products/{id}/sizes).
 - **Shipping time**: per order/shipment from Printful; we can show estimates when we have them.
 - **Shipping countries**: On import we call Catalog v2 `GET /catalog-products/{id}/shipping-countries` when we have a catalog product ID; if it returns a list of country codes we populate `product_available_country` so the admin Markets section and checkout know where the product ships. If the endpoint is unavailable or returns nothing we fall back to a static list of common Printful shipping countries. Validation also happens at checkout when we call Printful’s shipping-rates API.
@@ -83,7 +87,7 @@ Sync pulls from Printful into this schema. You create the product in Printful, t
 ## Sync flow (products)
 
 - **Printful → backend**: Sync products from your Printful store → creates **one Product** + **many ProductVariants** in our DB. Includes description, title, brand, variants (size, color, price). Re-sync updates that product and its variants from Printful.
-- **Backend → Printful**: Price changes (retail_price) can be pushed back to Printful via the export API. Other edits (description, title) update **our DB only** unless you use the export feature.
+- **Backend → Printful**: When you save a product in the admin, we push **name, thumbnail, variant retail_price, variant SKU** to Printful for that product (if it’s a Printful sync product). Description/tags are not supported by Printful’s Sync Products API and remain DB-only.
 - **Multiple designs**: The same Printful catalog product (e.g. one t-shirt) can be created multiple times in Printful with different designs—each becomes a separate sync product and a separate product in our backend.
 
 ## Checkout: email and phone

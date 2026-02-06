@@ -276,11 +276,7 @@ export function solanaAuthPlugin() {
                   },
                 });
               } catch (createUserErr) {
-                const errMsg =
-                  createUserErr instanceof Error
-                    ? createUserErr.message
-                    : String(createUserErr);
-                if (/unique constraint.*user_email_unique|duplicate key.*user_email_unique/i.test(errMsg)) {
+                if (isDuplicateUserEmailError(createUserErr)) {
                   const existingUser = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "email", value: email }],

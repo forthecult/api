@@ -252,11 +252,35 @@ async function calculatePrintfulShipping(
  * Handles admin shipping options, Printful, and Printify shipping rates.
  * Also checks country-based availability restrictions.
  */
+/** Normalize cart items: cart line id is often "productId__variantId"; if productId looks like that, split so lookups succeed. */
+function normalizeShippingItems(
+  items: Array<{ productId: string; productVariantId?: string; quantity: number }>,
+): Array<{ productId: string; productVariantId?: string; quantity: number }> {
+  return items.map((i) => {
+    const pid = i.productId?.trim();
+    if (!pid) return i;
+    const sep = pid.indexOf("__");
+    if (sep === -1) return i;
+    const productId = pid.slice(0, sep);
+    const variantId = pid.slice(sep + 2);
+    return {
+      productId,
+      productVariantId: i.productVariantId?.trim() || variantId || undefined,
+      quantity: i.quantity,
+    };
+  });
+}
+
 export async function runShippingCalculate(
   input: ExtendedShippingInput,
 ): Promise<ShippingResult> {
   const { countryCode, orderValueCents, items: rawItems } = input;
-  const productIds = [...new Set(rawItems.map((i) => i.productId))];
+  const items = normalizeShippingItems(rawItems);
+  const productIds = [
+    ...new Set(
+      items.map((i) => i.productId).filter((id) => id != null && id.length > 0),
+    ),
+  ];
 
   // If a valid free_shipping coupon is provided, return 0 shipping
   if (input.couponCode?.trim()) {
@@ -325,14 +349,14 @@ export async function runShippingCalculate(
       unavailableProducts: productIds,
     };
   }
-  const variantIds = rawItems
+  const variantIds = items
     .map((i) => i.productVariantId)
-    .filter((id): id is string => id != null);
+    .filter((id): id is string => id != null && id.length > 0);
 
-  // Printify products in cart that have no variant in the item (e.g. simple/single-variant products)
-  const printifyProductIdsWithoutVariant = [
+  // Products in cart that have no variant in the item (used for Printful + Printify fallback to first variant)
+  const productIdsWithoutVariant = [
     ...new Set(
-      rawItems
+      items
         .filter((i) => i.productId && !i.productVariantId)
         .map((i) => i.productId!),
     ),
@@ -509,7 +533,7 @@ export async function runShippingCalculate(
   );
 
   // Separate items by source (Printful, Printify, manual/other)
-  for (const item of rawItems) {
+  for (const item of items) {
     if (
       typeof item.productId !== "string" ||
       typeof item.quantity !== "number" ||
