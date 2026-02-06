@@ -202,7 +202,16 @@ export default function AdminCustomerDetailPage() {
   >([]);
   const [addressFindOpen, setAddressFindOpen] = useState(false);
   const [addressFindLoading, setAddressFindLoading] = useState(false);
-  const [addressLookupResult, setAddressLookupResult] = useState<string | null>(
+  /** Editable address from lookup (or fallback from suggestion). User can modify before copying/saving. */
+  type EditableAddress = {
+    address1: string;
+    address2: string | null;
+    city: string;
+    stateCode: string | null;
+    zip: string;
+    countryCode: string;
+  };
+  const [editableAddress, setEditableAddress] = useState<EditableAddress | null>(
     null,
   );
   const addressFindDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -242,6 +251,20 @@ export default function AdminCustomerDetailPage() {
   useEffect(() => {
     void fetchCustomer();
   }, [fetchCustomer]);
+
+  // Pre-fill editable address from latest shipping address when empty so it can be edited
+  useEffect(() => {
+    if (!customer?.latestShippingAddress || editableAddress !== null) return;
+    const lat = customer.latestShippingAddress;
+    setEditableAddress({
+      address1: lat.address1 ?? "",
+      address2: lat.address2 ?? null,
+      city: lat.city ?? "",
+      stateCode: lat.stateCode ?? null,
+      zip: lat.zip ?? "",
+      countryCode: lat.countryCode ?? "",
+    });
+  }, [customer?.latestShippingAddress, editableAddress]);
 
   useEffect(() => {
     const q = addressFindQuery.trim();
@@ -283,39 +306,62 @@ export default function AdminCustomerDetailPage() {
     };
   }, [addressFindQuery]);
 
-  const selectAddressFromLoqate = useCallback(async (loqateId: string) => {
-    setAddressFindOpen(false);
-    setAddressFindQuery("");
-    setAddressFindResults([]);
-    try {
-      const res = await fetch(
-        `${API_BASE}/api/loqate/retrieve?id=${encodeURIComponent(loqateId)}`,
-        { credentials: "include" },
-      );
-      if (!res.ok) return;
-      const addr = (await res.json()) as Parameters<
-        typeof mapRetrieveToShipping
-      >[0];
-      const mapped = mapRetrieveToShipping(addr);
-      const line = [
-        mapped.street,
-        mapped.apartment,
-        [mapped.city, mapped.state].filter(Boolean).join(", "),
-        mapped.zip,
-        mapped.country,
-      ]
-        .filter(Boolean)
-        .join(", ");
-      setAddressLookupResult(line);
-    } catch {
-      setAddressLookupResult(null);
-    }
-  }, []);
+  const selectAddressFromLoqate = useCallback(
+    async (loqateId: string, suggestionText?: string) => {
+      setAddressFindOpen(false);
+      setAddressFindQuery("");
+      setAddressFindResults([]);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/loqate/retrieve?id=${encodeURIComponent(loqateId)}`,
+          { credentials: "include" },
+        );
+        if (!res.ok) throw new Error("Retrieve failed");
+        const addr = (await res.json()) as Parameters<
+          typeof mapRetrieveToShipping
+        >[0];
+        const mapped = mapRetrieveToShipping(addr);
+        setEditableAddress({
+          address1: [mapped.street, mapped.apartment].filter(Boolean).join(", "),
+          address2: null,
+          city: mapped.city,
+          stateCode: mapped.state || null,
+          zip: mapped.zip,
+          countryCode: mapped.country || "",
+        });
+      } catch {
+        // CORS/502 or network error: show suggestion text so address doesn't disappear; user can edit
+        const line = suggestionText?.trim() ?? "";
+        setEditableAddress({
+          address1: line,
+          address2: null,
+          city: "",
+          stateCode: null,
+          zip: "",
+          countryCode: "",
+        });
+      }
+    },
+    [],
+  );
 
-  const copyLookupAddress = useCallback(() => {
-    if (!addressLookupResult) return;
-    void navigator.clipboard.writeText(addressLookupResult);
-  }, [addressLookupResult]);
+  const copyEditableAddress = useCallback(() => {
+    if (!editableAddress) return;
+    const line = [
+      editableAddress.address1,
+      editableAddress.address2,
+      [editableAddress.city, editableAddress.stateCode].filter(Boolean).join(", "),
+      editableAddress.zip,
+      editableAddress.countryCode,
+    ]
+      .filter(Boolean)
+      .join(", ");
+    void navigator.clipboard.writeText(line);
+  }, [editableAddress]);
+
+  const clearEditableAddress = useCallback(() => {
+    setEditableAddress(null);
+  }, []);
 
   const fetchOrders = useCallback(async () => {
     if (!id) return;
@@ -762,7 +808,7 @@ export default function AdminCustomerDetailPage() {
                           className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
                           onMouseDown={(e) => {
                             e.preventDefault();
-                            selectAddressFromLoqate(item.Id);
+                            selectAddressFromLoqate(item.Id, item.Text);
                           }}
                         >
                           {item.Text}
@@ -776,20 +822,127 @@ export default function AdminCustomerDetailPage() {
                     ))}
                   </ul>
                 )}
-                {addressLookupResult && (
-                  <div className="flex items-center gap-2 rounded border border-input bg-muted/30 px-2 py-1.5 text-sm">
-                    <span className="flex-1 truncate">
-                      {addressLookupResult}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="shrink-0"
-                      onClick={copyLookupAddress}
-                    >
-                      <Copy className="h-4 w-4" aria-hidden />
-                    </Button>
+                {editableAddress && (
+                  <div className="space-y-2 rounded border border-input bg-muted/20 p-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <label className={labelClass}>Address line 1</label>
+                        <input
+                          type="text"
+                          className={inputClass}
+                          value={editableAddress.address1}
+                          onChange={(e) =>
+                            setEditableAddress((prev) =>
+                              prev
+                                ? { ...prev, address1: e.target.value }
+                                : null,
+                            )
+                          }
+                          placeholder="Street address"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={labelClass}>Address line 2</label>
+                        <input
+                          type="text"
+                          className={inputClass}
+                          value={editableAddress.address2 ?? ""}
+                          onChange={(e) =>
+                            setEditableAddress((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    address2: e.target.value.trim() || null,
+                                  }
+                                : null,
+                            )
+                          }
+                          placeholder="Apt, suite, etc. (optional)"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>City</label>
+                        <input
+                          type="text"
+                          className={inputClass}
+                          value={editableAddress.city}
+                          onChange={(e) =>
+                            setEditableAddress((prev) =>
+                              prev ? { ...prev, city: e.target.value } : null
+                            )
+                          }
+                          placeholder="City"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>State / Province</label>
+                        <input
+                          type="text"
+                          className={inputClass}
+                          value={editableAddress.stateCode ?? ""}
+                          onChange={(e) =>
+                            setEditableAddress((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    stateCode: e.target.value.trim() || null,
+                                  }
+                                : null,
+                            )
+                          }
+                          placeholder="State"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>ZIP / Postcode</label>
+                        <input
+                          type="text"
+                          className={inputClass}
+                          value={editableAddress.zip}
+                          onChange={(e) =>
+                            setEditableAddress((prev) =>
+                              prev ? { ...prev, zip: e.target.value } : null
+                            )
+                          }
+                          placeholder="ZIP"
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>Country code</label>
+                        <input
+                          type="text"
+                          className={inputClass}
+                          value={editableAddress.countryCode}
+                          onChange={(e) =>
+                            setEditableAddress((prev) =>
+                              prev
+                                ? { ...prev, countryCode: e.target.value }
+                                : null
+                            )
+                          }
+                          placeholder="US, GB, …"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={copyEditableAddress}
+                      >
+                        <Copy className="mr-1.5 h-4 w-4" aria-hidden />
+                        Copy address
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearEditableAddress}
+                      >
+                        Clear
+                      </Button>
+                    </div>
                   </div>
                 )}
               </div>

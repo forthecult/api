@@ -4,6 +4,9 @@
 #   UPLOADTHING_TOKEN  - UploadThing token (optional). If set, brand logos are uploaded; if missing, the upload step runs but the script exits 0 and skips.
 # Do NOT use "if: secrets.UPLOADTHING_TOKEN != ''" — the secrets context is not allowed in job/step if: conditions and causes "Unrecognized named-value: 'secrets'" failure.
 # Trigger: Actions tab → "Seed staging (DB schema + categories)" → Run workflow
+#
+# If this repo is a monorepo (e.g. repo root is Cult with relivator/ inside), each step
+# runs from relivator/ so that bun and db commands use the correct package.json and schema.
 
 name: Seed staging (DB schema + categories)
 
@@ -13,6 +16,9 @@ on:
 jobs:
   seed:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
 
@@ -20,36 +26,46 @@ jobs:
         with:
           bun-version: latest
 
+      - name: Use relivator dir in monorepo
+        id: wd
+        run: |
+          if [ -d relivator ] && [ -f relivator/package.json ]; then
+            echo "dir=relivator" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install dependencies
+        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun install --frozen-lockfile
 
       - name: Push schema
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:push
 
       - name: Seed categories and brands
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        working-directory: ${{ steps.wd.outputs.dir }}
         run: |
           bun run db:seed-categories
           bun run db:seed-brands
 
       - name: Seed brand shipping options (US / International)
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        working-directory: ${{ steps.wd.outputs.dir }}
         run: bun run db:seed-shipping-by-brand
 
       - name: Seed products and reviews
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        working-directory: ${{ steps.wd.outputs.dir }}
         run: |
           bun run db:seed-products
           bun run db:seed-reviews
 
-      # Script skips upload and exits 0 when UPLOADTHING_TOKEN is unset; no workflow if: needed
+      # Optional: upload logos. Step timeout and continue-on-error so a slow/hanging UploadThing
+      # API does not block or fail the seed job; schema, categories, brands, shipping, products,
+      # and reviews are already seeded above.
       - name: Upload brand logos to UploadThing and update DB
+        working-directory: ${{ steps.wd.outputs.dir }}
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-brand-assets
+        timeout-minutes: 15
+        continue-on-error: true

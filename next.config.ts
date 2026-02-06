@@ -178,6 +178,8 @@ const config = {
       { hostname: "upload.wikimedia.org", protocol: "https" },
       { hostname: "assets.stickpng.com", protocol: "https" },
       { hostname: "sui.io", protocol: "https" },
+      // Printify product/mockup images (POD sync)
+      { hostname: "images-api.printify.com", protocol: "https" },
     ],
   },
 } as NextConfig;
