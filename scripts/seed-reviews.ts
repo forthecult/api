@@ -2,8 +2,11 @@
  * Seeds the database with real product reviews from the CSV export.
  *
  * Reviews are stored with productSlug for matching to products.
- * Reviews can exist independently of products (for homepage testimonials,
- * archived products, etc.). Only published and approved reviews are imported.
+ * Reviews can exist independently of products (productId nullable) for:
+ * - Homepage testimonials and site-wide social proof
+ * - Products that no longer exist or haven't been created yet
+ * Only published and approved reviews are imported.
+ * If data/reviews.csv is missing, the script exits 0 so staging seed can complete (shipping, products, etc.).
  *
  * Run: bun run db:seed-reviews
  */
@@ -149,11 +152,11 @@ function generateReviewId(
 async function seed() {
   console.log("Seeding product reviews from CSV…");
 
-  // Check if CSV exists
+  // If CSV is missing, skip so staging seed can complete (shipping, products, etc.)
   if (!fs.existsSync(CSV_PATH)) {
-    console.error(`CSV file not found at: ${CSV_PATH}`);
-    console.log("Please ensure the reviews CSV is at: data/reviews.csv");
-    process.exit(1);
+    console.warn(`Reviews CSV not found at: ${CSV_PATH}`);
+    console.log("Skipping reviews seed. Add data/reviews.csv and re-run db:seed-reviews to import reviews.");
+    return;
   }
 
   const csvContent = fs.readFileSync(CSV_PATH, "utf-8");

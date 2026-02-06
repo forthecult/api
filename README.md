@@ -69,7 +69,7 @@
 | `bun db:push`         | apply db schema changes                        |
 | `bun db:auth`         | update auth-related tables                     |
 | `bun db:studio`       | open visual db editor                          |
-| `bun db:seed:staging` | seed categories, brands, and products (order)  |
+| `bun db:seed:staging` | seed categories, brands, shipping-by-brand, products, reviews |
 
 ### seeding staging / deployed database
 
@@ -83,14 +83,14 @@ After deploying (e.g. Vercel, Railway) and creating a **staging** (or production
    bun run db:push
    ```
 
-3. **Seed data** (categories → brands → products):
+3. **Seed data** (categories → brands → shipping-by-brand → products → reviews):
    ```bash
    bun run db:seed:staging
    ```
-   Run this from your machine with `DATABASE_URL` set to the staging DB, or from CI (e.g. a deploy script or GitHub Action that has access to `DATABASE_URL`).
+   Run this from your machine with `DATABASE_URL` set to the staging DB, or from CI (e.g. a deploy script or GitHub Action that has access to `DATABASE_URL`). Reviews are imported from `data/reviews.csv` if present; if the file is missing, the reviews step is skipped and the rest of the seed still completes.
 
 To seed only categories and products (no brands): `bun run db:seed:all`.  
-To run seeds individually: `bun run db:seed-categories`, `bun run db:seed-brands`, `bun run db:seed`.
+To run seeds individually: `bun run db:seed-categories`, `bun run db:seed-brands`, `bun run db:seed-shipping-by-brand`, `bun run db:seed`, `bun run db:seed-reviews`.
 
 ## polar integration
 

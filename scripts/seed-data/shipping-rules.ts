@@ -2,7 +2,8 @@
  * Shipping rules for production/staging seed.
  * Keyed by brand slug (must match seed-brands slug). Used by seed-shipping-by-brand.
  *
- * Brands not listed here get DEFAULT_SHIPPING_OPTIONS (US $3, International $8).
+ * Default: US $4 + $1 per item (in the brand), International $8 + $1 per item (in the brand).
+ * When 2+ brands are in the cart, shipping is summed per brand (e.g. 2 brands, 1 item each = $4+$8 or $8+$8 depending on country).
  */
 
 export type ShippingOptionSeed = {
@@ -10,20 +11,23 @@ export type ShippingOptionSeed = {
   countryCode: string | null;
   minOrderCents: number | null;
   maxOrderCents: number | null;
-  type: "flat" | "free" | "per_item";
+  type: "flat" | "free" | "per_item" | "flat_plus_per_item";
   amountCents: number | null;
+  /** For type flat_plus_per_item: cost per additional item (first item uses amountCents). */
+  additionalItemCents: number | null;
   priority: number;
 };
 
-/** Default for all brands without a slug-specific override: US $3, International $8. */
+/** Default for all brands: US $4 + $1/item, International $8 + $1/item. */
 export const DEFAULT_SHIPPING_OPTIONS: ShippingOptionSeed[] = [
   {
-    name: "US", // name gets prefixed with brand name in script
+    name: "US",
     countryCode: "US",
     minOrderCents: null,
     maxOrderCents: null,
-    type: "flat",
-    amountCents: 300,
+    type: "flat_plus_per_item",
+    amountCents: 400, // $4 first item
+    additionalItemCents: 100, // $1 per additional item
     priority: 1,
   },
   {
@@ -31,8 +35,9 @@ export const DEFAULT_SHIPPING_OPTIONS: ShippingOptionSeed[] = [
     countryCode: null,
     minOrderCents: null,
     maxOrderCents: null,
-    type: "flat",
-    amountCents: 800,
+    type: "flat_plus_per_item",
+    amountCents: 800, // $8 first item
+    additionalItemCents: 100, // $1 per additional item
     priority: 0,
   },
 ];
@@ -49,6 +54,7 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       maxOrderCents: null,
       type: "free",
       amountCents: null,
+      additionalItemCents: null,
       priority: 1,
     },
     {
@@ -56,8 +62,9 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       countryCode: "US",
       minOrderCents: null,
       maxOrderCents: 4899,
-      type: "flat",
-      amountCents: 899,
+      type: "flat_plus_per_item",
+      amountCents: 400,
+      additionalItemCents: 100,
       priority: 0,
     },
   ],

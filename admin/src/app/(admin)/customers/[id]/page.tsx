@@ -442,13 +442,54 @@ export default function AdminCustomerDetailPage() {
             }
           : null,
       );
+
+      // If the lookup/editable address form has content, persist it to the customer's saved addresses
+      const addr = editableAddress;
+      if (
+        addr &&
+        addr.address1.trim() &&
+        addr.city.trim() &&
+        addr.zip.trim() &&
+        addr.countryCode.trim()
+      ) {
+        const addrRes = await fetch(
+          `${API_BASE}/api/admin/customers/${id}/addresses`,
+          {
+            method: "POST",
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              address1: addr.address1.trim(),
+              address2: addr.address2?.trim() || null,
+              city: addr.city.trim(),
+              stateCode: addr.stateCode?.trim() || null,
+              countryCode: addr.countryCode.trim().toUpperCase().slice(0, 2),
+              zip: addr.zip.trim(),
+            }),
+          },
+        );
+        if (addrRes.ok) {
+          await fetchCustomer();
+        } else {
+          const errData = (await addrRes.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          setSaveMessage({
+            type: "error",
+            text: errData.error ?? "Profile saved; address could not be saved.",
+          });
+          setSaveLoading(false);
+          return;
+        }
+      }
+
       setSaveMessage({ type: "success", text: "Saved." });
     } catch {
       setSaveMessage({ type: "error", text: "Failed to save" });
     } finally {
       setSaveLoading(false);
     }
-  }, [id, firstName, lastName, phone]);
+  }, [id, firstName, lastName, phone, editableAddress, fetchCustomer]);
 
   const handleResetPassword = useCallback(async () => {
     if (!id) return;

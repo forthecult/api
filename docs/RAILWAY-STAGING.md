@@ -70,7 +70,7 @@ If you do run seeds locally (with `DATABASE_URL` in `.env` or on the command lin
    DATABASE_URL='postgresql://...' bun run db:seed-brands    # optional
    DATABASE_URL='postgresql://...' bun run db:seed           # optional: seed products
    ```
-   Or in one go: `DATABASE_URL='postgresql://...' bun run db:seed:staging` (categories + brands + products).
+   Or in one go: `DATABASE_URL='postgresql://...' bun run db:seed:staging` (categories + brands + **shipping-by-brand** + products + **reviews**). Ensure `data/reviews.csv` exists in the repo for reviews to be seeded; if it’s missing, the reviews step is skipped and the rest of the seed still completes.
 
 4. **Admin user**
    Over HTTPS the app hashes the password before storing. For staging you must set `ADMIN_SEED_PASSWORD` in your env (never commit it). It needs the **app URL**, not `DATABASE_URL`:

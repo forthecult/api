@@ -44,6 +44,7 @@ function buildRow(
     maxWeightGrams: null,
     type: opt.type,
     amountCents: opt.amountCents,
+    additionalItemCents: opt.additionalItemCents ?? null,
     priority: opt.priority,
     brandId,
     sourceUrl: null,
