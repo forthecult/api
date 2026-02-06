@@ -1,0 +1,29 @@
+# Run from GitHub Actions so DATABASE_URL never touches your machine.
+# Add secret: repo Settings → Secrets and variables → Actions → New repository secret:
+#   Name: DATABASE_URL   Value: (paste Railway Postgres URL)
+# Trigger: Actions tab → "Seed staging (DB schema + categories)" → Run workflow
+
+name: Seed staging (DB schema + categories)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Push schema and seed categories (and brands/products)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          bun run db:push
+          bun run db:seed:staging

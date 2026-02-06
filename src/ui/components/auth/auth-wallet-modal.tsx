@@ -378,7 +378,7 @@ export function AuthWalletModal({
     connectAsync({ connector: wcConnector })
       .then(() => {
         if (cancelled) return;
-        setWcConnectDone(true);
+        // evmAddress is set by wagmi; SIWE effect runs when evmAddress is present
       })
       .catch((err) => {
         if (!cancelled) {

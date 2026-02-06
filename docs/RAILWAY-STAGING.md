@@ -44,7 +44,12 @@ Use the same `DATABASE_URL` you set on the Railway service. After the schema exi
 
 **Seeding staging from your machine (schema + categories + admin):** You do **not** run these inside Railway. Run them on your own computer, in the **repo root** (`relivator/`), with env vars set so they talk to your staging app and DB.
 
-**Keeping the DB URL off your machine:** Your `.env` is gitignored, so the staging `DATABASE_URL` there is never committed—but it still lives in a file. To avoid storing it at all: **don’t put the staging `DATABASE_URL` in `.env`**. Copy it from Railway when you need it and pass it only on the command line (e.g. `DATABASE_URL='postgresql://...' bun run db:push`). The value will be in your shell history unless you prefix the command with a space (if your shell is configured to ignore those) or clear history. Use a separate `.env.local` or similar only for local dev, and keep the staging URL only in Railway’s Variables.
+**Keeping the DB URL off your machine:** If your device is compromised, any credential on it (in `.env` or in shell history) is at risk. The only way to avoid having the staging DB URL on your machine at all is to **run the seed from somewhere that already has the credential**—e.g. GitHub Actions or Railway itself.
+
+- **GitHub Actions (recommended):** A workflow runs the seed in the cloud; the URL lives only in repo Secrets. In the repo: **Settings → Secrets and variables → Actions** add a secret `DATABASE_URL` with your Railway Postgres URL. Then go to **Actions → "Seed staging (DB schema + categories)" → Run workflow**. The workflow runs `db:push` and `db:seed:staging`; your machine never sees the URL. See `.github/workflows/seed-staging.yml`.
+- **Railway:** The credential already lives in Railway Variables. You can run a one-off from your machine with the Railway CLI (`railway run bun run db:push && railway run bun run db:seed:staging`) so the URL is injected by the CLI and not typed—but the process still runs on your device, so a compromised machine could still be snooped. To keep the seed entirely off your device, use the GitHub Actions workflow above.
+
+If you do run seeds locally (with `DATABASE_URL` in `.env` or on the command line), keep `.env` out of git and use a strong DB password; a compromised machine can still expose anything you run or store there.
 
 1. **Get these from Railway**
    - **DATABASE_URL** – In your Railway project, open the **main app** service (or the Postgres service) → **Variables** → copy the value of `DATABASE_URL` (the Postgres connection string).
