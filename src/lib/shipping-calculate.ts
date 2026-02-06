@@ -540,7 +540,7 @@ export async function runShippingCalculate(
     totalWeightGrams += weight;
 
     if (product.source === "printful") {
-      // Get catalog_variant_id for Printful shipping
+      // Get catalog_variant_id for Printful shipping (required for rate calculation)
       let catalogVariantId: number | null = null;
 
       if (item.productVariantId) {
@@ -549,6 +549,15 @@ export async function runShippingCalculate(
         );
         if (variantExternalId) {
           catalogVariantId = Number.parseInt(String(variantExternalId), 10);
+        }
+      }
+      // When cart has no variant selected (e.g. single-variant or fallback), use first variant so we still get a rate
+      if ((!catalogVariantId || isNaN(catalogVariantId)) && item.productId) {
+        const firstVariantExternalId =
+          printifyDefaultVariantByProductId.get(item.productId);
+        if (firstVariantExternalId != null) {
+          const parsed = Number.parseInt(String(firstVariantExternalId), 10);
+          if (!isNaN(parsed)) catalogVariantId = parsed;
         }
       }
 

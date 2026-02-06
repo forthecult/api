@@ -296,23 +296,31 @@ export function solanaAuthPlugin() {
                     })) as AccountRecord | null;
                     if (!existingAccountForWallet) {
                       const accountId = generateId({ model: "account" });
-                      await (ctx.context.internalAdapter as {
-                        createAccount: (data: {
-                          id: string;
-                          userId: string;
-                          accountId: string;
-                          providerId: string;
-                          createdAt: Date;
-                          updatedAt: Date;
-                        }) => Promise<unknown>;
-                      }).createAccount({
-                        id: accountId,
-                        userId: existingUser.id,
-                        accountId: addressTrim,
-                        providerId: SOLANA_PROVIDER_ID,
-                        createdAt: now,
-                        updatedAt: now,
-                      });
+                      try {
+                        await (ctx.context.internalAdapter as {
+                          createAccount: (data: {
+                            id: string;
+                            userId: string;
+                            accountId: string;
+                            providerId: string;
+                            createdAt: Date;
+                            updatedAt: Date;
+                          }) => Promise<unknown>;
+                        }).createAccount({
+                          id: accountId,
+                          userId: existingUser.id,
+                          accountId: addressTrim,
+                          providerId: SOLANA_PROVIDER_ID,
+                          createdAt: now,
+                          updatedAt: now,
+                        });
+                      } catch (linkAccountErr) {
+                        console.error(
+                          "[solana-auth] createAccount (link existing user) failed:",
+                          linkAccountErr,
+                        );
+                        throw linkAccountErr;
+                      }
                     }
                   }
                 }
@@ -374,7 +382,11 @@ export function solanaAuthPlugin() {
               },
             });
           } catch (err) {
+            // Log full error server-side for debugging (e.g. Railway logs)
             console.error("[solana-auth] Verify error:", err);
+            if (err instanceof Error && err.stack) {
+              console.error("[solana-auth] Stack:", err.stack);
+            }
             if (err instanceof APIError) throw err;
             // Don't expose raw DB/query errors to the client
             const raw =
