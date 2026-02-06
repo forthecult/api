@@ -419,7 +419,17 @@ export function SignInPageClient() {
                   </span>
                 </div>
               </div>
-              <div className="mt-6 grid grid-cols-2 gap-4">
+              <div className="mt-6 flex flex-col gap-4">
+                <Button
+                  className="w-full gap-2"
+                  disabled={loading || passkeyLoading}
+                  onClick={handlePasskeyLogin}
+                  variant="outline"
+                >
+                  <KeyRound className="h-5 w-5" />
+                  {passkeyLoading ? "Signing in…" : "Sign in with security key"}
+                </Button>
+                <div className="grid grid-cols-2 gap-4">
                 <Button
                   className="flex items-center gap-2"
                   disabled={loading}
