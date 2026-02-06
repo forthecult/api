@@ -46,8 +46,9 @@ type ShippingOptionRow = {
   maxQuantity: number | null;
   minWeightGrams: number | null;
   maxWeightGrams: number | null;
-  type: "flat" | "per_item" | "free";
+  type: "flat" | "per_item" | "flat_plus_per_item" | "free";
   amountCents: number | null;
+  additionalItemCents: number | null;
   name: string;
 };
 
@@ -80,6 +81,8 @@ export const ZERO_SHIPPING = {
   adminShippingCents: 0,
   canShipToCountry: true,
   unavailableProducts: [] as string[],
+  /** "express" when any selected admin option is express (e.g. phone required at checkout). */
+  shippingSpeed: "standard" as "standard" | "express",
 };
 
 export type ShippingResult =
@@ -93,7 +96,8 @@ export type ShippingResult =
       printifyShippingCents: number;
       adminShippingCents: number;
       canShipToCountry: boolean;
-      unavailableProducts: string[]; // Product IDs that cannot ship to this country
+      unavailableProducts: string[];
+      shippingSpeed: "standard" | "express";
     };
 
 type ExtendedShippingInput = ShippingCalculateInput & {
@@ -575,6 +579,7 @@ export async function runShippingCalculate(
   let adminShippingCents = 0;
   const adminLabels: string[] = [];
   let adminFreeShipping = false;
+  let adminShippingSpeed: "standard" | "express" = "standard";
 
   const hasPODItems = printfulItems.length > 0 || printifyItems.length > 0;
 
@@ -608,6 +613,9 @@ export async function runShippingCalculate(
         )
           continue;
 
+        if ((opt as { speed?: string | null }).speed === "express") {
+          adminShippingSpeed = "express";
+        }
         if (opt.type === "free") {
           adminLabels.push(opt.name);
           break;
@@ -619,6 +627,12 @@ export async function runShippingCalculate(
         }
         if (opt.type === "per_item" && opt.amountCents != null) {
           adminShippingCents += opt.amountCents * stats.qty;
+          adminLabels.push(opt.name);
+          break;
+        }
+        if (opt.type === "flat_plus_per_item" && opt.amountCents != null) {
+          const additional = (opt.additionalItemCents ?? 0) * Math.max(0, stats.qty - 1);
+          adminShippingCents += opt.amountCents + additional;
           adminLabels.push(opt.name);
           break;
         }
@@ -666,5 +680,6 @@ export async function runShippingCalculate(
     adminShippingCents: adminFreeShipping ? 0 : adminShippingCents,
     canShipToCountry: true,
     unavailableProducts: [],
+    shippingSpeed: adminShippingSpeed,
   };
 }

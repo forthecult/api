@@ -42,9 +42,11 @@ export default function AdminShippingOptionCreatePage() {
   const [maxQuantity, setMaxQuantity] = useState<string>("");
   const [minWeightGrams, setMinWeightGrams] = useState<string>("");
   const [maxWeightGrams, setMaxWeightGrams] = useState<string>("");
-  const [type, setType] = useState<"flat" | "per_item" | "free">("flat");
+  const [type, setType] = useState<"flat" | "per_item" | "flat_plus_per_item" | "free">("flat");
   const [amountCents, setAmountCents] = useState<string>("");
+  const [additionalItemCents, setAdditionalItemCents] = useState<string>("");
   const [priority, setPriority] = useState<string>("0");
+  const [speed, setSpeed] = useState<"standard" | "express">("standard");
   const [sourceUrl, setSourceUrl] = useState("");
   const [estimatedDaysText, setEstimatedDaysText] = useState("");
 
@@ -85,8 +87,18 @@ export default function AdminShippingOptionCreatePage() {
         minWeightGrams: parseNum(minWeightGrams) ?? null,
         maxWeightGrams: parseNum(maxWeightGrams) ?? null,
         type,
-        amountCents: type === "free" ? null : (parseDollars(amountCents) ?? 0),
+        amountCents:
+          type === "free"
+            ? null
+            : type === "flat_plus_per_item"
+              ? (parseDollars(amountCents) ?? 0)
+              : (type === "flat" || type === "per_item" ? (parseDollars(amountCents) ?? 0) : null),
+        additionalItemCents:
+          type === "flat_plus_per_item"
+            ? (parseDollars(additionalItemCents) ?? 0)
+            : null,
         priority: parseNum(priority) ?? 0,
+        speed,
         brandId: brandId.trim() || null,
         sourceUrl: sourceUrl.trim() || null,
         estimatedDaysText: estimatedDaysText.trim() || null,
@@ -288,12 +300,21 @@ export default function AdminShippingOptionCreatePage() {
                   id="type"
                   value={type}
                   onChange={(e) =>
-                    setType(e.target.value as "flat" | "per_item" | "free")
+                    setType(
+                      e.target.value as
+                        | "flat"
+                        | "per_item"
+                        | "flat_plus_per_item"
+                        | "free",
+                    )
                   }
                   className={inputClass}
                 >
                   <option value="flat">Flat rate</option>
                   <option value="per_item">Per item</option>
+                  <option value="flat_plus_per_item">
+                    Flat + per item (e.g. $5 first, $1 each additional)
+                  </option>
                   <option value="free">Free shipping</option>
                 </select>
               </div>
@@ -313,6 +334,38 @@ export default function AdminShippingOptionCreatePage() {
                   />
                 </div>
               )}
+              {type === "flat_plus_per_item" && (
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="amount" className={labelClass}>
+                      First item ($)
+                    </label>
+                    <input
+                      id="amount"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 5.00"
+                      value={amountCents}
+                      onChange={(e) => setAmountCents(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="additionalItemCents" className={labelClass}>
+                      Each additional item ($)
+                    </label>
+                    <input
+                      id="additionalItemCents"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 1.00"
+                      value={additionalItemCents}
+                      onChange={(e) => setAdditionalItemCents(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <label htmlFor="priority" className={labelClass}>
                   Priority (lower = evaluated first)
@@ -326,6 +379,22 @@ export default function AdminShippingOptionCreatePage() {
                   onChange={(e) => setPriority(e.target.value)}
                   className={inputClass}
                 />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="speed" className={labelClass}>
+                  Shipping speed
+                </label>
+                <select
+                  id="speed"
+                  value={speed}
+                  onChange={(e) =>
+                    setSpeed(e.target.value as "standard" | "express")
+                  }
+                  className={inputClass}
+                >
+                  <option value="standard">Standard</option>
+                  <option value="express">Express</option>
+                </select>
               </div>
             </div>
 

@@ -50,6 +50,7 @@ export default function AdminShippingOptionEditPage() {
   const [type, setType] = useState<"flat" | "per_item" | "free">("flat");
   const [amountCents, setAmountCents] = useState<string>("");
   const [priority, setPriority] = useState<string>("0");
+  const [speed, setSpeed] = useState<"standard" | "express">("standard");
 
   const fetchOption = useCallback(async () => {
     if (!id) return;
@@ -72,9 +73,11 @@ export default function AdminShippingOptionEditPage() {
         maxQuantity: number | null;
         minWeightGrams: number | null;
         maxWeightGrams: number | null;
-        type: "flat" | "per_item" | "free";
+        type: "flat" | "per_item" | "flat_plus_per_item" | "free";
         amountCents: number | null;
+        additionalItemCents: number | null;
         priority: number;
+        speed: "standard" | "express";
       };
       setName(row.name);
       setCountryCode(row.countryCode ?? "");
@@ -97,6 +100,7 @@ export default function AdminShippingOptionEditPage() {
         row.amountCents != null ? (row.amountCents / 100).toFixed(2) : "",
       );
       setPriority(String(row.priority));
+      setSpeed(row.speed ?? "standard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
@@ -126,6 +130,10 @@ export default function AdminShippingOptionEditPage() {
       setError("Amount is required for flat and per-item options.");
       return;
     }
+    if (type === "flat_plus_per_item" && (!amountCents.trim() || !additionalItemCents.trim())) {
+      setError("First item and each additional item amounts are required for Flat + per item.");
+      return;
+    }
     setSubmitting(true);
     try {
       const parseNum = (s: string) =>
@@ -145,8 +153,18 @@ export default function AdminShippingOptionEditPage() {
         minWeightGrams: parseNum(minWeightGrams) ?? null,
         maxWeightGrams: parseNum(maxWeightGrams) ?? null,
         type,
-        amountCents: type === "free" ? null : (parseDollars(amountCents) ?? 0),
+        amountCents:
+          type === "free"
+            ? null
+            : type === "flat_plus_per_item"
+              ? (parseDollars(amountCents) ?? 0)
+              : (type === "flat" || type === "per_item" ? (parseDollars(amountCents) ?? 0) : null),
+        additionalItemCents:
+          type === "flat_plus_per_item"
+            ? (parseDollars(additionalItemCents) ?? 0)
+            : null,
         priority: parseNum(priority) ?? 0,
+        speed,
         brandId: brandId.trim() || null,
         sourceUrl: sourceUrl.trim() || null,
         estimatedDaysText: estimatedDaysText.trim() || null,
@@ -372,12 +390,21 @@ export default function AdminShippingOptionEditPage() {
                   id="type"
                   value={type}
                   onChange={(e) =>
-                    setType(e.target.value as "flat" | "per_item" | "free")
+                    setType(
+                      e.target.value as
+                        | "flat"
+                        | "per_item"
+                        | "flat_plus_per_item"
+                        | "free",
+                    )
                   }
                   className={inputClass}
                 >
                   <option value="flat">Flat rate</option>
                   <option value="per_item">Per item</option>
+                  <option value="flat_plus_per_item">
+                    Flat + per item (e.g. $5 first, $1 each additional)
+                  </option>
                   <option value="free">Free shipping</option>
                 </select>
               </div>
@@ -397,6 +424,38 @@ export default function AdminShippingOptionEditPage() {
                   />
                 </div>
               )}
+              {type === "flat_plus_per_item" && (
+                <>
+                  <div className="space-y-2">
+                    <label htmlFor="amount" className={labelClass}>
+                      First item ($)
+                    </label>
+                    <input
+                      id="amount"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 5.00"
+                      value={amountCents}
+                      onChange={(e) => setAmountCents(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="additionalItemCents" className={labelClass}>
+                      Each additional item ($)
+                    </label>
+                    <input
+                      id="additionalItemCents"
+                      type="text"
+                      inputMode="decimal"
+                      placeholder="e.g. 1.00"
+                      value={additionalItemCents}
+                      onChange={(e) => setAdditionalItemCents(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </>
+              )}
               <div className="space-y-2">
                 <label htmlFor="priority" className={labelClass}>
                   Priority (lower = evaluated first)
@@ -410,6 +469,22 @@ export default function AdminShippingOptionEditPage() {
                   onChange={(e) => setPriority(e.target.value)}
                   className={inputClass}
                 />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="speed" className={labelClass}>
+                  Shipping speed
+                </label>
+                <select
+                  id="speed"
+                  value={speed}
+                  onChange={(e) =>
+                    setSpeed(e.target.value as "standard" | "express")
+                  }
+                  className={inputClass}
+                >
+                  <option value="standard">Standard</option>
+                  <option value="express">Express</option>
+                </select>
               </div>
             </div>
 

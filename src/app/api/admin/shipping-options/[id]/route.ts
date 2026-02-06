@@ -44,7 +44,9 @@ export async function GET(
       maxWeightGrams: row.maxWeightGrams,
       type: row.type,
       amountCents: row.amountCents,
+      additionalItemCents: row.additionalItemCents ?? null,
       priority: row.priority,
+      speed: row.speed ?? "standard",
       brandId: row.brandId,
       sourceUrl: row.sourceUrl,
       estimatedDaysText: row.estimatedDaysText,
@@ -83,9 +85,11 @@ export async function PATCH(
       maxQuantity?: number | null;
       minWeightGrams?: number | null;
       maxWeightGrams?: number | null;
-      type?: "flat" | "per_item" | "free";
+      type?: "flat" | "per_item" | "flat_plus_per_item" | "free";
       amountCents?: number | null;
+      additionalItemCents?: number | null;
       priority?: number;
+      speed?: "standard" | "express";
       brandId?: string | null;
       sourceUrl?: string | null;
       estimatedDaysText?: string | null;
@@ -114,21 +118,37 @@ export async function PATCH(
     if (
       body.type === "flat" ||
       body.type === "per_item" ||
+      body.type === "flat_plus_per_item" ||
       body.type === "free"
     ) {
       updates.type = body.type;
       if (body.type === "free") {
         updates.amountCents = null;
+        updates.additionalItemCents = null;
       } else if (
         typeof body.amountCents === "number" &&
         body.amountCents >= 0
       ) {
         updates.amountCents = body.amountCents;
+        if (body.type === "flat_plus_per_item" && typeof body.additionalItemCents === "number" && body.additionalItemCents >= 0) {
+          updates.additionalItemCents = body.additionalItemCents;
+        } else if (body.type !== "flat_plus_per_item") {
+          updates.additionalItemCents = null;
+        }
       }
     } else if (body.amountCents !== undefined) {
       updates.amountCents = body.amountCents ?? null;
     }
+    if (body.additionalItemCents !== undefined && body.type === "flat_plus_per_item") {
+      updates.additionalItemCents = body.additionalItemCents ?? null;
+    }
     if (typeof body.priority === "number") updates.priority = body.priority;
+    if (
+      body.speed === "standard" ||
+      body.speed === "express"
+    ) {
+      updates.speed = body.speed;
+    }
     if (body.brandId !== undefined) {
       updates.brandId =
         typeof body.brandId === "string" && body.brandId.trim() === ""
@@ -175,6 +195,8 @@ export async function PATCH(
       type: updated.type,
       amountCents: updated.amountCents,
       priority: updated.priority,
+      speed: updated.speed ?? "standard",
+      additionalItemCents: updated.additionalItemCents ?? null,
       brandId: updated.brandId,
       sourceUrl: updated.sourceUrl,
       estimatedDaysText: updated.estimatedDaysText,

@@ -69,7 +69,9 @@ export async function GET(request: NextRequest) {
         maxWeightGrams: shippingOptionsTable.maxWeightGrams,
         type: shippingOptionsTable.type,
         amountCents: shippingOptionsTable.amountCents,
+        additionalItemCents: shippingOptionsTable.additionalItemCents,
         priority: shippingOptionsTable.priority,
+        speed: shippingOptionsTable.speed,
         createdAt: shippingOptionsTable.createdAt,
         updatedAt: shippingOptionsTable.updatedAt,
         brandId: shippingOptionsTable.brandId,
@@ -97,6 +99,7 @@ export async function GET(request: NextRequest) {
       maxWeightGrams: o.maxWeightGrams,
       type: o.type,
       amountCents: o.amountCents,
+      additionalItemCents: o.additionalItemCents ?? null,
       priority: o.priority,
       createdAt: o.createdAt,
       updatedAt: o.updatedAt,
@@ -135,9 +138,11 @@ export async function POST(request: NextRequest) {
       maxQuantity?: number | null;
       minWeightGrams?: number | null;
       maxWeightGrams?: number | null;
-      type: "flat" | "per_item" | "free";
+      type: "flat" | "per_item" | "flat_plus_per_item" | "free";
       amountCents?: number | null;
+      additionalItemCents?: number | null;
       priority?: number;
+      speed?: "standard" | "express";
       brandId?: string | null;
       sourceUrl?: string | null;
       estimatedDaysText?: string | null;
@@ -152,10 +157,11 @@ export async function POST(request: NextRequest) {
     if (
       body.type !== "flat" &&
       body.type !== "per_item" &&
+      body.type !== "flat_plus_per_item" &&
       body.type !== "free"
     ) {
       return NextResponse.json(
-        { error: "type must be flat, per_item, or free" },
+        { error: "type must be flat, per_item, flat_plus_per_item, or free" },
         { status: 400 },
       );
     }
@@ -171,6 +177,20 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
+    if (body.type === "flat_plus_per_item") {
+      if (typeof body.amountCents !== "number" || body.amountCents < 0) {
+        return NextResponse.json(
+          { error: "amountCents (first item) is required and must be >= 0 for flat + per item" },
+          { status: 400 },
+        );
+      }
+      if (typeof body.additionalItemCents !== "number" || body.additionalItemCents < 0) {
+        return NextResponse.json(
+          { error: "additionalItemCents (each additional item) is required and must be >= 0 for flat + per item" },
+          { status: 400 },
+        );
+      }
+    }
 
     const now = new Date();
     const id = createId();
@@ -184,6 +204,12 @@ export async function POST(request: NextRequest) {
         : typeof body.amountCents === "number"
           ? body.amountCents
           : 0;
+    const additionalItemCents =
+      body.type === "flat_plus_per_item" &&
+      typeof body.additionalItemCents === "number" &&
+      body.additionalItemCents >= 0
+        ? body.additionalItemCents
+        : null;
 
     const brandId =
       typeof body.brandId === "string" && body.brandId.trim() === ""
@@ -199,6 +225,9 @@ export async function POST(request: NextRequest) {
         ? null
         : (body.estimatedDaysText ?? null);
 
+    const speed =
+      body.speed === "express" ? "express" : "standard";
+
     await db.insert(shippingOptionsTable).values({
       id,
       name: body.name.trim(),
@@ -211,7 +240,9 @@ export async function POST(request: NextRequest) {
       maxWeightGrams: body.maxWeightGrams ?? null,
       type: body.type,
       amountCents,
+      additionalItemCents,
       priority: typeof body.priority === "number" ? body.priority : 0,
+      speed,
       brandId,
       sourceUrl,
       estimatedDaysText,
@@ -245,6 +276,8 @@ export async function POST(request: NextRequest) {
       type: inserted.type,
       amountCents: inserted.amountCents,
       priority: inserted.priority,
+      speed: inserted.speed ?? "standard",
+      additionalItemCents: inserted.additionalItemCents ?? null,
       brandId: inserted.brandId,
       sourceUrl: inserted.sourceUrl,
       estimatedDaysText: inserted.estimatedDaysText,

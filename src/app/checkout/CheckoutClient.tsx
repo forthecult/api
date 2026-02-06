@@ -527,6 +527,7 @@ export function CheckoutClient() {
   const [loqateOpen, setLoqateOpen] = useState(false);
   const loqateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const skipNextFindRef = useRef(false);
+  const loqateWarmedRef = useRef(false);
   const addressContainerRef = useRef<HTMLDivElement | null>(null);
   const [billingLoqateSuggestions, setBillingLoqateSuggestions] = useState<
     LoqateFindItem[]
@@ -559,6 +560,9 @@ export function CheckoutClient() {
   const [shippingLabel, setShippingLabel] = useState<string | null>(null);
   const [shippingFree, setShippingFree] = useState(false);
   const [shippingLoading, setShippingLoading] = useState(false);
+  const [shippingSpeed, setShippingSpeed] = useState<"standard" | "express">(
+    "standard",
+  );
   const [canShipToCountry, setCanShipToCountry] = useState(true);
   const [navigatingToPay, setNavigatingToPay] = useState(false);
   const [discountCodeInput, setDiscountCodeInput] = useState("");
@@ -802,6 +806,7 @@ export function CheckoutClient() {
           canShipToCountry?: boolean;
           printfulShippingCents?: number;
           adminShippingCents?: number;
+          shippingSpeed?: "standard" | "express";
         }) => {
           if (!cancelled) {
             setShippingCents(
@@ -810,6 +815,9 @@ export function CheckoutClient() {
             setShippingLabel(data.label ?? null);
             setShippingFree(Boolean(data.freeShipping));
             setCanShipToCountry(data.canShipToCountry !== false);
+            setShippingSpeed(
+              data.shippingSpeed === "express" ? "express" : "standard",
+            );
           }
         },
       )
@@ -819,6 +827,7 @@ export function CheckoutClient() {
           setShippingLabel(null);
           setShippingFree(false);
           setCanShipToCountry(true);
+          setShippingSpeed("standard");
         }
       })
       .finally(() => {
@@ -1034,7 +1043,7 @@ export function CheckoutClient() {
         return;
       }
       setLoqateLoading(true);
-      const params = new URLSearchParams({ text });
+      const params = new URLSearchParams({ text, limit: "6" });
       if (form.country?.trim()) params.set("countries", form.country.trim());
       const ac = new AbortController();
       const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
@@ -1103,7 +1112,7 @@ export function CheckoutClient() {
         return;
       }
       setBillingLoqateLoading(true);
-      const params = new URLSearchParams({ text });
+      const params = new URLSearchParams({ text, limit: "6" });
       if (billingForm.country?.trim())
         params.set("countries", billingForm.country.trim());
       const ac = new AbortController();
@@ -1178,6 +1187,12 @@ export function CheckoutClient() {
         country === "US" ? "State is required" : "State / Province is required",
       );
     }
+    if (
+      shippingSpeed === "express" &&
+      !form.phone?.trim()
+    ) {
+      err.push("Phone number is required for Express shipping");
+    }
     return err;
   }, [
     form.country,
@@ -1187,6 +1202,8 @@ export function CheckoutClient() {
     form.city,
     form.zip,
     form.state,
+    form.phone,
+    shippingSpeed,
   ]);
 
   const validateBilling = useCallback((): string[] => {
@@ -1902,6 +1919,11 @@ export function CheckoutClient() {
                     onChange={(e) => update("street", e.target.value)}
                     onFocus={() => {
                       if (loqateSuggestions.length > 0) setLoqateOpen(true);
+                      // One-time warm-up: prefetch so first real request reuses connection
+                      if (!loqateWarmedRef.current) {
+                        loqateWarmedRef.current = true;
+                        fetch("/api/loqate/find?text=a&limit=1").catch(() => {});
+                      }
                     }}
                     onBlur={() => {
                       setTimeout(() => setLoqateOpen(false), 200);
@@ -2039,8 +2061,13 @@ export function CheckoutClient() {
                 <div className="sm:col-span-2 flex items-center gap-2">
                   <Input
                     aria-label="Phone"
+                    aria-required={shippingSpeed === "express"}
                     className={cn(checkoutFieldHeight, "flex-1 min-w-0")}
-                    placeholder="Phone (optional)"
+                    placeholder={
+                      shippingSpeed === "express"
+                        ? "Phone (required for Express shipping)"
+                        : "Phone (optional)"
+                    }
                     type="tel"
                     value={form.phone}
                     onChange={(e) => update("phone", e.target.value)}
@@ -2416,6 +2443,12 @@ export function CheckoutClient() {
                                   onFocus={() => {
                                     if (billingLoqateSuggestions.length > 0)
                                       setBillingLoqateOpen(true);
+                                    if (!loqateWarmedRef.current) {
+                                      loqateWarmedRef.current = true;
+                                      fetch(
+                                        "/api/loqate/find?text=a&limit=1",
+                                      ).catch(() => {});
+                                    }
                                   }}
                                   onBlur={() => {
                                     setTimeout(

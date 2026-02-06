@@ -1,6 +1,7 @@
 /**
  * Loqate Address Capture Find (type-ahead). Requires LOQATE_API_KEY in env.
  * Get a key at https://www.loqate.com/ (14-day free trial).
+ * Responses are cached in-memory (5 min TTL) to speed up repeated/similar queries.
  */
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -14,6 +15,36 @@ import {
 const LOQATE_FIND_BASE =
   "https://api.addressy.com/Capture/Interactive/Find/v1.20/json6.ws";
 
+const FIND_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const FIND_CACHE_MAX_ENTRIES = 300;
+
+type CacheEntry = { items: unknown[]; expiresAt: number };
+const findCache = new Map<string, CacheEntry>();
+
+function getCacheKey(text: string, countries: string, limit: string): string {
+  return `${text.toLowerCase().trim()}|${countries.trim()}|${limit}`;
+}
+
+function getCached(key: string): unknown[] | null {
+  const entry = findCache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) {
+    if (entry) findCache.delete(key);
+    return null;
+  }
+  return entry.items;
+}
+
+function setCache(key: string, items: unknown[]): void {
+  if (findCache.size >= FIND_CACHE_MAX_ENTRIES) {
+    const firstKey = findCache.keys().next().value;
+    if (firstKey !== undefined) findCache.delete(firstKey);
+  }
+  findCache.set(key, {
+    items,
+    expiresAt: Date.now() + FIND_CACHE_TTL_MS,
+  });
+}
+
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
   const rateLimitResult = checkRateLimit(
@@ -24,8 +55,8 @@ export async function GET(request: NextRequest) {
     return rateLimitResponse(rateLimitResult);
   }
 
-  const key = process.env.LOQATE_API_KEY;
-  if (!key?.trim()) {
+  const apiKey = process.env.LOQATE_API_KEY;
+  if (!apiKey?.trim()) {
     return NextResponse.json(
       { error: "Loqate is not configured" },
       { status: 503 },
@@ -41,8 +72,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ Items: [] });
   }
 
+  const cacheKey = getCacheKey(text, countries, limit);
+  const cached = getCached(cacheKey);
+  if (cached !== null) {
+    return NextResponse.json({ Items: cached });
+  }
+
   const params = new URLSearchParams({
-    Key: key,
+    Key: apiKey,
     Text: text,
     Limit: limit,
   });
@@ -67,7 +104,9 @@ export async function GET(request: NextRequest) {
         { status: 400 },
       );
     }
-    return NextResponse.json({ Items: data.Items ?? [] });
+    const items = data.Items ?? [];
+    setCache(cacheKey, items);
+    return NextResponse.json({ Items: items });
   } catch (err) {
     console.error("Loqate Find error:", err);
     return NextResponse.json(
