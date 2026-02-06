@@ -4,6 +4,14 @@ import React from "react";
 import { usePathname } from "next/navigation";
 
 import { cn } from "~/lib/cn";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/ui/primitives/dialog";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 
@@ -52,6 +60,8 @@ export function SupportChatWidget() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [takenOverBy, setTakenOverBy] = React.useState<string | null>(null);
+  const [endChatDialogOpen, setEndChatDialogOpen] = React.useState(false);
+  const [endingChat, setEndingChat] = React.useState(false);
   const guestIdRef = React.useRef<string | null>(null);
   const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -72,9 +82,10 @@ export function SupportChatWidget() {
 
   const ensureConversation = React.useCallback(async () => {
     const list = await fetchConversations();
-    if (list.length > 0) {
-      setConversationId(list[0]!.id);
-      return list[0]!.id;
+    const openConversations = list.filter((c) => c.status === "open");
+    if (openConversations.length > 0) {
+      setConversationId(openConversations[0]!.id);
+      return openConversations[0]!.id;
     }
     const guestId = getGuestId();
     const res = await fetch(`${API_BASE}/api/support-chat/conversations`, {
@@ -182,6 +193,36 @@ export function SupportChatWidget() {
     }
   };
 
+  const handleCloseClick = () => {
+    setEndChatDialogOpen(true);
+  };
+
+  const handleEndChatConfirm = React.useCallback(async () => {
+    const cid = conversationId;
+    setEndingChat(true);
+    try {
+      if (cid) {
+        const guestId = getGuestId();
+        await fetch(
+          `${API_BASE}/api/support-chat/conversations/${cid}`,
+          {
+            method: "PATCH",
+            credentials: "include",
+            headers: getHeaders(guestId),
+          },
+        );
+      }
+      setConversationId(null);
+      setMessages([]);
+      setError(null);
+      setTakenOverBy(null);
+      setEndChatDialogOpen(false);
+      setOpen(false);
+    } finally {
+      setEndingChat(false);
+    }
+  }, [conversationId]);
+
   if (isCheckout) return null;
 
   return (
@@ -202,7 +243,7 @@ export function SupportChatWidget() {
               variant="ghost"
               size="sm"
               aria-label="Close chat"
-              onClick={() => setOpen(false)}
+              onClick={handleCloseClick}
               className="h-8 w-8 p-0"
             >
               ×
@@ -256,6 +297,38 @@ export function SupportChatWidget() {
           </div>
         </div>
       )}
+      <Dialog open={endChatDialogOpen} onOpenChange={setEndChatDialogOpen}>
+        <DialogContent
+          className="sm:max-w-md"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle>End chat</DialogTitle>
+            <DialogDescription>
+              This will end the current chat session. You can start a new chat
+              anytime by opening the chat again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEndChatDialogOpen(false)}
+              disabled={endingChat}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => void handleEndChatConfirm()}
+              disabled={endingChat}
+            >
+              {endingChat ? "Ending…" : "End chat"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Button
         type="button"
         size="icon"

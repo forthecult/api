@@ -3,6 +3,8 @@
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { ProductActions, ProductPriceDisplay } from "./product-detail-client";
 import { SecureCheckoutLine } from "./secure-checkout-line";
 import type { ProductOptionDefinition, ProductVariantOption } from "./page";
@@ -52,6 +54,27 @@ export interface ProductVariantSectionProps {
   variants: ProductVariantOption[];
 }
 
+/** Same country-availability logic as ProductActions: excluded globally or product restricted and current country not in list. */
+function useUnavailableInCountry(product: {
+  availableCountryCodes?: string[];
+}) {
+  const { selectedCountry: footerCountry } = useCountryCurrency();
+  const allowedCountries = product.availableCountryCodes ?? [];
+  const hasCountryRestriction = allowedCountries.length > 0;
+  const currentCountryUpper =
+    footerCountry?.trim().toUpperCase().slice(0, 2) ?? "";
+  const notInAllowedCountries =
+    hasCountryRestriction &&
+    currentCountryUpper.length === 2 &&
+    !allowedCountries.some(
+      (c) => c?.trim().toUpperCase().slice(0, 2) === currentCountryUpper,
+    );
+  return (
+    (currentCountryUpper.length === 2 &&
+      isShippingExcluded(currentCountryUpper)) ||
+    notInAllowedCountries;
+}
+
 export function ProductVariantSection({
   product,
   hasVariants,
@@ -61,6 +84,8 @@ export function ProductVariantSection({
   const [selectedByIndex, setSelectedByIndex] = React.useState<
     Record<number, string>
   >({});
+
+  const unavailableInCountry = useUnavailableInCountry(product);
 
   // Initialize selection from first variant so we always have a valid combination
   React.useEffect(() => {
@@ -108,7 +133,11 @@ export function ProductVariantSection({
           />
         </div>
         <div aria-atomic="true" aria-live="polite" className="mb-6 mt-2">
-          {product.inStock ? (
+          {unavailableInCountry ? (
+            <p className="text-sm font-medium text-amber-600">
+              Not available in your country
+            </p>
+          ) : product.inStock ? (
             <p className="text-sm font-medium text-green-600">
               Stock Available
             </p>
@@ -172,9 +201,13 @@ export function ProductVariantSection({
         />
       </div>
 
-      {/* Stock */}
+      {/* Stock / country availability */}
       <div aria-atomic="true" aria-live="polite" className="mb-6">
-        {displayInStock ? (
+        {unavailableInCountry ? (
+          <p className="text-sm font-medium text-amber-600">
+            Not available in your country
+          </p>
+        ) : displayInStock ? (
           <p className="text-sm font-medium text-green-600">Stock Available</p>
         ) : (
           <p className="text-sm font-medium text-red-500">Out of Stock</p>
