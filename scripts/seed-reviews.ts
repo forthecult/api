@@ -19,12 +19,15 @@ import * as path from "node:path";
 import { db } from "../src/db";
 import { productReviewsTable, productsTable } from "../src/db/schema";
 
-// CSV path: prefer cwd (so CI with working-directory: relivator finds data/reviews.csv), else relative to script
-const CSV_PATH = (() => {
-  const fromCwd = path.join(process.cwd(), "data", "reviews.csv");
+// Prefer cwd so CI with working-directory: relivator finds data/
+const DATA_DIR = (() => {
+  const fromCwd = path.join(process.cwd(), "data");
   if (fs.existsSync(fromCwd)) return fromCwd;
-  return path.join(__dirname, "..", "data", "reviews.csv");
+  return path.join(__dirname, "..", "data");
 })();
+const CSV_PATH = path.join(DATA_DIR, "reviews.csv");
+/** Pre-extracted rows (from db:extract-reviews) — avoids CSV parsing in CI and speeds up seed. */
+const SEED_JSON_PATH = path.join(DATA_DIR, "reviews-seed.json");
 
 interface CsvReview {
   product_handle: string;
@@ -152,57 +155,81 @@ function generateReviewId(
   return `review-${Math.abs(hash).toString(36)}`;
 }
 
-async function seed() {
-  console.log("Seeding product reviews from CSV…");
+type ReviewRow = {
+  id: string;
+  productId: string | null;
+  productSlug: string;
+  productName: string;
+  rating: number;
+  title: string | null;
+  comment: string;
+  customerName: string;
+  author: string | null;
+  location: string | null;
+  showName: boolean;
+  visible: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  userId: null;
+};
 
-  if (!fs.existsSync(CSV_PATH)) {
-    console.warn(`Reviews CSV not found at: ${CSV_PATH}`);
-    console.log("Skipping reviews seed. Add data/reviews.csv and re-run db:seed-reviews to import reviews.");
-    // In CI, fail so the workflow does not silently skip reviews
-    if (process.env.CI === "true") {
-      console.error("Failing in CI because data/reviews.csv is required for staging.");
-      process.exit(1);
+const BATCH_SIZE = 500;
+
+async function insertReviewRows(rows: ReviewRow[]): Promise<{
+  inserted: number;
+  linked: number;
+  unlinked: number;
+  skipped: number;
+}> {
+  let inserted = 0;
+  let linked = 0;
+  let unlinked = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const chunk = rows.slice(i, i + BATCH_SIZE);
+    try {
+      await db
+        .insert(productReviewsTable)
+        .values(chunk)
+        .onConflictDoNothing({ target: productReviewsTable.id });
+      inserted += chunk.length;
+      for (const r of chunk) {
+        if (r.productId) linked++;
+        else unlinked++;
+      }
+    } catch (err) {
+      console.error(`Batch insert failed at offset ${i}:`, err);
+      for (const row of chunk) {
+        try {
+          await db
+            .insert(productReviewsTable)
+            .values(row)
+            .onConflictDoNothing({ target: productReviewsTable.id });
+          inserted++;
+          if (row.productId) linked++;
+          else unlinked++;
+        } catch (e) {
+          console.error(`Failed to insert review ${row.id}:`, e);
+          skipped++;
+        }
+      }
     }
-    return;
   }
+  return { inserted, linked, unlinked, skipped };
+}
 
-  const csvContent = fs.readFileSync(CSV_PATH, "utf-8");
-  const allReviews = parseCsv(csvContent);
+/** Seed from pre-extracted JSON (fast path: no CSV parsing, one product query, bulk insert). */
+async function seedFromJson(): Promise<boolean> {
+  if (!fs.existsSync(SEED_JSON_PATH)) return false;
 
-  console.log(`Parsed ${allReviews.length} total reviews from CSV`);
+  console.log("Seeding product reviews from pre-extracted JSON…");
 
-  // Filter out spam reviews - only keep published and approved
-  const validReviews = allReviews.filter(
-    (r) => r.state === "published" || r.state === "approved",
-  );
-
-  console.log(
-    `Filtered to ${validReviews.length} valid reviews (published/approved)`,
-  );
-
-  // Get all products with slugs for optional matching
-  const products = await db
-    .select({
-      id: productsTable.id,
-      slug: productsTable.slug,
-      name: productsTable.name,
-    })
-    .from(productsTable);
-
-  const slugToProduct = new Map<string, { id: string; name: string }>();
-  for (const p of products) {
-    if (p.slug) {
-      slugToProduct.set(p.slug, { id: p.id, name: p.name });
-    }
-  }
-
-  console.log(`Found ${slugToProduct.size} products with slugs in database`);
-
-  // Build rows for batch insert (avoid one round-trip per review)
-  const BATCH_SIZE = 150;
-  const rows: Array<{
+  const raw = JSON.parse(
+    fs.readFileSync(SEED_JSON_PATH, "utf-8"),
+  ) as Array<{
     id: string;
-    productId: string | null;
+    productId: null;
     productSlug: string;
     productName: string;
     rating: number;
@@ -213,10 +240,101 @@ async function seed() {
     location: string | null;
     showName: boolean;
     visible: boolean;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     userId: null;
-  }> = [];
+  }>;
+
+  const products = await db
+    .select({
+      id: productsTable.id,
+      slug: productsTable.slug,
+      name: productsTable.name,
+    })
+    .from(productsTable);
+
+  const slugToProduct = new Map<string, { id: string; name: string }>();
+  for (const p of products) {
+    if (p.slug) slugToProduct.set(p.slug, { id: p.id, name: p.name });
+  }
+
+  const rows: ReviewRow[] = raw.map((r) => {
+    const product = slugToProduct.get(r.productSlug);
+    return {
+      ...r,
+      productId: product?.id ?? null,
+      productName: product?.name ?? r.productName,
+      createdAt: new Date(r.createdAt),
+      updatedAt: new Date(r.updatedAt),
+    };
+  });
+
+  const { inserted, linked, unlinked, skipped } =
+    await insertReviewRows(rows);
+
+  console.log("\n--- Seed Results (from JSON) ---");
+  console.log(`Inserted: ${inserted} reviews`);
+  console.log(`  - Linked to products: ${linked}`);
+  console.log(`  - Unlinked (standalone): ${unlinked}`);
+  if (skipped > 0) console.log(`Skipped (insert error): ${skipped}`);
+  if (unlinked > 0) {
+    console.log(
+      "\nUnlinked reviews are still visible (homepage/testimonials).",
+    );
+  }
+  console.log("\nDone.");
+  return true;
+}
+
+async function seed() {
+  // Fast path: pre-extracted JSON (e.g. in CI; run db:extract-reviews when CSV changes)
+  if (await seedFromJson()) return;
+
+  console.log("Seeding product reviews from CSV…");
+
+  if (!fs.existsSync(CSV_PATH)) {
+    console.warn(`Reviews CSV not found at: ${CSV_PATH}`);
+    console.log(
+      "Skipping reviews seed. Use data/reviews-seed.json (run bun run db:extract-reviews from CSV) or add data/reviews.csv.",
+    );
+    if (process.env.CI === "true") {
+      console.error(
+        "Failing in CI: need data/reviews-seed.json or data/reviews.csv for staging.",
+      );
+      process.exit(1);
+    }
+    return;
+  }
+
+  const csvContent = fs.readFileSync(CSV_PATH, "utf-8");
+  const allReviews = parseCsv(csvContent);
+
+  console.log(`Parsed ${allReviews.length} total reviews from CSV`);
+
+  const validReviews = allReviews.filter(
+    (r) => r.state === "published" || r.state === "approved",
+  );
+
+  console.log(
+    `Filtered to ${validReviews.length} valid reviews (published/approved)`,
+  );
+
+  const products = await db
+    .select({
+      id: productsTable.id,
+      slug: productsTable.slug,
+      name: productsTable.name,
+    })
+    .from(productsTable);
+
+  const slugToProduct = new Map<string, { id: string; name: string }>();
+  for (const p of products) {
+    if (p.slug) slugToProduct.set(p.slug, { id: p.id, name: p.name });
+  }
+
+  console.log(`Found ${slugToProduct.size} products with slugs in database`);
+
+  const rows: ReviewRow[] = [];
   let skipped = 0;
 
   for (const review of validReviews) {
@@ -229,9 +347,7 @@ async function seed() {
     let createdAt: Date;
     try {
       createdAt = new Date(review.created_at);
-      if (isNaN(createdAt.getTime())) {
-        createdAt = new Date();
-      }
+      if (isNaN(createdAt.getTime())) createdAt = new Date();
     } catch {
       createdAt = new Date();
     }
@@ -246,7 +362,8 @@ async function seed() {
     const customerName = isAnonymous ? "Anonymous" : review.author;
     const product = slugToProduct.get(review.product_handle);
     const productId = product?.id || null;
-    const productName = product?.name || formatSlugAsName(review.product_handle);
+    const productName =
+      product?.name || formatSlugAsName(review.product_handle);
 
     rows.push({
       id: reviewId,
@@ -267,47 +384,15 @@ async function seed() {
     });
   }
 
-  let inserted = 0;
-  let linked = 0;
-  let unlinked = 0;
-
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const chunk = rows.slice(i, i + BATCH_SIZE);
-    try {
-      await db
-        .insert(productReviewsTable)
-        .values(chunk)
-        .onConflictDoNothing({ target: productReviewsTable.id });
-      inserted += chunk.length;
-      for (const r of chunk) {
-        if (r.productId) linked++;
-        else unlinked++;
-      }
-    } catch (err) {
-      console.error(`Batch insert failed at offset ${i}:`, err);
-      // Fallback: insert one-by-one for this chunk so we don't lose progress
-      for (const row of chunk) {
-        try {
-          await db
-            .insert(productReviewsTable)
-            .values(row)
-            .onConflictDoNothing({ target: productReviewsTable.id });
-          inserted++;
-          if (row.productId) linked++;
-          else unlinked++;
-        } catch (e) {
-          console.error(`Failed to insert review ${row.id}:`, e);
-          skipped++;
-        }
-      }
-    }
-  }
+  const { inserted, linked, unlinked, skipped: insertSkipped } =
+    await insertReviewRows(rows);
 
   console.log("\n--- Seed Results ---");
   console.log(`Inserted: ${inserted} reviews`);
   console.log(`  - Linked to products: ${linked}`);
   console.log(`  - Unlinked (standalone): ${unlinked}`);
   console.log(`Skipped (invalid rating): ${skipped} reviews`);
+  if (insertSkipped > 0) console.log(`Skipped (insert error): ${insertSkipped}`);
 
   if (unlinked > 0) {
     console.log(

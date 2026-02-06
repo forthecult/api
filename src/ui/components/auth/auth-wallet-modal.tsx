@@ -206,26 +206,63 @@ export function AuthWalletModal({
     async (wallet: Wallet) => {
       setError("");
       setSelectedWallet(wallet);
-      setSelectedChain("solana"); // Mark as Solana wallet
+      const name = wallet.adapter.name;
+      const isMultiChain = MULTI_CHAIN_WALLET_NAMES.some(
+        (n) => n.toLowerCase() === name.toLowerCase(),
+      );
+      if (isMultiChain) {
+        setStep("network");
+        return;
+      }
+      setSelectedChain("solana");
       try {
-        console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
+        console.log("[auth] Selecting Solana wallet:", name);
         select(wallet.adapter.name);
-        // Give the adapter time to initialize
         await new Promise((r) => setTimeout(r, 200));
         console.log("[auth] Connecting to Solana wallet...");
         await connect();
         console.log("[auth] Solana wallet connected, moving to signing step");
-        // Additional delay to ensure wallet state is fully updated
         await new Promise((r) => setTimeout(r, 100));
         setStep("signing");
       } catch (err) {
         console.error("[auth] Solana wallet connection failed:", err);
         setError("Connection failed. Try again or use another wallet.");
         setStep("wallet");
+        setSelectedWallet(null);
         setSelectedChain(null);
       }
     },
     [select, connect],
+  );
+
+  const handleSelectNetwork = useCallback(
+    async (chain: "solana" | "ethereum") => {
+      setError("");
+      setSelectedChain(chain);
+      const wallet = selectedWallet;
+      if (!wallet) return;
+      if (chain === "ethereum") {
+        setSelectedEthereumOption("injected");
+        setStep("signing");
+        return;
+      }
+      try {
+        console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
+        select(wallet.adapter.name);
+        await new Promise((r) => setTimeout(r, 200));
+        console.log("[auth] Connecting to Solana wallet...");
+        await connect();
+        console.log("[auth] Solana wallet connected, moving to signing step");
+        await new Promise((r) => setTimeout(r, 100));
+        setStep("signing");
+      } catch (err) {
+        console.error("[auth] Solana wallet connection failed:", err);
+        setError("Connection failed. Try again or use another wallet.");
+        setStep("network");
+        setSelectedChain(null);
+      }
+    },
+    [selectedWallet, select, connect],
   );
 
   // If Solana wallet disconnects while we're on "Sign the message", show error so user isn't stuck
