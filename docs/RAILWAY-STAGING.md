@@ -42,6 +42,38 @@ bun run db:push
 
 Use the same `DATABASE_URL` you set on the Railway service. After the schema exists, build and runtime will succeed.
 
+**Seeding staging from your machine (schema + categories + admin):** You do **not** run these inside Railway. Run them on your own computer, in the **repo root** (`relivator/`), with env vars set so they talk to your staging app and DB.
+
+1. **Get these from Railway**
+   - **DATABASE_URL** – In your Railway project, open the **main app** service (or the Postgres service) → **Variables** → copy the value of `DATABASE_URL` (the Postgres connection string).
+   - **Main app URL** – Your staging store URL, e.g. `https://bythecult-production.up.railway.app`.
+   - **ADMIN_EMAILS** – The email you want to use for admin (e.g. `you@forthecult.store`). This must match what you set in Railway’s `ADMIN_EMAILS` for the main app.
+
+2. **Schema (if you haven’t already)**
+   ```bash
+   cd relivator
+   DATABASE_URL='postgresql://user:pass@host:port/railway' bun run db:push
+   ```
+   Use the exact `DATABASE_URL` you copied. This creates all tables (`user`, `category`, `product`, `brand`, etc.).
+
+3. **Categories (and optional brands/products)**
+   These scripts connect **directly** to the DB, so they need `DATABASE_URL`:
+   ```bash
+   DATABASE_URL='postgresql://...' bun run db:seed-categories
+   DATABASE_URL='postgresql://...' bun run db:seed-brands    # optional
+   DATABASE_URL='postgresql://...' bun run db:seed           # optional: seed products
+   ```
+   Or in one go: `DATABASE_URL='postgresql://...' bun run db:seed:staging` (categories + brands + products).
+
+4. **Admin user**
+   This script does **not** use the DB directly. It sends an HTTP request to your **staging app’s** sign-up API. So it needs the **app URL**, not `DATABASE_URL`:
+   ```bash
+   ADMIN_EMAILS='you@forthecult.store' \
+   NEXT_PUBLIC_APP_URL='https://bythecult-production.up.railway.app' \
+   bun run db:seed-admin
+   ```
+   Replace the email and URL with your values. If the user already exists, the script will tell you to use “Forgot password?” on the login page. Otherwise it creates the user with password **`Admin123!`**. Then log in at the main app’s `/login` with that email and password; after that you can open the admin app and it will recognize you as admin.
+
 ---
 
 ## Two services (customer + admin)

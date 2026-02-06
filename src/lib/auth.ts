@@ -200,6 +200,8 @@ export const auth = betterAuth({
 
   emailAndPassword: {
     enabled: true,
+    // Disable so user is sent to login after signup; avoids 401 from auto sign-in on staging (cookies/baseURL)
+    autoSignIn: false,
     sendResetPassword: async ({ user, url }, _request) => {
       void sendResetPasswordEmail({ to: user.email, url, user });
     },
