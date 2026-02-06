@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
-import { signIn } from "~/lib/auth-client";
+import { authClient, signIn } from "~/lib/auth-client";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { GoogleIcon } from "~/ui/components/icons/google";
 import { Button } from "~/ui/primitives/button";
@@ -15,14 +14,19 @@ import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import { Separator } from "~/ui/primitives/separator";
 
+type EmailSignInMethod = "password" | "code";
+
 export function SignInPageClient() {
-  const router = useRouter();
+  const [method, setMethod] = useState<EmailSignInMethod>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sendCodeLoading, setSendCodeLoading] = useState(false);
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleEmailPasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -40,7 +44,6 @@ export function SignInPageClient() {
         );
         return;
       }
-      // Full page load so the session cookie is sent and dashboard sees the session
       window.location.href = SYSTEM_CONFIG.redirectAfterSignIn;
     } catch (err) {
       const message =
@@ -50,6 +53,78 @@ export function SignInPageClient() {
         typeof (err as { message: unknown }).message === "string"
           ? (err as { message: string }).message
           : "Invalid email or password";
+      setError(message);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendOtpCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setError("Email is required.");
+      return;
+    }
+    setError("");
+    setSendCodeLoading(true);
+    try {
+      const result = await authClient.emailOtp.sendVerificationOtp({
+        email: trimmed,
+        type: "sign-in",
+      });
+      if (result?.error) {
+        setError(
+          typeof result.error.message === "string"
+            ? result.error.message
+            : "Failed to send code",
+        );
+        return;
+      }
+      setOtpSent(true);
+      setOtpCode("");
+    } finally {
+      setSendCodeLoading(false);
+    }
+  };
+
+  const handleEmailOtpLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = email.trim();
+    const code = otpCode.replace(/\D/g, "");
+    if (!trimmed) {
+      setError("Email is required.");
+      return;
+    }
+    if (code.length < 6) {
+      setError("Enter the 6-digit code from your email.");
+      return;
+    }
+    setError("");
+    setLoading(true);
+    try {
+      const result = await signIn.emailOtp({
+        email: trimmed,
+        otp: code,
+      });
+      if (result?.error) {
+        setError(
+          typeof result.error.message === "string"
+            ? result.error.message
+            : "Invalid or expired code",
+        );
+        return;
+      }
+      window.location.href = SYSTEM_CONFIG.redirectAfterSignIn;
+    } catch (err) {
+      const message =
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof (err as { message: unknown }).message === "string"
+          ? (err as { message: string }).message
+          : "Invalid or expired code";
       setError(message);
       console.error(err);
     } finally {
@@ -136,58 +211,169 @@ export function SignInPageClient() {
 
           <Card className="border-none shadow-sm">
             <CardContent className="pt-2">
-              <form
-                className="space-y-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void handleEmailLogin(e);
-                }}
-              >
-                <div className="grid gap-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                    }}
-                    placeholder="satoshi@nakamoto.com"
-                    required
-                    type="email"
-                    value={email}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link
-                      className={`
-                        text-sm text-muted-foreground
-                        hover:underline
-                      `}
-                      href="/auth/forgot-password"
+              <div className="mb-4 flex gap-2 rounded-lg bg-muted/50 p-1">
+                <button
+                  type="button"
+                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    method === "password"
+                      ? "bg-background text-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => {
+                    setMethod("password");
+                    setError("");
+                    setOtpSent(false);
+                    setOtpCode("");
+                  }}
+                >
+                  Password
+                </button>
+                <button
+                  type="button"
+                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+                    method === "code"
+                      ? "bg-background text-foreground shadow"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                  onClick={() => {
+                    setMethod("code");
+                    setError("");
+                    setOtpSent(false);
+                    setOtpCode("");
+                  }}
+                >
+                  Email code
+                </button>
+              </div>
+
+              {method === "password" && (
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void handleEmailPasswordLogin(e);
+                  }}
+                >
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="satoshi@nakamoto.com"
+                      required
+                      type="email"
+                      value={email}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="password">Password</Label>
+                      <Link
+                        className="text-sm text-muted-foreground hover:underline"
+                        href="/auth/forgot-password"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
+                    <Input
+                      id="password"
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      type="password"
+                      value={password}
+                    />
+                  </div>
+                  {error && (
+                    <div className="text-sm font-medium text-destructive">
+                      {error}
+                    </div>
+                  )}
+                  <Button className="w-full" disabled={loading} type="submit">
+                    {loading ? "Signing in..." : "Sign in"}
+                  </Button>
+                </form>
+              )}
+
+              {method === "code" && (
+                <form
+                  className="space-y-4"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (otpSent) void handleEmailOtpLogin(e);
+                    else void handleSendOtpCode(e);
+                  }}
+                >
+                  <div className="grid gap-2">
+                    <Label htmlFor="email-otp">Email</Label>
+                    <Input
+                      id="email-otp"
+                      type="email"
+                      placeholder="satoshi@nakamoto.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={otpSent}
+                    />
+                  </div>
+                  {otpSent && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="otp">Verification code</Label>
+                      <Input
+                        id="otp"
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={8}
+                        placeholder="000000"
+                        value={otpCode}
+                        onChange={(e) =>
+                          setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+                        }
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Check your inbox for the 6-digit code.
+                      </p>
+                    </div>
+                  )}
+                  {error && (
+                    <div className="text-sm font-medium text-destructive">
+                      {error}
+                    </div>
+                  )}
+                  <Button
+                    className="w-full"
+                    disabled={
+                      loading ||
+                      sendCodeLoading ||
+                      !email.trim() ||
+                      (otpSent && otpCode.replace(/\D/g, "").length < 6)
+                    }
+                    type="submit"
+                  >
+                    {loading
+                      ? "Signing in..."
+                      : sendCodeLoading
+                        ? "Sending code..."
+                        : otpSent
+                          ? "Sign in"
+                          : "Send code"}
+                  </Button>
+                  {otpSent && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full text-sm"
+                      disabled={sendCodeLoading}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setOtpSent(false);
+                        setOtpCode("");
+                        setError("");
+                      }}
                     >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <Input
-                    id="password"
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                    }}
-                    required
-                    type="password"
-                    value={password}
-                  />
-                </div>
-                {error && (
-                  <div className="text-sm font-medium text-destructive">
-                    {error}
-                  </div>
-                )}
-                <Button className="w-full" disabled={loading} type="submit">
-                  {loading ? "Signing in..." : "Sign in"}
-                </Button>
-              </form>
+                      Use a different email
+                    </Button>
+                  )}
+                </form>
+              )}
               <div className="relative mt-6">
                 <div className="absolute inset-0 flex items-center">
                   <Separator className="w-full" />

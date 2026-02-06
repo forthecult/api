@@ -52,11 +52,14 @@ export function SecurityPageClient() {
     password: "",
     confirm: "",
   });
-  const [addEmailStep, setAddEmailStep] = useState<"email" | "code" | "password">("email");
+  const [addEmailStep, setAddEmailStep] = useState<
+    "email" | "code" | "choice" | "password"
+  >("email");
   const [addEmailCode, setAddEmailCode] = useState("");
   const [addEmailLoading, setAddEmailLoading] = useState(false);
   const [addEmailSendCodeLoading, setAddEmailSendCodeLoading] = useState(false);
   const [addEmailVerifyLoading, setAddEmailVerifyLoading] = useState(false);
+  const [addEmailCodeOnlyLoading, setAddEmailCodeOnlyLoading] = useState(false);
   const [addEmailError, setAddEmailError] = useState("");
 
   const fetchAccounts = useCallback(async () => {
@@ -211,10 +214,38 @@ export function SecurityPageClient() {
         setAddEmailError(data.error ?? "Invalid or expired code.");
         return;
       }
-      setAddEmailStep("password");
+      setAddEmailStep("choice");
       setMessage("");
     } finally {
       setAddEmailVerifyLoading(false);
+    }
+  };
+
+  const handleAddEmailCodeOnly = async () => {
+    const trimmed = addEmailPassword.email.trim();
+    if (!trimmed) {
+      setAddEmailError("Email is required.");
+      return;
+    }
+    setAddEmailError("");
+    setAddEmailCodeOnlyLoading(true);
+    try {
+      const updateRes = await authClient.updateUser({
+        email: trimmed,
+      } as Record<string, unknown>);
+      if (updateRes.error) {
+        setAddEmailError(updateRes.error.message ?? "Failed to add email.");
+        return;
+      }
+      setAddEmailPassword({ email: "", password: "", confirm: "" });
+      setAddEmailStep("email");
+      setAddEmailCode("");
+      setMessage(
+        "Email added. You can sign in with your email using the email code option (no password).",
+      );
+      await fetchAccounts();
+    } finally {
+      setAddEmailCodeOnlyLoading(false);
     }
   };
 
@@ -573,9 +604,10 @@ export function SecurityPageClient() {
               Add email & password
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Add an email and password to sign in with email/password in
-              addition to your wallet. We’ll send a verification code to your
-              email to confirm it’s yours, then you can set a password.
+              Add an email to sign in in addition to your wallet. We’ll send a
+              verification code to confirm it’s yours. Then choose to sign in
+              with a <strong>password</strong> or with an <strong>email code</strong> (no
+              password).
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -663,6 +695,52 @@ export function SecurityPageClient() {
               </>
             )}
 
+            {addEmailStep === "choice" && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  How do you want to sign in with{" "}
+                  <strong>{addEmailPassword.email}</strong>?
+                </p>
+                <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <strong className="text-foreground">Password:</strong> Enter
+                    your email and password each time you sign in.
+                  </li>
+                  <li>
+                    <strong className="text-foreground">Email code:</strong> Enter
+                    your email, receive a one-time code, and sign in with no
+                    password.
+                  </li>
+                </ul>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    onClick={() => {
+                      setAddEmailStep("password");
+                      setAddEmailError("");
+                    }}
+                  >
+                    Use password
+                  </Button>
+                  <Button
+                    variant="outline"
+                    disabled={addEmailCodeOnlyLoading}
+                    onClick={handleAddEmailCodeOnly}
+                  >
+                    {addEmailCodeOnlyLoading ? "Adding…" : "Use email code (no password)"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setAddEmailStep("code");
+                      setAddEmailError("");
+                    }}
+                  >
+                    Back
+                  </Button>
+                </div>
+              </>
+            )}
+
             {addEmailStep === "password" && (
               <>
                 <p className="text-sm text-muted-foreground">
@@ -706,7 +784,7 @@ export function SecurityPageClient() {
                   <Button
                     variant="ghost"
                     onClick={() => {
-                      setAddEmailStep("code");
+                      setAddEmailStep("choice");
                       setAddEmailPassword((prev) => ({
                         ...prev,
                         password: "",
@@ -715,7 +793,7 @@ export function SecurityPageClient() {
                       setAddEmailError("");
                     }}
                   >
-                    Back to code
+                    Back
                   </Button>
                 </div>
               </>

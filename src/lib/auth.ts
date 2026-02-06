@@ -3,7 +3,7 @@
 
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { twoFactor } from "better-auth/plugins";
+import { emailOTP, twoFactor } from "better-auth/plugins";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -15,6 +15,7 @@ import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
 import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
 import { db } from "~/db";
 import { sendResetPasswordEmail } from "~/lib/send-reset-password";
+import { sendVerificationOTPEmail } from "~/lib/send-otp-email";
 import {
   createUserNotification,
   userWantsTransactionalWebsite,
@@ -253,6 +254,12 @@ export const auth = betterAuth({
 
   plugins: [
     twoFactor(),
+    emailOTP({
+      disableSignUp: true, // Only existing users (e.g. wallet users who added email) can sign in with email code
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendVerificationOTPEmail({ to: email, otp, type });
+      },
+    }),
     solanaAuthPlugin(),
     ethereumAuthPlugin(),
     telegramAuthPlugin(),
