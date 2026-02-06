@@ -54,9 +54,13 @@ async function main() {
 
   const token = getToken();
   if (!token) {
-    console.log(
-      "UPLOADTHING_TOKEN not set; skipping brand asset upload. Add it in .env (local) or in GitHub Settings → Secrets (UPLOADTHING_TOKEN) for staging seed. Use the raw token with no quotes.",
-    );
+    const msg =
+      "UPLOADTHING_TOKEN not set. Add it in .env (local) or in GitHub Settings → Secrets (UPLOADTHING_TOKEN) for staging seed. Use the raw token with no quotes.";
+    if (process.env.GITHUB_ACTIONS === "true") {
+      console.error(msg);
+      process.exit(1);
+    }
+    console.log(msg + " Skipping brand asset upload.");
     process.exit(0);
   }
 

@@ -17,7 +17,7 @@
 So in practice:
 
 - **Admin**: Product and brand images can be uploaded via the “Upload” button (which uses UploadThing) or by pasting an image URL.
-- **CI / staging seed**: Optional step “Upload brand logos to UploadThing” runs `db:upload-brand-assets`; it only runs if `UPLOADTHING_TOKEN` is set and uses the same token as the app.
+- **CI / staging seed**: When `UPLOADTHING_TOKEN` is set as a repo secret (exact name), the workflow runs “Upload brand logos” (`db:upload-brand-assets`) and “Upload lookbook” (`db:upload-lookbook`). If the token is not set, those steps are skipped.
 - **End users**: Dashboard uploads and avatars go through UploadThing when the app is configured for it.
 
 ---
@@ -55,7 +55,7 @@ So: **you’re supposed to use UploadThing** when you want the app to host the i
 
   The second command uploads those files to UploadThing and updates brand logo (and asset) URLs. Requires `UPLOADTHING_TOKEN` in `.env`.
 
-- In GitHub Actions, the “Upload brand logos to UploadThing” step is optional: if `UPLOADTHING_TOKEN` is set in repo secrets, it runs the same script after seeding; if not, the step is skipped and brands keep whatever logo URLs they already have (or none).
+- In GitHub Actions, when `UPLOADTHING_TOKEN` is set in **Secrets and variables → Actions** (secret name must be exactly `UPLOADTHING_TOKEN`), the workflow runs brand logo upload and lookbook upload after seeding. If the secret is missing or misnamed, those steps are skipped and nothing is uploaded to UploadThing.
 
 ### 4. Lookbook images (staging / production)
 
@@ -69,7 +69,7 @@ The lookbook page (`/lookbook`) can serve images from UploadThing instead of `pu
 
   This uploads every image in `public/lookbook/` to UploadThing and writes **`data/lookbook-images.json`** with the same metadata and the new URLs.
 
-- **Deploy:** Commit **`data/lookbook-images.json`**. On build, the lookbook page will read that file and use the UploadThing URLs. If the file is missing, the page falls back to the static paths under `public/lookbook/`.
+- **Deploy:** Commit **`data/lookbook-images.json`**. On build, the lookbook page will read that file and use the UploadThing URLs. If the file is missing, the page falls back to the static paths under `public/lookbook/`. When the seed workflow runs with `UPLOADTHING_TOKEN` set, it uploads lookbook images and produces `data/lookbook-images.json`; the workflow also uploads that file as an artifact **lookbook-images-json** so you can download it and commit it to the repo for deploys.
 
 - **Note:** The home and about pages still reference a couple of lookbook images by static path (`/lookbook/...`). If you remove `public/lookbook/` from the repo after migrating, update those references to use the URLs from `data/lookbook-images.json` or the same UploadThing URLs.
 
@@ -91,7 +91,9 @@ If you don’t set the token, upload buttons in the app will fail; you can still
   - In the UploadThing dashboard, confirm the token is for the correct app and not revoked.
 
 - **Seed staging runs but nothing is uploaded to UploadThing**  
-  - Add the **`UPLOADTHING_TOKEN`** repo secret in GitHub: **Settings → Secrets and variables → Actions → New repository secret**, name `UPLOADTHING_TOKEN`, value = your UploadThing API token. Re-run the “Seed staging” workflow. Check the step “Check UploadThing token” in the run log: it will say whether the token is set. The step “Upload brand logos to UploadThing” will then upload from `scripts/brand-assets/<slug>/` for each seeded brand that has a matching folder and logo file.
+  - Add the repo secret in GitHub: **Settings → Secrets and variables → Actions → New repository secret**, name **exactly** `UPLOADTHING_TOKEN`, value = your UploadThing API token (raw, no quotes). Re-run the “Seed staging” workflow.  
+  - In the run log, check the step **“Check UploadThing token”**: it will say either “token is set” (then brand + lookbook upload steps run) or “token not set” (upload steps are skipped). If it says “token not set”, the secret is missing or the name is wrong (e.g. `UPLOADTHING_API_KEY` will not work).  
+  - When the token is set, “Upload brand logos” runs from `scripts/brand-assets/<slug>/` for each seeded brand with a matching folder, and “Upload lookbook” runs from `public/lookbook/`. If those steps fail, the job now fails so you can see the error (e.g. invalid token or API error).
 
 - **Seed taking a long time**  
   UploadThing is only used in the optional final step (“Upload brand logos”). The main seed (categories, brands, products, reviews) does not call UploadThing. If seed is slow, the cause is elsewhere (e.g. products/reviews); the pre-extracted `data/reviews-seed.json` keeps review seeding fast.

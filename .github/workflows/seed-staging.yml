@@ -1,7 +1,7 @@
 # Run from GitHub Actions so DATABASE_URL never touches your machine.
 # Required secrets: repo Settings → Secrets and variables → Actions:
 #   DATABASE_URL       - Railway (or other) Postgres URL (required for seed)
-#   UPLOADTHING_TOKEN  - UploadThing API token (optional). If set, brand logos in scripts/brand-assets/<slug>/ are uploaded to UploadThing and brand.logoUrl is updated. If missing, nothing is uploaded to UploadThing.
+#   UPLOADTHING_TOKEN  - UploadThing API token (optional). If set, brand logos (scripts/brand-assets/<slug>/) and lookbook images (public/lookbook/) are uploaded to UploadThing; brand.logoUrl and data/lookbook-images.json are updated. If missing, upload steps are skipped.
 # Do NOT use "if: secrets.UPLOADTHING_TOKEN != ''" — the secrets context is not allowed in job/step if: conditions and causes "Unrecognized named-value: 'secrets'" failure.
 # Trigger: Actions tab → "Seed staging (DB schema + categories)" → Run workflow
 #
@@ -68,23 +68,39 @@ jobs:
           fi
           bun run db:seed-reviews
 
-      # Optional: upload logos. Requires repo secret UPLOADTHING_TOKEN (Settings → Secrets and variables → Actions).
-      # If the secret is not set, the script skips uploads and exits 0. Step timeout and continue-on-error
-      # so a slow/hanging UploadThing API does not block or fail the seed job.
-      - name: Check UploadThing token (brand logos)
+      # Optional: upload brand logos + lookbook. Requires repo secret UPLOADTHING_TOKEN (Settings → Secrets and variables → Actions).
+      # When token is set, we run upload steps and fail the job if uploads fail. When token is missing, we skip upload steps.
+      - name: Check UploadThing token
+        id: check_uploadthing
         working-directory: ${{ steps.wd.outputs.dir }}
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: |
           if [ -n "$UPLOADTHING_TOKEN" ]; then
-            echo "UploadThing: token is set — brand logo upload will run."
+            echo "token_set=true" >> "$GITHUB_OUTPUT"
+            echo "UploadThing: token is set — brand and lookbook uploads will run."
           else
-            echo "UploadThing: token not set — add UPLOADTHING_TOKEN in repo Settings → Secrets and variables → Actions to upload brand logos to UploadThing. Skipping upload step."
+            echo "token_set=false" >> "$GITHUB_OUTPUT"
+            echo "UploadThing: token not set — add UPLOADTHING_TOKEN in repo Settings → Secrets and variables → Actions to upload brand logos and lookbook to UploadThing."
           fi
       - name: Upload brand logos to UploadThing and update DB
+        if: steps.check_uploadthing.outputs.token_set == 'true'
         working-directory: ${{ steps.wd.outputs.dir }}
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-brand-assets
         timeout-minutes: 15
-        continue-on-error: true
+      - name: Upload lookbook to UploadThing
+        if: steps.check_uploadthing.outputs.token_set == 'true'
+        working-directory: ${{ steps.wd.outputs.dir }}
+        env:
+          UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
+        run: bun run db:upload-lookbook
+        timeout-minutes: 10
+      - name: Upload lookbook manifest artifact (optional)
+        if: steps.check_uploadthing.outputs.token_set == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: lookbook-images-json
+          path: ${{ steps.wd.outputs.dir }}/data/lookbook-images.json
+          if-no-files-found: ignore
