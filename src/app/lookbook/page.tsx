@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 
 import { SEO_CONFIG } from "~/app";
 import { getLookbookImages } from "~/lib/get-lookbook-images";
+import { getPageTokenGates } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
@@ -126,12 +127,14 @@ export const metadata: Metadata = {
 };
 
 export default async function LookbookPage() {
-  const cookieStore = await cookies();
-  const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
-  const passed = hasValidTokenGateCookie(tgCookie, "page", "lookbook");
-
-  if (!passed) {
-    return <TokenGateGuard resourceType="page" resourceId="lookbook" />;
+  const config = await getPageTokenGates("lookbook");
+  if (config.tokenGated) {
+    const cookieStore = await cookies();
+    const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
+    const passed = hasValidTokenGateCookie(tgCookie, "page", "lookbook");
+    if (!passed) {
+      return <TokenGateGuard resourceType="page" resourceId="lookbook" />;
+    }
   }
 
   const images = getLookbookImages();
