@@ -13,6 +13,14 @@ import {
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 48;
 
+function isMissingTableError(err: unknown): boolean {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? (err as { code: string }).code
+      : (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42P01";
+}
+
 export type ProductsSort =
   | "newest"
   | "price_asc"
@@ -204,6 +212,35 @@ export async function GET(request: NextRequest) {
     );
   } catch (err) {
     console.error("Public products list error:", err);
+    if (isMissingTableError(err)) {
+      const { searchParams } = request.nextUrl;
+      const limit = Math.min(
+        MAX_LIMIT,
+        Math.max(
+          1,
+          Number.parseInt(
+            searchParams.get("limit") ?? String(DEFAULT_LIMIT),
+            10,
+          ) || DEFAULT_LIMIT,
+        ),
+      );
+      return NextResponse.json(
+        {
+          items: [],
+          total: 0,
+          page: 1,
+          limit,
+          totalPages: 0,
+          categories: [],
+        },
+        {
+          headers: {
+            "Cache-Control":
+              "public, s-maxage=60, stale-while-revalidate=120",
+          },
+        },
+      );
+    }
     return NextResponse.json(
       { error: "Failed to load products" },
       { status: 500 },

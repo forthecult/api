@@ -29,6 +29,7 @@ Railway will assign a URL like `https://your-app.up.railway.app`. That’s your 
 
 - `NEXT_PUBLIC_APP_URL` = `https://your-app.up.railway.app` (the same URL Railway gives this service).
 - `NEXT_PUBLIC_ADMIN_APP_URL` = leave empty if you’re not deploying admin; if you do deploy admin, set it to the admin service URL (see below).
+- `NEXT_SERVER_APP_URL` = `http://localhost:PORT` (e.g. `http://localhost:8080`) so server-side fetches (homepage, sitemap) call the app locally; avoids 502 on first load when the DB is not ready.
 - `DATABASE_URL`, `AUTH_SECRET`, and any other env your app needs.
 
 **Database schema (required):** The app expects tables such as `brand`, `category`, `product`, etc. If you see errors like `relation "brand" does not exist` (PostgreSQL 42P01), run migrations against the **staging** `DATABASE_URL` from your machine (or a one-off deploy step), for example:
