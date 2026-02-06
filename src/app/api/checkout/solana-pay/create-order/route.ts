@@ -43,6 +43,13 @@ export async function POST(request: NextRequest) {
     return rateLimitResponse(rateLimitResult);
   }
 
+  if (!process.env.SOLANA_DEPOSIT_SECRET?.trim()) {
+    return NextResponse.json(
+      { error: "Solana Pay is not configured (SOLANA_DEPOSIT_SECRET)." },
+      { status: 503 },
+    );
+  }
+
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     const rawBody = await request.json();

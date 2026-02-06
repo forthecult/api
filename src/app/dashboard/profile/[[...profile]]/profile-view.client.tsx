@@ -65,7 +65,7 @@ export function ProfileViewClient() {
         setProfile({
           firstName: data.firstName ?? "",
           lastName: data.lastName ?? "",
-          name: data.name ?? [data.firstName, data.lastName].filter(Boolean).join(" ") || "User",
+          name: data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || "User"),
           email: data.email ?? user.email ?? "",
           phone: data.phone ?? "",
           image: data.image ?? null,

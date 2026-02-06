@@ -62,6 +62,6 @@ The storefront uses `TokenGateGuard` on `[slug]` for both product and category v
 ## Env
 
 - **CULT_TOKEN_MINT_SOLANA**: Solana mint address for CULT/CRUST gates when the gate has no Contract Address (optional; falls back to a default pump.fun mint). If your community holds a different token (e.g. a different "Crustafarianism" mint), set this to that token’s mint so the gate checks the right one. You can copy the mint from your wallet (e.g. Phantom: open the token → Token address / Mint).
-- **SOLANA_RPC_URL** / **NEXT_PUBLIC_SOLANA_RPC_URL**: Used for balance checks and wallet verification.
+- **NEXT_PUBLIC_SOLANA_RPC_URL**: Used for balance checks and wallet verification (client and server).
 
 For **any SPL token**: create a gate with **Contract Address** set to the token’s mint (in admin). Then the gate uses that mint instead of the symbol-based default.

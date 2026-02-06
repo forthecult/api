@@ -47,7 +47,9 @@ export default function AdminShippingOptionEditPage() {
   const [maxQuantity, setMaxQuantity] = useState<string>("");
   const [minWeightGrams, setMinWeightGrams] = useState<string>("");
   const [maxWeightGrams, setMaxWeightGrams] = useState<string>("");
-  const [type, setType] = useState<"flat" | "per_item" | "free">("flat");
+  const [type, setType] = useState<
+    "flat" | "per_item" | "free" | "flat_plus_per_item"
+  >("flat");
   const [amountCents, setAmountCents] = useState<string>("");
   const [priority, setPriority] = useState<string>("0");
   const [speed, setSpeed] = useState<"standard" | "express">("standard");

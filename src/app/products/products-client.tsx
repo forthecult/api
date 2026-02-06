@@ -75,7 +75,7 @@ export function ProductsClient({
 }: ProductsClientProps) {
   const router = useRouter();
   const { addItem } = useCart();
-  const { isInWishlist, removeFromWishlist } = useWishlist();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
 
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
   const [categories] = React.useState<CategoryOption[]>(initialCategories);
@@ -226,28 +226,21 @@ export function ProductsClient({
     [addItem, products],
   );
 
-  const handleAddToWishlist = React.useCallback(async (productId: string) => {
-    try {
-      const res = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ productId }),
-      });
-      if (res.ok) {
+  const handleAddToWishlist = React.useCallback(
+    async (productId: string) => {
+      const result = await addToWishlist(productId);
+      if (result.ok) {
         toast.success("Added to wishlist");
       } else {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        if (res.status === 401) {
+        if (result.error === "Unauthorized" || result.error?.toLowerCase().includes("sign in")) {
           toast.error("Sign in to add to wishlist");
         } else {
-          toast.error(data.error ?? "Could not add to wishlist");
+          toast.error(result.error ?? "Could not add to wishlist");
         }
       }
-    } catch {
-      toast.error("Could not add to wishlist");
-    }
-  }, []);
+    },
+    [addToWishlist],
+  );
 
   const handleRemoveFromWishlist = React.useCallback(
     async (productId: string) => {

@@ -5,6 +5,7 @@ import { createQR, encodeURL } from "@solana/pay";
 import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
+  getAccount as getTokenAccount,
   getAssociatedTokenAddressSync,
   getMint,
   TOKEN_PROGRAM_ID,
@@ -73,6 +74,8 @@ function getInitialTimeLeft(expiresAt: string | null): number {
 
 const LAMPORTS_PER_SOL = 1e9;
 const TX_FEE_BUFFER_LAMPORTS = 10_000;
+/** Minimum SOL needed for tx fee (and possible ATA creation) when paying with SPL token */
+const MIN_SOL_FOR_TOKEN_TX_LAMPORTS = 50_000;
 
 type PayStatus =
   | "idle"
@@ -699,6 +702,109 @@ export function CryptoPayClient() {
     requiredLamports,
   ]);
 
+  /** Check if wallet has sufficient balance before sending. Used to show "insufficient" flow instead of prompting to sign. */
+  const checkBalanceSufficient = useCallback(async (): Promise<boolean> => {
+    if (!publicKey || !connection) return false;
+    try {
+      const solBalance = await connection.getBalance(publicKey);
+      if (token === "solana") {
+        return solBalance >= requiredLamports;
+      }
+      // SPL token: need enough token balance and enough SOL for fees
+      if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS) return false;
+      let splTokenMint: PublicKeyType;
+      let amountBigNumber: BigNumber;
+      if (token === "crust") {
+        if (crustSolPerToken == null || crustSolPerToken <= 0 || rate <= 0)
+          return false;
+        amountBigNumber = tokenAmountFromUsdWithPrice(
+          amountUsd,
+          crustSolPerToken,
+          rate,
+          6,
+        );
+        splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
+      } else if (token === "usdc") {
+        amountBigNumber = usdcAmountFromUsd(amountUsd);
+        splTokenMint = new PublicKey(USDC_MINT_MAINNET);
+      } else if (token === "whitewhale") {
+        amountBigNumber = tokenAmountFromUsd(amountUsd);
+        splTokenMint = new PublicKey(WHITEWHALE_MINT_MAINNET);
+      } else {
+        return false;
+      }
+      let mint;
+      let tokenProgramId = TOKEN_PROGRAM_ID;
+      try {
+        mint = await getMint(
+          connection,
+          splTokenMint,
+          undefined,
+          TOKEN_PROGRAM_ID,
+        );
+      } catch {
+        try {
+          mint = await getMint(
+            connection,
+            splTokenMint,
+            undefined,
+            TOKEN_2022_PROGRAM_ID,
+          );
+          tokenProgramId = TOKEN_2022_PROGRAM_ID;
+        } catch {
+          return false;
+        }
+      }
+      const senderATA = getAssociatedTokenAddressSync(
+        splTokenMint,
+        publicKey,
+        false,
+        tokenProgramId,
+      );
+      const account = await getTokenAccount(
+        connection,
+        senderATA,
+        "confirmed",
+        tokenProgramId,
+      );
+      const requiredTokens = amountBigNumber
+        .times(new BigNumber(10).pow(mint.decimals))
+        .integerValue(BigNumber.ROUND_CEIL);
+      return BigInt(requiredTokens.toString()) <= account.amount;
+    } catch {
+      return false;
+    }
+  }, [
+    connection,
+    publicKey,
+    token,
+    amountUsd,
+    crustSolPerToken,
+    rate,
+    requiredLamports,
+  ]);
+
+  /** User clicked "Pay with your wallet": check balance first, then send or show insufficient flow */
+  const handlePayWithWalletClick = useCallback(async () => {
+    if (!publicKey || !connection || !sendTransaction || !order?.depositAddress)
+      return;
+    setPayError(null);
+    setPayStatus("checking");
+    const sufficient = await checkBalanceSufficient();
+    if (!sufficient) {
+      setPayStatus("insufficient");
+      return;
+    }
+    await handlePayWithWallet();
+  }, [
+    publicKey,
+    connection,
+    sendTransaction,
+    order?.depositAddress,
+    checkBalanceSufficient,
+    handlePayWithWallet,
+  ]);
+
   const handlePayManually = useCallback(() => {
     setPayStatus("idle");
   }, []);
@@ -997,7 +1103,7 @@ export function CryptoPayClient() {
                         className="w-full gap-2"
                         size="lg"
                         type="button"
-                        onClick={handlePayWithWallet}
+                        onClick={handlePayWithWalletClick}
                       >
                         {wallet?.adapter.icon && (
                           <img
@@ -1035,15 +1141,16 @@ export function CryptoPayClient() {
                       <div className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4">
                         <AlertCircle className="size-5 shrink-0 text-amber-600 dark:text-amber-500" />
                         <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                          You currently don&apos;t have enough funds in your
-                          wallet! Please add funds before continuing!
+                          You don&apos;t have enough funds in your wallet for
+                          this order (including network fees). Add funds or pay
+                          manually below.
                         </p>
                       </div>
                       <Button
                         className="w-full gap-2"
                         size="lg"
                         type="button"
-                        onClick={handlePayWithWallet}
+                        onClick={handlePayWithWalletClick}
                       >
                         {wallet?.adapter.icon && (
                           <img
@@ -1103,7 +1210,7 @@ export function CryptoPayClient() {
                         size="lg"
                         variant="secondary"
                         type="button"
-                        onClick={handlePayWithWallet}
+                        onClick={handlePayWithWalletClick}
                       >
                         Pay with your wallet
                       </Button>

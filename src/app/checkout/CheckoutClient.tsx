@@ -18,6 +18,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -29,6 +30,7 @@ import { secureStorageSync } from "~/lib/secure-storage";
 import { EXCLUDED_SHIPPING_COUNTRIES } from "~/lib/shipping-restrictions";
 import {
   getSolanaPayLabel,
+  getSolanaPayRecipient,
   USDC_MINT_MAINNET,
   usdcAmountFromUsd,
   tokenAmountFromUsd,
@@ -592,10 +594,26 @@ export function CheckoutClient() {
     "bnb",
   ] as const;
 
+  const solanaPayConfigured = Boolean(getSolanaPayRecipient());
+  const visibleCryptoSubOptions = useMemo(
+    () =>
+      VISIBLE_CRYPTO_SUB_OPTIONS.filter(
+        (opt) => opt.value !== "solana" || solanaPayConfigured,
+      ),
+    [solanaPayConfigured],
+  );
+  const visibleUsdcSubOptions = useMemo(
+    () =>
+      USDC_SUB_OPTIONS.filter(
+        (opt) => opt.value !== "solana" || solanaPayConfigured,
+      ),
+    [solanaPayConfigured],
+  );
   const isSolanaPaySupported =
-    (paymentMethod === "stablecoins" && stablecoinToken === "usdc" && paymentSubOption === "solana") ||
-    (paymentMethod === "crypto" && paymentSubOption === "crust") ||
-    (paymentMethod === "crypto" && paymentSubOption === "solana");
+    solanaPayConfigured &&
+    ((paymentMethod === "stablecoins" && stablecoinToken === "usdc" && paymentSubOption === "solana") ||
+      (paymentMethod === "crypto" && paymentSubOption === "crust") ||
+      (paymentMethod === "crypto" && paymentSubOption === "solana"));
 
   const isEvmPaySupported =
     (paymentMethod === "crypto" &&
@@ -2657,7 +2675,7 @@ export function CheckoutClient() {
                   </label>
                   {paymentMethod === "crypto" && (
                     <div className="space-y-2 border-t border-border px-3 pb-3 pt-4">
-                      {VISIBLE_CRYPTO_SUB_OPTIONS.map((opt) => (
+                      {visibleCryptoSubOptions.map((opt) => (
                         <div key={opt.value}>
                           <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20">
                             <input
@@ -2836,7 +2854,7 @@ export function CheckoutClient() {
                         </label>
                       </div>
                       {stablecoinToken === "usdc"
-                        ? USDC_SUB_OPTIONS.map((opt) => (
+                        ? visibleUsdcSubOptions.map((opt) => (
                             <label
                               key={opt.value}
                               className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20"

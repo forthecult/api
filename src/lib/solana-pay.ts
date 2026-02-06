@@ -34,7 +34,7 @@ export function getSolanaPayLabel(): string {
     : "Store";
 }
 
-// ANKR Solana default (no phone required; set NEXT_PUBLIC_SOLANA_RPC_URL / SOLANA_RPC_URL for paid sub)
+// ANKR Solana default (no phone required; set NEXT_PUBLIC_SOLANA_RPC_URL for paid RPC)
 const ANKR_SOLANA_RPC = "https://rpc.ankr.com/solana";
 
 // RPCs that often return 403 from browser (skip network validation to avoid console noise)
@@ -51,7 +51,7 @@ export function isPublicSolanaRpc(url: string): boolean {
 }
 
 /**
- * Get Solana RPC URL for client-side usage
+ * Get Solana RPC URL (client and server).
  * Priority: NEXT_PUBLIC_SOLANA_RPC_URL > ANKR public
  */
 export function getSolanaRpcUrl(): string {
@@ -62,15 +62,8 @@ export function getSolanaRpcUrl(): string {
   return ANKR_SOLANA_RPC;
 }
 
-/**
- * Get Solana RPC URL for server-side usage (can use private API key / paid RPC)
- * Priority: SOLANA_RPC_URL > client URL (ANKR public default)
- */
+/** Server-side: same as getSolanaRpcUrl (single env var NEXT_PUBLIC_SOLANA_RPC_URL). */
 export function getSolanaRpcUrlServer(): string {
-  if (typeof process.env.SOLANA_RPC_URL === "string") {
-    const url = process.env.SOLANA_RPC_URL.trim();
-    if (url) return url;
-  }
   return getSolanaRpcUrl();
 }
 
