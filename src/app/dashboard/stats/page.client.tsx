@@ -6,6 +6,7 @@ import React from "react";
 import type { User } from "~/db/schema/users/types";
 
 import { signOut, useCurrentUser } from "~/lib/auth-client";
+import { isRealEmail } from "~/lib/is-real-email";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -96,7 +97,7 @@ export function DashboardPageClient({ user }: DashboardPageClientProps) {
                 <div className="space-y-1">
                   <p className="text-sm leading-none font-medium">Email</p>
                   <p className="text-sm text-muted-foreground">
-                    {user.email ?? "Not set"}
+                    {user.email && isRealEmail(user.email) ? user.email : "Not set"}
                   </p>
                 </div>
                 {user?.firstName && (

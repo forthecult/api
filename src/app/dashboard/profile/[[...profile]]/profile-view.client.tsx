@@ -22,13 +22,6 @@ const defaultOrderStats: OrderStats = {
   awaitingDelivery: 0,
 };
 
-/** True if the value looks like a real email (e.g. user@domain.com), not a wallet id like solana_xxx. */
-function isRealEmail(value: string | null | undefined): boolean {
-  if (!value || typeof value !== "string") return false;
-  const trimmed = value.trim();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
-}
-
 function formatBalance(cents: number | null | undefined): string {
   if (cents == null) return "—";
   return new Intl.NumberFormat("en-US", {

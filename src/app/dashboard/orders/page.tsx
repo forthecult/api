@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { db } from "~/db";
 import { formatCents, formatDateShort } from "~/lib/format";
+import { isRealEmail } from "~/lib/is-real-email";
 import { linkOrdersToUserByEmail } from "~/lib/link-orders-to-user";
 import { ordersTable } from "~/db/schema";
 import { Button } from "~/ui/primitives/button";
@@ -50,9 +51,9 @@ export default async function OrdersPage() {
   const user = await getCurrentUserOrRedirect();
   if (!user) return null;
 
-  // If email is verified, claim any guest orders placed with this email so they show in My Orders
+  // If email is verified and is a real email (not a wallet placeholder), claim any guest orders placed with this email
   const emailVerified = (user as { emailVerified?: boolean }).emailVerified;
-  if (emailVerified && user.email?.trim()) {
+  if (emailVerified && user.email?.trim() && isRealEmail(user.email)) {
     await linkOrdersToUserByEmail(user.id, user.email);
   }
 

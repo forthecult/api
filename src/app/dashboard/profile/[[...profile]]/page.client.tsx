@@ -157,21 +157,23 @@ export function ProfilePageClient() {
                 placeholder="Last name"
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                readOnly
-                disabled
-                className="bg-muted"
-                placeholder="Email"
-              />
-              <p className="text-xs text-muted-foreground">
-                Email is read-only.
-              </p>
-            </div>
+            {isRealEmail(email) && (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  readOnly
+                  disabled
+                  className="bg-muted"
+                  placeholder="Email"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Email is read-only. Change it in Security settings.
+                </p>
+              </div>
+            )}
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="phone">Phone</Label>
               <Input

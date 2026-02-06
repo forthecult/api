@@ -12,6 +12,7 @@ import {
   twoFactor,
   useCurrentUserOrRedirect,
 } from "~/lib/auth-client";
+import { isRealEmail } from "~/lib/is-real-email";
 import {
   OPEN_LINK_WALLET_MODAL,
   WALLET_LINKED_EVENT,
@@ -61,6 +62,10 @@ export function SecurityPageClient() {
   const [addEmailVerifyLoading, setAddEmailVerifyLoading] = useState(false);
   const [addEmailCodeOnlyLoading, setAddEmailCodeOnlyLoading] = useState(false);
   const [addEmailError, setAddEmailError] = useState("");
+  const [passkeys, setPasskeys] = useState<{ id: string; name?: string | null }[]>([]);
+  const [passkeysLoading, setPasskeysLoading] = useState(true);
+  const [passkeyAddLoading, setPasskeyAddLoading] = useState(false);
+  const [passkeyDeleteId, setPasskeyDeleteId] = useState<string | null>(null);
 
   const fetchAccounts = useCallback(async () => {
     setAccountsLoading(true);
@@ -543,38 +548,48 @@ export function SecurityPageClient() {
         </div>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <KeyRound className="h-5 w-5" />
-            Change password
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            We&apos;ll send you an email with a link to set a new password. Use
-            that link to change your password.
-          </p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {resetError && (
-            <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-              {resetError}
-            </div>
-          )}
-          {resetEmailSent && (
-            <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
-              Check your inbox (and spam) for a link to change your password.
-              The link expires in 1 hour.
-            </div>
-          )}
-          <Button
-            disabled={resetLoading}
-            onClick={handleSendChangePasswordEmail}
-            variant="outline"
-          >
-            {resetLoading ? "Sending…" : "Send change password email"}
-          </Button>
-        </CardContent>
-      </Card>
+      {(() => {
+        const hasCredentialAccount = accounts.some(
+          (a) => a.providerId === "credential"
+        );
+        const showChangePassword =
+          hasCredentialAccount && isRealEmail(user?.email ?? "");
+        if (!showChangePassword) return null;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5" />
+                Change password
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                We&apos;ll send you an email with a link to set a new password.
+                Use that link to change your password.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {resetError && (
+                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                  {resetError}
+                </div>
+              )}
+              {resetEmailSent && (
+                <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                  Check your inbox (and spam) for a link to change your
+                  password. The link expires in 1 hour.
+                </div>
+              )}
+              <Button
+                disabled={resetLoading}
+                onClick={handleSendChangePasswordEmail}
+                variant="outline"
+              >
+                {resetLoading ? "Sending…" : "Send change password email"}
+              </Button>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Card>
         <CardHeader>
