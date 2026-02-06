@@ -63,11 +63,12 @@ async function main() {
   }).from(brandTable);
 
   if (brands.length === 0) {
-    console.log("No brands found. Run db:seed-brands first if needed.");
-    return;
+    console.error("No brands found. Run db:seed-brands first. Failing so CI does not silently skip shipping options.");
+    process.exit(1);
   }
 
   const now = new Date();
+  let totalOptions = 0;
 
   for (const brand of brands) {
     const options: ShippingOptionSeed[] =
@@ -93,11 +94,12 @@ async function main() {
       } else {
         await db.insert(shippingOptionsTable).values(row);
         console.log(`  Created: ${row.name}`);
+        totalOptions++;
       }
     }
   }
 
-  console.log("\nDone.");
+  console.log(`\nDone. Seeded ${totalOptions} shipping option(s) for ${brands.length} brand(s).`);
 }
 
 main().catch((err) => {

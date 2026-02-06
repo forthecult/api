@@ -11,6 +11,9 @@ import { auth, isAdminUser } from "~/lib/auth";
 /**
  * All webhook event types we want to subscribe to for full order/product sync.
  * See: https://developers.printful.com/docs/#tag/Webhook-API
+ *
+ * Note: stock_updated requires product IDs to be specified, so we exclude it
+ * from the default registration. POD products are made-to-order anyway.
  */
 const REQUIRED_WEBHOOK_TYPES = [
   // Order events
@@ -27,7 +30,7 @@ const REQUIRED_WEBHOOK_TYPES = [
   "product_synced",       // Product created/synced
   "product_updated",      // Product updated
   "product_deleted",      // Product deleted
-  "stock_updated",        // Stock availability changed
+  // Note: "stock_updated" excluded - requires product IDs and POD is made-to-order
 ];
 
 /**

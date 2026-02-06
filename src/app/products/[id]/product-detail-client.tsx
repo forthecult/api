@@ -87,9 +87,11 @@ export function ProductActions({
     !allowedCountries.some(
       (c) => c?.trim().toUpperCase().slice(0, 2) === currentCountryUpper,
     );
+  // Use only the user's selected country (Preferences) so changing region in the modal updates the button immediately.
+  // Geo (shippingCountry) is not used here so a saved preference always wins.
   const unavailableInCountry =
-    isShippingExcluded(footerCountry) ||
-    (shippingCountry != null && isShippingExcluded(shippingCountry)) ||
+    (currentCountryUpper.length === 2 &&
+      isShippingExcluded(currentCountryUpper)) ||
     notInAllowedCountries;
   const inWishlist = isInWishlist(product.id);
   const price =
@@ -184,18 +186,18 @@ export function ProductActions({
               <Plus className="h-4 w-4" />
             </Button>
           </div>
-          {/* Unavailability banner in place of Add to cart (matches reference: red box, X icon, white text) */}
+          {/* Unavailability notice in place of Add to cart */}
           <div
-            className="flex min-h-[4.5rem] flex-1 items-center gap-3 rounded-lg bg-destructive px-4 py-3 text-white"
-            role="alert"
+            className="flex min-h-[4.5rem] flex-1 items-center gap-3 rounded-lg border border-border bg-muted/60 px-4 py-3 text-muted-foreground"
+            role="status"
           >
             <span
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive-foreground/20"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted"
               aria-hidden
             >
-              <X className="h-4 w-4 text-white" />
+              <X className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
-            <span className="font-medium">
+            <span className="text-sm">
               This item is currently not available in your region
             </span>
           </div>

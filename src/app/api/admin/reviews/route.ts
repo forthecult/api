@@ -105,15 +105,17 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error("Admin reviews list error:", err);
     const message = err instanceof Error ? err.message : "";
-    const hint =
-      message && /column.*does not exist|Unknown column/i.test(message)
-        ? " Run: bun run db:push (adds author, title, location to product_review if missing)."
-        : "";
+    const isColumnError =
+      message && /column.*does not exist|Unknown column/i.test(message);
+    const hint = isColumnError
+      ? " Run: bun run db:push (or psql $DATABASE_URL -f scripts/migrate-reviews-add-display-columns.sql) to add missing product_review columns."
+      : "";
     return NextResponse.json(
       {
         error: "Failed to load reviews",
+        ...(isColumnError ? { hint: hint.trim() } : {}),
         ...(process.env.NODE_ENV === "development" && message
-          ? { detail: message + hint }
+          ? { detail: message + (hint ? " " + hint : "") }
           : {}),
       },
       { status: 500 },

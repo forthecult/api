@@ -11,18 +11,11 @@ import { productCategoriesTable, productsTable } from "../src/db/schema";
 
 const now = new Date();
 
-/** Demo products. Categories must exist (run seed-categories.ts first). */
+/**
+ * Demo products for staging/production. Categories must exist (run seed-categories.ts first).
+ * Mock/test products (e.g. "Test Product — $1") are not included; add those only in local dev if needed.
+ */
 const DEMO_PRODUCTS = [
-  {
-    id: "test-1",
-    name: "Test Product — $1 (Real Transactions)",
-    imageUrl:
-      "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=60",
-    priceCents: 100,
-    categoryId: "testing",
-    brand: null as string | null,
-    description: null as string | null,
-  },
   {
     id: "1",
     name: "Premium Wireless Headphones",

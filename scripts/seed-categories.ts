@@ -1010,7 +1010,8 @@ const APPLICATION_SUB: CategoryRow[] = [
   },
 ];
 
-const DEMO_CATEGORY: CategoryRow[] = [
+/** Not seeded to staging/production; use only in local dev if you need a "Testing" category. */
+const _DEMO_CATEGORY: CategoryRow[] = [
   {
     id: "testing",
     name: "Testing",
@@ -1035,7 +1036,7 @@ const ALL_CATEGORIES: CategoryRow[] = [
   ...CURRENCY_SUB,
   ...NETWORK_SUB,
   ...APPLICATION_SUB,
-  ...DEMO_CATEGORY,
+  // ..._DEMO_CATEGORY — excluded so staging/production never get "Testing" category
 ];
 
 async function seed() {

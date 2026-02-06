@@ -46,8 +46,10 @@ async function main() {
   const force = process.argv.includes("--force");
 
   if (!process.env.UPLOADTHING_TOKEN) {
-    console.error("Missing UPLOADTHING_TOKEN in .env. Add it from the UploadThing dashboard.");
-    process.exit(1);
+    console.log(
+      "UPLOADTHING_TOKEN not set; skipping brand asset upload. Add it in .env (local) or as a repo secret (CI) to upload logos.",
+    );
+    process.exit(0);
   }
 
   if (!existsSync(ASSETS_DIR)) {
