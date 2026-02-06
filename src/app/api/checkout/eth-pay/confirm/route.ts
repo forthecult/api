@@ -370,10 +370,11 @@ export async function POST(request: NextRequest) {
       chainId,
       payer: senderAddress,
       message: "Payment confirmed successfully!",
-      ...(printfulOrderId && { printfulOrderId }),
-      ...(printfulError && { printfulError }),
-      ...(printifyOrderId && { printifyOrderId }),
-      ...(printifyError && { printifyError }),
+      ...((printfulError || printifyError) && {
+        fulfillmentError: [printfulError, printifyError]
+          .filter(Boolean)
+          .join("; "),
+      }),
     });
   } catch (err) {
     console.error("ETH Pay confirm error:", err);

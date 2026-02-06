@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
-import { runShippingCalculate, ZERO_SHIPPING } from "~/lib/shipping-calculate";
+import {
+  getPublicShippingResponse,
+  runShippingCalculate,
+  ZERO_SHIPPING,
+} from "~/lib/shipping-calculate";
 import {
   shippingCalculateSchema,
   validateBody,
@@ -11,13 +15,9 @@ import {
  * Public API: calculates shipping cost for a given country, order value, and line items.
  * Used by checkout to display dynamic shipping. No auth required.
  *
- * Supports:
- * - Admin-configured shipping options
- * - Printful shipping rates (when products are from Printful)
- * - Combined shipping for mixed orders
- * - Free shipping when a valid free_shipping coupon code is provided
- *
- * If no shipping options are configured (or table missing), returns $0 shipping so checkout can proceed.
+ * Supports admin-configured options, fulfillment-provider rates, and free shipping
+ * when a valid free_shipping coupon code is provided. Returns $0 shipping if no
+ * options are configured so checkout can proceed.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
     const validation = validateBody(shippingCalculateSchema, rawBody);
     if (!validation.success) {
       console.warn("Shipping calculate: validation failed", validation.error);
-      return NextResponse.json(ZERO_SHIPPING);
+      return NextResponse.json(getPublicShippingResponse(ZERO_SHIPPING));
     }
 
     const session = await auth.api.getSession({ headers: request.headers });
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await runShippingCalculate(extendedInput);
-    return NextResponse.json(result);
+    return NextResponse.json(getPublicShippingResponse(result));
   } catch (err) {
     console.error("Shipping calculate error:", err);
     return NextResponse.json(

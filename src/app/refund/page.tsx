@@ -34,7 +34,7 @@ export default function RefundPage() {
                 Orders that haven’t shipped
               </strong>{" "}
               are cancelled immediately. If your order was placed with an
-              external vendor (e.g. Printful), we cancel it with that vendor as
+              fulfillment partner, we cancel it with that partner as
               well.
             </li>
             <li>

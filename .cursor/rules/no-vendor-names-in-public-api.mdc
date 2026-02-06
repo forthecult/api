@@ -1,0 +1,15 @@
+---
+description: Do not expose fulfillment/vendor names (e.g. Printful, Printify) in public-facing APIs or user copy
+globs: src/app/api/**/*.ts, src/lib/openapi.ts, src/app/**/*.tsx
+alwaysApply: false
+---
+
+# No vendor names in public-facing APIs
+
+Do **not** expose the names of fulfillment or payment vendors (e.g. Printful, Printify) in:
+
+- **Public API responses** – Response bodies for routes that are not behind admin or internal auth (e.g. `/api/shipping/*`, `/api/checkout/*`, `/api/orders/*`, `/api/cart/*`, `/api/agent/*`, `/api/openapi.json`). Use generic terms instead (e.g. `fulfillmentError`, `fulfillmentOrderId`, shipping breakdown without vendor-named keys).
+- **OpenAPI spec** – Descriptions and examples in `src/lib/openapi.ts` must not mention specific vendor names.
+- **User-facing copy** – Storefront pages, refund/checkout copy, and error messages shown to customers must not name vendors; use “fulfillment partner”, “fulfillment provider”, or “our partners” instead.
+
+Internal code (admin routes, webhooks, server-only libs, logs, database column names) may still use vendor names where needed for integration.

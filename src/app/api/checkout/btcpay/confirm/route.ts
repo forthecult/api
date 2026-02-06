@@ -137,12 +137,12 @@ export async function POST(request: NextRequest) {
         pyError instanceof Error ? pyError.message : "Unknown error";
     }
 
+    const fulfillmentError = [printfulError, printifyError]
+      .filter(Boolean)
+      .join("; ");
     return NextResponse.json({
       orderId: order.id,
-      ...(printfulOrderId && { printfulOrderId }),
-      ...(printfulError && { printfulError }),
-      ...(printifyOrderId && { printifyOrderId }),
-      ...(printifyError && { printifyError }),
+      ...(fulfillmentError && { fulfillmentError }),
     });
   } catch (err) {
     console.error("BTCPay confirm error:", err);

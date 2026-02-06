@@ -771,7 +771,7 @@ export function CheckoutClient() {
   }, [form]);
 
   // dynamic shipping: recalc when country, cart, or subtotal changes (with timeout so slow API doesn't block UI)
-  // Also includes address fields for more accurate Printful shipping rates
+  // Also includes address fields for more accurate fulfillment shipping rates
   const SHIPPING_CALCULATE_TIMEOUT_MS = 15_000;
   useEffect(() => {
     const country = form.country?.trim();
@@ -801,7 +801,7 @@ export function CheckoutClient() {
           productVariantId: i.productVariantId,
           quantity: i.quantity,
         })),
-        // Additional fields for more accurate Printful shipping rates
+        // Additional fields for more accurate fulfillment shipping rates
         stateCode: form.state?.trim() || undefined,
         city: form.city?.trim() || undefined,
         zip: form.zip?.trim() || undefined,
@@ -822,7 +822,6 @@ export function CheckoutClient() {
           label?: string | null;
           freeShipping?: boolean;
           canShipToCountry?: boolean;
-          printfulShippingCents?: number;
           adminShippingCents?: number;
           shippingSpeed?: "standard" | "express";
         }) => {

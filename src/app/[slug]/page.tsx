@@ -65,7 +65,7 @@ interface Product {
   hasVariants?: boolean;
   optionDefinitions?: ProductOptionDefinition[];
   variants?: ProductVariantOption[];
-  /** Estimated delivery: handling and transit days (from Printify/Printful or manual). */
+  /** Estimated delivery: handling and transit days (from fulfillment provider or manual). */
   handlingDaysMin?: number | null;
   handlingDaysMax?: number | null;
   transitDaysMin?: number | null;

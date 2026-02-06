@@ -170,18 +170,17 @@ export async function POST(
       })
       .where(eq(ordersTable.id, orderId));
 
+    const fulfillmentError = [
+      printfulCancelResult.error,
+      printifyCancelResult.error,
+    ]
+      .filter(Boolean)
+      .join("; ");
     return NextResponse.json({
       orderId: order.id,
       status: "cancelled",
       message: "Order cancelled successfully",
-      printfulCancelled: order.printfulOrderId
-        ? printfulCancelResult.success
-        : undefined,
-      printfulError: printfulCancelResult.error,
-      printifyCancelled: order.printifyOrderId
-        ? printifyCancelResult.success
-        : undefined,
-      printifyError: printifyCancelResult.error,
+      ...(fulfillmentError && { fulfillmentError }),
       _actions: {
         refund:
           order.paymentStatus === "paid"

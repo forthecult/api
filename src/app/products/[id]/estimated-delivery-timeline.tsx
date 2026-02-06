@@ -13,7 +13,7 @@ const DEFAULT_TRANSIT_MIN = 3;
 const DEFAULT_TRANSIT_MAX = 7;
 
 export interface EstimatedDeliveryTimelineProps {
-  /** Fulfillment (handling) days min/max from Printify, Printful, or manual. */
+  /** Fulfillment (handling) days min/max from fulfillment provider or manual. */
   handlingDaysMin?: number | null;
   handlingDaysMax?: number | null;
   /** Transit (shipping) days min/max. Defaults used when null. */

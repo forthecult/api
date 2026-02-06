@@ -801,3 +801,15 @@ export async function runShippingCalculate(
     shippingSpeed: adminShippingSpeed,
   };
 }
+
+/** Public API response: same shape without vendor-named fields. */
+export function getPublicShippingResponse(result: ShippingResult) {
+  return {
+    shippingCents: result.shippingCents,
+    label: result.label,
+    freeShipping: result.freeShipping,
+    canShipToCountry: result.canShipToCountry,
+    unavailableProducts: result.unavailableProducts,
+    shippingSpeed: result.shippingSpeed,
+  };
+}

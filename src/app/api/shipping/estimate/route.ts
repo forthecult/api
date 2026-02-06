@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { runShippingCalculate } from "~/lib/shipping-calculate";
+import {
+  getPublicShippingResponse,
+  runShippingCalculate,
+} from "~/lib/shipping-calculate";
 import {
   shippingCalculateSchema,
   validateBody,
@@ -26,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await runShippingCalculate(validation.data);
-    return NextResponse.json(result);
+    return NextResponse.json(getPublicShippingResponse(result));
   } catch (err) {
     console.error("Shipping estimate error:", err);
     return NextResponse.json(
