@@ -22,6 +22,7 @@ import {
   OrganizationStructuredData,
   WebSiteStructuredData,
 } from "~/ui/components/structured-data";
+import { WagmiProvider } from "~/lib/wagmi-provider";
 import { ThemeProvider } from "~/ui/components/theme-provider";
 import { Toaster } from "~/ui/primitives/sonner";
 

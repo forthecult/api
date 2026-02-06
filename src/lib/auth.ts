@@ -116,16 +116,17 @@ export const auth = betterAuth({
       trustedProviders: ["solana", "ethereum", ...Object.keys(socialProviders)],
     },
   },
-  // Local: use localhost. Production: set NEXT_SERVER_APP_URL or VERCEL_URL so auth has a valid base URL.
+  // Links in emails (e.g. password reset) must use the public URL users can open, not the internal server URL.
+  // Prefer NEXT_PUBLIC_APP_URL so Railway (NEXT_SERVER_APP_URL=http://localhost:PORT) still gets correct links.
   baseURL: (() => {
     if (process.env.NODE_ENV === "development")
       return "http://localhost:3000";
+    const publicUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
+    if (publicUrl) return publicUrl;
     if (typeof process.env.VERCEL_URL === "string" && process.env.VERCEL_URL)
       return `https://${process.env.VERCEL_URL}`;
     const server = ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL);
-    if (server) return server;
-    const publicUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
-    return publicUrl ?? undefined;
+    return server ?? undefined;
   })(),
 
   // Trusted origins for CORS/auth - use explicit allowlist for security (never throw)

@@ -27,9 +27,9 @@ Railway will assign a URL like `https://your-app.up.railway.app`. That’s your 
 
 **Env for main app (staging):**
 
-- `NEXT_PUBLIC_APP_URL` = `https://your-app.up.railway.app` (the same URL Railway gives this service).
+- `NEXT_PUBLIC_APP_URL` = `https://your-app.up.railway.app` (the same URL Railway gives this service). Also used for links in emails (e.g. password reset).
 - `NEXT_PUBLIC_ADMIN_APP_URL` = leave empty if you’re not deploying admin; if you do deploy admin, set it to the admin service URL (see below).
-- `NEXT_SERVER_APP_URL` = `http://localhost:PORT` (e.g. `http://localhost:8080`) so server-side fetches (homepage, sitemap) call the app locally; avoids 502 on first load when the DB is not ready.
+- `NEXT_SERVER_APP_URL` = `http://localhost:PORT` (e.g. `http://localhost:8080`) for server-side fetches only; auth email links use `NEXT_PUBLIC_APP_URL`.
 - `DATABASE_URL`, `AUTH_SECRET`, and any other env your app needs.
 
 **Database schema (required):** The app expects tables such as `brand`, `category`, `product`, etc. If you see errors like `relation "brand" does not exist` (PostgreSQL 42P01), run migrations against the **staging** `DATABASE_URL` from your machine (or a one-off deploy step), for example:
@@ -43,6 +43,8 @@ bun run db:push
 Use the same `DATABASE_URL` you set on the Railway service. After the schema exists, build and runtime will succeed.
 
 **Seeding staging from your machine (schema + categories + admin):** You do **not** run these inside Railway. Run them on your own computer, in the **repo root** (`relivator/`), with env vars set so they talk to your staging app and DB.
+
+**Keeping the DB URL off your machine:** Your `.env` is gitignored, so the staging `DATABASE_URL` there is never committed—but it still lives in a file. To avoid storing it at all: **don’t put the staging `DATABASE_URL` in `.env`**. Copy it from Railway when you need it and pass it only on the command line (e.g. `DATABASE_URL='postgresql://...' bun run db:push`). The value will be in your shell history unless you prefix the command with a space (if your shell is configured to ignore those) or clear history. Use a separate `.env.local` or similar only for local dev, and keep the staging URL only in Railway’s Variables.
 
 1. **Get these from Railway**
    - **DATABASE_URL** – In your Railway project, open the **main app** service (or the Postgres service) → **Variables** → copy the value of `DATABASE_URL` (the Postgres connection string).
@@ -66,13 +68,14 @@ Use the same `DATABASE_URL` you set on the Railway service. After the schema exi
    Or in one go: `DATABASE_URL='postgresql://...' bun run db:seed:staging` (categories + brands + products).
 
 4. **Admin user**
-   This script does **not** use the DB directly. It sends an HTTP request to your **staging app’s** sign-up API. So it needs the **app URL**, not `DATABASE_URL`:
+   Over HTTPS the app hashes the password before storing. For staging you must set `ADMIN_SEED_PASSWORD` in your env (never commit it). It needs the **app URL**, not `DATABASE_URL`:
    ```bash
    ADMIN_EMAILS='you@forthecult.store' \
    NEXT_PUBLIC_APP_URL='https://bythecult-production.up.railway.app' \
+   ADMIN_SEED_PASSWORD='your-one-time-password' \
    bun run db:seed-admin
    ```
-   Replace the email and URL with your values. If the user already exists, the script will tell you to use “Forgot password?” on the login page. Otherwise it creates the user with password **`Admin123!`**. Then log in at the main app’s `/login` with that email and password; after that you can open the admin app and it will recognize you as admin.
+   Replace the email, URL, and password with your values. Use a strong one-time password; after first login, change it in the app. If the user already exists, use "Forgot password?" on the login page.
 
 ---
 
