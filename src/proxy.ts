@@ -149,6 +149,14 @@ function proxyHandler(request: NextRequest) {
 
   // Page/document request: set country cookie from geo when absent (first visit)
   const res = NextResponse.next();
+
+  // X-Robots-Tag: noindex, nofollow for dashboard/admin so crawlers do not index these pages
+  const isNoIndexPath =
+    path.startsWith("/dashboard") || path.startsWith("/admin");
+  if (isNoIndexPath) {
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+
   const existing = request.cookies.get(COUNTRY_CURRENCY_COOKIE)?.value;
   if (!existing) {
     // Try multiple geo header sources (Vercel, Cloudflare, generic)
