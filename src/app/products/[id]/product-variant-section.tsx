@@ -72,7 +72,8 @@ function useUnavailableInCountry(product: {
   return (
     (currentCountryUpper.length === 2 &&
       isShippingExcluded(currentCountryUpper)) ||
-    notInAllowedCountries;
+    notInAllowedCountries
+  );
 }
 
 export function ProductVariantSection({

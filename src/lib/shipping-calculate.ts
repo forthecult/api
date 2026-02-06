@@ -300,6 +300,15 @@ export async function runShippingCalculate(
     .map((i) => i.productVariantId)
     .filter((id): id is string => id != null);
 
+  // Printify products in cart that have no variant in the item (e.g. simple/single-variant products)
+  const printifyProductIdsWithoutVariant = [
+    ...new Set(
+      rawItems
+        .filter((i) => i.productId && !i.productVariantId)
+        .map((i) => i.productId!),
+    ),
+  ];
+
   let totalQuantity = 0;
   let totalWeightGrams = 0;
   let manualQuantity = 0;
@@ -362,41 +371,73 @@ export async function runShippingCalculate(
   let brandNameToId = new Map<string, string>();
 
   try {
-    const [productsResult, variantsResult, optionsResult, brandsResult] =
-      await Promise.all([
-        productIds.length > 0
-          ? db
-              .select({
-                id: productsTable.id,
-                brand: productsTable.brand,
-                weightGrams: productsTable.weightGrams,
-                source: productsTable.source,
-                externalId: productsTable.externalId,
-                priceCents: productsTable.priceCents,
-                printifyPrintProviderId: productsTable.printifyPrintProviderId,
-              })
-              .from(productsTable)
-              .where(inArray(productsTable.id, productIds))
-          : Promise.resolve([]),
-        variantIds.length > 0
-          ? db
-              .select({
-                id: productVariantsTable.id,
-                productId: productVariantsTable.productId,
-                externalId: productVariantsTable.externalId,
-                priceCents: productVariantsTable.priceCents,
-              })
-              .from(productVariantsTable)
-              .where(inArray(productVariantsTable.id, variantIds))
-          : Promise.resolve([]),
-        db
-          .select()
-          .from(shippingOptionsTable)
-          .orderBy(asc(shippingOptionsTable.priority)),
-        db.select({ id: brandTable.id, name: brandTable.name }).from(brandTable),
-      ]);
+    const [
+      productsResult,
+      variantsResult,
+      defaultVariantsForPrintifyResult,
+      optionsResult,
+      brandsResult,
+    ] = await Promise.all([
+      productIds.length > 0
+        ? db
+            .select({
+              id: productsTable.id,
+              brand: productsTable.brand,
+              weightGrams: productsTable.weightGrams,
+              source: productsTable.source,
+              externalId: productsTable.externalId,
+              priceCents: productsTable.priceCents,
+              printifyPrintProviderId: productsTable.printifyPrintProviderId,
+            })
+            .from(productsTable)
+            .where(inArray(productsTable.id, productIds))
+        : Promise.resolve([]),
+      variantIds.length > 0
+        ? db
+            .select({
+              id: productVariantsTable.id,
+              productId: productVariantsTable.productId,
+              externalId: productVariantsTable.externalId,
+              priceCents: productVariantsTable.priceCents,
+            })
+            .from(productVariantsTable)
+            .where(inArray(productVariantsTable.id, variantIds))
+        : Promise.resolve([]),
+      printifyProductIdsWithoutVariant.length > 0
+        ? db
+            .select({
+              productId: productVariantsTable.productId,
+              externalId: productVariantsTable.externalId,
+            })
+            .from(productVariantsTable)
+            .where(
+              inArray(
+                productVariantsTable.productId,
+                printifyProductIdsWithoutVariant,
+              ),
+            )
+            .orderBy(
+              asc(productVariantsTable.productId),
+              asc(productVariantsTable.id),
+            )
+        : Promise.resolve([]),
+      db
+        .select()
+        .from(shippingOptionsTable)
+        .orderBy(asc(shippingOptionsTable.priority)),
+      db.select({ id: brandTable.id, name: brandTable.name }).from(brandTable),
+    ]);
     products = productsResult;
     variants = variantsResult;
+    // First variant per product (for Printify items that have no variant in cart)
+    const printifyDefaultVariantByProductId = new Map<string, string>();
+    if (defaultVariantsForPrintifyResult.length > 0) {
+      for (const row of defaultVariantsForPrintifyResult) {
+        if (row.productId && row.externalId && !printifyDefaultVariantByProductId.has(row.productId)) {
+          printifyDefaultVariantByProductId.set(row.productId, row.externalId);
+        }
+      }
+    }
     allOptions = optionsResult;
     brandNameToId = new Map<string, string>(
       (
@@ -503,33 +544,38 @@ export async function runShippingCalculate(
           ? Number.parseInt(product.externalId, 10)
           : NaN;
       const printProviderId = product.printifyPrintProviderId ?? NaN;
-      const hasPrintifyIds =
+      const hasBlueprintAndProvider =
         !isNaN(blueprintId) &&
         !isNaN(printProviderId) &&
-        printProviderId > 0 &&
-        item.productVariantId != null;
+        printProviderId > 0;
 
-      if (hasPrintifyIds) {
+      let variantId: number | null = null;
+      if (item.productVariantId != null) {
         const variantExternalId = variantExternalIdMap.get(
-          item.productVariantId!,
+          item.productVariantId,
         );
-        const variantId =
+        variantId =
           variantExternalId != null
             ? Number.parseInt(variantExternalId, 10)
-            : NaN;
-        if (!isNaN(variantId)) {
-          printifyItems.push({
-            blueprintId,
-            printProviderId,
-            variantId,
-            quantity: qty,
-          });
-        } else {
-          manualQuantity += qty;
-          manualWeightGrams += weight;
-          manualValueCents += itemValueCents;
-          addToBrandBucket(brandId, itemValueCents, qty, weight);
+            : null;
+        if (variantId !== null && isNaN(variantId)) variantId = null;
+      } else {
+        // Single-variant or simple product: use first variant for this product
+        const defaultExternalId =
+          printifyDefaultVariantByProductId.get(item.productId);
+        if (defaultExternalId != null) {
+          const parsed = Number.parseInt(defaultExternalId, 10);
+          if (!isNaN(parsed)) variantId = parsed;
         }
+      }
+
+      if (hasBlueprintAndProvider && variantId != null) {
+        printifyItems.push({
+          blueprintId,
+          printProviderId,
+          variantId,
+          quantity: qty,
+        });
       } else {
         manualQuantity += qty;
         manualWeightGrams += weight;
