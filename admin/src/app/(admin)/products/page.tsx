@@ -16,7 +16,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
@@ -115,6 +115,9 @@ export default function AdminProductsPage() {
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [bulkAction, setBulkAction] = useState<"publish" | "unpublish" | "delete" | null>(null);
+  const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const loadFilterOptions = async () => {
@@ -166,6 +169,7 @@ export default function AdminProductsPage() {
       }
       const json = (await res.json()) as ProductsResponse;
       setData(json);
+      setSelectedIds([]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load products");
       setData(null);
@@ -304,6 +308,95 @@ export default function AdminProductsPage() {
       }
     },
     [fetchProducts],
+  );
+
+  const visibleIds = data?.items.map((p) => p.id) ?? [];
+  const allSelected =
+    visibleIds.length > 0 &&
+    visibleIds.every((id) => selectedIds.includes(id));
+  const someSelected = selectedIds.length > 0;
+  const isIndeterminate = someSelected && !allSelected;
+
+  const handleSelectAll = useCallback(() => {
+    if (allSelected) {
+      setSelectedIds((prev) => prev.filter((id) => !visibleIds.includes(id)));
+    } else {
+      setSelectedIds((prev) => [
+        ...prev.filter((id) => !visibleIds.includes(id)),
+        ...visibleIds,
+      ]);
+    }
+  }, [allSelected, visibleIds]);
+
+  const handleSelectOne = useCallback((id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  }, []);
+
+  const handleBulkPublish = useCallback(
+    async (published: boolean) => {
+      if (selectedIds.length === 0) return;
+      setBulkAction(published ? "publish" : "unpublish");
+      try {
+        const results = await Promise.allSettled(
+          selectedIds.map((id) =>
+            fetch(`${API_BASE}/api/admin/products/${id}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ published }),
+            }),
+          ),
+        );
+        const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !(r as PromiseFulfilledResult<Response>).value.ok));
+        if (failed.length > 0) {
+          setError(`Failed to update ${failed.length} product(s).`);
+        }
+        setSelectedIds([]);
+        await fetchProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Bulk update failed");
+      } finally {
+        setBulkAction(null);
+      }
+    },
+    [selectedIds, fetchProducts],
+  );
+
+  const handleBulkDelete = useCallback(
+    async () => {
+      if (selectedIds.length === 0) return;
+      if (
+        !window.confirm(
+          `Delete ${selectedIds.length} selected product(s)? This will remove the products and their variants, images, and tags.`,
+        )
+      ) {
+        return;
+      }
+      setBulkAction("delete");
+      try {
+        const results = await Promise.allSettled(
+          selectedIds.map((id) =>
+            fetch(`${API_BASE}/api/admin/products/${id}`, {
+              method: "DELETE",
+              credentials: "include",
+            }),
+          ),
+        );
+        const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !(r as PromiseFulfilledResult<Response>).value.ok));
+        if (failed.length > 0) {
+          setError(`Failed to delete ${failed.length} product(s).`);
+        }
+        setSelectedIds([]);
+        await fetchProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Bulk delete failed");
+      } finally {
+        setBulkAction(null);
+      }
+    },
+    [selectedIds, fetchProducts],
   );
 
   if (error) {
@@ -516,10 +609,66 @@ export default function AdminProductsPage() {
             </div>
           ) : data ? (
             <>
+              {someSelected && (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-md border border-border bg-muted/30 px-4 py-3">
+                  <span className="text-sm font-medium">
+                    {selectedIds.length} selected
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={!!bulkAction}
+                    onClick={() => handleBulkPublish(true)}
+                  >
+                    {bulkAction === "publish" ? "Publishing…" : "Bulk publish"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={!!bulkAction}
+                    onClick={() => handleBulkPublish(false)}
+                  >
+                    {bulkAction === "unpublish" ? "Unpublishing…" : "Bulk unpublish"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={!!bulkAction}
+                    onClick={() => void handleBulkDelete()}
+                  >
+                    {bulkAction === "delete" ? "Deleting…" : "Bulk delete"}
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    disabled={!!bulkAction}
+                    onClick={() => setSelectedIds([])}
+                  >
+                    Clear selection
+                  </Button>
+                </div>
+              )}
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <th className="w-10 whitespace-nowrap p-4" scope="col">
+                        <label className="flex cursor-pointer items-center justify-center">
+                          <input
+                            ref={selectAllRef}
+                            type="checkbox"
+                            checked={allSelected}
+                            onChange={handleSelectAll}
+                            className="h-4 w-4 rounded border-input"
+                            aria-label="Select all products on this page"
+                          />
+                        </label>
+                      </th>
                       {COLUMNS.map((col) => (
                         <th
                           key={col.key}
@@ -600,7 +749,7 @@ export default function AdminProductsPage() {
                       <tr>
                         <td
                           className="p-8 text-center text-muted-foreground"
-                          colSpan={COLUMNS.length}
+                          colSpan={COLUMNS.length + 1}
                         >
                           {search.trim()
                             ? "No products match your search."
@@ -610,6 +759,17 @@ export default function AdminProductsPage() {
                     ) : (
                       data.items.map((product) => (
                         <tr key={product.id} className="border-b last:border-0">
+                          <td className="w-10 p-4">
+                            <label className="flex cursor-pointer items-center justify-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.includes(product.id)}
+                                onChange={() => handleSelectOne(product.id)}
+                                className="h-4 w-4 rounded border-input"
+                                aria-label={`Select ${product.name}`}
+                              />
+                            </label>
+                          </td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
                               <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">

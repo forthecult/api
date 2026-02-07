@@ -68,6 +68,8 @@ interface Product {
   shipsFrom?: string | null;
   slug?: string;
   specs: Record<string, string>;
+  /** When non-empty, product ships only to these countries (ISO 2-letter). */
+  availableCountryCodes?: string[];
   hasVariants?: boolean;
   optionDefinitions?: ProductOptionDefinition[];
   variants?: ProductVariantOption[];
@@ -169,6 +171,7 @@ async function fetchProductBySlug(slug: string): Promise<Product | null> {
     metaDescription: data.metaDescription ?? undefined,
     pageTitle: data.pageTitle ?? undefined,
     sizeChart: data.sizeChart ?? undefined,
+    availableCountryCodes: data.availableCountryCodes ?? [],
   };
 }
 
@@ -436,6 +439,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       originalPrice: product.originalPrice,
                       inStock: product.inStock,
                       continueSellingWhenOutOfStock: product.continueSellingWhenOutOfStock,
+                      availableCountryCodes: product.availableCountryCodes,
                       ...(product.slug && { slug: product.slug }),
                     }}
                     hasVariants={product.hasVariants ?? false}
