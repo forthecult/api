@@ -2,11 +2,11 @@
   "openapi": "3.0.3",
   "info": {
     "title": "For the Cult API",
-    "description": "The most AI-agent-friendly eCommerce API. Designed for seamless integration with AI assistants, chatbots, and autonomous agents. Features semantic search, structured errors with suggestions, and multi-chain crypto payments.",
-    "version": "1.1.0",
+    "description": "The most AI-agent-friendly eCommerce API for quality lifestyle products. Designed for seamless integration with AI assistants, chatbots, and autonomous agents. Features semantic search, structured errors with suggestions, and multi-chain crypto payments.",
+    "version": "1.0",
     "contact": {
       "name": "For the Cult",
-      "email": "support@forthecut.store"
+      "email": "weare@forthecut.store"
     },
     "x-ai-friendly": true,
     "x-quick-start": "Call GET /api/agent/capabilities first to understand the API"

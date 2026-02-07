@@ -29,6 +29,7 @@ const BRANDS: Array<{
   websiteUrl: string;
   description: string;
   featured?: boolean;
+  logoUrl?: string | null;
 }> = [
   {
     name: "PacSafe",
@@ -36,6 +37,8 @@ const BRANDS: Array<{
     description:
       "Anti-theft travel gear: backpacks, daypacks, crossbody bags, slings, totes, and accessories. Secure, durable designs for travelers who value safety and style.",
     featured: true,
+    logoUrl:
+      "https://pacsafe.com/cdn/shop/files/pacsafe_logo_backup.png",
   },
   {
     name: "Berkey",
@@ -141,7 +144,7 @@ async function main() {
       id,
       name: b.name,
       slug: s,
-      logoUrl: null,
+      logoUrl: b.logoUrl ?? null,
       websiteUrl: b.websiteUrl,
       description: b.description,
       featured: b.featured ?? false,

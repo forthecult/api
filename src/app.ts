@@ -4,9 +4,8 @@ export const SEO_CONFIG = {
   fullName: "For the Cult",
   name: "For the Culture",
   slogan: "Where smart living and technology meet.",
-  /** Brand logo URL (e.g. Pacsafe). Shown in header and structured data. */
-  brandLogoUrl:
-    "https://pacsafe.com/cdn/shop/files/pacsafe_logo_backup.png",
+  /** Store logo URL. Shown in header and structured data. Omit to use site name in header and /logo.png in structured data. */
+  brandLogoUrl: undefined as string | undefined,
   /** used in meta description and open graph; keep under ~160 chars for SEO */
   metaDescription:
     "Premium lifestyle gear for the life you're building. Curated quality apparel and tech. Free shipping over $100.",
