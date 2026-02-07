@@ -32,6 +32,7 @@ import {
   FACTORY_ADDRESSES,
 } from "~/lib/contracts/evm-payment";
 import { runShippingCalculate } from "~/lib/shipping-calculate";
+import { normalizeCountryCode } from "~/lib/validations/checkout";
 
 // Map chain names to chain IDs
 const CHAIN_IDS: Record<string, number> = {
@@ -227,7 +228,11 @@ export async function POST(request: NextRequest) {
       (sum, i) => sum + i.priceCents * i.quantity,
       0,
     );
-    const countryCode = shipping?.countryCode?.trim()?.toUpperCase();
+    const rawCountry = shipping?.countryCode?.trim();
+    const countryCode =
+      rawCountry && rawCountry.length >= 2
+        ? normalizeCountryCode(rawCountry)
+        : undefined;
     if (countryCode && countryCode.length >= 2) {
       const { isShippingExcluded } = await import(
         "~/lib/shipping-restrictions"

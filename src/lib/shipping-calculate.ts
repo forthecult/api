@@ -699,7 +699,7 @@ export async function runShippingCalculate(
     variants.map((v) => [v.id, v.externalId]),
   );
 
-  /** Printful product IDs missing catalog_variant_id (log once per request to avoid spam). */
+  /** Printful product IDs missing catalog_variant_id (log once per product per process to avoid spam). */
   const printfulMissingCatalogVariantIds = new Set<string>();
 
   // Separate items by source (Printful, Printify, manual/other)
@@ -824,9 +824,18 @@ export async function runShippingCalculate(
   }
 
   if (printfulMissingCatalogVariantIds.size > 0) {
-    console.warn(
-      `Printful product(s) missing catalog_variant_id for shipping (re-sync from Printful to fix): ${[...printfulMissingCatalogVariantIds].join(", ")}`,
-    );
+    const logged = (globalThis as unknown as { __printfulMissingLogged?: Set<string> }).__printfulMissingLogged ?? new Set<string>();
+    (globalThis as unknown as { __printfulMissingLogged: Set<string> }).__printfulMissingLogged = logged;
+    const toLog = [...printfulMissingCatalogVariantIds].filter((id) => {
+      if (logged.has(id)) return false;
+      logged.add(id);
+      return true;
+    });
+    if (toLog.length > 0) {
+      console.warn(
+        `Printful product(s) missing catalog_variant_id for shipping (re-sync from Printful to fix): ${toLog.join(", ")}`,
+      );
+    }
   }
 
   // Calculate Printful shipping (if any Printful items)

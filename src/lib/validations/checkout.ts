@@ -44,13 +44,75 @@ export const createOrderSchema = z.object({
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
+// Map full country names (uppercase) to ISO 2-letter codes for shipping API resilience.
+// Used when client sends country name instead of code (e.g. address autocomplete, persisted form).
+const COUNTRY_NAME_TO_CODE: Record<string, string> = {
+  UNITED STATES: "US",
+  CANADA: "CA",
+  AUSTRALIA: "AU",
+  "NEW ZEALAND": "NZ",
+  GERMANY: "DE",
+  "UNITED KINGDOM": "GB",
+  SPAIN: "ES",
+  ITALY: "IT",
+  FRANCE: "FR",
+  NETHERLANDS: "NL",
+  JAPAN: "JP",
+  "HONG KONG": "HK",
+  ISRAEL: "IL",
+  "SOUTH KOREA": "KR",
+  "EL SALVADOR": "SV",
+  "UNITED ARAB EMIRATES": "AE",
+  MEXICO: "MX",
+  PHILIPPINES: "PH",
+  INDIA: "IN",
+  BRAZIL: "BR",
+  PANAMA: "PA",
+  ARGENTINA: "AR",
+  "SAINT KITTS AND NEVIS": "KN",
+  "COSTA RICA": "CR",
+  BELIZE: "BZ",
+  CHILE: "CL",
+  SWITZERLAND: "CH",
+  SINGAPORE: "SG",
+  ICELAND: "IS",
+  DENMARK: "DK",
+  MONTENEGRO: "ME",
+  PORTUGAL: "PT",
+  POLAND: "PL",
+  FINLAND: "FI",
+  LITHUANIA: "LT",
+  LUXEMBOURG: "LU",
+  LIECHTENSTEIN: "LI",
+  BELGIUM: "BE",
+  SWEDEN: "SE",
+  IRELAND: "IE",
+  AUSTRIA: "AT",
+  NORWAY: "NO",
+  ESTONIA: "EE",
+  "SAUDI ARABIA": "SA",
+  QATAR: "QA",
+  TAIWAN: "TW",
+  FIJI: "FJ",
+};
+
+/** Normalize country input to 2–3 letter ISO code. Safe to use for shipping/address. */
+export function normalizeCountryCode(raw: string): string {
+  const c = raw.trim().toUpperCase();
+  if (c.length <= 3) return c.length >= 2 ? c : "";
+  return COUNTRY_NAME_TO_CODE[c] ?? c.slice(0, 2);
+}
+
 // --- Shipping Calculate Schema ---
 export const shippingCalculateSchema = z.object({
   countryCode: z
     .string()
-    .min(2, "Country code is required")
-    .max(3)
-    .transform((c) => c.trim().toUpperCase()),
+    .min(1, "Country code is required")
+    .max(100)
+    .transform((c) => normalizeCountryCode(c))
+    .refine((c) => c.length >= 2 && c.length <= 3, {
+      message: "Country code must be 2–3 characters or a valid country name",
+    }),
   orderValueCents: z.number().int().nonnegative().default(0),
   items: z
     .array(

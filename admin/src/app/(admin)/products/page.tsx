@@ -22,6 +22,7 @@ import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
+import { CategorySelect } from "~/ui/category-select";
 
 const API_BASE = getMainAppUrl();
 
@@ -49,6 +50,7 @@ interface ProductRow {
   published: boolean;
   brand: string | null;
   categoryName: string | null;
+  categoryId: string | null;
   vendor: string | null;
   inventory: string;
 }
@@ -92,6 +94,11 @@ const COLUMNS = [
   { key: "action", label: "Action", sortKey: null },
 ] as const;
 
+interface CategoryOption {
+  id: string;
+  name: string;
+}
+
 export default function AdminProductsPage() {
   const [data, setData] = useState<ProductsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,10 +106,41 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [searchInput, setSearchInput] = useState("");
+  const [filterCategoryId, setFilterCategoryId] = useState("");
+  const [filterVendor, setFilterVendor] = useState("");
+  const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
+  const [vendorOptions, setVendorOptions] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState | null>(null);
+
+  useEffect(() => {
+    const loadFilterOptions = async () => {
+      try {
+        const [catRes, venRes] = await Promise.all([
+          fetch(`${API_BASE}/api/admin/categories?limit=500`, {
+            credentials: "include",
+          }),
+          fetch(`${API_BASE}/api/admin/products/vendors`, {
+            credentials: "include",
+          }),
+        ]);
+        if (catRes.ok) {
+          const catJson = (await catRes.json()) as { items?: { id: string; name: string }[] };
+          const items = catJson.items ?? [];
+          setCategoryOptions([{ id: "", name: "All categories" }, ...items]);
+        }
+        if (venRes.ok) {
+          const venJson = (await venRes.json()) as { vendors?: string[] };
+          setVendorOptions(venJson.vendors ?? []);
+        }
+      } catch {
+        // Non-blocking; filters just stay empty
+      }
+    };
+    void loadFilterOptions();
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -115,6 +153,8 @@ export default function AdminProductsPage() {
         sortOrder,
       });
       if (search.trim()) params.set("search", search.trim());
+      if (filterCategoryId.trim()) params.set("categoryId", filterCategoryId.trim());
+      if (filterVendor.trim()) params.set("vendor", filterVendor.trim());
       const res = await fetch(
         `${API_BASE}/api/admin/products?${params.toString()}`,
         { credentials: "include" },
@@ -131,7 +171,7 @@ export default function AdminProductsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, sortBy, sortOrder]);
+  }, [page, search, filterCategoryId, filterVendor, sortBy, sortOrder]);
 
   useEffect(() => {
     void fetchProducts();
@@ -389,6 +429,55 @@ export default function AdminProductsPage() {
               Search
             </Button>
           </div>
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <label
+                htmlFor="filter-category"
+                className="shrink-0 text-sm font-medium text-muted-foreground"
+              >
+                Category
+              </label>
+              <CategorySelect
+                id="filter-category"
+                value={filterCategoryId}
+                onChange={(value) => {
+                  setFilterCategoryId(value);
+                  setPage(1);
+                }}
+                options={categoryOptions}
+                placeholder="All categories"
+                className="min-w-[180px]"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="filter-vendor"
+                className="shrink-0 text-sm font-medium text-muted-foreground"
+              >
+                Vendor
+              </label>
+              <select
+                id="filter-vendor"
+                value={filterVendor}
+                onChange={(e) => {
+                  setFilterVendor(e.target.value);
+                  setPage(1);
+                }}
+                className={cn(
+                  "min-w-[140px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                  "ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring",
+                )}
+                aria-label="Filter by vendor"
+              >
+                <option value="">All vendors</option>
+                {vendorOptions.map((v) => (
+                  <option key={v} value={v}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -523,7 +612,16 @@ export default function AdminProductsPage() {
                             </div>
                           </td>
                           <td className="p-4 text-muted-foreground">
-                            {product.categoryName ?? "—"}
+                            {product.categoryId && product.categoryName ? (
+                              <Link
+                                href={`/categories/${product.categoryId}`}
+                                className="text-primary underline underline-offset-2 hover:no-underline"
+                              >
+                                {product.categoryName}
+                              </Link>
+                            ) : (
+                              product.categoryName ?? "—"
+                            )}
                           </td>
                           <td className="p-4 text-muted-foreground">
                             {product.brand ?? "—"}

@@ -76,7 +76,9 @@ export function getPaymentVisibility(
   const v = { ...DEFAULT_VISIBILITY };
   for (const s of settings) {
     const key = METHOD_KEY_MAP[s.methodKey];
-    if (key) v[key] = s.enabled;
+    if (key && key !== "enabledUsdcNetworks" && key !== "enabledUsdtNetworks") {
+      v[key] = s.enabled;
+    }
     if (s.methodKey === "stablecoin_usdc") {
       v.enabledUsdcNetworks =
         s.enabledNetworks !== undefined && s.enabledNetworks !== null

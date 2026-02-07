@@ -54,6 +54,8 @@ export async function GET(request: NextRequest) {
     );
     const offset = (page - 1) * limit;
     const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
+    const categoryIdParam = request.nextUrl.searchParams.get("categoryId")?.trim() ?? "";
+    const vendorParam = request.nextUrl.searchParams.get("vendor")?.trim() ?? "";
     const sortByParam = request.nextUrl.searchParams.get("sortBy")?.trim();
     const sortBy: SortBy =
       sortByParam && SORT_COLUMNS.includes(sortByParam as SortBy)
@@ -65,14 +67,30 @@ export async function GET(request: NextRequest) {
     const sortOrder = sortOrderParam === "asc" ? asc : desc;
 
     const term = search.length > 0 ? `%${search}%` : "";
+    const conditions: ReturnType<typeof or>[] = [];
+    if (search.length > 0) {
+      conditions.push(
+        or(
+          ilike(productsTable.name, term),
+          ilike(productsTable.id, term),
+          ilike(productsTable.brand, term),
+        ) as ReturnType<typeof or>,
+      );
+    }
+    if (categoryIdParam) {
+      const categoryProductIds = await db
+        .select({ productId: productCategoriesTable.productId })
+        .from(productCategoriesTable)
+        .where(eq(productCategoriesTable.categoryId, categoryIdParam));
+      conditions.push(
+        inArray(productsTable.id, categoryProductIds.map((r) => r.productId)),
+      );
+    }
+    if (vendorParam) {
+      conditions.push(eq(productsTable.vendor, vendorParam));
+    }
     const whereClause =
-      search.length > 0
-        ? or(
-            ilike(productsTable.name, term),
-            ilike(productsTable.id, term),
-            ilike(productsTable.brand, term),
-          )
-        : undefined;
+      conditions.length > 0 ? and(...conditions) : undefined;
 
     const orderBy =
       sortBy === "price"
@@ -200,6 +218,7 @@ export async function GET(request: NextRequest) {
         published: p.published,
         brand: p.brand,
         categoryName: mainPc?.category?.name ?? null,
+        categoryId: mainPc?.categoryId ?? null,
         vendor: p.vendor,
         inventory,
       };
