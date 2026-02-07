@@ -80,7 +80,7 @@ export function WishlistPageClient() {
         <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
           <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
         </div>
-      </div>
+      </>
     );
   }
 
