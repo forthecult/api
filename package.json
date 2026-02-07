@@ -12,6 +12,7 @@
     "db:migrate-printful": "psql $DATABASE_URL -f scripts/migrate-printful-schema.sql",
     "db:push": "drizzle-kit push",
     "db:seed": "bun run scripts/seed-products.ts",
+    "db:seed-products": "bun run scripts/seed-products.ts",
     "db:seed-categories": "bun run scripts/seed-categories.ts",
     "db:seed-brands": "bun run scripts/seed-brands.ts",
     "db:upload-brand-assets": "bun run scripts/upload-brand-assets.ts",

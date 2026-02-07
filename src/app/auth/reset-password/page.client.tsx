@@ -70,7 +70,7 @@ export function ResetPasswordClient() {
 
   if (errorParam === "INVALID_TOKEN" || (token === null && !success)) {
     return (
-      <div className="container flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
+      <div className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
         <div className="flex items-center gap-2">
           <KeyRound className="h-8 w-8 text-muted-foreground" />
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -94,7 +94,7 @@ export function ResetPasswordClient() {
 
   if (success) {
     return (
-      <div className="container flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
+      <div className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-green-600 dark:text-green-400">
@@ -112,7 +112,7 @@ export function ResetPasswordClient() {
   }
 
   return (
-    <div className="container flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
+    <div className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
       <div className="flex items-center gap-2">
         <KeyRound className="h-8 w-8 text-muted-foreground" />
         <h1 className="text-2xl font-semibold tracking-tight">

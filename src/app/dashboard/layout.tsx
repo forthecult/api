@@ -21,7 +21,7 @@ export default async function DashboardLayout({
       <div className="flex min-h-screen flex-col">
         <div
           className={`
-            container flex gap-6 px-4 py-6
+            container mx-auto max-w-7xl flex gap-6 px-4 py-6
             sm:px-6
             lg:px-8
           `}
