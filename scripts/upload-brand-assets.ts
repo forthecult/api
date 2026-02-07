@@ -58,6 +58,13 @@ async function main() {
     process.exit(0);
   }
 
+  if (!validateUploadThingToken(token)) {
+    const msg =
+      "UPLOADTHING_TOKEN is set but invalid. It must be a base64-encoded JSON object with apiKey, appId, and regions (from UploadThing Dashboard → API Keys → V7). Do not use an old secret or a plain API key. Skipping brand asset upload.";
+    console.warn(msg);
+    process.exit(process.env.GITHUB_ACTIONS === "true" ? 0 : 1);
+  }
+
   if (!existsSync(ASSETS_DIR)) {
     console.log("No scripts/brand-assets directory found. Create it and add brand slug folders with logo.* / banner.* images.");
     process.exit(0);

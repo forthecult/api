@@ -408,8 +408,8 @@ export default async function HomePage() {
                 </Link>
               )}
             </div>
-          </div>
-        </section>
+          </PageContainer>
+        </PageSection>
 
         {/* Featured Products */}
         <section
