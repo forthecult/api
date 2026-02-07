@@ -19,7 +19,14 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import {} from "~/ui/primitives/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/ui/primitives/table";
 
 export const metadata = {
   title: `CULT Token | ${SEO_CONFIG.name}`,
@@ -89,28 +96,51 @@ const cultureUnique = [
 
 const SOLSCAN_BASE = "https://solscan.io/account";
 
-/** Creator fee allocation items; first three have on-chain wallets (Solscan links). */
+/** Creator fee allocation: value is numeric % for pie chart; first three have on-chain wallets. */
 const creatorFeeAllocations = [
   {
+    value: 5,
     pct: "5%",
     label: "Buy back and burn",
     wallet: "BURNakw9tnzqnKeMi2BqDRjZzT2athWK2CfKTAxrrMYX",
   },
   {
+    value: 5,
     pct: "5%",
     label: "Staked token holders",
     wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd",
   },
   {
+    value: 5,
     pct: "5%",
     label: "Charity",
     wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS",
   },
-  { pct: "15%", label: "Marketing and advertising", wallet: null },
-  { pct: "20%", label: "Subsidize shipping and product prices", wallet: null },
-  { pct: "20%", label: "Product inventory and development", wallet: null },
-  { pct: "30%", label: "Treasury and feature development", wallet: null },
+  { value: 15, pct: "15%", label: "Marketing and advertising", wallet: null },
+  { value: 20, pct: "20%", label: "Subsidize shipping and product prices", wallet: null },
+  { value: 20, pct: "20%", label: "Product inventory and development", wallet: null },
+  { value: 30, pct: "30%", label: "Treasury and feature development", wallet: null },
 ];
+
+/** Conic-gradient stops for pie chart (cumulative %). Uses theme chart/primary colors. */
+const PIE_COLORS = [
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--primary)",
+  "var(--muted-foreground)",
+];
+function creatorFeePieGradient(): string {
+  let cum = 0;
+  const stops = creatorFeeAllocations.map((a, i) => {
+    const start = cum;
+    cum += a.value;
+    return `${PIE_COLORS[i % PIE_COLORS.length]} ${start}% ${cum}%`;
+  });
+  return `conic-gradient(from 0deg, ${stops.join(", ")})`;
+}
 
 const faqItems = [
   {
@@ -306,35 +336,61 @@ export default function TokenPage() {
               be viewed on Solscan.
             </p>
           </div>
-          <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {creatorFeeAllocations.map(({ pct, label, wallet }) => (
-              <Card
-                key={label}
-                className="border-border bg-card transition-shadow hover:shadow-md"
-              >
-                <CardContent className="flex flex-col gap-2 pt-5">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <span className="text-xl font-semibold text-foreground">
-                      {pct}
-                    </span>
-                    <span className="text-sm font-medium text-foreground">
-                      {label}
-                    </span>
-                  </div>
-                  {wallet ? (
-                    <a
-                      href={`${SOLSCAN_BASE}/${wallet}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-sm text-primary transition-colors hover:bg-muted hover:underline"
-                    >
-                      <span>View on Solscan</span>
-                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                    </a>
-                  ) : null}
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,280px)_1fr] lg:items-start">
+            {/* Pie chart */}
+            <div className="flex flex-col items-center gap-4">
+              <div
+                className="aspect-square w-full max-w-[240px] rounded-full border-4 border-background shadow-lg"
+                style={{
+                  background: creatorFeePieGradient(),
+                }}
+                aria-hidden
+              />
+              <p className="text-center text-xs text-muted-foreground">
+                Total 100%
+              </p>
+            </div>
+            {/* Table */}
+            <div className="min-w-0 rounded-lg border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[5rem]">Allocation</TableHead>
+                    <TableHead>Use</TableHead>
+                    <TableHead className="w-[8rem] text-right">
+                      On-chain
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {creatorFeeAllocations.map(({ pct, label, wallet }) => (
+                    <TableRow key={label}>
+                      <TableCell className="font-medium tabular-nums">
+                        {pct}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {label}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {wallet ? (
+                          <a
+                            href={`${SOLSCAN_BASE}/${wallet}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline"
+                          >
+                            View on Solscan
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         </section>
 

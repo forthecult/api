@@ -114,10 +114,14 @@ export async function OPTIONS(request: NextRequest) {
   return new Response(null, { status: 204, headers });
 }
 
-// Wrap handlers with rate limiting
+// Use a higher limit when IP is unknown so one shared bucket doesn't block all prod users (e.g. when proxy doesn't send X-Forwarded-For)
+function getAuthRateLimitConfig(ip: string) {
+  return ip === "unknown" ? RATE_LIMITS.authUnknownIp : RATE_LIMITS.auth;
+}
+
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const result = checkRateLimit(`auth:${ip}`, RATE_LIMITS.auth);
+  const result = checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
   if (!result.success) {
     return rateLimitResponse(result);
   }
@@ -126,7 +130,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const result = checkRateLimit(`auth:${ip}`, RATE_LIMITS.auth);
+  const result = checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
   if (!result.success) {
     return rateLimitResponse(result);
   }

@@ -100,8 +100,13 @@ export function getClientIp(headers: Headers): string {
 
 /** Preset rate limit configs */
 export const RATE_LIMITS = {
-  /** Auth endpoints: 60 requests per minute (get-session on each load + sign-in) */
+  /** Auth endpoints: 60 requests per minute per IP (get-session on each load + sign-in) */
   auth: { limit: 60, windowSeconds: 60 } as RateLimitConfig,
+  /**
+   * When client IP is missing (e.g. proxy not forwarding x-forwarded-for), all traffic shares one bucket.
+   * Use a higher limit so we don't block every user. Prefer fixing proxy to send X-Forwarded-For in prod.
+   */
+  authUnknownIp: { limit: 300, windowSeconds: 60 } as RateLimitConfig,
   /** Checkout/order creation: 5 requests per minute */
   checkout: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
   /** Admin endpoints: 60 requests per minute */
