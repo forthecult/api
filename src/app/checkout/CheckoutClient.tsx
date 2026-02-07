@@ -538,6 +538,7 @@ export function CheckoutClient() {
   const skipNextFindRef = useRef(false);
   const loqateWarmedRef = useRef(false);
   const addressContainerRef = useRef<HTMLDivElement | null>(null);
+  const addressInputFocusedRef = useRef(false);
   const [billingLoqateSuggestions, setBillingLoqateSuggestions] = useState<
     LoqateFindItem[]
   >([]);
@@ -548,6 +549,7 @@ export function CheckoutClient() {
   );
   const skipNextBillingFindRef = useRef(false);
   const billingAddressContainerRef = useRef<HTMLDivElement | null>(null);
+  const billingAddressInputFocusedRef = useRef(false);
   const [solanaPayOpen, setSolanaPayOpen] = useState(false);
   const [solanaPayUrl, setSolanaPayUrl] = useState<URL | null>(null);
   const [solanaPayOrderId, setSolanaPayOrderId] = useState<string | null>(null);
@@ -1134,6 +1136,7 @@ export function CheckoutClient() {
 
   // Loqate address autocomplete: debounced Find when shipping street/country change (with timeout so 503/slow API doesn't hang)
   const LOQATE_FIND_TIMEOUT_MS = 10_000;
+  const LOQATE_DEBOUNCE_MS = 200;
   useEffect(() => {
     const text = form.street?.trim() ?? "";
     if (text.length < 2) {
@@ -1149,6 +1152,7 @@ export function CheckoutClient() {
         return;
       }
       setLoqateLoading(true);
+      if (addressInputFocusedRef.current) setLoqateOpen(true);
       const params = new URLSearchParams({ text, limit: "6" });
       if (form.country?.trim()) params.set("countries", form.country.trim());
       const ac = new AbortController();
@@ -1164,7 +1168,7 @@ export function CheckoutClient() {
           clearTimeout(timeoutId);
           setLoqateLoading(false);
         });
-    }, 300);
+    }, LOQATE_DEBOUNCE_MS);
     return () => {
       if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
     };
@@ -1218,6 +1222,7 @@ export function CheckoutClient() {
         return;
       }
       setBillingLoqateLoading(true);
+      if (billingAddressInputFocusedRef.current) setBillingLoqateOpen(true);
       const params = new URLSearchParams({ text, limit: "6" });
       if (billingForm.country?.trim())
         params.set("countries", billingForm.country.trim());
@@ -1234,7 +1239,7 @@ export function CheckoutClient() {
           clearTimeout(timeoutId);
           setBillingLoqateLoading(false);
         });
-    }, 300);
+    }, LOQATE_DEBOUNCE_MS);
     return () => {
       if (billingLoqateDebounceRef.current)
         clearTimeout(billingLoqateDebounceRef.current);
@@ -2024,6 +2029,7 @@ export function CheckoutClient() {
                     value={form.street}
                     onChange={(e) => update("street", e.target.value)}
                     onFocus={() => {
+                      addressInputFocusedRef.current = true;
                       if (loqateSuggestions.length > 0) setLoqateOpen(true);
                       // One-time warm-up: prefetch so first real request reuses connection
                       if (!loqateWarmedRef.current) {
@@ -2032,7 +2038,16 @@ export function CheckoutClient() {
                       }
                     }}
                     onBlur={() => {
-                      setTimeout(() => setLoqateOpen(false), 200);
+                      addressInputFocusedRef.current = false;
+                      setTimeout(() => {
+                        if (
+                          !addressContainerRef.current?.contains(
+                            document.activeElement,
+                          )
+                        ) {
+                          setLoqateOpen(false);
+                        }
+                      }, 200);
                     }}
                   />
                   {loqateOpen &&
@@ -2547,6 +2562,8 @@ export function CheckoutClient() {
                                     updateBilling("street", e.target.value)
                                   }
                                   onFocus={() => {
+                                    billingAddressInputFocusedRef.current =
+                                      true;
                                     if (billingLoqateSuggestions.length > 0)
                                       setBillingLoqateOpen(true);
                                     if (!loqateWarmedRef.current) {
@@ -2557,10 +2574,17 @@ export function CheckoutClient() {
                                     }
                                   }}
                                   onBlur={() => {
-                                    setTimeout(
-                                      () => setBillingLoqateOpen(false),
-                                      200,
-                                    );
+                                    billingAddressInputFocusedRef.current =
+                                      false;
+                                    setTimeout(() => {
+                                      if (
+                                        !billingAddressContainerRef.current?.contains(
+                                          document.activeElement,
+                                        )
+                                      ) {
+                                        setBillingLoqateOpen(false);
+                                      }
+                                    }, 200);
                                   }}
                                 />
                                 {billingLoqateOpen &&
