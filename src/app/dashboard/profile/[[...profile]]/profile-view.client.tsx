@@ -134,8 +134,8 @@ export function ProfileViewClient() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-6">
-        {/* User summary card – wide, low height: avatar left, name+balance center, membership right */}
-        <Card className="lg:col-span-2">
+        {/* User summary card – takes half the row so it can expand to the right */}
+        <Card className="lg:col-span-3">
           <CardContent className="flex flex-row items-center gap-4 py-3 pl-3 pr-4">
             <div className="relative size-14 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted">
               {profile?.image ? (
@@ -167,7 +167,7 @@ export function ProfileViewClient() {
         </Card>
 
         {/* Order status cards */}
-        <div className="grid grid-cols-2 gap-4 lg:col-span-4 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-4 lg:col-span-3 sm:grid-cols-4">
           <Card>
             <CardContent className="flex flex-col items-center justify-center p-4 text-center">
               <span className="text-2xl font-bold tabular-nums text-foreground">

@@ -86,7 +86,7 @@ async function main() {
         continue;
       }
       const url =
-        res?.url ?? res?.ufsUrl ?? res?.data?.url ?? res?.data?.ufsUrl ?? null;
+        res?.ufsUrl ?? res?.data?.ufsUrl ?? res?.url ?? res?.data?.url ?? null;
       if (!url) {
         console.error(`No URL for ${basename}`);
         result.push(meta);

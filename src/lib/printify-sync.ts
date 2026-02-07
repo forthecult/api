@@ -405,7 +405,8 @@ async function createLocalProductFromPrintify(
     vendor: "Printify",
     brand: null, // Printify product API does not expose brand
     sku: productSku,
-    countryOfOrigin: null, // Printify API does not expose; set in admin if needed
+    countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
+    hsCode: printifyProduct.hs_code?.trim() || null,
     handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
     handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
     createdAt: now,
@@ -542,6 +543,8 @@ async function updateLocalProductFromPrintify(
       vendor: "Printify",
       sku: productSku,
       printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+      countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
+      hsCode: printifyProduct.hs_code?.trim() || null,
       handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
       handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
       ...(priceCents != null && { priceCents }),

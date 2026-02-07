@@ -25,6 +25,7 @@ import {
   fetchSyncProduct,
   fetchCatalogProduct,
   fetchCatalogProductShippingCountries,
+  fetchCatalogProductShippingCustoms,
   fetchVariantPrices,
   updateSyncProduct,
   updateSyncVariant,
@@ -145,17 +146,26 @@ export async function importSinglePrintfulProduct(
   const { sync_product: syncProduct, sync_variants: syncVariants } =
     syncProductFull;
 
-  // Fetch catalog product for description/brand when we have a catalog product id
-  let catalogProduct: { brand: string | null; description: string | null } | null =
-    null;
+  // Fetch catalog product for description/brand and shipping/customs (country of origin, HS code)
+  let catalogProduct: {
+    brand: string | null;
+    description: string | null;
+    countryOfOrigin: string | null;
+    hsCode: string | null;
+  } | null = null;
   const catalogProductId = syncVariants[0]?.product?.product_id;
   if (catalogProductId != null) {
     try {
-      const catalog = await fetchCatalogProduct(catalogProductId);
+      const [catalog, customs] = await Promise.all([
+        fetchCatalogProduct(catalogProductId),
+        fetchCatalogProductShippingCustoms(catalogProductId),
+      ]);
       if (catalog?.data) {
         catalogProduct = {
           brand: catalog.data.brand ?? null,
           description: catalog.data.description ?? null,
+          countryOfOrigin: customs.countryOfOrigin,
+          hsCode: customs.hsCode,
         };
       }
     } catch {
@@ -253,7 +263,12 @@ const PRINTFUL_SHIPPING_COUNTRY_CODES = [
 async function createLocalProductFromPrintful(
   syncProduct: PrintfulSyncProduct,
   syncVariants: PrintfulSyncVariant[],
-  catalogProduct: { brand: string | null; description: string | null } | null,
+  catalogProduct: {
+    brand: string | null;
+    description: string | null;
+    countryOfOrigin: string | null;
+    hsCode: string | null;
+  } | null,
 ): Promise<string> {
   const productId = nanoid();
   const now = new Date();
@@ -361,7 +376,8 @@ async function createLocalProductFromPrintful(
     vendor: "Printful",
     brand,
     sku: productSku,
-    countryOfOrigin: null, // Printful catalog API does not expose; set in admin if needed
+    countryOfOrigin: catalogProduct?.countryOfOrigin ?? null,
+    hsCode: catalogProduct?.hsCode ?? null,
     createdAt: now,
     updatedAt: now,
     lastSyncedAt: now,
@@ -434,7 +450,12 @@ async function updateLocalProductFromPrintful(
   productId: string,
   syncProduct: PrintfulSyncProduct,
   syncVariants: PrintfulSyncVariant[],
-  catalogProduct: { brand: string | null; description: string | null } | null,
+  catalogProduct: {
+    brand: string | null;
+    description: string | null;
+    countryOfOrigin: string | null;
+    hsCode: string | null;
+  } | null,
 ): Promise<void> {
   const now = new Date();
 
@@ -504,6 +525,10 @@ async function updateLocalProductFromPrintful(
       ...(description !== undefined && { description }),
       ...(brand !== undefined && { brand }),
       ...(metaDescription !== undefined && { metaDescription }),
+      ...(catalogProduct != null && {
+        countryOfOrigin: catalogProduct.countryOfOrigin,
+        hsCode: catalogProduct.hsCode,
+      }),
       ...(priceCents != null && { priceCents }),
       ...(costPerItemCents !== undefined && { costPerItemCents }),
       updatedAt: now,

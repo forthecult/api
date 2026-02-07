@@ -133,7 +133,7 @@ async function main() {
         continue;
       }
 
-      const url = res.url ?? res.ufsUrl ?? res.data?.url ?? res.data?.ufsUrl ?? null;
+      const url = res.ufsUrl ?? res.data?.ufsUrl ?? res.url ?? res.data?.url ?? null;
       if (!url) {
         console.error(`No URL in response for ${brand.slug}/${name}`);
         continue;

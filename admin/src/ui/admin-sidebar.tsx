@@ -54,6 +54,7 @@ const ADMIN_SECTIONS: NavSection[] = [
       { href: "/products", label: "Product List" },
       { href: "/products/create", label: "Create Product" },
       { href: "/products/reviews", label: "Product Reviews" },
+      { href: "/products#pod-sync", label: "Printful & Printify sync" },
     ],
   },
   {
@@ -81,7 +82,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: "Payment methods",
+    label: "Payments",
     icon: CreditCard,
     href: "/payment-methods",
   },

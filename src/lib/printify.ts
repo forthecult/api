@@ -198,6 +198,10 @@ export type PrintifyProduct = {
   title: string;
   description: string;
   tags: string[];
+  /** Country of origin (e.g. for shipping/customs); set in admin or from catalog when available. */
+  country_of_origin?: string | null;
+  /** HS / tariff code for international shipping; set in admin or from catalog when available. */
+  hs_code?: string | null;
   options: Array<{
     name: string;
     type: string;

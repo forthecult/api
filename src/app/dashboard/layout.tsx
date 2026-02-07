@@ -28,7 +28,7 @@ export default async function DashboardLayout({
         >
           <SidebarLoader />
           <main className="min-w-0 flex-1">
-            <div className="w-full max-w-4xl space-y-6 p-4 sm:p-6 md:p-8">
+            <div className="w-full max-w-6xl space-y-6 p-4 sm:p-6 md:p-8">
               {children}
             </div>
           </main>

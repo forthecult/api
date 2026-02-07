@@ -266,7 +266,7 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Printful & Printify sync – dedicated row so it’s easy to find */}
-      <Card className="border-primary/20 bg-muted/20">
+      <Card id="pod-sync" className="border-primary/20 bg-muted/20 scroll-mt-4">
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Printful & Printify sync</CardTitle>
           <p className="text-sm text-muted-foreground">

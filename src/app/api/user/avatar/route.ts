@@ -65,10 +65,10 @@ export async function POST(request: NextRequest) {
     }
 
     const url =
-      "url" in data && typeof (data as { url?: string }).url === "string"
-        ? (data as { url: string }).url
-        : "ufsUrl" in data && typeof (data as { ufsUrl?: string }).ufsUrl === "string"
-          ? (data as { ufsUrl: string }).ufsUrl
+      "ufsUrl" in data && typeof (data as { ufsUrl?: string }).ufsUrl === "string"
+        ? (data as { ufsUrl: string }).ufsUrl
+        : "url" in data && typeof (data as { url?: string }).url === "string"
+          ? (data as { url: string }).url
           : null;
 
     if (!url) {

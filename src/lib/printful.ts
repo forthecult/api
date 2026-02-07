@@ -427,6 +427,27 @@ async function pfFetchV1<T>(
   return json.result;
 }
 
+/**
+ * Fetch country of origin (and HS code if present) from Printful V1 catalog product.
+ * V1 GET /products/{id} returns origin_country; used during sync to populate shipping/customs.
+ */
+export async function fetchCatalogProductShippingCustoms(
+  catalogProductId: number,
+): Promise<{ countryOfOrigin: string | null; hsCode: string | null }> {
+  try {
+    const result = await pfFetchV1<{
+      product?: { origin_country?: string; hs_code?: string };
+    }>(`/products/${catalogProductId}`);
+    const product = result?.product;
+    return {
+      countryOfOrigin: product?.origin_country?.trim() ?? null,
+      hsCode: product?.hs_code?.trim() ?? null,
+    };
+  } catch {
+    return { countryOfOrigin: null, hsCode: null };
+  }
+}
+
 // --- Sync Product Types ---
 
 export type PrintfulSyncProductFile = {
