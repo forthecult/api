@@ -35,6 +35,7 @@
     "check": "tsc --noEmit && eslint --cache --fix . && biome check --fix --unsafe . && knip",
     "generate:openapi": "bun run scripts/generate-openapi.ts",
     "printful:sync": "bun run scripts/printful-sync-products.ts",
+    "printful:resync": "bun run scripts/printful-resync-products.ts",
     "printify:sync": "bun run scripts/printify-sync-products.ts",
     "db:list-products": "bun run scripts/list-products.ts",
     "db:crawl-brand-shipping": "bun run scripts/crawl-brand-shipping.ts",

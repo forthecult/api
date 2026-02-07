@@ -2711,12 +2711,12 @@ export function CheckoutClient() {
                               className="size-4 border-input text-primary focus:ring-primary"
                             />
                             <span className="text-sm">{opt.label}</span>
-                            {CRYPTO_LOGO_SRC[opt.value] ? (
+                            {CRYPTO_LOGO_SRC[opt.value as keyof typeof CRYPTO_LOGO_SRC] ? (
                               <Image
                                 alt={opt.label}
                                 className="ml-auto h-7 w-9 shrink-0 object-contain"
                                 height={28}
-                                src={CRYPTO_LOGO_SRC[opt.value]!}
+                                src={CRYPTO_LOGO_SRC[opt.value as keyof typeof CRYPTO_LOGO_SRC]!}
                                 width={36}
                               />
                             ) : null}

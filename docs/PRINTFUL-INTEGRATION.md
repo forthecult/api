@@ -68,9 +68,15 @@ So **re-synchronization from Printful → our system happens automatically** whe
    ```bash
    bun run printful:sync
    ```
-   Or call the admin API: `POST /api/admin/printful/sync` with body `{ "action": "import_all" }`.
+   Or call the admin API: `POST /api/admin/printful/sync` with body `{ "action": "import_all" }`. This imports new products only; existing ones are skipped.
 
-3. **Product must be synced in Printful** — In the Printful dashboard, the product must be in “Synced” status (not draft or failed). Our import only pulls products that are synced.
+3. **Full re-sync (update existing products)** — To refresh Markets, mockup images, and other data for products already in the store:
+   ```bash
+   bun run printful:resync
+   ```
+   Or call the admin API: `POST /api/admin/printful/sync` with body `{ "action": "import_all", "overwrite": true }`. You must be logged in as an admin (session cookie). Re-sync overwrites local product data with Printful’s (name, images, variants, **shipping countries/Markets**, etc.).
+
+4. **Product must be synced in Printful** — In the Printful dashboard, the product must be in “Synced” status (not draft or failed). Our import only pulls products that are synced.
 
 ## Product schema alignment
 

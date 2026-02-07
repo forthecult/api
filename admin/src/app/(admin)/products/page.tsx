@@ -2,13 +2,16 @@
 
 import {
   ArrowDown,
+  ArrowDownToLine,
   ArrowUp,
   ArrowUpDown,
+  ArrowUpFromLine,
   ChevronLeft,
   ChevronRight,
   Eye,
   Pencil,
   Plus,
+  RefreshCw,
   Search,
   Trash2,
 } from "lucide-react";
@@ -21,6 +24,21 @@ import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
+
+type SyncVendor = "printful" | "printify";
+type SyncDirection = "from" | "to";
+
+interface SyncState {
+  vendor: SyncVendor;
+  direction: SyncDirection;
+  loading: boolean;
+  result?: {
+    success: boolean;
+    summary?: { imported?: number; updated?: number; skipped?: number; errors?: number };
+    errors?: string[];
+    error?: string;
+  };
+}
 
 interface ProductRow {
   id: string;
@@ -84,6 +102,7 @@ export default function AdminProductsPage() {
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [syncState, setSyncState] = useState<SyncState | null>(null);
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -117,6 +136,70 @@ export default function AdminProductsPage() {
   useEffect(() => {
     void fetchProducts();
   }, [fetchProducts]);
+
+  const runSync = useCallback(
+    async (vendor: SyncVendor, direction: SyncDirection) => {
+      setSyncState({ vendor, direction, loading: true });
+      const base = `${API_BASE}/api/admin/${vendor}/sync`;
+      try {
+        if (direction === "from") {
+          // Vendor → Store: mockups, inventory, shipping
+          const res = await fetch(base, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              action: "import_all",
+              overwrite: true,
+            }),
+          });
+          const json = (await res.json().catch(() => ({}))) as SyncState["result"] & { error?: string };
+          if (!res.ok) {
+            setSyncState((s) =>
+              s ? { ...s, loading: false, result: { success: false, error: json.error ?? "Sync failed" } } : null,
+            );
+            return;
+          }
+          setSyncState((s) =>
+            s ? { ...s, loading: false, result: { ...json, success: json.success !== false } } : null,
+          );
+        } else {
+          // Store → Vendor: tags, SEO, descriptions, titles (and prices/SKU per backend)
+          const res = await fetch(base, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ action: "export_all" }),
+          });
+          const json = (await res.json().catch(() => ({}))) as SyncState["result"] & { error?: string };
+          if (!res.ok) {
+            setSyncState((s) =>
+              s ? { ...s, loading: false, result: { success: false, error: json.error ?? "Sync failed" } } : null,
+            );
+            return;
+          }
+          setSyncState((s) =>
+            s ? { ...s, loading: false, result: { ...json, success: json.success !== false } } : null,
+          );
+        }
+        void fetchProducts();
+      } catch (err) {
+        setSyncState((s) =>
+          s
+            ? {
+                ...s,
+                loading: false,
+                result: {
+                  success: false,
+                  error: err instanceof Error ? err.message : "Sync failed",
+                },
+              }
+            : null,
+        );
+      }
+    },
+    [fetchProducts],
+  );
 
   const handleTogglePublished = useCallback(
     async (id: string, current: boolean) => {
@@ -168,15 +251,100 @@ export default function AdminProductsPage() {
     );
   }
 
+  const isSyncing = syncState?.loading;
+  const syncVendorLabel = (v: SyncVendor) => (v === "printful" ? "Printful" : "Printify");
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold tracking-tight">Product List</h2>
-        <Link href="/products/create">
-          <Button type="button" className="gap-2">
-            <Plus className="h-4 w-4" />+ Add Product
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Two-way sync: Vendor ↔ Store */}
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+            <span className="text-xs font-medium text-muted-foreground">Sync</span>
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={isSyncing}
+                onClick={() => runSync("printful", "from")}
+                title="Pull mockups, inventory, shipping from Printful into the store"
+              >
+                <ArrowDownToLine className="h-3.5 w-3.5" />
+                Printful → Store
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={isSyncing}
+                onClick={() => runSync("printful", "to")}
+                title="Push tags, SEO, descriptions, titles, prices from store to Printful"
+              >
+                <ArrowUpFromLine className="h-3.5 w-3.5" />
+                Store → Printful
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
+            <div className="flex flex-wrap gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={isSyncing}
+                onClick={() => runSync("printify", "from")}
+                title="Pull mockups, inventory, shipping from Printify into the store"
+              >
+                <ArrowDownToLine className="h-3.5 w-3.5" />
+                Printify → Store
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                disabled={isSyncing}
+                onClick={() => runSync("printify", "to")}
+                title="Push tags, SEO, descriptions, titles, prices from store to Printify"
+              >
+                <ArrowUpFromLine className="h-3.5 w-3.5" />
+                Store → Printify
+              </Button>
+            </div>
+          </div>
+          {syncState?.loading && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+              {syncVendorLabel(syncState.vendor)}…
+            </span>
+          )}
+          {syncState && !syncState.loading && syncState.result && (
+            <span
+              className={cn(
+                "text-xs",
+                syncState.result.success ? "text-green-600 dark:text-green-400" : "text-destructive",
+              )}
+            >
+              {syncState.result.error
+                ? syncState.result.error
+                : syncState.direction === "from" && syncState.result.summary
+                  ? `Imported: ${syncState.result.summary.imported ?? 0}, Updated: ${syncState.result.summary.updated ?? 0}, Skipped: ${syncState.result.summary.skipped ?? 0}`
+                  : syncState.direction === "to" && syncState.result.summary
+                    ? `Updated: ${syncState.result.summary.updated ?? 0}, Skipped: ${syncState.result.summary.skipped ?? 0}`
+                    : "Done"}
+            </span>
+          )}
+          <Link href="/products/create">
+            <Button type="button" className="gap-2">
+              <Plus className="h-4 w-4" />+ Add Product
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <Card>
