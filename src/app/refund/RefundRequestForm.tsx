@@ -13,8 +13,7 @@ const inputClass =
 
 export function RefundRequestForm() {
   const [orderId, setOrderId] = useState("");
-  const [email, setEmail] = useState("");
-  const [paymentAddress, setPaymentAddress] = useState("");
+  const [lookupValue, setLookupValue] = useState("");
   const [refundAddress, setRefundAddress] = useState("");
   const [lookupStatus, setLookupStatus] = useState<
     "idle" | "loading" | "success" | "error"
@@ -29,16 +28,15 @@ export function RefundRequestForm() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       const oid = orderId.trim();
-      const em = email.trim();
-      const addr = paymentAddress.trim();
+      const value = lookupValue.trim();
       if (!oid) {
         setErrorMessage("Please enter your Order ID.");
         setLookupStatus("error");
         return;
       }
-      if (!em && !addr) {
+      if (!value) {
         setErrorMessage(
-          "Please enter either your billing email or payment address.",
+          "Please enter your billing email, payment address, or postal code.",
         );
         setLookupStatus("error");
         return;
@@ -49,11 +47,7 @@ export function RefundRequestForm() {
         const res = await fetch("/api/refund/lookup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: oid,
-            ...(em && { email: em }),
-            ...(addr && { paymentAddress: addr }),
-          }),
+          body: JSON.stringify({ orderId: oid, lookupValue: value }),
         });
         const data = (await res.json().catch(() => ({}))) as {
           isCrypto?: boolean;
@@ -74,24 +68,23 @@ export function RefundRequestForm() {
         setErrorMessage("Something went wrong. Please try again.");
       }
     },
-    [orderId, email, paymentAddress],
+    [orderId, lookupValue],
   );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       const oid = orderId.trim();
-      const em = email.trim();
-      const addr = paymentAddress.trim();
+      const value = lookupValue.trim();
       const refundAddr = refundAddress.trim();
       if (!oid) {
         setErrorMessage("Please enter your Order ID.");
         setSubmitStatus("error");
         return;
       }
-      if (!em && !addr) {
+      if (!value) {
         setErrorMessage(
-          "Please enter either your billing email or payment address.",
+          "Please enter your billing email, payment address, or postal code.",
         );
         setSubmitStatus("error");
         return;
@@ -111,8 +104,7 @@ export function RefundRequestForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: oid,
-            ...(em && { email: em }),
-            ...(addr && { paymentAddress: addr }),
+            lookupValue: value,
             ...(isCrypto && refundAddr && { refundAddress: refundAddr }),
           }),
         });
@@ -132,7 +124,7 @@ export function RefundRequestForm() {
         setErrorMessage("Failed to submit. Please try again.");
       }
     },
-    [orderId, email, paymentAddress, refundAddress, isCrypto],
+    [orderId, lookupValue, refundAddress, isCrypto],
   );
 
   const showRefundAddressField = lookupStatus === "success" && isCrypto;

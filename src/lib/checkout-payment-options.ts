@@ -24,6 +24,7 @@ export type PaymentVisibility = {
   cryptoEthereum: boolean;
   cryptoSolana: boolean;
   cryptoCrust: boolean;
+  cryptoPump: boolean;
   cryptoSui: boolean;
   cryptoTon: boolean;
   stablecoinUsdc: boolean;
@@ -39,6 +40,7 @@ const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
   crypto_solana: "cryptoSolana",
   crypto_monero: "cryptoMonero",
   crypto_crust: "cryptoCrust",
+  crypto_pump: "cryptoPump",
   crypto_sui: "cryptoSui",
   crypto_ton: "cryptoTon",
   stablecoin_usdc: "stablecoinUsdc",
@@ -54,6 +56,7 @@ const DEFAULT_VISIBILITY: PaymentVisibility = {
   cryptoEthereum: true,
   cryptoSolana: true,
   cryptoCrust: true,
+  cryptoPump: true,
   cryptoSui: true,
   cryptoTon: true,
   stablecoinUsdc: true,
@@ -107,6 +110,7 @@ const CRYPTO_SUB_OPTIONS: {
   { value: "solana", label: "Solana (SOL)" },
   { value: "monero", label: "Monero (XMR)" },
   { value: "crust", label: "Crustafarian (CRUST)" },
+  { value: "pump", label: "Pump (PUMP)" },
   { value: "other", label: "Other" },
 ];
 
@@ -156,6 +160,7 @@ export function visibleCryptoSubFromVisibility(v: PaymentVisibility) {
     if (opt.value === "solana") return v.cryptoSolana;
     if (opt.value === "monero") return v.cryptoMonero;
     if (opt.value === "crust") return v.cryptoCrust;
+    if (opt.value === "pump") return v.cryptoPump;
     if (opt.value === "other") return v.cryptoSui || v.cryptoTon;
     return true;
   });
@@ -169,6 +174,7 @@ export function hasAnyCryptoEnabled(v: PaymentVisibility): boolean {
     v.cryptoSolana ||
     v.cryptoMonero ||
     v.cryptoCrust ||
+    v.cryptoPump ||
     v.cryptoSui ||
     v.cryptoTon
   );
@@ -296,6 +302,10 @@ export function getPaymentIconPaths(
       icons.push({ src: "/payments/doge.svg", alt: "Dogecoin" });
     if (visibility.cryptoMonero)
       icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero" });
+    if (visibility.cryptoCrust)
+      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" });
+    if (visibility.cryptoPump)
+      icons.push({ src: "/crypto/pump/pump-logomark.svg", alt: "Pump" });
     if (visibility.stablecoinUsdc)
       icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC" });
     if (visibility.stablecoinUsdt)

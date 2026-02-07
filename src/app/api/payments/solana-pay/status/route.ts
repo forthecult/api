@@ -6,6 +6,7 @@ import BigNumber from "bignumber.js";
 import {
   getSolanaRpcUrlServer,
   CRUST_MINT_MAINNET,
+  PUMP_MINT_MAINNET,
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
@@ -51,7 +52,9 @@ export async function GET(request: Request) {
       ? WHITEWHALE_MINT_MAINNET
       : splTokenParam === CRUST_MINT_MAINNET
         ? CRUST_MINT_MAINNET
-        : USDC_MINT_MAINNET;
+        : splTokenParam === PUMP_MINT_MAINNET
+          ? PUMP_MINT_MAINNET
+          : USDC_MINT_MAINNET;
 
   if (!amount) {
     return NextResponse.json(

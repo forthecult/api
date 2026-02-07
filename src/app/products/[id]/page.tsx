@@ -114,6 +114,8 @@ async function fetchProductById(id: string): Promise<Product | null> {
       availableCountryCodes?: string[];
       features?: string[];
       continueSellingWhenOutOfStock?: boolean;
+      brand?: string | null;
+      model?: string | null;
       sizeChart?: {
         displayName: string;
         dataImperial: unknown;

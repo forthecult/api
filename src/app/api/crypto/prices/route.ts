@@ -8,9 +8,11 @@ import { NextResponse } from "next/server";
 
 import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
 import { getPumpTokenPriceInSol } from "~/lib/pump-price";
-import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-
-const CRUST_MINT_MAINNET = "HkBWJJiaUW5Kod4HpHWZiGD9PQVipmMiPDgiRPcNpump";
+import {
+  getSolanaRpcUrlServer,
+  CRUST_MINT_MAINNET,
+  PUMP_MINT_MAINNET,
+} from "~/lib/solana-pay";
 
 const COINGECKO_IDS = [
   "bitcoin",
@@ -32,6 +34,7 @@ export type CryptoPricesResponse = {
   DOGE?: number;
   TON?: number;
   CRUST?: number;
+  PUMP?: number;
   XMR?: number;
   /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
   XAU?: number;
@@ -47,6 +50,7 @@ const FALLBACK_PRICES: CryptoPricesResponse = {
   DOGE: 0.35,
   TON: 5.5,
   CRUST: 0.0001,
+  PUMP: 0.01,
   XMR: 150,
   XAU: 2650,
 };
@@ -71,27 +75,31 @@ export async function GET() {
     if (d?.["pax-gold"]?.usd) prices.XAU = d["pax-gold"].usd;
     if (d?.["kinesis-silver"]?.usd) prices.XAG = d["kinesis-silver"].usd;
 
-    // Fetch CRUST price with separate timeout (don't block main response)
+    // Fetch CRUST and PUMP prices with separate timeout (don't block main response)
     const solUsd = d?.solana?.usd;
     if (typeof solUsd === "number" && solUsd > 0) {
+      const connection = new Connection(getSolanaRpcUrlServer());
+      const fetchPumpTokenPrice = async (mint: string) => {
+        try {
+          return await Promise.race([
+            getPumpTokenPriceInSol(connection, new PublicKey(mint)),
+            new Promise<number>((resolve) =>
+              setTimeout(() => resolve(0), FETCH_TIMEOUT),
+            ),
+          ]);
+        } catch {
+          return 0;
+        }
+      };
       try {
-        const crustPromise = (async () => {
-          const connection = new Connection(getSolanaRpcUrlServer());
-          const crustMint = new PublicKey(CRUST_MINT_MAINNET);
-          return await getPumpTokenPriceInSol(connection, crustMint);
-        })();
-
-        // Race against timeout
-        const solPerToken = await Promise.race([
-          crustPromise,
-          new Promise<number>((resolve) =>
-            setTimeout(() => resolve(0), FETCH_TIMEOUT),
-          ),
+        const [crustSolPerToken, pumpSolPerToken] = await Promise.all([
+          fetchPumpTokenPrice(CRUST_MINT_MAINNET),
+          fetchPumpTokenPrice(PUMP_MINT_MAINNET),
         ]);
-
-        if (solPerToken > 0) prices.CRUST = solPerToken * solUsd;
+        if (crustSolPerToken > 0) prices.CRUST = crustSolPerToken * solUsd;
+        if (pumpSolPerToken > 0) prices.PUMP = pumpSolPerToken * solUsd;
       } catch {
-        // CRUST price fetch failed, continue without it
+        // Price fetches failed, continue without them
       }
     }
 

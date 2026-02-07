@@ -2,6 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ChevronDown, Wallet } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -107,9 +108,19 @@ export function CheckoutCryptoHeader() {
               </svg>
             </Link>
             <Link className="flex items-center gap-2" href="/">
-              <span className="text-xl font-bold tracking-tight text-foreground">
-                {SEO_CONFIG.name}
-              </span>
+              {SEO_CONFIG.brandLogoUrl ? (
+                <Image
+                  src={SEO_CONFIG.brandLogoUrl}
+                  alt={SEO_CONFIG.name}
+                  width={140}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                />
+              ) : (
+                <span className="text-xl font-bold tracking-tight text-foreground">
+                  {SEO_CONFIG.name}
+                </span>
+              )}
             </Link>
           </div>
 

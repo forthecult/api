@@ -76,7 +76,7 @@ export function OrganizationStructuredData() {
     "@type": "Organization",
     name: SEO_CONFIG.name,
     url: siteUrl,
-    logo: `${siteUrl}/logo.png`,
+    logo: SEO_CONFIG.brandLogoUrl ?? `${siteUrl}/logo.png`,
     description: SEO_CONFIG.description,
     contactPoint: {
       "@type": "ContactPoint",

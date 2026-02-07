@@ -335,9 +335,9 @@ const selectInputClass = cn(
   "disabled:pointer-events-none disabled:opacity-50",
 );
 
-/** top-level crypto options; "eth" shows nested chain choices, "other" shows nested options (e.g. Sui, TON), "crust" = Crustafarian */
+/** top-level crypto options; "eth" shows nested chain choices, "other" shows nested options (e.g. Sui, TON), "crust" = Crustafarian, "pump" = Pump */
 const CRYPTO_SUB_OPTIONS: {
-  value: "bitcoin" | "dogecoin" | "eth" | "solana" | "monero" | "crust" | "other";
+  value: "bitcoin" | "dogecoin" | "eth" | "solana" | "monero" | "crust" | "pump" | "other";
   label: string;
 }[] = [
   { value: "bitcoin", label: "Bitcoin (BTC)" },
@@ -346,6 +346,7 @@ const CRYPTO_SUB_OPTIONS: {
   { value: "solana", label: "Solana (SOL)" },
   { value: "monero", label: "Monero (XMR)" },
   { value: "crust", label: "Crustafarian (CRUST)" },
+  { value: "pump", label: "Pump (PUMP)" },
   { value: "other", label: "Other" },
 ];
 
@@ -367,6 +368,7 @@ const INITIAL_CRYPTO_SUB = (VISIBLE_CRYPTO_SUB_OPTIONS[0]?.value ?? "eth") as
   | "solana"
   | "monero"
   | "crust"
+  | "pump"
   | "other";
 
 /** options under Crypto → Other */
@@ -397,6 +399,7 @@ const CRYPTO_LOGO_SRC: Partial<
     | "ton"
     | "monero"
     | "crust"
+    | "pump"
     | "other",
     string
   >
@@ -409,6 +412,7 @@ const CRYPTO_LOGO_SRC: Partial<
   ton: "/crypto/ton/ton_logo.svg",
   monero: "/crypto/monero/monero-xmr-logo.svg",
   crust: "/crypto/solana/solanaLogoMark.svg",
+  pump: "/crypto/pump/pump-logomark.svg",
 };
 
 const USDC_SUB_OPTIONS: {
@@ -500,6 +504,7 @@ export function CheckoutClient() {
     | "solana"
     | "monero"
     | "crust"
+    | "pump"
     | "other";
   type UsdcSub = "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
   type UsdtSub = "ethereum" | "arbitrum" | "bnb" | "polygon";
@@ -650,6 +655,7 @@ export function CheckoutClient() {
     solanaPayConfigured &&
     ((paymentMethod === "stablecoins" && stablecoinToken === "usdc" && paymentSubOption === "solana") ||
       (paymentMethod === "crypto" && paymentSubOption === "crust") ||
+      (paymentMethod === "crypto" && paymentSubOption === "pump") ||
       (paymentMethod === "crypto" && paymentSubOption === "solana"));
 
   const isEvmPaySupported =
@@ -1468,9 +1474,11 @@ export function CheckoutClient() {
       const token =
         (paymentMethod === "crypto" && paymentSubOption === "crust")
           ? "crust"
-          : paymentMethod === "stablecoins" && stablecoinToken === "usdc" && paymentSubOption === "solana"
-            ? "usdc"
-            : "solana";
+          : (paymentMethod === "crypto" && paymentSubOption === "pump")
+            ? "pump"
+            : paymentMethod === "stablecoins" && stablecoinToken === "usdc" && paymentSubOption === "solana"
+              ? "usdc"
+              : "solana";
       const url = `/checkout/${data.orderId}#${token}`;
       router.push(url);
     } catch {
@@ -3129,7 +3137,9 @@ export function CheckoutClient() {
                     ? "Redirecting…"
                     : paymentMethod === "crypto" && paymentSubOption === "crust"
                       ? "Pay with CRUST"
-                      : paymentMethod === "stablecoins" && stablecoinToken === "usdc" &&
+                      : paymentMethod === "crypto" && paymentSubOption === "pump"
+                        ? "Pay with Pump"
+                        : paymentMethod === "stablecoins" && stablecoinToken === "usdc" &&
                           paymentSubOption === "solana"
                         ? "Pay with USDC (Solana)"
                         : "Pay with Solana"}

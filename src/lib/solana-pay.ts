@@ -22,6 +22,10 @@ export const WHITEWHALE_MINT_MAINNET =
 export const CRUST_MINT_MAINNET =
   "HkBWJJiaUW5Kod4HpHWZiGD9PQVipmMiPDgiRPcNpump";
 
+/** Pump (PUMP) SPL token on Solana. CA: pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn */
+export const PUMP_MINT_MAINNET =
+  "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn";
+
 export function getSolanaPayRecipient(): string | undefined {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined

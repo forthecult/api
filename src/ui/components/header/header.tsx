@@ -1,6 +1,7 @@
 "use client";
 
 import { Menu, Search, UserIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -274,18 +275,29 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
               </Button>
             )}
             <Link className="flex items-center gap-2" href="/">
-              <span
-                className={cn(
-                  "text-xl font-bold",
-                  !isDashboard &&
-                    `
-                      bg-gradient-to-r from-primary to-primary/70 bg-clip-text
-                      tracking-tight text-transparent
-                    `,
-                )}
-              >
-                {SEO_CONFIG.name}
-              </span>
+              {SEO_CONFIG.brandLogoUrl ? (
+                <Image
+                  src={SEO_CONFIG.brandLogoUrl}
+                  alt={SEO_CONFIG.name}
+                  width={140}
+                  height={32}
+                  className="h-8 w-auto object-contain"
+                  priority
+                />
+              ) : (
+                <span
+                  className={cn(
+                    "text-xl font-bold",
+                    !isDashboard &&
+                      `
+                        bg-gradient-to-r from-primary to-primary/70 bg-clip-text
+                        tracking-tight text-transparent
+                      `,
+                  )}
+                >
+                  {SEO_CONFIG.name}
+                </span>
+              )}
             </Link>
             {!isCheckout && (
               <nav className="hidden md:flex">

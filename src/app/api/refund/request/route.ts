@@ -20,11 +20,16 @@ function normalizePaymentAddress(addr: string | null | undefined): string {
   return (addr ?? "").trim().toLowerCase();
 }
 
+function normalizePostal(postal: string | null | undefined): string {
+  return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
+}
+
 const CRYPTO_METHODS = ["solana_pay", "eth_pay", "btcpay", "ton_pay"];
 
 /**
  * POST /api/refund/request
- * Body: { orderId: string, email?: string, paymentAddress?: string, refundAddress?: string }
+ * Body: { orderId: string, lookupValue: string, refundAddress?: string }
+ * lookupValue can be: billing email, payment (wallet) address, or shipping postal code.
  * Verifies the order and requester; for crypto orders, refundAddress is required.
  * Sends a refund request to support email for staff to process.
  */
@@ -53,8 +58,7 @@ export async function POST(request: NextRequest) {
     }
     type Body = {
       orderId?: string;
-      email?: string;
-      paymentAddress?: string;
+      lookupValue?: string;
       refundAddress?: string;
     };
     let body: Body;
@@ -64,9 +68,8 @@ export async function POST(request: NextRequest) {
       body = {};
     }
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
-    const email = typeof body.email === "string" ? body.email : undefined;
-    const paymentAddress =
-      typeof body.paymentAddress === "string" ? body.paymentAddress : undefined;
+    const lookupValue =
+      typeof body.lookupValue === "string" ? body.lookupValue.trim() : "";
     const refundAddress =
       typeof body.refundAddress === "string" ? body.refundAddress.trim() : "";
 
@@ -81,12 +84,13 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    if (!email?.trim() && !paymentAddress?.trim()) {
+    if (!lookupValue) {
       return NextResponse.json(
         {
           error: {
-            code: "MISSING_PROOF",
-            message: "Please provide either billing email or payment address",
+            code: "MISSING_LOOKUP",
+            message:
+              "Please enter your billing email, payment address, or postal code",
           },
         },
         { status: 400 },
@@ -98,6 +102,7 @@ export async function POST(request: NextRequest) {
         id: ordersTable.id,
         email: ordersTable.email,
         payerWalletAddress: ordersTable.payerWalletAddress,
+        shippingZip: ordersTable.shippingZip,
         paymentMethod: ordersTable.paymentMethod,
         paymentStatus: ordersTable.paymentStatus,
       })
@@ -118,16 +123,14 @@ export async function POST(request: NextRequest) {
     }
 
     const emailMatch =
-      email != null &&
-      email.trim() !== "" &&
-      normalizeEmail(order.email) === normalizeEmail(email);
+      normalizeEmail(order.email) === normalizeEmail(lookupValue);
     const addressMatch =
-      paymentAddress != null &&
-      paymentAddress.trim() !== "" &&
       normalizePaymentAddress(order.payerWalletAddress) ===
-        normalizePaymentAddress(paymentAddress);
+      normalizePaymentAddress(lookupValue);
+    const postalMatch =
+      normalizePostal(order.shippingZip) === normalizePostal(lookupValue);
 
-    if (!emailMatch && !addressMatch) {
+    if (!emailMatch && !addressMatch && !postalMatch) {
       return NextResponse.json(
         {
           error: {
@@ -162,15 +165,16 @@ export async function POST(request: NextRequest) {
         process.env.CONTACT_TO_EMAIL.trim()) ||
       "support@forthecult.store";
 
-    const replyTo = email?.trim() || undefined;
+    const replyTo = order.email?.trim() || undefined;
     const safeOrderId = orderId.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const safeEmail = (email ?? "").trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const safeLookup = lookupValue.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const safeRefundAddr = refundAddress.replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
     const htmlParts = [
       "<p><strong>Refund request</strong></p>",
       `<p><strong>Order ID:</strong> ${safeOrderId}</p>`,
-      `<p><strong>Billing email:</strong> ${safeEmail || "—"}</p>`,
+      `<p><strong>Lookup value (email / payment address / postal):</strong> ${safeLookup}</p>`,
+      `<p><strong>Order billing email:</strong> ${(order.email ?? "—").replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`,
     ];
     if (isCrypto && refundAddress) {
       htmlParts.push(
@@ -196,7 +200,7 @@ export async function POST(request: NextRequest) {
           replyTo: replyTo ?? undefined,
           subject: `[Refund request] Order ${orderId.slice(0, 12)}…`,
           html: `<!DOCTYPE html><html><body>${htmlParts.join("")}</body></html>`,
-          text: `Refund request\nOrder ID: ${orderId}\nBilling email: ${email ?? "—"}\n${isCrypto && refundAddress ? `Refund address (stablecoin): ${refundAddress}\n` : ""}\nProcess in admin and mark as refunded.`,
+          text: `Refund request\nOrder ID: ${orderId}\nLookup value: ${lookupValue}\nOrder billing email: ${order.email ?? "—"}\n${isCrypto && refundAddress ? `Refund address (stablecoin): ${refundAddress}\n` : ""}\nProcess in admin and mark as refunded.`,
         });
         if (error) {
           console.error("[Refund request] Resend error:", error);
@@ -225,7 +229,7 @@ export async function POST(request: NextRequest) {
     } else if (process.env.NODE_ENV === "development") {
       console.log("[Refund request] No RESEND_API_KEY - would send to", to, {
         orderId,
-        email: email ?? "—",
+        lookupValue,
         refundAddress: isCrypto ? refundAddress : "—",
       });
     }

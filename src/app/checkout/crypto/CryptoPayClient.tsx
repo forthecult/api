@@ -33,6 +33,7 @@ import {
 import {
   getSolanaPayLabel,
   CRUST_MINT_MAINNET,
+  PUMP_MINT_MAINNET,
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
   usdcAmountFromUsd,
@@ -52,6 +53,7 @@ const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
   usdc: { src: "/crypto/usdc/usdc-logo.svg", alt: "USDC" },
   whitewhale: { src: "/crypto/solana/solanaLogoMark.svg", alt: "WhiteWhale" },
   crust: { src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" },
+  pump: { src: "/crypto/pump/pump-logomark.svg", alt: "Pump" },
   sui: { src: "/crypto/sui/sui-logo.svg", alt: "Sui" },
 };
 
@@ -60,6 +62,7 @@ const PAYMENT_TITLE: Record<string, string> = {
   usdc: "Pay with USDC",
   whitewhale: "Pay with WhiteWhale",
   crust: "Pay with Crustafarian (CRUST)",
+  pump: "Pay with Pump",
   sui: "Pay with Sui",
 };
 
@@ -108,7 +111,7 @@ export function CryptoPayClient() {
   const [mounted, setMounted] = useState(false);
   const pathId = (params?.invoiceId as string) ?? "";
   const [token, setToken] = useState<
-    "solana" | "usdc" | "whitewhale" | "crust" | "sui"
+    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "sui"
   >("usdc");
   const [order, setOrder] = useState<OrderPaymentInfo | null>(null);
   const [orderLoading, setOrderLoading] = useState(true);
@@ -161,6 +164,7 @@ export function CryptoPayClient() {
       hash === "usdc" ||
       hash === "whitewhale" ||
       hash === "crust" ||
+      hash === "pump" ||
       hash === "sui"
     ) {
       setToken(hash);
@@ -233,17 +237,30 @@ export function CryptoPayClient() {
     token === "crust" && crustPriceUsd != null && crustPriceUsd > 0 && rate > 0
       ? crustPriceUsd / rate
       : null;
+  const pumpSolPerToken =
+    token === "pump" && pumpPriceUsd != null && pumpPriceUsd > 0 && rate > 0
+      ? pumpPriceUsd / rate
+      : null;
   const amountSol = amountUsd > 0 && rate > 0 ? amountUsd / rate : 0;
   const amountSolStr = amountSol.toFixed(6);
   const crustTokenPriceUsd =
     crustSolPerToken != null && crustSolPerToken > 0 && rate > 0
       ? crustSolPerToken * rate
       : 0;
+  const pumpTokenPriceUsd =
+    pumpSolPerToken != null && pumpSolPerToken > 0 && rate > 0
+      ? pumpSolPerToken * rate
+      : 0;
   const amountCrust =
     amountUsd > 0 && crustTokenPriceUsd > 0
       ? amountUsd / crustTokenPriceUsd
       : 0;
   const amountCrustStr = amountCrust.toFixed(6);
+  const amountPump =
+    amountUsd > 0 && pumpTokenPriceUsd > 0
+      ? amountUsd / pumpTokenPriceUsd
+      : 0;
+  const amountPumpStr = amountPump.toFixed(6);
   const amountUsdStr = amountUsd.toFixed(2);
   const amountSui =
     token === "sui" && amountUsd > 0 && (suiUsdRate ?? 0) > 0
@@ -253,11 +270,13 @@ export function CryptoPayClient() {
   const rateLabel =
     token === "crust" && crustTokenPriceUsd > 0
       ? `1 CRUST ≈ ${crustTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
-      : token === "usdc"
-        ? "1 USDC = 1 USD"
-        : token === "whitewhale"
-          ? "1 WhiteWhale ≈ 1 USD"
-          : `1 SOL = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+      : token === "pump" && pumpTokenPriceUsd > 0
+        ? `1 PUMP ≈ ${pumpTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
+        : token === "usdc"
+          ? "1 USDC = 1 USD"
+          : token === "whitewhale"
+            ? "1 WhiteWhale ≈ 1 USD"
+            : `1 SOL = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
   const { user } = useCurrentUser();
   const email = user?.email ?? order?.email ?? "";
@@ -268,23 +287,28 @@ export function CryptoPayClient() {
         ? "WhiteWhale"
         : token === "crust"
           ? "Crustafarian (CRUST)"
-          : token === "sui"
-            ? "Sui (SUI)"
-            : "Solana";
+          : token === "pump"
+            ? "Pump (PUMP)"
+            : token === "sui"
+              ? "Sui (SUI)"
+              : "Solana";
 
   // Use cached /api/crypto/prices for all crypto prices (single request, server caches 60s)
   useEffect(() => {
     fetch("/api/crypto/prices")
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number }) => {
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number }) => {
         if (typeof data?.SOL === "number" && data.SOL > 0)
           setSolUsdRate(data.SOL);
         if (typeof data?.CRUST === "number" && data.CRUST > 0)
           setCrustPriceUsd(data.CRUST);
+        if (typeof data?.PUMP === "number" && data.PUMP > 0)
+          setPumpPriceUsd(data.PUMP);
       })
       .catch(() => {
         setSolUsdRate(SOL_USD_FALLBACK);
         setCrustPriceUsd(null);
+        setPumpPriceUsd(null);
       });
   }, []);
 
@@ -332,6 +356,24 @@ export function CryptoPayClient() {
       setPaymentAddress(recipient);
       return;
     }
+    if (token === "pump") {
+      const solPerToken = pumpSolPerToken ?? 0;
+      const r = solUsdRate ?? SOL_USD_FALLBACK;
+      if (solPerToken <= 0 || r <= 0) return;
+      const amount = tokenAmountFromUsdWithPrice(amountUsd, solPerToken, r, 6);
+      const keypair = Keypair.generate();
+      const url = encodeURL({
+        recipient: new PublicKey(recipient),
+        amount,
+        splToken: new PublicKey(PUMP_MINT_MAINNET),
+        reference: keypair.publicKey,
+        label: getSolanaPayLabel(),
+        message: `Order total: $${amountUsd.toFixed(2)}`,
+      });
+      setPaymentUrl(url);
+      setPaymentAddress(recipient);
+      return;
+    }
     const keypair = Keypair.generate();
     const reference = keypair.publicKey;
     const isWhiteWhale = token === "whitewhale";
@@ -355,6 +397,7 @@ export function CryptoPayClient() {
     amountUsd,
     token,
     crustSolPerToken,
+    pumpSolPerToken,
     solUsdRate,
     order?.depositAddress,
     order?.orderId,
@@ -401,9 +444,11 @@ export function CryptoPayClient() {
     const splTokenMint =
       token === "crust"
         ? CRUST_MINT_MAINNET
-        : token === "whitewhale"
-          ? WHITEWHALE_MINT_MAINNET
-          : USDC_MINT_MAINNET;
+        : token === "pump"
+          ? PUMP_MINT_MAINNET
+          : token === "whitewhale"
+            ? WHITEWHALE_MINT_MAINNET
+            : USDC_MINT_MAINNET;
     const amountStr =
       token === "crust" &&
       crustSolPerToken != null &&
@@ -415,9 +460,19 @@ export function CryptoPayClient() {
             rate,
             6,
           ).toString()
-        : token === "whitewhale"
-          ? tokenAmountFromUsd(amountUsd).toString()
-          : usdcAmountFromUsd(amountUsd).toString();
+        : token === "pump" &&
+            pumpSolPerToken != null &&
+            pumpSolPerToken > 0 &&
+            rate > 0
+          ? tokenAmountFromUsdWithPrice(
+              amountUsd,
+              pumpSolPerToken,
+              rate,
+              6,
+            ).toString()
+          : token === "whitewhale"
+            ? tokenAmountFromUsd(amountUsd).toString()
+            : usdcAmountFromUsd(amountUsd).toString();
     const params = new URLSearchParams({
       depositAddress: order.depositAddress,
       amount: amountStr,
@@ -475,6 +530,7 @@ export function CryptoPayClient() {
     amountUsd,
     expired,
     crustSolPerToken,
+    pumpSolPerToken,
     rate,
     router,
     publicKey,
@@ -512,17 +568,21 @@ export function CryptoPayClient() {
   const amountDisplayStr =
     token === "crust"
       ? amountCrustStr
-      : token === "usdc" || token === "whitewhale"
-        ? amountUsdStr
-        : amountSolStr;
+      : token === "pump"
+        ? amountPumpStr
+        : token === "usdc" || token === "whitewhale"
+          ? amountUsdStr
+          : amountSolStr;
   const amountUnit =
     token === "crust"
       ? "CRUST"
-      : token === "usdc"
-        ? "USDC"
-        : token === "whitewhale"
-          ? "WhiteWhale"
-          : "SOL";
+      : token === "pump"
+        ? "PUMP"
+        : token === "usdc"
+          ? "USDC"
+          : token === "whitewhale"
+            ? "WhiteWhale"
+            : "SOL";
 
   const copyAmount = useCallback(() => {
     void navigator.clipboard.writeText(`${amountDisplayStr} ${amountUnit}`);
@@ -576,6 +636,23 @@ export function CryptoPayClient() {
             6,
           );
           splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
+        } else if (token === "pump") {
+          if (
+            pumpSolPerToken == null ||
+            pumpSolPerToken <= 0 ||
+            rate <= 0
+          ) {
+            setPayError("Pump price unavailable. Please try again.");
+            setPayStatus("error");
+            return;
+          }
+          amountBigNumber = tokenAmountFromUsdWithPrice(
+            amountUsd,
+            pumpSolPerToken,
+            rate,
+            6,
+          );
+          splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
         } else if (token === "usdc") {
           amountBigNumber = usdcAmountFromUsd(amountUsd);
           splTokenMint = new PublicKey(USDC_MINT_MAINNET);
@@ -700,6 +777,7 @@ export function CryptoPayClient() {
     token,
     amountUsd,
     crustSolPerToken,
+    pumpSolPerToken,
     rate,
     requiredLamports,
   ]);
@@ -726,6 +804,16 @@ export function CryptoPayClient() {
           6,
         );
         splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
+      } else if (token === "pump") {
+        if (pumpSolPerToken == null || pumpSolPerToken <= 0 || rate <= 0)
+          return false;
+        amountBigNumber = tokenAmountFromUsdWithPrice(
+          amountUsd,
+          pumpSolPerToken,
+          rate,
+          6,
+        );
+        splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
       } else if (token === "usdc") {
         amountBigNumber = usdcAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(USDC_MINT_MAINNET);
@@ -782,6 +870,7 @@ export function CryptoPayClient() {
     token,
     amountUsd,
     crustSolPerToken,
+    pumpSolPerToken,
     rate,
     requiredLamports,
   ]);
@@ -961,12 +1050,25 @@ export function CryptoPayClient() {
                       <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
                         Loading CRUST price from pump.fun…
                       </div>
+                    ) : token === "pump" && pumpSolPerToken === null ? (
+                      <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                        Loading Pump price from pump.fun…
+                      </div>
                     ) : token === "crust" && crustSolPerToken === 0 ? (
                       <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
                         <AlertCircle className="size-10 shrink-0" aria-hidden />
                         <p className="font-medium">CRUST price unavailable</p>
                         <p className="text-muted-foreground">
                           We couldn&apos;t load the CRUST price. Check your
+                          connection and refresh.
+                        </p>
+                      </div>
+                    ) : token === "pump" && pumpSolPerToken === 0 ? (
+                      <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
+                        <AlertCircle className="size-10 shrink-0" aria-hidden />
+                        <p className="font-medium">Pump price unavailable</p>
+                        <p className="text-muted-foreground">
+                          We couldn&apos;t load the Pump price. Check your
                           connection and refresh.
                         </p>
                       </div>
@@ -1021,7 +1123,8 @@ export function CryptoPayClient() {
                             className="shrink-0 gap-1.5"
                             onClick={copyAmount}
                             disabled={
-                              token === "crust" && crustSolPerToken == null
+                              (token === "crust" && crustSolPerToken == null) ||
+                              (token === "pump" && pumpSolPerToken == null)
                             }
                           >
                             {copied === "amount" ? (
@@ -1276,11 +1379,13 @@ export function CryptoPayClient() {
                       ? `${amountSuiStr} SUI`
                       : token === "crust"
                         ? `${amountCrustStr} CRUST`
-                        : token === "usdc"
-                          ? `${amountUsdStr} USDC`
-                          : token === "whitewhale"
-                            ? `${amountUsdStr} WhiteWhale`
-                            : `${amountSolStr} SOL`}
+                        : token === "pump"
+                          ? `${amountPumpStr} PUMP`
+                          : token === "usdc"
+                            ? `${amountUsdStr} USDC`
+                            : token === "whitewhale"
+                              ? `${amountUsdStr} WhiteWhale`
+                              : `${amountSolStr} SOL`}
                   </dd>
                 </div>
               </dl>
@@ -1293,11 +1398,13 @@ export function CryptoPayClient() {
                   ? `We've converted this price from USD to SUI at our rate of approximately ${rateLabel}. Uses the Sui Payment Kit (sui:pay).`
                   : token === "crust"
                     ? `We've converted this price from USD to CRUST at our rate of approximately ${rateLabel}.`
-                    : token === "usdc"
-                      ? `Pay in USDC (Solana). ${rateLabel}.`
-                      : token === "whitewhale"
-                        ? `Pay in WhiteWhale. ${rateLabel}.`
-                        : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
+                    : token === "pump"
+                      ? `We've converted this price from USD to PUMP at our rate of approximately ${rateLabel}.`
+                      : token === "usdc"
+                        ? `Pay in USDC (Solana). ${rateLabel}.`
+                        : token === "whitewhale"
+                          ? `Pay in WhiteWhale. ${rateLabel}.`
+                          : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
               </p>
             </div>
           </div>

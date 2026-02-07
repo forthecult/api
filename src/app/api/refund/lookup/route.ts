@@ -12,25 +12,28 @@ function normalizePaymentAddress(addr: string | null | undefined): string {
   return (addr ?? "").trim().toLowerCase();
 }
 
+function normalizePostal(postal: string | null | undefined): string {
+  return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
+}
+
 const CRYPTO_METHODS = ["solana_pay", "eth_pay", "btcpay", "ton_pay"];
 
 /**
  * POST /api/refund/lookup
- * Body: { orderId: string, email?: string, paymentAddress?: string }
- * Verifies the order exists and the requester is authorized (email or payment address match).
+ * Body: { orderId: string, lookupValue: string }
+ * lookupValue can be: billing email, payment (wallet) address, or shipping postal code.
+ * Verifies the order exists and the requester is authorized.
  * Returns { isCrypto: boolean } so the client can show the refund-address field for crypto orders.
  */
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
       orderId?: string;
-      email?: string;
-      paymentAddress?: string;
+      lookupValue?: string;
     };
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
-    const email = typeof body.email === "string" ? body.email : undefined;
-    const paymentAddress =
-      typeof body.paymentAddress === "string" ? body.paymentAddress : undefined;
+    const lookupValue =
+      typeof body.lookupValue === "string" ? body.lookupValue.trim() : "";
 
     if (!orderId) {
       return NextResponse.json(
@@ -38,12 +41,13 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    if (!email?.trim() && !paymentAddress?.trim()) {
+    if (!lookupValue) {
       return NextResponse.json(
         {
           error: {
-            code: "MISSING_PROOF",
-            message: "Please provide either billing email or payment address",
+            code: "MISSING_LOOKUP",
+            message:
+              "Please enter your billing email, payment address, or postal code",
           },
         },
         { status: 400 },
@@ -55,6 +59,7 @@ export async function POST(request: NextRequest) {
         id: ordersTable.id,
         email: ordersTable.email,
         payerWalletAddress: ordersTable.payerWalletAddress,
+        shippingZip: ordersTable.shippingZip,
         paymentMethod: ordersTable.paymentMethod,
         paymentStatus: ordersTable.paymentStatus,
       })
@@ -70,16 +75,14 @@ export async function POST(request: NextRequest) {
     }
 
     const emailMatch =
-      email != null &&
-      email.trim() !== "" &&
-      normalizeEmail(order.email) === normalizeEmail(email);
+      normalizeEmail(order.email) === normalizeEmail(lookupValue);
     const addressMatch =
-      paymentAddress != null &&
-      paymentAddress.trim() !== "" &&
       normalizePaymentAddress(order.payerWalletAddress) ===
-        normalizePaymentAddress(paymentAddress);
+      normalizePaymentAddress(lookupValue);
+    const postalMatch =
+      normalizePostal(order.shippingZip) === normalizePostal(lookupValue);
 
-    if (!emailMatch && !addressMatch) {
+    if (!emailMatch && !addressMatch && !postalMatch) {
       return NextResponse.json(
         {
           error: {

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { USDC_MINT_MAINNET } from "~/lib/solana-pay";
+import { PUMP_MINT_MAINNET, USDC_MINT_MAINNET } from "~/lib/solana-pay";
 
 /**
  * Supported chains and tokens for payment. AI agents use this to show
@@ -25,6 +25,13 @@ export async function GET() {
             name: "USD Coin",
             type: "spl",
             mint: USDC_MINT_MAINNET,
+            decimals: 6,
+          },
+          {
+            symbol: "PUMP",
+            name: "Pump",
+            type: "spl",
+            mint: PUMP_MINT_MAINNET,
             decimals: 6,
           },
         ],
