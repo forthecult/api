@@ -151,6 +151,7 @@ export async function importSinglePrintfulProduct(
   // Fetch catalog product for description/brand and shipping/customs (country of origin, HS code)
   let catalogProduct: {
     brand: string | null;
+    model: string | null;
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
@@ -165,6 +166,7 @@ export async function importSinglePrintfulProduct(
       if (catalog?.data) {
         catalogProduct = {
           brand: catalog.data.brand ?? null,
+          model: catalog.data.model ?? null,
           description: catalog.data.description ?? null,
           countryOfOrigin: customs.countryOfOrigin,
           hsCode: customs.hsCode,
