@@ -26,6 +26,7 @@ import {
   ProductStructuredData,
 } from "~/ui/components/structured-data";
 import { Button } from "~/ui/primitives/button";
+import { PageLoadingFallback } from "~/ui/primitives/spinner";
 import { Separator } from "~/ui/primitives/separator";
 import { EstimatedDeliveryTimeline } from "~/app/products/[id]/estimated-delivery-timeline";
 import { ProductDetailAccordion } from "~/app/products/[id]/product-detail-accordion";
