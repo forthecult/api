@@ -21,6 +21,7 @@ export async function GET() {
       methodKey: paymentMethodSettingTable.methodKey,
       label: paymentMethodSettingTable.label,
       enabled: paymentMethodSettingTable.enabled,
+      enabledNetworks: paymentMethodSettingTable.enabledNetworks,
       displayOrder: paymentMethodSettingTable.displayOrder,
     })
     .from(paymentMethodSettingTable)
