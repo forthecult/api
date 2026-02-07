@@ -13,6 +13,7 @@
 | **Logged-in user uploads** | App → Dashboard → Uploads | Users can upload images/videos via the UploadThing React component; files are stored in UploadThing and metadata in `uploads` table. |
 | **User avatar** | User profile | Avatar upload uses UploadThing (UTApi) and stores the file URL. |
 | **Lookbook** | `/lookbook` page | Optional: run `db:upload-lookbook` to upload `public/lookbook/` to UploadThing; commit `data/lookbook-images.json` so staging/prod serve from UploadThing. |
+| **Product mockups (Printful/Printify)** | Product and variant images | Run `db:upload-product-mockups` after syncing. Fetches mockup URLs from Printful/Printify CDNs, optimizes to WebP, renames for SEO, sets alt text, uploads to UploadThing, and updates `product_image`, `product.imageUrl`, and `product_variant.imageUrl`. |
 
 So in practice:
 
@@ -72,6 +73,27 @@ The lookbook page (`/lookbook`) can serve images from UploadThing instead of `pu
 - **Deploy:** Commit **`data/lookbook-images.json`**. On build, the lookbook page will read that file and use the UploadThing URLs. If the file is missing, the page falls back to the static paths under `public/lookbook/`. When the seed workflow runs with `UPLOADTHING_TOKEN` set, it uploads lookbook images and produces `data/lookbook-images.json`; the workflow also uploads that file as an artifact **lookbook-images-json** so you can download it and commit it to the repo for deploys.
 
 - **Note:** The home and about pages still reference a couple of lookbook images by static path (`/lookbook/...`). If you remove `public/lookbook/` from the repo after migrating, update those references to use the URLs from `data/lookbook-images.json` or the same UploadThing URLs.
+
+### 5. Product mockups (Printful / Printify)
+
+After syncing products from Printful or Printify, you can re-host their mockup images on UploadThing for SEO and speed:
+
+- **Optimized format:** Images are converted to WebP.
+- **SEO filename:** e.g. `my-product-name-mockup.webp` or `my-product-name-navy-mockup.webp`.
+- **Alt text:** Set on `product_image` and variant `imageAlt` for accessibility and SEO.
+
+Run from the project root (with `UPLOADTHING_TOKEN` in `.env`):
+
+```bash
+bun run db:upload-product-mockups
+```
+
+Options:
+
+- `--dry-run` — List which URLs would be uploaded and the filenames/alts; no upload or DB changes.
+- `--product-id=xxx` — Only process images for this product.
+
+The script updates `product_image.url`, `product.imageUrl`, and `product_variant.imageUrl` (and related alt fields) to the new UploadThing URLs.
 
 ---
 

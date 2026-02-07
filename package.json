@@ -17,6 +17,7 @@
     "db:seed-brands": "bun run scripts/seed-brands.ts",
     "db:upload-brand-assets": "bun run scripts/upload-brand-assets.ts",
     "db:upload-lookbook": "bun run scripts/upload-lookbook-to-uploadthing.ts",
+    "db:upload-product-mockups": "bun run scripts/upload-product-mockups.ts",
     "fetch-brand-assets": "bun run scripts/fetch-brand-assets.ts",
     "db:extract-reviews": "bun run scripts/extract-reviews-seed.ts",
     "db:seed-reviews": "bun run scripts/seed-reviews.ts",

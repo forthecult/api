@@ -57,7 +57,7 @@ export async function PATCH(
     .set(updates as Record<string, unknown>)
     .where(eq(sizeChartsTable.id, id))
     .returning();
-  if (!updated) return apiError("NOT_FOUND", { message: "Size chart not found" }, 404);
+  if (!updated) return apiError("NOT_FOUND", { message: "Size chart not found" });
   return NextResponse.json(updated);
 }
 

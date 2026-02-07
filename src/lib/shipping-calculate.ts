@@ -188,6 +188,75 @@ async function checkCountryAvailability(
   return { unavailableProducts, productCountryMap };
 }
 
+/** US state/province full name -> 2-letter code for Printful (requires state_code for US, CA, AU). */
+const US_STATE_NAME_TO_CODE: Record<string, string> = {
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  "district of columbia": "DC",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
+  "west virginia": "WV",
+  wisconsin: "WI",
+  wyoming: "WY",
+};
+
+function normalizeStateCodeForPrintful(
+  countryCode: string,
+  stateCode: string | undefined,
+): string | undefined {
+  if (!stateCode?.trim()) return undefined;
+  const s = stateCode.trim();
+  if (s.length === 2 && /^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  if (countryCode === "US") {
+    const code = US_STATE_NAME_TO_CODE[s.toLowerCase()];
+    if (code) return code;
+  }
+  return s;
+}
+
 /**
  * Calculate Printful shipping rates for Printful items in the order.
  */
@@ -205,6 +274,13 @@ async function calculatePrintfulShipping(
     return { shippingCents: 0, rate: null };
   }
 
+  const storeIdRaw = process.env.PRINTFUL_STORE_ID?.trim();
+  const storeId =
+    storeIdRaw != null && storeIdRaw !== ""
+      ? Number.parseInt(storeIdRaw, 10)
+      : undefined;
+  const storeIdFinal = Number.isNaN(storeId) ? undefined : storeId;
+
   try {
     const orderItems: PrintfulShippingOrderItem[] = printfulItems.map(
       (item) => ({
@@ -214,17 +290,25 @@ async function calculatePrintfulShipping(
       }),
     );
 
-    const response = await fetchShippingRates({
-      recipient: {
-        country_code: input.countryCode,
-        state_code: input.stateCode,
-        city: input.city,
-        zip: input.zip,
-        address1: input.address1 || "TBD", // Printful needs at least something
+    const stateCode = normalizeStateCodeForPrintful(
+      input.countryCode,
+      input.stateCode,
+    );
+
+    const response = await fetchShippingRates(
+      {
+        recipient: {
+          country_code: input.countryCode,
+          state_code: stateCode,
+          city: input.city,
+          zip: input.zip,
+          address1: input.address1 || "TBD", // Printful needs at least something
+        },
+        order_items: orderItems,
+        currency: "USD",
       },
-      order_items: orderItems,
-      currency: "USD",
-    });
+      storeIdFinal,
+    );
 
     if (response.data.length === 0) {
       console.warn("No Printful shipping rates available");

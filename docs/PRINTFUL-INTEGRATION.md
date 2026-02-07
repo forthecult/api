@@ -123,7 +123,7 @@ Sync pulls from Printful into this schema. You create the product in Printful, t
 ## Environment
 
 - `PRINTFUL_API_TOKEN` – Private token for API v2 (Bearer). Required for catalog, shipping, and orders.
-- Optional: `PRINTFUL_STORE_ID` – If you have multiple stores, set this to the store’s numeric ID so product export (admin → Printful) and sync use the correct store. Sent as `X-PF-Store-Id` on Sync Products API requests.
+- Optional: `PRINTFUL_STORE_ID` – If you have multiple stores, set this to the store’s numeric ID so product export (admin → Printful), sync, and **shipping rate calculation at checkout** use the correct store. Sent as `X-PF-Store-Id` on Sync Products and Shipping Rates API requests. If shipping always shows $0 at checkout and you use multiple stores, set this.
 - `PRINTFUL_WEBHOOK_SECRET` – Secret for verifying Printful webhook signatures (from Printful dashboard when registering webhook URL).
 
 If **admin changes don’t appear in Printful** after save: the app pushes name, thumbnail, and variant prices/SKU to Printful when you save a Printful product. If the push fails, the admin UI shows “Product saved, but changes were not pushed to Printful: &lt;error&gt;”. Check that `PRINTFUL_API_TOKEN` is valid, and if you use multiple stores, set `PRINTFUL_STORE_ID`. Common API errors (e.g. invalid thumbnail URL format) will appear in that message.
