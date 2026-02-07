@@ -43,6 +43,7 @@ const CRYPTO_COLORS: Record<CryptoCode, string> = {
   SOL: "#0D9488",
   DOGE: "#C2A633",
   CRUST: "#9945FF",
+  PUMP: "#00D26A",
   XMR: "#FF6600",
   XAU: "#FFD700",
   XAG: "#C0C0C0",
@@ -79,7 +80,7 @@ export function FooterBottom() {
           if (fiat == null) return null;
           if (
             selectedCrypto === "DOGE" ||
-            selectedCrypto === "CRUST" ||
+            selectedCrypto === "PUMP" ||
             selectedCrypto === "XMR"
           ) {
             return new Intl.NumberFormat(undefined, {
@@ -116,7 +117,7 @@ export function FooterBottom() {
       >
         {fiatPrice != null && currentCrypto && (
           <span
-            className={`flex items-center gap-1.5 font-medium ${selectedCrypto === "SOL" || selectedCrypto === "CRUST" ? "font-semibold" : ""}`}
+            className={`flex items-center gap-1.5 font-medium ${selectedCrypto === "SOL" || selectedCrypto === "PUMP" ? "font-semibold" : ""}`}
             style={{ color: CRYPTO_COLORS[selectedCrypto] }}
           >
             <Image

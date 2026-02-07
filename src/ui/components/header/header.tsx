@@ -4,11 +4,11 @@ import { Menu, Search, UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
-import { useCurrentUser } from "~/lib/auth-client";
+import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import { Cart } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
@@ -20,6 +20,7 @@ import { HeaderSearch } from "./header-search";
 import { HeaderGuestDropdown } from "./header-guest-dropdown";
 import { HeaderUserDropdown } from "./header-user";
 import { MobileNavSheet } from "./mobile-nav-sheet";
+import { ShopByCryptoMenu } from "./shop-by-crypto-menu";
 import { ShopMegaMenu } from "./shop-mega-menu";
 
 /** Throttle function for scroll handlers */
@@ -91,6 +92,92 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       subcategories?: Array<{ id: string; name: string; productCount?: number }>;
     }>
   >([]);
+
+  // Mega menu: exclude specific categories and only show categories that have products
+  const MEGA_MENU_EXCLUDED_NAMES = new Set([
+    "Currency (Potential)",
+    "Application Tokens",
+    "Application Token (dApps, DAOs)",
+    "Network (Artificial Organism)",
+  ]);
+  const filteredShopCategories = useMemo(() => {
+    return shopCategories
+      .filter((cat) => !MEGA_MENU_EXCLUDED_NAMES.has(cat.name))
+      .filter((cat) => {
+        const topCount = cat.productCount ?? 0;
+        const subCount = (cat.subcategories ?? []).reduce(
+          (sum, s) => sum + (s.productCount ?? 0),
+          0,
+        );
+        return topCount > 0 || subCount > 0;
+      })
+      .map((cat) => ({
+        ...cat,
+        subcategories: (cat.subcategories ?? []).filter(
+          (s) => (s.productCount ?? 0) > 0,
+        ),
+      }));
+  }, [shopCategories]);
+
+  // Shop by Crypto menu: only show when user has authenticated via web3 (Solana or Ethereum account)
+  const [hasWeb3Auth, setHasWeb3Auth] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!user?.id) {
+      setHasWeb3Auth(null);
+      return;
+    }
+    let cancelled = false;
+    listUserAccounts()
+      .then((res) => {
+        if (cancelled || res.error) {
+          if (!cancelled) setHasWeb3Auth(false);
+          return;
+        }
+        const list = res.data ?? [];
+        const web3 = list.some(
+          (a: { providerId?: string }) =>
+            a.providerId === "solana" || a.providerId === "ethereum",
+        );
+        if (!cancelled) setHasWeb3Auth(web3);
+      })
+      .catch(() => {
+        if (!cancelled) setHasWeb3Auth(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // Crypto categories for "Shop by Crypto" dropdown: Currency, Network, Application (exactly that order), only with products
+  const cryptoShopCategories = useMemo(() => {
+    const onlyCrypto = shopCategories.filter((cat) =>
+      MEGA_MENU_EXCLUDED_NAMES.has(cat.name),
+    );
+    const withProducts = onlyCrypto.filter((cat) => {
+      const topCount = cat.productCount ?? 0;
+      const subCount = (cat.subcategories ?? []).reduce(
+        (sum, s) => sum + (s.productCount ?? 0),
+        0,
+      );
+      return topCount > 0 || subCount > 0;
+    });
+    const currency = withProducts.find((c) => c.name === "Currency (Potential)");
+    const network = withProducts.find(
+      (c) => c.name === "Network (Artificial Organism)",
+    );
+    const application =
+      withProducts.find((c) => c.name === "Application Token (dApps, DAOs)") ??
+      withProducts.find((c) => c.name === "Application Tokens");
+    const ordered = [currency, network, application].filter(
+      (c): c is NonNullable<typeof c> => c != null,
+    );
+    return ordered.map((cat) => ({
+      ...cat,
+      subcategories: (cat.subcategories ?? []).filter(
+        (s) => (s.productCount ?? 0) > 0,
+      ),
+    }));
+  }, [shopCategories]);
 
   // Website notification prefs: show header widget only if transactional or marketing website is enabled
   const [websiteNotificationsOn, setWebsiteNotificationsOn] = useState<boolean | null>(null);
@@ -315,10 +402,19 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                     <>
                       <li>
                         <ShopMegaMenu
-                          categories={shopCategories}
+                          categories={filteredShopCategories}
                           isActive={isShopActive}
                         />
                       </li>
+                      {user &&
+                        hasWeb3Auth === true &&
+                        cryptoShopCategories.length > 0 && (
+                          <li>
+                            <ShopByCryptoMenu
+                              categories={cryptoShopCategories}
+                            />
+                          </li>
+                        )}
                       <li>
                         <Link
                           className={cn(
@@ -403,7 +499,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
         <MobileNavSheet
           open={mobileMenuOpen}
           onOpenChange={setMobileMenuOpen}
-          categories={shopCategories}
+          categories={filteredShopCategories}
           pathname={pathname}
           user={user}
           authPending={authPending}

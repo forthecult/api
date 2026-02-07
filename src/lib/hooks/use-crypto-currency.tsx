@@ -77,20 +77,23 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   React.useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (
-        raw &&
-        (raw === "BTC" ||
-          raw === "ETH" ||
-          raw === "SOL" ||
-          raw === "DOGE" ||
-          raw === "CRUST" ||
-          raw === "PUMP" ||
-          raw === "TON" ||
-          raw === "XMR" ||
-          raw === "XAU" ||
-          raw === "XAG")
-      ) {
-        setSelectedCryptoState(raw as CryptoCode);
+      if (raw) {
+        // Migrate away from CRUST (removed from footer widget) to PUMP
+        const code = raw === "CRUST" ? "PUMP" : raw;
+        if (
+          code === "BTC" ||
+          code === "ETH" ||
+          code === "SOL" ||
+          code === "DOGE" ||
+          code === "PUMP" ||
+          code === "TON" ||
+          code === "XMR" ||
+          code === "XAU" ||
+          code === "XAG"
+        ) {
+          setSelectedCryptoState(code as CryptoCode);
+          if (code !== raw) localStorage.setItem(STORAGE_KEY, code);
+        }
       }
     } catch {
       // ignore
@@ -218,9 +221,9 @@ export const CRYPTO_OPTIONS: {
   },
   { code: "DOGE", label: "Dogecoin (DOGE)", iconSrc: "/payments/doge.svg" },
   {
-    code: "CRUST",
-    label: "Crustafarian (CRUST)",
-    iconSrc: "/crypto/solana/solanaLogoMark.svg",
+    code: "PUMP",
+    label: "Pump (PUMP)",
+    iconSrc: "/crypto/pump/pump-logomark.svg",
   },
   {
     code: "XMR",

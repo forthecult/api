@@ -106,16 +106,6 @@ export function ProductsClient({
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // When search query changes (user typed), go to page 1 and refetch
-  const prevSearchRef = React.useRef(initialSearch);
-  React.useEffect(() => {
-    if (prevSearchRef.current === searchQuery) return;
-    prevSearchRef.current = searchQuery;
-    setPage(1);
-    router.push(buildPath({ page: 1, q: searchQuery }), { scroll: false });
-    fetchProducts(1, selectedCategory, sort, selectedSubcategory, searchQuery);
-  }, [searchQuery, buildPath, selectedCategory, sort, selectedSubcategory, fetchProducts, router]);
-
   const buildPath = React.useCallback(
     (opts: {
       page?: number;
@@ -190,6 +180,16 @@ export function ProductsClient({
     },
     [],
   );
+
+  // When search query changes (user typed), go to page 1 and refetch
+  const prevSearchRef = React.useRef(initialSearch);
+  React.useEffect(() => {
+    if (prevSearchRef.current === searchQuery) return;
+    prevSearchRef.current = searchQuery;
+    setPage(1);
+    router.push(buildPath({ page: 1, q: searchQuery }), { scroll: false });
+    fetchProducts(1, selectedCategory, sort, selectedSubcategory, searchQuery);
+  }, [searchQuery, buildPath, selectedCategory, sort, selectedSubcategory, fetchProducts, router]);
 
   const handleCategoryChange = React.useCallback(
     (categorySlug: string) => {
