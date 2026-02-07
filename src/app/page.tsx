@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 import { ArrowRight, Clock, ShoppingBag, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,7 +23,7 @@ import {
   CardTitle,
 } from "~/ui/primitives/card";
 
-const TestimonialsSection = dynamic(
+const TestimonialsSection = nextDynamic(
   () =>
     import("~/ui/components/testimonials/testimonials-with-marquee").then(
       (m) => m.TestimonialsSection,
