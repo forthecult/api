@@ -16,6 +16,7 @@ import { join } from "node:path";
 import { UTApi } from "uploadthing/server";
 
 import { LOOKBOOK_IMAGES } from "../src/lib/lookbook-data";
+import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
 
 const PUBLIC_LOOKBOOK = join(process.cwd(), "public", "lookbook");
 const DATA_DIR = join(process.cwd(), "data");
@@ -34,17 +35,17 @@ function ext(name: string): string {
   return i === -1 ? "" : name.slice(i).toLowerCase();
 }
 
-function getToken(): string | undefined {
-  const raw = process.env.UPLOADTHING_TOKEN;
-  if (raw == null || raw === "") return undefined;
-  return raw.trim().replace(/^['"]|['"]$/g, "");
-}
-
 async function main() {
-  const token = getToken();
+  const token = getUploadThingToken();
   if (!token) {
     console.error(
       "UPLOADTHING_TOKEN not set. Add it in .env (no quotes around the value).",
+    );
+    process.exit(1);
+  }
+  if (!validateUploadThingToken(token)) {
+    console.error(
+      "UPLOADTHING_TOKEN is set but invalid. It must be a base64-encoded JSON object with apiKey, appId, and regions (from UploadThing Dashboard → API Keys → V7). Do not use an old secret or a plain API key.",
     );
     process.exit(1);
   }

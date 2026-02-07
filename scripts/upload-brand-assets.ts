@@ -19,6 +19,7 @@ import { UTApi } from "uploadthing/server";
 
 import { db } from "../src/db";
 import { brandAssetTable, brandTable } from "../src/db/schema";
+import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
 
 const ASSETS_DIR = join(process.cwd(), "scripts", "brand-assets");
 const ALLOWED_EXT = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
@@ -42,38 +43,10 @@ function ext(name: string): string {
   return i === -1 ? "" : name.slice(i).toLowerCase();
 }
 
-/** Strip surrounding quotes from env value so UploadThing gets the raw token. */
-function getToken(): string | undefined {
-  const raw = process.env.UPLOADTHING_TOKEN;
-  if (raw == null || raw === "") return undefined;
-  return raw.trim().replace(/^['"]|['"]$/g, "");
-}
-
-/**
- * UploadThing expects token to be base64-encoded JSON: { apiKey: string, appId: string, regions: string[] }.
- * Validate before making requests so we fail fast with a clear message.
- */
-function validateUploadThingToken(token: string): boolean {
-  try {
-    const decoded = Buffer.from(token, "base64").toString("utf-8");
-    const obj = JSON.parse(decoded) as unknown;
-    if (obj == null || typeof obj !== "object") return false;
-    const o = obj as Record<string, unknown>;
-    return (
-      typeof o.apiKey === "string" &&
-      typeof o.appId === "string" &&
-      Array.isArray(o.regions) &&
-      o.regions.every((r) => typeof r === "string")
-    );
-  } catch {
-    return false;
-  }
-}
-
 async function main() {
   const force = process.argv.includes("--force");
 
-  const token = getToken();
+  const token = getUploadThingToken();
   if (!token) {
     const msg =
       "UPLOADTHING_TOKEN not set. Add it in .env (local) or in GitHub Settings → Secrets (UPLOADTHING_TOKEN) for staging seed. Use the raw token with no quotes.";

@@ -27,14 +27,14 @@ So in practice:
 ### 1. Get a token
 
 1. Sign up at [uploadthing.com](https://uploadthing.com).
-2. Create an app and get your **API token** (Dashboard → your app → API Keys or token).
+2. Create an app and get your **token** from **Dashboard → API Keys → V7** tab. The token must be a **base64-encoded JSON** object with `apiKey`, `appId`, and `regions`. Do not use an old “secret” or a plain API key from other tabs.
 3. Put it in `.env` **without quotes**:
 
    ```env
    UPLOADTHING_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
    ```
 
-   **Important:** Use the raw token. If you use `UPLOADTHING_TOKEN='eyJ...'` (with single or double quotes), some systems treat the quotes as part of the value and UploadThing rejects the request. The app will strip surrounding quotes when it can; for reliability, set the value with no quotes.
+   **Important:** Use the raw token. If you use `UPLOADTHING_TOKEN='eyJ...'` (with single or double quotes), some systems treat the quotes as part of the value and UploadThing rejects the request. The app will strip surrounding quotes when it can; for reliability, set the value with no quotes. If you see “Invalid token” or `INVALID_SERVER_CONFIG`, the value is not the V7 token (base64 JSON with apiKey, appId, regions)—re-copy it from the **V7** tab.
 
 ### 2. In the admin (products / brands)
 
