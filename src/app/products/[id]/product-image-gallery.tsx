@@ -4,6 +4,7 @@ import Image from "next/image";
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
+import { useProductVariantImage } from "./product-variant-image-context";
 
 const PLACEHOLDER_SRC = "/placeholder.svg";
 
@@ -34,6 +35,7 @@ export function ProductImageGallery({
   discountPercentage = 0,
   className,
 }: ProductImageGalleryProps) {
+  const { selectedVariant } = useProductVariantImage();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
   const [zoomOpen, setZoomOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -41,13 +43,35 @@ export function ProductImageGallery({
   /** URLs that failed to load (400, 404, etc.) so we show placeholder instead of breaking the page. */
   const [failedUrls, setFailedUrls] = React.useState<Set<string>>(() => new Set());
 
-  const list = React.useMemo(
+  const baseList = React.useMemo(
     () =>
       (images.length > 0 ? images : [PLACEHOLDER_SRC]).map((src) =>
         isExternalImageUrl(src) ? normalizeImageSrc(src) : src,
       ),
     [images],
   );
+
+  // When a variant with imageUrl is selected, show that image first; otherwise use product images
+  const list = React.useMemo(() => {
+    const variantImage =
+      selectedVariant?.imageUrl?.trim() && selectedVariant.imageUrl;
+    if (!variantImage) return baseList;
+    const normalized = isExternalImageUrl(variantImage)
+      ? normalizeImageSrc(variantImage)
+      : variantImage;
+    const rest = baseList.filter((src) => src !== normalized);
+    return [normalized, ...rest];
+  }, [baseList, selectedVariant?.imageUrl]);
+
+  // Reset to first image when selected variant (and thus list) changes so the variant image is shown
+  const prevVariantIdRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    const id = selectedVariant?.id ?? null;
+    if (id !== prevVariantIdRef.current) {
+      prevVariantIdRef.current = id;
+      setSelectedIndex(0);
+    }
+  }, [selectedVariant?.id]);
   const hasMultiple = list.length > 1;
   const actualMainSrc = list[selectedIndex] ?? list[0];
   const mainSrc =

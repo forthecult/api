@@ -32,6 +32,7 @@ import { EstimatedDeliveryTimeline } from "~/app/products/[id]/estimated-deliver
 import { ProductDetailAccordion } from "~/app/products/[id]/product-detail-accordion";
 import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
 import { ProductShare } from "~/app/products/[id]/product-share";
+import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
 // Types re-exported from product detail page (product page lives at base [slug] now)
@@ -362,14 +363,15 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                   ← Back to Products
                 </Button>
               </Link>
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-                <ProductImageGallery
-                  discountPercentage={discountPercentage}
-                  images={product.images ?? [product.image]}
-                  productName={product.name}
-                  mainImageAlt={product.mainImageAlt}
-                />
-                <div className="flex flex-col">
+              <ProductVariantImageProvider>
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                  <ProductImageGallery
+                    discountPercentage={discountPercentage}
+                    images={product.images ?? [product.image]}
+                    productName={product.name}
+                    mainImageAlt={product.mainImageAlt}
+                  />
+                  <div className="flex flex-col">
                   <div className="mb-6">
                     <h1 className="text-3xl font-bold">{product.name}</h1>
                     {product.rating > 0 && (
@@ -468,7 +470,8 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                     className="mt-6"
                   />
                 </div>
-              </div>
+                </div>
+              </ProductVariantImageProvider>
               <Separator className="my-8" />
               {Object.keys(product.specs).length > 0 && (
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-2">

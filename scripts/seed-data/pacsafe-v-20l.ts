@@ -1,7 +1,7 @@
 /**
  * Seed data for Pacsafe® V 20L Anti-Theft City Backpack.
  * Sourced from https://pacsafe.com/products/pacsafe-v-20l-anti-theft-city-backpack
- * Pacsafe list price = our cost; sell at 4% above ($179.95 → $187.15). Brand: Pacsafe. Category: Bags.
+ * Pacsafe list price = our cost; sell at 4% above ($179.95 → $187.15). Brand: Pacsafe. Category: Backpacks.
  */
 
 const LIST_PRICE_USD = 179.95;
@@ -13,7 +13,7 @@ const CDN = "https://cdn.shopify.com/s/files/1/0041/7638/0013/files";
 
 const PRODUCT_ID = "pacsafe-v-20l";
 const PRODUCT_SLUG = "pacsafe-v-20l-anti-theft-city-backpack";
-const CATEGORY_ID = "accessories-bags";
+const CATEGORY_ID = "accessories-backpacks";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   { url: `${CDN}/PacsafeV_20LCityBackpack_61150148_DigitalGray_01.jpg?v=1769879931`, alt: "Pacsafe V 20L Anti-Theft City Backpack, Digital Gray - front view", title: "Pacsafe V 20L City Backpack - Main view" },

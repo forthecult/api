@@ -1,7 +1,7 @@
 /**
  * Seed data for Pacsafe® V 12L Anti-Theft Tech Backpack.
  * Sourced from https://pacsafe.com/products/pacsafe-v-12l-anti-theft-tech-backpack
- * Pacsafe list price = our cost; sell at 4% above ($149.95 → $155.95). Brand: Pacsafe. Category: Bags.
+ * Pacsafe list price = our cost; sell at 4% above ($149.95 → $155.95). Brand: Pacsafe. Category: Backpacks.
  */
 
 const LIST_PRICE_USD = 149.95;
@@ -13,7 +13,7 @@ const CDN = "https://cdn.shopify.com/s/files/1/0041/7638/0013/files";
 
 const PRODUCT_ID = "pacsafe-v-12l";
 const PRODUCT_SLUG = "pacsafe-v-12l-anti-theft-tech-backpack";
-const CATEGORY_ID = "accessories-bags";
+const CATEGORY_ID = "accessories-backpacks";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   { url: `${CDN}/PacsafeV_12LTechBackpack_61140148_DigitalGray_01_8861f437-74e6-4ab9-8eec-89c67832b8a5.jpg?v=1769879522`, alt: "Pacsafe V 12L Anti-Theft Tech Backpack, Digital Gray - front view", title: "Pacsafe V 12L Tech Backpack - Main view" },

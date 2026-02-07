@@ -819,6 +819,37 @@ export async function fetchProductTemplate(
   return pfFetchV1(path, { storeId }) as Promise<PrintfulProductTemplateItem>;
 }
 
+// --- Mockup Generator API (V1) – retrieve print/design file URLs for template variants ---
+
+/** Response shape for printfiles endpoint (placement → file URL). */
+export type PrintfulTemplatePrintfilesResult = {
+  [placement: string]: Array<{ url?: string; type?: string; [key: string]: unknown }>;
+};
+
+/**
+ * GET /mockup-generator/product-templates/{templateId}/variants/{variantId}/printfiles
+ * Returns the actual print/design file URLs for a product template variant (used when creating sync products).
+ * Optional: technique_key (e.g. "DTG") for placement-specific technique.
+ */
+export async function fetchTemplateVariantPrintfiles(
+  templateId: number,
+  variantId: number,
+  options?: { technique_key?: string },
+): Promise<PrintfulTemplatePrintfilesResult | null> {
+  const qs = options?.technique_key
+    ? `?technique_key=${encodeURIComponent(options.technique_key)}`
+    : "";
+  try {
+    const result = await pfFetchV1<PrintfulTemplatePrintfilesResult>(
+      `/mockup-generator/product-templates/${templateId}/variants/${variantId}/printfiles${qs}`,
+      {},
+    );
+    return result;
+  } catch {
+    return null;
+  }
+}
+
 // --- Webhooks V1 API ---
 
 export type PrintfulWebhookConfig = {

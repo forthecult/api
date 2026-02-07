@@ -123,36 +123,109 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
   return (
     <div className="mb-6">
       <h4 className="mb-2 text-sm font-semibold text-foreground">{unitLabel}</h4>
-      {data.sizeTables.map((table, idx) => (
-        <div key={idx} className="mb-4">
-          {table.description && (
-            <p className="mb-2 text-xs text-muted-foreground">{table.description}</p>
-          )}
-          {table.measurements?.map((m, midx) => (
-            <div key={midx} className="mb-3 overflow-x-auto">
-              <p className="mb-1 text-xs font-medium text-foreground">{m.type_label}</p>
-              <table className="w-full min-w-[200px] border-collapse text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="p-2 text-left font-medium">Size</th>
-                    <th className="p-2 text-left font-medium">Measurement</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {m.values.map((v, vidx) => (
-                    <tr key={vidx} className="border-b border-border/50">
-                      <td className="p-2 font-medium">{v.size}</td>
-                      <td className="p-2 text-muted-foreground">
-                        {"value" in v ? v.value : `${v.min_value} – ${v.max_value}`}
-                      </td>
+      {data.sizeTables.map((table, idx) => {
+        const measurements = table.measurements ?? [];
+        const canCombine =
+          measurements.length > 1 &&
+          measurements.every((m) => m.values.length === measurements[0]?.values.length) &&
+          measurements.every((m, i) =>
+            m.values.every((v, j) => v.size === measurements[0]?.values[j]?.size),
+          );
+
+        if (canCombine && measurements.length > 0) {
+          const sizeColumn = measurements[0]!.values.map((v) => v.size);
+          const columns = ["Size", ...measurements.map((m) => m.type_label)];
+          return (
+            <div key={idx} className="mb-6">
+              {table.description && (
+                <p className="mb-3 text-sm text-muted-foreground">{table.description}</p>
+              )}
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[320px] border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      {columns.map((col, cidx) => (
+                        <th
+                          key={cidx}
+                          className="px-3 py-2.5 text-left font-semibold text-foreground first:rounded-tl-md last:rounded-tr-md"
+                        >
+                          {col}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {sizeColumn.map((size, rowIdx) => (
+                      <tr
+                        key={rowIdx}
+                        className={cn(
+                          "border-t border-border/60",
+                          rowIdx % 2 === 1 && "bg-muted/30",
+                        )}
+                      >
+                        <td className="px-3 py-2 font-medium text-foreground">{size}</td>
+                        {measurements.map((m, midx) => {
+                          const v = m.values[rowIdx];
+                          const cell =
+                            v && "value" in v
+                              ? v.value
+                              : v && "min_value" in v
+                                ? `${v.min_value} – ${v.max_value}`
+                                : "—";
+                          return (
+                            <td
+                              key={midx}
+                              className="px-3 py-2 text-muted-foreground"
+                            >
+                              {cell}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          ))}
-        </div>
-      ))}
+          );
+        }
+
+        return (
+          <div key={idx} className="mb-4">
+            {table.description && (
+              <p className="mb-2 text-sm text-muted-foreground">{table.description}</p>
+            )}
+            {measurements.map((m, midx) => (
+              <div key={midx} className="mb-3 overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[200px] border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      <th className="px-3 py-2 text-left font-semibold text-foreground">Size</th>
+                      <th className="px-3 py-2 text-left font-semibold text-foreground">{m.type_label}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {m.values.map((v, vidx) => (
+                      <tr
+                        key={vidx}
+                        className={cn(
+                          "border-t border-border/60",
+                          vidx % 2 === 1 && "bg-muted/30",
+                        )}
+                      >
+                        <td className="px-3 py-2 font-medium">{v.size}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {"value" in v ? v.value : `${v.min_value} – ${v.max_value}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

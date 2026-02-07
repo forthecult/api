@@ -22,6 +22,7 @@ import { EstimatedDeliveryTimeline } from "./estimated-delivery-timeline";
 import { ProductDetailAccordion } from "./product-detail-accordion";
 import { ProductImageGallery } from "./product-image-gallery";
 import { ProductShare } from "./product-share";
+import { ProductVariantImageProvider } from "./product-variant-image-context";
 import { ProductVariantSection } from "./product-variant-section";
 import { RelatedProductsSection } from "./related-products-section";
 import { getTokenGateConfig } from "~/lib/token-gate";
@@ -316,16 +317,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
             </Link>
 
             {/* Main grid */}
-            <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
-              <ProductImageGallery
-                discountPercentage={discountPercentage}
-                images={product.images ?? [product.image]}
-                productName={product.name}
-                mainImageAlt={product.mainImageAlt}
-              />
+            <ProductVariantImageProvider>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <ProductImageGallery
+                  discountPercentage={discountPercentage}
+                  images={product.images ?? [product.image]}
+                  productName={product.name}
+                  mainImageAlt={product.mainImageAlt}
+                />
 
-              {/* Product info */}
-              <div className="flex flex-col">
+                {/* Product info */}
+                <div className="flex flex-col">
                 {/* Title & rating (only when there are reviews) */}
                 <div className="mb-6">
                   <h1 className="text-3xl font-bold">{product.name}</h1>
@@ -431,8 +433,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   url={`${siteUrl}/products/${product.id}`}
                   className="mt-6"
                 />
+                </div>
               </div>
-            </div>
+            </ProductVariantImageProvider>
 
             <Separator className="my-8" />
 

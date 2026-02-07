@@ -72,18 +72,20 @@ const SIZES_ROW: Array<{ usa: string; uk: string; eur: string; lengthCm: string;
   { usa: "14M / 16W", uk: "13", eur: "48", lengthCm: "31.2", printIn: "12-1/4\"" },
 ];
 
+/** Single combined table: one row per size, columns USA, UK, EUR, Length. */
 function buildSizeChartImperial() {
   return {
     sizeTables: [
       {
         type: "Adults",
         unit: "in",
-        description: "Circadian Sandals — Men's & Women's. Use the print template to confirm fit.",
+        description: "Circadian Sandals — Men's & Women's. Measure your foot and match to sandal length; use Earth Runners' print template to confirm fit.",
+        /** Same size key across all columns so UI can render one table. */
         measurements: [
           { type_label: "USA (Men's / Women's)", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.usa })) },
           { type_label: "UK", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.uk })) },
           { type_label: "EUR", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.eur })) },
-          { type_label: "Sandal length (in)", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.printIn })) },
+          { type_label: "Length (in)", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.printIn })) },
         ],
       },
     ],
@@ -101,7 +103,7 @@ function buildSizeChartMetric() {
           { type_label: "USA (Men's / Women's)", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.usa })) },
           { type_label: "UK", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.uk })) },
           { type_label: "EUR", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.eur })) },
-          { type_label: "Sandal length (cm)", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.lengthCm })) },
+          { type_label: "Length (cm)", values: SIZES_ROW.map((r) => ({ size: r.usa, value: r.lengthCm })) },
         ],
       },
     ],
@@ -118,28 +120,45 @@ export const CIRCADIAN_SIZE_CHART = {
   dataMetric: buildSizeChartMetric(),
 };
 
-const OPTION_DEFINITIONS = [{ name: "Lace", values: ["Carbon", "Sunset"] }];
+const LACE_OPTIONS = [
+  { name: "Carbon", skuPrefix: "CA-CIR", imageUrl: `${CDN}/Carbon_circ2023_7b371855-6ead-49ff-ad30-c1f9c7376936.jpg?v=1749057390`, imageAlt: "Earth Runners Circadian sandals, Carbon Lifestyle Lace", imageTitle: "Circadian Sandals - Carbon" },
+  { name: "Sunset", skuPrefix: "SU-CIR", imageUrl: `${CDN}/Sunset_circ2023_33ad29c4-1741-42e2-a43d-1a181a06e05c.jpg?v=1749180263`, imageAlt: "Earth Runners Circadian sandals, Sunset Lifestyle Lace", imageTitle: "Circadian Sandals - Sunset" },
+] as const;
 
-const VARIANTS: Array<{ id: string; color: string; priceCents: number; sku: string; imageUrl: string; imageAlt: string; imageTitle: string }> = [
-  {
-    id: `${PRODUCT_ID}-carbon`,
-    color: "Carbon",
-    priceCents: PRICE_CENTS,
-    sku: "CA-CIR",
-    imageUrl: `${CDN}/Carbon_circ2023_7b371855-6ead-49ff-ad30-c1f9c7376936.jpg?v=1749057390`,
-    imageAlt: "Earth Runners Circadian sandals, Carbon Lifestyle Lace",
-    imageTitle: "Circadian Sandals - Carbon",
-  },
-  {
-    id: `${PRODUCT_ID}-sunset`,
-    color: "Sunset",
-    priceCents: PRICE_CENTS,
-    sku: "SU-CIR",
-    imageUrl: `${CDN}/Sunset_circ2023_33ad29c4-1741-42e2-a43d-1a181a06e05c.jpg?v=1749180263`,
-    imageAlt: "Earth Runners Circadian sandals, Sunset Lifestyle Lace",
-    imageTitle: "Circadian Sandals - Sunset",
-  },
+const OPTION_DEFINITIONS = [
+  { name: "Lace", values: LACE_OPTIONS.map((l) => l.name) },
+  { name: "Size", values: SIZES_ROW.map((r) => r.usa) },
 ];
+
+/** Lace × Size variants (Men's & Women's). All in stock. */
+const VARIANTS: Array<{
+  id: string;
+  color: string;
+  size: string;
+  priceCents: number;
+  sku: string;
+  imageUrl: string;
+  imageAlt: string;
+  imageTitle: string;
+  stockQuantity: number;
+}> = [];
+for (const lace of LACE_OPTIONS) {
+  for (const row of SIZES_ROW) {
+    const sizeSlug = row.usa.replace(/\s*\/\s*/g, "-").replace(/\./g, "");
+    const id = `${PRODUCT_ID}-${lace.name.toLowerCase()}-${sizeSlug}`;
+    VARIANTS.push({
+      id,
+      color: lace.name,
+      size: row.usa,
+      priceCents: PRICE_CENTS,
+      sku: `${lace.skuPrefix}-${sizeSlug}`,
+      imageUrl: lace.imageUrl,
+      imageAlt: lace.imageAlt,
+      imageTitle: lace.imageTitle,
+      stockQuantity: 99,
+    });
+  }
+}
 
 export const EARTH_RUNNERS_CIRCADIAN = {
   id: PRODUCT_ID,

@@ -202,7 +202,19 @@ async function seed() {
       );
     }
 
-    const variants = (p as { variants?: Array<{ id: string; color: string; priceCents: number; sku: string; imageUrl: string; imageAlt: string; imageTitle: string }> }).variants;
+    const variants = (p as {
+      variants?: Array<{
+        id: string;
+        color?: string;
+        size?: string;
+        priceCents: number;
+        sku: string;
+        imageUrl: string;
+        imageAlt?: string;
+        imageTitle?: string;
+        stockQuantity?: number;
+      }>;
+    }).variants;
     if (variants?.length) {
       await db
         .delete(productVariantsTable)
@@ -211,12 +223,15 @@ async function seed() {
         variants.map((v) => ({
           id: v.id,
           productId,
-          color: v.color,
+          color: v.color ?? null,
+          size: v.size ?? null,
           priceCents: v.priceCents,
           sku: v.sku,
           imageUrl: v.imageUrl,
           imageAlt: v.imageAlt ?? null,
           imageTitle: v.imageTitle ?? null,
+          stockQuantity: v.stockQuantity ?? null,
+          availabilityStatus: (v.stockQuantity ?? 0) > 0 ? "in_stock" : null,
           createdAt: now,
           updatedAt: now,
         })),

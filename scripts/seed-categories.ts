@@ -93,6 +93,30 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     parentId: null,
   },
   {
+    id: "shoes",
+    name: "Shoes",
+    slug: "shoes",
+    title: "Shoes — Sneakers, Boots, Loafers & Premium Footwear | Culture",
+    metaDescription:
+      "Premium shoes: sneakers, boots, loafers, and everyday footwear. Quality materials, built to last. Men's and women's. Pay with crypto or card. Culture.",
+    description:
+      "Footwear that holds up. We curate shoes in quality materials—sneakers, boots, loafers, and everyday styles for men and women. Durability and comfort over fast fashion. Pay with crypto or card.",
+    level: 1,
+    parentId: null,
+  },
+  {
+    id: "sandals",
+    name: "Sandals",
+    slug: "sandals",
+    title: "Sandals & Flip-Flops — Summer & Casual Footwear | Culture",
+    metaDescription:
+      "Sandals, flip-flops, and slides for men and women. Summer and casual footwear. Quality and comfort. Pay with crypto or card. Culture.",
+    description:
+      "Open, breathable footwear for warm days and casual wear. Sandals, flip-flops, and slides for men and women—curated for comfort and durability. Pay with crypto or card.",
+    level: 1,
+    parentId: null,
+  },
+  {
     id: "home-living",
     name: "Home & Living",
     slug: "home-living",

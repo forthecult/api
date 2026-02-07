@@ -1,6 +1,7 @@
 /**
  * Create products in the "For the Cult" Printful store from product templates.
  * Uses template titles (Honey and Silk copy) and upgrades them for Culture store branding and SEO.
+ * Uses the template's actual design/print file URLs (from Mockup Generator printfiles when available).
  *
  * Run from repo root:
  *   bun run scripts/create-products-from-templates.ts [target_store_id]
@@ -15,6 +16,7 @@ import "dotenv/config";
 import {
   createSyncProduct,
   fetchProductTemplates,
+  fetchTemplateVariantPrintfiles,
   type PrintfulProductTemplateItem,
 } from "../src/lib/printful";
 
@@ -109,9 +111,17 @@ async function main() {
     const description = buildDescriptionForCulture(cultureTitle);
     const thumbnail = tpl.mockup_file_url;
 
+    const designFile = await getDesignFileUrl(tpl);
+    if (!designFile) {
+      console.error(
+        `  [${i + 1}/${allTemplates.length}] Skip template ${tpl.id}: no design/print file URL (printfiles API and mockup_file_url missing or invalid)`,
+      );
+      continue;
+    }
+
     let sync_variants: ReturnType<typeof buildSyncVariantsFromTemplate>;
     try {
-      sync_variants = buildSyncVariantsFromTemplate(tpl);
+      sync_variants = buildSyncVariantsFromTemplate(tpl, designFile);
     } catch (e) {
       console.error(`  [${i + 1}/${allTemplates.length}] Skip template ${tpl.id}: ${(e as Error).message}`);
       continue;

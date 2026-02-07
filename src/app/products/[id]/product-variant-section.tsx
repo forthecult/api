@@ -5,6 +5,7 @@ import * as React from "react";
 import { cn } from "~/lib/cn";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { useProductVariantImage } from "./product-variant-image-context";
 import { ProductActions, ProductPriceDisplay } from "./product-detail-client";
 import { SecureCheckoutLine } from "./secure-checkout-line";
 import type { ProductOptionDefinition, ProductVariantOption } from "./page";
@@ -109,6 +110,15 @@ export function ProductVariantSection({
     hasVariants && optionDefinitions.length > 0 && variants.length > 0
       ? findVariant(variants, optionDefinitions, selectedByIndex)
       : null;
+
+  const { setSelectedVariant } = useProductVariantImage();
+  React.useEffect(() => {
+    setSelectedVariant(
+      selectedVariant
+        ? { id: selectedVariant.id, imageUrl: selectedVariant.imageUrl }
+        : null,
+    );
+  }, [selectedVariant, setSelectedVariant]);
 
   const displayPrice =
     selectedVariant != null ? selectedVariant.priceCents / 100 : product.price;

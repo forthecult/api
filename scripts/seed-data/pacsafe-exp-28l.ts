@@ -1,7 +1,7 @@
 /**
  * Seed data for Pacsafe® EXP 28L Anti-Theft Backpack.
  * Sourced from https://pacsafe.com/products/pacsafe-exp-28l-anti-theft-backpack
- * Price set 4% above cost ($229.95 cost → $239.15 sell). Brand: Pacsafe. Category: Bags.
+ * Price set 4% above cost ($229.95 cost → $239.15 sell). Brand: Pacsafe. Category: Backpacks.
  * Pacsafe list price = our cost (costPerItemCents); we do not show compare-at.
  */
 
@@ -20,7 +20,7 @@ const CDN =
 /** Product ID and slug for URLs and DB. */
 export const PRODUCT_ID = "pacsafe-exp-28l";
 export const PRODUCT_SLUG = "pacsafe-exp-28l-anti-theft-backpack";
-export const CATEGORY_ID = "accessories-bags";
+export const CATEGORY_ID = "accessories-backpacks";
 
 /** SEO-friendly image entries: url, alt, title (custom names and metadata). */
 export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
