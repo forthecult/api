@@ -76,20 +76,27 @@ async function main() {
     console.log("No brand-assets folders match seeded brand slugs. Add e.g. scripts/brand-assets/<slug>/logo.png for brands you want logos uploaded.");
     process.exit(0);
   }
-  console.log(`Found ${brandsWithAssets.length} brand(s) with assets to upload (${brandsWithAssets.map((b) => b.slug).join(", ")})`);
+
+  // Early exit when nothing to upload (all have logos and no --force) — avoids UTApi init and keeps CI under timeout
+  const brandsNeedingUpload: typeof brandsWithAssets = [];
+  for (const brand of brandsWithAssets) {
+    if (!force && brand.logoUrl) continue;
+    const slugDir = join(ASSETS_DIR, brand.slug);
+    const entries = readdirSync(slugDir, { withFileTypes: true })
+      .filter((e) => e.isFile() && ALLOWED_EXT.includes(ext(e.name)));
+    if (entries.length > 0) brandsNeedingUpload.push(brand);
+  }
+  if (brandsNeedingUpload.length === 0) {
+    console.log("All brands already have logos (or no images in asset folders). Nothing to upload.");
+    process.exit(0);
+  }
+  console.log(`Found ${brandsNeedingUpload.length} brand(s) to upload (${brandsNeedingUpload.map((b) => b.slug).join(", ")})`);
 
   const utapi = new UTApi({ token });
   let uploaded = 0;
 
-  for (const brand of brands) {
+  for (const brand of brandsNeedingUpload) {
     const slugDir = join(ASSETS_DIR, brand.slug);
-    if (!existsSync(slugDir)) continue;
-
-    if (!force && brand.logoUrl) {
-      console.log(`Skip (has logo): ${brand.slug}`);
-      continue;
-    }
-
     const entries = readdirSync(slugDir, { withFileTypes: true })
       .filter((e) => e.isFile() && ALLOWED_EXT.includes(ext(e.name)))
       .map((e) => ({ name: e.name, type: assetType(e.name) }))
@@ -97,11 +104,6 @@ async function main() {
         const order = { logo: 0, banner: 1, other: 2 };
         return order[a.type] - order[b.type];
       });
-
-    if (entries.length === 0) {
-      console.log(`Skip (no images): ${brand.slug}`);
-      continue;
-    }
 
     let firstLogoUrl: string | null = null;
 

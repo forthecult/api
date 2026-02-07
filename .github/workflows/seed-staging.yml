@@ -19,8 +19,8 @@ on:
 jobs:
   seed:
     runs-on: ubuntu-latest
-    # Seed should finish in a few minutes with batched inserts; 15m is a safe ceiling
-    timeout-minutes: 15
+    # Seed + optional UploadThing steps; 20m allows uploads to complete when needed
+    timeout-minutes: 20
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
@@ -91,7 +91,7 @@ jobs:
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-brand-assets
-        timeout-minutes: 15
+        timeout-minutes: 10
         continue-on-error: true
       - name: Upload lookbook to UploadThing
         if: steps.check_uploadthing.outputs.token_set == 'true'
@@ -99,7 +99,7 @@ jobs:
         env:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-lookbook
-        timeout-minutes: 10
+        timeout-minutes: 8
         continue-on-error: true
       - name: Upload lookbook manifest artifact (optional)
         if: steps.check_uploadthing.outputs.token_set == 'true'

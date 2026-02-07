@@ -18,6 +18,7 @@ import {
   productVariantsTable,
   sizeChartsTable,
 } from "../src/db/schema";
+import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
@@ -54,6 +55,7 @@ const CURATED_PRODUCTS = [
   TREZOR_SAFE_7,
   TREZOR_SAFE_5,
   HUSKYLENS_2,
+  CRYPTOMATIC_JETSETTER,
 ];
 
 async function seed() {
