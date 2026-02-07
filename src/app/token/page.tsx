@@ -2,6 +2,7 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  ExternalLink,
   Scale,
   Shield,
   Users,
@@ -84,6 +85,31 @@ const cultureUnique = [
   "No trackers. We won't follow you around the internet.",
   "We use technology to lower costs, make the supply chain more transparent, and improve our customers lives.",
   "Data deletion. No required account creation. No Shopify. We remove your address, phone number, and email 30 days after order placement (unless you want us to send you feature updates).",
+];
+
+const SOLSCAN_BASE = "https://solscan.io/account";
+
+/** Creator fee allocation items; first three have on-chain wallets (Solscan links). */
+const creatorFeeAllocations = [
+  {
+    pct: "5%",
+    label: "Buy back and burn",
+    wallet: "BURNakw9tnzqnKeMi2BqDRjZzT2athWK2CfKTAxrrMYX",
+  },
+  {
+    pct: "5%",
+    label: "Staked token holders",
+    wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd",
+  },
+  {
+    pct: "5%",
+    label: "Charity",
+    wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS",
+  },
+  { pct: "15%", label: "Marketing and advertising", wallet: null },
+  { pct: "20%", label: "Subsidize shipping and product prices", wallet: null },
+  { pct: "20%", label: "Product inventory and development", wallet: null },
+  { pct: "30%", label: "Treasury and feature development", wallet: null },
 ];
 
 const faqItems = [
@@ -270,39 +296,46 @@ export default function TokenPage() {
         </section>
 
         {/* Creator Fee Allocation */}
-        <section className="space-y-6 py-6 md:py-6">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
-            Creator Fee Allocation
-          </h2>
-          <ul className="list-inside list-disc space-y-2 text-muted-foreground">
-            <li>
-              <strong className="text-foreground">5%</strong> CULT buyback and
-              burn
-            </li>
-            <li>
-              <strong className="text-foreground">5%</strong> Staked $CULT token
-              holders
-            </li>
-            <li>
-              <strong className="text-foreground">5%</strong> Charity
-            </li>
-            <li>
-              <strong className="text-foreground">15%</strong> Marketing and
-              advertising
-            </li>
-            <li>
-              <strong className="text-foreground">20%</strong> Subsidize
-              shipping and product prices
-            </li>
-            <li>
-              <strong className="text-foreground">20%</strong> Product inventory
-              and development
-            </li>
-            <li>
-              <strong className="text-foreground">30%</strong> Treasury and
-              feature development
-            </li>
-          </ul>
+        <section className="space-y-8 py-12 md:py-6">
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+              Creator Fee Allocation
+            </h2>
+            <p className="mt-2 max-w-3xl text-muted-foreground">
+              Fee splits are sent to dedicated wallets. Verified allocations can
+              be viewed on Solscan.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            {creatorFeeAllocations.map(({ pct, label, wallet }) => (
+              <Card
+                key={label}
+                className="border-border bg-card transition-shadow hover:shadow-md"
+              >
+                <CardContent className="flex flex-col gap-2 pt-5">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-xl font-semibold text-foreground">
+                      {pct}
+                    </span>
+                    <span className="text-sm font-medium text-foreground">
+                      {label}
+                    </span>
+                  </div>
+                  {wallet ? (
+                    <a
+                      href={`${SOLSCAN_BASE}/${wallet}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-md border border-border bg-muted/50 px-2 py-1.5 text-sm text-primary transition-colors hover:bg-muted hover:underline"
+                    >
+                      <span>View on Solscan</span>
+                      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                    </a>
+                  ) : null}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </section>
 
         {/* Culture */}

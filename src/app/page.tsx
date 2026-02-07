@@ -31,10 +31,42 @@ const TestimonialsSection = nextDynamic(
   { ssr: true, loading: () => <div className="min-h-[200px]" /> },
 );
 
-import { testimonials } from "./mocks";
+import { testimonials as mockTestimonials } from "./mocks";
 
 // Avoid build-time SSG timeout when API/DB unreachable (e.g. Railway build)
 export const dynamic = "force-dynamic";
+
+type TestimonialItem = {
+  author: { avatar: string; handle: string; name: string };
+  text: string;
+};
+
+function avatarUrlForName(name: string): string {
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
+}
+
+async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
+  const baseUrl = getServerBaseUrl();
+  try {
+    const res = await fetch(`${baseUrl}/api/reviews?limit=20`, {
+      next: { revalidate: 300 },
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { items?: Array<{ id: string; comment: string; displayName: string }> };
+    const items = data.items ?? [];
+    if (items.length === 0) return [];
+    return items.map((r) => ({
+      author: {
+        avatar: avatarUrlForName(r.displayName),
+        handle: `@${r.displayName.toLowerCase().replace(/\s+/g, "").slice(0, 12)}`,
+        name: r.displayName,
+      },
+      text: r.comment,
+    }));
+  } catch {
+    return [];
+  }
+}
 
 async function fetchCategories(): Promise<
   Array<{ id: string; name: string; slug?: string; productCount: number }>
@@ -161,10 +193,14 @@ const featuresWhyChooseUs = [
 ];
 
 export default async function HomePage() {
-  const [featuredProducts, shopCategories] = await Promise.all([
-    fetchFeaturedProducts(),
-    fetchCategories(),
-  ]);
+  const [featuredProducts, shopCategories, reviewTestimonials] =
+    await Promise.all([
+      fetchFeaturedProducts(),
+      fetchCategories(),
+      fetchReviewsForTestimonials(),
+    ]);
+  const testimonials: TestimonialItem[] =
+    reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
   const topLevelShop = shopCategories.filter(
     (c) =>
       c.slug &&
