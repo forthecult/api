@@ -2,10 +2,15 @@
  * Category helpers for storefront: lookup by slug, list slugs, breadcrumbs.
  */
 
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 
 import { db } from "~/db";
-import { categoriesTable, productCategoriesTable } from "~/db/schema";
+import {
+  categoriesTable,
+  orderItemsTable,
+  productCategoriesTable,
+  productsTable,
+} from "~/db/schema";
 
 export type CategoryBySlug = {
   id: string;
@@ -89,6 +94,173 @@ export async function getAllCategorySlugsAndNames(): Promise<
   return rows
     .filter((r): r is { slug: string; name: string } => r.slug != null)
     .map((r) => ({ slug: r.slug!, name: r.name }));
+}
+
+export type CategoryWithDisplayImage = {
+  slug: string;
+  name: string;
+  /** Category image if set; otherwise product fallback (top-selling or most recent). Not persisted. */
+  image?: string | null;
+};
+
+/**
+ * Categories that have at least one published product, with a display image.
+ * Image is category.imageUrl if set; otherwise from top-selling product in that category,
+ * or most recently created product. Fallback is for display only (not saved to category).
+ */
+export async function getCategoriesWithProductsAndDisplayImage(): Promise<
+  CategoryWithDisplayImage[]
+> {
+  const catIdsWithProducts = await db
+    .selectDistinct({ categoryId: productCategoriesTable.categoryId })
+    .from(productCategoriesTable)
+    .innerJoin(
+      productsTable,
+      and(
+        eq(productCategoriesTable.productId, productsTable.id),
+        eq(productsTable.published, true),
+      ),
+    );
+
+  const ids = catIdsWithProducts
+    .map((r) => r.categoryId)
+    .filter((id): id is string => !!id);
+  if (ids.length === 0) return [];
+
+  const categories = await db
+    .select({
+      id: categoriesTable.id,
+      slug: categoriesTable.slug,
+      name: categoriesTable.name,
+      imageUrl: categoriesTable.imageUrl,
+    })
+    .from(categoriesTable)
+    .where(inArray(categoriesTable.id, ids))
+    .orderBy(asc(categoriesTable.name));
+
+  const needFallback = categories.filter(
+    (c) => c.imageUrl == null || c.imageUrl.trim() === "",
+  );
+  const fallbackByCategoryId = new Map<string, string>();
+
+  if (needFallback.length > 0) {
+    const needIds = needFallback.map((c) => c.id);
+
+    const soldSubq = db
+      .select({
+        categoryId: productCategoriesTable.categoryId,
+        productId: productCategoriesTable.productId,
+        qty: sql<number>`coalesce(sum(${orderItemsTable.quantity}), 0)::int`.as(
+          "qty",
+        ),
+      })
+      .from(productCategoriesTable)
+      .innerJoin(
+        orderItemsTable,
+        eq(productCategoriesTable.productId, orderItemsTable.productId),
+      )
+      .where(inArray(productCategoriesTable.categoryId, needIds))
+      .groupBy(
+        productCategoriesTable.categoryId,
+        productCategoriesTable.productId,
+      )
+      .as("sold");
+
+    const topPerCategory = await db
+      .select({
+        categoryId: soldSubq.categoryId,
+        productId: soldSubq.productId,
+        qty: soldSubq.qty,
+      })
+      .from(soldSubq)
+      .orderBy(desc(soldSubq.qty));
+
+    const seen = new Set<string>();
+    const topProductIds: string[] = [];
+    const categoryForProduct = new Map<string, string>();
+    for (const row of topPerCategory) {
+      if (row.categoryId && !seen.has(row.categoryId) && row.productId) {
+        seen.add(row.categoryId);
+        topProductIds.push(row.productId);
+        categoryForProduct.set(row.productId, row.categoryId);
+      }
+    }
+    if (topProductIds.length > 0) {
+      const products = await db
+        .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
+        .from(productsTable)
+        .where(inArray(productsTable.id, topProductIds));
+      for (const p of products) {
+        const url = p.imageUrl?.trim();
+        if (url) {
+          const catId = categoryForProduct.get(p.id);
+          if (catId) fallbackByCategoryId.set(catId, url);
+        }
+      }
+    }
+
+    const stillNeed = needIds.filter((id) => !fallbackByCategoryId.has(id));
+    if (stillNeed.length > 0) {
+      const newestPerCategory = await db
+        .select({
+          categoryId: productCategoriesTable.categoryId,
+          productId: productCategoriesTable.productId,
+          createdAt: productsTable.createdAt,
+        })
+        .from(productCategoriesTable)
+        .innerJoin(
+          productsTable,
+          eq(productCategoriesTable.productId, productsTable.id),
+        )
+        .where(
+          and(
+            inArray(productCategoriesTable.categoryId, stillNeed),
+            eq(productsTable.published, true),
+          ),
+        )
+        .orderBy(desc(productsTable.createdAt));
+
+      const seenNew = new Set<string>();
+      const newestProductIds: string[] = [];
+      const categoryForNewest = new Map<string, string>();
+      for (const row of newestPerCategory) {
+        if (
+          row.categoryId &&
+          !seenNew.has(row.categoryId) &&
+          row.productId &&
+          !fallbackByCategoryId.has(row.categoryId)
+        ) {
+          seenNew.add(row.categoryId);
+          newestProductIds.push(row.productId);
+          categoryForNewest.set(row.productId, row.categoryId);
+        }
+      }
+      if (newestProductIds.length > 0) {
+        const products = await db
+          .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
+          .from(productsTable)
+          .where(inArray(productsTable.id, newestProductIds));
+        for (const p of products) {
+          const url = p.imageUrl?.trim();
+          if (url) {
+            const catId = categoryForNewest.get(p.id);
+            if (catId) fallbackByCategoryId.set(catId, url);
+          }
+        }
+      }
+    }
+  }
+
+  return categories
+    .filter((c): c is typeof c & { slug: string } => c.slug != null)
+    .map((c) => ({
+      slug: c.slug!,
+      name: c.name,
+      image:
+        (c.imageUrl?.trim() && c.imageUrl) ||
+        fallbackByCategoryId.get(c.id) ||
+        undefined,
+    }));
 }
 
 export type SubcategoryOption = { slug: string; name: string };

@@ -37,6 +37,8 @@ interface Product {
 interface CategoryOption {
   slug: string;
   name: string;
+  /** Display image: category image or product fallback (not persisted). */
+  image?: string | null;
 }
 
 interface ProductsResponse {

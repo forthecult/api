@@ -2,7 +2,7 @@ import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { getAllCategorySlugsAndNames } from "~/lib/categories";
+import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import {
   categoriesTable,
   orderItemsTable,
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
           page: 1,
           limit,
           totalPages: 0,
-          categories: await getAllCategorySlugsAndNames(),
+          categories: await getCategoriesWithProductsAndDisplayImage(),
         });
       }
     }
@@ -171,8 +171,7 @@ export async function GET(request: NextRequest) {
       } as Parameters<typeof db.query.productsTable.findMany>[0]);
     }
 
-    const categoryNames = await getAllCategorySlugsAndNames();
-
+    const categoriesWithImage = await getCategoriesWithProductsAndDisplayImage();
     const total = countResult[0]?.count ?? 0;
     const totalPages = Math.ceil(total / limit) || 1;
 
@@ -224,7 +223,11 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         totalPages,
-        categories: categoryNames,
+        categories: categoriesWithImage.map((c) => ({
+          slug: c.slug,
+          name: c.name,
+          ...(c.image ? { image: c.image } : {}),
+        })),
       },
       {
         headers: {

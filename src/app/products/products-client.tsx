@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Search } from "lucide-react";
@@ -28,6 +29,8 @@ interface Product {
 interface CategoryOption {
   slug: string;
   name: string;
+  /** Display image: category image or product fallback (not persisted). */
+  image?: string | null;
 }
 
 export type SortOption =
@@ -321,7 +324,7 @@ export function ProductsClient({
               {categories.map((cat) => (
                 <Button
                   aria-pressed={cat.slug === selectedCategory}
-                  className="rounded-full"
+                  className="rounded-full gap-1.5 pl-1.5 pr-3"
                   key={cat.slug}
                   onClick={() => handleCategoryChange(cat.slug)}
                   size="sm"
@@ -330,6 +333,18 @@ export function ProductsClient({
                     cat.slug === selectedCategory ? "default" : "outline"
                   }
                 >
+                  {cat.image?.trim() ? (
+                    <span className="relative size-6 shrink-0 overflow-hidden rounded-full">
+                      <Image
+                        alt=""
+                        className="object-cover"
+                        fill
+                        sizes="24px"
+                        src={cat.image}
+                        unoptimized={/^https?:\/\//i.test(cat.image)}
+                      />
+                    </span>
+                  ) : null}
                   {cat.name}
                 </Button>
               ))}
