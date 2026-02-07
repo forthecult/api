@@ -229,10 +229,10 @@ function ProductCardInner({
                   <Lock className="h-7 w-7 text-primary" aria-hidden />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-sm font-semibold text-foreground">
+                  <span className="text-base font-semibold text-foreground">
                     Token-gated
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-sm text-muted-foreground">
                     {product.tokenGateSummary ? (
                       <>
                         Connect your wallet and sign to verify you hold the

@@ -1,13 +1,13 @@
 /**
  * Seed data for Trezor Safe 7 hardware wallet.
  * Sourced from https://trezor.io/trezor-safe-7
- * Long-form product page. Brand: Trezor. Category: Accessories (hardware wallets).
+ * Long-form product page. Brand: Trezor. Category: Hardware Wallets.
  */
 
 const PRICE_CENTS = 21900; // ~$219
 const PRODUCT_ID = "trezor-safe-7";
 const PRODUCT_SLUG = "trezor-safe-7";
-const CATEGORY_ID = "accessories";
+const CATEGORY_ID = "accessories-hardware-wallets";
 
 // Official images from trezor.io (product + hero/specs)
 const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";

@@ -336,21 +336,68 @@ export default function TokenPage() {
               be viewed on Solscan.
             </p>
           </div>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,280px)_minmax(0,420px)] lg:items-start">
-            {/* Pie chart + legend */}
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,380px)_1fr] lg:items-start">
+            {/* Pie chart with labels pointing to slices + legend */}
             <div className="flex flex-col items-center gap-4">
-              <div
-                className="aspect-square w-full max-w-[240px] rounded-full border-4 border-background shadow-lg"
-                style={{
-                  background: creatorFeePieGradient(),
-                }}
-                aria-hidden
-              />
+              <div className="relative aspect-square w-full max-w-[340px]">
+                <div
+                  className="absolute inset-0 rounded-full border-4 border-background shadow-lg"
+                  style={{
+                    background: creatorFeePieGradient(),
+                  }}
+                  aria-hidden
+                />
+                {/* SVG overlay: label lines + labels at slice mid-angles (viewBox 0 0 100 100, center 50,50) */}
+                <svg
+                  className="absolute inset-0 h-full w-full overflow-visible"
+                  viewBox="0 0 100 100"
+                  preserveAspectRatio="xMidYMid meet"
+                  aria-hidden
+                >
+                  {(() => {
+                    const rPie = 42
+                    const rLabel = 58
+                    let cum = 0
+                    return creatorFeeAllocations.map((a, i) => {
+                      const midDeg = (cum + a.value / 2) * 3.6
+                      cum += a.value
+                      const rad = (midDeg * Math.PI) / 180
+                      const xEdge = 50 + rPie * Math.sin(rad)
+                      const yEdge = 50 - rPie * Math.cos(rad)
+                      const xLabel = 50 + rLabel * Math.sin(rad)
+                      const yLabel = 50 - rLabel * Math.cos(rad)
+                      return (
+                        <g key={a.label}>
+                          <line
+                            x1={xEdge}
+                            y1={yEdge}
+                            x2={xLabel}
+                            y2={yLabel}
+                            stroke="var(--muted-foreground)"
+                            strokeWidth="0.8"
+                            strokeOpacity={0.8}
+                          />
+                          <text
+                            x={xLabel}
+                            y={yLabel}
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="fill-foreground text-[2.2px] font-medium"
+                            style={{ fontSize: "2.2px" }}
+                          >
+                            {a.pct} {a.label}
+                          </text>
+                        </g>
+                      )
+                    })
+                  })()}
+                </svg>
+              </div>
               <p className="text-center text-xs text-muted-foreground">
                 Total 100%
               </p>
               {/* Legend: color swatch + label for each slice */}
-              <ul className="grid w-full max-w-[240px] grid-cols-1 gap-1.5 text-left text-xs">
+              <ul className="grid w-full max-w-[340px] grid-cols-1 gap-1.5 text-left text-xs">
                 {creatorFeeAllocations.map((a, i) => (
                   <li
                     key={a.label}
@@ -371,14 +418,14 @@ export default function TokenPage() {
                 ))}
               </ul>
             </div>
-            {/* Table – constrained width */}
-            <div className="min-w-0 max-w-xl rounded-lg border border-border">
+            {/* Table – flexible width, no horizontal scroll */}
+            <div className="min-w-0 rounded-lg border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[5rem]">Allocation</TableHead>
                     <TableHead>Use</TableHead>
-                    <TableHead className="w-[8rem] text-right">
+                    <TableHead className="min-w-[7.5rem] text-right">
                       On-chain
                     </TableHead>
                   </TableRow>

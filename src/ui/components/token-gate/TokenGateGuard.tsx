@@ -321,8 +321,8 @@ export function TokenGateGuard({
           <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
             <Lock className="h-7 w-7 text-primary" />
           </div>
-          <h2 className="text-xl font-semibold">Token-gated content</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-2xl font-semibold">Token-gated content</h2>
+          <p className="text-base text-muted-foreground">
             Connect your wallet and sign to verify you hold the required tokens
             to view this page. You need: {gateSummary}.
           </p>
