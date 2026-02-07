@@ -14,9 +14,11 @@ const now = new Date();
  * GET /api/payment-methods
  * Public: returns which payment methods are enabled (for checkout and product pages).
  * If no rows exist, seeds defaults (all enabled) and returns them.
+ * On DB error, returns default list so the storefront still loads.
  */
 export async function GET() {
-  const rows = await db
+  try {
+    const rows = await db
     .select({
       methodKey: paymentMethodSettingTable.methodKey,
       label: paymentMethodSettingTable.label,
@@ -79,4 +81,16 @@ export async function GET() {
   }
 
   return NextResponse.json({ data: list });
+  } catch (err) {
+    console.error("Payment methods GET error:", err);
+    const fallback: PaymentMethodSetting[] = PAYMENT_METHOD_DEFAULTS.map(
+      (d) => ({
+        methodKey: d.methodKey,
+        label: d.label,
+        enabled: true,
+        displayOrder: d.displayOrder,
+      }),
+    ).sort((a, b) => a.displayOrder - b.displayOrder);
+    return NextResponse.json({ data: fallback });
+  }
 }

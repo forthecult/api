@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 export const metadata = {
   description: `Sitemap of ${SEO_CONFIG.name} — main pages, shop categories, and policies.`,
@@ -12,11 +13,12 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/products", label: "Products" },
   { href: "/about", label: "About us" },
   { href: "/lookbook", label: "Lookbook" },
-  { href: "/token", label: "$CULT Token" },
-  { href: "/affiliate-program", label: "Affiliate program" },
   { href: "/contact", label: "Contact" },
   { href: "/track-order", label: "Track order" },
   { href: "/refund", label: "Refund requests" },
+  { href: "/affiliate-program", label: "Affiliate program" },
+  { href: "/token", label: "$CULT Token" },
+  { href: "/sitemap", label: "Sitemap" },
 ];
 
 const POLICY_LINKS: { href: string; label: string }[] = [
@@ -31,11 +33,7 @@ type CategoryItem = { id: string; slug?: string; name: string };
 
 async function getCategories(): Promise<CategoryItem[]> {
   try {
-    const base =
-      process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
-    const siteUrl = /^https?:\/\//i.test(base.trim())
-      ? base.trim()
-      : `https://${base.trim().replace(/^\/+/, "")}`;
+    const siteUrl = getPublicSiteUrl();
     const res = await fetch(`${siteUrl}/api/categories`, {
       next: { revalidate: 3600 },
     });

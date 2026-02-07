@@ -1,5 +1,5 @@
 /**
- * Upload curated product images (Trezor Safe 7, Trezor Safe 5, HUSKYLENS 2) to UploadThing.
+ * Upload curated product images (Trezor Safe 7, Trezor Safe 5, HUSKYLENS 2, Cryptomatic Jetsetter) to UploadThing.
  * Fetches each image from the source URL (trezor.io, dfrobot.com), optimizes to WebP,
  * uploads to UploadThing, and updates product_image + product.imageUrl in the database.
  *
@@ -22,6 +22,7 @@ import {
 import { isUploadThingUrl, uploadMockupToUploadThing } from "../src/lib/product-mockup-upload";
 import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
 
+import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
 import { TREZOR_SAFE_5 } from "./seed-data/trezor-safe-5";
 import { TREZOR_SAFE_7 } from "./seed-data/trezor-safe-7";
@@ -30,6 +31,7 @@ const CURATED_PRODUCTS = [
   { id: TREZOR_SAFE_7.id, name: TREZOR_SAFE_7.name, images: TREZOR_SAFE_7.images ?? [] },
   { id: TREZOR_SAFE_5.id, name: TREZOR_SAFE_5.name, images: TREZOR_SAFE_5.images ?? [] },
   { id: HUSKYLENS_2.id, name: HUSKYLENS_2.name, images: HUSKYLENS_2.images ?? [] },
+  { id: CRYPTOMATIC_JETSETTER.id, name: CRYPTOMATIC_JETSETTER.name, images: CRYPTOMATIC_JETSETTER.images ?? [] },
 ];
 
 async function main() {

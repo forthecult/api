@@ -13,34 +13,39 @@ const PRODUCT_ID = "cryptomatic-jetsetter";
 const PRODUCT_SLUG = "cryptomatic-the-jetsetter";
 const CATEGORY_ID = "accessories-cryptomatic-watches";
 
-/** Base URL for product images (Cryptomatic site; replace with CDN URLs when available). */
-const IMG_BASE = "https://cryptomatic.io";
+/** Product images from Cryptomatic Squarespace CDN (https://cryptomatic.io). */
+const SQSP = "https://images.squarespace-cdn.com/content/v1/6346c0b861def74f44593142";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${IMG_BASE}/cdn/shop/files/Jetsetter_Main_01.jpg`,
+    url: `${SQSP}/a837b4f0-2db1-47b1-be04-265ab0809b7a/JET-111_leather.png`,
     alt: "Cryptomatic THE JETSETTER Swiss Made watch - Steel and Black",
     title: "THE JETSETTER - Model One",
   },
   {
-    url: `${IMG_BASE}/cdn/shop/files/Jetsetter_Model2.jpg`,
-    alt: "THE JETSETTER Steel and Orange",
-    title: "THE JETSETTER - Model Two",
+    url: `${SQSP}/ad0b48da-1d83-420d-a4ef-06bcda0587ad/JET-112_leather.png`,
+    alt: "THE JETSETTER Steel + Black",
+    title: "THE JETSETTER - Steel + Black",
   },
   {
-    url: `${IMG_BASE}/cdn/shop/files/Jetsetter_Model3.jpg`,
-    alt: "THE JETSETTER Steel Two-tone Bezel",
-    title: "THE JETSETTER - Model Three",
+    url: `${SQSP}/7e6f8b1a-ad2a-4117-a9e1-0cee62f847c2/JET-121_leather.png`,
+    alt: "THE JETSETTER Steel + Orange",
+    title: "THE JETSETTER - Steel + Orange",
   },
   {
-    url: `${IMG_BASE}/cdn/shop/files/Jetsetter_Model4.jpg`,
-    alt: "THE JETSETTER Inverse Black and Orange",
-    title: "THE JETSETTER - Model Four",
+    url: `${SQSP}/1154a062-9e37-4028-b2ac-20ba79b7a075/JET-213_leather.png`,
+    alt: "THE JETSETTER Steel + Two-tone Bezel",
+    title: "THE JETSETTER - Steel + Two-tone Bezel",
   },
   {
-    url: `${IMG_BASE}/cdn/shop/files/Jetsetter_Model5.jpg`,
-    alt: "THE JETSETTER Black and Orange",
-    title: "THE JETSETTER - Model Five",
+    url: `${SQSP}/5ccb34a0-fd5b-48ac-ab6e-4857c9131e5d/JET-212_leather.png`,
+    alt: "THE JETSETTER Inverse Black + Orange",
+    title: "THE JETSETTER - Inverse Black + Orange",
+  },
+  {
+    url: `${SQSP}/0584a882-e97d-45c9-94be-d0b3bace76e5/model+5+%283%29.jpg`,
+    alt: "THE JETSETTER Black + Orange",
+    title: "THE JETSETTER - Black + Orange",
   },
 ];
 
@@ -112,7 +117,7 @@ const VARIANTS: Array<{
     color: "Black + Orange",
     priceCents: PRICE_CENTS,
     sku: "JETSETTER-05",
-    imageUrl: PRODUCT_IMAGES[4]!.url,
+    imageUrl: PRODUCT_IMAGES[5]!.url,
     imageAlt: "THE JETSETTER Model Five - Black + Orange",
     imageTitle: "THE JETSETTER - Black + Orange",
     stockQuantity: 42,

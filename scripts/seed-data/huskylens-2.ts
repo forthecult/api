@@ -12,42 +12,15 @@ const PRODUCT_ID = "dfrobot-huskylens-2";
 const PRODUCT_SLUG = "dfrobot-huskylens-2";
 const CATEGORY_ID = "accessories-tech";
 
-// All product gallery and intro images from https://www.dfrobot.com/product-2995.html
+// Product images from DFRobot CDN (verified from https://www.dfrobot.com/product-2995.html)
 const DFR_IMG = "https://dfimg.dfrobot.com/enshop/image/data/SEN0638";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
-  // Gallery (Photos) — main product shots
   {
     url: `${DFR_IMG}/SEN0638_Main_01_226x150.jpg.webp`,
     alt: "HUSKYLENS 2 AI vision sensor - main view, camera, USB-C, Gravity interface",
     title: "HUSKYLENS 2 - Main view",
   },
-  {
-    url: `${DFR_IMG}/SEN0638_Main_02_226x150.jpg.webp`,
-    alt: "HUSKYLENS 2 - alternate angle",
-    title: "HUSKYLENS 2 - Angle view",
-  },
-  {
-    url: `${DFR_IMG}/SEN0638_Main_03_226x150.jpg.webp`,
-    alt: "HUSKYLENS 2 - touchscreen display",
-    title: "HUSKYLENS 2 - Screen",
-  },
-  {
-    url: `${DFR_IMG}/SEN0638_Main_04_226x150.jpg.webp`,
-    alt: "HUSKYLENS 2 - ports and connections",
-    title: "HUSKYLENS 2 - Ports",
-  },
-  {
-    url: `${DFR_IMG}/SEN0638_Main_05_226x150.jpg.webp`,
-    alt: "HUSKYLENS 2 with optional module",
-    title: "HUSKYLENS 2 - With module",
-  },
-  {
-    url: `${DFR_IMG}/SEN0638_Main_06_226x150.jpg.webp`,
-    alt: "HUSKYLENS 2 packaging and contents",
-    title: "HUSKYLENS 2 - Packaging",
-  },
-  // Introduction section images
   {
     url: `${DFR_IMG}/6%20TOPS%20AI%20accelerator_0x0.jpg.webp`,
     alt: "HUSKYLENS 2 - 6 TOPS on-device AI accelerator",
@@ -72,11 +45,6 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
     url: `${DFR_IMG}/Deployment%20of%20Custom%20Models_0x0.jpg.webp`,
     alt: "HUSKYLENS 2 - Deploy custom YOLO models",
     title: "HUSKYLENS 2 - Custom models",
-  },
-  {
-    url: `${DFR_IMG}/Model%20Combination.gif`,
-    alt: "HUSKYLENS 2 - Flexible model combination for diverse applications",
-    title: "HUSKYLENS 2 - Model combination",
   },
   {
     url: `${DFR_IMG}/wifi%20module-1_0x0.png.webp`,

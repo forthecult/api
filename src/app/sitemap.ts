@@ -1,14 +1,11 @@
 import type { MetadataRoute } from "next";
 
+import { getPublicSiteUrl } from "~/lib/app-url";
+
 // Generate on request so build doesn't depend on DB/API (avoids timeout + 42P01 during deploy)
 export const dynamic = "force-dynamic";
 
-function getSiteUrl(): string {
-  const raw = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
-  if (/^https?:\/\//i.test(raw.trim())) return raw.trim();
-  return `https://${raw.trim().replace(/^\/+/, "")}`;
-}
-const siteUrl = getSiteUrl();
+const siteUrl = getPublicSiteUrl();
 
 interface ProductItem {
   id: string;
@@ -58,86 +55,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchAllCategories(),
   ]);
 
-  // Static pages
+  // Static pages (public storefront only; no auth, checkout, or dashboard)
   const staticPages: MetadataRoute.Sitemap = [
-    {
-      url: siteUrl,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 1,
-    },
-    {
-      url: `${siteUrl}/products`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${siteUrl}/about`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: `${siteUrl}/lookbook`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${siteUrl}/contact`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${siteUrl}/refund`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${siteUrl}/affiliate-program`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
-    },
-    {
-      url: `${siteUrl}/token`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
-    {
-      url: `${siteUrl}/policies/privacy`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${siteUrl}/policies/terms`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${siteUrl}/policies/refund`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${siteUrl}/policies/shipping`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
-    {
-      url: `${siteUrl}/cookies`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
-    },
+    { url: siteUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { url: `${siteUrl}/products`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    { url: `${siteUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${siteUrl}/lookbook`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${siteUrl}/track-order`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${siteUrl}/refund`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${siteUrl}/affiliate-program`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteUrl}/token`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${siteUrl}/sitemap`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
+    { url: `${siteUrl}/policies/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/policies/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/policies/refund`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/policies/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/cookies`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
   ];
 
   // Category pages (store.com/[category-slug])

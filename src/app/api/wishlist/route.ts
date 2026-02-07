@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
       );
     }
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({
+        items: [],
+        pagination: { page: 1, limit: DEFAULT_LIMIT, total: 0, totalPages: 1 },
+      });
     }
 
     const { searchParams } = request.nextUrl;
