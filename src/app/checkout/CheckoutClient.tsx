@@ -2985,7 +2985,7 @@ export function CheckoutClient() {
                                 name="payment-usdc"
                                 checked={paymentSubOption === opt.value}
                                 onChange={() => {
-                                  setPaymentSubOption(opt.value);
+                                  setPaymentSubOption(opt.value as UsdcSub);
                                   setValidationErrors([]);
                                 }}
                                 className="size-4 border-input text-primary focus:ring-primary"
@@ -3012,7 +3012,7 @@ export function CheckoutClient() {
                                 name="payment-usdt"
                                 checked={paymentSubOption === opt.value}
                                 onChange={() => {
-                                  setPaymentSubOption(opt.value);
+                                  setPaymentSubOption(opt.value as UsdtSub);
                                   setValidationErrors([]);
                                 }}
                                 className="size-4 border-input text-primary focus:ring-primary"
