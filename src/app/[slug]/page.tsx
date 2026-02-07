@@ -41,6 +41,7 @@ import type {
 } from "~/app/products/[id]/page";
 import { ProductsClient } from "~/app/products/products-client";
 import { ESimMiniappClient } from "~/app/[slug]/esim-miniapp-client";
+import { getTokenGateConfig } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
@@ -298,11 +299,13 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     if (canonicalSlug && slug !== canonicalSlug) {
       redirect(`/${canonicalSlug}`);
     }
+    // Only show token gate when this product is actually token-gated; otherwise show product (avoids blank page)
+    const tokenGateConfig = await getTokenGateConfig("product", canonicalSlug);
     const cookieStore = await cookies();
     const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
     const passed = hasValidTokenGateCookie(tgCookie, "product", canonicalSlug);
 
-    if (!passed) {
+    if (tokenGateConfig.tokenGated && !passed) {
       return (
         <TokenGateGuard
           resourceType="product"

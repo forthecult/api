@@ -254,6 +254,15 @@ export function TokenGateGuard({
   }
 
   if (!config?.tokenGated || validated) {
+    // When server sent guard with no children and this resource isn't gated, refresh so server can send full content
+    if (!hasChildren && !config?.tokenGated) {
+      router.refresh();
+      return (
+        <div className="flex min-h-[280px] items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        </div>
+      );
+    }
     return <>{children}</>;
   }
 

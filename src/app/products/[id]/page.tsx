@@ -24,6 +24,7 @@ import { ProductImageGallery } from "./product-image-gallery";
 import { ProductShare } from "./product-share";
 import { ProductVariantSection } from "./product-variant-section";
 import { RelatedProductsSection } from "./related-products-section";
+import { getTokenGateConfig } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
@@ -261,11 +262,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
       )
     : 0;
 
+  const tokenGateConfig = await getTokenGateConfig("product", product.id);
   const cookieStore = await cookies();
   const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
   const passed = hasValidTokenGateCookie(tgCookie, "product", product.id);
 
-  if (!passed) {
+  if (tokenGateConfig.tokenGated && !passed) {
     return <TokenGateGuard resourceType="product" resourceId={product.id} />;
   }
 
