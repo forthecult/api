@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
+import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
 import {
   categoriesTable,
   orderItemsTable,
@@ -178,6 +179,7 @@ export async function GET(request: NextRequest) {
     // Product IDs that have token gates (from product_token_gate table). Separate query so
     // the main list never fails if the table is missing or relation has issues on deploy.
     let productIdsWithTokenGates = new Set<string>();
+    const tokenGateSummaryByProductId = new Map<string, string>();
     if (rows.length > 0) {
       try {
         const ids = rows.map((r) => r.id);
@@ -186,6 +188,33 @@ export async function GET(request: NextRequest) {
           .from(productTokenGateTable)
           .where(inArray(productTokenGateTable.productId, ids));
         productIdsWithTokenGates = new Set(gated.map((r) => r.productId));
+        if (productIdsWithTokenGates.size > 0) {
+          const gateRows = await db
+            .select({
+              productId: productTokenGateTable.productId,
+              tokenSymbol: productTokenGateTable.tokenSymbol,
+              quantity: productTokenGateTable.quantity,
+              network: productTokenGateTable.network,
+            })
+            .from(productTokenGateTable)
+            .where(inArray(productTokenGateTable.productId, [...productIdsWithTokenGates]));
+          const gatesByProduct = new Map<string, Array<{ tokenSymbol: string; quantity: number; network: string | null }>>();
+          for (const g of gateRows) {
+            const list = gatesByProduct.get(g.productId) ?? [];
+            list.push({
+              tokenSymbol: g.tokenSymbol,
+              quantity: g.quantity,
+              network: g.network,
+            });
+            gatesByProduct.set(g.productId, list);
+          }
+          for (const [productId, gates] of gatesByProduct) {
+            tokenGateSummaryByProductId.set(
+              productId,
+              formatTokenGateSummaryToDisplay(gates),
+            );
+          }
+        }
       } catch {
         // If product_token_gate is missing or query fails, only use column below
       }
@@ -198,6 +227,7 @@ export async function GET(request: NextRequest) {
       const mainPc =
         p.productCategories?.find((pc: { isMain?: boolean }) => pc.isMain) ??
         p.productCategories?.[0];
+      const tokenGated = (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id);
       return {
         id: p.id,
         slug: p.slug ?? undefined,
@@ -212,7 +242,10 @@ export async function GET(request: NextRequest) {
             : undefined,
         inStock: true,
         rating: 0,
-        tokenGated: (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id),
+        tokenGated,
+        ...(tokenGated && tokenGateSummaryByProductId.has(p.id)
+          ? { tokenGateSummary: tokenGateSummaryByProductId.get(p.id) }
+          : {}),
       };
     });
 

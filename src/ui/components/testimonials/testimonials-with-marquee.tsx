@@ -14,6 +14,7 @@ interface TestimonialsSectionProps {
   testimonials: {
     author: TestimonialAuthor;
     href?: string;
+    rating?: number;
     text: string;
   }[];
   title: string;
@@ -90,10 +91,11 @@ export function TestimonialsSection({
               {[...Array(4)].map((_, setIndex) =>
                 testimonials.map((testimonial, i) => (
                   <TestimonialCard
-                    // Using UUID or other unique identifier would be better here,
-                    // but for static content this is acceptable
                     key={`testimonial-${testimonial.author.name}-${setIndex}-${i}`}
-                    {...testimonial}
+                    author={testimonial.author}
+                    text={testimonial.text}
+                    rating={testimonial.rating}
+                    href={testimonial.href}
                   />
                 )),
               )}

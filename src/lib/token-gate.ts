@@ -39,6 +39,34 @@ export type TokenGateConfig = {
   gates: TokenGateRule[];
 };
 
+/**
+ * Format token gate rules into a short display string for product cards and listings.
+ * e.g. "≥ 1000 CULT on the Solana network" or "≥ 500 PUMP on Solana, or ≥ 100 WHALE on the Ethereum network"
+ */
+export function formatTokenGateSummaryToDisplay(
+  gates: Array<{ tokenSymbol: string; quantity: number; network: string | null }>,
+): string {
+  if (gates.length === 0) return "required tokens";
+  function networkLabel(network: string | null): string {
+    const n = (network ?? "solana").toLowerCase();
+    const labels: Record<string, string> = {
+      solana: "the Solana network",
+      ethereum: "the Ethereum network",
+      base: "the Base network",
+      arbitrum: "the Arbitrum network",
+      bnb: "the BNB Chain network",
+      bsc: "the BNB Chain network",
+      polygon: "the Polygon network",
+      avalanche: "the Avalanche network",
+    };
+    return labels[n] ?? (n ? `the ${n} network` : "the required network");
+  }
+  const parts = gates.map(
+    (g) => `≥ ${g.quantity} ${g.tokenSymbol} on ${networkLabel(g.network)}`,
+  );
+  return parts.length === 1 ? parts[0]! : parts.join(", or ");
+}
+
 /** CULT mint on Solana (env or default test mint). */
 export function getCultMintSolana(): string {
   const env =

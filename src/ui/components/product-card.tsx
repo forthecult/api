@@ -42,6 +42,8 @@ type ProductCardProps = Omit<
     slug?: string;
     /** When true, show only thumbnail with lock overlay (no name, price, add to cart). */
     tokenGated?: boolean;
+    /** When tokenGated, optional requirement text e.g. "≥ 1000 CULT on the Solana network". */
+    tokenGateSummary?: string;
   };
   variant?: "compact" | "default";
 };
@@ -205,7 +207,11 @@ function ProductCardInner({
                 role="button"
                 tabIndex={0}
                 className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted p-4 text-center"
-                aria-label="Token-gated product. Connect wallet to view."
+                aria-label={
+                  product.tokenGateSummary
+                    ? `Token-gated. You need: ${product.tokenGateSummary}`
+                    : "Token-gated product. Connect wallet to view."
+                }
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -222,12 +228,22 @@ function ProductCardInner({
                 <div className="flex size-14 items-center justify-center rounded-full bg-background shadow-lg">
                   <Lock className="h-7 w-7 text-primary" aria-hidden />
                 </div>
-                <div className="flex flex-col gap-1">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-sm font-semibold text-foreground">
                     Token-gated
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    Connect wallet to view
+                    {product.tokenGateSummary ? (
+                      <>
+                        Connect your wallet and sign to verify you hold the
+                        required tokens to view this page. You need:{" "}
+                        <span className="font-medium text-foreground">
+                          {product.tokenGateSummary}
+                        </span>
+                      </>
+                    ) : (
+                      "Connect wallet to view"
+                    )}
                   </span>
                 </div>
                 <Button

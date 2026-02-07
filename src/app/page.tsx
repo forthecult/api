@@ -37,13 +37,10 @@ import { testimonials as mockTestimonials } from "./mocks";
 export const dynamic = "force-dynamic";
 
 type TestimonialItem = {
-  author: { avatar: string; handle: string; name: string };
+  author: { name: string; avatar?: string; handle?: string };
   text: string;
+  rating?: number;
 };
-
-function avatarUrlForName(name: string): string {
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=6366f1&color=fff`;
-}
 
 async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
   const baseUrl = getServerBaseUrl();
@@ -52,16 +49,15 @@ async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
       next: { revalidate: 300 },
     });
     if (!res.ok) return [];
-    const data = (await res.json()) as { items?: Array<{ id: string; comment: string; displayName: string }> };
+    const data = (await res.json()) as {
+      items?: Array<{ id: string; comment: string; displayName: string; rating: number }>;
+    };
     const items = data.items ?? [];
     if (items.length === 0) return [];
     return items.map((r) => ({
-      author: {
-        avatar: avatarUrlForName(r.displayName),
-        handle: `@${r.displayName.toLowerCase().replace(/\s+/g, "").slice(0, 12)}`,
-        name: r.displayName,
-      },
+      author: { name: r.displayName },
       text: r.comment,
+      rating: r.rating,
     }));
   } catch {
     return [];

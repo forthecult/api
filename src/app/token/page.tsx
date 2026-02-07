@@ -31,7 +31,7 @@ import {
 export const metadata = {
   title: `CULT Token | ${SEO_CONFIG.name}`,
   description:
-    "Fair launch utility token for the CULT community. Governance rights and up to 15% discount on eligible purchases.",
+    "Fair launch utility token for the CULT community. Governance rights and up to 13.37% discount on eligible purchases.",
 };
 
 const valueCards = [
@@ -48,15 +48,15 @@ const valueCards = [
     icon: Shield,
   },
   {
-    title: "DAO Governed",
+    title: "Voting",
     description:
-      "Planned DAO structure. Token holders will participate in governance once established.",
+      "Token holders will participate in our direction.",
     icon: Users,
   },
   {
     title: "Real Utility",
     description:
-      "Up to 15% discount when used for eligible purchases at checkout.",
+      "Up to 13.37% discount when used for eligible purchases at checkout.",
     icon: Zap,
   },
 ];
@@ -74,16 +74,16 @@ const allocationItems = [
   },
   {
     label: "Team (unlocked)",
-    sublabel: "DAO governance participation",
-    pct: "5%",
+    sublabel: "Voting participation",
+    pct: "3.37%",
   },
 ];
 
 const fairLaunchPrinciples = [
-  "Team allocation 15% (middle of 10-20% range)",
+  "Team allocation 13.37% (middle of 10-20% range)",
   "Public allocation exceeds 30% min (85%)",
   "10% locked 6 months via Streamflow (verifiable on-chain)",
-  "5% unlocked so team can participate in DAO governance from day one",
+  "3.37% unlocked so team can participate in voting from day one",
 ];
 
 const cultureUnique = [
@@ -116,28 +116,28 @@ const creatorFeeAllocations = [
     label: "Charity",
     wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS",
   },
-  { value: 15, pct: "15%", label: "Marketing and advertising", wallet: null },
+  { value: 15, pct: "13.37%", label: "Marketing and advertising", wallet: null },
   { value: 20, pct: "20%", label: "Subsidize shipping and product prices", wallet: null },
   { value: 20, pct: "20%", label: "Product inventory and development", wallet: null },
   { value: 30, pct: "30%", label: "Treasury and feature development", wallet: null },
 ];
 
-/** Conic-gradient stops for pie chart (cumulative %). Uses theme chart/primary colors. */
+/** Conic-gradient colors. Last (30% Treasury) uses primary so the biggest slice stands out. */
 const PIE_COLORS = [
   "var(--chart-1)",
   "var(--chart-2)",
   "var(--chart-3)",
   "var(--chart-4)",
   "var(--chart-5)",
-  "var(--primary)",
   "var(--muted-foreground)",
+  "var(--primary)", // 30% Treasury – primary for largest slice
 ];
 function creatorFeePieGradient(): string {
   let cum = 0;
   const stops = creatorFeeAllocations.map((a, i) => {
     const start = cum;
     cum += a.value;
-    return `${PIE_COLORS[i % PIE_COLORS.length]} ${start}% ${cum}%`;
+    return `${PIE_COLORS[i]} ${start}% ${cum}%`;
   });
   return `conic-gradient(from 0deg, ${stops.join(", ")})`;
 }
@@ -148,15 +148,15 @@ const faqItems = [
     a: "Pump.fun aligns with fair launch principles: equal pricing for everyone, no presale, transparent distribution. Everyone starts at the same price on the bonding curve with no structural advantages for insiders.",
   },
   {
-    q: "Why 15% team allocation?",
-    a: "Fair launch standards recommend team allocations between 10-20%. We chose 15%—the middle path. 10% is locked for 6 months via Streamflow (verifiable on-chain). 5% is unlocked so the team can participate in DAO governance from day one.",
+    q: "Why 13.37% team allocation?",
+    a: "Fair launch standards recommend team allocations between 10-20%. We chose 13.37%—the middle path. 10% is locked for 6 months via Streamflow (verifiable on-chain). 5% is unlocked so the team can participate in DAO governance from day one.",
   },
   {
     q: "What creates demand for CULT?",
-    a: "The CULT token provides a 15% discount when used for eligible purchases at checkout, giving it utility within the CULT ecosystem.",
+    a: "The CULT token provides a 13.37% discount when used for eligible purchases at checkout, giving it utility within the CULT ecosystem.",
   },
   {
-    q: "How does the DAO work?",
+    q: "How does the voting work?",
     a: "The CULT community is being organized as a DAO, intended to provide a framework for decentralized governance. Once established, CULT token holders will be able to participate in governance decisions about protocol upgrades, fee structures, and the future of the ecosystem.",
   },
 ];
@@ -180,7 +180,7 @@ export default function TokenPage() {
         <section className="relative overflow-hidden py-12 md:py-16">
           <div className="relative z-10 mx-auto max-w-3xl space-y-6 text-center">
             <p className="text-sm font-medium text-muted-foreground">
-              {SEO_CONFIG.name} · DAO
+              {SEO_CONFIG.name}
             </p>
             <h1
               className={`
@@ -211,8 +211,8 @@ export default function TokenPage() {
               CULT community.
             </p>
             <p className="text-muted-foreground">
-              Holding CULT gives free shipping. Spending CULT gives up to 15%
-              discount on eligible purchases. We kept 15% for the team. You get
+              Holding CULT gives free shipping. Spending CULT gives up to 13.37%
+              discount on eligible purchases. We kept 13.37% for the team. You get
               the rest.
             </p>
           </div>
@@ -245,7 +245,7 @@ export default function TokenPage() {
                 you hold 250,000 or more tokens in your wallet
               </li>
               <li>
-                <strong className="text-foreground">Up to 15% discount</strong>{" "}
+                <strong className="text-foreground">Up to 13.37% discount</strong>{" "}
                 on eligible purchases at checkout
               </li>
               <li>
@@ -336,8 +336,8 @@ export default function TokenPage() {
               be viewed on Solscan.
             </p>
           </div>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,280px)_1fr] lg:items-start">
-            {/* Pie chart */}
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,280px)_minmax(0,420px)] lg:items-start">
+            {/* Pie chart + legend */}
             <div className="flex flex-col items-center gap-4">
               <div
                 className="aspect-square w-full max-w-[240px] rounded-full border-4 border-background shadow-lg"
@@ -349,9 +349,30 @@ export default function TokenPage() {
               <p className="text-center text-xs text-muted-foreground">
                 Total 100%
               </p>
+              {/* Legend: color swatch + label for each slice */}
+              <ul className="grid w-full max-w-[240px] grid-cols-1 gap-1.5 text-left text-xs">
+                {creatorFeeAllocations.map((a, i) => (
+                  <li
+                    key={a.label}
+                    className="flex items-center gap-2 text-muted-foreground"
+                  >
+                    <span
+                      className="h-3 w-3 shrink-0 rounded-sm border border-border"
+                      style={{ backgroundColor: PIE_COLORS[i] }}
+                      aria-hidden
+                    />
+                    <span>
+                      <span className="font-medium tabular-nums text-foreground">
+                        {a.pct}
+                      </span>{" "}
+                      {a.label}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            {/* Table */}
-            <div className="min-w-0 rounded-lg border border-border">
+            {/* Table – constrained width */}
+            <div className="min-w-0 max-w-xl rounded-lg border border-border">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -412,14 +433,13 @@ export default function TokenPage() {
           </ul>
         </section>
 
-        {/* DAO Governance */}
+        {/*  Governance */}
         <section className="space-y-8 py-12 md:py-16">
           <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
-            DAO governance
+            Voting
           </h2>
           <p className="max-w-3xl text-muted-foreground">
-            The CULT community is being organized as a DAO. We believe the
-            community should decide the future of the ecosystem.
+            We believe the community should decide the future of the ecosystem.
           </p>
           <div className="grid gap-8 md:grid-cols-2">
             <Card className="border-border bg-card">
@@ -430,17 +450,17 @@ export default function TokenPage() {
                 <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
                   <li>Charity funds allocation</li>
                   <li>Determine new products and features</li>
-                  <li>Guide treasury allocation decisions</li>
+                  <li>Become a DAO one day? It's possible!</li>
                 </ul>
               </CardContent>
             </Card>
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-lg">Why a DAO?</CardTitle>
+                <CardTitle className="text-lg">Why a DAO in the future?</CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                  <li>Legal recognition of DAO structure</li>
+                  <li>Better allocation of capital</li>
                   <li>Limited liability for token holders</li>
                   <li>Clear framework for decentralized ops</li>
                   <li>Compliant path to community governance</li>
@@ -480,7 +500,7 @@ export default function TokenPage() {
             </Button>
           </Link>
           <p className="text-sm text-muted-foreground">
-            Use CULT token at checkout for up to 15% off eligible purchases.
+            Use CULT token at checkout for up to 13.37% off eligible purchases.
           </p>
         </section>
 

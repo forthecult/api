@@ -30,6 +30,7 @@ export async function GET(request: Request) {
       columns: {
         id: true,
         comment: true,
+        rating: true,
         customerName: true,
         author: true,
         showName: true,
@@ -42,6 +43,7 @@ export async function GET(request: Request) {
     const items = rows.map((r) => ({
       id: r.id,
       comment: r.comment,
+      rating: r.rating,
       displayName: getReviewDisplayName({
         id: r.id,
         customerName: r.customerName,
