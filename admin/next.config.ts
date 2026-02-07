@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
 
 export default {
-  eslint: { ignoreDuringBuilds: true },
+  turbopack: { root: process.cwd() },
 } satisfies NextConfig;

@@ -29,6 +29,10 @@ export type PaymentVisibility = {
   cryptoTon: boolean;
   stablecoinUsdc: boolean;
   stablecoinUsdt: boolean;
+  /** For USDC: enabled network keys. Null/empty = all supported. */
+  enabledUsdcNetworks: string[] | null;
+  /** For USDT: enabled network keys. Null/empty = all supported. */
+  enabledUsdtNetworks: string[] | null;
 };
 
 const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
