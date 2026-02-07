@@ -104,7 +104,7 @@ export function WishlistPageClient() {
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
           {items.map((item) => (
             <li key={item.productId} className="min-w-0">
-              <Card className="flex h-full flex-col overflow-hidden transition-shadow hover:shadow-md">
+              <Card className="flex h-full flex-col overflow-hidden">
                 <CardContent className="flex flex-col p-0">
                   <Link
                     href={`/${item.product.slug ?? item.product.id}`}

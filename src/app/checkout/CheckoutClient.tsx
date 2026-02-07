@@ -3534,7 +3534,7 @@ function PolicyPopup({
               >
                 Read full policy
               </a>
-              <span className="text-muted-foreground"> (opens in new tab)</span>
+              <span className="text-muted-foreground"></span>
             </p>
           ) : null}
         </div>
