@@ -12,22 +12,39 @@ const PRODUCT_ID = "dfrobot-huskylens-2";
 const PRODUCT_SLUG = "dfrobot-huskylens-2";
 const CATEGORY_ID = "accessories-tech";
 
-// Official product/wiki images (DFRobot)
+// Official product images from DFRobot CDN (product-2995 / huskylens2)
+const DFR_IMG = "https://dfimg.dfrobot.com/enshop/image/data/SEN0638";
+
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: "https://wiki.dfrobot.com/images/0/0b/SEN0638_01.png",
+    url: `${DFR_IMG}/SEN0638_Main_01_226x150.jpg.webp`,
     alt: "HUSKYLENS 2 AI vision sensor - 6 TOPS, MCP and LLM support",
     title: "HUSKYLENS 2 - 6 TOPS AI Vision Sensor",
   },
   {
-    url: "https://wiki.dfrobot.com/images/thumb/2/2e/SEN0638_02.png/400px-SEN0638_02.png",
-    alt: "HUSKYLENS 2 touchscreen and replaceable camera module",
-    title: "HUSKYLENS 2 - Display and camera",
+    url: `${DFR_IMG}/6%20TOPS%20AI%20accelerator_0x0.jpg.webp`,
+    alt: "HUSKYLENS 2 - 6 TOPS on-device AI",
+    title: "HUSKYLENS 2 - 6 TOPS AI",
   },
   {
-    url: "https://wiki.dfrobot.com/images/thumb/5/5e/SEN0638_03.png/400px-SEN0638_03.png",
-    alt: "HUSKYLENS 2 interfaces - USB-C, Gravity UART I2C, TF slot",
-    title: "HUSKYLENS 2 - Interfaces",
+    url: `${DFR_IMG}/20%20models_0x0.jpg.webp`,
+    alt: "HUSKYLENS 2 - 20+ built-in AI models",
+    title: "HUSKYLENS 2 - Built-in models",
+  },
+  {
+    url: `${DFR_IMG}/MCP%20LLM-3_0x0.png.webp`,
+    alt: "HUSKYLENS 2 - MCP and LLM contextual awareness",
+    title: "HUSKYLENS 2 - MCP LLM",
+  },
+  {
+    url: `${DFR_IMG}/Compatibility_0x0.jpg.webp`,
+    alt: "HUSKYLENS 2 - Arduino, Raspberry Pi, ESP32 compatibility",
+    title: "HUSKYLENS 2 - Compatibility",
+  },
+  {
+    url: `${DFR_IMG}/Lens_0x0.png.webp`,
+    alt: "HUSKYLENS 2 - Replaceable camera module",
+    title: "HUSKYLENS 2 - Replaceable lens",
   },
 ];
 

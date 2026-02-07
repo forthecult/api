@@ -9,19 +9,35 @@ const PRODUCT_ID = "trezor-safe-7";
 const PRODUCT_SLUG = "trezor-safe-7";
 const CATEGORY_ID = "accessories";
 
-const CDN =
-  "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
+// Official images from trezor.io (product + hero/specs)
+const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
+const TREZOR_NEXT = "https://trezor.io/_next/static/media";
 
 export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${CDN}/eedcd2d7-7754-4386-1480-232d70eb0c00/public`,
+    url: `${TREZOR_CDN}/eedcd2d7-7754-4386-1480-232d70eb0c00/public`,
     alt: "Trezor Safe 7 hardware wallet - Charcoal Black",
     title: "Trezor Safe 7 - Charcoal Black",
   },
   {
-    url: `${CDN}/6d2ac1b9-31e3-4fa5-c56c-decf6bf47500/public`,
+    url: `${TREZOR_CDN}/6d2ac1b9-31e3-4fa5-c56c-decf6bf47500/public`,
     alt: "Trezor Safe 7 - Obsidian Green",
     title: "Trezor Safe 7 - Obsidian Green",
+  },
+  {
+    url: `${TREZOR_NEXT}/hero-desktop.31065358.jpg`,
+    alt: "Trezor Safe 7 hero - hardware wallet",
+    title: "Trezor Safe 7 - Hero",
+  },
+  {
+    url: `${TREZOR_NEXT}/black.9bb08b6d.jpg`,
+    alt: "Trezor Safe 7 elevated view",
+    title: "Trezor Safe 7 - Elevated view",
+  },
+  {
+    url: `${TREZOR_NEXT}/screen-start-desktop.c02078c5.jpg`,
+    alt: "Trezor Safe 7 color touchscreen",
+    title: "Trezor Safe 7 - Screen",
   },
 ];
 

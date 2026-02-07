@@ -7,6 +7,7 @@ import {
   categoriesTable,
   orderItemsTable,
   productCategoriesTable,
+  productTokenGateTable,
   productsTable,
 } from "~/db/schema";
 
@@ -175,6 +176,22 @@ export async function GET(request: NextRequest) {
     const total = countResult[0]?.count ?? 0;
     const totalPages = Math.ceil(total / limit) || 1;
 
+    // Product IDs that have token gates (from product_token_gate table). Separate query so
+    // the main list never fails if the table is missing or relation has issues on deploy.
+    let productIdsWithTokenGates = new Set<string>();
+    if (rows.length > 0) {
+      try {
+        const ids = rows.map((r) => r.id);
+        const gated = await db
+          .selectDistinct({ productId: productTokenGateTable.productId })
+          .from(productTokenGateTable)
+          .where(inArray(productTokenGateTable.productId, ids));
+        productIdsWithTokenGates = new Set(gated.map((r) => r.productId));
+      } catch {
+        // If product_token_gate is missing or query fails, only use column below
+      }
+    }
+
     type ProductWithRelations = (typeof rows)[number] & {
       productCategories?: Array<{ isMain?: boolean; category?: { name?: string; slug?: string } }>;
     };
@@ -196,7 +213,7 @@ export async function GET(request: NextRequest) {
             : undefined,
         inStock: true,
         rating: 0,
-        tokenGated: p.tokenGated ?? false,
+        tokenGated: (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id),
       };
     });
 

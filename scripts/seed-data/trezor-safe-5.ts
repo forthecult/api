@@ -9,14 +9,44 @@ const PRODUCT_ID = "trezor-safe-5";
 const PRODUCT_SLUG = "trezor-safe-5";
 const CATEGORY_ID = "accessories";
 
-const CDN =
-  "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
+// Official images from trezor.io (Safe 5 product shots)
+const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
 
 export const PRODUCT_IMAGES_SAFE_5: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${CDN}/eedcd2d7-7754-4386-1480-232d70eb0c00/public`,
+    url: `${TREZOR_CDN}/e05a7bf5-a123-4241-535f-571363943e00/public`,
     alt: "Trezor Safe 5 hardware wallet - Black Graphite",
     title: "Trezor Safe 5 - Black Graphite",
+  },
+  {
+    url: `${TREZOR_CDN}/b2c17482-7573-49b9-1ebf-ca12f66ae900/public`,
+    alt: "Trezor Safe 5 - front view",
+    title: "Trezor Safe 5 - Front",
+  },
+  {
+    url: `${TREZOR_CDN}/eae8bc5c-2403-423f-f2e3-f55795d80300/public`,
+    alt: "Trezor Safe 5 - color touchscreen",
+    title: "Trezor Safe 5 - Touchscreen",
+  },
+  {
+    url: `${TREZOR_CDN}/f96e0e46-d8dd-4f8f-788e-b3f29190bc00/public`,
+    alt: "Trezor Safe 5 - angle view",
+    title: "Trezor Safe 5 - Angle",
+  },
+  {
+    url: `${TREZOR_CDN}/3a805404-43bf-446c-fda7-1f378d890000/public`,
+    alt: "Trezor Safe 5 - Black Graphite variant",
+    title: "Trezor Safe 5 - Black Graphite",
+  },
+  {
+    url: `${TREZOR_CDN}/60a30b71-1f0e-4d32-0be7-926fa20fed00/public`,
+    alt: "Trezor Safe 5 - Green Beryl",
+    title: "Trezor Safe 5 - Green Beryl",
+  },
+  {
+    url: `${TREZOR_CDN}/0b48cccb-dbc3-4b16-d06e-e24ba2efaa00/public`,
+    alt: "Trezor Safe 5 - Violet Ore",
+    title: "Trezor Safe 5 - Violet Ore",
   },
 ];
 

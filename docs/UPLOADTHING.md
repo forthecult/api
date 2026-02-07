@@ -14,6 +14,7 @@
 | **User avatar** | User profile | Avatar upload uses UploadThing (UTApi) and stores the file URL. |
 | **Lookbook** | `/lookbook` page | Optional: run `db:upload-lookbook` to upload `public/lookbook/` to UploadThing; commit `data/lookbook-images.json` so staging/prod serve from UploadThing. |
 | **Product mockups (Printful/Printify)** | Product and variant images | Run `db:upload-product-mockups` after syncing. Fetches mockup URLs from Printful/Printify CDNs, optimizes to WebP, renames for SEO, sets alt text, uploads to UploadThing, and updates `product_image`, `product.imageUrl`, and `product_variant.imageUrl`. |
+| **Curated products (Trezor, HUSKYLENS 2)** | Trezor Safe 7, Safe 5, HUSKYLENS 2 images | Run `db:upload-curated-product-images` after seeding. Fetches images from trezor.io and DFRobot CDN, uploads to UploadThing, updates DB. Use `--dry-run` to preview. |
 
 So in practice:
 

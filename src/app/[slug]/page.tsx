@@ -108,6 +108,8 @@ interface ProductListResponse {
     originalPrice?: number;
     inStock: boolean;
     rating: number;
+    /** When true, show gated thumbnail on listing pages (lock overlay, no add-to-cart). */
+    tokenGated?: boolean;
   }>;
   total?: number;
   totalPages?: number;
@@ -625,6 +627,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     ...p,
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
+    tokenGated: p.tokenGated ?? false,
   }));
   // On a category page: All, parent category (if any), and this category's subcategories.
   const categories: CategoryOption[] = [

@@ -1,8 +1,9 @@
 "use client";
 
-import { Heart, Lock, ShoppingCart, Star } from "lucide-react";
+import { Heart, Lock, ShoppingCart, Star, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
@@ -11,9 +12,14 @@ import { useShippingCountry } from "~/lib/hooks/use-shipping-country";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
+import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardFooter } from "~/ui/primitives/card";
+import {
+  Dialog,
+  DialogContent,
+} from "~/ui/primitives/dialog";
 
 type ProductCardProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -91,10 +97,12 @@ function ProductCardInner({
   const unavailableInCountry =
     isShippingExcluded(footerCountry) ||
     (shippingCountry != null && isShippingExcluded(shippingCountry));
+  const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
   const [isAddingToCart, setIsAddingToCart] = React.useState(false);
   const [localWishlist, setLocalWishlist] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+  const [tokenGateOpen, setTokenGateOpen] = React.useState(false);
   const isInWishlist =
     typeof isInWishlistProp === "boolean" ? isInWishlistProp : localWishlist;
 
@@ -191,15 +199,50 @@ function ProductCardInner({
               />
             )}
 
-            {/* Token-gated lock overlay: show only thumbnail with lock */}
+            {/* Token-gated: strong overlay, message, and ungate from thumbnail */}
             {product.tokenGated && (
               <div
-                className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
-                aria-hidden
+                role="button"
+                tabIndex={0}
+                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted p-4 text-center"
+                aria-label="Token-gated product. Connect wallet to view."
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setTokenGateOpen(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setTokenGateOpen(true);
+                  }
+                }}
               >
-                <div className="flex size-14 items-center justify-center rounded-full bg-background/90 shadow-lg">
+                <div className="flex size-14 items-center justify-center rounded-full bg-background shadow-lg">
                   <Lock className="h-7 w-7 text-primary" aria-hidden />
                 </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold text-foreground">
+                    Token-gated
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Connect wallet to view
+                  </span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="gap-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setTokenGateOpen(true);
+                  }}
+                >
+                  <Wallet className="h-4 w-4" />
+                  Unlock
+                </Button>
               </div>
             )}
 
@@ -385,6 +428,22 @@ function ProductCardInner({
           )}
         </Card>
       </Link>
+
+      {product.tokenGated && (
+        <Dialog open={tokenGateOpen} onOpenChange={setTokenGateOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+            <TokenGateGuard
+              resourceType="product"
+              resourceId={product.slug ?? product.id}
+              className="min-h-0 py-0"
+              onValidated={() => {
+                setTokenGateOpen(false);
+                router.push(`/${product.slug ?? product.id}`);
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

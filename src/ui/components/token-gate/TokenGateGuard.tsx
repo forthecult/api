@@ -32,6 +32,8 @@ type TokenGateGuardProps = {
   children?: React.ReactNode;
   /** Optional class for the gated overlay container */
   className?: string;
+  /** When provided and user validates with no children, called instead of router.refresh (e.g. close modal and navigate). */
+  onValidated?: () => void;
 };
 
 function WalletOption({
@@ -76,6 +78,7 @@ export function TokenGateGuard({
   resourceId,
   children,
   className,
+  onValidated,
 }: TokenGateGuardProps) {
   const router = useRouter();
   const [config, setConfig] = useState<TokenGateConfig | null>(null);
@@ -238,12 +241,16 @@ export function TokenGateGuard({
     };
   }, [config?.tokenGated, step, connected, publicKey, signMessage, resourceType, resourceId]);
 
-  // When we were rendered without children (server sent gate shell only), after validation refresh so server can send content.
+  // When we were rendered without children (server sent gate shell only), after validation refresh or notify parent.
   useEffect(() => {
     if (validated && !hasChildren) {
-      router.refresh();
+      if (onValidated) {
+        onValidated();
+      } else {
+        router.refresh();
+      }
     }
-  }, [validated, hasChildren, router]);
+  }, [validated, hasChildren, router, onValidated]);
 
   if (loading) {
     return (
