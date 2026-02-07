@@ -333,7 +333,6 @@ export function ProductsClient({
                 </Button>
               ))}
             </div>
-          </div>
 
           {subcategories.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-2">
