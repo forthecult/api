@@ -258,75 +258,86 @@ export default function AdminProductsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold tracking-tight">Product List</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Two-way sync: Vendor ↔ Store */}
-          <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
-            <span className="text-xs font-medium text-muted-foreground">Sync</span>
-            <div className="flex flex-wrap gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                disabled={isSyncing}
-                onClick={() => runSync("printful", "from")}
-                title="Pull mockups, inventory, shipping from Printful into the store"
-              >
-                <ArrowDownToLine className="h-3.5 w-3.5" />
-                Printful → Store
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                disabled={isSyncing}
-                onClick={() => runSync("printful", "to")}
-                title="Push tags, SEO, descriptions, titles, prices from store to Printful"
-              >
-                <ArrowUpFromLine className="h-3.5 w-3.5" />
-                Store → Printful
-              </Button>
-            </div>
+        <Link href="/products/create">
+          <Button type="button" className="gap-2">
+            <Plus className="h-4 w-4" />+ Add Product
+          </Button>
+        </Link>
+      </div>
+
+      {/* Printful & Printify sync – dedicated row so it’s easy to find */}
+      <Card className="border-primary/20 bg-muted/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">Printful & Printify sync</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Pull catalog/inventory from your POD store, or push store changes (titles, descriptions, prices) to the vendor.
+          </p>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center gap-4 pt-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Printful</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={isSyncing}
+              onClick={() => runSync("printful", "from")}
+              title="Pull mockups, inventory, shipping from Printful into the store"
+            >
+              <ArrowDownToLine className="h-4 w-4" />
+              Printful → Store
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={isSyncing}
+              onClick={() => runSync("printful", "to")}
+              title="Push tags, SEO, descriptions, titles, prices from store to Printful"
+            >
+              <ArrowUpFromLine className="h-4 w-4" />
+              Store → Printful
+            </Button>
           </div>
-          <div className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/30 px-3 py-2">
-            <div className="flex flex-wrap gap-1.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                disabled={isSyncing}
-                onClick={() => runSync("printify", "from")}
-                title="Pull mockups, inventory, shipping from Printify into the store"
-              >
-                <ArrowDownToLine className="h-3.5 w-3.5" />
-                Printify → Store
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs"
-                disabled={isSyncing}
-                onClick={() => runSync("printify", "to")}
-                title="Push tags, SEO, descriptions, titles, prices from store to Printify"
-              >
-                <ArrowUpFromLine className="h-3.5 w-3.5" />
-                Store → Printify
-              </Button>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-muted-foreground">Printify</span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={isSyncing}
+              onClick={() => runSync("printify", "from")}
+              title="Pull mockups, inventory, shipping from Printify into the store"
+            >
+              <ArrowDownToLine className="h-4 w-4" />
+              Printify → Store
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1.5"
+              disabled={isSyncing}
+              onClick={() => runSync("printify", "to")}
+              title="Push tags, SEO, descriptions, titles, prices from store to Printify"
+            >
+              <ArrowUpFromLine className="h-4 w-4" />
+              Store → Printify
+            </Button>
           </div>
           {syncState?.loading && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <RefreshCw className="h-4 w-4 animate-spin" />
               {syncVendorLabel(syncState.vendor)}…
             </span>
           )}
           {syncState && !syncState.loading && syncState.result && (
             <span
               className={cn(
-                "text-xs",
+                "text-sm",
                 syncState.result.success ? "text-green-600 dark:text-green-400" : "text-destructive",
               )}
             >
@@ -339,13 +350,8 @@ export default function AdminProductsPage() {
                     : "Done"}
             </span>
           )}
-          <Link href="/products/create">
-            <Button type="button" className="gap-2">
-              <Plus className="h-4 w-4" />+ Add Product
-            </Button>
-          </Link>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="space-y-4">
