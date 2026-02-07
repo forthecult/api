@@ -101,7 +101,10 @@ To run both the **store** and the **admin** dashboard:
 
 ### Service 2 – Admin frontend
 
-- **Root directory:** **`admin`** (so Railway uses `admin/package.json`). If this is wrong or empty, Railway will build the **main** app instead and you will not get the admin UI (or you’ll get the wrong app).
+- **Root directory:** Depends on your repo layout.
+  - If your **repo root** is the **relivator** folder (i.e. the repo contains `admin/`, `src/`, `package.json` at top level), use **`admin`**.
+  - If your **repo root** is the **parent** of `relivator` (e.g. repo contains `relivator/admin/`, `relivator/package.json`), use **`relivator/admin`**. Using `admin` here would point at the wrong path (there is no `admin` at repo root), the build may use the wrong app or fail, and routes like `/payment-methods` can 404.
+  - In both cases, the value must point at the directory that contains `admin/package.json` (the Next.js app with `admin/src/app/(admin)/payment-methods/page.tsx`).
 - **Build:** `bun run build` (runs in `admin/`).
 - **Start:** `bun run start` (runs `next start` in `admin/`).
 - **Port:** leave Railway’s default. Next.js will use the `PORT` Railway sets; you don’t need to pick 3001.

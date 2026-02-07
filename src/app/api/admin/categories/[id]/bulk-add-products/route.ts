@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { and, eq, gte, ilike } from "drizzle-orm";
+import { and, eq, gte, ilike, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -11,6 +11,7 @@ import {
   productsTable,
   productTagsTable,
 } from "~/db/schema";
+import { getWholeWordRegexPattern } from "~/lib/category-auto-assign";
 import { auth, isAdminUser } from "~/lib/auth";
 
 /**
@@ -87,7 +88,10 @@ export async function POST(
 
       const conditions = [eq(productsTable.published, true)];
       if (tc) {
-        conditions.push(ilike(productsTable.name, `%${tc}%`));
+        const pattern = getWholeWordRegexPattern(tc);
+        if (pattern) {
+          conditions.push(sql`${productsTable.name} ~* ${pattern}`);
+        }
       }
       if (cwd !== null) {
         const since = new Date();
@@ -104,10 +108,14 @@ export async function POST(
         .where(and(...conditions));
 
       if (tag) {
-        const productIdsWithTag = await db
-          .selectDistinct({ productId: productTagsTable.productId })
-          .from(productTagsTable)
-          .where(ilike(productTagsTable.tag, `%${tag}%`));
+        const tagPattern = getWholeWordRegexPattern(tag);
+        const productIdsWithTag =
+          tagPattern
+            ? await db
+                .selectDistinct({ productId: productTagsTable.productId })
+                .from(productTagsTable)
+                .where(sql`${productTagsTable.tag} ~* ${tagPattern}`)
+            : [];
         const ids = new Set(productIdsWithTag.map((r) => r.productId));
         rows = rows.filter((p) => ids.has(p.id));
       }
