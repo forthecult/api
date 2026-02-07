@@ -33,7 +33,7 @@ const DEMO_PRODUCTS = [
     imageUrl:
       "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     priceCents: 29999,
-    categoryId: "accessories-watches",
+    categoryId: "accessories-tech",
     brand: "TechFit",
     description:
       "Stay connected and track your fitness goals with our advanced smartwatch. Features health monitoring, GPS tracking, and a beautiful always-on display.",

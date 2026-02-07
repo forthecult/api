@@ -6,6 +6,7 @@ import * as React from "react";
 
 import { getPaymentOptionsForDisplay } from "~/lib/checkout-payment-options";
 import { cn } from "~/lib/cn";
+import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 
 const ITEMS = [
   { id: "description", label: "Description" },
