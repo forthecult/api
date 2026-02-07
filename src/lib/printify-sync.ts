@@ -28,6 +28,7 @@ import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   fetchPrintifyProducts,
   fetchPrintifyProduct,
+  fetchPrintifyBlueprint,
   fetchPrintifyShippingInfo,
   updatePrintifyProduct,
   getPrintifyIfConfigured,
