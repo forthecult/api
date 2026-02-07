@@ -1,0 +1,41 @@
+# Run typecheck and build on push/PR so deployment never gets broken code.
+# Catches: missing imports, type errors, and any failure that would break "bun run build".
+
+name: CI (typecheck + build)
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Resolve working directory (monorepo)
+        id: wd
+        run: |
+          if [ -d relivator ] && [ -f relivator/package.json ]; then
+            echo "dir=relivator" >> "$GITHUB_OUTPUT"
+          else
+            echo "dir=." >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun run check
+
+      - name: Build
+        working-directory: ${{ steps.wd.outputs.dir }}
+        run: bun run build
