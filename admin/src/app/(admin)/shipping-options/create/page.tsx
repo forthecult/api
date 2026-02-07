@@ -57,6 +57,11 @@ export default function AdminShippingOptionCreatePage() {
       .catch(() => setBrands([]));
   }, []);
 
+  // When a brand is selected, default name to "Standard Shipping" for branded methods
+  useEffect(() => {
+    if (brandId.trim()) setName("Standard Shipping");
+  }, [brandId]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);

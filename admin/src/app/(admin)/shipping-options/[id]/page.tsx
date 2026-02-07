@@ -81,9 +81,15 @@ export default function AdminShippingOptionEditPage() {
         additionalItemCents: number | null;
         priority: number;
         speed: "standard" | "express";
+        brandId: string | null;
+        sourceUrl: string | null;
+        estimatedDaysText: string | null;
       };
-      setName(row.name);
+      setBrandId(row.brandId ?? "");
+      setName(row.brandId ? "Standard Shipping" : row.name);
       setCountryCode(row.countryCode ?? "");
+      setSourceUrl(row.sourceUrl ?? "");
+      setEstimatedDaysText(row.estimatedDaysText ?? "");
       setMinOrderCents(
         row.minOrderCents != null ? (row.minOrderCents / 100).toFixed(2) : "",
       );
@@ -266,7 +272,11 @@ export default function AdminShippingOptionEditPage() {
                 <select
                   id="brand"
                   value={brandId}
-                  onChange={(e) => setBrandId(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setBrandId(v);
+                    if (v.trim()) setName("Standard Shipping");
+                  }}
                   className={inputClass}
                 >
                   <option value="">Global (all brands)</option>

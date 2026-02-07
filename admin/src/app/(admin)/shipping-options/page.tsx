@@ -40,8 +40,9 @@ type ShippingOptionRow = {
   maxQuantity: number | null;
   minWeightGrams: number | null;
   maxWeightGrams: number | null;
-  type: "flat" | "per_item" | "free";
+  type: "flat" | "per_item" | "flat_plus_per_item" | "free";
   amountCents: number | null;
+  additionalItemCents: number | null;
   priority: number;
   brandId: string | null;
   brandName: string | null;
@@ -62,6 +63,7 @@ const SORT_KEYS = [
   "minQuantity",
   "minWeightGrams",
   "type",
+  "amountCents",
   "priority",
   "brandName",
 ] as const;
@@ -88,6 +90,7 @@ export default function AdminShippingOptionsPage() {
   const [sortBy, setSortBy] = useState<SortBy>("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [brandFilter, setBrandFilter] = useState<string>("");
+  const [countryFilter, setCountryFilter] = useState<string>("");
 
   const fetchOptions = useCallback(async () => {
     setLoading(true);
@@ -95,6 +98,7 @@ export default function AdminShippingOptionsPage() {
     try {
       const params = new URLSearchParams({ sortBy, sortOrder });
       if (brandFilter) params.set("brandId", brandFilter);
+      if (countryFilter) params.set("countryCode", countryFilter);
       const res = await fetch(
         `${API_BASE}/api/admin/shipping-options?${params.toString()}`,
         { credentials: "include" },
@@ -113,7 +117,7 @@ export default function AdminShippingOptionsPage() {
     } finally {
       setLoading(false);
     }
-  }, [sortBy, sortOrder, brandFilter]);
+  }, [sortBy, sortOrder, brandFilter, countryFilter]);
 
   useEffect(() => {
     void fetchOptions();
@@ -227,11 +231,25 @@ export default function AdminShippingOptionsPage() {
             value={brandFilter}
             onChange={(e) => setBrandFilter(e.target.value)}
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            aria-label="Filter by brand"
           >
             <option value="">All brands</option>
             {brands.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={countryFilter}
+            onChange={(e) => setCountryFilter(e.target.value)}
+            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            aria-label="Filter by country"
+          >
+            <option value="">All countries</option>
+            {COUNTRY_OPTIONS.filter((c) => c.value).map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </select>
@@ -281,12 +299,7 @@ export default function AdminShippingOptionsPage() {
                     <SortHeader column="minQuantity" label="Quantity" />
                     <SortHeader column="minWeightGrams" label="Weight (g)" />
                     <SortHeader column="type" label="Type" />
-                    <th
-                      className="whitespace-nowrap p-4 font-medium"
-                      scope="col"
-                    >
-                      Amount
-                    </th>
+                    <SortHeader column="amountCents" label="Amount" />
                     <SortHeader column="priority" label="Priority" />
                     <th
                       className="whitespace-nowrap p-4 font-medium"
@@ -307,7 +320,7 @@ export default function AdminShippingOptionsPage() {
                           href={`/shipping-options/${row.id}`}
                           className="text-primary hover:underline"
                         >
-                          {row.name}
+                          {row.brandId ? "Standard Shipping" : row.name}
                         </Link>
                       </td>
                       <td className="p-4">
@@ -348,7 +361,9 @@ export default function AdminShippingOptionsPage() {
                           : row.amountCents != null
                             ? row.type === "per_item"
                               ? `$${(row.amountCents / 100).toFixed(2)}/item`
-                              : `$${(row.amountCents / 100).toFixed(2)}`
+                              : row.type === "flat_plus_per_item"
+                                ? `$${(row.amountCents / 100).toFixed(2)}+`
+                                : `$${(row.amountCents / 100).toFixed(2)}`
                             : "—"}
                       </td>
                       <td className="p-4">{row.priority}</td>

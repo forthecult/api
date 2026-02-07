@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -13,6 +13,7 @@ const SORT_COLUMNS = [
   "minQuantity",
   "minWeightGrams",
   "type",
+  "amountCents",
   "priority",
   "brandName",
 ] as const;
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
       ?.toLowerCase();
     const sortOrder = sortOrderParam === "asc" ? asc : desc;
     const brandIdFilter = request.nextUrl.searchParams.get("brandId")?.trim() || null;
+    const countryCodeFilter = request.nextUrl.searchParams.get("countryCode")?.trim() || null;
 
     const orderColumn =
       sortBy === "name"
@@ -52,9 +54,11 @@ export async function GET(request: NextRequest) {
                 ? shippingOptionsTable.minWeightGrams
                 : sortBy === "type"
                   ? shippingOptionsTable.type
-                  : sortBy === "brandName"
-                    ? brandTable.name
-                    : shippingOptionsTable.priority;
+                  : sortBy === "amountCents"
+                    ? shippingOptionsTable.amountCents
+                    : sortBy === "brandName"
+                      ? brandTable.name
+                      : shippingOptionsTable.priority;
 
     const baseQuery = db
       .select({
@@ -82,10 +86,17 @@ export async function GET(request: NextRequest) {
       .from(shippingOptionsTable)
       .leftJoin(brandTable, eq(shippingOptionsTable.brandId, brandTable.id));
 
-    const rows = await (brandIdFilter
-      ? baseQuery.where(eq(shippingOptionsTable.brandId, brandIdFilter))
-      : baseQuery
-    ).orderBy(sortOrder(orderColumn), desc(shippingOptionsTable.createdAt));
+    const conditions = [
+      brandIdFilter ? eq(shippingOptionsTable.brandId, brandIdFilter) : null,
+      countryCodeFilter ? eq(shippingOptionsTable.countryCode, countryCodeFilter) : null,
+    ].filter(Boolean) as ReturnType<typeof eq>[];
+    const filteredQuery = conditions.length
+      ? baseQuery.where(conditions.length === 1 ? conditions[0]! : and(...conditions))
+      : baseQuery;
+    const rows = await filteredQuery.orderBy(
+      sortOrder(orderColumn),
+      desc(shippingOptionsTable.createdAt),
+    );
 
     const items = rows.map((o) => ({
       id: o.id,
