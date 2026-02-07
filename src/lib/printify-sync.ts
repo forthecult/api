@@ -377,11 +377,17 @@ async function createLocalProductFromPrintify(
   const defaultImage = printifyProduct.images.find((img) => img.is_default);
   const imageUrl = defaultImage?.src || printifyProduct.images[0]?.src || null;
 
-  // Shipping data (countries + handling days) from catalog API
-  const shippingData = await getPrintifyShippingData(
-    printifyProduct.blueprint_id,
-    printifyProduct.print_provider_id,
-  );
+  // Shipping data (countries + handling days) from catalog API; blueprint for brand/model
+  const [shippingData, blueprint] = await Promise.all([
+    getPrintifyShippingData(
+      printifyProduct.blueprint_id,
+      printifyProduct.print_provider_id,
+    ),
+    fetchPrintifyBlueprint(printifyProduct.blueprint_id).catch(() => null),
+  ]);
+
+  const brand = blueprint?.brand?.trim() ?? null;
+  const model = blueprint?.model?.trim() ?? null;
 
   // Create product
   await db.insert(productsTable).values({
@@ -420,7 +426,7 @@ async function createLocalProductFromPrintify(
   await applyCategoryAutoRules({
     id: productId,
     name: printifyProduct.title,
-    brand: null,
+    brand: brand ?? undefined,
     createdAt: now,
     tags: printifyProduct.tags ?? [],
   });
@@ -541,6 +547,8 @@ async function updateLocalProductFromPrintify(
       weightGrams,
       weightUnit: weightGrams ? "kg" : null,
       vendor: "Printify",
+      brand,
+      model,
       sku: productSku,
       printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
       countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
@@ -572,7 +580,7 @@ async function updateLocalProductFromPrintify(
   await syncProductCategoriesWithAutoRules({
     id: productId,
     name: printifyProduct.title,
-    brand: null,
+    brand: brand ?? undefined,
     createdAt: productCreatedAt,
     tags: printifyProduct.tags ?? [],
   });

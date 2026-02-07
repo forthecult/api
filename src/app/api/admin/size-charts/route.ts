@@ -1,0 +1,99 @@
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { eq, and, desc } from "drizzle-orm";
+import { nanoid } from "nanoid";
+
+import { db } from "~/db";
+import { sizeChartsTable } from "~/db/schema";
+import { requireAdmin } from "~/lib/api-auth";
+import { apiError } from "~/lib/api-error";
+
+const PROVIDERS = ["printful", "printify", "manual"] as const;
+
+/**
+ * GET /api/admin/size-charts
+ * List all size charts (admin). Optional: provider, brand, model filters.
+ */
+export async function GET(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const provider = searchParams.get("provider")?.trim();
+    const brand = searchParams.get("brand")?.trim();
+    const model = searchParams.get("model")?.trim();
+
+    const conditions = [];
+    if (provider) conditions.push(eq(sizeChartsTable.provider, provider));
+    if (brand) conditions.push(eq(sizeChartsTable.brand, brand));
+    if (model) conditions.push(eq(sizeChartsTable.model, model));
+
+    const rows =
+      conditions.length > 0
+        ? await db
+            .select()
+            .from(sizeChartsTable)
+            .where(and(...conditions))
+            .orderBy(desc(sizeChartsTable.updatedAt))
+        : await db.select().from(sizeChartsTable).orderBy(desc(sizeChartsTable.updatedAt));
+
+    return NextResponse.json(rows);
+  } catch (err) {
+    console.error("Admin size charts list error:", err);
+    return apiError("INTERNAL_ERROR");
+  }
+}
+
+/**
+ * POST /api/admin/size-charts
+ * Create a size chart. Body: { provider, brand, model, displayName, dataImperial?, dataMetric? }
+ */
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin(request);
+  if (!auth.ok) return auth.response;
+
+  try {
+    const body = (await request.json()) as {
+      provider?: string;
+      brand?: string;
+      model?: string;
+      displayName?: string;
+      dataImperial?: unknown;
+      dataMetric?: unknown;
+    };
+
+    const provider = body.provider?.trim();
+    const brand = body.brand?.trim();
+    const model = body.model?.trim();
+    const displayName = body.displayName?.trim();
+
+    if (!provider || !PROVIDERS.includes(provider as (typeof PROVIDERS)[number])) {
+      return apiError("VALIDATION_ERROR", { field: "provider", message: "Invalid or missing provider" });
+    }
+    if (!brand) return apiError("VALIDATION_ERROR", { field: "brand", message: "Brand is required" });
+    if (!model) return apiError("VALIDATION_ERROR", { field: "model", message: "Model is required" });
+    if (!displayName) return apiError("VALIDATION_ERROR", { field: "displayName", message: "Display name is required" });
+
+    const id = nanoid();
+    const now = new Date();
+
+    await db.insert(sizeChartsTable).values({
+      id,
+      provider,
+      brand,
+      model,
+      displayName,
+      dataImperial: body.dataImperial != null ? JSON.stringify(body.dataImperial) : null,
+      dataMetric: body.dataMetric != null ? JSON.stringify(body.dataMetric) : null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    const [created] = await db.select().from(sizeChartsTable).where(eq(sizeChartsTable.id, id)).limit(1);
+    return NextResponse.json(created ?? { id, provider, brand, model, displayName: body.displayName });
+  } catch (err) {
+    console.error("Admin size chart create error:", err);
+    return apiError("INTERNAL_ERROR");
+  }
+}

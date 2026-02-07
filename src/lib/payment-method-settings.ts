@@ -21,9 +21,31 @@ export const PAYMENT_METHOD_DEFAULTS: Array<{
   { methodKey: "stablecoin_usdt", label: "USDT (Stablecoin)", displayOrder: 21 },
 ];
 
+/** Network options for payment methods that support multiple networks. Used by admin and checkout. */
+export const PAYMENT_METHOD_NETWORKS: Record<
+  string,
+  { value: string; label: string }[]
+> = {
+  stablecoin_usdc: [
+    { value: "solana", label: "Solana" },
+    { value: "ethereum", label: "Ethereum" },
+    { value: "arbitrum", label: "Arbitrum" },
+    { value: "base", label: "Base" },
+    { value: "polygon", label: "Polygon" },
+  ],
+  stablecoin_usdt: [
+    { value: "ethereum", label: "Ethereum" },
+    { value: "arbitrum", label: "Arbitrum" },
+    { value: "bnb", label: "BNB Smart Chain" },
+    { value: "polygon", label: "Polygon" },
+  ],
+};
+
 export type PaymentMethodSetting = {
   methodKey: string;
   label: string;
   enabled: boolean;
+  /** For multi-network methods: enabled network keys. Null/empty = all supported. */
+  enabledNetworks?: string[] | null;
   displayOrder: number;
 };

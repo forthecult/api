@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       methodKey: paymentMethodSettingTable.methodKey,
       label: paymentMethodSettingTable.label,
       enabled: paymentMethodSettingTable.enabled,
+      enabledNetworks: paymentMethodSettingTable.enabledNetworks,
       displayOrder: paymentMethodSettingTable.displayOrder,
     })
     .from(paymentMethodSettingTable)
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
     methodKey: r.methodKey,
     label: r.label,
     enabled: r.enabled,
+    enabledNetworks: Array.isArray(r.enabledNetworks) ? r.enabledNetworks : null,
     displayOrder: r.displayOrder,
   }));
 
@@ -66,8 +68,8 @@ export async function GET(request: NextRequest) {
 
 /**
  * PATCH /api/admin/payment-methods
- * Admin: enable or disable a payment method.
- * Body: { methodKey: string, enabled: boolean }
+ * Admin: enable or disable a payment method, and/or set enabled networks.
+ * Body: { methodKey: string, enabled?: boolean, enabledNetworks?: string[] | null }
  */
 export async function PATCH(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -75,9 +77,13 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { methodKey?: string; enabled?: boolean };
+  let body: {
+    methodKey?: string;
+    enabled?: boolean;
+    enabledNetworks?: string[] | null;
+  };
   try {
-    body = (await request.json()) as { methodKey?: string; enabled?: boolean };
+    body = (await request.json()) as typeof body;
   } catch {
     return NextResponse.json(
       { error: "Invalid JSON body" },
@@ -87,6 +93,10 @@ export async function PATCH(request: NextRequest) {
 
   const methodKey = body.methodKey?.trim();
   const enabled = body.enabled;
+  const enabledNetworks =
+    body.enabledNetworks === null || Array.isArray(body.enabledNetworks)
+      ? body.enabledNetworks
+      : undefined;
 
   if (!methodKey) {
     return NextResponse.json(
@@ -94,9 +104,9 @@ export async function PATCH(request: NextRequest) {
       { status: 400 },
     );
   }
-  if (typeof enabled !== "boolean") {
+  if (enabled !== undefined && typeof enabled !== "boolean") {
     return NextResponse.json(
-      { error: "enabled must be a boolean" },
+      { error: "enabled must be a boolean when provided" },
       { status: 400 },
     );
   }
@@ -107,10 +117,18 @@ export async function PATCH(request: NextRequest) {
     .where(eq(paymentMethodSettingTable.methodKey, methodKey))
     .limit(1);
 
+  const updatePayload: {
+    enabled?: boolean;
+    enabledNetworks?: string[] | null;
+    updatedAt: Date;
+  } = { updatedAt: now };
+  if (enabled !== undefined) updatePayload.enabled = enabled;
+  if (enabledNetworks !== undefined) updatePayload.enabledNetworks = enabledNetworks;
+
   if (exists.length > 0) {
     await db
       .update(paymentMethodSettingTable)
-      .set({ enabled, updatedAt: now })
+      .set(updatePayload)
       .where(eq(paymentMethodSettingTable.methodKey, methodKey));
   } else {
     const def = PAYMENT_METHOD_DEFAULTS.find((d) => d.methodKey === methodKey);
@@ -123,7 +141,8 @@ export async function PATCH(request: NextRequest) {
     await db.insert(paymentMethodSettingTable).values({
       methodKey: def.methodKey,
       label: def.label,
-      enabled,
+      enabled: enabled ?? true,
+      enabledNetworks: enabledNetworks ?? null,
       displayOrder: def.displayOrder,
       createdAt: now,
       updatedAt: now,

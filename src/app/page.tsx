@@ -77,6 +77,7 @@ async function fetchFeaturedProducts(): Promise<
     originalPrice?: number;
     price: number;
     rating: number;
+    slug?: string;
   }>
 > {
   const baseUrl = getServerBaseUrl();
@@ -95,6 +96,7 @@ async function fetchFeaturedProducts(): Promise<
         originalPrice?: number;
         inStock?: boolean;
         rating?: number;
+        slug?: string;
       }>;
     };
     return (data.items ?? []).map((p) => ({
@@ -106,6 +108,7 @@ async function fetchFeaturedProducts(): Promise<
       originalPrice: p.originalPrice,
       price: p.price ?? 0,
       rating: p.rating ?? 0,
+      slug: p.slug,
     }));
   } catch {
     return [];

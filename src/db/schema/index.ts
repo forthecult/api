@@ -44,6 +44,10 @@ export * from "./reviews/relations";
 export * from "./reviews/tables";
 export * from "./reviews/types";
 
+export * from "./size-charts/relations";
+export * from "./size-charts/tables";
+export * from "./size-charts/types";
+
 export * from "./shipping/tables";
 export * from "./shipping/types";
 

@@ -13,6 +13,7 @@ import {
   productImagesTable,
   productVariantsTable,
   productsTable,
+  sizeChartsTable,
 } from "~/db/schema";
 
 type OptionDefinition = { name: string; values: string[] };
@@ -44,6 +45,18 @@ export type ProductBySlugResult = {
   /** Transit (shipping) days min/max. Fallback used in UI if null. */
   transitDaysMin?: number | null;
   transitDaysMax?: number | null;
+  /** Blank product brand (for size chart lookup). */
+  brand?: string | null;
+  /** Blank product model (for size chart lookup). */
+  model?: string | null;
+  /** Product source: printful | printify | manual. */
+  source?: string;
+  /** When product has brand+model and a size chart exists, for accordion "Size Guide". */
+  sizeChart?: {
+    displayName: string;
+    dataImperial: unknown;
+    dataMetric: unknown;
+  } | null;
   variants?: Array<{
     id: string;
     size?: string;
@@ -85,6 +98,9 @@ export async function getProductBySlugOrId(
       handlingDaysMax: productsTable.handlingDaysMax,
       transitDaysMin: productsTable.transitDaysMin,
       transitDaysMax: productsTable.transitDaysMax,
+      brand: productsTable.brand,
+      model: productsTable.model,
+      source: productsTable.source,
       // Stock management fields
       trackQuantity: productsTable.trackQuantity,
       continueSellingWhenOutOfStock: productsTable.continueSellingWhenOutOfStock,
@@ -214,6 +230,38 @@ export async function getProductBySlugOrId(
     .map((r) => r.url)
     .filter((u): u is string => Boolean(u));
 
+  // Size chart for accordion when product has brand+model and source is printful/printify
+  let sizeChart: { displayName: string; dataImperial: unknown; dataMetric: unknown } | null = null;
+  if (
+    product.source &&
+    (product.source === "printful" || product.source === "printify") &&
+    product.brand?.trim() &&
+    product.model?.trim()
+  ) {
+    const [chartRow] = await db
+      .select({
+        displayName: sizeChartsTable.displayName,
+        dataImperial: sizeChartsTable.dataImperial,
+        dataMetric: sizeChartsTable.dataMetric,
+      })
+      .from(sizeChartsTable)
+      .where(
+        and(
+          eq(sizeChartsTable.provider, product.source),
+          eq(sizeChartsTable.brand, product.brand.trim()),
+          eq(sizeChartsTable.model, product.model.trim()),
+        ),
+      )
+      .limit(1);
+    if (chartRow && (chartRow.dataImperial != null || chartRow.dataMetric != null)) {
+      sizeChart = {
+        displayName: chartRow.displayName,
+        dataImperial: chartRow.dataImperial as unknown,
+        dataMetric: chartRow.dataMetric as unknown,
+      };
+    }
+  }
+
   const shipsFrom = (() => {
     if (product.shipsFromDisplay?.trim()) return product.shipsFromDisplay.trim();
     const parts = [
@@ -262,6 +310,10 @@ export async function getProductBySlugOrId(
     handlingDaysMax: product.handlingDaysMax ?? undefined,
     transitDaysMin: product.transitDaysMin ?? undefined,
     transitDaysMax: product.transitDaysMax ?? undefined,
+    brand: product.brand ?? undefined,
+    model: product.model ?? undefined,
+    source: product.source ?? undefined,
+    sizeChart: sizeChart ?? undefined,
     variants,
   };
 }

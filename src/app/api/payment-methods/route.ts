@@ -53,6 +53,7 @@ export async function GET() {
     methodKey: r.methodKey,
     label: r.label,
     enabled: r.enabled,
+    enabledNetworks: Array.isArray(r.enabledNetworks) ? r.enabledNetworks : null,
     displayOrder: r.displayOrder,
   }));
 

@@ -8,12 +8,29 @@ import { getPaymentOptionsForDisplay } from "~/lib/checkout-payment-options";
 import { cn } from "~/lib/cn";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 
-const ITEMS = [
+const BASE_ITEMS = [
   { id: "description", label: "Description" },
   { id: "delivery", label: "Delivery" },
   { id: "returns", label: "Refunds and Returns" },
   { id: "payment", label: "Payment Options" },
 ] as const;
+
+type SizeChartData = {
+  availableSizes?: string[];
+  sizeTables?: Array<{
+    type: string;
+    unit: string;
+    description?: string;
+    image_url?: string;
+    measurements?: Array<{
+      type_label: string;
+      values: Array<
+        | { size: string; value: string }
+        | { size: string; min_value: string; max_value: string }
+      >;
+    }>;
+  }>;
+};
 
 const DELIVERY_COPY = (
   <>
@@ -101,18 +118,75 @@ function isApparelCategory(category: string): boolean {
   );
 }
 
+function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: string) {
+  if (!data?.sizeTables?.length) return null;
+  return (
+    <div className="mb-6">
+      <h4 className="mb-2 text-sm font-semibold text-foreground">{unitLabel}</h4>
+      {data.sizeTables.map((table, idx) => (
+        <div key={idx} className="mb-4">
+          {table.description && (
+            <p className="mb-2 text-xs text-muted-foreground">{table.description}</p>
+          )}
+          {table.measurements?.map((m, midx) => (
+            <div key={midx} className="mb-3 overflow-x-auto">
+              <p className="mb-1 text-xs font-medium text-foreground">{m.type_label}</p>
+              <table className="w-full min-w-[200px] border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="p-2 text-left font-medium">Size</th>
+                    <th className="p-2 text-left font-medium">Measurement</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {m.values.map((v, vidx) => (
+                    <tr key={vidx} className="border-b border-border/50">
+                      <td className="p-2 font-medium">{v.size}</td>
+                      <td className="p-2 text-muted-foreground">
+                        {"value" in v ? v.value : `${v.min_value} – ${v.max_value}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export interface ProductDetailAccordionProps {
   description: string;
   category: string;
   /** When true, description is sanitized HTML and will be rendered as HTML. */
   descriptionIsHtml?: boolean;
+  /** When set, adds a "Size Guide: {displayName}" accordion section with imperial + metric charts. */
+  sizeChart?: {
+    displayName: string;
+    dataImperial: unknown;
+    dataMetric: unknown;
+  };
 }
 
 export function ProductDetailAccordion({
   description,
   category,
   descriptionIsHtml,
+  sizeChart,
 }: ProductDetailAccordionProps) {
+  const items = React.useMemo(() => {
+    const list: Array<{ id: string; label: string }> = [...BASE_ITEMS];
+    if (sizeChart) {
+      list.splice(1, 0, {
+        id: "size-guide",
+        label: `Size Guide: ${sizeChart.displayName}`,
+      });
+    }
+    return list;
+  }, [sizeChart]);
+
   // Delivery and Returns open by default on page load
   const [openIds, setOpenIds] = React.useState<Set<string>>(
     () => new Set(["delivery", "returns"]),
@@ -205,6 +279,26 @@ export function ProductDetailAccordion({
           </div>
         );
       }
+      case "size-guide": {
+        if (!sizeChart) return null;
+        const imperial = sizeChart.dataImperial as SizeChartData | undefined;
+        const metric = sizeChart.dataMetric as SizeChartData | undefined;
+        const hasImperial = imperial?.sizeTables?.length;
+        const hasMetric = metric?.sizeTables?.length;
+        if (!hasImperial && !hasMetric) {
+          return (
+            <div className="pb-4 text-sm text-muted-foreground">
+              No size chart data available.
+            </div>
+          );
+        }
+        return (
+          <div className="pb-4 text-sm text-muted-foreground">
+            {hasImperial && renderSizeChartData(imperial, "Imperial (in)")}
+            {hasMetric && renderSizeChartData(metric, "Metric (cm)")}
+          </div>
+        );
+      }
       default:
         return null;
     }
@@ -212,7 +306,7 @@ export function ProductDetailAccordion({
 
   return (
     <div className="mt-6 border-y border-border">
-      {ITEMS.map((item) => {
+      {items.map((item) => {
         const isOpen = isPanelOpen(item.id);
         return (
           <div

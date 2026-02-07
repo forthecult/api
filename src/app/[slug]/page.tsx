@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Star } from "lucide-react";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
@@ -74,6 +74,16 @@ interface Product {
   handlingDaysMax?: number | null;
   transitDaysMin?: number | null;
   transitDaysMax?: number | null;
+  /** Blank product brand (synced from Printful/Printify). */
+  brand?: string | null;
+  /** Blank product model (synced from Printful/Printify). */
+  model?: string | null;
+  /** Size chart for accordion when product has brand+model (e.g. apparel). */
+  sizeChart?: {
+    displayName: string;
+    dataImperial: unknown;
+    dataMetric: unknown;
+  } | null;
 }
 
 interface ProductListResponse {
@@ -149,6 +159,9 @@ async function fetchProductBySlug(slug: string): Promise<Product | null> {
     handlingDaysMax: data.handlingDaysMax ?? undefined,
     transitDaysMin: data.transitDaysMin ?? undefined,
     transitDaysMax: data.transitDaysMax ?? undefined,
+    brand: data.brand ?? undefined,
+    model: data.model ?? undefined,
+    sizeChart: data.sizeChart ?? undefined,
   };
 }
 
@@ -259,6 +272,10 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
 
   if (product) {
     const canonicalSlug = product.slug ?? product.id;
+    // Redirect to canonical slug when URL is product id or wrong slug (keeps URLs consistent and avoids duplicate content)
+    if (canonicalSlug && slug !== canonicalSlug) {
+      redirect(`/${canonicalSlug}`);
+    }
     const cookieStore = await cookies();
     const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
     const passed = hasValidTokenGateCookie(tgCookie, "product", canonicalSlug);
@@ -359,6 +376,22 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       {product.category}
                     </p>
                   </div>
+                  {(product.brand ?? product.model) && (
+                    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      {product.brand?.trim() && (
+                        <span>
+                          <span className="font-medium text-foreground">Brand:</span>{" "}
+                          {product.brand.trim()}
+                        </span>
+                      )}
+                      {product.model?.trim() && (
+                        <span>
+                          <span className="font-medium text-foreground">Model:</span>{" "}
+                          {product.model.trim()}
+                        </span>
+                      )}
+                    </div>
+                  )}
                   {/* Features only at top; description is in accordion below */}
                   {product.features.length > 0 && (
                     <ul className="mb-6 space-y-2 text-muted-foreground">
@@ -400,6 +433,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                     category={product.category}
                     description={sanitizeProductDescription(product.description)}
                     descriptionIsHtml
+                    sizeChart={product.sizeChart ?? undefined}
                   />
                   <ProductShare
                     title={product.name}

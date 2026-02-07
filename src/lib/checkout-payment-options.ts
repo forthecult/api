@@ -58,6 +58,8 @@ const DEFAULT_VISIBILITY: PaymentVisibility = {
   cryptoTon: true,
   stablecoinUsdc: true,
   stablecoinUsdt: true,
+  enabledUsdcNetworks: null,
+  enabledUsdtNetworks: null,
 };
 
 /** Build visibility flags from API payment method settings. Missing methods default to enabled. */
@@ -68,6 +70,18 @@ export function getPaymentVisibility(
   for (const s of settings) {
     const key = METHOD_KEY_MAP[s.methodKey];
     if (key) v[key] = s.enabled;
+    if (s.methodKey === "stablecoin_usdc") {
+      v.enabledUsdcNetworks =
+        s.enabledNetworks !== undefined && s.enabledNetworks !== null
+          ? s.enabledNetworks
+          : null;
+    }
+    if (s.methodKey === "stablecoin_usdt") {
+      v.enabledUsdtNetworks =
+        s.enabledNetworks !== undefined && s.enabledNetworks !== null
+          ? s.enabledNetworks
+          : null;
+    }
   }
   return v;
 }
@@ -164,6 +178,22 @@ export function hasAnyStablecoinEnabled(v: PaymentVisibility): boolean {
   return v.stablecoinUsdc || v.stablecoinUsdt;
 }
 
+/** USDC network options filtered by admin-enabled networks. Null/empty = all. */
+export function visibleUsdcNetworks(v: PaymentVisibility): { value: string; label: string }[] {
+  const opts = USDC_SUB_OPTIONS;
+  const allowed = v.enabledUsdcNetworks;
+  if (!allowed || allowed.length === 0) return opts;
+  return opts.filter((o) => allowed.includes(o.value));
+}
+
+/** USDT network options filtered by admin-enabled networks. Null/empty = all. */
+export function visibleUsdtNetworks(v: PaymentVisibility): { value: string; label: string }[] {
+  const opts = USDT_SUB_OPTIONS;
+  const allowed = v.enabledUsdtNetworks;
+  if (!allowed || allowed.length === 0) return opts;
+  return opts.filter((o) => allowed.includes(o.value));
+}
+
 /** Build crypto payment copy for product accordion: list of accepted cryptocurrencies. */
 function getCryptoList(visibility?: PaymentVisibility | null): string[] {
   const opts = visibility
@@ -202,16 +232,25 @@ function getCardList(visibility?: PaymentVisibility | null): string[] {
   return cards;
 }
 
-/** Build stablecoins list for product accordion. */
+/** Build stablecoins list for product accordion (network names from visibility). */
 function getStablecoinsList(visibility?: PaymentVisibility | null): string[] {
   const list: string[] = [];
   if (visibility) {
-    if (visibility.stablecoinUsdc)
-      list.push("USDC (Solana, Ethereum, Arbitrum, Base, Polygon)");
-    if (visibility.stablecoinUsdt)
-      list.push("USDT (Ethereum, Arbitrum, BNB, Polygon)");
+    if (visibility.stablecoinUsdc) {
+      const usdcOpts = visibleUsdcNetworks(visibility);
+      const names = usdcOpts.map((o) => o.label).join(", ");
+      list.push(names ? `USDC (${names})` : "USDC");
+    }
+    if (visibility.stablecoinUsdt) {
+      const usdtOpts = visibleUsdtNetworks(visibility);
+      const names = usdtOpts.map((o) => o.label).join(", ");
+      list.push(names ? `USDT (${names})` : "USDT");
+    }
   } else {
-    list.push("USDC (Solana, Ethereum, Arbitrum, Base, Polygon)", "USDT (Ethereum, Arbitrum, BNB, Polygon)");
+    list.push(
+      "USDC (Solana, Ethereum, Arbitrum, Base, Polygon)",
+      "USDT (Ethereum, Arbitrum, BNB, Polygon)",
+    );
   }
   return list;
 }

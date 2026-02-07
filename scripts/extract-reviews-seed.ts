@@ -6,6 +6,10 @@
  * The JSON is in the right shape for the DB (with productId null; productName
  * derived from slug). The seed script then only does: load JSON, one product
  * lookup, merge productId/productName, bulk insert — so CI seeding is fast.
+ *
+ * Date/time: createdAt and updatedAt are taken from the CSV created_at column
+ * (required for correct review dates). If created_at is missing or invalid,
+ * the extract falls back to "now" and logs a warning so the CSV can be fixed.
  */
 
 import * as fs from "node:fs";
@@ -164,10 +168,19 @@ function run() {
     }
 
     let createdAt: Date;
+    const rawCreatedAt = (review.created_at ?? "").trim();
     try {
-      createdAt = new Date(review.created_at);
-      if (isNaN(createdAt.getTime())) createdAt = new Date();
+      createdAt = new Date(rawCreatedAt);
+      if (Number.isNaN(createdAt.getTime())) {
+        console.warn(
+          `Review ${review.product_handle} / ${review.author}: invalid or missing created_at "${rawCreatedAt}", using now`,
+        );
+        createdAt = new Date();
+      }
     } catch {
+      console.warn(
+        `Review ${review.product_handle} / ${review.author}: created_at parse failed, using now`,
+      );
       createdAt = new Date();
     }
 

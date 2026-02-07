@@ -67,6 +67,16 @@ interface Product {
   transitDaysMax?: number | null;
   /** When non-empty, product ships only to these countries (ISO 2-letter). */
   availableCountryCodes?: string[];
+  /** Blank product brand (synced from Printful/Printify). */
+  brand?: string | null;
+  /** Blank product model (synced from Printful/Printify). */
+  model?: string | null;
+  /** Size chart for accordion when product has brand+model (e.g. apparel). */
+  sizeChart?: {
+    displayName: string;
+    dataImperial: unknown;
+    dataMetric: unknown;
+  } | null;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -104,6 +114,11 @@ async function fetchProductById(id: string): Promise<Product | null> {
       availableCountryCodes?: string[];
       features?: string[];
       continueSellingWhenOutOfStock?: boolean;
+      sizeChart?: {
+        displayName: string;
+        dataImperial: unknown;
+        dataMetric: unknown;
+      } | null;
     };
     const price = data.price?.usd ?? 0;
     const originalPrice =
@@ -139,6 +154,9 @@ async function fetchProductById(id: string): Promise<Product | null> {
       transitDaysMin: data.transitDaysMin ?? undefined,
       transitDaysMax: data.transitDaysMax ?? undefined,
       availableCountryCodes: data.availableCountryCodes ?? [],
+      brand: data.brand ?? undefined,
+      model: data.model ?? undefined,
+      sizeChart: data.sizeChart ?? undefined,
     };
   } catch {
     return null;
@@ -337,6 +355,24 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   </p>
                 </div>
 
+                {/* Brand & model (synced from Printful/Printify) */}
+                {(product.brand ?? product.model) && (
+                  <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    {product.brand?.trim() && (
+                      <span>
+                        <span className="font-medium text-foreground">Brand:</span>{" "}
+                        {product.brand.trim()}
+                      </span>
+                    )}
+                    {product.model?.trim() && (
+                      <span>
+                        <span className="font-medium text-foreground">Model:</span>{" "}
+                        {product.model.trim()}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 {/* Features only at top (bullet points); description is in accordion below */}
                 {product.features.length > 0 && (
                   <ul className="mb-6 space-y-2 text-muted-foreground">
@@ -380,6 +416,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   category={product.category}
                   description={sanitizeProductDescription(product.description)}
                   descriptionIsHtml
+                  sizeChart={product.sizeChart ?? undefined}
                 />
                 <ProductShare
                   title={product.name}

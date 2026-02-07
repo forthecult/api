@@ -4,6 +4,11 @@
  * Staging uses JSON format: data/reviews-seed.json (preferred; no CSV parsing in CI).
  * Generate it with: bun run db:extract-reviews (from data/reviews.csv).
  *
+ * Date/time: Review created_at/updated_at are preserved. When seeding from JSON,
+ * createdAt and updatedAt are read from the seed file (from CSV created_at at
+ * extract time). When seeding from CSV, created_at is required; invalid or
+ * missing values fall back to "now" with a warning so the CSV can be fixed.
+ *
  * Every review is seeded even when the referenced product does not exist (productId
  * is set to null). Reviews are still visible on the front-end (e.g. homepage
  * testimonials). When a product with matching productSlug is later created, run
@@ -265,14 +270,20 @@ async function seedFromJson(): Promise<boolean> {
   }
 
   // Map every review to a row; productId is null when product doesn't exist (review still seeded for front-end).
+  // Preserve date/time from seed JSON (originally from CSV created_at); fallback to now if invalid.
+  const now = new Date();
   const rows: ReviewRow[] = raw.map((r) => {
     const product = slugToProduct.get(r.productSlug);
+    let createdAt = new Date(r.createdAt);
+    let updatedAt = new Date(r.updatedAt);
+    if (Number.isNaN(createdAt.getTime())) createdAt = now;
+    if (Number.isNaN(updatedAt.getTime())) updatedAt = createdAt;
     return {
       ...r,
       productId: product?.id ?? null,
       productName: product?.name ?? r.productName,
-      createdAt: new Date(r.createdAt),
-      updatedAt: new Date(r.updatedAt),
+      createdAt,
+      updatedAt,
     };
   });
 
@@ -352,11 +363,20 @@ async function seed() {
       continue;
     }
 
+    const rawCreatedAt = (review.created_at ?? "").trim();
     let createdAt: Date;
     try {
-      createdAt = new Date(review.created_at);
-      if (isNaN(createdAt.getTime())) createdAt = new Date();
+      createdAt = new Date(rawCreatedAt);
+      if (Number.isNaN(createdAt.getTime())) {
+        console.warn(
+          `Review ${review.product_handle} / ${review.author}: invalid or missing created_at "${rawCreatedAt}", using now`,
+        );
+        createdAt = new Date();
+      }
     } catch {
+      console.warn(
+        `Review ${review.product_handle} / ${review.author}: created_at parse failed, using now`,
+      );
       createdAt = new Date();
     }
 

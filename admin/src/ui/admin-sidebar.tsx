@@ -53,8 +53,8 @@ const ADMIN_SECTIONS: NavSection[] = [
     children: [
       { href: "/products", label: "Product List" },
       { href: "/products/create", label: "Create Product" },
+      { href: "/products/size-charts", label: "Size Charts" },
       { href: "/products/reviews", label: "Product Reviews" },
-      { href: "/products#pod-sync", label: "Printful & Printify sync" },
     ],
   },
   {

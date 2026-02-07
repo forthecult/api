@@ -1,4 +1,11 @@
-import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
@@ -7,6 +14,8 @@ export const paymentMethodSettingTable = pgTable("payment_method_setting", {
   methodKey: text("method_key").primaryKey(),
   label: text("label").notNull(),
   enabled: boolean("enabled").notNull().default(true),
+  /** For methods with multiple networks (e.g. USDC, USDT): enabled network keys. Null or empty = all supported networks. */
+  enabledNetworks: jsonb("enabled_networks").$type<string[] | null>(),
   displayOrder: integer("display_order").notNull().default(0),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),

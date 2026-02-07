@@ -16,6 +16,8 @@ import { userTable } from "../users/tables";
 export const productsTable = pgTable("product", {
   barcode: text("barcode"),
   brand: text("brand"),
+  /** Blank product model (e.g. "3001") for size chart lookup. */
+  model: text("model"),
   compareAtPriceCents: integer("compare_at_price_cents"),
   continueSellingWhenOutOfStock: boolean("continue_selling_when_out_of_stock")
     .notNull()

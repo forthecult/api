@@ -71,9 +71,23 @@ function StarRating({ rating }: { rating: number }) {
   );
 }
 
+function formatReviewDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return "—";
+  }
+}
+
 const COLUMNS = [
   { key: "name", label: "Product" },
   { key: "customer", label: "Author" },
+  { key: "date", label: "Date" },
   { key: "title", label: "Title" },
   { key: "comment", label: "Body" },
   { key: "rating", label: "Rating" },
@@ -266,6 +280,12 @@ export default function AdminProductsReviewsPage() {
                                 ) : null}
                               </span>
                             )}
+                          </td>
+                          <td
+                            className="whitespace-nowrap p-4 text-muted-foreground"
+                            title={review.createdAt}
+                          >
+                            {formatReviewDate(review.createdAt)}
                           </td>
                           <td className="max-w-[160px] truncate p-4 text-muted-foreground">
                             {review.title ?? "—"}

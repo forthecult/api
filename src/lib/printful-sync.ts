@@ -26,6 +26,7 @@ import {
   fetchCatalogProduct,
   fetchCatalogProductShippingCountries,
   fetchCatalogProductShippingCustoms,
+  fetchProductSizeGuide,
   fetchVariantPrices,
   updateSyncProduct,
   updateSyncVariant,
@@ -192,6 +193,9 @@ export async function importSinglePrintfulProduct(
       syncVariants,
       catalogProduct,
     );
+    if (catalogProductId != null && catalogProduct?.brand && catalogProduct?.model) {
+      await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
+    }
     return { action: "updated", productId: existingProduct.id };
   }
 
@@ -201,6 +205,9 @@ export async function importSinglePrintfulProduct(
     syncVariants,
     catalogProduct,
   );
+  if (catalogProductId != null && catalogProduct?.brand && catalogProduct?.model) {
+    await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
+  }
   return { action: "imported", productId };
 }
 
@@ -260,11 +267,81 @@ const PRINTFUL_SHIPPING_COUNTRY_CODES = [
 /**
  * Create a new local product from Printful sync product data.
  */
+/** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). */
+async function upsertPrintfulSizeChart(
+  catalogProductId: number,
+  brand: string,
+  model: string,
+): Promise<void> {
+  try {
+    const [imperialRes, metricRes] = await Promise.all([
+      fetchProductSizeGuide(catalogProductId, { unit: "inches" }).catch(() => null),
+      fetchProductSizeGuide(catalogProductId, { unit: "cm" }).catch(() => null),
+    ]);
+    const dataImperial =
+      (imperialRes?.data?.size_tables?.length ?? 0) > 0
+        ? {
+            availableSizes: imperialRes.data.available_sizes ?? [],
+            sizeTables: imperialRes.data.size_tables.map((t) => ({
+              type: t.type,
+              unit: t.unit,
+              description: t.description,
+              image_url: t.image_url,
+              measurements: t.measurements,
+            })),
+          }
+        : null;
+    const dataMetric =
+      (metricRes?.data?.size_tables?.length ?? 0) > 0
+        ? {
+            availableSizes: metricRes.data.available_sizes ?? [],
+            sizeTables: metricRes.data.size_tables.map((t) => ({
+              type: t.type,
+              unit: t.unit,
+              description: t.description,
+              image_url: t.image_url,
+              measurements: t.measurements,
+            })),
+          }
+        : null;
+    if (dataImperial == null && dataMetric == null) return;
+
+    const displayName = "T-Shirts"; // default; could derive from catalog product type
+    const id = nanoid();
+    const now = new Date();
+    await db
+      .insert(sizeChartsTable)
+      .values({
+        id,
+        provider: "printful",
+        brand,
+        model,
+        displayName,
+        dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
+        dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoUpdate({
+        target: [sizeChartsTable.provider, sizeChartsTable.brand, sizeChartsTable.model],
+        set: {
+          displayName,
+          dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
+          dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
+          updatedAt: now,
+        },
+      });
+  } catch (err) {
+    console.warn("Printful size chart import failed for catalog product", catalogProductId, err);
+  }
+}
+
 async function createLocalProductFromPrintful(
   syncProduct: PrintfulSyncProduct,
   syncVariants: PrintfulSyncVariant[],
   catalogProduct: {
     brand: string | null;
+    model: string | null;
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
@@ -309,9 +386,10 @@ async function createLocalProductFromPrintful(
       ? syncVariants[0]!.sku
       : null;
 
-  // Description and brand from catalog product; meta description from description
+  // Description, brand and model from catalog product; meta description from description
   const description = catalogProduct?.description ?? null;
   const brand = catalogProduct?.brand ?? null;
+  const model = catalogProduct?.model ?? null;
   const metaDescription =
     description != null && description.length > 0
       ? description
@@ -452,6 +530,7 @@ async function updateLocalProductFromPrintful(
   syncVariants: PrintfulSyncVariant[],
   catalogProduct: {
     brand: string | null;
+    model: string | null;
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
@@ -473,6 +552,7 @@ async function updateLocalProductFromPrintful(
 
   const description = catalogProduct?.description ?? undefined;
   const brand = catalogProduct?.brand ?? undefined;
+  const model = catalogProduct?.model ?? undefined;
   const metaDescription =
     description != null && description.length > 0
       ? description
@@ -524,6 +604,7 @@ async function updateLocalProductFromPrintful(
       sku: productSku,
       ...(description !== undefined && { description }),
       ...(brand !== undefined && { brand }),
+      ...(model !== undefined && { model }),
       ...(metaDescription !== undefined && { metaDescription }),
       ...(catalogProduct != null && {
         countryOfOrigin: catalogProduct.countryOfOrigin,

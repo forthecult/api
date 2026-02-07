@@ -622,12 +622,21 @@ export function CheckoutClient() {
     visibility === null || hasAnyCryptoEnabled(visibility);
   const showStablecoinsRow =
     visibility === null || hasAnyStablecoinEnabled(visibility);
-  const visibleUsdcSubOptions = useMemo(
+  const visibleUsdcSubOptions = useMemo(() => {
+    const base =
+      visibility !== null
+        ? visibleUsdcNetworks(visibility)
+        : USDC_SUB_OPTIONS;
+    return base.filter(
+      (opt) => opt.value !== "solana" || solanaPayConfigured,
+    );
+  }, [visibility, solanaPayConfigured]);
+  const visibleUsdtSubOptions = useMemo(
     () =>
-      USDC_SUB_OPTIONS.filter(
-        (opt) => opt.value !== "solana" || solanaPayConfigured,
-      ),
-    [solanaPayConfigured],
+      visibility !== null
+        ? visibleUsdtNetworks(visibility)
+        : USDT_SUB_OPTIONS,
+    [visibility],
   );
   const isSolanaPaySupported =
     solanaPayConfigured &&
@@ -2907,7 +2916,7 @@ export function CheckoutClient() {
                               ) : null}
                             </label>
                           ))
-                        : USDT_SUB_OPTIONS.map((opt) => (
+                        : visibleUsdtSubOptions.map((opt) => (
                             <label
                               key={opt.value}
                               className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20"
