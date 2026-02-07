@@ -9,7 +9,7 @@ export const metadata = {
 
 const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/", label: "Home" },
-  { href: "/products", label: "All products" },
+  { href: "/products", label: "Products" },
   { href: "/about", label: "About us" },
   { href: "/lookbook", label: "Lookbook" },
   { href: "/token", label: "$CULT Token" },

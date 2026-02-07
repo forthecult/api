@@ -49,6 +49,7 @@ interface Product {
   id: string;
   image: string;
   images?: string[];
+  mainImageAlt?: string | null;
   inStock: boolean;
   /** When true, product can be purchased regardless of stock (POD/made-to-order). */
   continueSellingWhenOutOfStock?: boolean;
@@ -101,6 +102,7 @@ async function fetchProductById(id: string): Promise<Product | null> {
       compareAtPriceCents?: number;
       imageUrl?: string;
       images?: string[];
+      mainImageAlt?: string | null;
       category?: string;
       inStock?: boolean;
       hasVariants?: boolean;
@@ -140,6 +142,7 @@ async function fetchProductById(id: string): Promise<Product | null> {
       features: data.features ?? [],
       image: data.imageUrl ?? "/placeholder.svg",
       images,
+      mainImageAlt: data.mainImageAlt ?? undefined,
       inStock: data.inStock ?? true,
       continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
       originalPrice,
@@ -316,6 +319,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 discountPercentage={discountPercentage}
                 images={product.images ?? [product.image]}
                 productName={product.name}
+                mainImageAlt={product.mainImageAlt}
               />
 
               {/* Product info */}

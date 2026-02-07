@@ -25,6 +25,7 @@ export type ProductBySlugResult = {
   price: { usd: number; crypto: Record<string, string> };
   compareAtPriceCents?: number;
   imageUrl?: string;
+  mainImageAlt?: string | null;
   images?: string[];
   category: string;
   inStock: boolean;
@@ -51,6 +52,8 @@ export type ProductBySlugResult = {
   model?: string | null;
   /** Product source: printful | printify | manual. */
   source?: string;
+  metaDescription?: string | null;
+  pageTitle?: string | null;
   /** When product has brand+model and a size chart exists, for accordion "Size Guide". */
   sizeChart?: {
     displayName: string;
@@ -85,6 +88,7 @@ export async function getProductBySlugOrId(
       priceCents: productsTable.priceCents,
       compareAtPriceCents: productsTable.compareAtPriceCents,
       imageUrl: productsTable.imageUrl,
+      mainImageAlt: productsTable.mainImageAlt,
       slug: productsTable.slug,
       published: productsTable.published,
       hasVariants: productsTable.hasVariants,
@@ -100,6 +104,8 @@ export async function getProductBySlugOrId(
       transitDaysMax: productsTable.transitDaysMax,
       brand: productsTable.brand,
       model: productsTable.model,
+      metaDescription: productsTable.metaDescription,
+      pageTitle: productsTable.pageTitle,
       source: productsTable.source,
       // Stock management fields
       trackQuantity: productsTable.trackQuantity,
@@ -294,6 +300,7 @@ export async function getProductBySlugOrId(
     price: { usd: basePriceUsd, crypto: {} },
     compareAtPriceCents: product.compareAtPriceCents ?? undefined,
     imageUrl: product.imageUrl ?? undefined,
+    mainImageAlt: product.mainImageAlt ?? undefined,
     images: imageUrls.length > 0 ? imageUrls : undefined,
     category: mainCat?.[0]?.categoryName ?? "Uncategorized",
     inStock,
@@ -312,6 +319,8 @@ export async function getProductBySlugOrId(
     transitDaysMax: product.transitDaysMax ?? undefined,
     brand: product.brand ?? undefined,
     model: product.model ?? undefined,
+    metaDescription: product.metaDescription ?? undefined,
+    pageTitle: product.pageTitle ?? undefined,
     source: product.source ?? undefined,
     sizeChart: sizeChart ?? undefined,
     variants,

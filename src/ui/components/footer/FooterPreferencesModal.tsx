@@ -54,7 +54,8 @@ export function FooterPreferencesModal({
     return COUNTRY_OPTIONS_ALPHABETICAL.filter(
       (o) =>
         o.countryName.toLowerCase().includes(q) ||
-        o.code.toLowerCase().includes(q),
+        o.code.toLowerCase().includes(q) ||
+        q.includes(o.code.toLowerCase()),
     );
   }, [countrySearch]);
 

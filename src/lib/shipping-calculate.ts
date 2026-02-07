@@ -367,7 +367,10 @@ async function calculatePrintfulShipping(
     );
 
     if (response.data.length === 0) {
-      console.warn("No Printful shipping rates available");
+      console.warn(
+        "No Printful shipping rates available (check address: US/CA/AU require state_code)",
+        { country: input.countryCode, hasState: Boolean(stateCode) },
+      );
       return { shippingCents: 0, rate: null };
     }
 
@@ -626,7 +629,10 @@ export async function runShippingCalculate(
             })
             .from(productVariantsTable)
             .where(
-              inArray(productVariantsTable.productId, productIds),
+              and(
+                inArray(productVariantsTable.productId, productIds),
+                isNotNull(productVariantsTable.externalId),
+              ),
             )
             .orderBy(
               asc(productVariantsTable.productId),

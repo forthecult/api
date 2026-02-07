@@ -40,6 +40,7 @@ import type {
   ProductVariantOption,
 } from "~/app/products/[id]/page";
 import { ProductsClient } from "~/app/products/products-client";
+import { ESimMiniappClient } from "~/app/[slug]/esim-miniapp-client";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
@@ -56,6 +57,7 @@ interface Product {
   id: string;
   image: string;
   images?: string[];
+  mainImageAlt?: string | null;
   inStock: boolean;
   /** When true, product can be purchased regardless of stock (POD/made-to-order). */
   continueSellingWhenOutOfStock?: boolean;
@@ -78,6 +80,8 @@ interface Product {
   brand?: string | null;
   /** Blank product model (synced from Printful/Printify). */
   model?: string | null;
+  metaDescription?: string | null;
+  pageTitle?: string | null;
   /** Size chart for accordion when product has brand+model (e.g. apparel). */
   sizeChart?: {
     displayName: string;
@@ -144,6 +148,7 @@ async function fetchProductBySlug(slug: string): Promise<Product | null> {
     features: data.features ?? [],
     image: data.imageUrl ?? "/placeholder.svg",
     images,
+    mainImageAlt: data.mainImageAlt ?? undefined,
     inStock: data.inStock ?? true,
     continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
     originalPrice,
@@ -161,6 +166,8 @@ async function fetchProductBySlug(slug: string): Promise<Product | null> {
     transitDaysMax: data.transitDaysMax ?? undefined,
     brand: data.brand ?? undefined,
     model: data.model ?? undefined,
+    metaDescription: data.metaDescription ?? undefined,
+    pageTitle: data.pageTitle ?? undefined,
     sizeChart: data.sizeChart ?? undefined,
   };
 }
@@ -227,19 +234,24 @@ export async function generateMetadata({
   const product = await fetchProductBySlug(slug);
   if (product) {
     const canonicalSlug = product.slug ?? product.id;
-    const metaDesc = stripHtmlForMeta(product.description).slice(0, 160);
+    const metaDesc =
+      product.metaDescription?.trim()?.slice(0, 160) ??
+      stripHtmlForMeta(product.description).slice(0, 160);
+    const pageTitle =
+      product.pageTitle?.trim() || product.name;
+    const ogTitle = pageTitle.includes(SEO_CONFIG.name) ? pageTitle : `${pageTitle} | ${SEO_CONFIG.name}`;
     return {
-      title: product.name,
+      title: pageTitle,
       description: metaDesc,
       openGraph: {
-        title: `${product.name} | ${SEO_CONFIG.name}`,
+        title: ogTitle,
         description: metaDesc,
-        images: [{ url: product.image, alt: product.name }],
+        images: [{ url: product.image, alt: product.mainImageAlt ?? product.name }],
         type: "website",
       },
       twitter: {
         card: "summary_large_image",
-        title: product.name,
+        title: ogTitle,
         description: metaDesc,
         images: [product.image],
       },
@@ -349,6 +361,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                   discountPercentage={discountPercentage}
                   images={product.images ?? [product.image]}
                   productName={product.name}
+                  mainImageAlt={product.mainImageAlt}
                 />
                 <div className="flex flex-col">
                   <div className="mb-6">
@@ -501,6 +514,36 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         />
       );
     }
+  }
+
+  // eSIM category: embed Boxo eSIM miniapp (travel data plans)
+  if (category.slug === "esim") {
+    const categoryDescription =
+      category.description?.slice(0, 160) ??
+      `Browse ${category.name} at ${SEO_CONFIG.name}.`;
+    return (
+      <>
+        <CollectionPageStructuredData
+          name={category.name}
+          description={categoryDescription}
+          url={`${baseUrl()}/${slug}`}
+          numberOfItems={0}
+        />
+        <div className="container mx-auto px-4 py-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold tracking-tight">
+              {category.name}
+            </h1>
+            {category.description ? (
+              <p className="mt-4 max-w-3xl text-muted-foreground">
+                {category.description}
+              </p>
+            ) : null}
+          </div>
+          <ESimMiniappClient />
+        </div>
+      </>
+    );
   }
 
   const resolvedSearchParams = (await searchParams) as {

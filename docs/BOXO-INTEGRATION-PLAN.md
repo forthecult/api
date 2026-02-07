@@ -1,6 +1,17 @@
 # Boxo Integration Plan — eCommerce Store
 
-This document is an **implementation plan only**. No code has been implemented. It is based on a review of [Boxo’s documentation](https://docs.boxo.io/main/homepage) and the current relivator/Cult eCommerce store.
+This document is an **implementation plan** and status log. It is based on a review of [Boxo’s documentation](https://docs.boxo.io/main/homepage) and the current relivator/Cult eCommerce store.
+
+---
+
+## Implementation status (eSIM)
+
+- **Web SDK**: npm package **`@appboxo/web-sdk`** — “Boxo Desktop Host App SDK”; embeds miniapps in a container via `mount({ container })` (iframe). API: `new AppboxoWebSDK({ clientId, appId })`, then `sdk.mount({ container })`, `sdk.destroy()` for cleanup.
+- **eSIM category**: Added to seed (in `SHOP_CATEGORIES`); included in `db:seed-categories` and thus in `db:seed:staging` / `db:seed:production`. Slug: `esim`. Full SEO: title, metaDescription, description.
+- **eSIM category page** (`/esim`): Renders category hero + embedded Boxo eSIM miniapp via `ESimMiniappClient` (uses `@appboxo/web-sdk`). When `NEXT_PUBLIC_BOXO_CLIENT_ID` and `NEXT_PUBLIC_BOXO_ESIM_APP_ID` are set, the miniapp iframe is mounted; otherwise a “configure Boxo” message is shown.
+- **Env (optional)**:
+  - `NEXT_PUBLIC_BOXO_CLIENT_ID` — Boxo host app client id (from [dashboard.boxo.io](https://dashboard.boxo.io) → My host apps).
+  - `NEXT_PUBLIC_BOXO_ESIM_APP_ID` — eSIM miniapp app id (from Boxo after eSIM integration is approved).
 
 ---
 
@@ -62,10 +73,8 @@ Reuse: layout patterns (e.g. `/telegram` layout with script + chrome), API route
 
 **Tasks**:
 
-1. **Clarify Web SDK surface**
-   - Docs list “Web SDK” under [Boxo SDK](https://docs.boxo.io/host-apps/BoxoSDK) but the detailed examples are for iOS/Android/Flutter/React Native/Capacitor/Expo. Confirm Web SDK package name (e.g. npm), script URL, or iframe-based launch from Boxo docs or support.
-   - If Web SDK is script-based: add script only in the layout or page where miniapps are used (similar to `telegram-web-app.js` in `/telegram`).
-   - If Web SDK is npm: add dependency and ensure it’s only loaded on the routes that need it (e.g. dynamic import or route-specific bundle).
+1. **Web SDK surface** ✅
+   - **npm**: `@appboxo/web-sdk` — “Boxo Desktop Host App SDK”. Embeds miniapp in a DOM container via iframe; `new AppboxoWebSDK({ clientId, appId })`, then `sdk.mount({ container })`. No script tag; bundle only on routes that use it (e.g. `/esim`).
 
 2. **Environment**
    - Add `NEXT_PUBLIC_BOXO_CLIENT_ID` (and keep any secret only on server).

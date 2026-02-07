@@ -46,6 +46,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@appboxo/web-sdk": "^1.4.3",
     "@better-auth/passkey": "^1.4.18",
     "@metamask/sdk": "^0.34.0",
     "@metamask/sdk-react": "^0.33.1",

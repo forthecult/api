@@ -601,6 +601,12 @@ export function CheckoutClient() {
   const [automaticCouponLoading, setAutomaticCouponLoading] = useState(false);
   /** Bump when user removes discount so we re-evaluate automatic. */
   const [discountEvalKey, setDiscountEvalKey] = useState(0);
+  /** Crypto prices (USD per token) for showing crypto total when crypto payment selected. */
+  const [cryptoPrices, setCryptoPrices] = useState<{
+    SOL?: number;
+    CRUST?: number;
+    PUMP?: number;
+  }>({});
   const router = useRouter();
   const isUS = form.country === "US";
   const isBillingUS = billingForm.country === "US";
@@ -623,6 +629,18 @@ export function CheckoutClient() {
     [visibility],
   );
   const solanaPayConfigured = Boolean(getSolanaPayRecipient());
+
+  // Fetch crypto prices when user might pay with crypto (summary shows crypto amount)
+  useEffect(() => {
+    if (paymentMethod !== "crypto") return;
+    fetch("/api/crypto/prices")
+      .then((res) => res.json())
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number }) => {
+        if (data && typeof data === "object") setCryptoPrices(data);
+      })
+      .catch(() => {});
+  }, [paymentMethod]);
+
   const visibleCryptoSubOptions = useMemo(() => {
     const base = visibility
       ? visibleCryptoSubFromVisibility(visibility)
@@ -927,6 +945,30 @@ export function CheckoutClient() {
   const totalCents =
     Math.round(subtotal * 100) - discountCents + shippingCents + taxCents;
   const total = Math.max(0, totalCents) / 100;
+
+  /** When paying with crypto, show equivalent amount (e.g. "≈ 0.0875 SOL") below fiat total. */
+  const cryptoTotalLabel = useMemo(() => {
+    if (paymentMethod !== "crypto" || total <= 0) return null;
+    if (paymentSubOption === "solana") {
+      const rate = cryptoPrices.SOL;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${amount.toFixed(4).replace(/\.?0+$/, "")} SOL`;
+    }
+    if (paymentSubOption === "crust") {
+      const rate = cryptoPrices.CRUST;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${amount.toFixed(6).replace(/\.?0+$/, "")} CRUST`;
+    }
+    if (paymentSubOption === "pump") {
+      const rate = cryptoPrices.PUMP;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${amount.toFixed(6).replace(/\.?0+$/, "")} PUMP`;
+    }
+    return null;
+  }, [paymentMethod, paymentSubOption, total, cryptoPrices.SOL, cryptoPrices.CRUST, cryptoPrices.PUMP]);
 
   const handleApplyCoupon = useCallback(async () => {
     const code = discountCodeInput.trim();
@@ -3437,6 +3479,11 @@ export function CheckoutClient() {
                     <FiatPrice usdAmount={total} />
                   </span>
                 </div>
+                {cryptoTotalLabel ? (
+                  <p className="text-right text-sm text-muted-foreground">
+                    {cryptoTotalLabel}
+                  </p>
+                ) : null}
               </CardContent>
             </Card>
           </div>

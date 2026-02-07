@@ -210,20 +210,6 @@ export function MobileNavSheet({
               </button>
               {shopExpanded && (
                 <ul className="ml-2 mt-1 space-y-0.5 border-l border-muted pl-3">
-                  <li>
-                    <Link
-                      className={cn(
-                        "block rounded px-2 py-1.5 text-sm",
-                        pathname === "/products"
-                          ? "font-medium text-primary"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                      href="/products"
-                      onClick={() => onOpenChange(false)}
-                    >
-                      All products
-                    </Link>
-                  </li>
                   {categories.map((cat) => {
                     const href = cat.slug ? `/${cat.slug}` : "/products";
                     return (

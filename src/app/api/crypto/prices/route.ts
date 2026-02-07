@@ -82,29 +82,42 @@ export async function GET() {
     if (d?.["pax-gold"]?.usd) prices.XAU = d["pax-gold"].usd;
     if (d?.["kinesis-silver"]?.usd) prices.XAG = d["kinesis-silver"].usd;
 
-    // PUMP from CoinGecko token price (contract address on Solana)
-    const pumpKey = PUMP_MINT_MAINNET.toLowerCase();
-    if (pumpTokenPrices?.[pumpKey]?.usd != null && pumpTokenPrices[pumpKey].usd! > 0) {
-      prices.PUMP = pumpTokenPrices[pumpKey].usd;
+    // PUMP: prefer CoinGecko token price (keys are often lowercase); fallback to pump.fun DEX if missing
+    const pumpEntry =
+      pumpTokenPrices?.[PUMP_MINT_MAINNET.toLowerCase()] ??
+      pumpTokenPrices?.[PUMP_MINT_MAINNET];
+    if (pumpEntry?.usd != null && pumpEntry.usd > 0) {
+      prices.PUMP = pumpEntry.usd;
     }
 
-    // CRUST via pump.fun LP (no CoinGecko listing)
+    // CRUST via pump.fun LP (no CoinGecko listing); PUMP fallback from pump.fun when CoinGecko doesn't return it
     const solUsd = d?.solana?.usd;
     if (typeof solUsd === "number" && solUsd > 0) {
       try {
-        const crustPromise = (async () => {
-          const connection = new Connection(getSolanaRpcUrlServer());
-          return await Promise.race([
+        const connection = new Connection(getSolanaRpcUrlServer());
+        const [crustSolPerToken, pumpSolPerToken] = await Promise.all([
+          Promise.race([
             getPumpTokenPriceInSol(connection, new PublicKey(CRUST_MINT_MAINNET)),
             new Promise<number>((resolve) =>
               setTimeout(() => resolve(0), FETCH_TIMEOUT),
             ),
-          ]);
-        })();
-        const crustSolPerToken = await crustPromise;
+          ]),
+          // Only fetch PUMP from pump.fun if CoinGecko didn't return it
+          prices.PUMP != null && prices.PUMP > 0
+            ? Promise.resolve(0)
+            : Promise.race([
+                getPumpTokenPriceInSol(connection, new PublicKey(PUMP_MINT_MAINNET)),
+                new Promise<number>((resolve) =>
+                  setTimeout(() => resolve(0), FETCH_TIMEOUT),
+                ),
+              ]),
+        ]);
         if (crustSolPerToken > 0) prices.CRUST = crustSolPerToken * solUsd;
+        if (pumpSolPerToken > 0 && (prices.PUMP == null || prices.PUMP <= 0)) {
+          prices.PUMP = pumpSolPerToken * solUsd;
+        }
       } catch {
-        // CRUST price fetch failed, continue without it
+        // pump.fun price fetch failed, continue with CoinGecko-only prices
       }
     }
 

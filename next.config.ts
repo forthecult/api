@@ -179,6 +179,7 @@ const config = {
       { hostname: "assets.stickpng.com", protocol: "https" },
       { hostname: "sui.io", protocol: "https" },
       { hostname: "pacsafe.com", protocol: "https" },
+      { hostname: "cdn.shopify.com", protocol: "https" },
       // Printify product/mockup images (POD sync)
       { hostname: "images-api.printify.com", protocol: "https" },
     ],

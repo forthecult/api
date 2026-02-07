@@ -56,15 +56,6 @@ export function ShopMegaMenu({
         className="w-[min(95vw,960px)] max-h-[min(80vh,520px)] overflow-auto rounded-xl border bg-popover p-0 shadow-lg"
       >
         <div className="flex flex-row flex-wrap gap-x-8 gap-y-4 py-4 px-4">
-          <div className="shrink-0">
-            <Link
-              href="/products"
-              className="block rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
-              onClick={() => setOpen(false)}
-            >
-              All products
-            </Link>
-          </div>
           {categories.map((cat) => {
             const href = cat.slug ? `/${cat.slug}` : "/products";
             return (

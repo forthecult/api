@@ -8,6 +8,8 @@ import { cn } from "~/lib/cn";
 export interface ProductImageGalleryProps {
   images: string[];
   productName: string;
+  /** SEO: alt text for the main (first) product image. Falls back to productName when not set. */
+  mainImageAlt?: string | null;
   discountPercentage?: number;
   className?: string;
 }
@@ -15,6 +17,7 @@ export interface ProductImageGalleryProps {
 export function ProductImageGallery({
   images,
   productName,
+  mainImageAlt,
   discountPercentage = 0,
   className,
 }: ProductImageGalleryProps) {
@@ -26,6 +29,10 @@ export function ProductImageGallery({
   const list = images.length > 0 ? images : ["/placeholder.svg"];
   const mainSrc = list[selectedIndex] ?? list[0];
   const hasMultiple = list.length > 1;
+  const mainAlt =
+    selectedIndex === 0 && mainImageAlt?.trim()
+      ? mainImageAlt.trim()
+      : productName;
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current || list.length === 0) return;
@@ -47,7 +54,7 @@ export function ProductImageGallery({
         onClick={() => hasMultiple && setZoomOpen((v) => !v)}
       >
         <Image
-          alt={productName}
+          alt={mainAlt}
           className={cn(
             "object-cover transition-transform duration-150",
             zoomOpen && "cursor-zoom-out scale-150",
