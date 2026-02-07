@@ -241,6 +241,7 @@ export function AdminSidebar() {
                 <li key={section.label}>
                   <Link
                     href={section.href}
+                    data-nav={section.label.toLowerCase().replace(/\s+/g, "-")}
                     className={cn(
                       "flex items-center gap-2 rounded-md px-2 py-2 text-sm transition-colors",
                       collapsed && "justify-center px-0",
