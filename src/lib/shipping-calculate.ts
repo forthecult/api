@@ -912,27 +912,35 @@ export async function runShippingCalculate(
         )
           continue;
 
-        if ((opt as { speed?: string | null }).speed === "express") {
+        const isExpress = (opt as { speed?: string | null }).speed === "express";
+        if (isExpress) {
           adminShippingSpeed = "express";
         }
+        // For brand-specific options, show friendly name (e.g. "Standard Shipping") instead of internal name (e.g. "PacSafe US Free over $49")
+        const displayLabel =
+          opt.brandId != null
+            ? isExpress
+              ? "Express Shipping"
+              : "Standard Shipping"
+            : opt.name;
         if (opt.type === "free") {
-          adminLabels.push(opt.name);
+          adminLabels.push(displayLabel);
           break;
         }
         if (opt.type === "flat" && opt.amountCents != null) {
           adminShippingCents += opt.amountCents;
-          adminLabels.push(opt.name);
+          adminLabels.push(displayLabel);
           break;
         }
         if (opt.type === "per_item" && opt.amountCents != null) {
           adminShippingCents += opt.amountCents * stats.qty;
-          adminLabels.push(opt.name);
+          adminLabels.push(displayLabel);
           break;
         }
         if (opt.type === "flat_plus_per_item" && opt.amountCents != null) {
           const additional = (opt.additionalItemCents ?? 0) * Math.max(0, stats.qty - 1);
           adminShippingCents += opt.amountCents + additional;
-          adminLabels.push(opt.name);
+          adminLabels.push(displayLabel);
           break;
         }
       }

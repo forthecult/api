@@ -32,9 +32,46 @@ export async function GET(request: NextRequest) {
     .from(paymentMethodSettingTable)
     .orderBy(paymentMethodSettingTable.displayOrder);
 
-  if (rows.length === 0) {
-    // Seed defaults
-    for (const d of PAYMENT_METHOD_DEFAULTS) {
+  const byKey = new Map(
+    rows.map((r) => [
+      r.methodKey,
+      {
+        methodKey: r.methodKey,
+        label: r.label,
+        enabled: r.enabled,
+        enabledNetworks: Array.isArray(r.enabledNetworks) ? r.enabledNetworks : null,
+        displayOrder: r.displayOrder,
+      },
+    ]),
+  );
+
+  // Always merge PAYMENT_METHOD_DEFAULTS so new methods appear in admin without a separate migration
+  const list: PaymentMethodSetting[] = [];
+  const toInsert: (typeof PAYMENT_METHOD_DEFAULTS)[number][] = [];
+  for (const d of PAYMENT_METHOD_DEFAULTS) {
+    const existing = byKey.get(d.methodKey);
+    if (existing) {
+      list.push({
+        methodKey: existing.methodKey,
+        label: existing.label,
+        enabled: existing.enabled,
+        enabledNetworks: existing.enabledNetworks,
+        displayOrder: existing.displayOrder,
+      });
+    } else {
+      toInsert.push(d);
+      list.push({
+        methodKey: d.methodKey,
+        label: d.label,
+        enabled: true,
+        displayOrder: d.displayOrder,
+      });
+    }
+  }
+  list.sort((a, b) => a.displayOrder - b.displayOrder);
+
+  if (toInsert.length > 0) {
+    for (const d of toInsert) {
       await db.insert(paymentMethodSettingTable).values({
         methodKey: d.methodKey,
         label: d.label,
@@ -44,24 +81,7 @@ export async function GET(request: NextRequest) {
         updatedAt: now,
       });
     }
-    const list: PaymentMethodSetting[] = PAYMENT_METHOD_DEFAULTS.map(
-      (d) => ({
-        methodKey: d.methodKey,
-        label: d.label,
-        enabled: true,
-        displayOrder: d.displayOrder,
-      }),
-    );
-    return NextResponse.json({ data: list });
   }
-
-  const list: PaymentMethodSetting[] = rows.map((r) => ({
-    methodKey: r.methodKey,
-    label: r.label,
-    enabled: r.enabled,
-    enabledNetworks: Array.isArray(r.enabledNetworks) ? r.enabledNetworks : null,
-    displayOrder: r.displayOrder,
-  }));
 
   return NextResponse.json({ data: list });
 }

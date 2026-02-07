@@ -766,7 +766,7 @@ export type PrintfulProductTemplateItem = {
   external_product_id: string | null;
   title: string;
   available_variant_ids: number[];
-  option_data?: Array<{ id: string; value: string[] }>;
+  option_data?: Array<{ id: string; value: string | string[] }>;
   colors?: Array<{ color_name: string; color_codes: string[] }>;
   sizes?: string[];
   mockup_file_url?: string;
@@ -780,7 +780,10 @@ export type PrintfulProductTemplateItem = {
     display_name: string;
     technique_key?: string;
     technique_display_name?: string;
+    options?: unknown[];
   }>;
+  placement_option_data?: Array<{ type: string; options: unknown[] }>;
+  design_id?: string | null;
   created_at?: number;
   updated_at?: number;
 };

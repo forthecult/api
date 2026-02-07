@@ -3421,11 +3421,6 @@ export function CheckoutClient() {
                   <div className="flex items-center justify-between gap-1">
                     <span className="flex items-center gap-1.5 text-muted-foreground">
                       Shipping
-                      {shippingLabel ? (
-                        <span className="text-xs font-normal normal-case text-muted-foreground/80">
-                          ({shippingLabel})
-                        </span>
-                      ) : null}
                       <Dialog>
                         <DialogTrigger
                           type="button"
