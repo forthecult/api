@@ -259,6 +259,7 @@ export default function AdminProductEditPage() {
   const [availableCountryCodes, setAvailableCountryCodes] = useState<string[]>(
     [],
   );
+  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
 
   const availableCountrySet = useMemo(
     () => new Set(availableCountryCodes),
@@ -1327,16 +1328,26 @@ export default function AdminProductEditPage() {
                 className={inputClass}
               />
               {imageUrl && (
-                <div className="relative mt-2 size-24 overflow-hidden rounded-md border bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="size-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
+                <div className="mt-2 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setExpandedImageUrl(imageUrl)}
+                    className="relative size-24 shrink-0 overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
+                    title="Click to expand"
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl}
+                      alt=""
+                      className="size-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </button>
+                  <span className="text-xs text-muted-foreground">
+                    Click to expand
+                  </span>
                 </div>
               )}
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
@@ -1727,13 +1738,22 @@ export default function AdminProductEditPage() {
                               </td>
                               <td className="p-2">
                                 <div className="flex items-center gap-3">
-                                  <div className="flex h-10 w-10 items-center justify-center rounded border border-dashed bg-muted/30">
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed bg-muted/30">
                                     {v.imageUrl ? (
-                                      <img
-                                        src={v.imageUrl}
-                                        alt=""
-                                        className="h-full w-full rounded object-cover"
-                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setExpandedImageUrl(v.imageUrl ?? null)
+                                        }
+                                        className="flex h-full w-full items-center justify-center transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
+                                        title="Click to expand"
+                                      >
+                                        <img
+                                          src={v.imageUrl}
+                                          alt=""
+                                          className="h-full w-full rounded object-cover"
+                                        />
+                                      </button>
                                     ) : (
                                       <ImageIcon className="h-4 w-4 text-muted-foreground" />
                                     )}
@@ -1842,6 +1862,38 @@ export default function AdminProductEditPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* Image expand modal */}
+        {expandedImageUrl && (
+          <div
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setExpandedImageUrl(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Expanded image"
+          >
+            <button
+              type="button"
+              onClick={() => setExpandedImageUrl(null)}
+              className="absolute right-4 top-4 rounded-md bg-black/50 p-2 text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white"
+              aria-label="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <div
+              className="relative max-h-[90vh] max-w-[90vw]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={expandedImageUrl}
+                alt="Expanded view"
+                className="max-h-[90vh] max-w-full rounded object-contain shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Variant Edit Modal */}
         {editingVariantIndex !== null && variants[editingVariantIndex] && (
@@ -1987,6 +2039,13 @@ export default function AdminProductEditPage() {
               least one country, the product will only be shown and purchasable
               in those regions (storefront and checkout).
             </p>
+            {vendor?.toLowerCase() === "printful" && (
+              <p className="text-sm text-muted-foreground">
+                Printful products: shipping countries are filled on import or
+                re-sync from Printful. If Markets is empty, re-sync the product
+                to refresh shipping destinations.
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-6">
             {COUNTRIES_BY_CONTINENT.map((entry, continentIndex) => (

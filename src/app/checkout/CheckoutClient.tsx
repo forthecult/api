@@ -2703,7 +2703,7 @@ export function CheckoutClient() {
                               name="payment-crypto"
                               checked={paymentSubOption === opt.value}
                               onChange={() => {
-                                setPaymentSubOption(opt.value);
+                                setPaymentSubOption(opt.value as CryptoSub);
                                 setValidationErrors([]);
                                 if (opt.value !== "other")
                                   setCryptoOtherSubOption("");

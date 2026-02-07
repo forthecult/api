@@ -214,18 +214,18 @@ function buildOptionDefinitionsFromVariants(
   return options;
 }
 
-/** Get variant image URL: prefer preview/mockup from files, fallback to catalog variant image. */
+/**
+ * Get variant image URL: prefer product mockup (product-with-design) over print file (design-only).
+ * Order: mockup > preview > default. Avoid using the "default" file when it's the print/design file.
+ */
 function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | null {
-  const previewFile =
-    syncVariant.files?.find(
-      (f) =>
-        f.type === "preview" || f.type === "mockup" || f.type === "default",
-    ) ?? syncVariant.files?.[0];
+  const files = syncVariant.files ?? [];
+  const mockupOrPreview =
+    files.find((f) => f.type === "mockup" || f.type === "preview") ??
+    files.find((f) => f.type === "default");
+  const file = mockupOrPreview ?? files[0];
   const fromFile =
-    previewFile?.preview_url ||
-    previewFile?.thumbnail_url ||
-    previewFile?.url ||
-    null;
+    file?.preview_url || file?.thumbnail_url || file?.url || null;
   if (fromFile) return fromFile;
   return syncVariant.product?.image ?? null;
 }
@@ -306,10 +306,10 @@ async function createLocalProductFromPrintful(
           .slice(0, 160)
       : null;
 
-  // Primary image: thumbnail or first variant image
+  // Primary image: prefer variant mockup (product-with-design) over sync product thumbnail (often print-file preview)
   const productImageUrl =
-    syncProduct.thumbnail_url ||
-    (firstVariant ? getPrintfulVariantImageUrl(firstVariant) : null);
+    (firstVariant ? getPrintfulVariantImageUrl(firstVariant) : null) ||
+    syncProduct.thumbnail_url;
 
   // Cost per item from first variant's catalog price (wholesale/technique price)
   let costPerItemCents: number | null = null;
