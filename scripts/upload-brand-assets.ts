@@ -135,7 +135,8 @@ async function main() {
         continue;
       }
 
-      const url = res.ufsUrl ?? res.data?.ufsUrl ?? res.url ?? res.data?.url ?? null;
+      // Use only ufsUrl (file.url / file.appUrl deprecated in uploadthing v9)
+      const url = res.ufsUrl ?? res.data?.ufsUrl ?? null;
       if (!url) {
         console.error(`No URL in response for ${brand.slug}/${name}`);
         continue;

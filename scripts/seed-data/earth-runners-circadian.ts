@@ -125,12 +125,32 @@ const LACE_OPTIONS = [
   { name: "Sunset", skuPrefix: "SU-CIR", imageUrl: `${CDN}/Sunset_circ2023_33ad29c4-1741-42e2-a43d-1a181a06e05c.jpg?v=1749180263`, imageAlt: "Earth Runners Circadian sandals, Sunset Lifestyle Lace", imageTitle: "Circadian Sandals - Sunset" },
 ] as const;
 
+/** One display value per size row: "Men's 4", "Women's 6", "Men's 4.5", "Women's 6.5", ... (44 total). */
+function getSizeDisplayValues(): string[] {
+  const out: string[] = [];
+  for (const row of SIZES_ROW) {
+    const [mPart, wPart] = row.usa.split(/\s*\/\s*/).map((s) => s.trim());
+    const menNum = mPart?.replace(/M$/, "").trim() ?? "";
+    const womenNum = wPart?.replace(/W$/, "").trim() ?? "";
+    out.push(`Men's ${menNum}`, `Women's ${womenNum}`);
+  }
+  return out;
+}
+
+const SIZE_DISPLAY_VALUES = getSizeDisplayValues();
+
+/** Size display (e.g. "Men's 4") -> index into SIZES_ROW (0–21) for SKU. */
+function sizeDisplayToRowIndex(sizeDisplay: string): number {
+  const i = SIZE_DISPLAY_VALUES.indexOf(sizeDisplay);
+  return i < 0 ? 0 : Math.floor(i / 2);
+}
+
 const OPTION_DEFINITIONS = [
   { name: "Lace", values: LACE_OPTIONS.map((l) => l.name) },
-  { name: "Size", values: SIZES_ROW.map((r) => r.usa) },
+  { name: "Size", values: SIZE_DISPLAY_VALUES },
 ];
 
-/** Lace × Size variants (Men's & Women's). All in stock. */
+/** Lace × Size variants: 2 lace × 44 size options = 88. Men's 4 and Women's 6 share same SKU (same physical size). */
 const VARIANTS: Array<{
   id: string;
   color: string;
@@ -143,13 +163,15 @@ const VARIANTS: Array<{
   stockQuantity: number;
 }> = [];
 for (const lace of LACE_OPTIONS) {
-  for (const row of SIZES_ROW) {
+  for (const sizeDisplay of SIZE_DISPLAY_VALUES) {
+    const rowIndex = sizeDisplayToRowIndex(sizeDisplay);
+    const row = SIZES_ROW[rowIndex]!;
     const sizeSlug = row.usa.replace(/\s*\/\s*/g, "-").replace(/\./g, "");
-    const id = `${PRODUCT_ID}-${lace.name.toLowerCase()}-${sizeSlug}`;
+    const id = `${PRODUCT_ID}-${lace.name.toLowerCase()}-${sizeDisplay.replace(/\s+/g, "-").replace(/\./g, "")}`;
     VARIANTS.push({
       id,
       color: lace.name,
-      size: row.usa,
+      size: sizeDisplay,
       priceCents: PRICE_CENTS,
       sku: `${lace.skuPrefix}-${sizeSlug}`,
       imageUrl: lace.imageUrl,

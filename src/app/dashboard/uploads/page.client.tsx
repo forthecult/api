@@ -156,7 +156,12 @@ export default function UploadsPageClient() {
           <UploadButton
             endpoint="videoUploader"
             onClientUploadComplete={(res) => {
-              console.log("Video(s) uploaded: ", res);
+              if (res?.length) {
+                console.log(
+                  "Video(s) uploaded:",
+                  res.map((f) => ({ key: f.key, name: f.name })),
+                );
+              }
               void loadMediaGallery();
             }}
             onUploadError={(uploadError: Error) => {

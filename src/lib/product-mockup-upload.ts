@@ -146,8 +146,8 @@ export async function uploadMockupToUploadThing(
       console.warn(`UploadThing error for ${filename}:`, res.error);
       return null;
     }
-    const url =
-      res?.ufsUrl ?? res?.data?.ufsUrl ?? res?.url ?? res?.data?.url ?? null;
+    // Use only ufsUrl (file.url / file.appUrl deprecated in uploadthing v9)
+    const url = res?.ufsUrl ?? res?.data?.ufsUrl ?? null;
     const key = res?.key ?? res?.data?.key ?? null;
     if (!url) {
       console.warn(`No URL in UploadThing response for ${filename}`);

@@ -10,7 +10,7 @@
 
 import "dotenv/config";
 
-import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
+import { asc, eq, isNull } from "drizzle-orm";
 import { UTApi } from "uploadthing/server";
 
 import { db } from "../src/db";
@@ -219,28 +219,39 @@ async function main() {
   }
 
   // Backfill primary image from first gallery image for products where imageUrl is missing or not UploadThing
-  const productsNeedingBackfill = await db
+  const productsWithNullImage = await db
     .select({ id: productsTable.id })
     .from(productsTable)
-    .where(
-      or(
-        isNull(productsTable.imageUrl),
-        sql`${productsTable.imageUrl} NOT LIKE '%uploadthing%'`,
-      ),
+    .where(isNull(productsTable.imageUrl));
+  const allProductsWithImages = await db
+    .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
+    .from(productsTable)
+    .innerJoin(
+      productImagesTable,
+      eq(productsTable.id, productImagesTable.productId),
     );
+  const needsBackfill = new Set<string>();
+  for (const p of productsWithNullImage) {
+    needsBackfill.add(p.id);
+  }
+  for (const p of allProductsWithImages) {
+    if (p.imageUrl && !isUploadThingUrl(p.imageUrl)) {
+      needsBackfill.add(p.id);
+    }
+  }
   let backfillCount = 0;
-  for (const prod of productsNeedingBackfill) {
+  for (const productId of needsBackfill) {
     const firstImage = await db
       .select({ url: productImagesTable.url })
       .from(productImagesTable)
-      .where(eq(productImagesTable.productId, prod.id))
+      .where(eq(productImagesTable.productId, productId))
       .orderBy(asc(productImagesTable.sortOrder))
       .limit(1);
     if (firstImage.length > 0 && firstImage[0]!.url) {
       await db
         .update(productsTable)
         .set({ imageUrl: firstImage[0]!.url, updatedAt: new Date() })
-        .where(eq(productsTable.id, prod.id));
+        .where(eq(productsTable.id, productId));
       backfillCount++;
     }
   }

@@ -103,13 +103,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Use only ufsUrl (file.url / file.appUrl are deprecated in uploadthing v9)
     const url =
       "ufsUrl" in data &&
       typeof (data as { ufsUrl?: string }).ufsUrl === "string"
         ? (data as { ufsUrl: string }).ufsUrl
-        : "url" in data && typeof (data as { url?: string }).url === "string"
-          ? (data as { url: string }).url
-          : null;
+        : null;
 
     if (!url) {
       return NextResponse.json(
