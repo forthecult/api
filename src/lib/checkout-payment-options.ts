@@ -331,3 +331,54 @@ export function getPaymentIconPaths(
   }
   return icons;
 }
+
+/** Footer payment items: same size/format, filtered by checkout visibility. CC logos shown when creditCard OR paypal enabled (PayPal allows CC). */
+export function getFooterPaymentItems(
+  visibility: PaymentVisibility | null,
+): Array<{ name: string; title?: string; src: string }> {
+  const showCc =
+    visibility !== null
+      ? visibility.creditCard || visibility.paypal
+      : !HIDDEN_PAYMENT_OPTIONS.creditCard || !HIDDEN_PAYMENT_OPTIONS.paypal;
+  const showPaypal =
+    visibility !== null ? visibility.paypal : !HIDDEN_PAYMENT_OPTIONS.paypal;
+
+  const items: Array<{ name: string; title?: string; src: string }> = [];
+
+  if (visibility === null) {
+    // Before API load: use HIDDEN_PAYMENT_OPTIONS for crypto; always use Solana logo mark
+    if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin)
+      items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
+    if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin)
+      items.push({
+        name: "Dogecoin",
+        title: "Much wow. Such spend.",
+        src: "/payments/doge.svg",
+      });
+    if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero)
+      items.push({ name: "Monero", src: "/payments/monero.svg" });
+    items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
+    items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
+  } else {
+    if (visibility.cryptoBitcoin) items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
+    if (visibility.cryptoDogecoin)
+      items.push({ name: "Dogecoin", title: "Much wow. Such spend.", src: "/payments/doge.svg" });
+    if (visibility.cryptoMonero) items.push({ name: "Monero", src: "/payments/monero.svg" });
+    if (visibility.cryptoEthereum) items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
+    if (visibility.cryptoSolana)
+      items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
+  }
+
+  if (showPaypal) items.push({ name: "PayPal", src: "/payments/paypal.svg" });
+  if (showCc) {
+    items.push({ name: "American Express", src: "/payments/amex.svg" });
+    items.push({ name: "Apple Pay", src: "/payments/apple-pay.svg" });
+    items.push({ name: "Diners Club", src: "/payments/diners.svg" });
+    items.push({ name: "Discover", src: "/payments/discover.svg" });
+    items.push({ name: "Google Pay", src: "/payments/google-pay.svg" });
+    items.push({ name: "Mastercard", src: "/payments/mastercard.svg" });
+    items.push({ name: "Visa", src: "/payments/visa.svg" });
+  }
+
+  return items;
+}

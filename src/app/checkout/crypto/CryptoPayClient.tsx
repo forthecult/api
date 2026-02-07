@@ -132,6 +132,7 @@ export function CryptoPayClient() {
   const [payStatus, setPayStatus] = useState<PayStatus>("idle");
   const [payError, setPayError] = useState<string | null>(null);
   const [crustPriceUsd, setCrustPriceUsd] = useState<number | null>(null);
+  const [pumpPriceUsd, setPumpPriceUsd] = useState<number | null>(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
