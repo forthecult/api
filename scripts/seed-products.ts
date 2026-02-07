@@ -62,7 +62,8 @@ async function seed() {
     mainImageAlt: p.mainImageAlt ?? null,
     mainImageTitle: p.mainImageTitle ?? null,
     priceCents: p.priceCents,
-    compareAtPriceCents: p.compareAtPriceCents ?? null,
+    compareAtPriceCents: (p as { compareAtPriceCents?: number }).compareAtPriceCents ?? null,
+    costPerItemCents: (p as { costPerItemCents?: number }).costPerItemCents ?? null,
     description: p.description,
     featuresJson:
       (p.features?.length ?? 0) > 0

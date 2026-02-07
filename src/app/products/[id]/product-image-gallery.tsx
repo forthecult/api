@@ -7,6 +7,10 @@ import { cn } from "~/lib/cn";
 
 const PLACEHOLDER_SRC = "/placeholder.svg";
 
+function isExternalImageUrl(src: string): boolean {
+  return /^https?:\/\//i.test(src?.trim() ?? "");
+}
+
 export interface ProductImageGalleryProps {
   images: string[];
   productName: string;

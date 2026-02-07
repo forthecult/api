@@ -92,8 +92,21 @@ function ProductCardInner({
   const [isHovered, setIsHovered] = React.useState(false);
   const [isAddingToCart, setIsAddingToCart] = React.useState(false);
   const [localWishlist, setLocalWishlist] = React.useState(false);
+  const [imageError, setImageError] = React.useState(false);
   const isInWishlist =
     typeof isInWishlistProp === "boolean" ? isInWishlistProp : localWishlist;
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [product.id, product.image]);
+
+  /** External URLs: load in browser directly (like admin) to avoid Next Image proxy/CDN issues. */
+  const isExternalImage =
+    typeof product.image === "string" && /^https?:\/\//i.test(product.image);
+  const imageSrc =
+    imageError || !product.image
+      ? "/placeholder.svg"
+      : product.image;
 
   const handleAddToCart = React.useCallback(
     (e: React.MouseEvent) => {
@@ -156,7 +169,7 @@ function ProductCardInner({
           onMouseLeave={() => setIsHovered(false)}
         >
           <div className="relative aspect-square overflow-hidden rounded-t-lg">
-            {product.image && (
+            {(imageSrc === "/placeholder.svg" || product.image) && (
               <Image
                 alt={product.name}
                 className={cn(
@@ -165,7 +178,9 @@ function ProductCardInner({
                 )}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                src={product.image}
+                src={imageSrc}
+                unoptimized={isExternalImage}
+                onError={() => setImageError(true)}
               />
             )}
 
