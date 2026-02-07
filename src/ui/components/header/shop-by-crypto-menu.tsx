@@ -130,7 +130,7 @@ export function ShopByCryptoMenu({
                 </span>
                 <Link
                   href={href}
-                  className="rounded-lg px-3 py-2 text-sm font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
+                  className="rounded-lg px-3 py-2 text-base font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
                   onClick={() => setOpen(false)}
                 >
                   {cat.name}
@@ -141,7 +141,7 @@ export function ShopByCryptoMenu({
                       <li key={sub.id}>
                         <Link
                           href={href}
-                          className="block rounded px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          className="block rounded px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                           onClick={() => setOpen(false)}
                         >
                           {sub.name}

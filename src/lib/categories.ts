@@ -267,6 +267,7 @@ export type SubcategoryOption = { slug: string; name: string };
 
 /**
  * Child categories of a given parent (for subcategory filter on category pages).
+ * Only returns subcategories that have at least one published product.
  */
 export async function getSubcategories(
   parentId: string,
@@ -275,13 +276,47 @@ export async function getSubcategories(
     .select({
       slug: categoriesTable.slug,
       name: categoriesTable.name,
+      categoryId: categoriesTable.id,
     })
     .from(categoriesTable)
     .where(eq(categoriesTable.parentId, parentId))
     .orderBy(asc(categoriesTable.name));
+
+  if (rows.length === 0) return [];
+
+  const categoryIds = rows
+    .map((r) => r.categoryId)
+    .filter((id): id is string => id != null);
+  if (categoryIds.length === 0) return [];
+
+  const counts = await db
+    .select({
+      categoryId: productCategoriesTable.categoryId,
+      count: sql<number>`count(distinct ${productCategoriesTable.productId})::int`,
+    })
+    .from(productCategoriesTable)
+    .innerJoin(
+      productsTable,
+      eq(productCategoriesTable.productId, productsTable.id),
+    )
+    .where(
+      and(
+        inArray(productCategoriesTable.categoryId, categoryIds),
+        eq(productsTable.published, true),
+      ),
+    )
+    .groupBy(productCategoriesTable.categoryId);
+
+  const countByCategoryId = new Map(
+    counts.map((c) => [c.categoryId, c.count]),
+  );
+
   return rows
-    .filter((r): r is { slug: string; name: string } => r.slug != null)
-    .map((r) => ({ slug: r.slug!, name: r.name }));
+    .filter(
+      (r): r is { slug: string; name: string; categoryId: string } =>
+        r.slug != null && (countByCategoryId.get(r.categoryId) ?? 0) > 0,
+    )
+    .map((r) => ({ slug: r.slug, name: r.name }));
 }
 
 export type BreadcrumbItem = { name: string; href: string };

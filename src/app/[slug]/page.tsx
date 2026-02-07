@@ -629,11 +629,13 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     rating: p.rating ?? 0,
     tokenGated: p.tokenGated ?? false,
   }));
-  // On a category page: All, parent category (if any), and this category's subcategories.
+  // First row: All + current category (no subcategory pills to avoid duplicating the second row).
   const categories: CategoryOption[] = [
     { slug: "all", name: "All" },
     ...(parent ? [parent] : []),
-    ...subcategories,
+    ...(subcategories.length > 0
+      ? [{ slug, name: category.name }]
+      : subcategories),
   ];
 
   const categoryDescription =

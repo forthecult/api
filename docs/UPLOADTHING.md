@@ -14,7 +14,7 @@
 | **User avatar** | User profile | Avatar upload uses UploadThing (UTApi) and stores the file URL. |
 | **Lookbook** | `/lookbook` page | Optional: run `db:upload-lookbook` to upload `public/lookbook/` to UploadThing; commit `data/lookbook-images.json` so staging/prod serve from UploadThing. |
 | **Product mockups (Printful/Printify)** | Product and variant images | Run `db:upload-product-mockups` after syncing. Fetches mockup URLs from Printful/Printify CDNs, optimizes to WebP, renames for SEO, sets alt text, uploads to UploadThing, and updates `product_image`, `product.imageUrl`, and `product_variant.imageUrl`. |
-| **Curated products (all brands)** | Pacsafe, Earth Runners, Spout, Trezor, HUSKYLENS 2, Cryptomatic Jetsetter | Run `db:upload-curated-product-images` after seeding. **We host all product images:** script downloads each image from the vendor URL, optimizes to WebP, uploads to UploadThing, and updates `product_image`, `product.imageUrl`, and `product_variant.imageUrl`. Required after seed so images are served from our CDN, not vendor sites. Use `--dry-run` to preview. |
+| **Curated products (all brands)** | Pacsafe, Earth Runners, Spout, Trezor, HUSKYLENS 2, Cryptomatic Jetsetter | Run `db:upload-curated-product-images` after seeding (or use the **Seed staging** workflow with `UPLOADTHING_TOKEN` set—it runs this step automatically). **We host all product images:** script downloads each image from the vendor URL, optimizes to WebP, uploads to UploadThing, and updates `product_image`, `product.imageUrl`, and `product_variant.imageUrl`. Required so images are served from our CDN, not vendor sites. Use `--dry-run` to preview. |
 
 So in practice:
 

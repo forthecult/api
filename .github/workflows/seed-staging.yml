@@ -1,7 +1,7 @@
 # Run from GitHub Actions so DATABASE_URL never touches your machine.
 # Required secrets: repo Settings → Secrets and variables → Actions:
 #   DATABASE_URL       - Railway (or other) Postgres URL (required for seed)
-#   UPLOADTHING_TOKEN  - UploadThing API token (optional). If set, brand logos (scripts/brand-assets/<slug>/) and lookbook images (public/lookbook/) are uploaded to UploadThing; brand.logoUrl and data/lookbook-images.json are updated. If missing, upload steps are skipped.
+#   UPLOADTHING_TOKEN  - UploadThing API token (optional). If set: brand logos, lookbook, and curated product images (Pacsafe, Trezor, etc.) are uploaded to UploadThing and DB is updated. If missing, upload steps are skipped.
 # Do NOT use "if: secrets.UPLOADTHING_TOKEN != ''" — the secrets context is not allowed in job/step if: conditions and causes "Unrecognized named-value: 'secrets'" failure.
 # Trigger: Actions tab → "Seed staging (DB schema + categories)" → Run workflow
 #
@@ -79,10 +79,10 @@ jobs:
         run: |
           if [ -n "$UPLOADTHING_TOKEN" ]; then
             echo "token_set=true" >> "$GITHUB_OUTPUT"
-            echo "UploadThing: token is set — brand and lookbook uploads will run."
+            echo "UploadThing: token is set — brand logos, lookbook, and curated product images will be uploaded."
           else
             echo "token_set=false" >> "$GITHUB_OUTPUT"
-            echo "UploadThing: token not set — add UPLOADTHING_TOKEN in repo Settings → Secrets and variables → Actions to upload brand logos and lookbook to UploadThing."
+            echo "UploadThing: token not set — add UPLOADTHING_TOKEN in repo Settings → Secrets and variables → Actions to upload brand logos, lookbook, and curated product images."
           fi
       # Optional: if token is missing/invalid or upload fails, these steps are skipped or don't fail the job
       - name: Upload brand logos to UploadThing and update DB
@@ -100,6 +100,14 @@ jobs:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-lookbook
         timeout-minutes: 8
+        continue-on-error: true
+      - name: Upload curated product images to UploadThing
+        if: steps.check_uploadthing.outputs.token_set == 'true'
+        working-directory: ${{ steps.wd.outputs.dir }}
+        env:
+          UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
+        run: bun run db:upload-curated-product-images
+        timeout-minutes: 15
         continue-on-error: true
       - name: Upload lookbook manifest artifact (optional)
         if: steps.check_uploadthing.outputs.token_set == 'true'

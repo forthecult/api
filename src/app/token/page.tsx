@@ -547,7 +547,7 @@ export default function TokenPage() {
             </Button>
           </Link>
           <p className="text-sm text-muted-foreground">
-            Use CULT token at checkout for up to 13.37% off eligible purchases.
+            Use CULT token at checkout for up to 20% off eligible purchases.
           </p>
         </section>
 
