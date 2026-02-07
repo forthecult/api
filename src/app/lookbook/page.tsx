@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { cookies } from "next/headers";
 
 import { SEO_CONFIG } from "~/app";
 import { getLookbookImages } from "~/lib/get-lookbook-images";
-import { getPageTokenGates } from "~/lib/token-gate";
-import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
-import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
+import { PageTokenGate } from "~/ui/components/token-gate/PageTokenGate";
 
 const PHOTOGRAPHER = {
   name: "George J. Patterson",
@@ -114,6 +111,9 @@ const LOOKBOOK_IMAGES: Array<{
   },
 ];
 
+/** Avoid prerender at build to prevent DB connection pool exhaustion (e.g. Neon Session mode). */
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: `Lookbook | ${SEO_CONFIG.name}`,
   description:
@@ -127,19 +127,10 @@ export const metadata: Metadata = {
 };
 
 export default async function LookbookPage() {
-  const config = await getPageTokenGates("lookbook");
-  if (config.tokenGated) {
-    const cookieStore = await cookies();
-    const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
-    const passed = hasValidTokenGateCookie(tgCookie, "page", "lookbook");
-    if (!passed) {
-      return <TokenGateGuard resourceType="page" resourceId="lookbook" />;
-    }
-  }
-
   const images = getLookbookImages();
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
+    <PageTokenGate slug="lookbook">
+      <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <header className="mb-12 border-b border-border pb-10">
         <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
           Lookbook
@@ -196,5 +187,6 @@ export default async function LookbookPage() {
         <p className="mt-1 text-sm text-muted-foreground">{PHOTOGRAPHER.bio}</p>
       </footer>
     </div>
+    </PageTokenGate>
   );
 }

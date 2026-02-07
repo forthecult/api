@@ -75,6 +75,12 @@ export const wagmiConfig = createConfig({
               icons: [],
             },
             showQrModal: true,
+            // Disable Pulse/analytics to avoid tracker flags and ERR_BLOCKED_BY_CLIENT when
+            // ad blockers or privacy extensions block pulse.walletconnect.org.
+            telemetryEnabled: false,
+            qrModalOptions: {
+              features: { analytics: false },
+            },
           }),
         ]
       : []),

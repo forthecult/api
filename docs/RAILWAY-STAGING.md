@@ -101,13 +101,15 @@ To run both the **store** and the **admin** dashboard:
 
 ### Service 2 – Admin frontend
 
-- **Root directory:** **`admin`** (so Railway uses `admin/package.json`).
+- **Root directory:** **`admin`** (so Railway uses `admin/package.json`). If this is wrong or empty, Railway will build the **main** app instead and you will not get the admin UI (or you’ll get the wrong app).
 - **Build:** `bun run build` (runs in `admin/`).
 - **Start:** `bun run start` (runs `next start` in `admin/`).
 - **Port:** leave Railway’s default. Next.js will use the `PORT` Railway sets; you don’t need to pick 3001.
 - **Env (in the admin service):**
   - `NEXT_PUBLIC_MAIN_APP_URL` or `NEXT_PUBLIC_APP_URL` = main app URL (same as `NEXT_PUBLIC_APP_URL` above). The admin app uses this to call the main app’s API and for login redirects.
   - **Database / auth:** the admin app talks to the main app’s API (same backend). It does **not** need its own `DATABASE_URL` or `AUTH_SECRET`; it needs the main app’s URL so it can call `/api/auth/*`, `/api/admin/*`, etc. So only set the main app URL (and any env the admin’s own build needs, if any).
+
+**Redeploying admin:** When you change admin-only code (e.g. sidebar in `admin/src/ui/admin-sidebar.tsx`), you must deploy the **admin** service. Redeploying only the main (customer) service will not update the admin. In Railway, open the **admin** service and use “Redeploy” or push to the branch that triggers the admin build. If the admin service uses the same repo and branch as the main app, ensure its **Root directory** is set to **`admin`** so it builds from `admin/`, not the repo root.
 
 **No custom domain:**  
 Use the URLs Railway gives you (e.g. `https://xxx.up.railway.app` and `https://yyy.up.railway.app`). Set those in the env vars above; no domain setup required.
