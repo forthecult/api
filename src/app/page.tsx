@@ -197,14 +197,13 @@ export default async function HomePage() {
     ]);
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
+  // Shop by category: only categories that have products; exclude Currency/Network/Application Token
+  const EXCLUDED_SLUGS = ["currency", "network", "dapp"];
   const topLevelShop = shopCategories.filter(
     (c) =>
       c.slug &&
-      ![
-        "currency-potential",
-        "network-artificial-organism",
-        "application-token",
-      ].includes(c.slug),
+      c.productCount > 0 &&
+      !EXCLUDED_SLUGS.includes(c.slug),
   );
 
   return (

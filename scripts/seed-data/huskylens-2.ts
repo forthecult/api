@@ -12,15 +12,42 @@ const PRODUCT_ID = "dfrobot-huskylens-2";
 const PRODUCT_SLUG = "dfrobot-huskylens-2";
 const CATEGORY_ID = "accessories-tech";
 
-// Product images from DFRobot CDN (verified from https://www.dfrobot.com/product-2995.html)
+// Product images from DFRobot CDN — carousel uses 1220x813; intro section uses _0x0 (https://www.dfrobot.com/product-2995.html)
 const DFR_IMG = "https://dfimg.dfrobot.com/enshop/image/data/SEN0638";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+  // Carousel / gallery (1220x813)
   {
-    url: `${DFR_IMG}/SEN0638_Main_01_226x150.jpg.webp`,
+    url: `${DFR_IMG}/SEN0638_Main_01_1220x813.jpg.webp`,
     alt: "HUSKYLENS 2 AI vision sensor - main view, camera, USB-C, Gravity interface",
     title: "HUSKYLENS 2 - Main view",
   },
+  {
+    url: `${DFR_IMG}/SEN0638_Main_02_1220x813.jpg.webp`,
+    alt: "HUSKYLENS 2 - alternate angle",
+    title: "HUSKYLENS 2 - Angle view",
+  },
+  {
+    url: `${DFR_IMG}/SEN0638_Main_03_1220x813.jpg.webp`,
+    alt: "HUSKYLENS 2 - touchscreen display",
+    title: "HUSKYLENS 2 - Screen",
+  },
+  {
+    url: `${DFR_IMG}/SEN0638_Main_04_1220x813.jpg.webp`,
+    alt: "HUSKYLENS 2 - ports and connections",
+    title: "HUSKYLENS 2 - Ports",
+  },
+  {
+    url: `${DFR_IMG}/SEN0638_Main_05_1220x813.jpg.webp`,
+    alt: "HUSKYLENS 2 with optional module",
+    title: "HUSKYLENS 2 - With module",
+  },
+  {
+    url: `${DFR_IMG}/SEN0638_Main_06_1220x813.jpg.webp`,
+    alt: "HUSKYLENS 2 packaging and contents",
+    title: "HUSKYLENS 2 - Packaging",
+  },
+  // Intro section (full-size _0x0)
   {
     url: `${DFR_IMG}/6%20TOPS%20AI%20accelerator_0x0.jpg.webp`,
     alt: "HUSKYLENS 2 - 6 TOPS on-device AI accelerator",

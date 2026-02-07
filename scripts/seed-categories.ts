@@ -177,18 +177,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     level: 1,
     parentId: null,
   },
-  {
-    id: "other",
-    name: "Other",
-    slug: "other",
-    title: "Staff Picks & Curated Collections — Limited Editions | Culture",
-    metaDescription:
-      "Staff picks, Age of Decentralization, Bitcoin Not Bombs, CoinGecko, token-gated drops, and personalizations. Curated collections and limited editions. Pay with crypto or card. Culture.",
-    description:
-      "Curated collections and limited editions. Staff picks, Age of Decentralization merchandise (digitally verified when applicable), cause-based collections, partner merchandise, and personalizations. Every product meets our curation standards: meaningful quality, pillar-aligned, no harm. Pay with crypto or card.",
-    level: 1,
-    parentId: null,
-  },
+  // "Other" removed: must not be seeded (per product requirements).
 ];
 
 /** Men's Clothing subcategories. Natural fibers only (Culture pillar: Protect Your Health). */
@@ -1178,12 +1167,12 @@ const ALL_CATEGORIES: CategoryRow[] = [
   ...CHILDRENS_SUB,
   ...ACCESSORIES_SUB,
   ...HOME_LIVING_SUB,
-  ...OTHER_SUB,
+  // ...OTHER_SUB — excluded: "Other" category must not be seeded
   ...SHOP_BY_CRYPTO,
   ...CURRENCY_SUB,
   ...NETWORK_SUB,
   ...APPLICATION_SUB,
-  // ..._DEMO_CATEGORY — excluded so staging/production never get "Testing" category
+  // ..._DEMO_CATEGORY — excluded: "Testing" category must not be seeded
 ];
 
 async function seed() {
