@@ -127,7 +127,7 @@ export function ProfileViewClient() {
     "User";
 
   return (
-    <div className="container max-w-6xl space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <div className="flex items-center gap-2">
         <UserIcon className="h-7 w-7 text-muted-foreground" aria-hidden />
         <h1 className="text-2xl font-semibold tracking-tight">My Profile</h1>

@@ -130,7 +130,7 @@ export function SupportTicketsPageClient() {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Headphones className="h-7 w-7" />

@@ -250,7 +250,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   };
 
   return (
-    <div className="container mx-auto max-w-3xl space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <MapPin className="h-7 w-7" />

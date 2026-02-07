@@ -70,7 +70,7 @@ export function WishlistPageClient() {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-6xl space-y-6 p-4 md:p-8">
+      <>
         <div className="flex items-center gap-2">
           <Heart className="h-7 w-7" />
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -177,6 +177,6 @@ export function WishlistPageClient() {
           ))}
         </ul>
       )}
-    </div>
+    </>
   );
 }

@@ -1,7 +1,8 @@
 /**
- * Seeds the database with demo products. Categories must exist (run seed-categories first).
- * Real reviews are seeded separately via seed-reviews.ts (from data/reviews.csv).
- * Run: bun run scripts/seed-products.ts
+ * Seeds the database with products when DEMO_PRODUCTS is non-empty (local dev only).
+ * Staging/production: no mock products; add real products via admin or Printful/Printify sync.
+ * Reviews are seeded separately via seed-reviews.ts (from data/reviews.csv).
+ * Run: bun run scripts/seed-products.ts or bun run db:seed-products
  */
 
 import "dotenv/config";
@@ -29,6 +30,10 @@ async function seed() {
   console.log(
     "Seeding products… (run seed-categories.ts first to create categories)",
   );
+  if (DEMO_PRODUCTS.length === 0) {
+    console.log("No demo products configured. Skipping product seed.");
+    return;
+  }
   await db
     .insert(productsTable)
     .values(
@@ -64,9 +69,7 @@ async function seed() {
       ],
     });
 
-  console.log(
-    "Done. Demo products are in the database. Reviews are production data only.",
-  );
+  console.log("Done. Demo products are in the database.");
 }
 
 seed()

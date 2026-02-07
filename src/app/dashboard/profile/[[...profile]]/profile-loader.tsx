@@ -8,7 +8,7 @@ const ProfileViewClient = dynamic(
   () => import("./profile-view.client").then((m) => m.ProfileViewClient),
   {
     loading: () => (
-      <div className="container max-w-4xl space-y-6 p-4 md:p-8">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid gap-6 lg:grid-cols-3">
           <Skeleton className="h-48 rounded-lg" />

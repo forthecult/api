@@ -63,7 +63,7 @@ export default async function OrdersPage() {
   });
 
   return (
-    <div className="container mx-auto max-w-4xl space-y-6 p-4 md:p-8">
+    <>
       <div className="flex items-center gap-2">
         <Package className="h-7 w-7" />
         <h1 className="text-2xl font-semibold tracking-tight">My Orders</h1>
@@ -145,6 +145,6 @@ export default async function OrdersPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </>
   );
 }

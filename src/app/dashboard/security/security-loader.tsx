@@ -8,7 +8,7 @@ const SecurityPageClient = dynamic(
   () => import("./page.client").then((m) => m.SecurityPageClient),
   {
     loading: () => (
-      <div className="container max-w-2xl space-y-6 p-4 md:p-8">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="space-y-4">
           <Skeleton className="h-20 w-full rounded-lg" />
