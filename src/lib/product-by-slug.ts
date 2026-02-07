@@ -236,14 +236,10 @@ export async function getProductBySlugOrId(
     .map((r) => r.url)
     .filter((u): u is string => Boolean(u));
 
-  // Size chart for accordion when product has brand+model and source is printful/printify
+  // Size chart for accordion when product has brand+model (printful, printify, or manual)
   let sizeChart: { displayName: string; dataImperial: unknown; dataMetric: unknown } | null = null;
-  if (
-    product.source &&
-    (product.source === "printful" || product.source === "printify") &&
-    product.brand?.trim() &&
-    product.model?.trim()
-  ) {
+  if (product.brand?.trim() && product.model?.trim()) {
+    const provider = product.source === "printful" || product.source === "printify" ? product.source : "manual";
     const [chartRow] = await db
       .select({
         displayName: sizeChartsTable.displayName,
@@ -253,7 +249,7 @@ export async function getProductBySlugOrId(
       .from(sizeChartsTable)
       .where(
         and(
-          eq(sizeChartsTable.provider, product.source),
+          eq(sizeChartsTable.provider, provider),
           eq(sizeChartsTable.brand, product.brand.trim()),
           eq(sizeChartsTable.model, product.model.trim()),
         ),

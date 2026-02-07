@@ -11,6 +11,13 @@ function isExternalImageUrl(src: string): boolean {
   return /^https?:\/\//i.test(src?.trim() ?? "");
 }
 
+/** Prefer https for external URLs to avoid mixed-content blocking on HTTPS pages. */
+function normalizeImageSrc(src: string): string {
+  const s = src?.trim() ?? "";
+  if (s.startsWith("http://")) return "https://" + s.slice(7);
+  return s;
+}
+
 export interface ProductImageGalleryProps {
   images: string[];
   productName: string;
@@ -34,7 +41,13 @@ export function ProductImageGallery({
   /** URLs that failed to load (400, 404, etc.) so we show placeholder instead of breaking the page. */
   const [failedUrls, setFailedUrls] = React.useState<Set<string>>(() => new Set());
 
-  const list = images.length > 0 ? images : [PLACEHOLDER_SRC];
+  const list = React.useMemo(
+    () =>
+      (images.length > 0 ? images : [PLACEHOLDER_SRC]).map((src) =>
+        isExternalImageUrl(src) ? normalizeImageSrc(src) : src,
+      ),
+    [images],
+  );
   const hasMultiple = list.length > 1;
   const actualMainSrc = list[selectedIndex] ?? list[0];
   const mainSrc =
@@ -79,6 +92,7 @@ export function ProductImageGallery({
           priority
           sizes="(max-width: 768px) 100vw, 50vw"
           src={mainSrc}
+          unoptimized={isExternalImageUrl(mainSrc)}
           onError={handleMainImageError}
           style={
             zoomOpen
@@ -118,6 +132,7 @@ export function ProductImageGallery({
                   fill
                   sizes="64px"
                   src={thumbSrc}
+                  unoptimized={isExternalImageUrl(thumbSrc)}
                   onError={() =>
                     setFailedUrls((prev) => new Set(prev).add(src))
                   }

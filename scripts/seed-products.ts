@@ -11,12 +11,19 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
+  productAvailableCountryTable,
   productCategoriesTable,
   productImagesTable,
   productsTable,
   productVariantsTable,
+  sizeChartsTable,
 } from "../src/db/schema";
+import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
+import { PACSAFE_RFIDSAFE_WALLET } from "./seed-data/pacsafe-rfidsafe-wallet";
+import { PACSAFE_V_12L } from "./seed-data/pacsafe-v-12l";
+import { PACSAFE_V_20L } from "./seed-data/pacsafe-v-20l";
+import { SPOUT_MONOLITH } from "./seed-data/spout-monolith";
 
 const now = new Date();
 
@@ -33,8 +40,15 @@ const DEMO_PRODUCTS: Array<{
   description: string;
 }> = [];
 
-/** Curated full products (Pacsafe, etc.) with images, features, and SEO fields. */
-const CURATED_PRODUCTS = [PACSAFE_EXP_28L];
+/** Curated full products (Pacsafe, Spout, etc.) with images, features, and SEO fields. */
+const CURATED_PRODUCTS = [
+  PACSAFE_EXP_28L,
+  PACSAFE_V_20L,
+  PACSAFE_V_12L,
+  PACSAFE_RFIDSAFE_WALLET,
+  EARTH_RUNNERS_CIRCADIAN,
+  SPOUT_MONOLITH,
+];
 
 async function seed() {
   console.log(
@@ -50,6 +64,8 @@ async function seed() {
     brand: p.brand,
     source: "manual" as const,
     published: true,
+    handlingDaysMin: null,
+    handlingDaysMax: null,
     createdAt: now,
     updatedAt: now,
   }));
@@ -64,6 +80,7 @@ async function seed() {
     priceCents: p.priceCents,
     compareAtPriceCents: (p as { compareAtPriceCents?: number }).compareAtPriceCents ?? null,
     costPerItemCents: (p as { costPerItemCents?: number }).costPerItemCents ?? null,
+    model: (p as { model?: string }).model ?? null,
     description: p.description,
     featuresJson:
       (p.features?.length ?? 0) > 0
@@ -86,6 +103,8 @@ async function seed() {
         : null,
     source: "manual" as const,
     published: true,
+    handlingDaysMin: (p as { handlingDaysMin?: number }).handlingDaysMin ?? null,
+    handlingDaysMax: (p as { handlingDaysMax?: number }).handlingDaysMax ?? null,
     createdAt: now,
     updatedAt: now,
   }));
@@ -100,6 +119,19 @@ async function seed() {
     .insert(productsTable)
     .values(allProductRows)
     .onConflictDoNothing({ target: productsTable.id });
+
+  // Restrict availability by country when product defines availableCountryCodes (e.g. US-only for Spout)
+  for (const p of CURATED_PRODUCTS) {
+    const codes = (p as { availableCountryCodes?: readonly string[] }).availableCountryCodes;
+    if (codes?.length) {
+      await db
+        .delete(productAvailableCountryTable)
+        .where(eq(productAvailableCountryTable.productId, p.id));
+      await db.insert(productAvailableCountryTable).values(
+        codes.map((countryCode) => ({ productId: p.id, countryCode })),
+      );
+    }
+  }
 
   const categoryLinks: Array<{ productId: string; categoryId: string }> = [
     ...DEMO_PRODUCTS.map((p) => ({ productId: p.id, categoryId: p.categoryId })),
@@ -121,6 +153,34 @@ async function seed() {
         productCategoriesTable.productId,
         productCategoriesTable.categoryId,
       ],
+    });
+
+  // Seed manual size chart for Earth Runners Circadian (Men's & Women's)
+  await db
+    .insert(sizeChartsTable)
+    .values({
+      id: CIRCADIAN_SIZE_CHART.id,
+      provider: CIRCADIAN_SIZE_CHART.provider,
+      brand: CIRCADIAN_SIZE_CHART.brand,
+      model: CIRCADIAN_SIZE_CHART.model,
+      displayName: CIRCADIAN_SIZE_CHART.displayName,
+      dataImperial: CIRCADIAN_SIZE_CHART.dataImperial as unknown as Record<string, unknown>,
+      dataMetric: CIRCADIAN_SIZE_CHART.dataMetric as unknown as Record<string, unknown>,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [
+        sizeChartsTable.provider,
+        sizeChartsTable.brand,
+        sizeChartsTable.model,
+      ],
+      set: {
+        displayName: CIRCADIAN_SIZE_CHART.displayName,
+        dataImperial: CIRCADIAN_SIZE_CHART.dataImperial as unknown as Record<string, unknown>,
+        dataMetric: CIRCADIAN_SIZE_CHART.dataMetric as unknown as Record<string, unknown>,
+        updatedAt: now,
+      },
     });
 
   for (const p of CURATED_PRODUCTS) {

@@ -48,7 +48,7 @@ function buildRow(
     priority: opt.priority,
     brandId,
     sourceUrl: null,
-    estimatedDaysText: null,
+    estimatedDaysText: opt.estimatedDaysText ?? null,
     createdAt: now,
     updatedAt: now,
   };

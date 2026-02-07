@@ -16,6 +16,8 @@ export type ShippingOptionSeed = {
   /** For type flat_plus_per_item: cost per additional item (first item uses amountCents). */
   additionalItemCents: number | null;
   priority: number;
+  /** Human-readable estimate, e.g. "1-2 weeks". */
+  estimatedDaysText?: string | null;
 };
 
 /** Default for all brands: US $4 + $1/item, International $8 + $1/item. */
@@ -66,6 +68,20 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       amountCents: 400,
       additionalItemCents: 100,
       priority: 0,
+    },
+  ],
+  /** US only; $75 flat; ships in 1-2 weeks. */
+  spout: [
+    {
+      name: "Spout US — Ships in 1-2 weeks",
+      countryCode: "US",
+      minOrderCents: null,
+      maxOrderCents: null,
+      type: "flat",
+      amountCents: 7500,
+      additionalItemCents: null,
+      priority: 1,
+      estimatedDaysText: "1-2 weeks",
     },
   ],
 };

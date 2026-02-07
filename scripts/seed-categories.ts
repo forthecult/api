@@ -84,11 +84,11 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     name: "Accessories",
     slug: "accessories",
     title:
-      "Accessories — Hardware Wallets, Hats, Bags, Backpacks, Tech & Travel | Culture",
+      "Accessories — Wallets, Hardware Wallets, Hats, Bags, Backpacks, Tech & Travel | Culture",
     metaDescription:
-      "Hardware wallets (Trezor, Ledger), hats, bags, backpacks, phone cases, mouse pads, watches, travel gear. Protect your assets and autonomy. Premium accessories. Pay with 50+ cryptos or card. Culture.",
+      "Wallets, hardware wallets (Trezor, Ledger), hats, bags, backpacks, phone cases, mouse pads, watches, travel gear. Protect your assets and autonomy. Premium accessories. Pay with 50+ cryptos or card. Culture.",
     description:
-      "Tools that protect your assets and autonomy. Hardware wallets (Trezor, Ledger) for self-custody. Hats, socks, watches, bags, backpacks, phone cases, mouse pads, tech and travel accessories. We curate for quality and privacy—no products that require always-on cloud or sell your data. Pay with 50+ cryptocurrencies or card.",
+      "Tools that protect your assets and autonomy. Wallets and card holders (RFID-blocking, minimalist). Hardware wallets (Trezor, Ledger) for self-custody. Hats, socks, watches, bags, backpacks, phone cases, mouse pads, tech and travel accessories. We curate for quality and privacy—no products that require always-on cloud or sell your data. Pay with 50+ cryptocurrencies or card.",
     level: 1,
     parentId: null,
   },
@@ -1113,6 +1113,11 @@ const PRODUCT_BULK_ADD_CONFIG: ProductBulkAddConfig[] = [
     categoryId: "accessories-backpacks",
     titleContains: "backpack",
     tagContains: "backpack",
+  },
+  {
+    categoryId: "accessories-wallets",
+    titleContains: "wallet",
+    tagContains: "wallet",
   },
 ];
 
