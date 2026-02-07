@@ -117,10 +117,10 @@ async function main() {
         const code = res.error?.code;
         const message = res.error?.message ?? String(res.error);
         if (code === "INVALID_SERVER_CONFIG" || message.includes("Invalid token")) {
-          console.error(
-            "UPLOADTHING_TOKEN is invalid. It must be a base64-encoded JSON object with apiKey, appId, and regions from UploadThing Dashboard → API Keys → V7. Update the token in .env or in GitHub Settings → Secrets (UPLOADTHING_TOKEN).",
+          console.warn(
+            "UPLOADTHING_TOKEN is invalid. It must be a base64-encoded JSON object with apiKey, appId, and regions from UploadThing Dashboard → API Keys → V7. Update the token in .env or in GitHub Settings → Secrets (UPLOADTHING_TOKEN). Skipping remaining uploads.",
           );
-          process.exit(1);
+          process.exit(process.env.GITHUB_ACTIONS === "true" ? 0 : 1);
         }
         console.error(`Upload error for ${brand.slug}/${name}:`, res.error);
         continue;

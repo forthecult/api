@@ -84,6 +84,7 @@ jobs:
             echo "token_set=false" >> "$GITHUB_OUTPUT"
             echo "UploadThing: token not set — add UPLOADTHING_TOKEN in repo Settings → Secrets and variables → Actions to upload brand logos and lookbook to UploadThing."
           fi
+      # Optional: if token is missing/invalid or upload fails, these steps are skipped or don't fail the job
       - name: Upload brand logos to UploadThing and update DB
         if: steps.check_uploadthing.outputs.token_set == 'true'
         working-directory: ${{ steps.wd.outputs.dir }}
@@ -91,6 +92,7 @@ jobs:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-brand-assets
         timeout-minutes: 15
+        continue-on-error: true
       - name: Upload lookbook to UploadThing
         if: steps.check_uploadthing.outputs.token_set == 'true'
         working-directory: ${{ steps.wd.outputs.dir }}
@@ -98,6 +100,7 @@ jobs:
           UPLOADTHING_TOKEN: ${{ secrets.UPLOADTHING_TOKEN }}
         run: bun run db:upload-lookbook
         timeout-minutes: 10
+        continue-on-error: true
       - name: Upload lookbook manifest artifact (optional)
         if: steps.check_uploadthing.outputs.token_set == 'true'
         uses: actions/upload-artifact@v4
