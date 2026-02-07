@@ -100,6 +100,57 @@ function normalizeThirdPartyShippingLabel(
   return isExpressKeyword ? "Express" : "Standard";
 }
 
+/**
+ * Estimate sales tax / VAT for checkout display.
+ * Printful and Printify do not provide pre-checkout tax APIs; this gives a best-effort
+ * estimate by destination. Used for US state sales tax and EU/UK/NO VAT.
+ */
+function estimateTaxCents(
+  subtotalCents: number,
+  shippingCents: number,
+  countryCode: string,
+  stateCode?: string,
+): { taxCents: number; note: string | null } {
+  const country = countryCode.toUpperCase();
+  // US: approximate state sales tax (rate × (subtotal + shipping) for most states)
+  if (country === "US") {
+    const state = (stateCode ?? "").trim().toUpperCase().slice(0, 2);
+    // Approximate combined state + local rates (0 = no state sales tax)
+    const US_STATE_TAX_RATE: Record<string, number> = {
+      AL: 0.09, AZ: 0.08, AR: 0.095, CA: 0.0725, CO: 0.076, CT: 0.0635,
+      DC: 0.06, FL: 0.06, GA: 0.07, HI: 0.04, ID: 0.06, IL: 0.0625, IN: 0.07,
+      IA: 0.06, KS: 0.065, KY: 0.06, LA: 0.0445, ME: 0.055, MD: 0.06,
+      MA: 0.0625, MI: 0.06, MN: 0.065, MS: 0.07, MO: 0.04225, NE: 0.055,
+      NV: 0.0685, NJ: 0.06625, NM: 0.05125, NY: 0.08, NC: 0.0475, ND: 0.05,
+      OH: 0.0575, OK: 0.045, PA: 0.06, RI: 0.07, SC: 0.06, SD: 0.045,
+      TN: 0.07, TX: 0.0625, UT: 0.061, VT: 0.06, VA: 0.053, WA: 0.065,
+      WV: 0.06, WI: 0.05, WY: 0.04,
+    };
+    const rate = state ? US_STATE_TAX_RATE[state] ?? 0.06 : 0.06;
+    if (rate <= 0) return { taxCents: 0, note: null };
+    const taxBase = subtotalCents + shippingCents;
+    const taxCents = Math.round(taxBase * rate);
+    return {
+      taxCents,
+      note: "Estimated sales tax. Final amount may vary by jurisdiction.",
+    };
+  }
+  // EU, UK, Norway: VAT (approximate; actual rate varies by country)
+  if (
+    country === "GB" ||
+    country === "NO" ||
+    ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"].includes(country)
+  ) {
+    const vatRate = country === "GB" ? 0.20 : country === "NO" ? 0.25 : 0.20;
+    const taxCents = Math.round((subtotalCents + shippingCents) * vatRate);
+    return {
+      taxCents,
+      note: "Estimated VAT. Final amount may vary.",
+    };
+  }
+  return { taxCents: 0, note: null };
+}
+
 export const ZERO_SHIPPING = {
   shippingCents: 0,
   label: null as string | null,
@@ -110,8 +161,10 @@ export const ZERO_SHIPPING = {
   adminShippingCents: 0,
   canShipToCountry: true,
   unavailableProducts: [] as string[],
-  /** "express" when any selected admin option is express (e.g. phone required at checkout). */
   shippingSpeed: "standard" as "standard" | "express",
+  taxCents: 0,
+  taxNote: null as string | null,
+  customsDutiesNote: null as string | null,
 };
 
 export type ShippingResult =
@@ -127,6 +180,9 @@ export type ShippingResult =
       canShipToCountry: boolean;
       unavailableProducts: string[];
       shippingSpeed: "standard" | "express";
+      taxCents: number;
+      taxNote: string | null;
+      customsDutiesNote: string | null;
     };
 
 type ExtendedShippingInput = ShippingCalculateInput & {
@@ -907,8 +963,20 @@ export async function runShippingCalculate(
     printfulResult.shippingCents === 0 &&
     printifyShippingCents === 0;
 
+  const finalShippingCents = isFreeShipping ? 0 : totalShippingCents;
+  const { taxCents, note: taxNote } = estimateTaxCents(
+    input.orderValueCents,
+    finalShippingCents,
+    input.countryCode,
+    input.stateCode,
+  );
+  const customsDutiesNote =
+    printfulResult.rate?.shipments?.some((s) => s.customs_fees_possible) === true
+      ? "Customs or import duties may apply on delivery depending on your country."
+      : null;
+
   return {
-    shippingCents: isFreeShipping ? 0 : totalShippingCents,
+    shippingCents: finalShippingCents,
     label: finalLabel,
     freeShipping: isFreeShipping,
     printfulShipping: printfulResult.rate,
@@ -918,6 +986,9 @@ export async function runShippingCalculate(
     canShipToCountry: true,
     unavailableProducts: [],
     shippingSpeed: adminShippingSpeed,
+    taxCents,
+    taxNote,
+    customsDutiesNote,
   };
 }
 
@@ -930,5 +1001,8 @@ export function getPublicShippingResponse(result: ShippingResult) {
     canShipToCountry: result.canShipToCountry,
     unavailableProducts: result.unavailableProducts,
     shippingSpeed: result.shippingSpeed,
+    taxCents: result.taxCents,
+    taxNote: result.taxNote,
+    customsDutiesNote: result.customsDutiesNote,
   };
 }

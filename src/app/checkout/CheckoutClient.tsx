@@ -36,7 +36,13 @@ import {
 } from "~/lib/checkout-payment-options";
 import { useCurrentUser } from "~/lib/auth-client";
 import { secureStorageSync } from "~/lib/secure-storage";
-import { EXCLUDED_SHIPPING_COUNTRIES } from "~/lib/shipping-restrictions";
+import {
+  isShippingExcluded,
+} from "~/lib/shipping-restrictions";
+import {
+  COUNTRY_OPTIONS_ALPHABETICAL,
+  useCountryCurrency,
+} from "~/lib/hooks/use-country-currency";
 import {
   getSolanaPayLabel,
   getSolanaPayRecipient,
@@ -207,36 +213,13 @@ const COUNTRIES_REQUIRING_STATE = new Set(["US", "CA", "AU", "MX", "BR", "IN"]);
 /** Countries that do not use postal/zip codes (rare; most countries do). */
 const COUNTRIES_WITHOUT_POSTAL = new Set<string>(["HK"]);
 
-const ALL_COUNTRY_OPTIONS: { value: string; label: string }[] = [
+/** All countries we ship to (from site country list, excluding restricted). */
+const COUNTRY_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Select country" },
-  { value: "US", label: "United States" },
-  { value: "CA", label: "Canada" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "AU", label: "Australia" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "ES", label: "Spain" },
-  { value: "IT", label: "Italy" },
-  { value: "NL", label: "Netherlands" },
-  { value: "JP", label: "Japan" },
-  { value: "NZ", label: "New Zealand" },
-  { value: "HK", label: "Hong Kong" },
-  { value: "AE", label: "United Arab Emirates" },
-  { value: "IL", label: "Israel" },
-  { value: "KR", label: "South Korea" },
-  { value: "SV", label: "El Salvador" },
-  { value: "MX", label: "Mexico" },
-  { value: "BR", label: "Brazil" },
-  { value: "IN", label: "India" },
-  { value: "OTHER", label: "Other" },
+  ...COUNTRY_OPTIONS_ALPHABETICAL.filter((o) => !isShippingExcluded(o.code)).map(
+    (o) => ({ value: o.code, label: o.countryName }),
+  ),
 ];
-/** Exclude countries we do not ship to (all products). */
-const COUNTRY_OPTIONS = ALL_COUNTRY_OPTIONS.filter(
-  (opt) =>
-    !opt.value ||
-    opt.value === "OTHER" ||
-    !EXCLUDED_SHIPPING_COUNTRIES.has(opt.value),
-);
 
 const US_STATE_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "State" },
@@ -302,7 +285,7 @@ const US_STATE_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const SHIPPING_POLICY_CONTENT =
-  "We partner with a number of fulfillment partners in an effort to ship all orders as quickly as possible. Most orders ship with 24 hours, and most domestic order deliver within 2-3 business days, and international orders deliver within 2 weeks. During high-demand and peak seasons, shipping can sometimes take up to 2 weeks. Unfortunately we cannot ship to a P.O Box.";
+  "We partner with a number of fulfillment partners in an effort to ship all orders as quickly as possible. Most orders ship within 1 business day, domestic order deliver within 2-4 business days, and international orders deliver within 2 weeks. During high-demand and peak seasons, shipping can sometimes take up to 2 weeks. Unfortunately we cannot ship to a P.O Box.";
 
 /** Shortened policy text for checkout footer popups. */
 const REFUND_POLICY_SUMMARY =
@@ -461,6 +444,7 @@ const USDT_LOGO_SRC: Partial<
 export function CheckoutClient() {
   const { isHydrated, items, subtotal, itemCount } = useCart();
   const { user, isPending: authPending } = useCurrentUser();
+  const { selectedCountry } = useCountryCurrency();
   const isLoggedIn = Boolean(user?.email);
   const userReceiveMarketing =
     (user as { receiveMarketing?: boolean } | null)?.receiveMarketing === true;
@@ -471,6 +455,17 @@ export function CheckoutClient() {
     getPersistedShippingForm(),
   );
   const [emailNews, setEmailNews] = useState(true);
+
+  // Auto-fill shipping country from the country the customer was on (footer/geo)
+  useEffect(() => {
+    if (
+      !selectedCountry ||
+      form.country?.trim() ||
+      isShippingExcluded(selectedCountry)
+    )
+      return;
+    setForm((prev) => ({ ...prev, country: selectedCountry }));
+  }, [selectedCountry, form.country]); // Don't overwrite once user has a country
 
   // When opened from Telegram Mini App (/telegram/checkout or ?source=telegram), prefill email with synthetic value so backend has a valid email
   useEffect(() => {
@@ -582,6 +577,11 @@ export function CheckoutClient() {
     "standard",
   );
   const [canShipToCountry, setCanShipToCountry] = useState(true);
+  const [taxCents, setTaxCents] = useState<number>(0);
+  const [taxNote, setTaxNote] = useState<string | null>(null);
+  const [customsDutiesNote, setCustomsDutiesNote] = useState<string | null>(
+    null,
+  );
   const [navigatingToPay, setNavigatingToPay] = useState(false);
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -697,8 +697,9 @@ export function CheckoutClient() {
     );
     const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
     const shippingFeeCentsRounded = Math.round(shippingCents);
+    const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingFeeCentsRounded;
+      subtotalCents - discountCentsForOrder + shippingFeeCentsRounded + taxCentsRounded;
     setSolanaPayStatus("pending");
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
@@ -709,6 +710,7 @@ export function CheckoutClient() {
           orderItems,
           totalCents: orderTotalCents,
           shippingFeeCents: shippingFeeCentsRounded,
+          taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           emailMarketingConsent:
             isLoggedIn && userReceiveMarketing ? true : emailNews,
@@ -748,6 +750,7 @@ export function CheckoutClient() {
   }, [
     subtotal,
     shippingCents,
+    taxCents,
     items,
     form.email,
     user?.id,
@@ -867,6 +870,9 @@ export function CheckoutClient() {
           canShipToCountry?: boolean;
           adminShippingCents?: number;
           shippingSpeed?: "standard" | "express";
+          customsDutiesNote?: string | null;
+          taxCents?: number;
+          taxNote?: string | null;
         }) => {
           if (!cancelled) {
             setShippingCents(
@@ -878,6 +884,9 @@ export function CheckoutClient() {
             setShippingSpeed(
               data.shippingSpeed === "express" ? "express" : "standard",
             );
+            setTaxCents(typeof data.taxCents === "number" ? data.taxCents : 0);
+            setTaxNote(data.taxNote ?? null);
+            setCustomsDutiesNote(data.customsDutiesNote ?? null);
           }
         },
       )
@@ -888,6 +897,9 @@ export function CheckoutClient() {
           setShippingFree(false);
           setCanShipToCountry(true);
           setShippingSpeed("standard");
+          setTaxCents(0);
+          setTaxNote(null);
+          setCustomsDutiesNote(null);
         }
       })
       .finally(() => {
@@ -913,7 +925,7 @@ export function CheckoutClient() {
 
   const discountCents = appliedCoupon?.discountCents ?? 0;
   const totalCents =
-    Math.round(subtotal * 100) - discountCents + shippingCents;
+    Math.round(subtotal * 100) - discountCents + shippingCents + taxCents;
   const total = Math.max(0, totalCents) / 100;
 
   const handleApplyCoupon = useCallback(async () => {
@@ -1431,8 +1443,9 @@ export function CheckoutClient() {
     );
     const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
     const shippingCentsRounded = Math.round(shippingCents);
+    const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingCentsRounded;
+      subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
     const emailRaw = form.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
@@ -1448,6 +1461,7 @@ export function CheckoutClient() {
           orderItems,
           totalCents: orderTotalCents,
           shippingFeeCents: shippingCentsRounded,
+          taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           emailMarketingConsent:
             isLoggedIn && userReceiveMarketing ? true : emailNews,
@@ -1493,6 +1507,7 @@ export function CheckoutClient() {
     useShippingAsBilling,
     subtotal,
     shippingCents,
+    taxCents,
     items,
     total,
     paymentMethod,
@@ -1528,8 +1543,9 @@ export function CheckoutClient() {
     );
     const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
     const shippingCentsRounded = Math.round(shippingCents);
+    const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingCentsRounded;
+      subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
     const emailRaw = form.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
@@ -1551,6 +1567,7 @@ export function CheckoutClient() {
           orderItems,
           totalCents: orderTotalCents,
           shippingFeeCents: shippingCentsRounded,
+          taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           token,
           emailMarketingConsent:
@@ -1588,6 +1605,7 @@ export function CheckoutClient() {
     validateBilling,
     useShippingAsBilling,
     shippingCents,
+    taxCents,
     items,
     total,
     paymentSubOption,
@@ -1597,6 +1615,7 @@ export function CheckoutClient() {
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
+    appliedCoupon,
   ]);
 
   const handleGoToEthPay = useCallback(async () => {
@@ -1635,8 +1654,9 @@ export function CheckoutClient() {
     );
     const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
     const shippingFeeCentsRounded = Math.round(shippingCents);
+    const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingFeeCentsRounded;
+      subtotalCents - discountCentsForOrder + shippingFeeCentsRounded + taxCentsRounded;
     try {
       // Create order via API
       const res = await fetch("/api/checkout/eth-pay/create-order", {
@@ -1653,6 +1673,7 @@ export function CheckoutClient() {
           ),
           totalCents: Math.round(orderTotalCents),
           shippingFeeCents: shippingFeeCentsRounded,
+          taxCents: taxCentsRounded,
           chain,
           token,
           userId: user?.id,
@@ -1741,6 +1762,7 @@ export function CheckoutClient() {
     useShippingAsBilling,
     total,
     shippingCents,
+    taxCents,
     items,
     paymentMethod,
     paymentSubOption,
@@ -1752,6 +1774,7 @@ export function CheckoutClient() {
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
+    appliedCoupon,
   ]);
 
   const handleGoToTonPay = useCallback(async () => {
@@ -1775,8 +1798,9 @@ export function CheckoutClient() {
     );
     const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
     const shippingCentsRounded = Math.round(shippingCents);
+    const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingCentsRounded;
+      subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
     const emailRaw = form.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
@@ -1798,6 +1822,7 @@ export function CheckoutClient() {
           ),
           totalCents: Math.round(orderTotalCents),
           shippingFeeCents: shippingCentsRounded,
+          taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           emailMarketingConsent:
             isLoggedIn && userReceiveMarketing ? true : emailNews,
@@ -1833,6 +1858,7 @@ export function CheckoutClient() {
     validateBilling,
     useShippingAsBilling,
     shippingCents,
+    taxCents,
     items,
     router,
     emailNews,
@@ -2191,12 +2217,14 @@ export function CheckoutClient() {
                 </div>
                 <div className="sm:col-span-2 flex items-center gap-2">
                   <Input
-                    aria-label="Phone"
+                    aria-label={
+                      shippingSpeed === "express" ? "Phone (required)" : "Phone"
+                    }
                     aria-required={shippingSpeed === "express"}
                     className={cn(checkoutFieldHeight, "flex-1 min-w-0")}
                     placeholder={
                       shippingSpeed === "express"
-                        ? "Phone (required for Express shipping)"
+                        ? "Phone"
                         : "Phone (optional)"
                     }
                     type="tel"
@@ -3384,12 +3412,24 @@ export function CheckoutClient() {
                       )}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tax</span>
-                    <span className="font-medium">
-                      <FiatPrice usdAmount={0} />
-                    </span>
+                  <div className="flex flex-col items-end gap-0.5">
+                    <div className="flex w-full justify-between">
+                      <span className="text-muted-foreground">Tax</span>
+                      <span className="font-medium">
+                        <FiatPrice usdAmount={taxCents / 100} />
+                      </span>
+                    </div>
+                    {taxNote ? (
+                      <span className="w-full text-right text-xs text-muted-foreground">
+                        {taxNote}
+                      </span>
+                    ) : null}
                   </div>
+                  {customsDutiesNote ? (
+                    <p className="text-xs text-muted-foreground">
+                      {customsDutiesNote}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">
                   <span>Total</span>

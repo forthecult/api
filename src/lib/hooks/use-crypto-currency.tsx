@@ -8,15 +8,18 @@ export type CryptoCode =
   | "SOL"
   | "DOGE"
   | "CRUST"
+  | "PUMP"
+  | "TON"
   | "XMR"
   | "XAU"
   | "XAG";
 
-const COINGECKO_IDS: Record<Exclude<CryptoCode, "CRUST" | "XAU" | "XAG">, string> = {
+const COINGECKO_IDS: Record<Exclude<CryptoCode, "CRUST" | "PUMP" | "XAU" | "XAG">, string> = {
   BTC: "bitcoin",
   ETH: "ethereum",
   SOL: "solana",
   DOGE: "dogecoin",
+  TON: "toncoin",
   XMR: "monero",
 };
 
@@ -43,6 +46,8 @@ const DECIMAL_MAP: Record<CryptoCode, number> = {
   SOL: 4,
   DOGE: 6,
   CRUST: 6,
+  PUMP: 6,
+  TON: 4,
   XMR: 6,
   XAU: 2,
   XAG: 2,
@@ -55,6 +60,8 @@ const FALLBACK_RATES: Record<CryptoCode, number> = {
   SOL: 100,
   DOGE: 0.08,
   CRUST: 0,
+  PUMP: 0.01,
+  TON: 5.5,
   XMR: 150,
   XAU: 2_650,
   XAG: 31,
@@ -77,6 +84,8 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
           raw === "SOL" ||
           raw === "DOGE" ||
           raw === "CRUST" ||
+          raw === "PUMP" ||
+          raw === "TON" ||
           raw === "XMR" ||
           raw === "XAU" ||
           raw === "XAG")
@@ -115,7 +124,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
         }
         const next: Rates = { ...FALLBACK_RATES };
         (
-          ["BTC", "ETH", "SOL", "DOGE", "CRUST", "XMR", "XAU", "XAG"] as const
+          ["BTC", "ETH", "SOL", "DOGE", "CRUST", "PUMP", "TON", "XMR", "XAU", "XAG"] as const
         ).forEach((code) => {
           const v = data[code];
           if (typeof v === "number" && v > 0) next[code] = v;

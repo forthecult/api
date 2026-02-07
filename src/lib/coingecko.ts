@@ -70,3 +70,50 @@ export async function getCoinGeckoSimplePrice(
     return undefined;
   }
 }
+
+const TOKEN_PRICE_CACHE = new Map<string, CacheEntry>();
+
+/**
+ * Fetch token price by platform and contract address(es).
+ * e.g. platformId "solana", contractAddresses ["pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn"]
+ * Cached 60s. Uses same rate limit as simple price.
+ */
+export async function getCoinGeckoTokenPrice(
+  platformId: string,
+  contractAddresses: string[],
+): Promise<Record<string, { usd?: number }> | undefined> {
+  if (contractAddresses.length === 0) return undefined;
+  const key = `token:${platformId}:${contractAddresses.join(",")}`;
+  const now = Date.now();
+
+  const hit = TOKEN_PRICE_CACHE.get(key);
+  if (hit && now - hit.fetchedAt < CACHE_TTL_MS) {
+    return hit.data;
+  }
+
+  if (!canMakeRequest(now)) {
+    if (hit) return hit.data;
+    return undefined;
+  }
+
+  const apiKey = process.env.COINGECKO_API_KEY?.trim();
+  const url = new URL(
+    `https://api.coingecko.com/api/v3/simple/token_price/${platformId}`,
+  );
+  url.searchParams.set("contract_addresses", contractAddresses.join(","));
+  url.searchParams.set("vs_currencies", "usd");
+  if (apiKey) url.searchParams.set("x_cg_demo_api_key", apiKey);
+
+  try {
+    const res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = (await res.json()) as Record<string, { usd?: number }>;
+    recordRequest(Date.now());
+    TOKEN_PRICE_CACHE.set(key, { data, fetchedAt: Date.now() });
+    return data;
+  } catch {
+    if (hit) return hit.data;
+    return undefined;
+  }
+}

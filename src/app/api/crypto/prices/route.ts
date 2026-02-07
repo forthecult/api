@@ -1,12 +1,15 @@
 /**
- * All crypto prices in USD: single CoinGecko call (BTC, ETH, SOL, DOGE, etc.) + CRUST via pump.fun.
+ * All crypto prices in USD: CoinGecko (BTC, ETH, SOL, DOGE, etc. + PUMP token by contract) + CRUST via pump.fun.
  * Cached 60s (ISR). Used by CryptoCurrencyProvider so client makes one request.
  */
 
 import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
-import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
+import {
+  getCoinGeckoSimplePrice,
+  getCoinGeckoTokenPrice,
+} from "~/lib/coingecko";
 import { getPumpTokenPriceInSol } from "~/lib/pump-price";
 import {
   getSolanaRpcUrlServer,
@@ -60,7 +63,11 @@ export async function GET() {
 
   try {
     // Fetch via shared client (60s cache, 30/min rate limit)
-    const d = await getCoinGeckoSimplePrice(COINGECKO_IDS);
+    const [d, pumpTokenPrices] = await Promise.all([
+      getCoinGeckoSimplePrice(COINGECKO_IDS),
+      getCoinGeckoTokenPrice("solana", [PUMP_MINT_MAINNET]),
+    ]);
+
     if (!d) {
       return NextResponse.json(FALLBACK_PRICES);
     }
@@ -75,31 +82,29 @@ export async function GET() {
     if (d?.["pax-gold"]?.usd) prices.XAU = d["pax-gold"].usd;
     if (d?.["kinesis-silver"]?.usd) prices.XAG = d["kinesis-silver"].usd;
 
-    // Fetch CRUST and PUMP prices with separate timeout (don't block main response)
+    // PUMP from CoinGecko token price (contract address on Solana)
+    const pumpKey = PUMP_MINT_MAINNET.toLowerCase();
+    if (pumpTokenPrices?.[pumpKey]?.usd != null && pumpTokenPrices[pumpKey].usd! > 0) {
+      prices.PUMP = pumpTokenPrices[pumpKey].usd;
+    }
+
+    // CRUST via pump.fun LP (no CoinGecko listing)
     const solUsd = d?.solana?.usd;
     if (typeof solUsd === "number" && solUsd > 0) {
-      const connection = new Connection(getSolanaRpcUrlServer());
-      const fetchPumpTokenPrice = async (mint: string) => {
-        try {
+      try {
+        const crustPromise = (async () => {
+          const connection = new Connection(getSolanaRpcUrlServer());
           return await Promise.race([
-            getPumpTokenPriceInSol(connection, new PublicKey(mint)),
+            getPumpTokenPriceInSol(connection, new PublicKey(CRUST_MINT_MAINNET)),
             new Promise<number>((resolve) =>
               setTimeout(() => resolve(0), FETCH_TIMEOUT),
             ),
           ]);
-        } catch {
-          return 0;
-        }
-      };
-      try {
-        const [crustSolPerToken, pumpSolPerToken] = await Promise.all([
-          fetchPumpTokenPrice(CRUST_MINT_MAINNET),
-          fetchPumpTokenPrice(PUMP_MINT_MAINNET),
-        ]);
+        })();
+        const crustSolPerToken = await crustPromise;
         if (crustSolPerToken > 0) prices.CRUST = crustSolPerToken * solUsd;
-        if (pumpSolPerToken > 0) prices.PUMP = pumpSolPerToken * solUsd;
       } catch {
-        // Price fetches failed, continue without them
+        // CRUST price fetch failed, continue without it
       }
     }
 

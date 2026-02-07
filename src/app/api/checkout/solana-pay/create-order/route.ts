@@ -66,6 +66,7 @@ export async function POST(request: NextRequest) {
       orderItems: rawItems,
       totalCents,
       shippingFeeCents = 0,
+      taxCents = 0,
       emailMarketingConsent,
       smsMarketingConsent,
       telegramUserId,
@@ -163,11 +164,12 @@ export async function POST(request: NextRequest) {
           },
         )
       : null;
-    const baseTotal = subtotalCents + shippingFeeCents;
-    const expectedTotal =
+    const baseBeforeTax = subtotalCents + shippingFeeCents;
+    const discountedTotal =
       couponResult?.totalAfterDiscountCents ??
       affiliateResult?.totalAfterDiscountCents ??
-      baseTotal;
+      baseBeforeTax;
+    const expectedTotal = discountedTotal + taxCents;
     const TOLERANCE_CENTS = 100;
     if (Math.abs(totalCents - expectedTotal) > TOLERANCE_CENTS) {
       return NextResponse.json(
@@ -195,6 +197,7 @@ export async function POST(request: NextRequest) {
       paymentMethod: "solana_pay",
       paymentStatus: "pending",
       shippingFeeCents,
+      taxCents,
       solanaPayDepositAddress: depositAddress,
       ...(reference && typeof reference === "string" && reference.trim()
         ? { solanaPayReference: reference.trim() }

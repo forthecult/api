@@ -74,6 +74,7 @@ interface CreateEthOrderBody {
   }>;
   totalCents: number;
   shippingFeeCents?: number;
+  taxCents?: number;
   chain: string;
   token: string;
   userId?: string;
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
       orderItems: rawItems,
       totalCents,
       shippingFeeCents = 0,
+      taxCents = 0,
       chain,
       token,
       affiliateCode,
@@ -366,6 +368,7 @@ export async function POST(request: NextRequest) {
       paymentMethod: "eth_pay",
       paymentStatus: "pending",
       shippingFeeCents: shippingRounded,
+      taxCents,
       solanaPayDepositAddress: depositAddress, // Reuse this field for all crypto deposit addresses
       status: "pending",
       totalCents: expectedTotal,

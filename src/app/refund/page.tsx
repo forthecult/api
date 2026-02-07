@@ -4,7 +4,7 @@ import { SEO_CONFIG } from "~/app";
 import { RefundRequestForm } from "./RefundRequestForm";
 
 export const metadata = {
-  description: `Request a refund. Enter your Order ID and we'll guide you through the process. Card and PayPal refunds are automated; crypto refunds are issued in stablecoin.`,
+  description: `Request a refund. Enter your Order ID and email, payment address, or postal code to look up your order. Card and PayPal refunds are automated; crypto refunds are issued in stablecoin.`,
   title: `Request a refund | ${SEO_CONFIG.name}`,
 };
 

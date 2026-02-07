@@ -139,8 +139,8 @@ export function RefundRequestForm() {
           Refund request
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Enter your Order ID and either your billing email or the payment
-          (wallet) address used at checkout. If you paid with crypto, we’ll ask
+          Enter your Order ID and one of: your billing email, the payment
+          (wallet) address used at checkout, or your shipping postal code. If you paid with crypto, we’ll ask
           for the address where you’d like to receive your refund (in
           stablecoin).
         </p>
@@ -164,41 +164,24 @@ export function RefundRequestForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="refund-email">Billing email</Label>
-            <Input
-              id="refund-email"
-              className={inputClass}
-              type="email"
-              placeholder="Email used at checkout"
-              value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (lookupStatus !== "idle") setLookupStatus("idle");
-              }}
-              autoComplete="email"
-              disabled={submitStatus === "loading" || submitStatus === "success"}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="refund-payment-address">
-              Payment address (optional)
+            <Label htmlFor="refund-lookup">
+              Email, payment address, or postal code
             </Label>
             <Input
-              id="refund-payment-address"
+              id="refund-lookup"
               className={inputClass}
               type="text"
-              placeholder="Wallet address if you paid with crypto"
-              value={paymentAddress}
+              placeholder="Billing email, wallet address, or shipping postal code"
+              value={lookupValue}
               onChange={(e) => {
-                setPaymentAddress(e.target.value);
+                setLookupValue(e.target.value);
                 if (lookupStatus !== "idle") setLookupStatus("idle");
               }}
               autoComplete="off"
               disabled={submitStatus === "loading" || submitStatus === "success"}
             />
             <p className="text-xs text-muted-foreground">
-              If you paid with card or PayPal, use billing email. If you paid
-              with crypto, you can use the wallet address instead.
+              Enter any one of these so we can verify your order.
             </p>
           </div>
 

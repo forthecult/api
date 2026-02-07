@@ -28,6 +28,7 @@ export const createOrderSchema = z.object({
     .min(1, "At least one order item is required"),
   totalCents: z.number().int().nonnegative("Total must be non-negative"),
   shippingFeeCents: z.number().int().nonnegative().optional().default(0),
+  taxCents: z.number().int().nonnegative().optional().default(0),
   userId: z.string().nullable().optional(),
   emailMarketingConsent: z.boolean().optional(),
   smsMarketingConsent: z.boolean().optional(),
