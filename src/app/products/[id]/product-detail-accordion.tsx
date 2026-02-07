@@ -125,7 +125,11 @@ export function ProductDetailAccordion({
     });
   };
   const isPanelOpen = (itemId: string) => openIds.has(itemId);
-  const paymentOptions = React.useMemo(() => getPaymentOptionsForDisplay(), []);
+  const { visibility } = usePaymentMethodSettings();
+  const paymentOptions = React.useMemo(
+    () => getPaymentOptionsForDisplay(visibility),
+    [visibility],
+  );
 
   const renderContent = (itemId: string) => {
     switch (itemId) {

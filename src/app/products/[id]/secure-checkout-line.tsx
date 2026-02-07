@@ -3,9 +3,11 @@
 import Image from "next/image";
 
 import { getPaymentIconPaths } from "~/lib/checkout-payment-options";
+import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 
 export function SecureCheckoutLine() {
-  const icons = getPaymentIconPaths();
+  const { visibility } = usePaymentMethodSettings();
+  const icons = getPaymentIconPaths(visibility);
 
   return (
     <div className="mb-6 block w-full">

@@ -25,6 +25,13 @@ import {
 import type BigNumber from "bignumber.js";
 
 import { useCart } from "~/lib/hooks/use-cart";
+import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
+import {
+  getHiddenFromVisibility,
+  hasAnyCryptoEnabled,
+  hasAnyStablecoinEnabled,
+  visibleCryptoSubFromVisibility,
+} from "~/lib/checkout-payment-options";
 import { useCurrentUser } from "~/lib/auth-client";
 import { secureStorageSync } from "~/lib/secure-storage";
 import { EXCLUDED_SHIPPING_COUNTRIES } from "~/lib/shipping-restrictions";
@@ -309,7 +316,7 @@ const checkoutFieldHeight = "h-11";
 const paymentOptionRowClass =
   "min-h-12 flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-card p-3 transition-colors hover:bg-muted/30 dark:hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/20";
 
-/** Hide these payment options from the UI (options remain in code, not removed). */
+/** Fallback when payment method API has not loaded; hide card/paypal/crypto by default. */
 const HIDDEN_PAYMENT_OPTIONS = {
   creditCard: true,
   paypal: true,
@@ -340,7 +347,7 @@ const CRYPTO_SUB_OPTIONS: {
   { value: "other", label: "Other" },
 ];
 
-/** Crypto sub-options visible in UI (hidden options filtered out). */
+/** Crypto sub-options visible in UI when using fallback (hidden options filtered out). */
 const VISIBLE_CRYPTO_SUB_OPTIONS = CRYPTO_SUB_OPTIONS.filter((opt) => {
   if (opt.value === "bitcoin" && HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin)
     return false;
@@ -594,14 +601,27 @@ export function CheckoutClient() {
     "bnb",
   ] as const;
 
-  const solanaPayConfigured = Boolean(getSolanaPayRecipient());
-  const visibleCryptoSubOptions = useMemo(
+  const { visibility } = usePaymentMethodSettings();
+  const hiddenOptions = useMemo(
     () =>
-      VISIBLE_CRYPTO_SUB_OPTIONS.filter(
-        (opt) => opt.value !== "solana" || solanaPayConfigured,
-      ),
-    [solanaPayConfigured],
+      visibility
+        ? getHiddenFromVisibility(visibility)
+        : HIDDEN_PAYMENT_OPTIONS,
+    [visibility],
   );
+  const solanaPayConfigured = Boolean(getSolanaPayRecipient());
+  const visibleCryptoSubOptions = useMemo(() => {
+    const base = visibility
+      ? visibleCryptoSubFromVisibility(visibility)
+      : VISIBLE_CRYPTO_SUB_OPTIONS;
+    return base.filter(
+      (opt) => opt.value !== "solana" || solanaPayConfigured,
+    );
+  }, [visibility, solanaPayConfigured]);
+  const showCryptoRow =
+    visibility === null || hasAnyCryptoEnabled(visibility);
+  const showStablecoinsRow =
+    visibility === null || hasAnyStablecoinEnabled(visibility);
   const visibleUsdcSubOptions = useMemo(
     () =>
       USDC_SUB_OPTIONS.filter(
@@ -2154,8 +2174,8 @@ export function CheckoutClient() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Credit card (Stripe) — hidden when HIDDEN_PAYMENT_OPTIONS.creditCard */}
-                {!HIDDEN_PAYMENT_OPTIONS.creditCard && (
+                {/* Credit card (Stripe) — hidden when hiddenOptions.creditCard */}
+                {!hiddenOptions.creditCard && (
                   <div className="space-y-0">
                     <label className={paymentOptionRowClass}>
                       <div className="flex items-center gap-3">
@@ -2615,7 +2635,8 @@ export function CheckoutClient() {
                     )}
                   </div>
                 )}
-                {/* Crypto */}
+                {/* Crypto — hidden when no crypto methods enabled via admin */}
+                {showCryptoRow && (
                 <div className="space-y-0">
                   <label className={paymentOptionRowClass}>
                     <div className="flex items-center gap-3">
@@ -2629,7 +2650,7 @@ export function CheckoutClient() {
                       <span className="text-sm font-medium">Crypto</span>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      {!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin && (
+                      {!hiddenOptions.cryptoBitcoin && (
                         <Image
                           alt="Bitcoin"
                           className="size-5 shrink-0 object-contain"
@@ -2652,7 +2673,7 @@ export function CheckoutClient() {
                         src="/crypto/solana/solanaLogoMark.svg"
                         width={20}
                       />
-                      {!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin && (
+                      {!hiddenOptions.cryptoDogecoin && (
                         <Image
                           alt="Dogecoin"
                           className="size-5 shrink-0 object-contain"
@@ -2661,7 +2682,7 @@ export function CheckoutClient() {
                           width={20}
                         />
                       )}
-                      {!HIDDEN_PAYMENT_OPTIONS.cryptoMonero && (
+                      {!hiddenOptions.cryptoMonero && (
                         <Image
                           alt="Monero"
                           className="size-5 shrink-0 object-contain"
@@ -2775,8 +2796,10 @@ export function CheckoutClient() {
                     </div>
                   )}
                 </div>
+                )}
 
-                {/* Stablecoins (USDC, USDT) */}
+                {/* Stablecoins (USDC, USDT) — hidden when both disabled via admin */}
+                {showStablecoinsRow && (
                 <div className="space-y-0">
                   <label className={paymentOptionRowClass}>
                     <div className="flex items-center gap-3">
@@ -2809,6 +2832,7 @@ export function CheckoutClient() {
                   {paymentMethod === "stablecoins" && (
                     <div className="space-y-2 border-t border-border px-3 pb-3 pt-4">
                       <div className="mb-2 flex gap-2">
+                        {(visibility === null || visibility.stablecoinUsdc) && (
                         <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20">
                           <input
                             type="radio"
@@ -2830,6 +2854,8 @@ export function CheckoutClient() {
                             width={20}
                           />
                         </label>
+                        )}
+                        {(visibility === null || visibility.stablecoinUsdt) && (
                         <label className="flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20">
                           <input
                             type="radio"
@@ -2851,6 +2877,7 @@ export function CheckoutClient() {
                             width={20}
                           />
                         </label>
+                        )}
                       </div>
                       {stablecoinToken === "usdc"
                         ? visibleUsdcSubOptions.map((opt) => (
@@ -2910,9 +2937,10 @@ export function CheckoutClient() {
                     </div>
                   )}
                 </div>
+                )}
 
-                {/* PayPal — hidden when HIDDEN_PAYMENT_OPTIONS.paypal */}
-                {!HIDDEN_PAYMENT_OPTIONS.paypal && (
+                {/* PayPal — hidden when hiddenOptions.paypal */}
+                {!hiddenOptions.paypal && (
                   <div className="space-y-0">
                     <label className={paymentOptionRowClass}>
                       <div className="flex items-center gap-3">

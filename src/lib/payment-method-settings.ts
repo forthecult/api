@@ -1,0 +1,29 @@
+/**
+ * Payment method keys and labels. Used by admin UI and API.
+ * When a method is disabled in admin, it is hidden from checkout and product pages.
+ */
+export const PAYMENT_METHOD_DEFAULTS: Array<{
+  methodKey: string;
+  label: string;
+  displayOrder: number;
+}> = [
+  { methodKey: "stripe", label: "Stripe (Credit / Debit card)", displayOrder: 0 },
+  { methodKey: "paypal", label: "PayPal", displayOrder: 1 },
+  { methodKey: "crypto_bitcoin", label: "Bitcoin (BTC)", displayOrder: 10 },
+  { methodKey: "crypto_dogecoin", label: "Dogecoin (DOGE)", displayOrder: 11 },
+  { methodKey: "crypto_ethereum", label: "Ethereum (ETH)", displayOrder: 12 },
+  { methodKey: "crypto_solana", label: "Solana (SOL)", displayOrder: 13 },
+  { methodKey: "crypto_monero", label: "Monero (XMR)", displayOrder: 14 },
+  { methodKey: "crypto_crust", label: "Crustafarian (CRUST)", displayOrder: 15 },
+  { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 16 },
+  { methodKey: "crypto_ton", label: "TON", displayOrder: 17 },
+  { methodKey: "stablecoin_usdc", label: "USDC (Stablecoin)", displayOrder: 20 },
+  { methodKey: "stablecoin_usdt", label: "USDT (Stablecoin)", displayOrder: 21 },
+];
+
+export type PaymentMethodSetting = {
+  methodKey: string;
+  label: string;
+  enabled: boolean;
+  displayOrder: number;
+};

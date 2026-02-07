@@ -5,6 +5,7 @@ import {
   ChevronDown,
   ChevronLeft,
   Circle,
+  CreditCard,
   LayoutDashboard,
   Package,
   FolderTree,
@@ -127,6 +128,11 @@ const ADMIN_SECTIONS: NavSection[] = [
     label: "Site Settings",
     icon: Settings,
     href: "/site-settings",
+  },
+  {
+    label: "Payment methods",
+    icon: CreditCard,
+    href: "/payment-methods",
   },
   {
     label: "Token Gates",
