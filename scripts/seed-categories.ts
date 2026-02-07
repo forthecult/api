@@ -136,6 +136,19 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     parentId: null,
   },
   {
+    id: "esim",
+    name: "eSIM",
+    slug: "esim",
+    title:
+      "eSIM — Travel Data Plans & Digital SIM Cards Worldwide | Culture",
+    metaDescription:
+      "Buy eSIM for travel: instant data in 190+ countries. No physical SIM, no roaming fees. Regional and global plans. Activate before you fly. Pay with card or crypto. Culture.",
+    description:
+      "Stay connected abroad without roaming shock or hunting for local SIMs. eSIM (embedded SIM) gives you instant mobile data in 190+ countries—no physical SIM card, no store visits. Choose regional plans (Europe, Asia, Americas) or country-specific data packs; activate before you fly or when you land. Perfect for travelers, digital nomads, and remote workers. Plans from 1 day to 30 days; top up when you need more. Our eSIM partner offers transparent pricing, QR activation, and support. Pay with card or crypto. Culture.",
+    level: 1,
+    parentId: null,
+  },
+  {
     id: "other",
     name: "Other",
     slug: "other",

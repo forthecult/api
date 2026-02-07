@@ -187,6 +187,20 @@ export async function importSinglePrintfulProduct(
 
   if (existingProduct) {
     if (!overwriteExisting) {
+      // Still ensure size chart exists for this brand/model (import once per brand/model)
+      if (catalogProductId != null && catalogProduct?.brand && catalogProduct?.model) {
+        await upsertPrintfulSizeChart(
+          catalogProductId,
+          catalogProduct.brand,
+          catalogProduct.model,
+        ).catch((err) => {
+          console.warn(
+            "Printful size chart upsert failed on skip for product",
+            existingProduct.id,
+            err,
+          );
+        });
+      }
       return { action: "skipped", productId: existingProduct.id };
     }
 

@@ -250,12 +250,17 @@ export async function generateMetadata({
   }
   const category = await getCategoryBySlug(slug);
   const categoryName = category?.name ?? slug;
+  const title =
+    category?.title ?? `${categoryName} | ${SEO_CONFIG.name}`;
+  const description =
+    category?.metaDescription?.slice(0, 160) ??
+    `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
   return {
-    title: `${categoryName} | ${SEO_CONFIG.name}`,
-    description: `Browse ${categoryName} at ${SEO_CONFIG.name}.`,
+    title,
+    description,
     openGraph: {
-      title: `${categoryName} | ${SEO_CONFIG.name}`,
-      description: `Browse ${categoryName} at ${SEO_CONFIG.name}.`,
+      title,
+      description,
       type: "website",
     },
     alternates: {

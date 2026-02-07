@@ -12,6 +12,7 @@ export type CategoryBySlug = {
   name: string;
   slug: string;
   title: string | null;
+  metaDescription: string | null;
   description: string | null;
   parentId: string | null;
   tokenGated: boolean;
@@ -30,6 +31,7 @@ export async function getCategoryBySlug(
       name: categoriesTable.name,
       slug: categoriesTable.slug,
       title: categoriesTable.title,
+      metaDescription: categoriesTable.metaDescription,
       description: categoriesTable.description,
       parentId: categoriesTable.parentId,
       tokenGated: categoriesTable.tokenGated,
@@ -43,6 +45,7 @@ export async function getCategoryBySlug(
     name: row.name,
     slug: row.slug,
     title: row.title ?? null,
+    metaDescription: row.metaDescription ?? null,
     description: row.description ?? null,
     parentId: row.parentId ?? null,
     tokenGated: row.tokenGated ?? false,

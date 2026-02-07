@@ -414,7 +414,8 @@ async function createLocalProductFromPrintify(
     weightGrams,
     weightUnit: weightGrams ? "kg" : null,
     vendor: "Printify",
-    brand: null, // Printify product API does not expose brand
+    brand,
+    model,
     sku: productSku,
     countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
     hsCode: printifyProduct.hs_code?.trim() || null,
