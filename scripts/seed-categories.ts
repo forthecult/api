@@ -2,7 +2,7 @@
  * Seeds the database with For the Cult categories (Shop + Shop by Crypto).
  *
  * Slugs = what people search. SEO-first: full names (bitcoin, ethereum, dogecoin, monero, uniswap)
- * not tickers (btc, eth, doge). Parent slugs: currency, network, dapps (short and clear).
+ * not tickers (btc, eth, doge). Parent slugs: currency, network, dapp (short and clear).
  *
  * Every category has title, metaDescription, and description for SEO and category pages.
  * Also seeds "Bulk add products" auto-assign rules for crypto categories (title/tag contains
@@ -24,6 +24,10 @@ import {
 
 const now = new Date();
 
+/** Pacsafe backpack image for Backpacks category (same CDN as seed-data pacsafe-exp-28l). */
+const PACSAFE_BACKPACK_IMAGE_URL =
+  "https://cdn.shopify.com/s/files/1/0041/7638/0013/files/PacsafeEXP_28LBackpack_60314100_Black_01.jpg?v=1769879540";
+
 type CategoryRow = {
   id: string;
   name: string;
@@ -31,6 +35,7 @@ type CategoryRow = {
   title: string | null;
   metaDescription: string | null;
   description: string | null;
+  imageUrl?: string | null;
   level: number;
   parentId: string | null;
 };
@@ -79,11 +84,11 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     name: "Accessories",
     slug: "accessories",
     title:
-      "Accessories — Hardware Wallets, Hats, Bags, Tech & Travel | Culture",
+      "Accessories — Hardware Wallets, Hats, Bags, Backpacks, Tech & Travel | Culture",
     metaDescription:
-      "Hardware wallets (Trezor, Ledger), hats, bags, phone cases, mouse pads, watches, travel gear. Protect your assets and autonomy. Premium accessories. Pay with 50+ cryptos or card. Culture.",
+      "Hardware wallets (Trezor, Ledger), hats, bags, backpacks, phone cases, mouse pads, watches, travel gear. Protect your assets and autonomy. Premium accessories. Pay with 50+ cryptos or card. Culture.",
     description:
-      "Tools that protect your assets and autonomy. Hardware wallets (Trezor, Ledger) for self-custody. Hats, socks, watches, bags, phone cases, mouse pads, tech and travel accessories. We curate for quality and privacy—no products that require always-on cloud or sell your data. Pay with 50+ cryptocurrencies or card.",
+      "Tools that protect your assets and autonomy. Hardware wallets (Trezor, Ledger) for self-custody. Hats, socks, watches, bags, backpacks, phone cases, mouse pads, tech and travel accessories. We curate for quality and privacy—no products that require always-on cloud or sell your data. Pay with 50+ cryptocurrencies or card.",
     level: 1,
     parentId: null,
   },
@@ -461,6 +466,19 @@ const ACCESSORIES_SUB: CategoryRow[] = [
       "Bags and backpacks. Security-focused and travel-ready. Culture.",
     description:
       "Bags and backpacks for autonomy: travel, security, durability. We curate for quality and privacy.",
+    level: 2,
+    parentId: "accessories",
+  },
+  {
+    id: "accessories-backpacks",
+    name: "Backpacks",
+    slug: "backpacks",
+    title: "Backpacks — Travel, Anti-Theft & Laptop Bags | Culture",
+    metaDescription:
+      "Backpacks: travel backpacks, anti-theft backpacks, laptop backpacks. Security-focused, durable. Pacsafe and premium brands. Pay with crypto or card. Culture.",
+    description:
+      "Travel and everyday backpacks that protect your gear and your autonomy. Anti-theft backpacks with slash-proof straps, locking zippers, and RFID blocking. Laptop backpacks, commuter backpacks, and adventure packs. We curate for durability, security, and quality—brands like Pacsafe. Pay with 50+ cryptocurrencies or card.",
+    imageUrl: PACSAFE_BACKPACK_IMAGE_URL,
     level: 2,
     parentId: "accessories",
   },
@@ -1077,6 +1095,27 @@ const CRYPTO_BULK_ADD_CONFIG: CryptoBulkAddConfig[] = [
   { categoryId: "uniswap", fullName: "Uniswap", ticker: "UNI" },
 ];
 
+/**
+ * Product-type categories get "Bulk add products" rules so products are auto-assigned
+ * when product title or product tag contains the term (e.g. "mug" for Mugs).
+ */
+type ProductBulkAddConfig = {
+  categoryId: string;
+  /** Term to match in title (case-insensitive via ilike in app). */
+  titleContains: string;
+  /** Term to match in tag (lowercase). */
+  tagContains: string;
+};
+
+const PRODUCT_BULK_ADD_CONFIG: ProductBulkAddConfig[] = [
+  { categoryId: "home-mugs", titleContains: "mug", tagContains: "mug" },
+  {
+    categoryId: "accessories-backpacks",
+    titleContains: "backpack",
+    tagContains: "backpack",
+  },
+];
+
 /** Not seeded to staging/production; use only in local dev if you need a "Testing" category. */
 const _DEMO_CATEGORY: CategoryRow[] = [
   {
@@ -1119,6 +1158,7 @@ async function seed() {
       `excluded.${categoriesTable.metaDescription.name}`,
     ),
     description: sql.raw(`excluded.${categoriesTable.description.name}`),
+    imageUrl: sql.raw(`excluded.${categoriesTable.imageUrl.name}`),
     level: sql.raw(`excluded.${categoriesTable.level.name}`),
     parentId: sql.raw(`excluded.${categoriesTable.parentId.name}`),
     updatedAt: sql.raw(`excluded.${categoriesTable.updatedAt.name}`),
@@ -1131,6 +1171,7 @@ async function seed() {
       title: c.title,
       metaDescription: c.metaDescription,
       description: c.description,
+      imageUrl: c.imageUrl ?? null,
       level: c.level,
       parentId: c.parentId,
       featured: false,
@@ -1147,11 +1188,13 @@ async function seed() {
   }
   console.log(`Done. ${ALL_CATEGORIES.length} categories seeded.`);
 
-  // Seed "Bulk add products" rules: one delete + one bulk insert instead of 80 round-trips.
+  // Seed "Bulk add products" rules: delete for all bulk-add categories, then bulk insert.
   const cryptoCategoryIds = CRYPTO_BULK_ADD_CONFIG.map((c) => c.categoryId);
+  const productCategoryIds = PRODUCT_BULK_ADD_CONFIG.map((c) => c.categoryId);
+  const allBulkAddCategoryIds = [...new Set([...cryptoCategoryIds, ...productCategoryIds])];
   await db
     .delete(categoryAutoAssignRuleTable)
-    .where(inArray(categoryAutoAssignRuleTable.categoryId, cryptoCategoryIds));
+    .where(inArray(categoryAutoAssignRuleTable.categoryId, allBulkAddCategoryIds));
 
   const ruleRows: Array<{
     id: string;
@@ -1187,13 +1230,38 @@ async function seed() {
       });
     }
   }
+  for (const { categoryId, titleContains, tagContains } of PRODUCT_BULK_ADD_CONFIG) {
+    const tagLower = tagContains.toLowerCase();
+    ruleRows.push({
+      id: createId(),
+      categoryId,
+      titleContains,
+      tagContains: null,
+      createdWithinDays: null,
+      brand: null,
+      enabled: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+    ruleRows.push({
+      id: createId(),
+      categoryId,
+      titleContains: null,
+      tagContains: tagLower,
+      createdWithinDays: null,
+      brand: null,
+      enabled: true,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
   for (let i = 0; i < ruleRows.length; i += 50) {
     await db
       .insert(categoryAutoAssignRuleTable)
       .values(ruleRows.slice(i, i + 50));
   }
   console.log(
-    `Seeded bulk-add rules for ${CRYPTO_BULK_ADD_CONFIG.length} crypto categories (4 rules each).`,
+    `Seeded bulk-add rules: ${CRYPTO_BULK_ADD_CONFIG.length} crypto categories (4 rules each), ${PRODUCT_BULK_ADD_CONFIG.length} product-type categories.`,
   );
 }
 
