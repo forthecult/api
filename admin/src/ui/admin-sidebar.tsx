@@ -81,6 +81,11 @@ const ADMIN_SECTIONS: NavSection[] = [
     ],
   },
   {
+    label: "Payment methods",
+    icon: CreditCard,
+    href: "/payment-methods",
+  },
+  {
     label: "Customers",
     icon: Users,
     href: "/customers",
@@ -128,11 +133,6 @@ const ADMIN_SECTIONS: NavSection[] = [
     label: "Site Settings",
     icon: Settings,
     href: "/site-settings",
-  },
-  {
-    label: "Payment methods",
-    icon: CreditCard,
-    href: "/payment-methods",
   },
   {
     label: "Token Gates",
