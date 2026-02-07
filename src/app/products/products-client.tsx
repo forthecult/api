@@ -3,11 +3,13 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Search } from "lucide-react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
 import { Button } from "~/ui/primitives/button";
+import { Input } from "~/ui/primitives/input";
 import { Spinner } from "~/ui/primitives/spinner";
 
 interface Product {
@@ -50,6 +52,8 @@ interface ProductsClientProps {
   subcategories?: CategoryOption[];
   initialSort?: SortOption;
   initialSubcategory?: string;
+  /** Initial search query (for category pages) */
+  initialSearch?: string;
 }
 
 const SORT_LABELS: Record<SortOption, string> = {
@@ -73,6 +77,7 @@ export function ProductsClient({
   subcategories = [],
   initialSort = "newest",
   initialSubcategory,
+  initialSearch = "",
 }: ProductsClientProps) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -89,9 +94,27 @@ export function ProductsClient({
   const [selectedSubcategory, setSelectedSubcategory] = React.useState(
     initialSubcategory ?? "",
   );
+  const [searchQuery, setSearchQuery] = React.useState(initialSearch);
+  const [searchInput, setSearchInput] = React.useState(initialSearch);
   const [loading, setLoading] = React.useState(false);
 
   const limit = 12;
+
+  // Debounce search input into searchQuery
+  React.useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // When search query changes (user typed), go to page 1 and refetch
+  const prevSearchRef = React.useRef(initialSearch);
+  React.useEffect(() => {
+    if (prevSearchRef.current === searchQuery) return;
+    prevSearchRef.current = searchQuery;
+    setPage(1);
+    router.push(buildPath({ page: 1, q: searchQuery }), { scroll: false });
+    fetchProducts(1, selectedCategory, sort, selectedSubcategory, searchQuery);
+  }, [searchQuery, buildPath, selectedCategory, sort, selectedSubcategory, fetchProducts, router]);
 
   const buildPath = React.useCallback(
     (opts: {
@@ -99,6 +122,7 @@ export function ProductsClient({
       sort?: SortOption;
       subcategory?: string;
       category?: string;
+      q?: string;
     }) => {
       const cat = opts.category ?? selectedCategory;
       const path = cat === "all" ? "/products" : `/${cat}`;
@@ -106,13 +130,15 @@ export function ProductsClient({
       const p = opts.page ?? page;
       const s = opts.sort ?? sort;
       const sub = opts.subcategory ?? selectedSubcategory;
+      const searchQ = opts.q ?? searchQuery;
       if (p > 1) params.set("page", String(p));
       if (s !== "newest") params.set("sort", s);
       if (sub) params.set("subcategory", sub);
-      const q = params.toString();
-      return q ? `${path}?${q}` : path;
+      if (searchQ) params.set("q", searchQ);
+      const qs = params.toString();
+      return qs ? `${path}?${qs}` : path;
     },
-    [selectedCategory, page, sort, selectedSubcategory],
+    [selectedCategory, page, sort, selectedSubcategory, searchQuery],
   );
 
   const fetchProducts = React.useCallback(
@@ -121,6 +147,7 @@ export function ProductsClient({
       categorySlug: string,
       sortOption: SortOption,
       subcategorySlug: string,
+      search: string = "",
     ) => {
       setLoading(true);
       try {
@@ -131,6 +158,7 @@ export function ProductsClient({
         });
         if (categorySlug !== "all") params.set("category", categorySlug);
         if (subcategorySlug) params.set("subcategory", subcategorySlug);
+        if (search.trim()) params.set("q", search.trim());
 
         const res = await fetch(`/api/products?${params}`, {
           credentials: "include",
@@ -170,7 +198,7 @@ export function ProductsClient({
       setPage(1);
       const path = categorySlug === "all" ? "/products" : `/${categorySlug}`;
       router.push(`${path}?page=1`, { scroll: false });
-      fetchProducts(1, categorySlug, sort, "");
+      fetchProducts(1, categorySlug, sort, "", searchQuery);
     },
     [router, fetchProducts, sort],
   );
@@ -180,7 +208,7 @@ export function ProductsClient({
       setSort(newSort);
       setPage(1);
       router.push(buildPath({ page: 1, sort: newSort }), { scroll: false });
-      fetchProducts(1, selectedCategory, newSort, selectedSubcategory);
+      fetchProducts(1, selectedCategory, newSort, selectedSubcategory, searchQuery);
     },
     [router, selectedCategory, selectedSubcategory, fetchProducts, buildPath],
   );
@@ -192,7 +220,7 @@ export function ProductsClient({
       router.push(buildPath({ page: 1, subcategory: subSlug }), {
         scroll: false,
       });
-      fetchProducts(1, selectedCategory, sort, subSlug);
+      fetchProducts(1, selectedCategory, sort, subSlug, searchQuery);
     },
     [router, selectedCategory, sort, fetchProducts, buildPath],
   );
@@ -201,7 +229,7 @@ export function ProductsClient({
     (newPage: number) => {
       setPage(newPage);
       router.push(buildPath({ page: newPage }), { scroll: false });
-      fetchProducts(newPage, selectedCategory, sort, selectedSubcategory);
+      fetchProducts(newPage, selectedCategory, sort, selectedSubcategory, searchQuery);
     },
     [router, selectedCategory, sort, selectedSubcategory, fetchProducts, buildPath],
   );
@@ -259,16 +287,17 @@ export function ProductsClient({
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 py-10">
         <div className="container px-4 md:px-6">
-          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-              {/* Show full category description if available, otherwise fall back to short description */}
-              <p className="mt-1 max-w-2xl text-muted-foreground">
-                {categoryDescriptionFull?.trim() || description}
-              </p>
-            </div>
+          {/* Compact header: title + one short line of description (SEO/category intro) */}
+          <header className="mb-6">
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
+            <p className="mt-0.5 line-clamp-2 max-w-xl text-sm text-muted-foreground">
+              {categoryDescriptionFull?.trim()
+                ? categoryDescriptionFull.slice(0, 160).trim() + (categoryDescriptionFull.length > 160 ? "…" : "")
+                : description}
+            </p>
+          </header>
 
-            <div className="flex flex-wrap items-center gap-2">
+          <div className="mb-6 flex flex-wrap items-center gap-2">
               <label htmlFor="sort-products" className="sr-only">
                 Sort by
               </label>
@@ -307,7 +336,7 @@ export function ProductsClient({
           </div>
 
           {subcategories.length > 0 && (
-            <div className="mb-6 flex flex-wrap gap-2">
+            <div className="mb-4 flex flex-wrap gap-2">
               <Button
                 aria-pressed={selectedSubcategory === ""}
                 className="rounded-full"
@@ -334,6 +363,23 @@ export function ProductsClient({
             </div>
           )}
 
+          {/* Products section: search + grid + pagination */}
+          <section className="space-y-6" aria-label="Products in this category">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h2 className="text-lg font-semibold">Products</h2>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                <Input
+                  type="search"
+                  placeholder="Search products…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9"
+                  aria-label="Search products in this category"
+                />
+              </div>
+            </div>
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Spinner variant="page" />
@@ -354,9 +400,11 @@ export function ProductsClient({
               </div>
 
               {products.length === 0 && (
-                <div className="mt-8 text-center">
+                <div className="py-12 text-center">
                   <p className="text-muted-foreground">
-                    No products found in this category.
+                    {searchQuery
+                      ? "No products match your search. Try a different term."
+                      : "No products found in this category."}
                   </p>
                 </div>
               )}
@@ -364,18 +412,19 @@ export function ProductsClient({
               {totalPages > 1 && (
                 <nav
                   aria-label="Pagination"
-                  className="mt-12 flex flex-wrap items-center justify-center gap-2"
+                  className="mt-10 flex flex-wrap items-center justify-center gap-3"
                 >
                   <Button
                     disabled={page <= 1}
                     onClick={() => handlePageChange(Math.max(1, page - 1))}
                     variant="outline"
+                    size="sm"
                   >
                     Previous
                   </Button>
                   <span className="px-2 text-sm text-muted-foreground">
                     Page {page} of {totalPages}
-                    {total > 0 && ` (${total} total)`}
+                    {total > 0 && ` (${total} products)`}
                   </span>
                   <Button
                     disabled={page >= totalPages}
@@ -383,6 +432,7 @@ export function ProductsClient({
                       handlePageChange(Math.min(totalPages, page + 1))
                     }
                     variant="outline"
+                    size="sm"
                   >
                     Next
                   </Button>
@@ -390,6 +440,7 @@ export function ProductsClient({
               )}
             </>
           )}
+          </section>
         </div>
       </main>
     </div>

@@ -69,11 +69,11 @@ export async function POST(request: NextRequest) {
     const displayName = body.displayName?.trim();
 
     if (!provider || !PROVIDERS.includes(provider as (typeof PROVIDERS)[number])) {
-      return apiError("VALIDATION_ERROR", { field: "provider", message: "Invalid or missing provider" });
+      return apiError("INVALID_REQUEST", { field: "provider", message: "Invalid or missing provider" });
     }
-    if (!brand) return apiError("VALIDATION_ERROR", { field: "brand", message: "Brand is required" });
-    if (!model) return apiError("VALIDATION_ERROR", { field: "model", message: "Model is required" });
-    if (!displayName) return apiError("VALIDATION_ERROR", { field: "displayName", message: "Display name is required" });
+    if (!brand) return apiError("INVALID_REQUEST", { field: "brand", message: "Brand is required" });
+    if (!model) return apiError("INVALID_REQUEST", { field: "model", message: "Model is required" });
+    if (!displayName) return apiError("INVALID_REQUEST", { field: "displayName", message: "Display name is required" });
 
     const id = nanoid();
     const now = new Date();

@@ -551,6 +551,24 @@ export default function AdminDiscountCreatePage() {
                 All set conditions must be met for this automatic discount to
                 apply. Leave a field empty for no limit. Amounts in $.
               </p>
+              <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+                <p className="mb-2 font-medium text-foreground">
+                  Cart must contain (optional)
+                </p>
+                <ul className="list-inside list-disc space-y-1">
+                  <li>
+                    <strong>Specific product:</strong> Select one or more
+                    products in the <strong>Products</strong> section below.
+                    The discount applies only when at least one is in the cart.
+                  </li>
+                  <li>
+                    <strong>Product from a category:</strong> Select one or
+                    more categories in the <strong>Categories</strong> section
+                    below. The discount applies only when the cart has at least
+                    one product from one of those categories.
+                  </li>
+                </ul>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">

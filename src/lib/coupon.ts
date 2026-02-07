@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/db";
 import {
@@ -7,6 +7,7 @@ import {
   couponRedemptionTable,
   couponsTable,
 } from "~/db/schema";
+import { productCategoriesTable } from "~/db/schema";
 import { userMeetsTokenHolderCondition } from "~/lib/token-holder-balance";
 
 export type CouponCheckoutResult = {
@@ -350,18 +351,42 @@ export async function resolveAutomaticCouponForCheckout(
     if (!meetsRuleset(coupon, input)) continue;
 
     const productIds = input.productIds ?? [];
+    // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
     if (productIds.length > 0) {
-      const allowedProductIds = (
-        await db
+      const [allowedProductIds, couponCategoryIds] = await Promise.all([
+        db
           .select({ productId: couponProductTable.productId })
           .from(couponProductTable)
           .where(eq(couponProductTable.couponId, coupon.id))
-      ).map((r) => r.productId);
-      if (
-        allowedProductIds.length > 0 &&
-        !productIds.some((id) => allowedProductIds.includes(id))
-      ) {
-        continue;
+          .then((rows) => rows.map((r) => r.productId)),
+        db
+          .select({ categoryId: couponCategoryTable.categoryId })
+          .from(couponCategoryTable)
+          .where(eq(couponCategoryTable.couponId, coupon.id))
+          .then((rows) => rows.map((r) => r.categoryId)),
+      ]);
+      const hasProductRule = allowedProductIds.length > 0;
+      const hasCategoryRule = couponCategoryIds.length > 0;
+      if (hasProductRule || hasCategoryRule) {
+        const cartHasAllowedProduct =
+          hasProductRule &&
+          productIds.some((id) => allowedProductIds.includes(id));
+        let cartHasProductFromCategory = false;
+        if (hasCategoryRule) {
+          const [match] = await db
+            .select({ productId: productCategoriesTable.productId })
+            .from(productCategoriesTable)
+            .where(
+              and(
+                inArray(productCategoriesTable.categoryId, couponCategoryIds),
+                inArray(productCategoriesTable.productId, productIds),
+              ),
+            )
+            .limit(1);
+          cartHasProductFromCategory = Boolean(match);
+        }
+        // Pass if either rule is satisfied (OR when both are set)
+        if (!cartHasAllowedProduct && !cartHasProductFromCategory) continue;
       }
     }
 

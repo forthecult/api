@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
     );
     const category = searchParams.get("category")?.trim() || null;
     const subcategory = searchParams.get("subcategory")?.trim() || null;
+    const q = (searchParams.get("q") ?? searchParams.get("search") ?? "").trim().slice(0, 100);
     const sortParam = (searchParams.get("sort")?.trim() || "newest") as ProductsSort;
     const sort: ProductsSort =
       ["newest", "price_asc", "price_desc", "best_selling", "rating"].includes(
@@ -90,13 +91,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const whereClause =
+    let whereClause =
       productIdsFilter === null
         ? eq(productsTable.published, true)
         : and(
             eq(productsTable.published, true),
             inArray(productsTable.id, productIdsFilter),
           );
+    if (q.length > 0) {
+      whereClause = and(whereClause, ilike(productsTable.name, `%${q}%`));
+    }
 
     const orderBy =
       sort === "price_asc"

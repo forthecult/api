@@ -187,6 +187,7 @@ async function fetchCategoryPage(
   limit: number,
   sort?: string,
   subcategory?: string,
+  q?: string,
 ): Promise<ProductListResponse> {
   const params = new URLSearchParams({
     page: String(page),
@@ -195,6 +196,7 @@ async function fetchCategoryPage(
   });
   if (sort) params.set("sort", sort);
   if (subcategory) params.set("subcategory", subcategory);
+  if (q?.trim()) params.set("q", q.trim());
   try {
     const res = await fetch(`${baseUrl()}/api/products?${params}`, {
       next: { revalidate: 60 },
@@ -500,6 +502,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     page?: string;
     sort?: string;
     subcategory?: string;
+    q?: string;
   };
   const page = Math.max(
     1,
@@ -513,10 +516,11 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       ? sortParam
       : "newest";
   const subcategoryParam = resolvedSearchParams.subcategory?.trim() || "";
+  const searchQuery = resolvedSearchParams.q?.trim() ?? "";
   const limit = 12;
 
   const [data, subcategories, parent] = await Promise.all([
-    fetchCategoryPage(slug, page, limit, sort, subcategoryParam || undefined),
+    fetchCategoryPage(slug, page, limit, sort, subcategoryParam || undefined, searchQuery || undefined),
     getSubcategories(category.id),
     category.parentId ? getCategoryParent(category.parentId) : Promise.resolve(null),
   ]);
@@ -559,6 +563,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         subcategories={subcategories}
         initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating"}
         initialSubcategory={subcategoryParam || undefined}
+        initialSearch={searchQuery}
       />
     </Suspense>
     </>
