@@ -17,6 +17,7 @@ type Product = {
   price: number;
   rating?: number;
   slug?: string;
+  tokenGated?: boolean;
 };
 
 export function FeaturedProductsSection({ products }: { products: Product[] }) {

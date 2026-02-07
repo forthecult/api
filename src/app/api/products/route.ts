@@ -196,6 +196,7 @@ export async function GET(request: NextRequest) {
             : undefined,
         inStock: true,
         rating: 0,
+        tokenGated: p.tokenGated ?? false,
       };
     });
 

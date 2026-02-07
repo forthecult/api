@@ -179,6 +179,7 @@ type RelatedProduct = {
   originalPrice?: number;
   price: number;
   rating?: number;
+  tokenGated?: boolean;
 };
 
 async function fetchRelatedProducts(

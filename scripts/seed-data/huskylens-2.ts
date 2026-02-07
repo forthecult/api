@@ -1,0 +1,101 @@
+/**
+ * Seed data for DFRobot HUSKYLENS 2 — 6 TOPS AI Vision Sensor with MCP & LLM support.
+ * Sourced from https://www.dfrobot.com/huskylens/huskylens2 and https://www.dfrobot.com/product-2995.html
+ * Brand: DFRobot. Category: Tech Accessories. Price: 4% above cost ($74.90 → $77.90).
+ */
+
+const COST_CENTS = 7490; // $74.90 DFRobot list
+const PRICE_MARKUP = 1.04;
+const PRICE_CENTS = Math.round(COST_CENTS * PRICE_MARKUP);
+
+const PRODUCT_ID = "dfrobot-huskylens-2";
+const PRODUCT_SLUG = "dfrobot-huskylens-2";
+const CATEGORY_ID = "accessories-tech";
+
+// Official product/wiki images (DFRobot)
+const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+  {
+    url: "https://wiki.dfrobot.com/images/0/0b/SEN0638_01.png",
+    alt: "HUSKYLENS 2 AI vision sensor - 6 TOPS, MCP and LLM support",
+    title: "HUSKYLENS 2 - 6 TOPS AI Vision Sensor",
+  },
+  {
+    url: "https://wiki.dfrobot.com/images/thumb/2/2e/SEN0638_02.png/400px-SEN0638_02.png",
+    alt: "HUSKYLENS 2 touchscreen and replaceable camera module",
+    title: "HUSKYLENS 2 - Display and camera",
+  },
+  {
+    url: "https://wiki.dfrobot.com/images/thumb/5/5e/SEN0638_03.png/400px-SEN0638_03.png",
+    alt: "HUSKYLENS 2 interfaces - USB-C, Gravity UART I2C, TF slot",
+    title: "HUSKYLENS 2 - Interfaces",
+  },
+];
+
+const FEATURES: string[] = [
+  "6 TOPS on-device AI — Kendryte K230 dual-core 1.6 GHz, 1 GB LPDDR4, 8 GB eMMC",
+  "20+ built-in models: face/object recognition, gesture, pose, OCR, barcode, line tracking, fall detection",
+  "Built-in MCP service — gives LLMs real-world context (who, what, where) instead of raw snapshots",
+  "Deploy custom YOLO models — train and run your own vision models on-device",
+  "2.4\" IPS touchscreen (640×480), full-lamination capacitive; 2 MP 60 FPS camera, replaceable module",
+  "UART / I2C Gravity interface — works with Arduino, micro:bit, Raspberry Pi, ESP32, UNIHIKER",
+  "Real-time video streaming (wired USB-C or optional Wi-Fi module); TF card slot, microphone, 1 W speaker",
+  "3.3–5 V, 1.5–3 W; 70×58×19 mm, 90 g; optional microscope and night vision lens modules",
+];
+
+const DESCRIPTION = `<p>HUSKYLENS 2 is a next-generation AI vision sensor that puts 6 TOPS of on-device machine learning in your hands. Control devices with gestures, give LLMs real-world awareness via its built-in MCP service, or deploy your own custom YOLO models—all without the cloud.</p>
+
+<h2>Control at a distance</h2>
+<p>Gesture recognition and human keypoint detection turn your hands into controllers. Build contactless UIs, interactive robots, or motion-based games that understand exactly what you're doing.</p>
+
+<h2>Empowers LLMs with context, not just pixels</h2>
+<p>Other vision sensors send raw snapshots to AI. HUSKYLENS 2 runs a built-in MCP server that tells the LLM <em>who</em> is in the frame and <em>what</em> they're doing—so models can follow your rules and make better decisions.</p>
+
+<h2>20+ built-in models, plus your own</h2>
+<p>Face detection and recognition, object tracking, hand keypoints, pose recognition, OCR, barcode/QR, line tracking, fall detection, and more. Train custom models with YOLO and deploy them directly on the device.</p>
+
+<h2>Replaceable camera, broad compatibility</h2>
+<p>Swap in manual-focus, microscope, or night vision modules. Connect over Gravity (UART/I2C) to Arduino, Raspberry Pi, micro:bit, ESP32, and UNIHIKER. Optional Wi-Fi module for wireless streaming and MQTT.</p>
+
+<h2>Specifications</h2>
+<ul>
+<li><strong>Processor:</strong> Kendryte K230 dual-core 1.6 GHz, 6 TOPS AI</li>
+<li><strong>Memory / storage:</strong> 1 GB LPDDR4, 8 GB eMMC</li>
+<li><strong>Display:</strong> 2.4" IPS 640×480, capacitive touch</li>
+<li><strong>Camera:</strong> GC2093 2 MP, 1/2.9", 60 FPS, replaceable</li>
+<li><strong>Interfaces:</strong> USB-C, Gravity 4-pin (I2C/UART), TF card slot</li>
+<li><strong>Power:</strong> 3.3–5 V, 1.5–3 W</li>
+<li><strong>Dimensions / weight:</strong> 70×58×19 mm, 90 g</li>
+</ul>
+
+<h2>In the box</h2>
+<ul>
+<li>HUSKYLENS 2 AI vision sensor × 1</li>
+<li>M3 screws × 6, M3 nuts × 6</li>
+<li>Mounting bracket, heightening bracket</li>
+<li>Gravity 4P cable (30 cm), dual-plug PH2.0-4P cable (20 cm)</li>
+<li>Power adapter board</li>
+</ul>`;
+
+export const HUSKYLENS_2 = {
+  id: PRODUCT_ID,
+  name: "HUSKYLENS 2 — 6 TOPS AI Vision Sensor with MCP & LLM Support",
+  slug: PRODUCT_SLUG,
+  imageUrl: PRODUCT_IMAGES[0]!.url,
+  mainImageAlt:
+    "HUSKYLENS 2 AI vision sensor - 6 TOPS on-device AI, MCP service for LLMs, 20+ models",
+  mainImageTitle: "HUSKYLENS 2 | 6 TOPS AI Vision Sensor | DFRobot",
+  priceCents: PRICE_CENTS,
+  costPerItemCents: COST_CENTS,
+  categoryId: CATEGORY_ID,
+  brand: "DFRobot",
+  model: "HUSKYLENS 2",
+  description: DESCRIPTION,
+  features: FEATURES,
+  metaDescription:
+    "HUSKYLENS 2: 6 TOPS AI vision sensor with built-in MCP and LLM support. 20+ models, custom YOLO deployment, UART/I2C. DFRobot. Buy at Culture.",
+  pageTitle: "HUSKYLENS 2 | 6 TOPS AI Vision Sensor with MCP & LLM | Culture",
+  sku: "SEN0638",
+  hasVariants: false,
+  continueSellingWhenOutOfStock: true,
+  images: PRODUCT_IMAGES,
+};

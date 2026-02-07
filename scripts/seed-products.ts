@@ -19,11 +19,14 @@ import {
   sizeChartsTable,
 } from "../src/db/schema";
 import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
+import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
 import { PACSAFE_RFIDSAFE_WALLET } from "./seed-data/pacsafe-rfidsafe-wallet";
 import { PACSAFE_V_12L } from "./seed-data/pacsafe-v-12l";
 import { PACSAFE_V_20L } from "./seed-data/pacsafe-v-20l";
 import { SPOUT_MONOLITH } from "./seed-data/spout-monolith";
+import { TREZOR_SAFE_5 } from "./seed-data/trezor-safe-5";
+import { TREZOR_SAFE_7 } from "./seed-data/trezor-safe-7";
 
 const now = new Date();
 
@@ -48,6 +51,9 @@ const CURATED_PRODUCTS = [
   PACSAFE_RFIDSAFE_WALLET,
   EARTH_RUNNERS_CIRCADIAN,
   SPOUT_MONOLITH,
+  TREZOR_SAFE_7,
+  TREZOR_SAFE_5,
+  HUSKYLENS_2,
 ];
 
 async function seed() {
@@ -103,6 +109,7 @@ async function seed() {
         : null,
     source: "manual" as const,
     published: true,
+    pageLayout: (p as { pageLayout?: string }).pageLayout ?? null,
     handlingDaysMin: (p as { handlingDaysMin?: number }).handlingDaysMin ?? null,
     handlingDaysMax: (p as { handlingDaysMax?: number }).handlingDaysMax ?? null,
     createdAt: now,

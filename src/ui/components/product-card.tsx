@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, Lock, ShoppingCart, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
@@ -34,6 +34,8 @@ type ProductCardProps = Omit<
     rating?: number;
     /** Used for URL when present (store.com/[slug]). Falls back to id. */
     slug?: string;
+    /** When true, show only thumbnail with lock overlay (no name, price, add to cart). */
+    tokenGated?: boolean;
   };
   variant?: "compact" | "default";
 };
@@ -168,13 +170,18 @@ function ProductCardInner({
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          <div className="relative aspect-square overflow-hidden rounded-t-lg">
+          <div
+            className={cn(
+              "relative aspect-square overflow-hidden",
+              product.tokenGated ? "rounded-lg" : "rounded-t-lg",
+            )}
+          >
             {(imageSrc === "/placeholder.svg" || product.image) && (
               <Image
                 alt={product.name}
                 className={cn(
                   "object-cover transition-transform duration-300 ease-in-out",
-                  isHovered && "scale-105",
+                  isHovered && !product.tokenGated && "scale-105",
                 )}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -184,18 +191,32 @@ function ProductCardInner({
               />
             )}
 
-            {/* Category badge */}
-            <Badge
-              className={`
-                absolute top-2 left-2 bg-background/80 backdrop-blur-sm
-              `}
-              variant="outline"
-            >
-              {product.category}
-            </Badge>
+            {/* Token-gated lock overlay: show only thumbnail with lock */}
+            {product.tokenGated && (
+              <div
+                className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 backdrop-blur-[2px]"
+                aria-hidden
+              >
+                <div className="flex size-14 items-center justify-center rounded-full bg-background/90 shadow-lg">
+                  <Lock className="h-7 w-7 text-primary" aria-hidden />
+                </div>
+              </div>
+            )}
+
+            {/* Category badge (hidden for token-gated) */}
+            {!product.tokenGated && (
+              <Badge
+                className={`
+                  absolute top-2 left-2 bg-background/80 backdrop-blur-sm
+                `}
+                variant="outline"
+              >
+                {product.category}
+              </Badge>
+            )}
 
             {/* Discount badge */}
-            {discount > 0 && (
+            {!product.tokenGated && discount > 0 && (
               <Badge
                 className={`
                 absolute top-2 right-2 bg-destructive
@@ -206,35 +227,38 @@ function ProductCardInner({
               </Badge>
             )}
 
-            {/* Wishlist button */}
-            <Button
-              className={cn(
-                `
-                  absolute right-2 bottom-2 z-10 rounded-full bg-background/80
-                  backdrop-blur-sm transition-opacity duration-300
-                `,
-                !isHovered && !isInWishlist && "opacity-0",
-              )}
-              onClick={handleWishlistClick}
-              size="icon"
-              type="button"
-              variant="outline"
-              aria-pressed={isInWishlist}
-            >
-              <Heart
+            {/* Wishlist button (hidden for token-gated) */}
+            {!product.tokenGated && (
+              <Button
                 className={cn(
-                  "h-4 w-4",
-                  isInWishlist
-                    ? "fill-destructive text-destructive"
-                    : "text-muted-foreground",
+                  `
+                    absolute right-2 bottom-2 z-10 rounded-full bg-background/80
+                    backdrop-blur-sm transition-opacity duration-300
+                  `,
+                  !isHovered && !isInWishlist && "opacity-0",
                 )}
-              />
-              <span className="sr-only">
-                {isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-              </span>
-            </Button>
+                onClick={handleWishlistClick}
+                size="icon"
+                type="button"
+                variant="outline"
+                aria-pressed={isInWishlist}
+              >
+                <Heart
+                  className={cn(
+                    "h-4 w-4",
+                    isInWishlist
+                      ? "fill-destructive text-destructive"
+                      : "text-muted-foreground",
+                  )}
+                />
+                <span className="sr-only">
+                  {isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                </span>
+              </Button>
+            )}
           </div>
 
+          {!product.tokenGated && (
           <CardContent className="p-4 pt-4">
             {/* Product name with line clamp */}
             <h3
@@ -273,8 +297,9 @@ function ProductCardInner({
               </>
             )}
           </CardContent>
+          )}
 
-          {variant === "default" && (
+          {!product.tokenGated && variant === "default" && (
             <CardFooter className="p-4 pt-0">
               <Button
                 className={cn(
@@ -299,7 +324,7 @@ function ProductCardInner({
             </CardFooter>
           )}
 
-          {variant === "compact" && (
+          {!product.tokenGated && variant === "compact" && (
             <CardFooter className="p-4 pt-0">
               <div className="flex w-full items-center justify-between">
                 <div className="flex flex-col gap-0.5">
@@ -346,7 +371,7 @@ function ProductCardInner({
             </CardFooter>
           )}
 
-          {!product.inStock && (
+          {!product.tokenGated && !product.inStock && (
             <div
               className={`
                 absolute inset-0 flex items-center justify-center

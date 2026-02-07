@@ -60,6 +60,7 @@ export async function GET(
       priceCents: number;
       compareAtPriceCents: number | null;
       categoryName: string;
+      tokenGated: boolean;
     }> = [];
     const seenIds = new Set<string>([id]);
 
@@ -73,6 +74,7 @@ export async function GET(
           imageUrl: productsTable.imageUrl,
           priceCents: productsTable.priceCents,
           compareAtPriceCents: productsTable.compareAtPriceCents,
+          tokenGated: productsTable.tokenGated,
         })
         .from(productsTable)
         .innerJoin(
@@ -123,6 +125,7 @@ export async function GET(
           priceCents: p.priceCents,
           compareAtPriceCents: p.compareAtPriceCents,
           categoryName: categoryByProductId.get(p.id) ?? "Uncategorized",
+          tokenGated: p.tokenGated ?? false,
         });
       }
     }
@@ -145,6 +148,7 @@ export async function GET(
             priceCents: productsTable.priceCents,
             compareAtPriceCents: productsTable.compareAtPriceCents,
             categoryName: categoriesTable.name,
+            tokenGated: productsTable.tokenGated,
           })
           .from(productsTable)
           .innerJoin(
@@ -176,6 +180,7 @@ export async function GET(
             priceCents: p.priceCents,
             compareAtPriceCents: p.compareAtPriceCents,
             categoryName: p.categoryName,
+            tokenGated: p.tokenGated ?? false,
           });
         }
       }
@@ -192,6 +197,7 @@ export async function GET(
           imageUrl: productsTable.imageUrl,
           priceCents: productsTable.priceCents,
           compareAtPriceCents: productsTable.compareAtPriceCents,
+          tokenGated: productsTable.tokenGated,
         })
         .from(productsTable)
         .where(
@@ -239,6 +245,7 @@ export async function GET(
           priceCents: p.priceCents,
           compareAtPriceCents: p.compareAtPriceCents,
           categoryName: categoryByProductId.get(p.id) ?? "Uncategorized",
+          tokenGated: p.tokenGated ?? false,
         });
       }
     }
@@ -254,6 +261,7 @@ export async function GET(
         p.compareAtPriceCents != null ? p.compareAtPriceCents / 100 : undefined,
       inStock: true,
       rating: 0,
+      tokenGated: p.tokenGated,
     }));
 
     return NextResponse.json({ items });

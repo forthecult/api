@@ -123,6 +123,13 @@ const BRANDS: Array<{
     description:
       "Open-source hardware and kits: sensors, Arduino-compatible boards, robotics, single-board computers. Gravity and Fermion product lines for education and prototyping.",
   },
+  {
+    name: "Trezor",
+    websiteUrl: "https://trezor.io/",
+    description:
+      "Hardware wallets for Bitcoin and crypto. Open-source security, self-custody, and support for 1000s of coins. Trezor Safe 3, Safe 5, and Safe 7.",
+    featured: true,
+  },
 ];
 
 async function main() {

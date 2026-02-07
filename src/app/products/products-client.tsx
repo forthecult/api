@@ -22,6 +22,7 @@ interface Product {
   price: number;
   rating: number;
   slug?: string;
+  tokenGated?: boolean;
 }
 
 interface CategoryOption {

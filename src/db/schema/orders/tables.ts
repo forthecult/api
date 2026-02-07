@@ -41,6 +41,8 @@ export const productsTable = pgTable("product", {
   name: text("name").notNull(),
   optionDefinitionsJson: text("option_definitions_json"), // [{ name, values: string[] }]
   pageTitle: text("page_title"),
+  /** Product page layout: "default" (standard PDP) or "long-form" (hero, sections, specs, FAQ). */
+  pageLayout: text("page_layout").default("default"),
   physicalProduct: boolean("physical_product").notNull().default(true),
   priceCents: integer("price_cents").notNull(),
   published: boolean("published").notNull().default(true),

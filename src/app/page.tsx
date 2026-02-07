@@ -78,6 +78,7 @@ async function fetchFeaturedProducts(): Promise<
     price: number;
     rating: number;
     slug?: string;
+    tokenGated?: boolean;
   }>
 > {
   const baseUrl = getServerBaseUrl();
@@ -97,6 +98,7 @@ async function fetchFeaturedProducts(): Promise<
         inStock?: boolean;
         rating?: number;
         slug?: string;
+        tokenGated?: boolean;
       }>;
     };
     return (data.items ?? []).map((p) => ({
@@ -109,6 +111,7 @@ async function fetchFeaturedProducts(): Promise<
       price: p.price ?? 0,
       rating: p.rating ?? 0,
       slug: p.slug,
+      tokenGated: p.tokenGated,
     }));
   } catch {
     return [];

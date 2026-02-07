@@ -60,6 +60,8 @@ export type ProductBySlugResult = {
     dataImperial: unknown;
     dataMetric: unknown;
   } | null;
+  /** Product page layout: "default" or "long-form". */
+  pageLayout?: string | null;
   variants?: Array<{
     id: string;
     size?: string;
@@ -106,6 +108,7 @@ export async function getProductBySlugOrId(
       model: productsTable.model,
       metaDescription: productsTable.metaDescription,
       pageTitle: productsTable.pageTitle,
+      pageLayout: productsTable.pageLayout,
       source: productsTable.source,
       // Stock management fields
       trackQuantity: productsTable.trackQuantity,
@@ -317,6 +320,7 @@ export async function getProductBySlugOrId(
     model: product.model ?? undefined,
     metaDescription: product.metaDescription ?? undefined,
     pageTitle: product.pageTitle ?? undefined,
+    pageLayout: product.pageLayout ?? undefined,
     source: product.source ?? undefined,
     sizeChart: sizeChart ?? undefined,
     variants,

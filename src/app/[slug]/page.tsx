@@ -42,6 +42,7 @@ import type {
 } from "~/app/products/[id]/page";
 import { ProductsClient } from "~/app/products/products-client";
 import { ESimMiniappClient } from "~/app/[slug]/esim-miniapp-client";
+import { LongFormProductPage } from "~/app/[slug]/long-form-product-page";
 import { getTokenGateConfig } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
@@ -92,6 +93,8 @@ interface Product {
     dataImperial: unknown;
     dataMetric: unknown;
   } | null;
+  /** Product page layout: "default" or "long-form". */
+  pageLayout?: string | null;
 }
 
 interface ProductListResponse {
@@ -121,6 +124,7 @@ type RelatedProduct = {
   originalPrice?: number;
   price: number;
   rating?: number;
+  tokenGated?: boolean;
 };
 
 /* -------------------------------------------------------------------------- */
@@ -173,6 +177,7 @@ async function fetchProductBySlug(slug: string): Promise<Product | null> {
     metaDescription: data.metaDescription ?? undefined,
     pageTitle: data.pageTitle ?? undefined,
     sizeChart: data.sizeChart ?? undefined,
+    pageLayout: data.pageLayout ?? undefined,
     availableCountryCodes: data.availableCountryCodes ?? [],
   };
 }
@@ -328,6 +333,39 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       product.name,
       `/${canonicalSlug}`,
     );
+
+    if (product.pageLayout === "long-form") {
+      return (
+        <>
+          <ProductStructuredData
+            product={{
+              id: product.id,
+              name: product.name,
+              description: stripHtmlForMeta(product.description),
+              price: product.price,
+              image: product.image,
+              inStock: product.inStock,
+              rating: product.rating,
+              category: product.category,
+              slug: canonicalSlug,
+            }}
+          />
+          <BreadcrumbStructuredData
+            items={breadcrumbTrail.map((item) => ({
+              name: item.name,
+              url: `${siteUrl}${item.href}`,
+            }))}
+          />
+          <LongFormProductPage
+            product={product}
+            breadcrumbTrail={breadcrumbTrail}
+            discountPercentage={discountPercentage}
+            siteUrl={siteUrl}
+            relatedProducts={relatedProducts}
+          />
+        </>
+      );
+    }
 
     return (
       <>
