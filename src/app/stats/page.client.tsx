@@ -8,6 +8,7 @@ import {
   Star,
   Ticket,
 } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { formatCents } from "~/lib/format";
@@ -24,7 +25,12 @@ type StoreStats = {
   orderCount: number;
   averageOrderValueCents: number;
   soldItems: number;
-  mostPopularItem: { name: string; quantity: number } | null;
+  mostPopularItem: {
+    name: string;
+    quantity: number;
+    productId?: string;
+    slug?: string | null;
+  } | null;
   supportTicketsCount: number;
   chatsCount: number;
 };
@@ -88,7 +94,13 @@ export function StatsPageClient() {
 
   if (!stats) return null;
 
-  const cards = [
+  const cards: Array<{
+    title: string;
+    description: string;
+    value: string;
+    icon: typeof Package;
+    productHref?: string;
+  }> = [
     {
       title: "Number of orders",
       description: "Paid or fulfilled orders",
@@ -114,6 +126,10 @@ export function StatsPageClient() {
         : "No sales yet",
       value: stats.mostPopularItem?.name ?? "—",
       icon: Star,
+      productHref:
+        stats.mostPopularItem?.productId || stats.mostPopularItem?.slug
+          ? `/${stats.mostPopularItem?.slug ?? stats.mostPopularItem?.productId ?? ""}`
+          : undefined,
     },
     {
       title: "Support tickets",
@@ -149,9 +165,18 @@ export function StatsPageClient() {
             </CardHeader>
             <CardContent>
               <CardDescription className="mb-1">{card.description}</CardDescription>
-              <p className="text-2xl font-semibold tabular-nums">
-                {card.value}
-              </p>
+              {card.productHref ? (
+                <Link
+                  href={card.productHref}
+                  className="text-2xl font-semibold tabular-nums text-primary underline-offset-4 hover:underline"
+                >
+                  {card.value}
+                </Link>
+              ) : (
+                <p className="text-2xl font-semibold tabular-nums">
+                  {card.value}
+                </p>
+              )}
             </CardContent>
           </Card>
         );

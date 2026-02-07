@@ -5,6 +5,7 @@ import { db } from "~/db";
 import {
   orderItemsTable,
   ordersTable,
+  productsTable,
   supportChatConversationTable,
   supportTicketTable,
 } from "~/db/schema";
@@ -37,6 +38,8 @@ export async function GET(request: NextRequest) {
           .select({
             name: orderItemsTable.name,
             quantity: orderItemsTable.quantity,
+            productId: orderItemsTable.productId,
+            slug: productsTable.slug,
           })
           .from(orderItemsTable)
           .innerJoin(
@@ -45,6 +48,10 @@ export async function GET(request: NextRequest) {
               eq(orderItemsTable.orderId, ordersTable.id),
               paidOrFulfilled,
             ),
+          )
+          .leftJoin(
+            productsTable,
+            eq(orderItemsTable.productId, productsTable.id),
           ),
         db
           .select({ count: sql<number>`count(*)::int` })
@@ -63,18 +70,44 @@ export async function GET(request: NextRequest) {
       0,
     );
 
-    const byName = new Map<string, number>();
+    const byProduct = new Map<
+      string,
+      { name: string; quantity: number; slug: string | null }
+    >();
     for (const row of orderItemsRows) {
-      const q = byName.get(row.name) ?? 0;
-      byName.set(row.name, q + row.quantity);
+      const id = row.productId ?? `name:${row.name}`;
+      const existing = byProduct.get(id);
+      if (existing) {
+        existing.quantity += row.quantity;
+      } else {
+        byProduct.set(id, {
+          name: row.name,
+          quantity: row.quantity,
+          slug: row.productId ? (row.slug ?? null) : null,
+        });
+      }
     }
-    let mostPopularItem: { name: string; quantity: number } | null = null;
-    for (const [name, quantity] of byName) {
+    let mostPopularItem: {
+      name: string;
+      quantity: number;
+      productId?: string;
+      slug?: string | null;
+    } | null = null;
+    for (const [productId, entry] of byProduct) {
       if (
         !mostPopularItem ||
-        quantity > mostPopularItem.quantity
+        entry.quantity > mostPopularItem.quantity
       ) {
-        mostPopularItem = { name, quantity };
+        mostPopularItem = {
+          name: entry.name,
+          quantity: entry.quantity,
+          ...(productId.startsWith("name:")
+            ? {}
+            : {
+                productId,
+                slug: entry.slug,
+              }),
+        };
       }
     }
 

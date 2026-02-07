@@ -8,6 +8,7 @@ import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
 import { Button } from "~/ui/primitives/button";
+import { Spinner } from "~/ui/primitives/spinner";
 
 interface Product {
   category: string;
