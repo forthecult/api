@@ -32,7 +32,7 @@ So in practice:
 3. Put it in `.env` **without quotes**:
 
    ```env
-   UPLOADTHING_TOKEN=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+   UPLOADTHING_TOKEN=eyJhbGciOiJIUzI1Ni...
    ```
 
    **Important:** Use the raw token. If you use `UPLOADTHING_TOKEN='eyJ...'` (with single or double quotes), some systems treat the quotes as part of the value and UploadThing rejects the request. The app will strip surrounding quotes when it can; for reliability, set the value with no quotes. If you see “Invalid token” or `INVALID_SERVER_CONFIG`, the value is not the V7 token (base64 JSON with apiKey, appId, regions)—re-copy it from the **V7** tab.

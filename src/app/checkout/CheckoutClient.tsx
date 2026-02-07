@@ -31,6 +31,8 @@ import {
   hasAnyCryptoEnabled,
   hasAnyStablecoinEnabled,
   visibleCryptoSubFromVisibility,
+  visibleUsdcNetworks,
+  visibleUsdtNetworks,
 } from "~/lib/checkout-payment-options";
 import { useCurrentUser } from "~/lib/auth-client";
 import { secureStorageSync } from "~/lib/secure-storage";

@@ -25,7 +25,7 @@ Standards and best practices for the customer-facing storefront (non-dashboard) 
 ## Performance
 
 - **Heavy client components**: Lazy-load with `next/dynamic` and a clear loading state (e.g. support chat widget, auth page clients).
-- **Support chat**: The support chat widget is loaded only after the visibility API returns and is dynamically imported to keep it out of the main bundle.
+- **Support chat**: The support chat widget is loaded 10 seconds after the page loads, then the visibility API is checked and the widget is dynamically imported. This keeps the main bundle and initial requests lighter.
 - **Images**: Use Next.js `Image` with `sizes` and `priority` for above-the-fold hero images. Prefer AVIF/WebP (configured in `next.config.ts`).
 - **Package imports**: `optimizePackageImports` in `next.config.ts` is used for lucide-react, Radix, framer-motion, date-fns; add new large UI/icon libs there when introduced.
 

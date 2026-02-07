@@ -11,14 +11,23 @@ const SupportChatWidget = dynamic(
   { ssr: false },
 );
 
+const SUPPORT_CHAT_DEFER_MS = 10_000;
+
 /**
- * Wraps the chat widget: fetches visibility from API, then lazy-loads the widget.
- * Reduces initial bundle; chat JS loads only when widget is shown.
+ * Wraps the chat widget: waits 10s after mount, then fetches visibility from API
+ * and lazy-loads the widget. Defers chat JS and API work to keep initial load fast.
  */
 export function SupportChatWidgetWrapper() {
+  const [canLoad, setCanLoad] = React.useState(false);
   const [visible, setVisible] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
+    const t = setTimeout(() => setCanLoad(true), SUPPORT_CHAT_DEFER_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  React.useEffect(() => {
+    if (!canLoad) return;
     let cancelled = false;
     fetch("/api/support-chat/widget-visible", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { visible: true }))
@@ -31,9 +40,9 @@ export function SupportChatWidgetWrapper() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canLoad]);
 
-  if (visible === false) return null;
+  if (!canLoad || visible === false) return null;
   if (visible === null) return null;
   return <SupportChatWidget />;
 }
