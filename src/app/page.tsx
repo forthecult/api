@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { ArrowRight, Clock, ShoppingBag, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
 import { HeroBadge } from "~/ui/components/hero-badge";
-import { TestimonialsSection } from "~/ui/components/testimonials/testimonials-with-marquee";
+import {
+  PageContainer,
+  PageSection,
+  SectionHeading,
+  SectionHeadingBlock,
+} from "~/ui/components/layout/page-container";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -15,6 +22,14 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
+
+const TestimonialsSection = dynamic(
+  () =>
+    import("~/ui/components/testimonials/testimonials-with-marquee").then(
+      (m) => m.TestimonialsSection,
+    ),
+  { ssr: true, loading: () => <div className="min-h-[200px]" /> },
+);
 
 import { testimonials } from "./mocks";
 
@@ -64,10 +79,7 @@ async function fetchFeaturedProducts(): Promise<
     rating: number;
   }>
 > {
-  const baseUrl =
-    process.env.NEXT_SERVER_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const baseUrl = getServerBaseUrl();
   try {
     const res = await fetch(`${baseUrl}/api/products?page=1&limit=8`, {
       next: { revalidate: 60 },
@@ -100,7 +112,7 @@ async function fetchFeaturedProducts(): Promise<
   }
 }
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+const siteUrl = getPublicSiteUrl();
 
 export const metadata: Metadata = {
   description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
@@ -111,7 +123,7 @@ export const metadata: Metadata = {
   },
   title: SEO_CONFIG.fullName,
   alternates: {
-    canonical: siteUrl,
+    canonical: `${siteUrl}/`,
   },
 };
 
@@ -166,25 +178,9 @@ export default async function HomePage() {
         `}
       >
         {/* Hero Section */}
-        <section
-          className={`
-            relative overflow-hidden py-24
-            md:py-32
-          `}
-        >
-          <div
-            className={`
-              bg-grid-black/[0.02] absolute inset-0
-              bg-[length:20px_20px]
-            `}
-          />
-          <div
-            className={`
-              relative z-10 container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
+        <section className="relative overflow-hidden py-24 md:py-32">
+          <div className="bg-grid-black/[0.02] absolute inset-0 bg-[length:20px_20px]" />
+          <PageContainer className="relative z-10">
             <div
               className={`
                 grid items-center gap-10
@@ -289,68 +285,30 @@ export default async function HomePage() {
                 />
               </div>
             </div>
-          </div>
-          <div
-            className={`
-              absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent
-              via-primary/20 to-transparent
-            `}
-          />
+          </PageContainer>
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         </section>
 
         {/* Where culture and technology merge */}
-        <section
-          className={`
-            py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
+        <PageSection>
+          <PageContainer>
             <div className="mx-auto max-w-3xl space-y-6 text-center">
-              <h2
-                className={`
-                  font-display text-2xl font-semibold tracking-tight
-                  text-foreground md:text-3xl
-                `}
-              >
-                A lifestyle for the independent
-              </h2>
-              <p className="text-muted-foreground md:text-lg">
-                If you are here, you have front row seats. We work with curated
-                quality to create gear that fits how you live—and the future
-                you're building. Our membership gives you a discount on most
-                products, free shipping for orders over $100, exclusive items,
-                and early access to new arrivals.
-              </p>
+              <SectionHeading
+                title="A lifestyle for the independent"
+                subtitle="If you are here, you have front row seats. We work with curated quality to create gear that fits how you live—and the future you're building. Our membership gives you a discount on most products, free shipping for orders over $100, exclusive items, and early access to new arrivals."
+              />
               <Link href="/signup">
                 <Button variant="outline" size="lg">
                   Learn about membership
                 </Button>
               </Link>
             </div>
-          </div>
-        </section>
+          </PageContainer>
+        </PageSection>
 
         {/* Pure style for a healthier you */}
-        <section
-          className={`
-            bg-muted/50 py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
+        <PageSection background="muted">
+          <PageContainer>
             <div className="mx-auto max-w-3xl space-y-4 text-center">
               <h2
                 className={`
@@ -392,72 +350,26 @@ export default async function HomePage() {
                 Photos by George J. Patterson
               </p>
             </div>
-          </div>
-        </section>
+          </PageContainer>
+        </PageSection>
 
         {/* Exquisite Essentials */}
-        <section
-          className={`
-            py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
-            <div className="mx-auto max-w-3xl space-y-4 text-center">
-              <h2
-                className={`
-                  font-display text-2xl font-semibold tracking-tight
-                  text-foreground md:text-3xl
-                `}
-              >
-                Exquisite essentials
-              </h2>
-              <p className="text-muted-foreground md:text-lg">
-                Our collection offers an unparalleled blend of quality and
-                style. Each piece is meticulously crafted to meet your needs
-                while exuding sophistication and refinement. From functional
-                accessories to statement items, our products are designed to
-                elevate your everyday and leave a lasting impression.
-              </p>
-            </div>
-          </div>
-        </section>
+        <PageSection>
+          <PageContainer>
+            <SectionHeading
+              title="Exquisite essentials"
+              subtitle="Our collection offers an unparalleled blend of quality and style. Each piece is meticulously crafted to meet your needs while exuding sophistication and refinement. From functional accessories to statement items, our products are designed to elevate your everyday and leave a lasting impression."
+            />
+          </PageContainer>
+        </PageSection>
 
         {/* Featured Categories */}
-        <section
-          className={`
-            py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
-            <div className="mb-8 flex flex-col items-center text-center">
-              <h2
-                className={`
-                  font-display text-3xl leading-tight font-bold tracking-tight
-                  md:text-4xl
-                `}
-              >
-                Shop by category
-              </h2>
-              <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
-              <p className="mt-4 max-w-2xl text-center text-muted-foreground">
-                Find the perfect fit from our curated collections—tech, style,
-                and everyday essentials
-              </p>
-            </div>
+        <PageSection>
+          <PageContainer>
+            <SectionHeadingBlock
+              title="Shop by category"
+              description="Find the perfect fit from our curated collections—tech, style, and everyday essentials"
+            />
             <div
               className={`
                 grid grid-cols-2 gap-4

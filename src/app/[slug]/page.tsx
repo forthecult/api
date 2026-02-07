@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
+import { getServerBaseUrl } from "~/lib/app-url";
 import {
   getCategoryBySlug,
   getCategoryParent,
@@ -107,10 +108,7 @@ type RelatedProduct = {
 /*                               Fetch helpers                                */
 /* -------------------------------------------------------------------------- */
 
-const baseUrl = () =>
-  process.env.NEXT_SERVER_APP_URL ||
-  process.env.NEXT_PUBLIC_APP_URL ||
-  "http://localhost:3000";
+const baseUrl = () => getServerBaseUrl();
 
 /** Resolve product by slug from DB (no self-fetch; avoids 404/cache issues). */
 async function fetchProductBySlug(slug: string): Promise<Product | null> {
@@ -512,13 +510,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         url={`${baseUrl()}/${slug}`}
         numberOfItems={data.total ?? 0}
       />
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-        </div>
-      }
-    >
+    <Suspense fallback={<PageLoadingFallback />}>
       <ProductsClient
         initialProducts={products}
         initialCategories={categories}

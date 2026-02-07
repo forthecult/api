@@ -3,10 +3,12 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { CollectionPageStructuredData } from "~/ui/components/structured-data";
+import { PageLoadingFallback } from "~/ui/primitives/spinner";
 import { ProductsClient } from "./products-client";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+const siteUrl = getPublicSiteUrl();
 
 export const metadata: Metadata = {
   title: "Products",
@@ -51,10 +53,7 @@ async function fetchProducts(
   category?: string,
   sort?: string,
 ): Promise<ProductsResponse> {
-  const baseUrl =
-    process.env.NEXT_SERVER_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const baseUrl = getServerBaseUrl();
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
@@ -133,13 +132,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
         url={`${siteUrl}/products`}
         numberOfItems={data.total ?? 0}
       />
-      <Suspense
-        fallback={
-          <div className="flex min-h-screen items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-          </div>
-        }
-      >
+      <Suspense fallback={<PageLoadingFallback />}>
         <ProductsClient
           initialProducts={products}
           initialCategories={categories}

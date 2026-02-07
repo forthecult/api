@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 
 import { SEO_CONFIG } from "~/app";
+import { cn } from "~/lib/cn";
+import { Skeleton } from "~/ui/primitives/skeleton";
 
 const DEFAULT_BACKGROUND =
   "https://images.unsplash.com/photo-1719811059181-09032aef07b8?q=80&w=1200&auto=format&fit=crop&ixlib=rb-4.0.3";
@@ -89,6 +91,22 @@ export function AuthFormDivider({
       </div>
       <div className="relative flex justify-center text-xs uppercase">
         <span className="bg-background px-2 text-muted-foreground">{text}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Shared skeleton for login/signup dynamic loaders. Keeps layout identical to AuthFormLayout. */
+export function AuthPageSkeleton({ formHeight = "h-64" }: { formHeight?: "h-64" | "h-80" }) {
+  return (
+    <div className="grid h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-2">
+      <Skeleton className="hidden h-full min-w-0 md:block" />
+      <div className="flex min-w-0 items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-4">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-6 w-64" />
+          <Skeleton className={cn("w-full rounded-lg", formHeight)} />
+        </div>
       </div>
     </div>
   );

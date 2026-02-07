@@ -1,21 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import React from "react";
 
-import { SupportChatWidget } from "~/ui/components/support-chat/support-chat-widget";
-
-const API_BASE = typeof window !== "undefined" ? "" : "";
+const SupportChatWidget = dynamic(
+  () =>
+    import("~/ui/components/support-chat/support-chat-widget").then(
+      (m) => m.SupportChatWidget,
+    ),
+  { ssr: false },
+);
 
 /**
- * Wraps the chat widget and only renders it when the admin has not hidden it.
- * Fetches visibility from the public API on mount.
+ * Wraps the chat widget: fetches visibility from API, then lazy-loads the widget.
+ * Reduces initial bundle; chat JS loads only when widget is shown.
  */
 export function SupportChatWidgetWrapper() {
   const [visible, setVisible] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {
     let cancelled = false;
-    fetch(`${API_BASE}/api/support-chat/widget-visible`, { credentials: "include" })
+    fetch("/api/support-chat/widget-visible", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { visible: true }))
       .then((data: { visible?: boolean }) => {
         if (!cancelled) setVisible(data.visible !== false);

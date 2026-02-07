@@ -7,8 +7,9 @@ import { Lock, Wallet as WalletIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 
-import { Button } from "~/ui/primitives/button";
 import { cn } from "~/lib/cn";
+import { Button } from "~/ui/primitives/button";
+import { Spinner } from "~/ui/primitives/spinner";
 
 const API_BASE =
   typeof window !== "undefined"
@@ -352,7 +353,7 @@ export function TokenGateGuard({
 
         {step === "signing" && (
           <div className="flex flex-col items-center gap-4 py-4">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+            <Spinner variant="page" />
             <p className="text-center text-sm text-muted-foreground">
               Open your wallet to sign the message and verify your token
               balance.
