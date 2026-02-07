@@ -1,6 +1,6 @@
 /**
  * Download, optimize (WebP), and upload ALL curated product images to UploadThing.
- * Covers: Pacsafe (4), Earth Runners, Spout, Trezor Safe 7/5, HUSKYLENS 2, Cryptomatic Jetsetter.
+ * Covers: Pacsafe (4), Earth Runners, Spout, Trezor Safe 7/5, HUSKYLENS 2, Cryptomatic Jetsetter, Home Assistant Green/Voice.
  * Updates product_image, product.imageUrl, and product_variant.imageUrl in the DB.
  *
  * Run after seeding products. Requires UPLOADTHING_TOKEN in .env.
@@ -10,7 +10,7 @@
 
 import "dotenv/config";
 
-import { eq } from "drizzle-orm";
+import { and, asc, eq, isNull, or, sql } from "drizzle-orm";
 import { UTApi } from "uploadthing/server";
 
 import { db } from "../src/db";
@@ -44,6 +44,8 @@ const CURATED_PRODUCTS = [
   TREZOR_SAFE_5,
   HUSKYLENS_2,
   CRYPTOMATIC_JETSETTER,
+  HOME_ASSISTANT_GREEN,
+  HOME_ASSISTANT_VOICE,
 ];
 
 type ImageSpec = {
@@ -180,15 +182,29 @@ async function main() {
       .update(productImagesTable)
       .set({ url: newUrl, alt })
       .where(eq(productImagesTable.url, oldUrl))
-      .returning({ id: productImagesTable.id });
+      .returning({ id: productImagesTable.id, productId: productImagesTable.productId });
     updatedImages += imageRows.length;
 
+    // Update product.imageUrl where it matched oldUrl (primary image)
     const productRows = await db
       .update(productsTable)
       .set({ imageUrl: newUrl, updatedAt: new Date() })
       .where(eq(productsTable.imageUrl, oldUrl))
       .returning({ id: productsTable.id });
     updatedProducts += productRows.length;
+
+    // Sync primary image from gallery for products whose imageUrl didn't match oldUrl (e.g. stale or null)
+    const alreadyUpdatedIds = new Set(productRows.map((r) => r.id));
+    const productIdsFromGallery = [...new Set(imageRows.map((r) => r.productId).filter(Boolean))];
+    for (const pid of productIdsFromGallery) {
+      if (alreadyUpdatedIds.has(pid!)) continue;
+      const r = await db
+        .update(productsTable)
+        .set({ imageUrl: newUrl, updatedAt: new Date() })
+        .where(eq(productsTable.id, pid!))
+        .returning({ id: productsTable.id });
+      updatedProducts += r.length;
+    }
 
     const variantRows = await db
       .update(productVariantsTable)
@@ -202,8 +218,38 @@ async function main() {
     updatedVariants += variantRows.length;
   }
 
+  // Backfill primary image from first gallery image for products where imageUrl is missing or not UploadThing
+  const productsNeedingBackfill = await db
+    .select({ id: productsTable.id })
+    .from(productsTable)
+    .where(
+      or(
+        isNull(productsTable.imageUrl),
+        sql`${productsTable.imageUrl} NOT LIKE '%uploadthing%'`,
+      ),
+    );
+  let backfillCount = 0;
+  for (const prod of productsNeedingBackfill) {
+    const firstImage = await db
+      .select({ url: productImagesTable.url })
+      .from(productImagesTable)
+      .where(eq(productImagesTable.productId, prod.id))
+      .orderBy(asc(productImagesTable.sortOrder))
+      .limit(1);
+    if (firstImage.length > 0 && firstImage[0]!.url) {
+      await db
+        .update(productsTable)
+        .set({ imageUrl: firstImage[0]!.url, updatedAt: new Date() })
+        .where(eq(productsTable.id, prod.id));
+      backfillCount++;
+    }
+  }
+  if (backfillCount > 0) {
+    console.log(`Backfill: set primary image from gallery for ${backfillCount} product(s).`);
+  }
+
   console.log(
-    `Done. Updated: ${updatedImages} product_image(s), ${updatedProducts} product(s) imageUrl, ${updatedVariants} variant(s) imageUrl.`,
+    `Done. Updated: ${updatedImages} product_image(s), ${updatedProducts + backfillCount} product(s) imageUrl, ${updatedVariants} variant(s) imageUrl.`,
   );
 }
 

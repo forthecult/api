@@ -48,7 +48,10 @@ export function RelatedProductsSection({
   };
 
   return (
-    <section aria-labelledby="related-products-heading" className="mt-12">
+    <section
+      aria-labelledby="related-products-heading"
+      className="mt-12 pb-14 px-4 sm:px-6 lg:px-8"
+    >
       <h2
         id="related-products-heading"
         className="mb-6 text-2xl font-bold text-foreground"
@@ -59,7 +62,7 @@ export function RelatedProductsSection({
         <p className="text-muted-foreground">No related products at the moment.</p>
       ) : (
       <div className="mx-auto max-w-5xl">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-10 lg:grid-cols-4">
         {products.map((product) => (
           <ProductCard
             key={product.id}

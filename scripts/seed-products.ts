@@ -20,6 +20,8 @@ import {
 } from "../src/db/schema";
 import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
+import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
+import { HOME_ASSISTANT_VOICE } from "./seed-data/home-assistant-voice";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
 import { PACSAFE_RFIDSAFE_WALLET } from "./seed-data/pacsafe-rfidsafe-wallet";
@@ -56,6 +58,8 @@ const CURATED_PRODUCTS = [
   TREZOR_SAFE_5,
   HUSKYLENS_2,
   CRYPTOMATIC_JETSETTER,
+  HOME_ASSISTANT_GREEN,
+  HOME_ASSISTANT_VOICE,
 ];
 
 async function seed() {

@@ -96,4 +96,6 @@ export const PACSAFE_V_20L = {
   hasVariants: true,
   optionDefinitions: OPTION_DEFINITIONS,
   variants: VARIANTS,
+  /** North America store: US & Canada only (pacsafe.com/pages/shipping). */
+  availableCountryCodes: ["US", "CA"] as const,
 };

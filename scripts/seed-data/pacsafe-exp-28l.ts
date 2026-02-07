@@ -187,4 +187,6 @@ export const PACSAFE_EXP_28L = {
   hasVariants: true,
   optionDefinitions: OPTION_DEFINITIONS,
   variants: VARIANTS,
+  /** North America store: US & Canada only (pacsafe.com/pages/shipping). */
+  availableCountryCodes: ["US", "CA"] as const,
 };

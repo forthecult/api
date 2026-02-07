@@ -3,6 +3,7 @@
  * Sourced from https://cryptomatic.io/
  * One listing with 5 model variants. Price: 0.021 BTC (stored as USD equivalent ~$2,100).
  * Brand: Cryptomatic. Category: Cryptomatic Watches.
+ * Shipping: International door-to-door courier (cryptomatic.io/shipping-returns). No product_available_country restriction = available everywhere.
  */
 
 /** Approximate USD at seed time; 0.021 BTC. Update or use dynamic pricing as needed. */

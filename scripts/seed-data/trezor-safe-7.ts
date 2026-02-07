@@ -2,6 +2,7 @@
  * Seed data for Trezor Safe 7 hardware wallet.
  * Sourced from https://trezor.io/trezor-safe-7
  * Long-form product page. Brand: Trezor. Category: Hardware Wallets.
+ * Shipping: Trezor ships to 200+ countries (shop.trezor.io checkout dropdown). No product_available_country restriction = available everywhere.
  */
 
 const PRICE_CENTS = 21900; // ~$219

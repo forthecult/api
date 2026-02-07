@@ -52,7 +52,7 @@ export default function RefundPage() {
               We’re working on automating this too. Onchain refunds are only made
               in <strong className="font-medium text-foreground">stablecoin</strong>{" "}
               (e.g. USDC) to the wallet address you provide—we do not refund in
-              the original coin.
+              the original coin, unless it was a stablecoin.
             </li>
             <li>
               Once your refund is processed, we’ll send a notification to every

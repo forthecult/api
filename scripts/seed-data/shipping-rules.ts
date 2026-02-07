@@ -48,6 +48,7 @@ export const DEFAULT_SHIPPING_OPTIONS: ShippingOptionSeed[] = [
  * Override rules by brand slug. Only brands listed here use these; others use DEFAULT_SHIPPING_OPTIONS.
  */
 export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
+  /** North America store: US & Canada only (see pacsafe.com/pages/shipping). */
   pacsafe: [
     {
       name: "PacSafe US Free over $49",
@@ -57,7 +58,7 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       type: "free",
       amountCents: null,
       additionalItemCents: null,
-      priority: 1,
+      priority: 2,
     },
     {
       name: "PacSafe US Under $49",
@@ -67,7 +68,28 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       type: "flat_plus_per_item",
       amountCents: 400,
       additionalItemCents: 100,
+      priority: 1,
+    },
+    {
+      name: "PacSafe Canada Free over $49",
+      countryCode: "CA",
+      minOrderCents: 4900,
+      maxOrderCents: null,
+      type: "free",
+      amountCents: null,
+      additionalItemCents: null,
+      priority: 2,
+    },
+    {
+      name: "PacSafe Canada Under $49",
+      countryCode: "CA",
+      minOrderCents: null,
+      maxOrderCents: 4899,
+      type: "flat",
+      amountCents: 899,
+      additionalItemCents: null,
       priority: 0,
+      estimatedDaysText: "2-7 business days",
     },
   ],
   /** US only; $75 flat; ships in 1-2 weeks. */
