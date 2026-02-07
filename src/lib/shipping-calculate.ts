@@ -643,6 +643,9 @@ export async function runShippingCalculate(
     variants.map((v) => [v.id, v.externalId]),
   );
 
+  /** Printful product IDs missing catalog_variant_id (log once per request to avoid spam). */
+  const printfulMissingCatalogVariantIds = new Set<string>();
+
   // Separate items by source (Printful, Printify, manual/other)
   for (const item of items) {
     if (
@@ -703,10 +706,8 @@ export async function runShippingCalculate(
           quantity: qty,
         });
       } else {
-        // Fallback: treat as manual for shipping purposes
-        console.warn(
-          `Printful product ${item.productId} missing catalog_variant_id for shipping`,
-        );
+        // Fallback: treat as manual for shipping purposes (re-sync product from Printful to backfill variant externalId)
+        printfulMissingCatalogVariantIds.add(item.productId);
         manualQuantity += qty;
         manualWeightGrams += weight;
         manualValueCents += itemValueCents;
@@ -764,6 +765,12 @@ export async function runShippingCalculate(
       manualValueCents += itemValueCents;
       addToBrandBucket(brandId, itemValueCents, qty, weight);
     }
+  }
+
+  if (printfulMissingCatalogVariantIds.size > 0) {
+    console.warn(
+      `Printful product(s) missing catalog_variant_id for shipping (re-sync from Printful to fix): ${[...printfulMissingCatalogVariantIds].join(", ")}`,
+    );
   }
 
   // Calculate Printful shipping (if any Printful items)
