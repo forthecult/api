@@ -1,0 +1,7 @@
+#!/bin/sh
+# Run typecheck so broken code (e.g. missing imports, type errors) doesn't get committed.
+# Full `bun run check` (lint + biome + knip) runs in CI.
+if [ -d relivator ] && [ -f relivator/package.json ]; then
+  cd relivator
+fi
+bun run typecheck

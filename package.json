@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "next build --webpack",
+    "build": "bun run typecheck && next build --webpack",
     "start": "next start",
     "dev": "next dev -p 3000",
     "dev:turbo": "next dev --turbopack -p 3000",
@@ -33,6 +33,7 @@
     "db:auth": "bun src/lib/auth-db.ts",
     "ui": "bunx --bun shadcn@latest add",
     "latest": "bun update --latest && bun check",
+    "typecheck": "tsc --noEmit",
     "check": "tsc --noEmit && eslint --cache --fix . && biome check --fix --unsafe . && knip",
     "generate:openapi": "bun run scripts/generate-openapi.ts",
     "printful:sync": "bun run scripts/printful-sync-products.ts",
@@ -41,7 +42,8 @@
     "db:list-products": "bun run scripts/list-products.ts",
     "db:crawl-brand-shipping": "bun run scripts/crawl-brand-shipping.ts",
     "db:seed-shipping-by-brand": "bun run scripts/seed-shipping-by-brand.ts",
-    "tests": "bun test ./.tests"
+    "tests": "bun test ./.tests",
+    "prepare": "husky"
   },
   "dependencies": {
     "@better-auth/passkey": "^1.4.18",
@@ -138,6 +140,7 @@
     "eslint-plugin-perfectionist": "^5.5.0",
     "eslint-plugin-readable-tailwind": "^3.0.0",
     "execa": "^9.6.1",
+    "husky": "^9.1.7",
     "knip": "^5.83.0",
     "magic-string": "^0.30.21",
     "postcss": "^8.5.6",

@@ -126,7 +126,11 @@ export async function uploadMockupToUploadThing(
     return null;
   }
 
-  const file = new File([webpBuffer], filename, { type: "image/webp" });
+  const file = new File(
+    [new Uint8Array(webpBuffer)],
+    filename,
+    { type: "image/webp" },
+  );
 
   try {
     const result = await utapi.uploadFiles(file);

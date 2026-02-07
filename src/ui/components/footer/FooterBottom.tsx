@@ -44,6 +44,7 @@ const CRYPTO_COLORS: Record<CryptoCode, string> = {
   DOGE: "#C2A633",
   CRUST: "#9945FF",
   PUMP: "#00D26A",
+  TON: "#0088CC",
   XMR: "#FF6600",
   XAU: "#FFD700",
   XAG: "#C0C0C0",

@@ -431,7 +431,7 @@ async function createLocalProductFromPrintify(
   await applyCategoryAutoRules({
     id: productId,
     name: printifyProduct.title,
-    brand: brand ?? undefined,
+    brand: brand ?? null,
     createdAt: now,
     tags: printifyProduct.tags ?? [],
   });
@@ -490,10 +490,15 @@ async function updateLocalProductFromPrintify(
 ): Promise<void> {
   const now = new Date();
 
-  const shippingData = await getPrintifyShippingData(
-    printifyProduct.blueprint_id,
-    printifyProduct.print_provider_id,
-  );
+  const [shippingData, blueprint] = await Promise.all([
+    getPrintifyShippingData(
+      printifyProduct.blueprint_id,
+      printifyProduct.print_provider_id,
+    ),
+    fetchPrintifyBlueprint(printifyProduct.blueprint_id).catch(() => null),
+  ]);
+  const brand = blueprint?.brand?.trim() ?? null;
+  const model = blueprint?.model?.trim() ?? null;
 
   const [productRow] = await db
     .select({ createdAt: productsTable.createdAt })
@@ -585,7 +590,7 @@ async function updateLocalProductFromPrintify(
   await syncProductCategoriesWithAutoRules({
     id: productId,
     name: printifyProduct.title,
-    brand: brand ?? undefined,
+    brand: brand ?? null,
     createdAt: productCreatedAt,
     tags: printifyProduct.tags ?? [],
   });
