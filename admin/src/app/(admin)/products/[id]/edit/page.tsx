@@ -316,6 +316,7 @@ export default function AdminProductEditPage() {
     [availableCountrySet],
   );
 
+  const formRef = useRef<HTMLFormElement>(null);
   const continentCheckboxRefs = useRef<Record<number, HTMLInputElement | null>>(
     {},
   );
@@ -943,6 +944,14 @@ export default function AdminProductEditPage() {
             View product ↗
           </a>
         ) : null}
+        <Button
+          type="button"
+          disabled={saving}
+          onClick={() => formRef.current?.requestSubmit()}
+          className="ml-auto"
+        >
+          {saving ? "Saving…" : "Save product"}
+        </Button>
       </div>
 
       {error && (
@@ -951,7 +960,7 @@ export default function AdminProductEditPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
         {/* Basic */}
         <Card>
           <CardHeader>

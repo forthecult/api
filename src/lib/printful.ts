@@ -427,6 +427,31 @@ async function pfFetchV1<T>(
   return json.result;
 }
 
+// --- Store Information API (account-level, no X-PF-Store-Id) ---
+
+export type PrintfulStoreInfo = {
+  id: number;
+  type: string;
+  name: string;
+  website?: string;
+  address?: string;
+  created_at?: number;
+};
+
+/**
+ * GET /stores – Get basic information about all stores (account-level).
+ * Requires an account-level private token.
+ */
+export async function fetchStores(): Promise<PrintfulStoreInfo[]> {
+  const list = await pfFetchV1<PrintfulStoreInfo[] | { store: PrintfulStoreInfo[] }>(
+    "/stores",
+    {},
+  );
+  if (Array.isArray(list)) return list;
+  if (list?.store && Array.isArray(list.store)) return list.store;
+  return [];
+}
+
 /**
  * Fetch country of origin (and HS code if present) from Printful V1 catalog product.
  * V1 GET /products/{id} returns origin_country; used during sync to populate shipping/customs.
@@ -729,6 +754,66 @@ export async function deleteSyncProduct(
   }
 
   return { success: true };
+}
+
+// --- Product Templates API (V1) ---
+// https://developers.printful.com/docs/#tag/Product-Templates-API
+// Account-level; list/get templates created in your Printful account.
+
+export type PrintfulProductTemplateItem = {
+  id: number;
+  product_id: number;
+  external_product_id: string | null;
+  title: string;
+  available_variant_ids: number[];
+  option_data?: Array<{ id: string; value: string[] }>;
+  colors?: Array<{ color_name: string; color_codes: string[] }>;
+  sizes?: string[];
+  mockup_file_url?: string;
+  mockup_file?: {
+    imageURL?: string;
+    thumbnailURL?: string;
+    status?: string;
+  };
+  placements?: Array<{
+    placement: string;
+    display_name: string;
+    technique_key?: string;
+    technique_display_name?: string;
+  }>;
+  created_at?: number;
+  updated_at?: number;
+};
+
+export type PrintfulProductTemplatesResponse = {
+  items: PrintfulProductTemplateItem[];
+  paging?: { total: number; offset: number; limit: number };
+};
+
+/**
+ * GET /product-templates – List product templates (account-level).
+ * Requires scope product_templates or product_templates/read.
+ */
+export async function fetchProductTemplates(
+  params: { offset?: number; limit?: number } = {},
+  storeId?: number,
+): Promise<PrintfulProductTemplatesResponse> {
+  const search = new URLSearchParams();
+  if (params.offset != null) search.set("offset", String(params.offset));
+  if (params.limit != null) search.set("limit", String(params.limit));
+  const qs = search.toString() ? `?${search.toString()}` : "";
+  return pfFetchV1<PrintfulProductTemplatesResponse>(`/product-templates${qs}`, { storeId });
+}
+
+/**
+ * GET /product-templates/{id} – Get a single product template by ID or external ID (e.g. @988123).
+ */
+export async function fetchProductTemplate(
+  id: string | number,
+  storeId?: number,
+): Promise<PrintfulProductTemplateItem> {
+  const path = typeof id === "string" && id.startsWith("@") ? `/product-templates/${id}` : `/product-templates/${id}`;
+  return pfFetchV1(path, { storeId }) as Promise<PrintfulProductTemplateItem>;
 }
 
 // --- Webhooks V1 API ---

@@ -504,6 +504,18 @@ const ACCESSORIES_SUB: CategoryRow[] = [
     parentId: "accessories",
   },
   {
+    id: "accessories-wallets",
+    name: "Wallets",
+    slug: "wallets",
+    title: "Wallets & Card Holders — RFID-Blocking, Minimalist | Culture",
+    metaDescription:
+      "Wallets and card holders. RFID-blocking, minimalist. Premium quality. Culture.",
+    description:
+      "Wallets and card holders for everyday carry. RFID-blocking and minimalist options. We curate for quality and durability.",
+    level: 2,
+    parentId: "accessories",
+  },
+  {
     id: "accessories-hardware-wallets",
     name: "Hardware Wallets",
     slug: "hardware-wallets",
