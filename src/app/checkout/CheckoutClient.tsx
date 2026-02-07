@@ -584,10 +584,14 @@ export function CheckoutClient() {
     discountCents: number;
     freeShipping: boolean;
     totalAfterDiscountCents: number;
+    source: "code" | "automatic";
   } | null>(null);
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [showDiscountCode, setShowDiscountCode] = useState(false);
+  const [automaticCouponLoading, setAutomaticCouponLoading] = useState(false);
+  /** Bump when user removes discount so we re-evaluate automatic. */
+  const [discountEvalKey, setDiscountEvalKey] = useState(0);
   const router = useRouter();
   const isUS = form.country === "US";
   const isBillingUS = billingForm.country === "US";
@@ -932,6 +936,7 @@ export function CheckoutClient() {
           discountCents: data.discountCents,
           freeShipping: data.freeShipping,
           totalAfterDiscountCents: data.totalAfterDiscountCents,
+          source: "code",
         });
         setDiscountCodeInput("");
       } else {
@@ -947,6 +952,61 @@ export function CheckoutClient() {
       setCouponLoading(false);
     }
   }, [discountCodeInput, subtotal, shippingCents, items]);
+
+  // Fetch and apply best automatic discount when no code has been applied (or only automatic was applied)
+  useEffect(() => {
+    // Don't overwrite a discount the customer applied via code
+    if (appliedCoupon?.source === "code") return;
+    if (items.length === 0) {
+      setAppliedCoupon(null);
+      return;
+    }
+    let cancelled = false;
+    setAutomaticCouponLoading(true);
+    const productCount = items.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
+    fetch("/api/checkout/coupons/automatic", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        subtotalCents: Math.round(subtotal * 100),
+        shippingFeeCents: Math.round(shippingCents),
+        productCount,
+        productIds: items.map((i) => i.productId ?? i.id),
+      }),
+    })
+      .then((res) => res.json())
+      .then((data: { applied: boolean } & Record<string, unknown>) => {
+        if (cancelled) return;
+        if (data.applied && data.couponId && data.code != null) {
+          setAppliedCoupon({
+            couponId: data.couponId as string,
+            code: data.code as string,
+            discountKind: (data.discountKind as string) ?? "amount_off_order",
+            discountType: (data.discountType as string) ?? "percent",
+            discountValue: typeof data.discountValue === "number" ? data.discountValue : 0,
+            discountCents: typeof data.discountCents === "number" ? data.discountCents : 0,
+            freeShipping: data.freeShipping === true,
+            totalAfterDiscountCents:
+              typeof data.totalAfterDiscountCents === "number"
+                ? data.totalAfterDiscountCents
+                : 0,
+            source: "automatic",
+          });
+        } else {
+          setAppliedCoupon(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setAppliedCoupon(null);
+      })
+      .finally(() => {
+        if (!cancelled) setAutomaticCouponLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [items, subtotal, shippingCents, discountEvalKey]);
 
   // attach QR code to container when Solana Pay dialog opens (delay so dialog DOM is mounted and visible)
   useEffect(() => {
@@ -3222,7 +3282,14 @@ export function CheckoutClient() {
                   </div>
                   {appliedCoupon ? (
                     <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">Discount</span>
+                      <span className="text-muted-foreground">
+                        Discount
+                        {appliedCoupon.source === "automatic" ? (
+                          <span className="ml-1 font-normal text-muted-foreground/80">
+                            (automatic)
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="flex items-center gap-2 font-medium">
                         {appliedCoupon.freeShipping ? (
                           "Free shipping"
@@ -3236,6 +3303,7 @@ export function CheckoutClient() {
                           onClick={() => {
                             setAppliedCoupon(null);
                             setCouponError("");
+                            setDiscountEvalKey((k) => k + 1);
                           }}
                           className="text-xs text-primary underline-offset-4 hover:underline"
                         >

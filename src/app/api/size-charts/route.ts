@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .limit(1);
 
     if (!chart) {
-      return apiError("NOT_FOUND", { message: "Size chart not found" }, 404);
+      return apiError("NOT_FOUND", { message: "Size chart not found" });
     }
 
     return apiSuccess({

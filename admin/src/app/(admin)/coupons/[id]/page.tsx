@@ -61,6 +61,14 @@ export default function AdminDiscountDetailPage() {
   const [tokenHolderChain, setTokenHolderChain] = useState<string>("");
   const [tokenHolderTokenAddress, setTokenHolderTokenAddress] = useState("");
   const [tokenHolderMinBalance, setTokenHolderMinBalance] = useState("");
+  const [ruleSubtotalMin, setRuleSubtotalMin] = useState("");
+  const [ruleSubtotalMax, setRuleSubtotalMax] = useState("");
+  const [ruleShippingMin, setRuleShippingMin] = useState("");
+  const [ruleShippingMax, setRuleShippingMax] = useState("");
+  const [ruleProductCountMin, setRuleProductCountMin] = useState("");
+  const [ruleProductCountMax, setRuleProductCountMax] = useState("");
+  const [ruleOrderTotalMin, setRuleOrderTotalMin] = useState("");
+  const [ruleOrderTotalMax, setRuleOrderTotalMax] = useState("");
 
   const fetchCoupon = useCallback(async () => {
     if (!id) return;
@@ -97,6 +105,14 @@ export default function AdminDiscountDetailPage() {
         tokenHolderChain?: string | null;
         tokenHolderTokenAddress?: string | null;
         tokenHolderMinBalance?: string | null;
+        ruleSubtotalMinCents?: number | null;
+        ruleSubtotalMaxCents?: number | null;
+        ruleShippingMinCents?: number | null;
+        ruleShippingMaxCents?: number | null;
+        ruleProductCountMin?: number | null;
+        ruleProductCountMax?: number | null;
+        ruleOrderTotalMinCents?: number | null;
+        ruleOrderTotalMaxCents?: number | null;
         categoryIds: string[];
         productIds: string[];
         redemptionCount?: number;
@@ -135,6 +151,42 @@ export default function AdminDiscountDetailPage() {
       setTokenHolderChain(row.tokenHolderChain ?? "");
       setTokenHolderTokenAddress(row.tokenHolderTokenAddress ?? "");
       setTokenHolderMinBalance(row.tokenHolderMinBalance ?? "");
+      setRuleSubtotalMin(
+        row.ruleSubtotalMinCents != null
+          ? (row.ruleSubtotalMinCents / 100).toFixed(2)
+          : "",
+      );
+      setRuleSubtotalMax(
+        row.ruleSubtotalMaxCents != null
+          ? (row.ruleSubtotalMaxCents / 100).toFixed(2)
+          : "",
+      );
+      setRuleShippingMin(
+        row.ruleShippingMinCents != null
+          ? (row.ruleShippingMinCents / 100).toFixed(2)
+          : "",
+      );
+      setRuleShippingMax(
+        row.ruleShippingMaxCents != null
+          ? (row.ruleShippingMaxCents / 100).toFixed(2)
+          : "",
+      );
+      setRuleProductCountMin(
+        row.ruleProductCountMin != null ? String(row.ruleProductCountMin) : "",
+      );
+      setRuleProductCountMax(
+        row.ruleProductCountMax != null ? String(row.ruleProductCountMax) : "",
+      );
+      setRuleOrderTotalMin(
+        row.ruleOrderTotalMinCents != null
+          ? (row.ruleOrderTotalMinCents / 100).toFixed(2)
+          : "",
+      );
+      setRuleOrderTotalMax(
+        row.ruleOrderTotalMaxCents != null
+          ? (row.ruleOrderTotalMaxCents / 100).toFixed(2)
+          : "",
+      );
       setCategoryIds(row.categoryIds ?? []);
       setProductIds(row.productIds ?? []);
       setRedemptionCount(row.redemptionCount ?? null);
@@ -180,8 +232,8 @@ export default function AdminDiscountDetailPage() {
       e.preventDefault();
       setError(null);
       const codeTrim = code.trim().toUpperCase();
-      if (!codeTrim) {
-        setError("Discount code is required.");
+      if (method === "code" && !codeTrim) {
+        setError("Discount code is required when method is Code.");
         return;
       }
       const val =
@@ -200,7 +252,8 @@ export default function AdminDiscountDetailPage() {
       try {
         const appliesTo =
           discountKind === "free_shipping" ? "shipping" : "subtotal";
-        const body = {
+        const body: Record<string, unknown> = {
+          method,
           code: codeTrim,
           dateStart: dateStart ? new Date(dateStart).toISOString() : null,
           dateEnd: dateEnd ? new Date(dateEnd).toISOString() : null,
@@ -219,6 +272,30 @@ export default function AdminDiscountDetailPage() {
           categoryIds,
           productIds,
         };
+        body.ruleSubtotalMinCents = ruleSubtotalMin.trim()
+          ? Math.round(Number.parseFloat(ruleSubtotalMin) * 100)
+          : null;
+        body.ruleSubtotalMaxCents = ruleSubtotalMax.trim()
+          ? Math.round(Number.parseFloat(ruleSubtotalMax) * 100)
+          : null;
+        body.ruleShippingMinCents = ruleShippingMin.trim()
+          ? Math.round(Number.parseFloat(ruleShippingMin) * 100)
+          : null;
+        body.ruleShippingMaxCents = ruleShippingMax.trim()
+          ? Math.round(Number.parseFloat(ruleShippingMax) * 100)
+          : null;
+        body.ruleProductCountMin = ruleProductCountMin.trim()
+          ? Number.parseInt(ruleProductCountMin, 10)
+          : null;
+        body.ruleProductCountMax = ruleProductCountMax.trim()
+          ? Number.parseInt(ruleProductCountMax, 10)
+          : null;
+        body.ruleOrderTotalMinCents = ruleOrderTotalMin.trim()
+          ? Math.round(Number.parseFloat(ruleOrderTotalMin) * 100)
+          : null;
+        body.ruleOrderTotalMaxCents = ruleOrderTotalMax.trim()
+          ? Math.round(Number.parseFloat(ruleOrderTotalMax) * 100)
+          : null;
         const res = await fetch(`${API_BASE}/api/admin/coupons/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -254,6 +331,14 @@ export default function AdminDiscountDetailPage() {
       tokenHolderMinBalance,
       categoryIds,
       productIds,
+      ruleSubtotalMin,
+      ruleSubtotalMax,
+      ruleShippingMin,
+      ruleShippingMax,
+      ruleProductCountMin,
+      ruleProductCountMax,
+      ruleOrderTotalMin,
+      ruleOrderTotalMax,
       fetchCoupon,
     ],
   );
@@ -548,6 +633,150 @@ export default function AdminDiscountDetailPage() {
             )}
           </CardContent>
         </Card>
+
+        {method === "automatic" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>When to apply (ruleset)</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                All set conditions must be met for this automatic discount to
+                apply. Leave a field empty for no limit. Amounts in $.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                <div className="space-y-2">
+                  <label htmlFor="ruleSubtotalMin" className={labelClass}>
+                    Subtotal min ($)
+                  </label>
+                  <input
+                    id="ruleSubtotalMin"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={ruleSubtotalMin}
+                    onChange={(e) => setRuleSubtotalMin(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 50"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="ruleSubtotalMax" className={labelClass}>
+                    Subtotal max ($)
+                  </label>
+                  <input
+                    id="ruleSubtotalMax"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={ruleSubtotalMax}
+                    onChange={(e) => setRuleSubtotalMax(e.target.value)}
+                    className={inputClass}
+                    placeholder="No max"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="ruleShippingMin" className={labelClass}>
+                    Shipping min ($)
+                  </label>
+                  <input
+                    id="ruleShippingMin"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={ruleShippingMin}
+                    onChange={(e) => setRuleShippingMin(e.target.value)}
+                    className={inputClass}
+                    placeholder="No min"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="ruleShippingMax" className={labelClass}>
+                    Shipping max ($)
+                  </label>
+                  <input
+                    id="ruleShippingMax"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={ruleShippingMax}
+                    onChange={(e) => setRuleShippingMax(e.target.value)}
+                    className={inputClass}
+                    placeholder="No max"
+                  />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                <div className="space-y-2">
+                  <label htmlFor="ruleProductCountMin" className={labelClass}>
+                    Product count min
+                  </label>
+                  <input
+                    id="ruleProductCountMin"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={ruleProductCountMin}
+                    onChange={(e) => setRuleProductCountMin(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 2"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Total quantity of items
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="ruleProductCountMax" className={labelClass}>
+                    Product count max
+                  </label>
+                  <input
+                    id="ruleProductCountMax"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={ruleProductCountMax}
+                    onChange={(e) => setRuleProductCountMax(e.target.value)}
+                    className={inputClass}
+                    placeholder="No max"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="ruleOrderTotalMin" className={labelClass}>
+                    Order total min ($)
+                  </label>
+                  <input
+                    id="ruleOrderTotalMin"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={ruleOrderTotalMin}
+                    onChange={(e) => setRuleOrderTotalMin(e.target.value)}
+                    className={inputClass}
+                    placeholder="e.g. 75"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Subtotal + shipping
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <label htmlFor="ruleOrderTotalMax" className={labelClass}>
+                    Order total max ($)
+                  </label>
+                  <input
+                    id="ruleOrderTotalMax"
+                    type="number"
+                    min={0}
+                    step={0.01}
+                    value={ruleOrderTotalMax}
+                    onChange={(e) => setRuleOrderTotalMax(e.target.value)}
+                    className={inputClass}
+                    placeholder="No max"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

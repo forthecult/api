@@ -38,6 +38,15 @@ export const couponsTable = pgTable("coupon", {
   tokenHolderChain: text("token_holder_chain"), // "solana" | "evm"
   tokenHolderTokenAddress: text("token_holder_token_address"), // mint (Solana) or contract (EVM)
   tokenHolderMinBalance: text("token_holder_min_balance"), // decimal string, e.g. "1"
+  // Automatic discount ruleset: all set conditions must be met (AND). null = no constraint.
+  ruleSubtotalMinCents: integer("rule_subtotal_min_cents"),
+  ruleSubtotalMaxCents: integer("rule_subtotal_max_cents"),
+  ruleShippingMinCents: integer("rule_shipping_min_cents"),
+  ruleShippingMaxCents: integer("rule_shipping_max_cents"),
+  ruleProductCountMin: integer("rule_product_count_min"), // min total quantity of items
+  ruleProductCountMax: integer("rule_product_count_max"),
+  ruleOrderTotalMinCents: integer("rule_order_total_min_cents"), // subtotal + shipping
+  ruleOrderTotalMaxCents: integer("rule_order_total_max_cents"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });

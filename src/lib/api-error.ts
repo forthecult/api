@@ -48,6 +48,8 @@ export type ApiErrorCode =
   // Auth errors
   | "UNAUTHORIZED"
   | "FORBIDDEN"
+  // Generic resource not found
+  | "NOT_FOUND"
   // Rate limiting
   | "RATE_LIMIT_EXCEEDED"
   // Server errors
@@ -254,6 +256,12 @@ const ERROR_DEFINITIONS: Record<ApiErrorCode, Omit<ApiErrorDetails, "code">> = {
       "Check your API key permissions",
       "Contact support if you believe this is an error",
     ],
+  },
+
+  NOT_FOUND: {
+    message: "The requested resource was not found.",
+    httpStatus: 404,
+    suggestions: ["Verify the resource ID or path is correct"],
   },
 
   // Rate limiting

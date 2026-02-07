@@ -6,7 +6,6 @@ import { useCallback, useEffect, useState } from "react";
 import { getMainAppUrl } from "~/lib/env";
 import { cn } from "~/lib/cn";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import { Checkbox } from "~/ui/checkbox";
 
 const API_BASE = getMainAppUrl();
 

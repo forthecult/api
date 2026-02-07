@@ -24,6 +24,7 @@ import {
   applyCategoryAutoRules,
   syncProductCategoriesWithAutoRules,
 } from "~/lib/category-auto-assign";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   fetchPrintifyProducts,
   fetchPrintifyProduct,
@@ -268,9 +269,12 @@ async function syncPrintifyProductCountries(
     .delete(productAvailableCountryTable)
     .where(eq(productAvailableCountryTable.productId, productId));
 
-  if (countryCodes && countryCodes.length > 0) {
+  // Never ship to our excluded countries; APIs cannot override
+  const allowed =
+    countryCodes?.filter((c) => !isShippingExcluded(c)) ?? [];
+  if (allowed.length > 0) {
     await db.insert(productAvailableCountryTable).values(
-      countryCodes.map((countryCode) => ({
+      allowed.map((countryCode) => ({
         productId,
         countryCode,
       })),

@@ -173,3 +173,241 @@ export async function resolveCouponForCheckout(
     totalAfterDiscountCents,
   };
 }
+
+/** Input for automatic discount resolution (cart snapshot). */
+export type AutomaticCouponInput = {
+  subtotalCents: number;
+  shippingFeeCents: number;
+  /** Total quantity of items in cart (sum of quantities). */
+  productCount: number;
+  productIds?: string[];
+  userId?: string | null;
+};
+
+function meetsRuleset(
+  coupon: {
+    ruleSubtotalMinCents: number | null;
+    ruleSubtotalMaxCents: number | null;
+    ruleShippingMinCents: number | null;
+    ruleShippingMaxCents: number | null;
+    ruleProductCountMin: number | null;
+    ruleProductCountMax: number | null;
+    ruleOrderTotalMinCents: number | null;
+    ruleOrderTotalMaxCents: number | null;
+  },
+  input: AutomaticCouponInput,
+): boolean {
+  const orderTotalCents = input.subtotalCents + input.shippingFeeCents;
+  if (
+    coupon.ruleSubtotalMinCents != null &&
+    input.subtotalCents < coupon.ruleSubtotalMinCents
+  )
+    return false;
+  if (
+    coupon.ruleSubtotalMaxCents != null &&
+    input.subtotalCents > coupon.ruleSubtotalMaxCents
+  )
+    return false;
+  if (
+    coupon.ruleShippingMinCents != null &&
+    input.shippingFeeCents < coupon.ruleShippingMinCents
+  )
+    return false;
+  if (
+    coupon.ruleShippingMaxCents != null &&
+    input.shippingFeeCents > coupon.ruleShippingMaxCents
+  )
+    return false;
+  if (
+    coupon.ruleProductCountMin != null &&
+    input.productCount < coupon.ruleProductCountMin
+  )
+    return false;
+  if (
+    coupon.ruleProductCountMax != null &&
+    input.productCount > coupon.ruleProductCountMax
+  )
+    return false;
+  if (
+    coupon.ruleOrderTotalMinCents != null &&
+    orderTotalCents < coupon.ruleOrderTotalMinCents
+  )
+    return false;
+  if (
+    coupon.ruleOrderTotalMaxCents != null &&
+    orderTotalCents > coupon.ruleOrderTotalMaxCents
+  )
+    return false;
+  return true;
+}
+
+function computeDiscountFromCoupon(
+  coupon: {
+    discountKind: string | null;
+    discountType: string | null;
+    discountValue: number;
+  },
+  subtotalCents: number,
+  shippingFeeCents: number,
+): { discountCents: number; freeShipping: boolean } {
+  const discountKind = coupon.discountKind ?? "amount_off_order";
+  const discountType = coupon.discountType ?? "percent";
+  const discountValue = coupon.discountValue ?? 0;
+  const freeShipping = discountKind === "free_shipping";
+  let discountCents = 0;
+  if (freeShipping) {
+    discountCents = shippingFeeCents;
+  } else if (discountKind === "amount_off_order") {
+    const totalCents = subtotalCents + shippingFeeCents;
+    if (discountType === "percent") {
+      discountCents = Math.round(
+        totalCents * (Math.min(100, discountValue) / 100),
+      );
+    } else {
+      discountCents = Math.min(discountValue, totalCents);
+    }
+  } else if (discountKind === "amount_off_products") {
+    if (discountType === "percent") {
+      discountCents = Math.round(
+        subtotalCents * (Math.min(100, discountValue) / 100),
+      );
+    } else {
+      discountCents = Math.min(discountValue, subtotalCents);
+    }
+  }
+  return { discountCents, freeShipping };
+}
+
+/**
+ * Find the best automatic discount that applies to the given cart.
+ * Returns the coupon that gives the highest discountCents, or null if none apply.
+ * Does not record redemption (that happens at order creation).
+ */
+export async function resolveAutomaticCouponForCheckout(
+  input: AutomaticCouponInput,
+): Promise<CouponCheckoutResult | null> {
+  const now = new Date();
+  const automaticCoupons = await db
+    .select({
+      id: couponsTable.id,
+      code: couponsTable.code,
+      dateStart: couponsTable.dateStart,
+      dateEnd: couponsTable.dateEnd,
+      discountKind: couponsTable.discountKind,
+      discountType: couponsTable.discountType,
+      discountValue: couponsTable.discountValue,
+      maxUses: couponsTable.maxUses,
+      maxUsesPerCustomer: couponsTable.maxUsesPerCustomer,
+      maxUsesPerCustomerType: couponsTable.maxUsesPerCustomerType,
+      tokenHolderChain: couponsTable.tokenHolderChain,
+      tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
+      tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+      ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
+      ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
+      ruleShippingMinCents: couponsTable.ruleShippingMinCents,
+      ruleShippingMaxCents: couponsTable.ruleShippingMaxCents,
+      ruleProductCountMin: couponsTable.ruleProductCountMin,
+      ruleProductCountMax: couponsTable.ruleProductCountMax,
+      ruleOrderTotalMinCents: couponsTable.ruleOrderTotalMinCents,
+      ruleOrderTotalMaxCents: couponsTable.ruleOrderTotalMaxCents,
+    })
+    .from(couponsTable)
+    .where(eq(couponsTable.method, "automatic"));
+
+  const orderTotalCents = input.subtotalCents + input.shippingFeeCents;
+  let best: CouponCheckoutResult | null = null;
+
+  for (const coupon of automaticCoupons) {
+    if (coupon.dateStart && now < coupon.dateStart) continue;
+    if (coupon.dateEnd && now > coupon.dateEnd) continue;
+
+    if (coupon.maxUses != null && coupon.maxUses > 0) {
+      const [redemptionCount] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(couponRedemptionTable)
+        .where(eq(couponRedemptionTable.couponId, coupon.id));
+      if ((redemptionCount?.count ?? 0) >= coupon.maxUses) continue;
+    }
+
+    if (
+      coupon.maxUsesPerCustomer != null &&
+      coupon.maxUsesPerCustomer > 0 &&
+      input.userId &&
+      coupon.maxUsesPerCustomerType === "account"
+    ) {
+      const [userRedemptions] = await db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(couponRedemptionTable)
+        .where(
+          and(
+            eq(couponRedemptionTable.couponId, coupon.id),
+            eq(couponRedemptionTable.userId, input.userId),
+          ),
+        );
+      if ((userRedemptions?.count ?? 0) >= coupon.maxUsesPerCustomer) continue;
+    }
+
+    if (!meetsRuleset(coupon, input)) continue;
+
+    const productIds = input.productIds ?? [];
+    if (productIds.length > 0) {
+      const allowedProductIds = (
+        await db
+          .select({ productId: couponProductTable.productId })
+          .from(couponProductTable)
+          .where(eq(couponProductTable.couponId, coupon.id))
+      ).map((r) => r.productId);
+      if (
+        allowedProductIds.length > 0 &&
+        !productIds.some((id) => allowedProductIds.includes(id))
+      ) {
+        continue;
+      }
+    }
+
+    const tokenChain = coupon.tokenHolderChain?.trim();
+    const tokenAddress = coupon.tokenHolderTokenAddress?.trim();
+    const tokenMinBalance = coupon.tokenHolderMinBalance?.trim();
+    if (tokenChain && tokenAddress && tokenMinBalance) {
+      if (!input.userId) continue;
+      const chain = tokenChain.toLowerCase() as "solana" | "evm";
+      if (chain === "solana" || chain === "evm") {
+        const meets = await userMeetsTokenHolderCondition(
+          input.userId,
+          chain,
+          tokenAddress,
+          tokenMinBalance,
+        );
+        if (!meets) continue;
+      }
+    }
+
+    const { discountCents, freeShipping } = computeDiscountFromCoupon(
+      coupon,
+      input.subtotalCents,
+      input.shippingFeeCents,
+    );
+    const totalAfterDiscountCents = Math.max(
+      0,
+      orderTotalCents - discountCents,
+    );
+    const candidate: CouponCheckoutResult = {
+      couponId: coupon.id,
+      code: coupon.code,
+      discountKind: coupon.discountKind ?? "amount_off_order",
+      discountType: coupon.discountType ?? "percent",
+      discountValue: coupon.discountValue ?? 0,
+      discountCents,
+      freeShipping,
+      totalAfterDiscountCents,
+    };
+    if (
+      !best ||
+      candidate.discountCents > best.discountCents
+    ) {
+      best = candidate;
+    }
+  }
+
+  return best;
+}

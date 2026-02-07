@@ -16,6 +16,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { COUNTRIES_BY_CONTINENT } from "~/lib/countries-by-continent";
 import { cn } from "~/lib/cn";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
@@ -267,6 +268,7 @@ export default function AdminProductEditPage() {
   );
 
   const setCountry = useCallback((code: string, checked: boolean) => {
+    if (isShippingExcluded(code)) return; // No-ship countries cannot be selected
     setAvailableCountryCodes((prev) => {
       const set = new Set(prev);
       if (checked) set.add(code);
@@ -279,7 +281,9 @@ export default function AdminProductEditPage() {
     (continentIndex: number, checked: boolean) => {
       const entry = COUNTRIES_BY_CONTINENT[continentIndex];
       if (!entry) return;
-      const codes = entry.countries.map((c) => c.code);
+      const codes = entry.countries
+        .map((c) => c.code)
+        .filter((c) => !isShippingExcluded(c));
       setAvailableCountryCodes((prev) => {
         const set = new Set(prev);
         for (const code of codes) {
@@ -296,7 +300,8 @@ export default function AdminProductEditPage() {
     (continentIndex: number) => {
       const entry = COUNTRIES_BY_CONTINENT[continentIndex];
       if (!entry) return false;
-      return entry.countries.every((c) => availableCountrySet.has(c.code));
+      const selectable = entry.countries.filter((c) => !isShippingExcluded(c.code));
+      return selectable.length > 0 && selectable.every((c) => availableCountrySet.has(c.code));
     },
     [availableCountrySet],
   );
@@ -304,10 +309,9 @@ export default function AdminProductEditPage() {
     (continentIndex: number) => {
       const entry = COUNTRIES_BY_CONTINENT[continentIndex];
       if (!entry) return false;
-      const count = entry.countries.filter((c) =>
-        availableCountrySet.has(c.code),
-      ).length;
-      return count > 0 && count < entry.countries.length;
+      const selectable = entry.countries.filter((c) => !isShippingExcluded(c.code));
+      const count = selectable.filter((c) => availableCountrySet.has(c.code)).length;
+      return count > 0 && count < selectable.length;
     },
     [availableCountrySet],
   );
@@ -414,7 +418,9 @@ export default function AdminProductEditPage() {
         );
       }
       skipNextTokenGatesFromFetch.current = false;
-      setAvailableCountryCodes(data.availableCountryCodes ?? []);
+      setAvailableCountryCodes(
+        (data.availableCountryCodes ?? []).filter((c) => !isShippingExcluded(c)),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load product");
     } finally {
@@ -542,7 +548,7 @@ export default function AdminProductEditPage() {
             network: g.network?.trim() || null,
             contractAddress: g.contractAddress?.trim() || null,
           })),
-          availableCountryCodes,
+          availableCountryCodes: availableCountryCodes.filter((c) => !isShippingExcluded(c)),
         };
         const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
           method: "PATCH",
@@ -2046,6 +2052,9 @@ export default function AdminProductEditPage() {
                 to refresh shipping destinations.
               </p>
             )}
+            <p className="text-sm text-muted-foreground">
+              Countries we do not ship to are disabled and cannot be selected.
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {COUNTRIES_BY_CONTINENT.map((entry, continentIndex) => (
@@ -2065,24 +2074,30 @@ export default function AdminProductEditPage() {
                   <span>{entry.continent}</span>
                 </label>
                 <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 md:grid-cols-4">
-                  {entry.countries.map((country) => (
-                    <label
-                      key={country.code}
-                      className={cn(
-                        "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground",
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={availableCountrySet.has(country.code)}
-                        onChange={(e) =>
-                          setCountry(country.code, e.target.checked)
-                        }
-                        className="size-4 rounded border-input"
-                      />
-                      <span>{country.name}</span>
-                    </label>
-                  ))}
+                  {entry.countries.map((country) => {
+                    const noShip = isShippingExcluded(country.code);
+                    return (
+                      <label
+                        key={country.code}
+                        className={cn(
+                          "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground",
+                          noShip && "cursor-not-allowed opacity-60",
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={!noShip && availableCountrySet.has(country.code)}
+                          disabled={noShip}
+                          onChange={(e) =>
+                            !noShip && setCountry(country.code, e.target.checked)
+                          }
+                          className="size-4 rounded border-input"
+                          title={noShip ? "We do not ship to this country" : undefined}
+                        />
+                        <span>{country.name}{noShip ? " (no ship)" : ""}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             ))}

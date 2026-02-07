@@ -20,6 +20,7 @@ import {
   productImagesTable,
 } from "~/db/schema";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   fetchSyncProducts,
   fetchSyncProduct,
@@ -432,6 +433,8 @@ async function createLocalProductFromPrintful(
       marketCountryCodes = apiCountries;
     }
   }
+  // Never ship to our excluded countries (e.g. Cuba, Russia); APIs cannot override
+  marketCountryCodes = marketCountryCodes.filter((c) => !isShippingExcluded(c));
 
   // Create product (vendor, page title, description, brand, sku from catalog/sync)
   // Printful fulfillment typically 2–5 business days; default transit 3–7 for estimates
@@ -656,6 +659,8 @@ async function updateLocalProductFromPrintful(
       marketCountryCodes = apiCountries;
     }
   }
+  // Never ship to our excluded countries (e.g. Cuba, Russia); APIs cannot override
+  marketCountryCodes = marketCountryCodes.filter((c) => !isShippingExcluded(c));
   await db
     .delete(productAvailableCountryTable)
     .where(eq(productAvailableCountryTable.productId, productId));

@@ -185,6 +185,14 @@ export async function POST(request: NextRequest) {
       tokenHolderMinBalance?: string | null;
       categoryIds?: string[];
       productIds?: string[];
+      ruleSubtotalMinCents?: number | null;
+      ruleSubtotalMaxCents?: number | null;
+      ruleShippingMinCents?: number | null;
+      ruleShippingMaxCents?: number | null;
+      ruleProductCountMin?: number | null;
+      ruleProductCountMax?: number | null;
+      ruleOrderTotalMinCents?: number | null;
+      ruleOrderTotalMaxCents?: number | null;
     };
 
     const method = body.method === "automatic" ? "automatic" : "code";
@@ -273,6 +281,14 @@ export async function POST(request: NextRequest) {
       tokenHolderChain: body.tokenHolderChain ?? null,
       tokenHolderTokenAddress: body.tokenHolderTokenAddress ?? null,
       tokenHolderMinBalance: body.tokenHolderMinBalance ?? null,
+      ruleSubtotalMinCents: body.ruleSubtotalMinCents ?? null,
+      ruleSubtotalMaxCents: body.ruleSubtotalMaxCents ?? null,
+      ruleShippingMinCents: body.ruleShippingMinCents ?? null,
+      ruleShippingMaxCents: body.ruleShippingMaxCents ?? null,
+      ruleProductCountMin: body.ruleProductCountMin ?? null,
+      ruleProductCountMax: body.ruleProductCountMax ?? null,
+      ruleOrderTotalMinCents: body.ruleOrderTotalMinCents ?? null,
+      ruleOrderTotalMaxCents: body.ruleOrderTotalMaxCents ?? null,
       createdAt: now,
       updatedAt: now,
     });

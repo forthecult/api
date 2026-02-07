@@ -15,6 +15,7 @@ import {
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import { syncProductCategoriesWithAutoRules } from "~/lib/category-auto-assign";
 import { exportProductToPrintful } from "~/lib/printful-sync";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { exportProductToPrintify } from "~/lib/printify-sync";
 
 /** Generate URL-safe slug from name when slug is empty. */
@@ -169,7 +170,9 @@ export async function GET(
       tokenGateContractAddress: product.tokenGateContractAddress,
       tokenGates,
       categoryId: mainPc[0]?.categoryId ?? null,
-      availableCountryCodes: availableCountries.map((r) => r.countryCode),
+      availableCountryCodes: availableCountries
+        .map((r) => r.countryCode)
+        .filter((c) => !isShippingExcluded(c)),
       images: images.map((img) => ({
         id: img.id,
         url: img.url,
@@ -523,7 +526,8 @@ export async function PATCH(
         ...new Set(
           body.availableCountryCodes
             .map((c) => c.trim().toUpperCase())
-            .filter(Boolean),
+            .filter(Boolean)
+            .filter((c) => !isShippingExcluded(c)),
         ),
       ];
       for (const code of codes) {

@@ -74,6 +74,14 @@ export async function GET(
       tokenHolderChain: coupon.tokenHolderChain ?? null,
       tokenHolderTokenAddress: coupon.tokenHolderTokenAddress ?? null,
       tokenHolderMinBalance: coupon.tokenHolderMinBalance ?? null,
+      ruleSubtotalMinCents: coupon.ruleSubtotalMinCents ?? null,
+      ruleSubtotalMaxCents: coupon.ruleSubtotalMaxCents ?? null,
+      ruleShippingMinCents: coupon.ruleShippingMinCents ?? null,
+      ruleShippingMaxCents: coupon.ruleShippingMaxCents ?? null,
+      ruleProductCountMin: coupon.ruleProductCountMin ?? null,
+      ruleProductCountMax: coupon.ruleProductCountMax ?? null,
+      ruleOrderTotalMinCents: coupon.ruleOrderTotalMinCents ?? null,
+      ruleOrderTotalMaxCents: coupon.ruleOrderTotalMaxCents ?? null,
       categoryIds: categoryRows.map((r) => r.categoryId),
       productIds: productRows.map((r) => r.productId),
       redemptionCount: redemptionTotal,
@@ -128,6 +136,14 @@ export async function PATCH(
       tokenHolderMinBalance?: string | null;
       categoryIds?: string[];
       productIds?: string[];
+      ruleSubtotalMinCents?: number | null;
+      ruleSubtotalMaxCents?: number | null;
+      ruleShippingMinCents?: number | null;
+      ruleShippingMaxCents?: number | null;
+      ruleProductCountMin?: number | null;
+      ruleProductCountMax?: number | null;
+      ruleOrderTotalMinCents?: number | null;
+      ruleOrderTotalMaxCents?: number | null;
     };
 
     const [existing] = await db
@@ -197,6 +213,22 @@ export async function PATCH(
       updates.tokenHolderTokenAddress = body.tokenHolderTokenAddress ?? null;
     if (body.tokenHolderMinBalance !== undefined)
       updates.tokenHolderMinBalance = body.tokenHolderMinBalance ?? null;
+    if (body.ruleSubtotalMinCents !== undefined)
+      updates.ruleSubtotalMinCents = body.ruleSubtotalMinCents ?? null;
+    if (body.ruleSubtotalMaxCents !== undefined)
+      updates.ruleSubtotalMaxCents = body.ruleSubtotalMaxCents ?? null;
+    if (body.ruleShippingMinCents !== undefined)
+      updates.ruleShippingMinCents = body.ruleShippingMinCents ?? null;
+    if (body.ruleShippingMaxCents !== undefined)
+      updates.ruleShippingMaxCents = body.ruleShippingMaxCents ?? null;
+    if (body.ruleProductCountMin !== undefined)
+      updates.ruleProductCountMin = body.ruleProductCountMin ?? null;
+    if (body.ruleProductCountMax !== undefined)
+      updates.ruleProductCountMax = body.ruleProductCountMax ?? null;
+    if (body.ruleOrderTotalMinCents !== undefined)
+      updates.ruleOrderTotalMinCents = body.ruleOrderTotalMinCents ?? null;
+    if (body.ruleOrderTotalMaxCents !== undefined)
+      updates.ruleOrderTotalMaxCents = body.ruleOrderTotalMaxCents ?? null;
 
     await db
       .update(couponsTable)
@@ -266,6 +298,14 @@ export async function PATCH(
       maxUses: updated.maxUses,
       maxUsesPerCustomer: updated.maxUsesPerCustomer,
       maxUsesPerCustomerType: updated.maxUsesPerCustomerType,
+      ruleSubtotalMinCents: updated.ruleSubtotalMinCents ?? null,
+      ruleSubtotalMaxCents: updated.ruleSubtotalMaxCents ?? null,
+      ruleShippingMinCents: updated.ruleShippingMinCents ?? null,
+      ruleShippingMaxCents: updated.ruleShippingMaxCents ?? null,
+      ruleProductCountMin: updated.ruleProductCountMin ?? null,
+      ruleProductCountMax: updated.ruleProductCountMax ?? null,
+      ruleOrderTotalMinCents: updated.ruleOrderTotalMinCents ?? null,
+      ruleOrderTotalMaxCents: updated.ruleOrderTotalMaxCents ?? null,
       categoryIds: categoryRows.map((r) => r.categoryId),
       productIds: productRows.map((r) => r.productId),
       createdAt: updated.createdAt.toISOString(),

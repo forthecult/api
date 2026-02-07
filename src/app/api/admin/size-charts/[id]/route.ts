@@ -23,7 +23,7 @@ export async function GET(
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
 
   const [chart] = await db.select().from(sizeChartsTable).where(eq(sizeChartsTable.id, id)).limit(1);
-  if (!chart) return apiError("NOT_FOUND", { message: "Size chart not found" }, 404);
+  if (!chart) return apiError("NOT_FOUND", { message: "Size chart not found" });
   return NextResponse.json(chart);
 }
 
@@ -75,6 +75,6 @@ export async function DELETE(
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
 
   const [deleted] = await db.delete(sizeChartsTable).where(eq(sizeChartsTable.id, id)).returning({ id: sizeChartsTable.id });
-  if (!deleted) return apiError("NOT_FOUND", { message: "Size chart not found" }, 404);
+  if (!deleted) return apiError("NOT_FOUND", { message: "Size chart not found" });
   return new NextResponse(null, { status: 204 });
 }
