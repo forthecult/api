@@ -18,6 +18,7 @@ import {
   productsTable,
   productVariantsTable,
   productImagesTable,
+  sizeChartsTable,
 } from "~/db/schema";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
