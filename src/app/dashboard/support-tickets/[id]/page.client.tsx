@@ -121,7 +121,7 @@ export function SupportTicketDetailClient() {
 
   if (loading) {
     return (
-      <div className="container mx-auto flex max-w-2xl items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
       </div>
     );
@@ -129,7 +129,7 @@ export function SupportTicketDetailClient() {
 
   if (error || !ticket) {
     return (
-      <div className="container mx-auto max-w-2xl space-y-6 p-4 md:p-8">
+      <div className="space-y-6">
         <Button asChild variant="ghost" size="sm" className="gap-2">
           <Link href="/dashboard/support-tickets">
             <ChevronLeft className="h-4 w-4" />
@@ -144,7 +144,7 @@ export function SupportTicketDetailClient() {
   const canReply = ticket.status !== "closed";
 
   return (
-    <div className="container mx-auto max-w-2xl space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button asChild variant="ghost" size="icon" aria-label="Back to tickets">
           <Link href="/dashboard/support-tickets">

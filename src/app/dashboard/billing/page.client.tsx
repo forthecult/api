@@ -43,8 +43,8 @@ export function BillingPageClient({ user }: BillingPageClientProps) {
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <h1 className="mb-6 text-3xl font-bold">Billing & payments</h1>
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Billing & payments</h1>
 
       <Card>
         <CardHeader>

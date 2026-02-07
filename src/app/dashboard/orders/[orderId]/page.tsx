@@ -62,7 +62,7 @@ export default async function OrderDetailPage({
   }
 
   return (
-    <div className="container mx-auto max-w-2xl space-y-6 p-4 md:p-8">
+    <div className="space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight">
         Order{" "}
         <span className="font-mono text-muted-foreground">#{order.id}</span>

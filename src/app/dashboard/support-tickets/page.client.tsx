@@ -123,7 +123,7 @@ export function SupportTicketsPageClient() {
 
   if (!user) {
     return (
-      <div className="container mx-auto flex max-w-2xl items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8">
         <p className="text-muted-foreground">Please sign in to view support tickets.</p>
       </div>
     );

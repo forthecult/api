@@ -246,7 +246,7 @@ export function AffiliatePageClient() {
 
   if (loading) {
     return (
-      <div className="container mx-auto flex max-w-2xl items-center justify-center p-8">
+      <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
       </div>
     );

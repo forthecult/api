@@ -49,6 +49,27 @@ function getToken(): string | undefined {
   return raw.trim().replace(/^['"]|['"]$/g, "");
 }
 
+/**
+ * UploadThing expects token to be base64-encoded JSON: { apiKey: string, appId: string, regions: string[] }.
+ * Validate before making requests so we fail fast with a clear message.
+ */
+function validateUploadThingToken(token: string): boolean {
+  try {
+    const decoded = Buffer.from(token, "base64").toString("utf-8");
+    const obj = JSON.parse(decoded) as unknown;
+    if (obj == null || typeof obj !== "object") return false;
+    const o = obj as Record<string, unknown>;
+    return (
+      typeof o.apiKey === "string" &&
+      typeof o.appId === "string" &&
+      Array.isArray(o.regions) &&
+      o.regions.every((r) => typeof r === "string")
+    );
+  } catch {
+    return false;
+  }
+}
+
 async function main() {
   const force = process.argv.includes("--force");
 
@@ -118,8 +139,16 @@ async function main() {
         continue;
       }
 
-      const res = data as { url?: string; ufsUrl?: string; data?: { url?: string; ufsUrl?: string }; error?: unknown };
+      const res = data as { url?: string; ufsUrl?: string; data?: { url?: string; ufsUrl?: string }; error?: { code?: string; message?: string } };
       if (res.error) {
+        const code = res.error?.code;
+        const message = res.error?.message ?? String(res.error);
+        if (code === "INVALID_SERVER_CONFIG" || message.includes("Invalid token")) {
+          console.error(
+            "UPLOADTHING_TOKEN is invalid. It must be a base64-encoded JSON object with apiKey, appId, and regions from UploadThing Dashboard → API Keys → V7. Update the token in .env or in GitHub Settings → Secrets (UPLOADTHING_TOKEN).",
+          );
+          process.exit(1);
+        }
         console.error(`Upload error for ${brand.slug}/${name}:`, res.error);
         continue;
       }

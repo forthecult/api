@@ -111,12 +111,7 @@ export function SettingsPageClient() {
   );
 
   return (
-    <div
-      className={`
-        container space-y-6 p-4
-        md:p-8
-      `}
-    >
+    <div className="space-y-6">
       <div className="space-y-0.5">
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <p className="text-muted-foreground">
