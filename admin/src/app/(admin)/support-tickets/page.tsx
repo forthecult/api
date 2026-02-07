@@ -9,6 +9,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { cn } from "~/lib/cn";
@@ -59,12 +60,22 @@ const STATUS_OPTIONS = [
   { value: "closed", label: "Closed" },
 ] as const;
 
+const TYPE_OPTIONS = [
+  { value: "", label: "All types" },
+  { value: "normal", label: "Normal" },
+  { value: "urgent", label: "Urgent" },
+] as const;
+
 export default function AdminSupportTicketsPage() {
+  const router = useRouter();
   const [data, setData] = useState<SupportTicketsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("");
+  const [typeFilter, setTypeFilter] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
   const fetchTickets = useCallback(async () => {
@@ -73,6 +84,9 @@ export default function AdminSupportTicketsPage() {
     try {
       const params = new URLSearchParams({ page: String(page), limit: "10" });
       if (statusFilter.trim()) params.set("status", statusFilter.trim());
+      if (typeFilter.trim()) params.set("type", typeFilter.trim());
+      if (fromDate.trim()) params.set("fromDate", fromDate.trim());
+      if (toDate.trim()) params.set("toDate", toDate.trim());
       const res = await fetch(
         `${API_BASE}/api/admin/support-tickets?${params.toString()}`,
         { credentials: "include" },
@@ -89,7 +103,7 @@ export default function AdminSupportTicketsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter]);
+  }, [page, statusFilter, typeFilter, fromDate, toDate]);
 
   useEffect(() => {
     void fetchTickets();
@@ -147,6 +161,59 @@ export default function AdminSupportTicketsPage() {
                 </option>
               ))}
             </select>
+            <select
+              id="typeFilter"
+              className={cn(
+                "rounded-md border border-input bg-background px-3 py-2 text-sm",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
+              )}
+              value={typeFilter}
+              onChange={(e) => {
+                setTypeFilter(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter by ticket type"
+            >
+              {TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value || "all"} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <label htmlFor="fromDate" className="text-sm font-medium">
+              From date
+            </label>
+            <input
+              id="fromDate"
+              type="date"
+              className={cn(
+                "rounded-md border border-input bg-background px-3 py-2 text-sm",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
+              )}
+              value={fromDate}
+              onChange={(e) => {
+                setFromDate(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter from date"
+            />
+            <label htmlFor="toDate" className="text-sm font-medium">
+              To date
+            </label>
+            <input
+              id="toDate"
+              type="date"
+              className={cn(
+                "rounded-md border border-input bg-background px-3 py-2 text-sm",
+                "focus:outline-none focus:ring-2 focus:ring-ring",
+              )}
+              value={toDate}
+              onChange={(e) => {
+                setToDate(e.target.value);
+                setPage(1);
+              }}
+              aria-label="Filter to date"
+            />
             <div className="relative flex-1 min-w-[200px] max-w-md">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -207,8 +274,8 @@ export default function AdminSupportTicketsPage() {
                           className="p-8 text-center text-muted-foreground"
                           colSpan={6}
                         >
-                          {statusFilter
-                            ? "No tickets match the selected status."
+                          {statusFilter || typeFilter || fromDate || toDate
+                            ? "No tickets match the selected filters."
                             : "No support tickets yet."}
                         </td>
                       </tr>
@@ -216,9 +283,21 @@ export default function AdminSupportTicketsPage() {
                       data.items.map((ticket) => (
                         <tr
                           key={ticket.id}
-                          className="border-b last:border-0"
+                          role="button"
+                          tabIndex={0}
+                          className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => router.push(`/support-tickets/${ticket.id}`)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              router.push(`/support-tickets/${ticket.id}`);
+                            }
+                          }}
                         >
-                          <td className="p-4">
+                          <td
+                            className="p-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <div className="flex flex-col">
                               <Link
                                 href={`/customers/${ticket.customer.id}`}
@@ -265,7 +344,10 @@ export default function AdminSupportTicketsPage() {
                           <td className="whitespace-nowrap p-4 text-muted-foreground">
                             {formatDate(ticket.createdAt)}
                           </td>
-                          <td className="p-4 text-right">
+                          <td
+                            className="p-4 text-right"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <span className="inline-flex items-center gap-1">
                               <Link
                                 className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"

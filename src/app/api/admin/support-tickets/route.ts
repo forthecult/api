@@ -1,4 +1,4 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -13,6 +13,9 @@ const MAX_PAGE_SIZE = 100;
 
 const STATUS_VALUES = ["open", "pending", "closed"] as const;
 type StatusFilter = (typeof STATUS_VALUES)[number];
+
+const TYPE_VALUES = ["normal", "urgent"] as const;
+type TypeFilter = (typeof TYPE_VALUES)[number];
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,8 +43,31 @@ export async function GET(request: NextRequest) {
     const statusFilter: StatusFilter | "" = STATUS_VALUES.includes(statusParam as StatusFilter)
       ? (statusParam as StatusFilter)
       : "";
+    const typeParam = request.nextUrl.searchParams.get("type")?.trim().toLowerCase() ?? "";
+    const typeFilter: TypeFilter | "" = TYPE_VALUES.includes(typeParam as TypeFilter)
+      ? (typeParam as TypeFilter)
+      : "";
+    const fromDateParam = request.nextUrl.searchParams.get("fromDate")?.trim() ?? "";
+    const toDateParam = request.nextUrl.searchParams.get("toDate")?.trim() ?? "";
 
-    const whereClause = statusFilter ? eq(supportTicketTable.status, statusFilter) : undefined;
+    const conditions: ReturnType<typeof eq>[] = [];
+    if (statusFilter) conditions.push(eq(supportTicketTable.status, statusFilter));
+    if (typeFilter) conditions.push(eq(supportTicketTable.type, typeFilter));
+    if (fromDateParam) {
+      const from = new Date(fromDateParam);
+      if (!Number.isNaN(from.getTime())) {
+        from.setHours(0, 0, 0, 0);
+        conditions.push(gte(supportTicketTable.createdAt, from));
+      }
+    }
+    if (toDateParam) {
+      const to = new Date(toDateParam);
+      if (!Number.isNaN(to.getTime())) {
+        to.setHours(23, 59, 59, 999);
+        conditions.push(lte(supportTicketTable.createdAt, to));
+      }
+    }
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [rows, countResult] = await Promise.all([
       db

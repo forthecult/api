@@ -47,7 +47,7 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 // Map full country names (uppercase) to ISO 2-letter codes for shipping API resilience.
 // Used when client sends country name instead of code (e.g. address autocomplete, persisted form).
 const COUNTRY_NAME_TO_CODE: Record<string, string> = {
-  UNITED STATES: "US",
+  "UNITED STATES": "US",
   CANADA: "CA",
   AUSTRALIA: "AU",
   "NEW ZEALAND": "NZ",

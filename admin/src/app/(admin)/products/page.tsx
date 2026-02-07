@@ -113,6 +113,7 @@ export default function AdminProductsPage() {
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState | null>(null);
 
   useEffect(() => {
@@ -176,6 +177,35 @@ export default function AdminProductsPage() {
   useEffect(() => {
     void fetchProducts();
   }, [fetchProducts]);
+
+  const handleDelete = useCallback(
+    async (product: ProductRow) => {
+      if (
+        !window.confirm(
+          `Delete "${product.name}"? This will remove the product and its variants, images, and tags. Orders that included this product will keep the line item but the product link will be cleared.`,
+        )
+      ) {
+        return;
+      }
+      setDeletingId(product.id);
+      try {
+        const res = await fetch(
+          `${API_BASE}/api/admin/products/${product.id}`,
+          { method: "DELETE", credentials: "include" },
+        );
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          throw new Error(body.error ?? "Failed to delete");
+        }
+        await fetchProducts();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to delete product");
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [fetchProducts],
+  );
 
   const runSync = useCallback(
     async (vendor: SyncVendor, direction: SyncDirection) => {
@@ -682,7 +712,9 @@ export default function AdminProductsPage() {
                               </a>
                               <button
                                 type="button"
-                                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                                disabled={deletingId === product.id}
+                                onClick={() => handleDelete(product)}
+                                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50 disabled:pointer-events-none"
                                 aria-label={`Delete ${product.name}`}
                               >
                                 <Trash2 className="h-4 w-4" />

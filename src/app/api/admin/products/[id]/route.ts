@@ -638,3 +638,36 @@ export async function PATCH(
     );
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+    const product = await getProductByParam(id);
+    if (!product) {
+      return NextResponse.json(
+        { error: "Product not found" },
+        { status: 404 },
+      );
+    }
+
+    await db
+      .delete(productsTable)
+      .where(eq(productsTable.id, product.id));
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin product delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete product" },
+      { status: 500 },
+    );
+  }
+}
