@@ -43,7 +43,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     slug: "mens-clothing",
     title: "Men's Clothing — Organic Cotton & Natural Fiber Apparel | Culture",
     metaDescription:
-      "Men's tees, hoodies, jackets and more in organic cotton and natural fibers only. No polyester. Premium apparel that protects your health. Culture.",
+      "Men's tees, hoodies, jackets, and more in organic cotton, bamboo, and natural fibers only. No polyester or synthetics. Premium apparel that protects your health. Pay with crypto or card. Culture.",
     description:
       "Apparel that touches your body should protect your health. We sell men's clothing in organic cotton, bamboo, and alpaca only—no polyester, no synthetic blends. Natural fibers breathe better, last longer, and don't shed microplastics. Tees, tank tops, long sleeves, sweatshirts, hoodies, jackets, sportswear, shoes. Premium quality. Pay with crypto or card.",
     level: 1,
@@ -55,7 +55,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     slug: "womens-clothing",
     title: "Women's Clothing — Toxin-Free, Natural Fiber Apparel | Culture",
     metaDescription:
-      "Women's tees, hoodies, swimwear and more in organic cotton and natural fibers. No synthetics. Premium, health-conscious apparel. Culture.",
+      "Women's tees, crop tops, hoodies, swimwear, and more in organic cotton and natural fibers. No polyester or synthetics. Premium, health-conscious apparel. Pay with crypto or card. Culture.",
     description:
       "The clothes you wear become part of you. We sell women's clothing in organic cotton, bamboo, and natural fibers only—no polyester or synthetic blends. Tees, crop tops, tank tops, long sleeves, sweatshirts, hoodies, jackets, sportswear, swimwear. Premium quality, toxin-free. Pay with crypto or card.",
     level: 1,
@@ -68,7 +68,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     title:
       "Children's Clothing — Safe, Natural Fiber Kids & Baby Apparel | Culture",
     metaDescription:
-      "Kids and baby clothing in organic cotton and natural fibers. No polyester. Safe, durable apparel for the whole family. Culture.",
+      "Kids and baby clothing in organic cotton and natural fibers. No polyester. Safe, durable, toxin-free apparel for the whole family. Tees, hoodies, baby clothing. Pay with crypto or card. Culture.",
     description:
       "Safe, natural materials for the whole family. Children's clothing in organic cotton and natural fibers only—no polyester or synthetics. Tees, long sleeves, hoodies, sweatshirts, baby clothing. Premium quality that lasts. Pay with crypto or card.",
     level: 1,
@@ -81,7 +81,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     title:
       "Accessories — Hardware Wallets, Hats, Bags, Tech & Travel | Culture",
     metaDescription:
-      "Hardware wallets (Trezor, Ledger), hats, bags, phone cases, travel gear. Protect your assets and autonomy. Premium accessories. Culture.",
+      "Hardware wallets (Trezor, Ledger), hats, bags, phone cases, mouse pads, watches, travel gear. Protect your assets and autonomy. Premium accessories. Pay with 50+ cryptos or card. Culture.",
     description:
       "Tools that protect your assets and autonomy. Hardware wallets (Trezor, Ledger) for self-custody. Hats, socks, watches, bags, phone cases, mouse pads, tech and travel accessories. We curate for quality and privacy—no products that require always-on cloud or sell your data. Pay with 50+ cryptocurrencies or card.",
     level: 1,
@@ -93,7 +93,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     slug: "home-living",
     title: "Home & Living — Premium Coffee, Wall Art, Mugs, Kitchen | Culture",
     metaDescription:
-      "Premium coffee (mycotoxin-tested), wall art, books, mugs, towels, kitchen and bathroom. Quality home products. Culture.",
+      "Premium coffee (single-origin, mycotoxin-tested), wall art, books, mugs, glassware, towels, kitchen and bathroom. Quality home products. Pay with crypto or card. Culture.",
     description:
       "Products for how you live. Premium coffee (single-origin, mycotoxin-tested), dark chocolate, wall art with optional digital certificates, books, posters, mugs, glassware, towels, bathroom and kitchen accessories. We prioritize quality and health—no planned obsolescence, no harmful materials. Pay with crypto or card.",
     level: 1,
@@ -154,7 +154,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     slug: "other",
     title: "Staff Picks & Curated Collections — Limited Editions | Culture",
     metaDescription:
-      "Staff picks, Age of Decentralization, Bitcoin Not Bombs, token-gated drops, personalizations. Curated collections. Culture.",
+      "Staff picks, Age of Decentralization, Bitcoin Not Bombs, CoinGecko, token-gated drops, and personalizations. Curated collections and limited editions. Pay with crypto or card. Culture.",
     description:
       "Curated collections and limited editions. Staff picks, Age of Decentralization merchandise (digitally verified when applicable), cause-based collections, partner merchandise, and personalizations. Every product meets our curation standards: meaningful quality, pillar-aligned, no harm. Pay with crypto or card.",
     level: 1,
@@ -405,10 +405,10 @@ const CHILDRENS_SUB: CategoryRow[] = [
   {
     id: "childrens-baby",
     name: "Baby Clothing",
-    slug: "childrens-baby",
+    slug: "baby-clothing",
     title: "Baby Clothing — Safe, Natural Fiber | Culture",
     metaDescription:
-      "Baby clothing in organic cotton and natural fibers. Safe for sensitive skin. Culture.",
+      "Baby clothing in organic cotton and natural fibers. Safe for sensitive skin, toxin-free, no polyester. Culture.",
     description:
       "Baby clothing in organic cotton and natural fibers only. Safe, toxin-free.",
     level: 2,
@@ -491,7 +491,7 @@ const ACCESSORIES_SUB: CategoryRow[] = [
     slug: "hardware-wallets",
     title: "Hardware Wallets — Trezor, Ledger | Culture",
     metaDescription:
-      "Hardware wallets for Bitcoin and crypto. Trezor, Ledger. Self-custody, secure storage. Culture.",
+      "Hardware wallets for Bitcoin and crypto: Trezor, Ledger. Self-custody, secure storage. We've sold them since 2015. Pay with 50+ cryptos or card. Culture.",
     description:
       "Protect your assets. Hardware wallets (Trezor, Ledger) give you self-custody—your keys, your coins. We've sold them since 2015. No intermediaries holding your funds. Pay with 50+ cryptocurrencies or card.",
     level: 2,
@@ -572,7 +572,7 @@ const HOME_LIVING_SUB: CategoryRow[] = [
     slug: "books",
     title: "Books — Decentralization, Bitcoin, Privacy | Culture",
     metaDescription:
-      "Books on decentralization, Bitcoin, privacy, and intentional living. Culture.",
+      "Books on decentralization, Bitcoin, privacy, and intentional living. Age of Decentralization reading. Pay with crypto or card. Culture.",
     description:
       "Books for the Age of Decentralization. Topics: decentralization, Bitcoin, privacy, health, autonomy. Premium quality. We curate for meaning and accuracy.",
     level: 2,
@@ -639,7 +639,8 @@ const HOME_LIVING_SUB: CategoryRow[] = [
     name: "Mugs",
     slug: "mugs",
     title: "Mugs — Premium Ceramic | Culture",
-    metaDescription: "Mugs. Premium ceramic, built to last. Culture.",
+    metaDescription:
+      "Mugs: premium ceramic coffee mugs and drinkware. Built to last, no harmful glazes. Pay with crypto or card. Culture.",
     description:
       "Mugs curated for quality and durability. Premium ceramic, no harmful glazes.",
     level: 2,
@@ -673,7 +674,7 @@ const HOME_LIVING_SUB: CategoryRow[] = [
     slug: "coffee",
     title: "Coffee — Single-Origin, Mycotoxin-Tested | Culture",
     metaDescription:
-      "Premium coffee. Single-origin, mycotoxin-tested. Culture.",
+      "Premium coffee: single-origin, mycotoxin-tested. No commodity-grade beans. Protect your health. Pay with crypto or card. Culture.",
     description:
       "Protect your health. We sell premium coffee: single-origin, mycotoxin-tested. No commodity-grade beans. Quality you can taste. Pay with crypto or card.",
     level: 2,
@@ -688,7 +689,8 @@ const OTHER_SUB: CategoryRow[] = [
     name: "Staff Picks",
     slug: "staff-picks",
     title: "Staff Picks — Curated by Culture | Culture",
-    metaDescription: "Staff picks. Products we use and recommend. Culture.",
+    metaDescription:
+      "Staff picks: products we use and recommend. Curated for quality, health, privacy, and autonomy. Pay with crypto or card. Culture.",
     description:
       "Curated by our team. Every pick meets our standards: meaningful quality, pillar-aligned (health, privacy, assets, autonomy), no harm. Products we'd use ourselves.",
     level: 2,
@@ -697,10 +699,10 @@ const OTHER_SUB: CategoryRow[] = [
   {
     id: "age-of-decentralization",
     name: "Age of Decentralization",
-    slug: "age-of-decentralization",
+    slug: "decentralization",
     title: "Age of Decentralization — Digitally Verified | Culture",
     metaDescription:
-      "Age of Decentralization. Limited editions, digital certificates. Culture.",
+      "Age of Decentralization merchandise: limited editions with digital Certificates of Authenticity. Apparel and art. Digitally verified. Pay with crypto or card. Culture.",
     description:
       "The Age of Decentralization is here. Limited merchandise that can be digitally verified. Apparel and art may include digital Certificates of Authenticity. We curate for quality and meaning.",
     level: 2,
@@ -711,7 +713,8 @@ const OTHER_SUB: CategoryRow[] = [
     name: "Bitcoin Not Bombs",
     slug: "bitcoin-not-bombs",
     title: "Bitcoin Not Bombs | Culture",
-    metaDescription: "Bitcoin Not Bombs. Cause-based collection. Culture.",
+    metaDescription:
+      "Bitcoin Not Bombs: cause-based collection supporting self-sovereignty and peace. Premium apparel and merchandise. Pay with crypto or card. Culture.",
     description:
       "Cause-based collection. Premium quality products that support the message. We've supported self-sovereignty and peace since 2015.",
     level: 2,
@@ -720,9 +723,10 @@ const OTHER_SUB: CategoryRow[] = [
   {
     id: "coingecko-merchandise",
     name: "CoinGecko Merchandise",
-    slug: "coingecko-merchandise",
+    slug: "coingecko",
     title: "CoinGecko Merchandise | Culture",
-    metaDescription: "CoinGecko merchandise. Premium quality. Culture.",
+    metaDescription:
+      "CoinGecko merchandise: official partner apparel and gear. Premium quality, curated. Pay with crypto or card. Culture.",
     description: "Partner merchandise from CoinGecko. Curated for quality.",
     level: 2,
     parentId: "other",
@@ -732,7 +736,8 @@ const OTHER_SUB: CategoryRow[] = [
     name: "Personalizations",
     slug: "personalizations",
     title: "Personalizations — Custom Orders | Culture",
-    metaDescription: "Personalized merchandise. Custom orders. Culture.",
+    metaDescription:
+      "Personalized and custom merchandise. Quality personalization. Pay with crypto or card. Culture.",
     description:
       "Personalized and custom merchandise. We curate for quality—no disposable or low-quality personalization.",
     level: 2,
@@ -748,7 +753,7 @@ const SHOP_BY_CRYPTO: CategoryRow[] = [
     slug: "currency",
     title: "Shop by Currency — BTC, DOGE, XMR, LTC, ZEC | Culture",
     metaDescription:
-      "Products by currency: Bitcoin (BTC), Dogecoin (DOGE), Monero (XMR), Litecoin (LTC), Zcash (ZEC). Pay with crypto or card. Premium quality. Culture.",
+      "Shop by currency: Bitcoin (BTC), Dogecoin (DOGE), Monero (XMR), Litecoin (LTC), Zcash (ZEC). Apparel, hardware wallets, art. Pay with crypto or card. Culture.",
     description:
       "Browse products themed around currency-layer cryptocurrencies. We accept Bitcoin, Dogecoin, Monero, Litecoin, Zcash and 50+ others via BTCPay and EVM. Self-sovereignty isn't just for your money—it's for your entire life. Premium apparel, hardware wallets, art, and gifts. Pay with crypto or card.",
     level: 1,
@@ -760,7 +765,7 @@ const SHOP_BY_CRYPTO: CategoryRow[] = [
     slug: "network",
     title: "Shop by Network — ETH, AVAX, ATOM, FIL, TON | Culture",
     metaDescription:
-      "Products by network: Ethereum (ETH), Avalanche (AVAX), Cosmos (ATOM), Filecoin (FIL), Toncoin (TON). Premium quality. Pay with crypto. Culture.",
+      "Shop by network: Ethereum (ETH), Avalanche (AVAX), Cosmos (ATOM), Filecoin (FIL), Toncoin (TON). Apparel and merchandise. Pay with crypto or card. Culture.",
     description:
       "Browse products themed around network-layer protocols. We accept ETH, SOL, and 50+ cryptocurrencies. Premium apparel and merchandise. Every product meets our curation standards: quality, pillar-aligned, no harm. Pay with crypto or card.",
     level: 1,
@@ -769,10 +774,10 @@ const SHOP_BY_CRYPTO: CategoryRow[] = [
   {
     id: "application-token",
     name: "Application Token (dApps, DAOs)",
-    slug: "dapps",
+    slug: "dapp",
     title: "Shop by dApp — 1inch, Aave, Uniswap & More | Culture",
     metaDescription:
-      "Products by dApp/DAO: 1inch, Aave, Uniswap, Decentraland, Maker, and more. Premium quality. Culture.",
+      "Shop by dApp/DAO: 1inch, Aave, Uniswap, Decentraland, Maker, and more. DeFi and metaverse merchandise. Pay with crypto or card. Culture.",
     description:
       "Browse products themed around application tokens, dApps, and DAOs. Premium merchandise. We're a lifestyle brand built on decentralization principles—not just crypto merch. Pay with 50+ cryptocurrencies or card.",
     level: 1,

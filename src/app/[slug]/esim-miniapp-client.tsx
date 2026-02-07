@@ -26,6 +26,15 @@ export function ESimMiniappClient() {
       sandboxMode: process.env.NODE_ENV === "development",
       theme: "system",
       debug: process.env.NODE_ENV === "development",
+      onGetAuthCode: async () => {
+        const res = await fetch("/api/boxo/auth-code", { method: "POST" });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as { error_code?: string };
+          throw new Error(data.error_code ?? "Failed to get auth code");
+        }
+        const data = (await res.json()) as { auth_code: string };
+        return data.auth_code;
+      },
     });
 
     sdk

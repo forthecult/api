@@ -238,6 +238,13 @@ export function TokenGateGuard({
     };
   }, [config?.tokenGated, step, connected, publicKey, signMessage, resourceType, resourceId]);
 
+  // When we were rendered without children (server sent gate shell only), after validation refresh so server can send content.
+  useEffect(() => {
+    if (validated && !hasChildren) {
+      router.refresh();
+    }
+  }, [validated, hasChildren, router]);
+
   if (loading) {
     return (
       <div className={cn("flex min-h-[280px] items-center justify-center", className)}>
@@ -245,13 +252,6 @@ export function TokenGateGuard({
       </div>
     );
   }
-
-  // When we were rendered without children (server sent gate shell only), after validation refresh so server can send content.
-  useEffect(() => {
-    if (validated && !hasChildren) {
-      router.refresh();
-    }
-  }, [validated, hasChildren, router]);
 
   if (!config?.tokenGated || validated) {
     return <>{children}</>;

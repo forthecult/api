@@ -662,6 +662,79 @@ export default function AdminProductEditPage() {
     setImages((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const moveImage = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setImages((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(fromIndex, 1);
+      next.splice(toIndex, 0, item!);
+      return next.map((img, i) => ({ ...img, sortOrder: i }));
+    });
+  }, []);
+
+  const [primaryDropActive, setPrimaryDropActive] = useState(false);
+  const [galleryDropActive, setGalleryDropActive] = useState(false);
+  const [dragImageIndex, setDragImageIndex] = useState<number | null>(null);
+
+  const uploadFilesToGallery = useCallback(
+    async (files: FileList | null) => {
+      if (!files?.length) return;
+      setUploadImageLoading(true);
+      setError(null);
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          if (!file.type.startsWith("image/")) continue;
+          const form = new FormData();
+          form.append("file", file);
+          const res = await fetch(`${API_BASE}/api/admin/upload`, {
+            method: "POST",
+            credentials: "include",
+            body: form,
+          });
+          if (!res.ok) {
+            const data = (await res.json().catch(() => ({}))) as { error?: string };
+            throw new Error(data.error ?? "Upload failed");
+          }
+          const data = (await res.json()) as { url: string };
+          setImages((prev) => [
+            ...prev,
+            { url: data.url, alt: "", title: "", sortOrder: prev.length },
+          ]);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Upload failed");
+      } finally {
+        setUploadImageLoading(false);
+      }
+    },
+    [],
+  );
+
+  const uploadFileAsPrimary = useCallback(async (file: File) => {
+    setUploadImageLoading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/api/admin/upload`, {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? "Upload failed");
+      }
+      const data = (await res.json()) as { url: string };
+      setImageUrl(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadImageLoading(false);
+    }
+  }, []);
+
   const uploadImageInputRef = useRef<HTMLInputElement>(null);
   const uploadImageTargetRef = useRef<null | "primary" | number>(null);
   const [uploadImageLoading, setUploadImageLoading] = useState(false);
@@ -1304,58 +1377,82 @@ export default function AdminProductEditPage() {
           <CardHeader>
             <CardTitle>Media</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Primary image and gallery. Upload to UploadThing or paste a URL.
+              Primary image and gallery. Drag and drop to upload (optimized for web) or paste a URL.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="imageUrl" className={labelClass}>
-                  Primary image URL
-                </label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="gap-1"
-                  disabled={uploadImageLoading}
-                  onClick={() => triggerUploadImage("primary")}
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploadImageLoading ? "Uploading…" : "Upload"}
-                </Button>
-              </div>
-              <input
-                id="imageUrl"
-                type="url"
-                placeholder="https://…"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className={inputClass}
-              />
-              {imageUrl && (
-                <div className="mt-2 flex items-center gap-2">
-                  <button
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPrimaryDropActive(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPrimaryDropActive(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setPrimaryDropActive(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file?.type.startsWith("image/")) uploadFileAsPrimary(file);
+                }}
+                className={cn(
+                  "rounded-md transition-colors",
+                  primaryDropActive && "ring-2 ring-primary ring-offset-2",
+                )}
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <label htmlFor="imageUrl" className={labelClass}>
+                    Primary image URL
+                  </label>
+                  <Button
                     type="button"
-                    onClick={() => setExpandedImageUrl(imageUrl)}
-                    className="relative size-24 shrink-0 overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
-                    title="Click to expand"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    disabled={uploadImageLoading}
+                    onClick={() => triggerUploadImage("primary")}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={imageUrl}
-                      alt=""
-                      className="size-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                      }}
-                    />
-                  </button>
-                  <span className="text-xs text-muted-foreground">
-                    Click to expand
-                  </span>
+                    <Upload className="h-4 w-4" />
+                    {uploadImageLoading ? "Uploading…" : "Upload"}
+                  </Button>
                 </div>
-              )}
+                <input
+                  id="imageUrl"
+                  type="url"
+                  placeholder="https://… or drop image"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className={inputClass}
+                />
+                {imageUrl && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedImageUrl(imageUrl)}
+                      className="relative size-24 shrink-0 overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
+                      title="Click to expand"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={imageUrl}
+                        alt=""
+                        className="size-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </button>
+                    <span className="text-xs text-muted-foreground">
+                      Click to expand
+                    </span>
+                  </div>
+                )}
+              </div>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div>
                   <label
@@ -1406,11 +1503,75 @@ export default function AdminProductEditPage() {
                   <Plus className="h-4 w-4" /> Add image
                 </Button>
               </div>
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (dragImageIndex === null) setGalleryDropActive(true);
+                }}
+                onDragLeave={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setGalleryDropActive(false);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setGalleryDropActive(false);
+                  if (dragImageIndex !== null) return;
+                  uploadFilesToGallery(e.dataTransfer.files);
+                }}
+                className={cn(
+                  "rounded-md border-2 border-dashed py-4 text-center text-sm text-muted-foreground transition-colors",
+                  galleryDropActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-muted/30",
+                )}
+              >
+                Drop images here to add (optimized for web)
+              </div>
               {images.map((img, i) => (
                 <div
                   key={i}
-                  className="flex flex-wrap items-start gap-2 rounded border p-2"
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const from = parseInt(
+                      e.dataTransfer.getData("text/plain"),
+                      10,
+                    );
+                    if (!Number.isNaN(from) && from !== i)
+                      moveImage(from, i);
+                  }}
+                  className={cn(
+                    "flex flex-wrap items-start gap-2 rounded border p-2",
+                    dragImageIndex === i && "opacity-60",
+                  )}
                 >
+                  <span
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData("text/plain", String(i));
+                      e.dataTransfer.effectAllowed = "move";
+                      setDragImageIndex(i);
+                    }}
+                    onDragEnd={() => setDragImageIndex(null)}
+                    className="flex shrink-0 cursor-grab touch-none items-center pt-2 active:cursor-grabbing"
+                    title="Drag to reorder"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                      }
+                    }}
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </span>
                   <input
                     type="url"
                     placeholder="Image URL"

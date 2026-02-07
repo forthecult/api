@@ -1,6 +1,6 @@
 "use client";
 
-import { Layers, Trash2 } from "lucide-react";
+import { Layers, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -83,6 +83,9 @@ export default function AdminCategoryEditPage() {
   };
   const [savedRules, setSavedRules] = useState<AutoAssignRule[]>([]);
   const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageDropActive, setImageDropActive] = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   const fetchCategory = useCallback(async () => {
     if (!id) return;
@@ -160,6 +163,52 @@ export default function AdminCategoryEditPage() {
   useEffect(() => {
     if (id) void fetchAutoAssignRules();
   }, [id, fetchAutoAssignRules]);
+
+  const uploadImageFile = useCallback(async (file: File) => {
+    setImageUploading(true);
+    setError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`${API_BASE}/api/admin/upload`, {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(data.error ?? "Upload failed");
+      }
+      const data = (await res.json()) as { url: string };
+      setImageUrl(data.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setImageUploading(false);
+    }
+  }, []);
+
+  const handleImageDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setImageDropActive(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file && file.type.startsWith("image/")) uploadImageFile(file);
+    },
+    [uploadImageFile],
+  );
+
+  const handleImageDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDropActive(true);
+  }, []);
+
+  const handleImageDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageDropActive(false);
+  }, []);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -768,24 +817,69 @@ export default function AdminCategoryEditPage() {
                 Image URL
               </label>
               <input
-                id="imageUrl"
-                type="url"
-                placeholder="https://…"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className={inputClass}
+                ref={imageInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                aria-hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) uploadImageFile(file);
+                }}
               />
+              <div
+                onDragOver={handleImageDragOver}
+                onDragLeave={handleImageDragLeave}
+                onDrop={handleImageDrop}
+                className={cn(
+                  "rounded-md border-2 border-dashed p-4 transition-colors",
+                  imageDropActive
+                    ? "border-primary bg-primary/5"
+                    : "border-border bg-muted/30",
+                )}
+              >
+                <input
+                  id="imageUrl"
+                  type="url"
+                  placeholder="https://… or drop image here"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  className={inputClass}
+                />
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                    disabled={imageUploading}
+                    onClick={() => imageInputRef.current?.click()}
+                  >
+                    <Upload className="h-4 w-4" />
+                    {imageUploading ? "Uploading…" : "Upload"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    Drop an image here or paste a URL. Uploads are optimized for web.
+                  </span>
+                </div>
+              </div>
               {imageUrl && (
-                <div className="relative mt-2 size-20 overflow-hidden rounded-md border bg-muted">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl}
-                    alt=""
-                    className="size-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                  />
+                <div className="relative mt-2 flex items-center gap-3">
+                  <div className="relative size-20 shrink-0 overflow-hidden rounded-md border bg-muted">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imageUrl}
+                      alt=""
+                      className="size-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    Preview
+                  </span>
                 </div>
               )}
             </div>

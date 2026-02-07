@@ -12,6 +12,43 @@ This document is an **implementation plan** and status log. It is based on a rev
 - **Env (optional)**:
   - `NEXT_PUBLIC_BOXO_CLIENT_ID` — Boxo host app client id (from [dashboard.boxo.io](https://dashboard.boxo.io) → My host apps).
   - `NEXT_PUBLIC_BOXO_ESIM_APP_ID` — eSIM miniapp app id (from Boxo after eSIM integration is approved).
+- **Boxo Connect & Payments APIs**: Implemented. See **Step 7: Dashboard URLs** below for what to enter in the Boxo dashboard.
+
+---
+
+## Step 7: Dashboard URLs (Boxo Connect & Payments)
+
+Use your store’s base URL (e.g. `https://yourstore.com` or `http://localhost:3000` for dev). Replace `<BASE_URL>` below.
+
+### Boxo Connect (Integration keys → Boxo connect section)
+
+| Field | Value |
+|-------|--------|
+| **Single sign on enabled** | Turn **ON** |
+| **Access token URL** | `https://<BASE_URL>/api/boxo/connect/access-token` |
+| **Refresh token URL** | `https://<BASE_URL>/api/boxo/connect/refresh-token` |
+| **User data URL** | `https://<BASE_URL>/api/boxo/connect/user-data` |
+| **Access token prefix** | `Token` (default; or set `BOXO_ACCESS_TOKEN_PREFIX` in env to match) |
+| **User consent links** | Add items (e.g. Title: "Terms & Conditions", URL: your terms page; "Privacy Policy", "FAQ") so they appear in the SSO modal. |
+
+**Env (server-side, not `NEXT_PUBLIC_`):**
+
+- `BOXO_CLIENT_ID` — same as your host app client id (or omit and rely on `NEXT_PUBLIC_BOXO_CLIENT_ID`).
+- `BOXO_SECRET_KEY` — secret key from Boxo Integration keys (keep secret).
+- `BOXO_ACCESS_TOKEN_PREFIX` — optional; default `Token`.
+
+When the eSIM miniapp calls login, the frontend requests an auth code from `POST /api/boxo/auth-code` (user must be signed in); Boxo then calls the access token and user data URLs to complete SSO.
+
+### Payments (Integration keys → Payments section)
+
+| Field | Value |
+|-------|--------|
+| **Payments enabled** | Turn **ON** |
+| **Create order payment URL** | `https://<BASE_URL>/api/boxo/payments/create-order` |
+| **Get order payment status URL** | `https://<BASE_URL>/api/boxo/payments/status` |
+| **Use access token** | Optional; leave OFF if using client_id/secret auth. |
+
+Payments create a record in `boxo_order_payment` with status `in_process`. To complete the flow you will later: (1) show payment UI when the Web SDK fires a payment event, (2) charge the user (e.g. Polar or your checkout), (3) update the row to `paid` / `failed` / `cancelled` (and optional `payment_fail_reason`). Boxo will poll the status URL until the status is final.
 
 ---
 

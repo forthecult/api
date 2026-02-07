@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import sharp from "sharp";
 import { UTApi } from "uploadthing/server";
 
 import { getAdminAuth } from "~/lib/admin-api-auth";
@@ -11,6 +12,25 @@ const ALLOWED_TYPES = [
   "image/webp",
   "image/gif",
 ];
+
+const WEBP_QUALITY = 85;
+const MAX_WIDTH = 1600;
+
+/** Optimize image for web: resize if large, compress to WebP. Preserve GIF as-is for animation. */
+async function optimizeImageForWeb(file: File): Promise<File> {
+  if (file.type === "image/gif") {
+    return file;
+  }
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const optimized = await sharp(buffer)
+    .resize(MAX_WIDTH, undefined, { withoutEnlargement: true })
+    .webp({ quality: WEBP_QUALITY })
+    .toBuffer();
+  const name = file.name.replace(/\.[^.]+$/, "") || "image";
+  return new File([new Uint8Array(optimized)], `${name}.webp`, {
+    type: "image/webp",
+  });
+}
 
 /**
  * POST /api/admin/upload
@@ -66,8 +86,14 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    let fileToUpload: File;
+    try {
+      fileToUpload = await optimizeImageForWeb(file);
+    } catch {
+      fileToUpload = file;
+    }
     const utapi = new UTApi({ token });
-    const result = await utapi.uploadFiles(file);
+    const result = await utapi.uploadFiles(fileToUpload);
 
     const data = Array.isArray(result) ? result[0] : result;
     if (!data || typeof data !== "object") {
