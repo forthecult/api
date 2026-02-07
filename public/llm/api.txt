@@ -1,0 +1,48 @@
+# API Reference (summary for LLMs)
+
+Base: same origin as this site. Example: https://your-domain.com/api
+Format: JSON. Timestamps: ISO 8601. Optional auth: Authorization: Bearer API_KEY, X-Agent-Id, X-Agent-Name.
+
+## First call for agents
+
+GET /api/agent/capabilities — Returns features, payment options, shipping countries, rate limits, and full endpoint reference. Use this before other calls.
+
+## OpenAPI and docs
+
+- GET /api/openapi.json — Full OpenAPI 3 specification.
+- GET /api/docs — Interactive API docs (Swagger UI), if enabled.
+
+## Health and discovery
+
+- GET /api/health — API and dependency health.
+- GET /api/chains — Supported payment chains and tokens (Solana, EVM, etc.).
+- GET /api/categories — Store categories.
+
+## Products
+
+- POST /api/products/semantic-search — Natural-language search (e.g. "birthday gift for dad who likes golf"). Body: { "query": "..." }.
+- POST /api/v1/products/search — Structured search with query, category, limit, offset.
+- GET /api/products/{productId} — Single product by ID.
+- POST /api/cart/estimate — Preview cart totals and shipping before checkout. Body: items (productId, variantId?, quantity), shipping (countryCode, zip).
+
+## Checkout and orders
+
+- POST /api/checkout — Create order. Body: items, email, payment (chain, token for crypto; or card), shipping (name, address1, city, etc.). Returns orderId and payment (recipient, amount, token, solanaPayUrl for crypto; or payment link for card).
+- GET /api/orders/{orderId}/status — Poll until status === "paid". Lightweight; use every few seconds.
+
+Payment flow (crypto): checkout → get deposit address and amount → user/agent sends transfer → poll status. Solana Pay URL is returned for wallet deep links.
+
+## Admin (create/edit products)
+
+Auth: API key (Authorization: Bearer ADMIN_API_KEY or X-API-Key) or session (admin user).
+
+- GET /api/admin/products — List products. Query: page, limit, search, sortBy, sortOrder.
+- POST /api/admin/products — Create product. Min body: name, priceCents; optional: description, imageUrl, published, categoryId, variants, etc.
+- GET /api/admin/products/{id} — Get one product.
+- PATCH /api/admin/products/{id} — Update product (partial body).
+
+## Errors
+
+Responses use structured errors: code, message, details, requestId, _suggestions (next steps). Responses may include _actions (suggested API calls).
+
+For full request/response shapes and more endpoints, fetch GET /api/openapi.json or see the human docs in the repository (docs/Culture Store API.md).

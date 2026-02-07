@@ -1,0 +1,28 @@
+# Integrations (for LLMs)
+
+Summary of payments, webhooks, auth, and optional services used by this site.
+
+## Payments
+
+- Polar — Subscriptions and billing. Customer portal at /dashboard/billing. Webhooks for subscription events. Env: POLAR_ACCESS_TOKEN, POLAR_WEBHOOK_SECRET, POLAR_ENVIRONMENT.
+- Crypto (Solana Pay) — Native SOL, USDC, SPL tokens. Each order gets a unique deposit address; checkout response includes amount, token, and solanaPayUrl. Poll GET /api/orders/{orderId}/status for confirmation.
+- Card / other — Checkout can return a payment link or redirect; behavior depends on store configuration.
+
+## Fulfillment and webhooks
+
+- Printful — POD fulfillment. Products and orders sync via webhooks. Webhook URL: /api/webhooks/printful. Env: PRINTFUL_WEBHOOK_SECRET. Register webhook with Printful; local dev cannot receive webhooks (use manual sync).
+- Printify — POD fulfillment. Webhook URL: /api/webhooks/printify. Env: PRINTIFY_WEBHOOK_SECRET. Register via dashboard or API.
+
+Order status updates (e.g. shipped) come from these webhooks; the API and customer-facing order status reflect that.
+
+## Auth
+
+- better-auth — Email and OAuth. Admin users: set ADMIN_EMAILS in env; dashboard and admin API accept session or API key. For API-only agents: use ADMIN_API_KEY and Authorization: Bearer <key> or X-API-Key.
+
+## Optional services
+
+- Loqate — Address autocomplete/validation at checkout. Env: LOQATE_API_KEY. If unset, address is plain text.
+- Uploadthing — File uploads (e.g. images). See docs/UPLOADTHING.md in repo.
+- Telegram — Optional order notifications and mini-app. See docs/TELEGRAM-MINI-APP.md in repo.
+
+For API details use /llm/api.txt and GET /api/agent/capabilities. For product/order creation and webhook setup, see repository docs (Printful, Printify, POD).

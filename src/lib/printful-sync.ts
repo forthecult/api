@@ -284,8 +284,8 @@ async function upsertPrintfulSizeChart(
     const dataImperial =
       (imperialRes?.data?.size_tables?.length ?? 0) > 0
         ? {
-            availableSizes: imperialRes.data.available_sizes ?? [],
-            sizeTables: imperialRes.data.size_tables.map((t) => ({
+            availableSizes: imperialRes?.data?.available_sizes ?? [],
+            sizeTables: (imperialRes?.data?.size_tables ?? []).map((t) => ({
               type: t.type,
               unit: t.unit,
               description: t.description,
@@ -297,8 +297,8 @@ async function upsertPrintfulSizeChart(
     const dataMetric =
       (metricRes?.data?.size_tables?.length ?? 0) > 0
         ? {
-            availableSizes: metricRes.data.available_sizes ?? [],
-            sizeTables: metricRes.data.size_tables.map((t) => ({
+            availableSizes: metricRes?.data?.available_sizes ?? [],
+            sizeTables: (metricRes?.data?.size_tables ?? []).map((t) => ({
               type: t.type,
               unit: t.unit,
               description: t.description,

@@ -1,0 +1,22 @@
+# Overview — Culture Store / Relivator
+
+This site is an ecommerce store (Culture Store) built on the Relivator stack: Next.js, React, Drizzle, better-auth, Polar and crypto payments, Printful/Printify for fulfillment.
+
+## For AI agents and LLMs
+
+- The site exposes a REST API designed for AI: semantic product search, structured errors with suggestions, action hints in responses, multi-chain crypto and card payments.
+- Best first call: GET /api/agent/capabilities — returns supported features, payment options, shipping countries, rate limits, and endpoint reference.
+- OpenAPI spec: GET /api/openapi.json. Human-readable API docs: /api/docs (if enabled).
+
+## Main concepts
+
+- Products: Published products with variants (size, color), categories, brands. Search via POST /api/products/semantic-search or POST /api/v1/products/search.
+- Checkout: POST /api/checkout with items, email, payment (chain/token or card), shipping. Returns order ID and payment details (crypto address + amount or payment link).
+- Orders: Poll GET /api/orders/{orderId}/status until status is "paid". Webhooks for fulfillment (Printful/Printify) update order status.
+- Admin: Create/edit products via /api/admin/products with Authorization: Bearer ADMIN_API_KEY or session cookie (admin emails in ADMIN_EMAILS).
+
+## Customer-facing
+
+- Storefront, product pages, cart, checkout. Auth via better-auth (email, OAuth). Subscriptions and billing via Polar (dashboard/billing).
+
+Use /llm/api.txt for full API summary and /llm/integrations.txt for payments, webhooks, and auth.
