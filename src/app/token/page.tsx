@@ -203,7 +203,7 @@ export default function TokenPage() {
           </div>
         </section>
 
-        {/* Why Pump.fun & What CULT Gets You (single section like tns.id/token) */}
+        {/* Why Pump.fun, value cards, then What CULT Gets You */}
         <section className="space-y-10 py-6 md:py-6">
           <div className="space-y-6">
             <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
@@ -220,6 +220,24 @@ export default function TokenPage() {
               launches on the bonding curve—everyone starts at the same price.
             </p>
           </div>
+
+          {/* Value cards (4 boxes) */}
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {valueCards.map(({ title, description, icon: Icon }) => (
+              <Card key={title} className="border-border bg-card">
+                <CardHeader>
+                  <Icon className="h-8 w-8 text-primary" />
+                  <CardTitle className="text-lg">{title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-muted-foreground">
+                    {description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
           <div className="space-y-4">
             <h3 className="font-display text-xl font-semibold text-foreground md:text-2xl">
               What CULT gets you
@@ -243,23 +261,6 @@ export default function TokenPage() {
               </li>
             </ul>
           </div>
-        </section>
-
-        {/* Value cards */}
-        <section className="grid gap-6 py-12 md:grid-cols-2 md:py-6 lg:grid-cols-4">
-          {valueCards.map(({ title, description, icon: Icon }) => (
-            <Card key={title} className="border-border bg-card">
-              <CardHeader>
-                <Icon className="h-8 w-8 text-primary" />
-                <CardTitle className="text-lg">{title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-muted-foreground">
-                  {description}
-                </CardDescription>
-              </CardContent>
-            </Card>
-          ))}
         </section>
 
         {/* Proposed Token Allocation */}
