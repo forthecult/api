@@ -31,7 +31,7 @@ import {
 export const metadata = {
   title: `CULT Token | ${SEO_CONFIG.name}`,
   description:
-    "Fair launch utility token for the CULT community. Governance rights and up to 13.37% discount on eligible purchases.",
+    "Fair launch utility token for the CULT community. Governance rights and up to 20% discount on eligible purchases.",
 };
 
 const valueCards = [
@@ -56,7 +56,7 @@ const valueCards = [
   {
     title: "Real Utility",
     description:
-      "Up to 13.37% discount when used for eligible purchases at checkout.",
+      "Up to 20% discount when used for eligible purchases at checkout.",
     icon: Zap,
   },
 ];
@@ -245,7 +245,7 @@ export default function TokenPage() {
                 you hold 250,000 or more tokens in your wallet
               </li>
               <li>
-                <strong className="text-foreground">Up to 13.37% discount</strong>{" "}
+                <strong className="text-foreground">Up to 20% discount</strong>{" "}
                 on eligible purchases at checkout
               </li>
               <li>
@@ -337,8 +337,8 @@ export default function TokenPage() {
             </p>
           </div>
           <div className="flex flex-col gap-10">
-            {/* Pie chart with labels pointing to slices */}
-            <div className="flex flex-col items-center gap-4">
+            {/* Pie chart with labels; table is below */}
+            <div className="flex flex-col items-center">
               <div className="relative aspect-square w-full max-w-[340px]">
                 <div
                   className="absolute inset-0 rounded-full border-4 border-background shadow-lg"
@@ -383,7 +383,7 @@ export default function TokenPage() {
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="fill-foreground font-medium"
-                            style={{ fontSize: "5.5px" }}
+                            style={{ fontSize: "14px" }}
                           >
                             {a.pct} {a.label}
                           </text>
@@ -393,11 +393,8 @@ export default function TokenPage() {
                   })()}
                 </svg>
               </div>
-              <p className="text-center text-sm text-muted-foreground">
-                Total 100%
-              </p>
             </div>
-            {/* Table below pie chart */}
+            {/* Table directly below pie chart */}
             <div className="min-w-0 rounded-lg border border-border">
               <Table>
                 <TableHeader>

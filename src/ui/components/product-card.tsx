@@ -166,13 +166,16 @@ function ProductCardInner({
   );
 
   return (
-    <div className={cn("group", className)} {...props}>
-      <Link href={`/${product.slug ?? product.id}`}>
+    <div className={cn("group h-full", className)} {...props}>
+      <Link
+        className="flex h-full flex-col"
+        href={`/${product.slug ?? product.id}`}
+      >
         <Card
           className={cn(
             `
-              relative h-full overflow-hidden rounded-lg py-0 transition-all
-              duration-200 ease-in-out will-change-transform
+              relative flex h-full flex-col overflow-hidden rounded-lg py-0
+              transition-all duration-200 ease-in-out will-change-transform
               hover:shadow-md hover:-translate-y-0.5
             `,
             isHovered && "ring-1 ring-primary/20",
@@ -318,7 +321,7 @@ function ProductCardInner({
           </div>
 
           {!product.tokenGated && (
-          <CardContent className="p-4 pt-4">
+          <CardContent className="flex flex-1 flex-col p-4 pt-4 min-h-0">
             {/* Product name with line clamp */}
             <h3
               className={`
@@ -359,7 +362,7 @@ function ProductCardInner({
           )}
 
           {!product.tokenGated && variant === "default" && (
-            <CardFooter className="p-4 pt-0">
+            <CardFooter className="mt-auto p-4 pt-0">
               <Button
                 className={cn(
                   "w-full gap-2 transition-all",
