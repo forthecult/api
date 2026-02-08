@@ -336,8 +336,8 @@ export default function TokenPage() {
               be viewed on Solscan.
             </p>
           </div>
-          <div className="grid gap-10 lg:grid-cols-[minmax(0,380px)_1fr] lg:items-start">
-            {/* Pie chart with labels pointing to slices + legend */}
+          <div className="flex flex-col gap-10">
+            {/* Pie chart with labels pointing to slices */}
             <div className="flex flex-col items-center gap-4">
               <div className="relative aspect-square w-full max-w-[340px]">
                 <div
@@ -382,8 +382,8 @@ export default function TokenPage() {
                             y={yLabel}
                             textAnchor="middle"
                             dominantBaseline="middle"
-                            className="fill-foreground text-[2.2px] font-medium"
-                            style={{ fontSize: "2.2px" }}
+                            className="fill-foreground font-medium"
+                            style={{ fontSize: "5.5px" }}
                           >
                             {a.pct} {a.label}
                           </text>
@@ -393,32 +393,11 @@ export default function TokenPage() {
                   })()}
                 </svg>
               </div>
-              <p className="text-center text-xs text-muted-foreground">
+              <p className="text-center text-sm text-muted-foreground">
                 Total 100%
               </p>
-              {/* Legend: color swatch + label for each slice */}
-              <ul className="grid w-full max-w-[340px] grid-cols-1 gap-1.5 text-left text-xs">
-                {creatorFeeAllocations.map((a, i) => (
-                  <li
-                    key={a.label}
-                    className="flex items-center gap-2 text-muted-foreground"
-                  >
-                    <span
-                      className="h-3 w-3 shrink-0 rounded-sm border border-border"
-                      style={{ backgroundColor: PIE_COLORS[i] }}
-                      aria-hidden
-                    />
-                    <span>
-                      <span className="font-medium tabular-nums text-foreground">
-                        {a.pct}
-                      </span>{" "}
-                      {a.label}
-                    </span>
-                  </li>
-                ))}
-              </ul>
             </div>
-            {/* Table – flexible width, no horizontal scroll */}
+            {/* Table below pie chart */}
             <div className="min-w-0 rounded-lg border border-border">
               <Table>
                 <TableHeader>
