@@ -322,27 +322,27 @@ export default function TokenPage() {
             </p>
           </div>
           <div className="flex flex-col gap-10">
-            {/* Pie chart: viewBox has margin so labels sit in space; pie same visual size */}
+            {/* Pie chart: viewBox 130 so pie ~65% of container (~25% bigger); lines 25% longer (rLabel 67) */}
             <div className="flex flex-col items-center overflow-visible px-2 py-8 md:px-6 md:py-10">
               <div
                 className="relative w-full max-w-[380px] overflow-visible"
                 style={{ aspectRatio: "1" }}
               >
-                {/* Gradient pie: center 50,50 radius 42 → 84 units; viewBox 160 → pie 84/160 = 52.5% of container */}
+                {/* Gradient pie: center 50,50 radius 42 → 84 units; viewBox 130 → pie 84/130 ≈ 65% of container */}
                 <div
-                  className="absolute left-1/2 top-1/2 h-[52.5%] w-[52.5%] -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-background shadow-lg"
+                  className="absolute left-1/2 top-1/2 h-[65%] w-[65%] -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-background shadow-lg"
                   style={{ background: creatorFeePieGradient() }}
                   aria-hidden
                 />
                 <svg
                   className="absolute inset-0 h-full w-full overflow-visible"
-                  viewBox="-30 -30 160 160"
+                  viewBox="-10 -10 130 130"
                   preserveAspectRatio="xMidYMid meet"
                   aria-hidden
                 >
                   {(() => {
                     const rPie = 42
-                    const rLabel = 62
+                    const rLabel = 67
                     let cum = 0
                     return creatorFeeAllocations.map((a) => {
                       const midDeg = (cum + a.value / 2) * 3.6
