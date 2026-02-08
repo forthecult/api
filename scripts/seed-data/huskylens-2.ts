@@ -3,6 +3,7 @@
  * Sourced from https://www.dfrobot.com/huskylens/huskylens2 and https://www.dfrobot.com/product-2995.html
  * Brand: DFRobot. Category: Tech Accessories. Price: 4% above cost ($74.90 → $77.90).
  * Shipping: DFRobot sells in USD/EUR/GBP; no explicit country list found. No product_available_country restriction = available everywhere.
+ * Images: vendor CDN (dfimg.dfrobot.com). Run db:upload-curated-product-images to pull, optimize, and upload to UploadThing.
  */
 
 const COST_CENTS = 7490; // $74.90 DFRobot list

@@ -2,7 +2,8 @@
  * Seed data for Home Assistant Voice Preview Edition — voice assistant for Home Assistant.
  * Sourced from https://www.seeedstudio.com/Home-Assistant-Voice-p-6998.html (US warehouse).
  * Brand: Seeed Studio. Category: Smart Home. US price: $59.00.
- * Shipping: Seeed US warehouse ships to USA only; CN to most countries, DE to EU. No product restriction = available everywhere.
+ * Images: full-size catalog URLs (no cache). Run db:upload-curated-product-images to upload to UploadThing.
+ * Markets: Seeed US warehouse ships USA only; we restrict to US.
  */
 
 const PRICE_CENTS = 5900; // US $59.00
@@ -10,31 +11,32 @@ const PRODUCT_ID = "home-assistant-voice";
 const PRODUCT_SLUG = "home-assistant-voice";
 const CATEGORY_ID = "smart-home";
 
-const SEEED_CDN = "https://media-cdn.seeedstudio.com/media/catalog/product/cache/48035b5512857d0ab907b31a092da78f";
+/** Full-size images (no cache path). Upload script will pull, optimize, and upload to UploadThing. */
+const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_CDN}/h/o/home_assitant_voice.jpg`,
+    url: `${SEEED_MEDIA}/h/o/home_assitant_voice.jpg`,
     alt: "Home Assistant Voice Preview Edition - voice assistant for Home Assistant",
     title: "Home Assistant Voice - Main",
   },
   {
-    url: `${SEEED_CDN}/v/o/voice_preview_edition_-_device_-_5._top.png`,
+    url: `${SEEED_MEDIA}/v/o/voice_preview_edition_-_device_-_5._top.png`,
     alt: "Home Assistant Voice - top view",
     title: "Home Assistant Voice - Top",
   },
   {
-    url: `${SEEED_CDN}/v/o/voice_preview_edition_-_device_-_7._front.png`,
+    url: `${SEEED_MEDIA}/v/o/voice_preview_edition_-_device_-_7._front.png`,
     alt: "Home Assistant Voice - front",
     title: "Home Assistant Voice - Front",
   },
   {
-    url: `${SEEED_CDN}/v/o/voice_preview_edition_-_device_-_8._back.png`,
+    url: `${SEEED_MEDIA}/v/o/voice_preview_edition_-_device_-_8._back.png`,
     alt: "Home Assistant Voice - back",
     title: "Home Assistant Voice - Back",
   },
   {
-    url: `${SEEED_CDN}/v/o/voice_preview_edition_-_packaging_-_4._open_with_contents.png`,
+    url: `${SEEED_MEDIA}/v/o/voice_preview_edition_-_packaging_-_4._open_with_contents.png`,
     alt: "Home Assistant Voice - packaging and contents",
     title: "Home Assistant Voice - Contents",
   },
@@ -74,4 +76,6 @@ export const HOME_ASSISTANT_VOICE = {
   continueSellingWhenOutOfStock: true,
   pageLayout: "long-form" as const,
   images: PRODUCT_IMAGES,
+  /** Seeed US warehouse ships to USA only. Run db:upload-curated-product-images so images are on UploadThing. */
+  availableCountryCodes: ["US"] as const,
 };

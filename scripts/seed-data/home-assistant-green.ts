@@ -2,7 +2,8 @@
  * Seed data for Home Assistant Green — official smart home hub.
  * Sourced from https://www.seeedstudio.com/Home-Assistant-Green-p-5792.html (US warehouse).
  * Brand: Seeed Studio. Category: Smart Home. US price: $158.90.
- * Shipping: Seeed US warehouse ships to USA only; CN to most countries, DE to EU. No product restriction = available everywhere.
+ * Images: full-size catalog URLs (no cache). Run db:upload-curated-product-images to upload to UploadThing.
+ * Markets: Seeed US warehouse ships USA only; we restrict to US.
  */
 
 const PRICE_CENTS = 15890; // US $158.90
@@ -10,43 +11,34 @@ const PRODUCT_ID = "home-assistant-green";
 const PRODUCT_SLUG = "home-assistant-green";
 const CATEGORY_ID = "smart-home";
 
-const SEEED_CDN = "https://media-cdn.seeedstudio.com/media/catalog/product/cache/48035b5512857d0ab907b31a092da78f";
+/** Full-size images (no cache path). Upload script will pull, optimize, and upload to UploadThing. */
+const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_CDN}/5/-/5-113110024--home-assistant-green-fontall_1.jpg`,
+    url: `${SEEED_MEDIA}/5/-/5-113110024--home-assistant-green-fontall_1.jpg`,
     alt: "Home Assistant Green smart home hub - front view",
     title: "Home Assistant Green - Front",
   },
   {
-    url: `${SEEED_CDN}/2/-/2-113110024--home-assistant-green-45font_1.jpg`,
+    url: `${SEEED_MEDIA}/2/-/2-113110024--home-assistant-green-45font_1.jpg`,
     alt: "Home Assistant Green - 45° angle",
     title: "Home Assistant Green - Angle",
   },
   {
-    url: `${SEEED_CDN}/3/-/3-113110024--home-assistant-green-back_1.jpg`,
+    url: `${SEEED_MEDIA}/3/-/3-113110024--home-assistant-green-back_1.jpg`,
     alt: "Home Assistant Green - back view",
     title: "Home Assistant Green - Back",
   },
   {
-    url: `${SEEED_CDN}/4/-/4-113110024--home-assistant-green-45back_1.jpg`,
-    alt: "Home Assistant Green - back angle",
-    title: "Home Assistant Green - Back angle",
-  },
-  {
-    url: `${SEEED_CDN}/6/-/6-113110024--home-assistant-green-feature_1.jpg`,
+    url: `${SEEED_MEDIA}/6/-/6-113110024--home-assistant-green-feature_1.jpg`,
     alt: "Home Assistant Green - feature",
     title: "Home Assistant Green - Feature",
   },
   {
-    url: `${SEEED_CDN}/1/0/10-113110024--home-assistant-green-first.jpg`,
+    url: `${SEEED_MEDIA}/1/0/10-113110024--home-assistant-green-first.jpg`,
     alt: "Home Assistant Green - first setup",
     title: "Home Assistant Green - Setup",
-  },
-  {
-    url: `${SEEED_CDN}/1/1/11-113110024--home-assistant-green-size.jpg`,
-    alt: "Home Assistant Green - dimensions",
-    title: "Home Assistant Green - Size",
   },
 ];
 
@@ -86,4 +78,6 @@ export const HOME_ASSISTANT_GREEN = {
   continueSellingWhenOutOfStock: true,
   pageLayout: "long-form" as const,
   images: PRODUCT_IMAGES,
+  /** Seeed US warehouse ships to USA only. Run db:upload-curated-product-images so images are on UploadThing. */
+  availableCountryCodes: ["US"] as const,
 };

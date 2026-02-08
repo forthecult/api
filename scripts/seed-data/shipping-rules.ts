@@ -92,6 +92,19 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       estimatedDaysText: "2-7 business days",
     },
   ],
+  /** Seeed US warehouse ships to USA only (seeedstudio.com). */
+  "seeed-studio": [
+    {
+      name: "Seeed Studio US",
+      countryCode: "US",
+      minOrderCents: null,
+      maxOrderCents: null,
+      type: "flat_plus_per_item",
+      amountCents: 400,
+      additionalItemCents: 100,
+      priority: 1,
+    },
+  ],
   /** US only; $75 flat; ships in 1-2 weeks. */
   spout: [
     {

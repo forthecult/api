@@ -1,6 +1,7 @@
 /**
  * Download, optimize (WebP), and upload ALL curated product images to UploadThing.
  * Covers: Pacsafe (4), Earth Runners, Spout, Trezor Safe 7/5, HUSKYLENS 2, Cryptomatic Jetsetter, Home Assistant Green/Voice.
+ * Seed data may use vendor URLs (Seeed, Trezor CDN, etc.); this script downloads those, optimizes, uploads to UT, and updates the DB.
  * Updates product_image, product.imageUrl, and product_variant.imageUrl in the DB.
  *
  * Run after seeding products. Requires UPLOADTHING_TOKEN in .env.
@@ -24,6 +25,8 @@ import { getUploadThingToken, validateUploadThingToken } from "../src/lib/upload
 
 import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
+import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
+import { HOME_ASSISTANT_VOICE } from "./seed-data/home-assistant-voice";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
 import { PACSAFE_RFIDSAFE_WALLET } from "./seed-data/pacsafe-rfidsafe-wallet";

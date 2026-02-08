@@ -99,7 +99,11 @@ export async function uploadMockupToUploadThing(
   let buffer: Buffer;
   try {
     const res = await fetch(sourceUrl, {
-      headers: { Accept: "image/*" },
+      headers: {
+        Accept: "image/*",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; CultureStore/1.0; image-fetch)",
+      },
       signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) {

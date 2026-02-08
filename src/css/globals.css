@@ -238,7 +238,7 @@
 
 /* Testimonials: 4 sets, pause on hover */
 .animate-marquee-testimonials {
-  animation: marquee-quarter 40s linear infinite;
+  animation: marquee-quarter 80s linear infinite;
 }
 
 .group:hover .animate-marquee-testimonials {

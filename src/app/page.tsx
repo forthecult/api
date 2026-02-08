@@ -164,25 +164,25 @@ export const metadata: Metadata = {
 const featuresWhyChooseUs = [
   {
     description:
-      "Free shipping on orders over $100. Fast, reliable delivery to your doorstep. Members get free shipping on most orders.",
+      "Free shipping on orders over $100. Fast, reliable delivery worldwide. Members get free shipping on most orders.",
     icon: <Truck className="h-6 w-6 text-primary" />,
     title: "Free shipping",
   },
   {
     description:
-      "Your payment information is always safe and secure. We use industry-leading encryption and you control your data.",
+      "Pay with Solana, $CULT, or card. Secure encryption and you control your data. Checkout is guest-friendly—sign up optional.",
     icon: <ShoppingBag className="h-6 w-6 text-primary" />,
-    title: "Secure checkout",
+    title: "Pay your way",
   },
   {
     description:
-      "Our customer support team is here to help with any questions or concerns. We care for you.",
+      "Our support team is here for orders, returns, and questions. We respond quickly and care about your experience.",
     icon: <Clock className="h-6 w-6 text-primary" />,
-    title: "24/7 support",
+    title: "Support when you need it",
   },
   {
     description:
-      "We stand behind the quality of every product. Meticulously curated with a 30-day money-back guarantee.",
+      "Every product is curated for quality. We stand behind what we sell with a 30-day money-back guarantee.",
     icon: <Star className="h-6 w-6 text-primary" />,
     title: "Quality guarantee",
   },
@@ -253,8 +253,9 @@ export default async function HomePage() {
                       md:text-xl
                     `}
                   >
-                    Curated for people who invest in themselves. Quality gear at
-                    competitive prices.
+                    Curated tech, premium apparel, wellness gear, and travel
+                    essentials—for people who invest in themselves. Pay with
+                    Solana, $CULT, or card.
                   </p>
                 </div>
                 <div
@@ -294,7 +295,11 @@ export default async function HomePage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-5 w-5 text-primary/70" />
-                    <span>We ship to 100+ countries</span>
+                    <span>Worldwide delivery</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ShoppingBag className="h-5 w-5 text-primary/70" />
+                    <span>Pay with crypto or card</span>
                   </div>
                 </div>
               </div>
@@ -312,7 +317,7 @@ export default async function HomePage() {
                   `}
                 />
                 <Image
-                  alt="Culture brand — premium apparel and lifestyle. Where smart living and technology meet."
+                  alt="For the Cult — curated tech, premium apparel, and lifestyle gear. Where smart living and technology meet."
                   title="Culture lifestyle"
                   className="object-cover"
                   fill
@@ -332,7 +337,7 @@ export default async function HomePage() {
             <div className="mx-auto max-w-3xl space-y-6 text-center">
               <SectionHeading
                 title="A lifestyle for the independent"
-                subtitle="If you are here, you have front row seats. We work with curated quality to create gear that fits how you live—and the future you're building. Our membership gives you a discount on most products, free shipping for orders over $100, exclusive items, and early access to new arrivals."
+                subtitle="You're in the right place. We curate tech, apparel, wellness, and travel gear that fits how you live—and the future you're building. Join as a member for product discounts, free shipping on orders over $100, exclusive drops, and early access to new arrivals. Pay your way: Solana, $CULT, or card."
               />
               <Link href="/signup">
                 <Button variant="outline" size="lg">
@@ -343,7 +348,7 @@ export default async function HomePage() {
           </PageContainer>
         </PageSection>
 
-        {/* Pure style for a healthier you */}
+        {/* Quality that looks good and does good */}
         <PageSection background="muted">
           <PageContainer>
             <div className="mx-auto max-w-3xl space-y-4 text-center">
@@ -353,14 +358,13 @@ export default async function HomePage() {
                   text-foreground md:text-3xl
                 `}
               >
-                Pure style for a healthier you
+                Quality that looks good and does good
               </h2>
               <p className="text-muted-foreground md:text-lg">
-                We believe that what you wear and use should not only look good,
-                but help you feel your best. That’s why we’re committed to
-                quality materials and thoughtfully curated apparel—something
-                we’d be proud to use ourselves, and a step toward a lifestyle
-                you can feel good about.
+                What you wear and use should look great and support how you feel.
+                We focus on quality materials and thoughtfully curated
+                apparel—gear we'd use ourselves, for a lifestyle you can feel
+                good about.
               </p>
               <Link href="/lookbook">
                 <Button variant="secondary" size="lg">
@@ -390,12 +394,12 @@ export default async function HomePage() {
           </PageContainer>
         </PageSection>
 
-        {/* Exquisite Essentials */}
+        {/* Curated collections */}
         <PageSection>
           <PageContainer>
             <SectionHeading
-              title="Exquisite essentials"
-              subtitle="Our collection offers an unparalleled blend of quality and style. Each piece is meticulously crafted to meet your needs while exuding sophistication and refinement. From functional accessories to statement items, our products are designed to elevate your everyday and leave a lasting impression."
+              title="Tech, style, and everyday essentials"
+              subtitle="From travel tech and premium apparel to wellness and lifestyle gear—each piece is chosen for quality and how you actually live. Functional, refined, and built to last."
             />
           </PageContainer>
         </PageSection>
@@ -405,7 +409,7 @@ export default async function HomePage() {
           <PageContainer>
             <SectionHeadingBlock
               title="Shop by category"
-              description="Find the perfect fit from our curated collections—tech, style, and everyday essentials"
+              description="Browse curated tech, apparel, wellness, and travel essentials—each category handpicked for quality and value"
             />
             <div
               className={`
@@ -473,7 +477,8 @@ export default async function HomePage() {
               </h2>
               <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
               <p className="mt-4 max-w-2xl text-center text-muted-foreground">
-                Handpicked gear for how you live—tech, style, and essentials
+                Handpicked tech, apparel, wellness, and travel gear for how you
+                live
               </p>
             </div>
             <div
@@ -533,7 +538,8 @@ export default async function HomePage() {
                   md:text-lg
                 `}
               >
-                We offer the best shopping experience with premium features
+                Secure checkout, crypto or card, free shipping over $100, and
+                support when you need it
               </p>
             </div>
             <div
@@ -638,8 +644,9 @@ export default async function HomePage() {
                     md:text-xl
                   `}
                 >
-                  Join thousands for exclusive deals, early access to new
-                  arrivals, and free shipping over $100. Sign up today.
+                  Join for member discounts, early access to new arrivals, and
+                  free shipping over $100. Pay with Solana, $CULT, or card. Sign
+                  up today.
                 </p>
                 <div
                   className={`
