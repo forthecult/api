@@ -161,6 +161,16 @@ export default function TokenPage() {
           lg:px-8
         `}
       >
+        {/* Web3 eCommerce lead */}
+        <section className="border-b border-border py-8 md:py-10">
+          <p className="mx-auto max-w-2xl text-center text-lg text-muted-foreground md:text-xl">
+            When you search &apos;web3 eCommerce&apos; you&apos;ll find dozens of
+            articles about the benefits, but no one is doing it the way it
+            should be. At least, not with physical products. We&apos;re here to
+            change that.
+          </p>
+        </section>
+
         {/* Hero */}
         <section className="relative overflow-hidden py-12 md:py-16">
           <div className="relative z-10 mx-auto max-w-3xl space-y-6 text-center">
@@ -182,19 +192,6 @@ export default function TokenPage() {
                 CULT Token
               </span>
             </h1>
-            <p className="text-lg text-muted-foreground md:text-xl">
-              Fair launch on{" "}
-              <a
-                className="underline underline-offset-2 hover:text-foreground"
-                href="https://pump.fun"
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                pump.fun
-              </a>
-              . Available to everyone on equal terms. A utility token for the
-              CULT community.
-            </p>
             <p className="text-muted-foreground">
               Holding CULT gives free shipping. Spending CULT gives up to 20%
               discount on eligible purchases. We kept 13.37% for the team. You get
@@ -497,10 +494,9 @@ export default function TokenPage() {
               </CardHeader>
               <CardContent>
                 <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                  <li>Better allocation of capital</li>
-                  <li>Limited liability for token holders</li>
-                  <li>Clear framework for decentralized ops</li>
-                  <li>Compliant path to community governance</li>
+                  <li>Better ]capital management</li>
+                  <li>Clear framework for decentralized operations</li>
+                  <li>Path to community governance</li>
                 </ul>
               </CardContent>
             </Card>

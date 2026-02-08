@@ -37,6 +37,8 @@ export type ProductVariantOption = {
   id: string;
   size?: string;
   color?: string;
+  /** Gender/style option (e.g. Men's / Women's). */
+  gender?: string;
   priceCents: number;
   stockQuantity?: number;
   imageUrl?: string;

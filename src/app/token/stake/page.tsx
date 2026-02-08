@@ -34,7 +34,7 @@ export default function TokenStakePage() {
           </h1>
           <p className="mt-1 text-muted-foreground">
             Your CULT balance is your voting power. Connect your Solana wallet to
-            participate in governance.
+            participate.
           </p>
           <Link
             href="/token"

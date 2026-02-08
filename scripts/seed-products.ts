@@ -288,6 +288,7 @@ async function seed() {
         id: string;
         color?: string;
         size?: string;
+        gender?: string;
         priceCents: number;
         sku: string;
         imageUrl: string;
@@ -307,6 +308,7 @@ async function seed() {
           productId,
           color: v.color ?? null,
           size: v.size ?? null,
+          gender: (v as { gender?: string }).gender ?? null,
           priceCents: v.priceCents,
           sku: v.sku,
           imageUrl: v.imageUrl,

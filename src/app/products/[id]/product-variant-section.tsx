@@ -10,12 +10,22 @@ import { ProductActions, ProductPriceDisplay } from "./product-detail-client";
 import { SecureCheckoutLine } from "./secure-checkout-line";
 import type { ProductOptionDefinition, ProductVariantOption } from "./page";
 
-/** Map option definition to variant field: "color" | "size". */
-function getVariantKey(optionName: string, index: number): "color" | "size" {
+/** Map option definition to variant field: "color" | "size" | "gender". */
+function getVariantKey(
+  optionName: string,
+  index: number,
+): "color" | "size" | "gender" {
   const lower = optionName.toLowerCase();
   if (lower.includes("color")) return "color";
   if (lower.includes("size")) return "size";
-  return index === 0 ? "color" : "size";
+  if (
+    lower.includes("men") ||
+    lower.includes("women") ||
+    lower.includes("gender") ||
+    lower.includes("style")
+  )
+    return "gender";
+  return index === 0 ? "color" : index === 1 ? "gender" : "size";
 }
 
 function findVariant(
@@ -28,7 +38,12 @@ function findVariant(
       const value = selectedByIndex[idx];
       if (value == null) return false;
       const key = getVariantKey(opt.name, idx);
-      const variantValue = key === "color" ? v.color : v.size;
+      const variantValue =
+        key === "color"
+          ? v.color
+          : key === "gender"
+            ? v.gender
+            : v.size;
       return variantValue === value;
     });
   });
@@ -98,7 +113,12 @@ export function ProductVariantSection({
     const initial: Record<number, string> = {};
     optionDefinitions.forEach((opt, idx) => {
       const key = getVariantKey(opt.name, idx);
-      const value = key === "color" ? first.color : first.size;
+      const value =
+        key === "color"
+          ? first.color
+          : key === "gender"
+            ? first.gender
+            : first.size;
       if (value) initial[idx] = value;
     });
     setSelectedByIndex((prev) =>

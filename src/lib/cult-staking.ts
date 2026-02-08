@@ -66,6 +66,35 @@ export function getUserStakePda(
 
 /** UserStake account layout: 8 (discriminator) + 32 (owner) + 8 (amount) */
 const USER_STAKE_AMOUNT_OFFSET = 8 + 32;
+const USER_STAKE_OWNER_OFFSET = 8;
+const USER_STAKE_ACCOUNT_SIZE = 8 + 32 + 8;
+
+export type StakerEntry = { owner: string; amount: bigint };
+
+/** Fetch all stakers and their raw staked amounts (for reward distribution). */
+export async function fetchAllStakers(
+  connection: Connection,
+  programId: PublicKeyClass | null,
+): Promise<StakerEntry[]> {
+  if (!programId) return [];
+  try {
+    const accounts = await connection.getProgramAccounts(programId, {
+      filters: [{ dataSize: USER_STAKE_ACCOUNT_SIZE }],
+    });
+    return accounts
+      .map(({ account }) => {
+        const data = account.data;
+        if (data.length < USER_STAKE_AMOUNT_OFFSET + 8) return null;
+        const owner = new PublicKeyClass(data.subarray(USER_STAKE_OWNER_OFFSET, USER_STAKE_OWNER_OFFSET + 32));
+        const amount = data.readBigUInt64LE(USER_STAKE_AMOUNT_OFFSET);
+        if (amount === 0n) return null;
+        return { owner: owner.toBase58(), amount };
+      })
+      .filter((e): e is StakerEntry => e !== null);
+  } catch {
+    return [];
+  }
+}
 
 /** Fetch staked amount (raw, with decimals) for a wallet. Returns 0n if no stake account, program not deployed, or program ID not set. */
 export async function fetchStakedBalance(

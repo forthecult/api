@@ -76,8 +76,55 @@ If `CULT_STAKING_PROGRAM_ID` is not set, the app still works: voting power = wal
 - **UserStake** (PDA `["stake", pool, user]`): `owner`, `amount` (raw u64).
 - **Vault**: ATA(mint, pool_pda) — holds all staked CULT; pool PDA is authority so the program can sign for unstake.
 
+## Auto-distribution of SOL to stakers
+
+SOL (or other rewards) can be sent to stakers proportionally using a **cron job** and the script `scripts/staking-rewards-distribute.ts`.
+
+### How it works
+
+1. The script calls `getProgramAccounts` on the staking program to fetch all `UserStake` accounts (owner + amount).
+2. It computes each staker’s share of a fixed SOL amount: `(staker_amount / total_staked) * reward_sol`.
+3. It sends SOL from a dedicated **rewards wallet** to each staker’s wallet (the `owner` of each stake account) in batches of transactions.
+
+### Setup
+
+1. **Rewards wallet**  
+   Create a Solana wallet used only for staking rewards. Fund it with SOL (e.g. from the “5% Staked holders” creator fee allocation).
+
+2. **Environment** (for the machine that runs the script, e.g. cron or CI):
+
+   - `STAKING_REWARDS_WALLET_SECRET_KEY` – base58 or JSON array private key of the rewards wallet.
+   - `CULT_STAKING_PROGRAM_ID` – staking program ID.
+   - `REWARD_SOL_TOTAL` – SOL to distribute in this run (e.g. `0.5`).
+   - Optional: `MIN_STAKER_LAMPORTS` (default 1000) – skip stakers whose share is below this.
+   - Optional: `SOLANA_RPC_URL`, `DRY_RUN=true`, `BATCH_SIZE` (default 8).
+
+3. **Run manually**
+
+   ```bash
+   REWARD_SOL_TOTAL=0.5 STAKING_REWARDS_WALLET_SECRET_KEY=... CULT_STAKING_PROGRAM_ID=... bun run scripts/staking-rewards-distribute.ts
+   ```
+
+4. **Run automatically (cron)**  
+   Example: weekly on Sunday at midnight:
+
+   ```bash
+   0 0 * * 0 cd /path/to/relivator && REWARD_SOL_TOTAL=0.5 STAKING_REWARDS_WALLET_SECRET_KEY=... CULT_STAKING_PROGRAM_ID=... bun run scripts/staking-rewards-distribute.ts
+   ```
+
+   Use your preferred way to inject env (e.g. a `.env` file only on the server, or your cron env).
+
+5. **Where the SOL comes from**  
+   Fund the rewards wallet from your treasury or from the share of fees you allocate to stakers (e.g. the 5% “Staked holders” creator fee). You can run a separate process that periodically sweeps that fee wallet into the rewards wallet, or send SOL manually before each distribution.
+
+### Safety
+
+- Use **DRY_RUN=true** first to log payouts without sending.
+- Keep `STAKING_REWARDS_WALLET_SECRET_KEY` only on the server that runs the script; never commit it.
+- Start with small `REWARD_SOL_TOTAL` to verify, then increase.
+
 ## Security
 
 - Only the pool PDA can sign for vault transfers (unstake).
 - One stake account per user per pool; amount is incremented on stake and decremented on unstake.
-- No rewards or lock in this version; rewards (e.g. from creator fee) can be added later.
+- Rewards are sent by an off-chain script from a dedicated wallet; the on-chain program does not hold or send SOL.

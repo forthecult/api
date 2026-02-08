@@ -112,13 +112,18 @@ export const CIRCADIAN_SIZE_CHART = {
   dataMetric: buildSizeChartMetric(),
 };
 
-/** Option 1: Men's or Women's. Option 2: physical size (same sandal length; 22 sizes). */
+/** Color option: Carbon or Sunset. */
+const COLORS = ["Carbon", "Sunset"] as const;
+
+/** Option 2: Men's or Women's. */
 const GENDERS = ["Men's", "Women's"] as const;
 
 /** Size option values: one per physical sandal length (e.g. "4M / 6W"). */
 const SIZE_OPTION_VALUES = SIZES_ROW.map((r) => r.usa);
 
+/** Option order: Color → Men/Women → Size (2 × 2 × 22 = 88 variants). */
 const OPTION_DEFINITIONS = [
+  { name: "Color", values: [...COLORS] },
   { name: "Men/Women", values: [...GENDERS] },
   { name: "Size", values: SIZE_OPTION_VALUES },
 ];
@@ -128,17 +133,28 @@ function sizeRowToSkuSlug(row: (typeof SIZES_ROW)[number]): string {
   return row.usa.replace(/\s*\/\s*/g, "-").replace(/\s/g, "").replace(/\./g, "");
 }
 
-/** Single default product image for all variants (no lace variant imagery). */
-const DEFAULT_VARIANT_IMAGE = {
-  url: `${CDN}/Carbon_circ2023_7b371855-6ead-49ff-ad30-c1f9c7376936.jpg?v=1749057390`,
-  alt: "Earth Runners Circadian sandals - 9mm Vibram sole",
-  title: "Circadian Sandals — Earth Runners",
+/** Variant images by color (Carbon vs Sunset). */
+const VARIANT_IMAGES: Record<
+  (typeof COLORS)[number],
+  { url: string; alt: string; title: string }
+> = {
+  Carbon: {
+    url: `${CDN}/Carbon_circ2023_7b371855-6ead-49ff-ad30-c1f9c7376936.jpg?v=1749057390`,
+    alt: "Earth Runners Circadian sandals, Carbon - 9mm Vibram sole",
+    title: "Circadian Sandals — Carbon",
+  },
+  Sunset: {
+    url: `${CDN}/Sunset_circ2023_33ad29c4-1741-42e2-a43d-1a181a06e05c.jpg?v=1749180263`,
+    alt: "Earth Runners Circadian sandals, Sunset - earthing adventure sandals",
+    title: "Circadian Sandals — Sunset",
+  },
 };
 
-/** Men/Women × Size variants: 2 × 22 = 44. Same SKU for (Men's, 4M/6W) and (Women's, 4M/6W). */
+/** Color × Men/Women × Size variants: 2 × 2 × 22 = 88. */
 const VARIANTS: Array<{
   id: string;
   color: string;
+  gender: string;
   size: string;
   priceCents: number;
   sku: string;
@@ -148,23 +164,29 @@ const VARIANTS: Array<{
   stockQuantity: number;
   label: string;
 }> = [];
-for (const gender of GENDERS) {
-  for (let i = 0; i < SIZES_ROW.length; i++) {
-    const row = SIZES_ROW[i]!;
-    const sizeSlug = sizeRowToSkuSlug(row);
-    const id = `${PRODUCT_ID}-${gender.toLowerCase().replace(/'/g, "")}-${sizeSlug}`;
-    VARIANTS.push({
-      id,
-      color: gender,
-      size: row.usa,
-      priceCents: PRICE_CENTS,
-      sku: `CA-CIR-${sizeSlug}`,
-      imageUrl: DEFAULT_VARIANT_IMAGE.url,
-      imageAlt: DEFAULT_VARIANT_IMAGE.alt,
-      imageTitle: DEFAULT_VARIANT_IMAGE.title,
-      stockQuantity: 99,
-      label: `${gender} ${row.usa}`,
-    });
+for (const color of COLORS) {
+  const img = VARIANT_IMAGES[color];
+  for (const gender of GENDERS) {
+    for (let i = 0; i < SIZES_ROW.length; i++) {
+      const row = SIZES_ROW[i]!;
+      const sizeSlug = sizeRowToSkuSlug(row);
+      const genderSlug = gender.toLowerCase().replace(/'/g, "");
+      const colorSlug = color.toLowerCase();
+      const id = `${PRODUCT_ID}-${colorSlug}-${genderSlug}-${sizeSlug}`;
+      VARIANTS.push({
+        id,
+        color,
+        gender,
+        size: row.usa,
+        priceCents: PRICE_CENTS,
+        sku: `CA-CIR-${colorSlug.slice(0, 2).toUpperCase()}-${sizeSlug}`,
+        imageUrl: img.url,
+        imageAlt: img.alt,
+        imageTitle: img.title,
+        stockQuantity: 99,
+        label: `${color} ${gender} ${row.usa}`,
+      });
+    }
   }
 }
 

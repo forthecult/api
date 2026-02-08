@@ -98,6 +98,8 @@ export const productVariantsTable = pgTable(
     externalId: text("external_id"), // printful: catalog_variant_id / printify: variant_id
     size: text("size"),
     color: text("color"),
+    /** Gender/style option (e.g. Men's / Women's for Earth Runners). Used when product has 3 option dimensions. */
+    gender: text("gender"),
     colorCode: text("color_code"),
     sku: text("sku"),
     /** Display label (e.g. Printful sync variant "name": "Product / Color / Size") */

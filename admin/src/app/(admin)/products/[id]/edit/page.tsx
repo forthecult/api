@@ -270,6 +270,7 @@ export default function AdminProductEditPage() {
     [],
   );
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
+  const [primaryImageLoadError, setPrimaryImageLoadError] = useState(false);
 
   const availableCountrySet = useMemo(
     () => new Set(availableCountryCodes),
@@ -359,6 +360,7 @@ export default function AdminProductEditPage() {
       setDescription(data.description ?? "");
       setFeatures(Array.isArray(data.features) ? data.features : []);
       setImageUrl(data.imageUrl ?? "");
+      setPrimaryImageLoadError(false);
       setMainImageAlt(
         (data as { mainImageAlt?: string | null }).mainImageAlt ?? "",
       );
@@ -1645,7 +1647,10 @@ export default function AdminProductEditPage() {
                   type="url"
                   placeholder="https://… or drop image"
                   value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
+                  onChange={(e) => {
+                    setImageUrl(e.target.value);
+                    setPrimaryImageLoadError(false);
+                  }}
                   className={inputClass}
                 />
                 {imageUrl && (
@@ -1653,18 +1658,24 @@ export default function AdminProductEditPage() {
                     <button
                       type="button"
                       onClick={() => setExpandedImageUrl(imageUrl)}
-                      className="relative size-24 shrink-0 overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="relative flex size-24 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
                       title="Click to expand"
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imageUrl}
-                        alt=""
-                        className="size-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = "none";
-                        }}
-                      />
+                      {primaryImageLoadError ? (
+                        <span className="flex flex-col items-center gap-0.5 p-1 text-center text-[10px] text-destructive">
+                          <ImageIcon className="size-5" />
+                          Failed to load
+                        </span>
+                      ) : (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={imageUrl}
+                          alt=""
+                          className="size-full object-cover"
+                          referrerPolicy="no-referrer"
+                          onError={() => setPrimaryImageLoadError(true)}
+                        />
+                      )}
                     </button>
                     <span className="text-xs text-muted-foreground">
                       Click to expand
@@ -2158,6 +2169,7 @@ export default function AdminProductEditPage() {
                                           src={v.imageUrl}
                                           alt=""
                                           className="h-full w-full rounded object-cover"
+                                          referrerPolicy="no-referrer"
                                         />
                                       </button>
                                     ) : (
@@ -2292,9 +2304,10 @@ export default function AdminProductEditPage() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={expandedImageUrl}
+                src={expandedImageUrl ?? undefined}
                 alt="Expanded view"
                 className="max-h-[90vh] max-w-full rounded object-contain shadow-2xl"
+                referrerPolicy="no-referrer"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>

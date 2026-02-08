@@ -98,6 +98,31 @@ Options:
 
 The script (and the admin action) update `product_image.url`, `product.imageUrl`, and `product_variant.imageUrl` (and related alt fields) to the new UploadThing URLs.
 
+### 6. Product photos for staging and production (curated products)
+
+Curated products (TRMNL, Earth Runners, Pacsafe, Trezor, Home Assistant, etc.) are seeded with **vendor/source image URLs** only. Those URLs are not used on the storefront; images must be **uploaded to UploadThing** and the DB updated so the app serves from `*.ufs.sh` / `utfs.io`.
+
+**To get product photos displaying in staging and production:**
+
+1. **Use one UploadThing app for all environments**  
+   Use the same `UPLOADTHING_TOKEN` in local `.env`, GitHub Actions (staging seed), and production env. URLs written to the DB will then work in admin and storefront everywhere.
+
+2. **Seed products, then upload images**
+   - **Locally** (with DB and `UPLOADTHING_TOKEN` in `.env`):
+     ```bash
+     bun run db:seed-products
+     bun run db:upload-curated-product-images
+     ```
+   - Or in one go: `bun run db:seed-and-upload-curated` (seed + upload; still requires `UPLOADTHING_TOKEN`).
+   - **Staging (GitHub Actions):** Run the **“Seed staging (DB schema + categories)”** workflow. If the repo secret **`UPLOADTHING_TOKEN`** is set (Settings → Secrets and variables → Actions), the workflow runs `db:upload-curated-product-images` after seeding. That step downloads images from vendor URLs, optimizes to WebP, uploads to UploadThing, and updates product/variant/image URLs in the DB. If the secret is missing, product images stay as vendor URLs and may not load or may be blocked by CORS.
+
+3. **If admin still shows “Failed to load” or placeholders**
+   - Confirm the workflow log shows **“Upload curated product images to UploadThing”** ran (and didn’t error). If it was skipped, add `UPLOADTHING_TOKEN` and re-run the workflow.
+   - In admin, open a product and check the Media URLs. They should be `https://….ufs.sh/…` or `https://utfs.io/…`. If they’re still vendor URLs (e.g. `media-cdn.seeedstudio.com`), the upload step didn’t run or failed.
+   - Admin image previews use `referrerPolicy="no-referrer"` so external CDN images load; if the URL is correct and the file exists in your UploadThing app, the preview should show. If you see “Failed to load”, the URL may be wrong (e.g. typo) or the file may be in a different UploadThing app (different token).
+
+**Summary:** Seed products → run `db:upload-curated-product-images` with `UPLOADTHING_TOKEN` set (locally or in the staging workflow) → product and variant image URLs in the DB point to UploadThing → photos display in staging and production.
+
 ---
 
 ## Summary
