@@ -78,8 +78,8 @@ export function RelatedProductsSection({
           />
         ))}
         </div>
-      </div>
       )}
+      </div>
     </section>
   );
 }
