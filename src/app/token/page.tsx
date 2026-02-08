@@ -337,46 +337,32 @@ export default function TokenPage() {
             </p>
           </div>
           <div className="flex flex-col gap-10">
-            {/* Pie chart with labels spread out; table is below */}
-            <div className="flex flex-col items-center overflow-visible py-8 md:py-10">
-              <div
-                className="relative mx-auto w-full max-w-[380px] overflow-visible"
-                style={{ aspectRatio: "1" }}
-              >
-                {/* Extra space so labels aren't clipped: viewBox has margin; pie is centered and smaller */}
+            {/* Pie chart: full size; labels outside pie, small font to avoid overlap */}
+            <div className="flex flex-col items-center overflow-visible py-6">
+              <div className="relative aspect-square w-full max-w-[340px] overflow-visible">
                 <div
-                  className="absolute rounded-full border-4 border-background shadow-lg"
-                  style={{
-                    background: creatorFeePieGradient(),
-                    top: "50%",
-                    left: "50%",
-                    width: "42.67%",
-                    height: "42.67%",
-                    marginTop: "-21.33%",
-                    marginLeft: "-21.33%",
-                  }}
+                  className="absolute inset-0 rounded-full border-4 border-background shadow-lg"
+                  style={{ background: creatorFeePieGradient() }}
                   aria-hidden
                 />
                 <svg
                   className="absolute inset-0 h-full w-full overflow-visible"
-                  viewBox="-25 -25 150 150"
+                  viewBox="0 0 100 100"
                   preserveAspectRatio="xMidYMid meet"
                   aria-hidden
                 >
                   {(() => {
-                    const cx = 50
-                    const cy = 50
-                    const rPie = 32
-                    const rLabel = 58
+                    const rPie = 42
+                    const rLabel = 62
                     let cum = 0
                     return creatorFeeAllocations.map((a) => {
                       const midDeg = (cum + a.value / 2) * 3.6
                       cum += a.value
                       const rad = (midDeg * Math.PI) / 180
-                      const xEdge = cx + rPie * Math.sin(rad)
-                      const yEdge = cy - rPie * Math.cos(rad)
-                      const xLabel = cx + rLabel * Math.sin(rad)
-                      const yLabel = cy - rLabel * Math.cos(rad)
+                      const xEdge = 50 + rPie * Math.sin(rad)
+                      const yEdge = 50 - rPie * Math.cos(rad)
+                      const xLabel = 50 + rLabel * Math.sin(rad)
+                      const yLabel = 50 - rLabel * Math.cos(rad)
                       return (
                         <g key={a.label}>
                           <line
@@ -394,7 +380,7 @@ export default function TokenPage() {
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="fill-foreground font-medium"
-                            style={{ fontSize: "12px" }}
+                            style={{ fontSize: "6px" }}
                           >
                             {a.pct} {a.label}
                           </text>
