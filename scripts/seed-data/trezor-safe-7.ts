@@ -10,25 +10,25 @@ const PRODUCT_ID = "trezor-safe-7";
 const PRODUCT_SLUG = "trezor-safe-7";
 const CATEGORY_ID = "accessories-hardware-wallets";
 
-// Official images from trezor.io (product + hero/specs)
+// Product images from trezor.io/trezor-safe-7 (hero, color variants, device shots only)
 const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
 const TREZOR_NEXT = "https://trezor.io/_next/static/media";
 
 export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
+    url: `${TREZOR_NEXT}/hero-desktop.31065358.jpg`,
+    alt: "Trezor Safe 7 hardware wallet - hero",
+    title: "Trezor Safe 7 - Hero",
+  },
+  {
     url: `${TREZOR_CDN}/eedcd2d7-7754-4386-1480-232d70eb0c00/public`,
-    alt: "Trezor Safe 7 hardware wallet - Charcoal Black",
+    alt: "Trezor Safe 7 - Charcoal Black",
     title: "Trezor Safe 7 - Charcoal Black",
   },
   {
     url: `${TREZOR_CDN}/6d2ac1b9-31e3-4fa5-c56c-decf6bf47500/public`,
     alt: "Trezor Safe 7 - Obsidian Green",
     title: "Trezor Safe 7 - Obsidian Green",
-  },
-  {
-    url: `${TREZOR_NEXT}/hero-desktop.31065358.jpg`,
-    alt: "Trezor Safe 7 hero - hardware wallet",
-    title: "Trezor Safe 7 - Hero",
   },
   {
     url: `${TREZOR_NEXT}/black.9bb08b6d.jpg`,
@@ -40,61 +40,44 @@ export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> 
     alt: "Trezor Safe 7 color touchscreen",
     title: "Trezor Safe 7 - Screen",
   },
+  {
+    url: `${TREZOR_NEXT}/back.c63746cb.jpg`,
+    alt: "Trezor Safe 7 back and dimensions",
+    title: "Trezor Safe 7 - Back",
+  },
+  {
+    url: `${TREZOR_NEXT}/aluminum-body.32d3d361.jpg`,
+    alt: "Trezor Safe 7 premium aluminum unibody",
+    title: "Trezor Safe 7 - Aluminum body",
+  },
 ];
 
 const FEATURES: string[] = [
-  "TROPIC01—world’s first transparent, auditable Secure Element",
-  "Quantum-ready: post-quantum cryptography for firmware and boot",
-  "Dual Secure Element (TROPIC01 + EAL6+) for strongest physical protection",
-  "2.5\" high-res color touchscreen (520×380 px), 700 nits",
-  "Bluetooth 5.0+ and USB-C; Qi2 wireless charging",
-  "LiFePO₄ battery—4× charge cycles, long storage life",
-  "IP67 dust and water resistant; Gorilla Glass 3",
-  "12-, 20-, or 24-word backup; optional Multi-share Backup",
-  "1000s of coins & tokens; 70k+ dApps via WalletConnect",
-  "FIDO2 passkey / 2FA support",
+  "TROPIC01 + EAL6+ dual Secure Elements; first auditable secure element",
+  "Quantum-ready: post-quantum crypto for firmware and boot",
+  "2.5\" color touchscreen, 700 nits; Bluetooth 5.0+ and Qi2 wireless charging",
+  "LiFePO₄ battery, IP67, aluminum unibody; 1000s of coins, 70k+ dApps",
+  "12–24 word backup, Multi-share option; FIDO2 passkey support",
 ];
 
-const DESCRIPTION = `<p>The Trezor Safe 7 is the hardware wallet that redefines crypto security. Your crypto, fully protected—today, tomorrow, and beyond.</p>
+const DESCRIPTION = `<p>The Safe 7 is Trezor’s flagship wallet: two Secure Elements (the open, auditable TROPIC01 plus an EAL6+ chip), post-quantum cryptography for firmware and boot, and a 2.5" high-res color screen. You get strong physical protection and future-ready design in one device.</p>
 
-<h2>Unprecedented security. Unparalleled design.</h2>
-<p>The TROPIC01 is the world’s first Secure Element open to anyone to audit and verify. Trezor Safe 7 combines it with an additional NDA-free EAL6+ secure element for the strongest physical protection in the industry.</p>
-
-<h2>Quantum-ready architecture</h2>
-<p>Trezor Safe 7 is the only hardware wallet using post-quantum cryptography to secure firmware updates, device authentication, and the boot process—protecting your wallet against future quantum computing threats.</p>
-
-<h2>Wireless freedom</h2>
-<p>Manage crypto on any device with open-source encrypted Bluetooth. Qi2-compatible wireless charging and USB-C keep you powered. The LiFePO₄ battery delivers 4× the charging cycles of standard lithium batteries.</p>
-
-<h2>Brilliant high-res color touchscreen</h2>
-<p>2.5\" display, 520×380 pixels, 700 nits. Gorilla Glass 3, haptic feedback. Review and sign every transaction with clarity.</p>
-
-<h2>Built to endure</h2>
-<p>Premium anodized aluminum unibody, reinforced glass back, IP67-rated. Engineered for excellence.</p>
+<p>Use it over Bluetooth or USB-C. Qi2 wireless charging and a LiFePO₄ battery give long life and more charge cycles than typical lithium. The body is anodized aluminum with Gorilla Glass 3 and IP67 rating. Manage thousands of coins and connect to 70k+ dApps via WalletConnect; the Safe 7 also works as a FIDO2 passkey.</p>
 
 <h2>Specifications</h2>
 <ul>
-<li><strong>Dimensions:</strong> 75.4×44.5×8.3 mm / 45 g</li>
-<li><strong>Display:</strong> 2.5\" color, 520×380 px</li>
-<li><strong>Connectivity:</strong> Bluetooth 5.0+, USB-C</li>
-<li><strong>Battery:</strong> LiFePO₄ 3.2V 330mAh, Qi2 wireless charging</li>
-<li><strong>Certifications:</strong> CE, RoHS, REACH, WEEE; x-ray safe for air travel</li>
+<li><strong>Display:</strong> 2.5" color, 520×380 px · <strong>Size:</strong> 75.4×44.5×8.3 mm, 45 g</li>
+<li><strong>Connectivity:</strong> Bluetooth 5.0+, USB-C · <strong>Battery:</strong> LiFePO₄, Qi2</li>
 </ul>
 
-<h2>What’s in the box?</h2>
-<ul>
-<li>Trezor Safe 7 hardware wallet</li>
-<li>USB-C → USB-C cable</li>
-<li>2× 20-word wallet backup cards</li>
-<li>Start-up guide & product safety guide</li>
-<li>Trezor stickers</li>
-</ul>`;
+<h2>In the box</h2>
+<p>Trezor Safe 7, USB-C cable, 2× backup cards, start-up and safety guides, stickers.</p>`;
 
 export const TREZOR_SAFE_7 = {
   id: PRODUCT_ID,
   name: "Trezor Safe 7",
   slug: PRODUCT_SLUG,
-  imageUrl: PRODUCT_IMAGES[0]!.url,
+  imageUrl: PRODUCT_IMAGES[0]!.url, // hero; upload script will replace with UploadThing
   mainImageAlt: "Trezor Safe 7 hardware wallet - quantum-ready, dual Secure Element",
   mainImageTitle: "Trezor Safe 7 | Hardware Wallet",
   priceCents: PRICE_CENTS,

@@ -25,37 +25,18 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
 ];
 
 const FEATURES: string[] = [
-  "RFID-blocking material protects credit cards against unwanted scans",
-  "Discreet hidden pocket for high-value bills or cards",
-  "External access pocket for transport cards or fast transactions",
-  "Fits up to 10 cards",
-  "Attachment point to clip into a Pacsafe bag",
-  "Attachment point for cut-resistant wallet strap (sold separately)",
-  "Made with post-consumer recycled PET",
-  "PFC-free water-repellent shell fabric",
-  "RFIDsafe™ blocking pockets and material",
+  "RFID-blocking material protects cards from skimming",
+  "Hidden pocket for bills or backup cards; holds up to 10 cards",
+  "External slot for transit or tap-to-pay card",
+  "Clip or strap attachment (strap sold separately); recycled, PFC-free",
+  "2-year warranty",
 ];
 
-const DESCRIPTION = `This ultra-compact card wallet seamlessly combines organization, security, and convenience into one must-have item. It features three card slots, including a hidden pocket to keep high-value bills or cards securely out of sight. The hidden pocket can also be used for separating different currencies while you travel. The two storage sections hold up to three cards each. An easy-access card slot on the outside provides quick, one-tap access for your daily transport card. Carry it your way! Enhance your card wallet with our versatile security straps, allowing you to seamlessly transform it into a wristlet, micro crossbody, or attach it securely to your belt loop.
+const DESCRIPTION = `<p>A slim card wallet that keeps daily carry organized and your cards protected from RFID skimming. Three main slots plus a hidden pocket give you room for cards and a bit of cash; the hidden pocket works well for separating currencies when you travel. An external slot gives one-tap access to a transit or payment card.</p>
 
-This product is made with post-consumer recycled polyester (rPET), equivalent to 2 recycled plastic bottles, and is treated with 100% PFC-free water repellency.
+<p>Clip it inside a Pacsafe bag or add an optional cut-resistant strap to wear as a wristlet or micro crossbody. Shell and lining are recycled polyester with PFC-free water repellency—about two plastic bottles’ worth of rPET per wallet.</p>
 
-SPECIFICATIONS
-
-Height: 4.3 in
-Width: 3.2 in
-Depth: 0.8 in
-Weight: 0.1 lb
-
-MATERIALS
-
-Shell: 600D recycled polyester, 1000mm water resistant, PFC-free.
-Lining: 75D recycled polyester twill, 1000mm water resistant, PFC-free.
-Sustainable materials: Recycled polyester (rPET).
-
-WARRANTY
-
-Pacsafe offers a 2-year warranty on accessories.`;
+<p><strong>Dimensions:</strong> 4.3 × 3.2 × 0.8 in · <strong>Weight:</strong> 0.1 lb. 2-year warranty on accessories.</p>`;
 
 const OPTION_DEFINITIONS = [{ name: "Color", values: ["Rose", "Fresh Mint", "Garnet Red", "Stone", "Jet Black", "Coastal Blue"] }];
 

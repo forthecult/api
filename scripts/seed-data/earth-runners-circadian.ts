@@ -26,26 +26,18 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
 ];
 
 const FEATURES: string[] = [
-  "9mm Vibram® Gumlite outsole (7.5mm outsole + 1.5mm footbed)—medium thickness, excellent wet grip",
-  "Weight: 5.9 oz (single sandal, men's 9 / women's 11)",
-  "Earth Grip footbed: moisture-wicking canvas, GOTS (Organic) certified small-batch dye",
-  "Grounded Conductive Laces™ with copper plug for earthing when worn on bare earth",
-  "Carbon & Sunset: Ergonomic Lifestyle Laces (9/16\" Double Tubular Webbing, Double SS conductive thread)",
-  "Zero drop, minimalist design inspired by Tarahumara huarache sandals",
-  "Buckles: injection molded in Santa Cruz, CA with 25% recycled plastic",
-  "1% of sales donated to True Messages (Tarahumara running heritage)",
+  "9mm Vibram® Gumlite outsole—medium thickness, strong wet grip",
+  "Grounded Conductive Laces™ with copper plug for earthing on natural surfaces",
+  "Earth Grip footbed: GOTS-certified canvas, moisture-wicking",
+  "Zero-drop, minimalist design; Carbon and Sunset lace options",
+  "1% of sales to True Messages (Tarahumara running heritage)",
 ];
 
-const DESCRIPTION = `The Circadian will keep you secure and in tune with the earth's natural rhythms—at every step. Our #1 best-selling adventure sandal, the Circadian features a medium-thick 9mm Vibram® sole, excellent wet grip, and a moderate ground feel. The minimalist nature of Earth Runners sandals offers a gentle reminder to yourself—and others—of the oneness you share with the Earth.
+const DESCRIPTION = `<p>The Circadian is Earth Runners’ best-selling adventure sandal: a 9mm Vibram Gumlite sole (7.5mm outsole + 1.5mm footbed) that gives solid grip and a moderate ground feel without extra bulk. The footbed is Earth Grip canvas—GOTS-certified, moisture-wicking—and the laces are Grounded Conductive Laces™ with a copper plug so you can earth when you’re on dirt, sand, or grass.</p>
 
-Weight: 5.9 oz (single sandal, men's 9 / women's 11)
-Thickness: 7.5mm outsole + 1.5mm footbed = 9mm
-Sole: Vibram® Gumlite Outsole (domestically sourced)
-Footbed: Earth Grip — moisture-wicking canvas, GOTS (Organic) certified small-batch dye
+<p>You can choose Carbon or Sunset ergonomic lifestyle laces; both use double tubular webbing and conductive stainless-steel thread. Buckles are injection-molded in Santa Cruz, CA with 25% recycled plastic. Single sandal weight is about 5.9 oz (men’s 9 / women’s 11).</p>
 
-Lace options in this listing: Carbon Lifestyle Lace and Sunset Lifestyle Lace. Both are Ergonomic Grounded Conductive Laces™ with earthing plug and conductive stainless-steel thread.
-
-We proudly donate 1% of all sales to True Messages, a non-profit focused on honoring the running heritage of the Tarahumara culture and supporting the youth of the community.`;
+<p>Earth Runners donates 1% of sales to True Messages, supporting Tarahumara running heritage and youth in the community.</p>`;
 
 /** Size chart: Men's & Women's (from Earth Runners website). Used for size_chart table + description. */
 const SIZES_ROW: Array<{ usa: string; uk: string; eur: string; lengthCm: string; printIn: string }> = [

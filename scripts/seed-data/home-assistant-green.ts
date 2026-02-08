@@ -1,8 +1,11 @@
 /**
  * Seed data for Home Assistant Green — official smart home hub.
- * Sourced from https://www.seeedstudio.com/Home-Assistant-Green-p-5792.html (US warehouse).
- * Brand: Seeed Studio. Category: Smart Home. US price: $158.90.
- * Images: full-size catalog URLs (no cache). Run db:upload-curated-product-images to upload to UploadThing.
+ * Sourced from Seeed Studio (US warehouse). Brand: Seeed Studio. Category: Smart Home. US price: $158.90.
+ *
+ * IMAGES: We do not use Seeed's CDN. The URLs below are SOURCE ONLY for the upload script.
+ * Run db:upload-curated-product-images after seeding so images are downloaded, optimized, and
+ * uploaded to UploadThing; the store then serves images from our CDN (UploadThing), not Seeed.
+ *
  * Markets: Seeed US warehouse ships USA only; we restrict to US.
  */
 
@@ -11,50 +14,51 @@ const PRODUCT_ID = "home-assistant-green";
 const PRODUCT_SLUG = "home-assistant-green";
 const CATEGORY_ID = "smart-home";
 
-/** Full-size images (no cache path). Upload script will pull, optimize, and upload to UploadThing. */
-const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
+/** Source URLs only—upload script fetches from here and hosts on UploadThing. We do not serve Seeed CDN. */
+const SEEED_CACHE =
+  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_MEDIA}/5/-/5-113110024--home-assistant-green-fontall_1.jpg`,
+    url: `${SEEED_CACHE}/5/-/5-113110024--home-assistant-green-fontall_1.jpg`,
     alt: "Home Assistant Green smart home hub - front view",
     title: "Home Assistant Green - Front",
   },
   {
-    url: `${SEEED_MEDIA}/2/-/2-113110024--home-assistant-green-45font_1.jpg`,
+    url: `${SEEED_CACHE}/2/-/2-113110024--home-assistant-green-45font_1.jpg`,
     alt: "Home Assistant Green - 45° angle",
     title: "Home Assistant Green - Angle",
   },
   {
-    url: `${SEEED_MEDIA}/3/-/3-113110024--home-assistant-green-back_1.jpg`,
+    url: `${SEEED_CACHE}/3/-/3-113110024--home-assistant-green-back_1.jpg`,
     alt: "Home Assistant Green - back view",
     title: "Home Assistant Green - Back",
   },
   {
-    url: `${SEEED_MEDIA}/6/-/6-113110024--home-assistant-green-feature_1.jpg`,
+    url: `${SEEED_CACHE}/6/-/6-113110024--home-assistant-green-feature_1.jpg`,
     alt: "Home Assistant Green - feature",
     title: "Home Assistant Green - Feature",
   },
   {
-    url: `${SEEED_MEDIA}/1/0/10-113110024--home-assistant-green-first.jpg`,
+    url: `${SEEED_CACHE}/1/0/10-113110024--home-assistant-green-first.jpg`,
     alt: "Home Assistant Green - first setup",
     title: "Home Assistant Green - Setup",
   },
 ];
 
 const FEATURES: string[] = [
-  "Official smart home hub developed with the Home Assistant team",
-  "Home Assistant OS pre-installed — plug-and-play setup",
-  "Expandable with Zigbee, Thread, and Matter via official accessories (Connect ZBT-2, ZWA-2)",
-  "All data stored locally by default — privacy-focused",
-  "Thriving open-source ecosystem; improved every month",
-  "Control all smart devices from one system",
-  "Effortless setup and local-first automation",
+  "Official hub developed with the Home Assistant team; OS pre-installed",
+  "All data stays local—no required cloud, no data mining",
+  "Expandable with Zigbee, Thread, and Matter (Connect ZBT-2, ZWA-2)",
+  "One system for all your smart devices; plug-and-play setup",
+  "Open-source ecosystem with monthly improvements",
 ];
 
-const DESCRIPTION = `<p>Home Assistant Green is the easiest and most privacy-focused way to automate your home. It offers an effortless setup and allows you to control all your smart devices with just one system, where all data is stored locally by default.</p>
-<p>This board benefits from the thriving Home Assistant ecosystem and is improved every month by the open-source community. It comes with Home Assistant OS pre-installed for a true plug-and-play experience and can be expanded to support Zigbee, Thread, and Matter via official accessories.</p>
-<p><strong>Why local?</strong> Keep your smart home data in your home — no mandatory cloud, no data mining. Run automations, dashboards, and integrations entirely on your own hardware.</p>`;
+const DESCRIPTION = `<p>Home Assistant Green is the official hardware for running Home Assistant: one hub to control lights, climate, media, and hundreds of compatible devices. Everything runs on the device and your local network. No mandatory cloud accounts, no sending sensor data to third parties—automations, dashboards, and integrations stay on your hardware.</p>
+
+<p>Out of the box it’s plug-and-play with Home Assistant OS already installed. Add Zigbee, Thread, or Matter with official Connect modules (ZBT-2, ZWA-2) when you’re ready. The project is open source and actively developed, so you get regular updates and a large community.</p>
+
+<p>If you care about privacy and local control, Green is built for that: your smart home, your rules, your data.</p>`;
 
 export const HOME_ASSISTANT_GREEN = {
   id: PRODUCT_ID,
@@ -78,6 +82,6 @@ export const HOME_ASSISTANT_GREEN = {
   continueSellingWhenOutOfStock: true,
   pageLayout: "long-form" as const,
   images: PRODUCT_IMAGES,
-  /** Seeed US warehouse ships to USA only. Run db:upload-curated-product-images so images are on UploadThing. */
+  /** US only. Images must be on UploadThing (run db:upload-curated-product-images)—we do not use Seeed CDN. */
   availableCountryCodes: ["US"] as const,
 };

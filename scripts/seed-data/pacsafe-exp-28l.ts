@@ -66,55 +66,29 @@ export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> 
   },
 ];
 
-/** Key features (bullet list on product page). */
+/** Key features (4–5 bullets; rest in description). */
 export const FEATURES: string[] = [
-  "Made with post-consumer recycled PET (rPET)—equivalent to 32 recycled plastic bottles",
-  "PFC-free water-repellent shell fabric (1000mm water resistant)",
-  "Dual carry: backpack or duffel via centrally located grab handle",
-  "Fits 16\" MacBook Pro and most 16\" laptops in padded sleeve",
-  "Luggage slip slides over wheeled bag handles for balanced carry",
-  "Adjustable sternum strap for comfort",
-  "Internal pockets: designated phone and pen pockets for organization",
-  "Two side pockets for water bottle or small umbrella",
-  "Internal attachment point for wallets and keys",
-  "External attachment points for pouches, locks, or rain covers",
-  "RFIDsafe® blocking pockets and material",
-  "PopNLock security clip",
-  "Self-locking zippers",
-  "Carrysafe® slashguard strap with Dyneema®",
-  "eXomesh® slashguard (embroidered method)",
-  "Roobar™ Deluxe locking system",
-  "Interlocking zip pullers",
-  "Puncture-resistant ToughZip",
+  "Roobar™ Deluxe locking system and puncture-resistant ToughZip for serious theft deterrence",
+  "RFIDsafe® blocking pockets and Carrysafe® slashguard straps with Dyneema®",
+  "Fits 16\" MacBook Pro in padded sleeve; luggage slip for wheeled bags",
+  "Dual carry: wear as backpack or grab as duffel via center handle",
+  "Made with recycled PET (rPET)—equivalent to 32 plastic bottles; PFC-free water repellent",
 ];
 
-/** Full product description (plain text + specs; description accordion). */
-export const DESCRIPTION = `The Pacsafe EXP 28L Backpack caters to commuters, city explorers, and quick getaway seekers, emphasizing security, functionality, and comfort in a compact design. Advanced anti-theft features such as self-locking zippers, ToughZip technology, and an RFID-blocking pocket for digital security help offer travelers the peace of mind they deserve. The backpack facilitates easy organization with a spacious main compartment, padded laptop sleeve, and quick-access pockets. It ensures seamless transitions and versatility with a luggage slip and durable handles, allowing travelers to carry it like a duffel bag. By combining advanced security features, effortless organization, and comfortable functionality, the Pacsafe EXP 28L Backpack is an ideal choice for travelers seeking peace of mind, organization, and convenience on their journeys.
+/** Full product description (rewritten for Culture; specs and details). */
+export const DESCRIPTION = `<p>The EXP 28L is built for commuters and weekend travelers who want one bag that does it all: secure, organized, and ready to go. A lockable hidden laptop compartment fits most 16" laptops, while internal pockets keep phone, pens, and keys in place. Use the luggage slip to slide the bag onto wheeled luggage or carry it by the central grab handle when you're in a rush.</p>
 
-This product is made with post-consumer recycled polyester (rPET), equivalent to 32 recycled plastic bottles, and is treated with 100% PFC-free water repellency.
+<p>Security is front and center. Self-locking zippers, PopNLock clip, and eXomesh slashguard work together so your gear stays yours. The shell and lining are 750D and 150D recycled polyester with 1000mm water resistance and no PFCs—tough and sustainable.</p>
 
+<h2>Specifications</h2>
+<ul>
+<li><strong>Volume:</strong> 28 L</li>
+<li><strong>Dimensions:</strong> 19.7 × 11.2 × 7.5 in</li>
+<li><strong>Weight:</strong> 2.4 lb (1.09 kg)</li>
+<li><strong>Materials:</strong> 750D/150D rPET, PFC-free</li>
+</ul>
 
-SPECIFICATIONS
-
-Volume: 28 L
-Height: 19.7 in
-Width: 11.2 in
-Depth: 7.5 in
-Weight: 2.4 lb (1.09 kg)
-Crossbody circumference (max–min): 42.1–52.0 in
-Backpack strap length (max–min): 26.4–36.2 in
-
-
-MATERIALS
-
-Shell: 750D recycled polyester, 1000mm water resistant, PFC-free.
-Lining: 150D recycled polyester, 1000mm water resistant, PFC-free.
-Sustainable materials: Recycled polyester (rPET).
-
-
-WARRANTY
-
-Pacsafe offers a limited 5-year warranty on backpacks and bags.`;
+<p>Pacsafe backs this bag with a 5-year limited warranty.</p>`;
 
 /** Meta description for SEO. */
 export const META_DESCRIPTION =

@@ -30,46 +30,26 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
 ];
 
 const FEATURES: string[] = [
-  "Up to 2.5 gallons of water per day from air — no plumbing needed",
-  "Tested non-detect for microplastics, PFAS, or lead",
-  "Doubles as an air purifier (removes dust, odors, VOCs)",
-  "Six levels of filtration for air and water",
-  "Always Fresh Pitcher with UV-C light keeps water clean for days",
-  "Smart sensors stop fill when pitcher is full; wireless charging",
-  "Fridge-ready half-gallon pitcher; dishwasher-safe base",
-  "Adds calcium, magnesium, potassium for alkaline water",
-  "Dimensions: 18\" × 14.5\" × 8.5\"; weight 25 lb",
-  "1-year limited warranty; 30-day money-back guarantee",
-  "Includes: Spout Monolith, Always Fresh Pitcher, air filter, water filter, carry bag, quickstart guide",
+  "Makes up to 2.5 gallons of water per day from air—no plumbing",
+  "Six-stage filtration; tested non-detect for microplastics, PFAS, and lead",
+  "Doubles as an air purifier for the room",
+  "Always Fresh Pitcher with UV-C; smart fill and wireless charging",
+  "1-year warranty; 30-day money-back guarantee; ships US in 1–2 weeks",
 ];
 
-const DESCRIPTION = `The most revolutionary innovation to drinking water since the tap.
+const DESCRIPTION = `<p>Spout turns humidity in the air into drinking water. Plug it in, set the half-gallon pitcher on the base, and the machine pulls moisture from the room, runs it through six levels of filtration, and fills the pitcher. Output is alkaline (calcium, magnesium, potassium added) and tested non-detect for microplastics, PFAS, and lead.</p>
 
-Introducing Spout, the world's smallest powered atmospheric water generator. Turn air into an infinite supply of pure alkaline water — no pipes, no plastic bottles.
+<p>The same airflow is filtered, so the unit also acts as an air purifier—dust, odors, and VOCs are reduced. The Always Fresh Pitcher uses UV-C to keep water clean for days; smart sensors stop the fill when the pitcher is full. Fridge-ready pitcher; base is dishwasher-safe.</p>
 
-**Pure and Safe:** We employ six levels of filtration to the air and the water it produces. The machine also serves as an air purifier for the space it inhabits.
+<h2>Specifications</h2>
+<ul>
+<li><strong>Daily output:</strong> 0.75–2.5 gal (conditions-dependent)</li>
+<li><strong>Size:</strong> 18 × 14.5 × 8.5 in · 25 lb</li>
+<li><strong>Power:</strong> 360–640 W · ~5–9 kWh/gal</li>
+<li><strong>Environment:</strong> 33°F–105°F, 20–100% RH</li>
+</ul>
 
-**Wherever, Whenever:** The Spout generates up to 2.5 gallons of water from thin air every day*, so no plumbing needed. Perfect for homelife or vanlife.
-
-**Easy to Use:** Just plug it in and witness pure water... happen.
-
-PRODUCT SPECS
-
-Daily production: 0.75–2.5 gallons*
-Power: 360–640 W
-Dimensions: 18" × 14.5" × 8.5"
-Weight: 25 lb
-Pitcher volume: 0.5 gallons
-Power per gallon: ~5–9 kWh/gal
-T/H range: 33°F–105°F, 20–100% RH
-Service period: 3 months (air + water filter)
-Rated lifetime est.: 5 years
-
-WHAT'S INCLUDED
-
-Spout Monolith unit, Always Fresh Pitcher, air filter, water filter, carry bag, quickstart guide & user manual. 1-year warranty.
-
-*Depending on conditions. Ships within 1-2 weeks. US only.`;
+<p>Includes Monolith, Always Fresh Pitcher, air filter, water filter, carry bag, and quickstart guide. Filter service about every 3 months. US only.</p>`;
 
 export const SPOUT_MONOLITH = {
   id: PRODUCT_ID,

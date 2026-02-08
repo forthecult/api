@@ -126,44 +126,25 @@ const VARIANTS: Array<{
 ];
 
 const FEATURES: string[] = [
-  "Swiss Made — Soprod C125 caliber, automatic winding, 25 jewels, 42h power reserve",
-  "40mm case, 48mm lug-to-lug, 11.9mm height, 20mm lug width",
-  "Rotating ceramic bezel, sapphire crystal with anti-reflective coating",
-  "100m water resistance",
-  "24-hour hand for second time zone",
-  "316L stainless steel case, Swiss Super-Luminova®",
-  "Limited edition of 210 pieces (42 per model)",
-  "Italian leather strap + NATO strap + butterfly buckle, travel case included",
+  "Swiss Soprod C125 automatic—25 jewels, 42h reserve, 24h second time zone",
+  "40mm 316L steel case, ceramic bezel, sapphire crystal, 100m water resistance",
+  "Five dial variants; 42 pieces each (210 total)",
+  "Italian leather + NATO strap, travel case included",
+  "Cryptomatic—Bitcoin-only since 2014; price in BTC",
 ];
 
-const DESCRIPTION = `<p>THE JETSETTER is Cryptomatic’s first <strong>Swiss Made</strong> timepiece, powered by the Soprod C125 caliber. A versatile 40mm design with rotating ceramic bezel, sapphire crystal, and 100m water resistance—built for life’s journeys.</p>
+const DESCRIPTION = `<p>THE JETSETTER is Cryptomatic’s first Swiss Made watch: a 40mm travel-ready piece with a Soprod C125 automatic movement, rotating ceramic bezel, and 100 m water resistance. The dial offers hour, minutes, hacking seconds, date, and a 24-hour hand for a second time zone.</p>
 
-<h2>Five models, one collection</h2>
-<p>Steel + Black, Steel + Orange, Steel + Two-tone Bezel, Inverse Black + Orange, and Black + Orange. Each limited to 42 pieces.</p>
-
-<h2>Movement</h2>
-<p>Caliber Soprod C125 — automatic winding, 25 jewels, 42-hour power reserve, 28,800 A/h. Hour, minutes, hacking seconds, date, and 24-hour hand for a second time zone.</p>
+<p>Five models—Steel + Black, Steel + Orange, Steel + Two-tone Bezel, Inverse Black + Orange, and Black + Orange—each limited to 42 pieces. Case is 316L stainless with sapphire crystal and anti-reflective coating; Super-Luminova on hands and indices.</p>
 
 <h2>Specifications</h2>
 <ul>
-<li><strong>Movement:</strong> Swiss Soprod C125, automatic, 25 jewels, 42h power reserve</li>
-<li><strong>Case:</strong> 40mm diameter, 48mm lug-to-lug, 11.9mm height, 20mm lug width</li>
-<li><strong>Materials:</strong> 316L stainless steel, sapphire crystal with anti-reflective coating, ceramic bezel</li>
-<li><strong>Water resistance:</strong> 100m</li>
-<li><strong>Functions:</strong> Hour, minutes, hacking seconds, date, 24-hour hand, rotating ceramic bezel</li>
+<li><strong>Movement:</strong> Soprod C125, automatic, 28,800 A/h</li>
+<li><strong>Case:</strong> 40mm, 48mm lug-to-lug, 11.9mm height, 20mm lugs</li>
+<li><strong>In the box:</strong> Watch, Italian leather strap with butterfly buckle, NATO strap, spring bars, warranty card, cleaning cloth, canvas and leather travel case</li>
 </ul>
 
-<h2>In the box</h2>
-<ul>
-<li>1 × JETSETTER Limited Edition timepiece</li>
-<li>Italian leather strap with matching butterfly buckle</li>
-<li>NATO strap with orange accent and pin buckle</li>
-<li>Set of spring bars</li>
-<li>Warranty card, cleaning cloth</li>
-<li>Canvas and leather travel case</li>
-</ul>
-
-<p><strong>Price:</strong> 0.021 BTC (2,100,000 sats). Cryptomatic — Bitcoin only since 2014. Limited edition of 210 watches.</p>`;
+<p>Price: 0.021 BTC. Cryptomatic accepts Bitcoin only.</p>`;
 
 export const CRYPTOMATIC_JETSETTER = {
   id: PRODUCT_ID,

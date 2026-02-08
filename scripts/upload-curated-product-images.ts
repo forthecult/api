@@ -1,11 +1,10 @@
 /**
  * Download, optimize (WebP), and upload ALL curated product images to UploadThing.
+ * We do not serve vendor CDNs (e.g. Seeed Studio); the store must use UploadThing-hosted images only.
+ * Seed data may contain vendor URLs as SOURCE ONLY; this script fetches them, optimizes, uploads to UT, and updates the DB.
  * Covers: Pacsafe (4), Earth Runners, Spout, Trezor Safe 7/5, HUSKYLENS 2, Cryptomatic Jetsetter, Home Assistant Green/Voice.
- * Seed data may use vendor URLs (Seeed, Trezor CDN, etc.); this script downloads those, optimizes, uploads to UT, and updates the DB.
- * Updates product_image, product.imageUrl, and product_variant.imageUrl in the DB.
  *
  * Run after seeding products. Requires UPLOADTHING_TOKEN in .env.
- *
  * Usage: bun run scripts/upload-curated-product-images.ts [--dry-run]
  */
 

@@ -25,44 +25,24 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
 ];
 
 const FEATURES: string[] = [
-  "Made with post-consumer recycled PET (rPET)—equivalent to 14 recycled plastic bottles",
-  "PFC-free water-repellent shell fabric",
-  "Fits iPad Pro 11\" and most 11\" tablets in padded sleeve",
-  "Tablet sleeve doubles as hydration pack system",
-  "Adjustable sternum strap and hip belt for comfort",
-  "External attachment points on shoulder straps for pouches, locks, or rain covers",
-  "Two side pockets for water bottle or small umbrella",
-  "Internal pockets: phone pocket, pen pocket; internal attachment for wallets and keys",
-  "RFIDsafe® blocking pockets and material",
-  "PopNLock security clip",
-  "Carrysafe® slashguard strap with Dyneema®",
-  "eXomesh® slashguard (embroidered method)",
-  "Roobar™ Sport locking system",
+  "12L compact pack with padded sleeve for 11\" tablet (e.g. iPad Pro)",
+  "Roobar™ Sport lock, RFIDsafe® blocking, and slashguard straps",
+  "Tablet sleeve doubles as hydration reservoir slot; two side pockets",
+  "Phone and pen pockets, attachment points for keys and pouches",
+  "Recycled PET (rPET), PFC-free—equivalent to 14 plastic bottles",
 ];
 
-const DESCRIPTION = `This backpack keeps it convenient and practical with its taller profile and compact design, providing just the right amount of space for your must-haves without any extra bulk. You've got 12L of cleverly organized storage tailored to your tech gear, including a padded sleeve to fit an 11-inch tablet. The front compartment comes equipped with two mesh pockets, perfect for stashing chargers, cables, or any other accessories you need close at hand.
+const DESCRIPTION = `<p>Minimal profile, max utility. The V 12L holds your tablet, daily tech, and a few extras without feeling like a full-size backpack. The main compartment has a padded sleeve that fits an 11" tablet and can double as a hydration reservoir slot. Up front, mesh pockets keep cables and small gear organized; inside you get phone and pen pockets plus an attachment point for keys.</p>
 
-This product is made with post-consumer recycled polyester (rPET), equivalent to 14 recycled plastic bottles, and is treated with 100% PFC-free water repellency.
+<p>Same Pacsafe DNA: Roobar Sport lock, PopNLock clip, Carrysafe® slashguard, eXomesh®, and RFID blocking. Sternum strap and hip belt are adjustable; shoulder straps have attachment points for pouches or a rain cover. Shell and lining are 750D/150D rPET, 1000mm water resistant, PFC-free.</p>
 
-SPECIFICATIONS
+<h2>Specifications</h2>
+<ul>
+<li><strong>Volume:</strong> 12 L · <strong>Weight:</strong> 1.38 lb (620 g)</li>
+<li><strong>Dimensions:</strong> 16.1 × 7.9 × 5.1 in</li>
+</ul>
 
-Volume: 12 L
-Height: 16.1 in
-Width: 7.9 in
-Depth: 5.1 in
-Weight: 1.38 lb (620 g)
-Crossbody circumference (max–min): 37.0–50.0 in
-Backpack strap length (max–min): 23.2–36.2 in
-
-MATERIALS
-
-Shell: 750D recycled polyester, 1000mm water resistant, PFC-free.
-Lining: 150D recycled polyester, 1000mm water resistant, PFC-free.
-Sustainable materials: Recycled polyester (rPET).
-
-WARRANTY
-
-Pacsafe offers a limited 5-year warranty on backpacks and bags.`;
+<p>5-year limited warranty.</p>`;
 
 const OPTION_DEFINITIONS = [{ name: "Color", values: ["Digital Gray", "Beige", "Black"] }];
 

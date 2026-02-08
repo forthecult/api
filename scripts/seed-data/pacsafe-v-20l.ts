@@ -25,46 +25,24 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
 ];
 
 const FEATURES: string[] = [
-  "Made with post-consumer recycled PET (rPET)—equivalent to 25 recycled plastic bottles",
-  "PFC-free water-repellent shell fabric",
-  "Quick-access zipper pocket on shoulder strap for AirPods and transit card",
-  "Fits 16\" MacBook Pro and most 16\" laptops in lockable hidden back compartment with padded sleeve",
-  "Luggage slip slides over wheeled bag handles for balanced carry",
-  "Hidden back pocket for extra security",
-  "Internal pockets: phone pocket, pen pocket, zipper mesh, RFID blocking pocket for passport and cards",
-  "Two side pockets for water bottle or small umbrella",
-  "Adjustable sternum strap and hip belt for comfort",
-  "RFIDsafe® blocking pockets and material",
-  "PopNLock security clip",
-  "Secure dock lock",
-  "Carrysafe® slashguard strap with Dyneema®",
-  "eXomesh® slashguard (embroidered method)",
-  "Roobar™ Sport locking system",
+  "Lockable hidden back compartment fits 16\" MacBook Pro in padded sleeve",
+  "RFIDsafe® blocking and Roobar™ Sport lock for cards and bag security",
+  "Quick-access strap pocket for AirPods or transit card; hidden back pocket",
+  "Slim 20L profile with sternum strap and hip belt; luggage slip included",
+  "Recycled PET (rPET), PFC-free water repellent—equivalent to 25 plastic bottles",
 ];
 
-const DESCRIPTION = `Elevate your city adventures with this slimline backpack that offers multiple compartments for efficient organization, including two front stash compartments for quick access to smaller essentials. The main compartment boasts a padded laptop sleeve fit for a 16-inch MacBook Pro, accompanied by an admin section featuring a zipper mesh pocket, pen pocket, phone pocket, and an RFID blocking pocket for protecting your passport and cards. There's even a hidden back pocket, an extra hiding spot to securely store your other valuables.
+const DESCRIPTION = `<p>Urban carry without the bulk. The V 20L keeps your laptop in a lockable hidden back compartment, so it's out of sight and harder to grab. Inside, an admin layout gives you a phone pocket, pen pocket, zipper mesh, and RFID-blocking slot for passport and cards. Two front stash pockets and a hidden back pocket round out quick access.</p>
 
-This product is made with post-consumer recycled polyester (rPET), equivalent to 25 recycled plastic bottles, and is treated with 100% PFC-free water repellency.
+<p>Shoulder strap has a small zipper pocket for transit cards or earbuds. Carrysafe® slashguard and eXomesh® help protect against slash-and-grab; PopNLock and secure dock lock add another layer. Shell and lining are 750D and 150D recycled polyester, 1000mm water resistant, PFC-free.</p>
 
-SPECIFICATIONS
+<h2>Specifications</h2>
+<ul>
+<li><strong>Volume:</strong> 20 L · <strong>Weight:</strong> 2.14 lb (970 g)</li>
+<li><strong>Dimensions:</strong> 17.7 × 11 × 5.7 in</li>
+</ul>
 
-Volume: 20 L
-Height: 17.7 in
-Width: 11 in
-Depth: 5.7 in
-Weight: 2.14 lb (970 g)
-Backpack strap length (max–min): 25.6–36.2 in
-Crossbody circumference (max–min): 42.1–52.8 in
-
-MATERIALS
-
-Shell: 750D recycled polyester, 1000mm water resistant, PFC-free.
-Lining: 150D recycled polyester, 1000mm water resistant, PFC-free.
-Sustainable materials: Recycled polyester (rPET).
-
-WARRANTY
-
-Pacsafe offers a limited 5-year warranty on backpacks and bags.`;
+<p>5-year limited warranty.</p>`;
 
 const OPTION_DEFINITIONS = [{ name: "Color", values: ["Digital Gray", "Beige", "Black"] }];
 

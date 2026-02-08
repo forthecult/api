@@ -52,49 +52,25 @@ export const PRODUCT_IMAGES_SAFE_5: Array<{ url: string; alt: string; title: str
 ];
 
 const FEATURES: string[] = [
-  "1.54\" color touchscreen with Trezor Touch haptic feedback",
-  "EAL6+ Secure Element—best defense against online and offline threats",
-  "Open-source security and design; transparent wallet architecture",
-  "PIN & passphrase protection with on-device entry",
-  "12-, 20-, or 24-word backup; Advanced Multi-share Backup option",
-  "Gorilla Glass 3; scratch-resistant, tamper-evident casing",
-  "USB-C connection; Trezor Suite for desktop & mobile",
-  "1000s of coins & tokens; compatible with third-party wallet apps",
-  "FIDO2—use as a 2FA device",
-  "MicroSD card slot for future features",
+  "1.54\" color touchscreen with haptic feedback for confirmations",
+  "EAL6+ Secure Element; open-source firmware and design",
+  "12-, 20-, or 24-word backup; optional Multi-share Backup",
+  "USB-C; Trezor Suite for desktop and mobile; 1000s of coins",
+  "FIDO2 capable; Gorilla Glass 3, CE/RoHS; x-ray safe for travel",
 ];
 
-const DESCRIPTION = `<p>The Trezor Safe 5 brings exceptional convenience with a vibrant color touchscreen and confirmation haptic feedback. Seriously secure, intuitively easy.</p>
+const DESCRIPTION = `<p>The Safe 5 is Trezor’s compact hardware wallet: confirm every transaction on a color touchscreen with haptic feedback, while keys stay in an EAL6+ Secure Element. No cloud, no closed code—firmware and design are open source so you can verify how your crypto is protected.</p>
 
-<h2>View. Tap. Feel. Confirm.</h2>
-<p>Your crypto, your control. Absolute control of every transaction with on-device confirmation. Protected by a certified EAL6+ Secure Element.</p>
-
-<h2>Security starts with open-source</h2>
-<p>Transparent wallet design makes your Trezor better and safer. PIN and passphrase protection with on-device entry keep your keys under your control.</p>
-
-<h2>Clear & simple wallet backup</h2>
-<p>Recover access to your digital assets with 12-, 20-, or 24-word backup. Advanced Multi-share Backup adds an extra layer of recovery protection.</p>
-
-<h2>Manage your crypto in Trezor Suite</h2>
-<p>Send, receive, trade, and stake. Track your portfolio and history. Supports 1000s of coins and tokens.</p>
+<p>Set a PIN and optional passphrase on the device. Back up with 12, 20, or 24 words, or use Advanced Multi-share Backup for extra recovery options. Use Trezor Suite to send, receive, trade, and stake across a huge range of coins and tokens; the device also works as a FIDO2 2FA key.</p>
 
 <h2>Specifications</h2>
 <ul>
-<li><strong>Display:</strong> 1.54\" color, 240×240 px</li>
-<li><strong>Security:</strong> EAL6+ Secure Element, open-source</li>
-<li><strong>Dimensions:</strong> 65.9×40×8 mm / 23 g</li>
-<li><strong>Connectivity:</strong> USB-C</li>
-<li><strong>Certifications:</strong> CE, RoHS; x-ray safe for air travel</li>
+<li><strong>Display:</strong> 1.54" color, 240×240 px</li>
+<li><strong>Size:</strong> 65.9×40×8 mm, 23 g · USB-C</li>
 </ul>
 
-<h2>What’s in the box?</h2>
-<ul>
-<li>Trezor Safe 5 hardware wallet</li>
-<li>USB-C → USB-C cable</li>
-<li>2× 20-word wallet backup cards</li>
-<li>Start-up guide</li>
-<li>Trezor stickers</li>
-</ul>`;
+<h2>In the box</h2>
+<p>Trezor Safe 5, USB-C cable, 2× backup cards, start-up guide, stickers.</p>`;
 
 export const TREZOR_SAFE_5 = {
   id: PRODUCT_ID,
