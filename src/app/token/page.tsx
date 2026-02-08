@@ -96,30 +96,15 @@ const cultureUnique = [
 
 const SOLSCAN_BASE = "https://solscan.io/account";
 
-/** Creator fee allocation: value is numeric % for pie chart; first three have on-chain wallets. */
+/** Creator fee allocation: value is numeric % for pie chart; chartLabel = short text on pie. subjectToChange = show * and note below table. */
 const creatorFeeAllocations = [
-  {
-    value: 5,
-    pct: "5%",
-    label: "Buy back and burn",
-    wallet: "BURNakw9tnzqnKeMi2BqDRjZzT2athWK2CfKTAxrrMYX",
-  },
-  {
-    value: 5,
-    pct: "5%",
-    label: "Staked token holders",
-    wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd",
-  },
-  {
-    value: 5,
-    pct: "5%",
-    label: "Charity",
-    wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS",
-  },
-  { value: 15, pct: "15%", label: "Marketing and advertising", wallet: null },
-  { value: 20, pct: "20%", label: "Subsidize shipping and product prices", wallet: null },
-  { value: 20, pct: "20%", label: "Product inventory and development", wallet: null },
-  { value: 30, pct: "30%", label: "Treasury and feature development", wallet: null },
+  { value: 5, pct: "5%", label: "Buy back and burn", chartLabel: "5% Buy back & burn", wallet: "BURNakw9tnzqnKeMi2BqDRjZzT2athWK2CfKTAxrrMYX", subjectToChange: false },
+  { value: 5, pct: "5%", label: "Staked token holders", chartLabel: "5% Staked holders", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: false },
+  { value: 5, pct: "5%", label: "Charity", chartLabel: "5% Charity", wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS", subjectToChange: false },
+  { value: 15, pct: "13.37%", label: "Marketing and advertising", chartLabel: "13.37% Marketing", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: true },
+  { value: 20, pct: "20%", label: "Subsidize shipping and product prices", chartLabel: "20% Shipping & prices", wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ", subjectToChange: true },
+  { value: 20, pct: "20%", label: "Product inventory and development", chartLabel: "20% Product & inventory", wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm", subjectToChange: true },
+  { value: 30, pct: "30%", label: "Treasury and feature development", chartLabel: "30% Treasury", wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb", subjectToChange: true },
 ];
 
 /** Conic-gradient colors. Last (30% Treasury) uses primary so the biggest slice stands out. */
@@ -337,17 +322,21 @@ export default function TokenPage() {
             </p>
           </div>
           <div className="flex flex-col gap-10">
-            {/* Pie chart: full size; labels outside pie, small font to avoid overlap */}
-            <div className="flex flex-col items-center overflow-visible py-6">
-              <div className="relative aspect-square w-full max-w-[340px] overflow-visible">
+            {/* Pie chart: viewBox has margin so labels sit in space; pie same visual size */}
+            <div className="flex flex-col items-center overflow-visible px-2 py-8 md:px-6 md:py-10">
+              <div
+                className="relative w-full max-w-[380px] overflow-visible"
+                style={{ aspectRatio: "1" }}
+              >
+                {/* Gradient pie: center 50,50 radius 42 → 84 units; viewBox 160 → pie 84/160 = 52.5% of container */}
                 <div
-                  className="absolute inset-0 rounded-full border-4 border-background shadow-lg"
+                  className="absolute left-1/2 top-1/2 h-[52.5%] w-[52.5%] -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-background shadow-lg"
                   style={{ background: creatorFeePieGradient() }}
                   aria-hidden
                 />
                 <svg
                   className="absolute inset-0 h-full w-full overflow-visible"
-                  viewBox="0 0 100 100"
+                  viewBox="-30 -30 160 160"
                   preserveAspectRatio="xMidYMid meet"
                   aria-hidden
                 >
@@ -363,6 +352,10 @@ export default function TokenPage() {
                       const yEdge = 50 - rPie * Math.cos(rad)
                       const xLabel = 50 + rLabel * Math.sin(rad)
                       const yLabel = 50 - rLabel * Math.cos(rad)
+                      const chartText =
+                        "chartLabel" in a && typeof a.chartLabel === "string"
+                          ? a.chartLabel
+                          : `${a.pct} ${a.label}`
                       return (
                         <g key={a.label}>
                           <line
@@ -382,7 +375,7 @@ export default function TokenPage() {
                             className="fill-foreground font-medium"
                             style={{ fontSize: "6px" }}
                           >
-                            {a.pct} {a.label}
+                            {chartText}
                           </text>
                         </g>
                       )
@@ -398,19 +391,25 @@ export default function TokenPage() {
                   <TableRow>
                     <TableHead className="w-[5rem]">Allocation</TableHead>
                     <TableHead>Use</TableHead>
+                    <TableHead className="min-w-0 font-mono text-xs text-muted-foreground">
+                      Address
+                    </TableHead>
                     <TableHead className="min-w-[7.5rem] text-right">
                       On-chain
                     </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {creatorFeeAllocations.map(({ pct, label, wallet }) => (
+                  {creatorFeeAllocations.map(({ pct, label, wallet, subjectToChange }) => (
                     <TableRow key={label}>
                       <TableCell className="font-medium tabular-nums">
                         {pct}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {label}
+                        {subjectToChange ? `${label}*` : label}
+                      </TableCell>
+                      <TableCell className="max-w-[12rem] truncate font-mono text-xs text-muted-foreground" title={wallet ?? undefined}>
+                        {wallet ?? "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         {wallet ? (
@@ -432,6 +431,9 @@ export default function TokenPage() {
                 </TableBody>
               </Table>
             </div>
+            <p className="mt-3 text-sm text-muted-foreground">
+              * Note: subject to change
+            </p>
           </div>
         </section>
 

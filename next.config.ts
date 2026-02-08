@@ -117,6 +117,10 @@ const config = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
+          // Block crawlers on staging only (VERCEL_ENV=preview or STAGING=1)
+          ...(process.env.VERCEL_ENV === "preview" || process.env.STAGING === "1"
+            ? [{ key: "X-Robots-Tag" as const, value: "noindex, nofollow" }]
+            : []),
         ],
       },
     ];

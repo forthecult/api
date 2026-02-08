@@ -43,47 +43,55 @@ const siteUrl =
     siteUrlRaw.trim()
   : `https://${siteUrlRaw.trim().replace(/^\/+/, "")}`;
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
-  keywords: SEO_CONFIG.keywords?.split(",").map((k) => k.trim()),
-  openGraph: {
+/** Staging: Vercel preview deploys or explicit STAGING=1. Block indexing only on staging. */
+const isStaging =
+  process.env.VERCEL_ENV === "preview" || process.env.STAGING === "1";
+
+export async function generateMetadata(): Promise<Metadata> {
+  return {
+    metadataBase: new URL(siteUrl),
     description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
-    title: SEO_CONFIG.fullName,
-    type: "website",
-    siteName: SEO_CONFIG.fullName,
-    locale: "en_US",
-  },
-  title: {
-    default: SEO_CONFIG.fullName,
-    template: `%s | ${SEO_CONFIG.name}`,
-  },
-  twitter: {
-    card: "summary_large_image",
-    description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
-    title: SEO_CONFIG.fullName,
-  },
-  alternates: {
-    canonical: "/",
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
+    keywords: SEO_CONFIG.keywords?.split(",").map((k) => k.trim()),
+    openGraph: {
+      description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
+      title: SEO_CONFIG.fullName,
+      type: "website",
+      siteName: SEO_CONFIG.fullName,
+      locale: "en_US",
     },
-  },
-  icons: {
-    icon: [
-      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
-    ],
-  },
-};
+    title: {
+      default: SEO_CONFIG.fullName,
+      template: `%s | ${SEO_CONFIG.name}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
+      title: SEO_CONFIG.fullName,
+    },
+    alternates: {
+      canonical: "/",
+    },
+    robots: isStaging
+      ? { index: false, follow: false }
+      : {
+          index: true,
+          follow: true,
+          googleBot: {
+            index: true,
+            follow: true,
+            "max-video-preview": -1,
+            "max-image-preview": "large",
+            "max-snippet": -1,
+          },
+        },
+    icons: {
+      icon: [
+        { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+        { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+      ],
+    },
+  };
+}
 
 function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
