@@ -8,9 +8,13 @@
  * - order:shipment:created, order:shipment:delivered
  *
  * Product Events:
- * - product:publish:started - Publish started (we import; product may still be "publishing")
- * - product:published - Publish completed (we import again to ensure data is final)
- * - product:deleted - Product deleted from Printify
+ * - product:publish:started - Publish started (we return 200 immediately, then import in background)
+ * - product:published - Publish completed (same: 200 first, import in background)
+ * - product:deleted - Product deleted from Printify (200 first, unpublish in background)
+ *
+ * We return 200 immediately for product events so Printify can mark the product as "Published"
+ * on their side. If we awaited the full import, Printify could timeout and leave products
+ * stuck in "Publishing".
  *
  * Security: Printify doesn't sign webhooks with HMAC like Printful.
  * In production, set PRINTIFY_WEBHOOK_SECRET and configure your webhook URL
@@ -80,7 +84,11 @@ export async function POST(request: NextRequest) {
 
     const eventType = payload.type;
     const resourceType = payload.resource?.type;
-    const resourceId = payload.resource?.id;
+    // Printify may send id as string or number; normalize to string for API calls
+    const resourceId =
+      payload.resource?.id != null
+        ? String(payload.resource.id)
+        : undefined;
 
     console.log(
       `Printify webhook received: ${eventType} for ${resourceType} ${resourceId}`,
@@ -88,26 +96,48 @@ export async function POST(request: NextRequest) {
 
     // Handle product events
     if (resourceType === "product") {
-      // Import when publish starts or when publish completes (product may be "publishing" for a few minutes)
+      // Import when publish starts or when publish completes (product may be "publishing" for a few minutes).
+      // Return 200 immediately so Printify marks the product as "Published" on their side; process import in
+      // background. If we await the full import, Printify may timeout and keep the product stuck in "Publishing".
       if (
         (eventType === "product:publish:started" ||
           eventType === "product:published") &&
         resourceId
       ) {
-        const result = await handlePrintifyProductPublished({ id: resourceId });
-        if (!result.success) {
-          console.warn(
-            `Printify ${eventType} failed: ${result.error}`,
-          );
-        }
+        void handlePrintifyProductPublished({ id: resourceId })
+          .then((result) => {
+            if (!result.success) {
+              console.warn(
+                `Printify ${eventType} import failed: ${result.error}`,
+              );
+            } else {
+              console.log(
+                `Printify ${eventType}: product ${resourceId} imported successfully`,
+              );
+            }
+          })
+          .catch((err) => {
+            console.error(
+              `Printify ${eventType} import error for ${resourceId}:`,
+              err,
+            );
+          });
         return NextResponse.json({ received: true });
       }
 
       if (eventType === "product:deleted" && resourceId) {
-        const result = await handlePrintifyProductDeleted({ id: resourceId });
-        if (!result.success) {
-          console.warn(`Printify product:deleted failed: ${result.error}`);
-        }
+        void handlePrintifyProductDeleted({ id: resourceId })
+          .then((result) => {
+            if (!result.success) {
+              console.warn(`Printify product:deleted failed: ${result.error}`);
+            }
+          })
+          .catch((err) => {
+            console.error(
+              `Printify product:deleted error for ${resourceId}:`,
+              err,
+            );
+          });
         return NextResponse.json({ received: true });
       }
 

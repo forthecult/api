@@ -16,7 +16,7 @@ const CATEGORY_ID = "smart-home";
 
 /** Source URLs only—upload script fetches from here and hosts on UploadThing. We do not serve Seeed CDN. */
 const SEEED_CACHE =
-  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/48035b5512857d0ab907b31a092da78f";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {

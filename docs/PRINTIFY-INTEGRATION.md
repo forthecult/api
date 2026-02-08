@@ -48,9 +48,11 @@ POST /api/admin/printify/sync
 ### Webhooks
 
 Product sync events are handled automatically:
-- `product:publish:started` — Publish started → we import (product may still show "Publishing" in Printify)
-- `product:published` — Publish completed → we import again so data is final
-- `product:deleted` — Product deleted in Printify → unpublishes local product
+- `product:publish:started` — Publish started → we **return 200 immediately** so Printify marks the product as "Published", then we import in the background
+- `product:published` — Publish completed → same: 200 first, import in background
+- `product:deleted` — Product deleted in Printify → 200 first, unpublish local product in background
+
+We return HTTP 200 right away for product events so Printify can clear the "Publishing" status. If we waited for the full import before responding, Printify could timeout and leave products stuck in "Publishing".
 
 **Register the webhook** in Printify: Settings → Webhooks → Add webhook. URL: `https://your-store.com/api/webhooks/printify` (optionally add `?secret=YOUR_SECRET` and set `PRINTIFY_WEBHOOK_SECRET` in .env).
 
