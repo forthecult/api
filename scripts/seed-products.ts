@@ -23,13 +23,17 @@ import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth
 import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
 import { HOME_ASSISTANT_VOICE } from "./seed-data/home-assistant-voice";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
+import { LINKSTAR_H68K_1432_V2 } from "./seed-data/linkstar-h68k-1432-v2";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
 import { PACSAFE_RFIDSAFE_WALLET } from "./seed-data/pacsafe-rfidsafe-wallet";
 import { PACSAFE_V_12L } from "./seed-data/pacsafe-v-12l";
 import { PACSAFE_V_20L } from "./seed-data/pacsafe-v-20l";
+import { SENSECAP_WATCHER_W1_A } from "./seed-data/sensecap-watcher-w1-a";
 import { SPOUT_MONOLITH } from "./seed-data/spout-monolith";
 import { TREZOR_SAFE_5 } from "./seed-data/trezor-safe-5";
 import { TREZOR_SAFE_7 } from "./seed-data/trezor-safe-7";
+import { TRMNL_7_5_OG_DIY_KIT } from "./seed-data/trmnl-7-5-og-diy-kit";
+import { XIAO_SMART_IR_MATE } from "./seed-data/xiao-smart-ir-mate";
 
 const now = new Date();
 
@@ -60,6 +64,10 @@ const CURATED_PRODUCTS = [
   CRYPTOMATIC_JETSETTER,
   HOME_ASSISTANT_GREEN,
   HOME_ASSISTANT_VOICE,
+  LINKSTAR_H68K_1432_V2,
+  SENSECAP_WATCHER_W1_A,
+  TRMNL_7_5_OG_DIY_KIT,
+  XIAO_SMART_IR_MATE,
 ];
 
 async function seed() {

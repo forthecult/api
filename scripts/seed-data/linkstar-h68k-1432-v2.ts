@@ -1,0 +1,69 @@
+/**
+ * Seed data for LinkStar-H68K-1432 V2 — quad-core router with dual-2.5G + dual-1G Ethernet, Wi-Fi 6.
+ * Sourced from Seeed Studio (US). Only V2. Brand: Seeed Studio. Category: Smart Home.
+ * US price $104; we add 5% → $109.20.
+ * https://www.seeedstudio.com/LinkStar-H68K-1432-V2-p-5886.html
+ *
+ * IMAGES: Source URLs only. Run db:upload-curated-product-images after seeding.
+ * Markets: Seeed US warehouse — US only.
+ */
+
+const COST_CENTS = 10400; // $104 US
+const PRICE_MARKUP = 1.05;
+const PRICE_CENTS = Math.round(COST_CENTS * PRICE_MARKUP); // $109.20
+
+const PRODUCT_ID = "linkstar-h68k-1432-v2";
+const PRODUCT_SLUG = "linkstar-h68k-1432-v2";
+const CATEGORY_ID = "smart-home";
+
+const SEEED_CACHE =
+  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+
+const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+  {
+    url: `${SEEED_CACHE}/1/0/2/102110958.jpg`,
+    alt: "LinkStar H68K V2 router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
+    title: "LinkStar H68K-1432 V2 - Main",
+  },
+  {
+    url: `${SEEED_CACHE}/l/i/linkstar-h68k-v2-02.jpg`,
+    alt: "LinkStar H68K V2 - ports and interfaces",
+    title: "LinkStar H68K V2 - Ports",
+  },
+];
+
+const FEATURES: string[] = [
+  "Quad-core Cortex-A55 RK3568; 4 Ethernet (dual-2.5G + dual-1G), Wi-Fi 6",
+  "High storage capacity and media player; indoor use",
+  "Better communication and heat dissipation than first-gen H68K",
+  "Reasonable interface layout; OpenWRT-friendly",
+];
+
+const DESCRIPTION = `<p>LinkStar-H68K-V2 router equips a quad-core Cortex-A55 RK3568 chip with 4 Ethernet interfaces (dual-2.5G and dual-1G) and Wi-Fi 6. It offers high storage capacity and media player functionality, recommended for indoor use. Compared with the first H68K generation, it has better communication and heat dissipation, and a more convenient interface layout.</p>
+
+<p>Ideal for homelab, NAS, or smart home gateway use with OpenWRT or other Linux distros.</p>`;
+
+export const LINKSTAR_H68K_1432_V2 = {
+  id: PRODUCT_ID,
+  name: "LinkStar-H68K-1432 V2",
+  slug: PRODUCT_SLUG,
+  imageUrl: PRODUCT_IMAGES[0]!.url,
+  mainImageAlt:
+    "LinkStar H68K-1432 V2 router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
+  mainImageTitle: "LinkStar H68K-1432 V2 | Seeed Studio",
+  priceCents: PRICE_CENTS,
+  costPerItemCents: COST_CENTS,
+  categoryId: CATEGORY_ID,
+  brand: "Seeed Studio",
+  model: "LinkStar-H68K-1432 V2",
+  description: DESCRIPTION,
+  features: FEATURES,
+  metaDescription:
+    "LinkStar H68K-1432 V2: quad-core RK3568 router with dual-2.5G and dual-1G Ethernet, Wi-Fi 6. Seeed Studio. Buy at Culture.",
+  pageTitle: "LinkStar H68K-1432 V2 | Seeed Studio | Culture",
+  sku: "102110958",
+  hasVariants: false,
+  continueSellingWhenOutOfStock: true,
+  images: PRODUCT_IMAGES,
+  availableCountryCodes: ["US"] as const,
+};
