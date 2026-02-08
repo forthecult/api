@@ -211,7 +211,7 @@ export default function TokenPage() {
               CULT community.
             </p>
             <p className="text-muted-foreground">
-              Holding CULT gives free shipping. Spending CULT gives up to 13.37%
+              Holding CULT gives free shipping. Spending CULT gives up to 20%
               discount on eligible purchases. We kept 13.37% for the team. You get
               the rest.
             </p>
