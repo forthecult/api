@@ -28,7 +28,11 @@ export function isUploadThingUrl(url: string | null): boolean {
   if (!url || typeof url !== "string") return false;
   try {
     const host = new URL(url).hostname.toLowerCase();
-    return host.includes("utfs.io") || host.includes("uploadthing");
+    return (
+      host.includes("utfs.io") ||
+      host.includes("ufs.sh") ||
+      host.includes("uploadthing")
+    );
   } catch {
     return false;
   }

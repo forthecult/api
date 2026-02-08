@@ -120,3 +120,6 @@ If you don’t set the token, upload buttons in the app will fail; you can still
 
 - **Seed taking a long time**  
   UploadThing is only used in the optional final step (“Upload brand logos”). The main seed (categories, brands, products, reviews) does not call UploadThing. If seed is slow, the cause is elsewhere (e.g. products/reviews); the pre-extracted `data/reviews-seed.json` keeps review seeding fast.
+
+- **Product images (curated) missing on the front-end**  
+  Curated products (Home Assistant, LinkStar, SenseCAP Watcher, TRMNL, XIAO Smart IR Mate, etc.) should serve images from UploadThing (`*.ufs.sh` or `utfs.io`). If they show placeholders: (1) Ensure the database is running and `UPLOADTHING_TOKEN` is set in `.env`. (2) Run `bun run db:seed-and-upload-curated` (or `db:seed-products` then `db:upload-curated-product-images`) so images are re-fetched from vendor URLs, uploaded to UploadThing, and DB URLs updated. (3) In admin, check that product/gallery image URLs are correct—no typos in the subdomain (e.g. `y0p8x6gowf.ufs.sh` vs `y0p8x6qowf.ufs.sh`); a single wrong character causes 404 and the front-end falls back to the placeholder.
