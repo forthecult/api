@@ -6,6 +6,7 @@ import { productsTable } from "~/db/schema";
 import {
   importAllPrintfulProducts,
   importSinglePrintfulProduct,
+  importSizeChartsForAllPrintfulProducts,
   exportProductToPrintful,
   exportAllPrintfulProducts,
 } from "~/lib/printful-sync";
@@ -24,6 +25,7 @@ import { auth, isAdminUser } from "~/lib/auth";
  * - { action: "import_single", productId: "abc", overwrite: true } - Re-sync one product by our product ID (refreshes Markets)
  * - { action: "export_single", productId: "abc" } - Push local changes to Printful
  * - { action: "export_all" } - Push all local changes to Printful
+ * - { action: "import_size_charts" } - Backfill size charts for all Printful products (by brand/model)
  */
 export async function POST(request: NextRequest) {
   const session = await auth.api.getSession({ headers: request.headers });
@@ -167,10 +169,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    case "import_size_charts": {
+      console.log("Starting Printful size charts backfill...");
+      const result = await importSizeChartsForAllPrintfulProducts();
+      return NextResponse.json({
+        success: result.success,
+        upserted: result.upserted,
+        errors: result.errors.slice(0, 30),
+      });
+    }
+
     default:
       return NextResponse.json(
         {
-          error: `Unknown action: ${action}. Valid: import_all, import_single, export_single, export_all`,
+          error: `Unknown action: ${action}. Valid: import_all, import_single, import_size_charts, export_single, export_all`,
         },
         { status: 400 },
       );
@@ -201,6 +213,8 @@ export async function GET(request: NextRequest) {
         "POST with { action: 'import_all' } - Import all Printful products",
       import_single:
         "POST with { action: 'import_single', printfulSyncProductId: 123 } or { action: 'import_single', productId: 'our-id', overwrite: true }",
+      import_size_charts:
+        "POST with { action: 'import_size_charts' } - Backfill size charts for all Printful products",
       export_single: "POST with { action: 'export_single', productId: 'abc' }",
       export_all:
         "POST with { action: 'export_all' } - Push prices to Printful",

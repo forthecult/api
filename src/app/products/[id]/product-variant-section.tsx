@@ -92,10 +92,32 @@ function useUnavailableInCountry(product: {
   );
 }
 
+/** Build option definitions from variant size/color when product has variants but optionDefinitions are missing (e.g. legacy Printful sync). */
+function deriveOptionDefinitionsFromVariants(
+  variants: ProductVariantOption[],
+): ProductOptionDefinition[] {
+  const sizeValues = new Set<string>();
+  const colorValues = new Set<string>();
+  const genderValues = new Set<string>();
+  for (const v of variants) {
+    if (v.size?.trim()) sizeValues.add(v.size.trim());
+    if (v.color?.trim()) colorValues.add(v.color.trim());
+    if (v.gender?.trim()) genderValues.add(v.gender.trim());
+  }
+  const opts: ProductOptionDefinition[] = [];
+  if (colorValues.size > 0)
+    opts.push({ name: "Color", values: [...colorValues].sort() });
+  if (genderValues.size > 0)
+    opts.push({ name: "Gender", values: [...genderValues].sort() });
+  if (sizeValues.size > 0)
+    opts.push({ name: "Size", values: [...sizeValues].sort() });
+  return opts;
+}
+
 export function ProductVariantSection({
   product,
   hasVariants,
-  optionDefinitions,
+  optionDefinitions: optionDefinitionsProp,
   variants,
 }: ProductVariantSectionProps) {
   const [selectedByIndex, setSelectedByIndex] = React.useState<
@@ -103,6 +125,14 @@ export function ProductVariantSection({
   >({});
 
   const unavailableInCountry = useUnavailableInCountry(product);
+
+  // Use option definitions from API, or derive from variants when missing (e.g. after Printful sync fix)
+  const optionDefinitions =
+    optionDefinitionsProp.length > 0
+      ? optionDefinitionsProp
+      : hasVariants && variants.length > 1
+        ? deriveOptionDefinitionsFromVariants(variants)
+        : [];
 
   // Initialize selection from first variant so we always have a valid combination
   React.useEffect(() => {

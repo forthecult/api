@@ -40,6 +40,11 @@ POST /api/admin/printify/sync
 POST /api/admin/printify/sync
 { "action": "import_single", "printifyProductId": "abc123" }
 
+# Clear stuck "Publishing" (re-call publish so Printify marks as Published)
+POST /api/admin/printify/sync
+{ "action": "confirm_publish" }
+# Or one product: { "action": "confirm_publish", "printifyProductId": "abc123" } or { "productId": "our-id" }
+
 # Push price changes to Printify
 POST /api/admin/printify/sync
 { "action": "export_single", "productId": "abc" }
@@ -54,13 +59,15 @@ Product sync events are handled automatically:
 
 We return HTTP 200 right away for product events so Printify can clear the "Publishing" status. If we waited for the full import before responding, Printify could timeout and leave products stuck in "Publishing".
 
-**Register the webhook** in Printify: Settings → Webhooks → Add webhook. URL: `https://your-store.com/api/webhooks/printify` (optionally add `?secret=YOUR_SECRET` and set `PRINTIFY_WEBHOOK_SECRET` in .env).
+**Webhooks are configured via the Printify API only** (there is no webhook UI in Printify for API stores). Register them with `POST /v1/shops/{shop_id}/webhooks.json` (topic + url). Required for clearing "Publishing": `product:publish:started` and `product:published`. URL should be `https://your-store.com/api/webhooks/printify` (or append `?secret=YOUR_SECRET` if you set `PRINTIFY_WEBHOOK_SECRET` in .env). **Validate that webhooks are registered**: `GET /api/admin/printify/sync` returns a `webhooks` object with `ok`, `expectedUrl`, `registered`, `missingProductTopics`, and `message`. Use this to confirm topics and URL before relying on confirm_publish to clear stuck status.
 
 ### Product not showing in store?
 
 1. **"Publishing" status** — Printify can show "Publishing" for a few minutes after you click Publish. The product is synced when the webhook fires (`product:publish:started` or `product:published`). If your webhook isn’t set up or the request failed, the product won’t appear until you sync manually.
 
-2. **Manual sync** — Pull all products from Printify into the store. **Run from the relivator directory** so the script uses the same `.env` and `DATABASE_URL` as the app:
+2. **Clear stuck "Publishing"** — Use **confirm_publish** to re-call Printify's publish API so they re-send the webhook; when we return 200, they mark as "Published". `POST /api/admin/printify/sync` with `{ "action": "confirm_publish" }` (all) or `{ "action": "confirm_publish", "printifyProductId": "abc123" }` or `{ "productId": "our-id" }` for one. Ensure your [webhook URL](#webhooks) is registered.
+
+3. **Manual import** — Pull all products from Printify into the store. **Run from the relivator directory** so the script uses the same `.env` and `DATABASE_URL` as the app:
    ```bash
    cd relivator
    bun run printify:sync
@@ -69,14 +76,14 @@ We return HTTP 200 right away for product events so Printify can clear the "Publ
 
    By default only **visible** products are imported. If a product is still "Publishing" (not yet visible in Printify), it will be skipped. Wait until it’s visible, or run the sync script with `visibleOnly: false` (edit `scripts/printify-sync-products.ts` temporarily) to import all.
 
-3. **Verify products are in the database** — If you get 404 when opening a product by slug (e.g. admin edit or storefront), the product may not be in the DB. List products to confirm:
+4. **Verify products are in the database** — If you get 404 when opening a product by slug (e.g. admin edit or storefront), the product may not be in the DB. List products to confirm:
    ```bash
    cd relivator
    bun run db:list-products
    ```
    This shows total count, breakdown by source (printify / printful / manual), and the first 50 products with id, slug, and name. If the list is empty or your product/slug is missing, run `bun run printify:sync` from the same directory.
 
-4. **Publishing settings** — In Printify, ensure "Hide in store" is unchecked and you’ve selected your API store as the sales channel. The note about Etsy/eBay/Amazon applies only to those marketplaces; your custom store is unaffected.
+5. **Publishing settings** — In Printify, ensure "Hide in store" is unchecked and you’ve selected your API store as the sales channel. The note about Etsy/eBay/Amazon applies only to those marketplaces; your custom store is unaffected.
 
 ## Product schema alignment
 

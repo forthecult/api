@@ -211,6 +211,8 @@ export default function AdminProductEditPage() {
   const [loading, setLoading] = useState(true);
   const [printfulResyncLoading, setPrintfulResyncLoading] = useState(false);
   const [printifyResyncLoading, setPrintifyResyncLoading] = useState(false);
+  const [printifyConfirmPublishLoading, setPrintifyConfirmPublishLoading] =
+    useState(false);
   const [printifyDeleteLoading, setPrintifyDeleteLoading] = useState(false);
   const [printifyIdToDelete, setPrintifyIdToDelete] = useState("");
   const [printifyIdToImport, setPrintifyIdToImport] = useState("");
@@ -517,6 +519,41 @@ export default function AdminProductEditPage() {
       setPrintifyResyncLoading(false);
     }
   }, [product?.id, fetchProduct]);
+
+  const handlePrintifyConfirmPublish = useCallback(async () => {
+    if (!product?.id) return;
+    setPrintifyConfirmPublishLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "confirm_publish",
+          productId: product.id,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        message?: string;
+      };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Confirm publish failed");
+      }
+      setError(null);
+      if (json.message) {
+        setError(null);
+        // Show success briefly (or could use a toast)
+        console.log("Printify confirm publish:", json.message);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Confirm publish failed");
+    } finally {
+      setPrintifyConfirmPublishLoading(false);
+    }
+  }, [product?.id]);
 
   const handleDeleteFromPrintify = useCallback(async () => {
     if (!product?.id) return;
@@ -2502,6 +2539,25 @@ export default function AdminProductEditPage() {
                       type="button"
                       variant="outline"
                       size="sm"
+                      disabled={printifyConfirmPublishLoading}
+                      onClick={() => void handlePrintifyConfirmPublish()}
+                      className="gap-1.5"
+                      title="Re-call Printify publish API to clear stuck 'Publishing' status"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "size-3.5",
+                          printifyConfirmPublishLoading && "animate-spin",
+                        )}
+                      />
+                      {printifyConfirmPublishLoading
+                        ? "Confirming…"
+                        : "Confirm publish in Printify"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
                       disabled={printifyDeleteLoading}
                       onClick={() => void handleDeleteFromPrintify()}
                       className="gap-1.5 text-destructive hover:text-destructive"
@@ -2517,7 +2573,7 @@ export default function AdminProductEditPage() {
               <>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-muted-foreground">
-                    Stuck in Publishing? Delete in Printify by product ID (from Printify URL):
+                    Stuck in Publishing? Use &quot;Confirm publish in Printify&quot; above first (or for all: POST /api/admin/printify/sync with {`{ "action": "confirm_publish" }`}). Or delete by Printify product ID:
                   </span>
                   <input
                     type="text"

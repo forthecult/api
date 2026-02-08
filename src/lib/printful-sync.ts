@@ -9,7 +9,7 @@
  * blank catalog items. This service syncs those finished products to your store.
  */
 
-import { eq, isNull, and } from "drizzle-orm";
+import { eq, and, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
@@ -139,6 +139,76 @@ export async function importAllPrintfulProducts(
 }
 
 /**
+ * Backfill size charts for all existing Printful products.
+ * Fetches size guides from Printful for each distinct catalog product (brand+model) and upserts into size_chart.
+ * Call this after a resync if size charts were not imported (e.g. products were skipped).
+ */
+export async function importSizeChartsForAllPrintfulProducts(): Promise<{
+  success: boolean;
+  upserted: number;
+  errors: string[];
+}> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return { success: false, upserted: 0, errors: ["Printful not configured"] };
+  }
+
+  const errors: string[] = [];
+  let upserted = 0;
+
+  try {
+    const rows = await db
+      .select({
+        externalId: productsTable.externalId,
+        brand: productsTable.brand,
+        model: productsTable.model,
+      })
+      .from(productsTable)
+      .where(
+        and(
+          eq(productsTable.source, "printful"),
+          isNotNull(productsTable.printfulSyncProductId),
+          isNotNull(productsTable.externalId),
+        ),
+      );
+
+    const seen = new Set<string>();
+    for (const row of rows) {
+      const catalogProductId =
+        row.externalId != null
+          ? Number.parseInt(String(row.externalId), 10)
+          : NaN;
+      if (!Number.isFinite(catalogProductId) || catalogProductId <= 0) continue;
+
+      const brand = (row.brand?.trim() || "Printful").trim() || "Printful";
+      const model =
+        (row.model?.trim() || String(catalogProductId)).trim() ||
+        String(catalogProductId);
+      const key = `${brand}|${model}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      try {
+        await upsertPrintfulSizeChart(catalogProductId, brand, model);
+        upserted++;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        errors.push(`Catalog ${catalogProductId} (${brand} / ${model}): ${message}`);
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      upserted,
+      errors,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, upserted, errors: [message] };
+  }
+}
+
+/**
  * Import a single Printful sync product by ID.
  */
 const PRINTFUL_VARIANT_RETRY_DELAYS_MS = [2000, 5000];
@@ -264,24 +334,36 @@ export async function importSinglePrintfulProduct(
   return { action: "imported", productId };
 }
 
+/** Coerce option value to string (Printful can return string | boolean). */
+function optionValueToString(
+  opt: { id?: string; value?: string | boolean } | null,
+): string | null {
+  if (opt == null) return null;
+  const v = opt.value;
+  if (v == null) return null;
+  const s = typeof v === "string" ? v : String(v);
+  const t = s.trim();
+  return t.length > 0 ? t : null;
+}
+
 /** Get size from sync variant: top-level or options array (Printful may use options only). */
 function getVariantSize(v: PrintfulSyncVariant): string | null {
   if (v.size?.trim()) return v.size.trim();
-  const opt = v.options?.find(
-    (o) => o?.id?.toLowerCase() === "size" || o?.id === "Size",
-  );
-  const val = typeof opt?.value === "string" ? opt.value.trim() : null;
-  return val || null;
+  const opts = v.options ?? [];
+  const sizeOpt =
+    opts.find((o) => o?.id?.toLowerCase() === "size") ??
+    opts.find((o) => /size|garment_size/i.test(o?.id ?? ""));
+  return optionValueToString(sizeOpt ?? null);
 }
 
 /** Get color from sync variant: top-level or options array (Printful may use options only). */
 function getVariantColor(v: PrintfulSyncVariant): string | null {
   if (v.color?.trim()) return v.color.trim();
-  const opt = v.options?.find(
-    (o) => o?.id?.toLowerCase() === "color" || o?.id === "Color",
-  );
-  const val = typeof opt?.value === "string" ? opt.value.trim() : null;
-  return val || null;
+  const opts = v.options ?? [];
+  const colorOpt =
+    opts.find((o) => o?.id?.toLowerCase() === "color") ??
+    opts.find((o) => /color|garment_color/i.test(o?.id ?? ""));
+  return optionValueToString(colorOpt ?? null);
 }
 
 /** Build option definitions (Size, Color) from sync variants for storefront and admin. */

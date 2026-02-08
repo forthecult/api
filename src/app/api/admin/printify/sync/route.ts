@@ -13,8 +13,71 @@ import {
 import {
   getPrintifyIfConfigured,
   deletePrintifyProduct,
+  publishPrintifyProduct,
+  listPrintifyWebhooks,
 } from "~/lib/printify";
 import { auth, isAdminUser } from "~/lib/auth";
+
+/** Required product webhook topics so Printify can clear "Publishing" when we return 200. */
+const REQUIRED_PRODUCT_WEBHOOK_TOPICS = [
+  "product:publish:started",
+  "product:published",
+] as const;
+
+function getExpectedWebhookUrl(): string {
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
+  const path = "/api/webhooks/printify";
+  const secret = process.env.PRINTIFY_WEBHOOK_SECRET?.trim();
+  const qs = secret ? `?secret=${encodeURIComponent(secret)}` : "";
+  return base ? `${base.replace(/\/$/, "")}${path}${qs}` : "";
+}
+
+async function validatePrintifyWebhooks(shopId: string): Promise<{
+  ok: boolean;
+  expectedUrl: string;
+  registered: Array<{ topic: string; url: string }>;
+  registeredTopics: string[];
+  missingProductTopics: string[];
+  message: string;
+}> {
+  const expectedUrl = getExpectedWebhookUrl();
+  let registered: Array<{ topic: string; url: string }> = [];
+  try {
+    const list = await listPrintifyWebhooks(shopId);
+    registered = (list ?? []).map((w) => ({ topic: w.topic, url: w.url }));
+  } catch {
+    return {
+      ok: false,
+      expectedUrl,
+      registered: [],
+      registeredTopics: [],
+      missingProductTopics: [...REQUIRED_PRODUCT_WEBHOOK_TOPICS],
+      message: "Failed to list webhooks (Printify API error).",
+    };
+  }
+  const registeredTopics = registered.map((r) => r.topic);
+  const missingProductTopics = REQUIRED_PRODUCT_WEBHOOK_TOPICS.filter(
+    (t) => !registeredTopics.includes(t),
+  );
+  const urlMismatch = registered.length > 0 && registered.some((r) => r.url !== expectedUrl);
+  const ok = missingProductTopics.length === 0 && !urlMismatch;
+  let message: string;
+  if (missingProductTopics.length > 0) {
+    message = `Missing webhooks for: ${missingProductTopics.join(", ")}. Register these via Printify API (POST /shops/{shop_id}/webhooks.json) so "Publishing" can clear.`;
+  } else if (urlMismatch) {
+    message = `Webhooks point to different URL(s). Expected: ${expectedUrl}. Update via Printify API if needed.`;
+  } else {
+    message = "Product webhooks registered; Printify can clear Publishing when we return 200.";
+  }
+  return {
+    ok,
+    expectedUrl,
+    registered,
+    registeredTopics,
+    missingProductTopics,
+    message,
+  };
+}
 
 /**
  * POST /api/admin/printify/sync
@@ -26,6 +89,7 @@ import { auth, isAdminUser } from "~/lib/auth";
  * - { action: "import_all", overwrite: true } - Import and overwrite existing
  * - { action: "import_single", printifyProductId: "abc123" } - Import one product by Printify ID (e.g. stuck in "Publishing")
  * - { action: "import_single", productId: "our-id", overwrite: true } - Re-sync one product by our product ID (refreshes Markets)
+ * - { action: "confirm_publish", printifyProductId?: "abc", productId?: "our-id" } - Re-call Printify publish API to clear stuck "Publishing" (no body = all local Printify products)
  * - { action: "delete_in_printify", printifyProductId: "abc123" } - Delete product in Printify (unsticks "Publishing"); optional productId to unlink locally
  * - { action: "export_single", productId: "abc" } - Push local changes to Printify
  * - { action: "export_all" } - Push all local changes to Printify
@@ -134,6 +198,95 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    case "confirm_publish": {
+      // Validate webhooks so caller knows if "Publishing" will actually clear
+      const webhooksValidation = await validatePrintifyWebhooks(pf.shopId);
+      const webhooksPayload = {
+        ok: webhooksValidation.ok,
+        expectedUrl: webhooksValidation.expectedUrl,
+        missingProductTopics: webhooksValidation.missingProductTopics,
+        message: webhooksValidation.message,
+      };
+
+      // Re-call Printify publish API so they re-send webhook / clear "Publishing" status
+      const productIdParam = body.productId;
+      const printifyProductIdParam = body.printifyProductId;
+
+      if (printifyProductIdParam) {
+        const result = await publishPrintifyProduct(pf.shopId, printifyProductIdParam);
+        if (!result.success) {
+          return NextResponse.json(
+            { success: false, error: result.error ?? "Printify publish API failed", webhooks: webhooksPayload },
+            { status: 400 },
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          message: "Publish confirmed for one product. Check Printify; status should clear shortly.",
+          confirmed: 1,
+          webhooks: webhooksPayload,
+        });
+      }
+
+      if (productIdParam) {
+        const [row] = await db
+          .select({ printifyProductId: productsTable.printifyProductId })
+          .from(productsTable)
+          .where(eq(productsTable.id, productIdParam))
+          .limit(1);
+        if (!row?.printifyProductId) {
+          return NextResponse.json(
+            { error: "Product not found or is not a Printify product.", webhooks: webhooksPayload },
+            { status: 400 },
+          );
+        }
+        const result = await publishPrintifyProduct(pf.shopId, row.printifyProductId);
+        if (!result.success) {
+          return NextResponse.json(
+            { success: false, error: result.error ?? "Printify publish API failed", webhooks: webhooksPayload },
+            { status: 400 },
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          message: "Publish confirmed for one product. Check Printify; status should clear shortly.",
+          confirmed: 1,
+          webhooks: webhooksPayload,
+        });
+      }
+
+      // Confirm publish for all local Printify products (stuck "Publishing" → clear via re-publish)
+      const printifyProducts = await db
+        .select({
+          id: productsTable.id,
+          printifyProductId: productsTable.printifyProductId,
+        })
+        .from(productsTable)
+        .where(eq(productsTable.source, "printify"));
+
+      const withIds = printifyProducts.filter((p) => p.printifyProductId != null);
+      const confirmed: number[] = [];
+      const errors: string[] = [];
+
+      for (const p of withIds) {
+        const res = await publishPrintifyProduct(pf.shopId, p.printifyProductId!);
+        if (res.success) confirmed.push(1);
+        else errors.push(`${p.printifyProductId}: ${res.error ?? "unknown"}`);
+      }
+
+      return NextResponse.json({
+        success: errors.length === 0,
+        message:
+          confirmed.length > 0
+            ? `Publish confirmed for ${confirmed.length} product(s). Check Printify; statuses should clear shortly.`
+            : "No Printify products found to confirm.",
+        confirmed: confirmed.length,
+        total: withIds.length,
+        errors: errors.slice(0, 20),
+        webhooks: webhooksPayload,
+      });
+    }
+
     case "delete_in_printify": {
       let printifyProductIdToDelete = body.printifyProductId;
       if (printifyProductIdToDelete == null && body.productId) {
@@ -225,7 +378,7 @@ export async function POST(request: NextRequest) {
     default:
       return NextResponse.json(
         {
-          error: `Unknown action: ${action}. Valid: import_all, import_single, delete_in_printify, export_single, export_all`,
+          error: `Unknown action: ${action}. Valid: import_all, import_single, confirm_publish, delete_in_printify, export_single, export_all`,
         },
         { status: 400 },
       );
@@ -247,16 +400,33 @@ export async function GET(request: NextRequest) {
   }
 
   const pf = getPrintifyIfConfigured();
+  let webhooks: Awaited<ReturnType<typeof validatePrintifyWebhooks>> | null = null;
+  if (pf) {
+    webhooks = await validatePrintifyWebhooks(pf.shopId);
+  }
 
   return NextResponse.json({
     configured: pf != null,
     shopId: pf?.shopId ?? null,
-    webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/printify`,
+    webhookUrl: getExpectedWebhookUrl(),
+    webhooks: webhooks
+      ? {
+          ok: webhooks.ok,
+          expectedUrl: webhooks.expectedUrl,
+          registered: webhooks.registered,
+          missingProductTopics: webhooks.missingProductTopics,
+          message: webhooks.message,
+        }
+      : null,
     documentation: {
       import_all:
         "POST with { action: 'import_all' } - Import all Printify products",
       import_single:
         "POST with { action: 'import_single', printifyProductId: 'abc123' } or { action: 'import_single', productId: 'our-id', overwrite: true }",
+      webhooks:
+        "GET returns webhooks validation (ok, expectedUrl, missingProductTopics). Register via Printify API: POST /v1/shops/{shop_id}/webhooks.json with topic and url.",
+      confirm_publish:
+        "POST with { action: 'confirm_publish' } (all) or printifyProductId/productId to re-call publish API and clear stuck 'Publishing'. Response includes webhooks validation.",
       delete_in_printify:
         "POST with { action: 'delete_in_printify', printifyProductId: 'abc123' } or { productId: 'our-id' } to delete in Printify (unstick Publishing)",
       export_single: "POST with { action: 'export_single', productId: 'abc' }",

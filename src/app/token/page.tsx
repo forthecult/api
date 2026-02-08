@@ -102,7 +102,7 @@ const creatorFeeAllocations = [
   { value: 5, pct: "5%", label: "Staked token holders", chartLabel: "5% Staked holders", wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT", subjectToChange: false },
   { value: 5, pct: "5%", label: "Charity", chartLabel: "5% Charity", wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE", subjectToChange: false },
   { value: 15, pct: "13.37%", label: "Marketing and advertising", chartLabel: "13.37% Marketing", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: true },
-  { value: 20, pct: "20%", label: "Subsidize shipping and product prices", chartLabel: "20% Shipping & prices", wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ", subjectToChange: true },
+  { value: 20, pct: "20%", label: "Subsidize shipping and product prices", chartLabel: "20% Shipping & prices", chartLabelOutset: 14, wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ", subjectToChange: true },
   { value: 20, pct: "20%", label: "Product inventory and development", chartLabel: "20% Product & inventory", wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm", subjectToChange: true },
   { value: 30, pct: "30%", label: "Treasury and feature development", chartLabel: "30% Treasury", wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb", subjectToChange: true },
 ];
@@ -342,19 +342,26 @@ export default function TokenPage() {
                     const rPie = 42
                     const rLineEnd = 58
                     const rLabel = 70
+                    const outset = (a: (typeof creatorFeeAllocations)[number]) =>
+                      "chartLabelOutset" in a && typeof (a as { chartLabelOutset?: number }).chartLabelOutset === "number"
+                        ? (a as { chartLabelOutset: number }).chartLabelOutset
+                        : 0
                     let cum = 0
                     const points = creatorFeeAllocations.map((a) => {
                       const midDeg = (cum + a.value / 2) * 3.6
                       cum += a.value
                       const rad = (midDeg * Math.PI) / 180
+                      const o = outset(a)
+                      const lineEnd = rLineEnd + o
+                      const labelR = rLabel + o
                       return {
                         key: a.label,
                         xEdge: 50 + rPie * Math.sin(rad),
                         yEdge: 50 - rPie * Math.cos(rad),
-                        xLineEnd: 50 + rLineEnd * Math.sin(rad),
-                        yLineEnd: 50 - rLineEnd * Math.cos(rad),
-                        xLabel: 50 + rLabel * Math.sin(rad),
-                        yLabel: 50 - rLabel * Math.cos(rad),
+                        xLineEnd: 50 + lineEnd * Math.sin(rad),
+                        yLineEnd: 50 - lineEnd * Math.cos(rad),
+                        xLabel: 50 + labelR * Math.sin(rad),
+                        yLabel: 50 - labelR * Math.cos(rad),
                         chartText:
                           "chartLabel" in a && typeof a.chartLabel === "string"
                             ? a.chartLabel
