@@ -1,11 +1,11 @@
 /**
  * No-ship countries: we do not ship to these (all products).
  * Keep in sync with relivator/src/lib/shipping-restrictions.ts.
- * Used in admin Markets to disable checkboxes and filter saved codes.
+ * Aligned with Printful/Printify: RU, BY, UA, EC, CU, IR, KP, SY, PS (Gaza). Used in admin Markets.
  */
 export const EXCLUDED_SHIPPING_COUNTRY_CODES = [
-  "SY", "KP", "CU", "RU", "BY", "VE", "NG", "UA", "LY", "ZW", "PK", "BD",
-  "GH", "ID", "PH", "ET", "CM", "CI", "SN", "UG", "DZ", "LB", "SB", "WS",
+  "SY", "KP", "CU", "RU", "BY", "UA", "EC", "IR", "PS",
+  "VE", "NG", "LY", "ZW", "PK", "BD", "GH", "ID", "PH", "ET", "CM", "CI", "SN", "UG", "DZ", "LB", "SB", "WS",
   "TO", "VU", "FJ", "PG", "HT", "GY", "SR", "PY", "BO",
 ] as const;
 

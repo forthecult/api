@@ -24,6 +24,7 @@ import {
   applyCategoryAutoRules,
   syncProductCategoriesWithAutoRules,
 } from "~/lib/category-auto-assign";
+import { POD_SHIPPING_COUNTRY_CODES } from "~/lib/pod-shipping-countries";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   fetchPrintifyProducts,
@@ -259,8 +260,8 @@ async function getPrintifyShippingData(
 }
 
 /**
- * Sync product available countries. Empty list = available everywhere.
- * Caller should pass countryCodes from getPrintifyShippingData to avoid duplicate API calls.
+ * Sync product available countries. When API returns null/empty (e.g. REST_OF_WORLD),
+ * use comprehensive fallback so Markets are populated.
  */
 async function syncPrintifyProductCountries(
   productId: string,
@@ -270,9 +271,14 @@ async function syncPrintifyProductCountries(
     .delete(productAvailableCountryTable)
     .where(eq(productAvailableCountryTable.productId, productId));
 
-  // Never ship to our excluded countries; APIs cannot override
-  const allowed =
-    countryCodes?.filter((c) => !isShippingExcluded(c)) ?? [];
+  let allowed: string[];
+  if (countryCodes != null && countryCodes.length > 0) {
+    allowed = countryCodes.filter((c) => !isShippingExcluded(c));
+  } else {
+    allowed = [...POD_SHIPPING_COUNTRY_CODES].filter(
+      (c) => !isShippingExcluded(c),
+    );
+  }
   if (allowed.length > 0) {
     await db.insert(productAvailableCountryTable).values(
       allowed.map((countryCode) => ({
@@ -464,8 +470,15 @@ async function createLocalProductFromPrintify(
     );
   }
 
-  // Shipping countries from Printify catalog API (already fetched above)
+  // Shipping countries from Printify catalog API (or fallback when REST_OF_WORLD/empty)
   await syncPrintifyProductCountries(productId, shippingData.countryCodes);
+
+  // Re-host mockup images to UploadThing in background (SEO, our CDN)
+  void import("~/lib/upload-product-mockups")
+    .then((m) => m.triggerMockupUploadForProduct(productId))
+    .catch((err) =>
+      console.warn("Printify post-sync mockup upload failed:", err),
+    );
 
   console.log(
     `Imported Printify product ${printifyProduct.id} as ${productId}`,
@@ -633,8 +646,15 @@ async function updateLocalProductFromPrintify(
     }
   }
 
-  // Sync shipping countries from Printify catalog API
+  // Sync shipping countries from Printify catalog API (or fallback)
   await syncPrintifyProductCountries(productId, shippingData.countryCodes);
+
+  // Re-host mockup images to UploadThing in background (SEO, our CDN)
+  void import("~/lib/upload-product-mockups")
+    .then((m) => m.triggerMockupUploadForProduct(productId))
+    .catch((err) =>
+      console.warn("Printify post-sync mockup upload failed:", err),
+    );
 
   console.log(
     `Updated Printify product ${printifyProduct.id} (local: ${productId})`,

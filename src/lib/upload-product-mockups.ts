@@ -220,3 +220,23 @@ export async function uploadProductMockupsForProduct(
 }
 
 export { buildSeoFilename, buildSeoAlt, isProviderImageUrl, isUploadThingUrl };
+
+/**
+ * Trigger mockup upload for a single product (e.g. after Printful/Printify sync).
+ * No-op if UPLOADTHING_TOKEN is missing or invalid. Safe to call fire-and-forget.
+ */
+export async function triggerMockupUploadForProduct(
+  productId: string,
+): Promise<{ ran: boolean; uploaded?: number }> {
+  const { getUploadThingToken, validateUploadThingToken } = await import(
+    "~/lib/uploadthing-token"
+  );
+  const token = getUploadThingToken();
+  if (!token || !validateUploadThingToken(token)) {
+    return { ran: false };
+  }
+  const { UTApi } = await import("uploadthing/server");
+  const utapi = new UTApi({ token });
+  const result = await uploadProductMockupsForProduct(utapi, productId);
+  return { ran: true, uploaded: result.uploaded };
+}

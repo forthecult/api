@@ -211,6 +211,10 @@ export default function AdminProductEditPage() {
   const [loading, setLoading] = useState(true);
   const [printfulResyncLoading, setPrintfulResyncLoading] = useState(false);
   const [printifyResyncLoading, setPrintifyResyncLoading] = useState(false);
+  const [printifyDeleteLoading, setPrintifyDeleteLoading] = useState(false);
+  const [printifyIdToDelete, setPrintifyIdToDelete] = useState("");
+  const [printifyIdToImport, setPrintifyIdToImport] = useState("");
+  const [printifyImportLoading, setPrintifyImportLoading] = useState(false);
   const [uploadMockupsLoading, setUploadMockupsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -511,6 +515,117 @@ export default function AdminProductEditPage() {
       setPrintifyResyncLoading(false);
     }
   }, [product?.id, fetchProduct]);
+
+  const handleDeleteFromPrintify = useCallback(async () => {
+    if (!product?.id) return;
+    if (
+      !window.confirm(
+        "Delete this product in Printify? This will remove it from your Printify catalog and unlink it here (product will be unpublished). Use this to unstick products stuck in Publishing.",
+      )
+    ) {
+      return;
+    }
+    setPrintifyDeleteLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "delete_in_printify",
+          productId: product.id,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Delete in Printify failed");
+      }
+      await fetchProduct();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete in Printify failed");
+    } finally {
+      setPrintifyDeleteLoading(false);
+    }
+  }, [product?.id, fetchProduct]);
+
+  const handleDeleteInPrintifyById = useCallback(async () => {
+    const id = printifyIdToDelete.trim();
+    if (!id) return;
+    if (
+      !window.confirm(
+        `Delete product ${id} in Printify? This removes it from your Printify catalog. Use for products stuck in Publishing that are not in this store yet.`,
+      )
+    ) {
+      return;
+    }
+    setPrintifyDeleteLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "delete_in_printify",
+          printifyProductId: id,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Delete in Printify failed");
+      }
+      setPrintifyIdToDelete("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete in Printify failed");
+    } finally {
+      setPrintifyDeleteLoading(false);
+    }
+  }, [printifyIdToDelete]);
+
+  const handleImportPrintifyById = useCallback(async () => {
+    const id = printifyIdToImport.trim();
+    if (!id) return;
+    setPrintifyImportLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "import_single",
+          printifyProductId: id,
+          overwrite: false,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        productId?: string;
+      };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Import failed");
+      }
+      setPrintifyIdToImport("");
+      if (json.productId) {
+        const base = window.location.pathname.replace(/[^/]+\/?$/, "").replace(/\/$/, "");
+        window.location.pathname = `${base}/${json.productId}`;
+      } else {
+        await fetchProduct();
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setPrintifyImportLoading(false);
+    }
+  }, [printifyIdToImport, fetchProduct]);
 
   const handleUploadMockups = useCallback(async () => {
     if (!id) return;
@@ -2356,21 +2471,84 @@ export default function AdminProductEditPage() {
                   </Button>
                 )}
                 {vendor?.toLowerCase() === "printify" && (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={printifyResyncLoading}
+                      onClick={() => void handlePrintifyResync()}
+                      className="gap-1.5"
+                    >
+                      <RefreshCw
+                        className={cn("size-3.5", printifyResyncLoading && "animate-spin")}
+                      />
+                      {printifyResyncLoading ? "Re-syncing…" : "Re-sync from Printify"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={printifyDeleteLoading}
+                      onClick={() => void handleDeleteFromPrintify()}
+                      className="gap-1.5 text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                      {printifyDeleteLoading ? "Deleting…" : "Delete from Printify"}
+                    </Button>
+                  </>
+                )}
+              </div>
+            )}
+            {vendor?.toLowerCase() === "printify" && (
+              <>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">
+                    Stuck in Publishing? Delete in Printify by product ID (from Printify URL):
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Printify product ID"
+                    value={printifyIdToDelete}
+                    onChange={(e) => setPrintifyIdToDelete(e.target.value)}
+                    className="h-8 w-48 rounded border border-input bg-background px-2 text-sm"
+                  />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={printifyResyncLoading}
-                    onClick={() => void handlePrintifyResync()}
+                    disabled={printifyDeleteLoading || !printifyIdToDelete.trim()}
+                    onClick={() => void handleDeleteInPrintifyById()}
+                    className="gap-1.5 text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                    Delete in Printify
+                  </Button>
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">
+                    Or import by Printify product ID (adds product to store):
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Printify product ID"
+                    value={printifyIdToImport}
+                    onChange={(e) => setPrintifyIdToImport(e.target.value)}
+                    className="h-8 w-48 rounded border border-input bg-background px-2 text-sm"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={printifyImportLoading || !printifyIdToImport.trim()}
+                    onClick={() => void handleImportPrintifyById()}
                     className="gap-1.5"
                   >
-                    <RefreshCw
-                      className={cn("size-3.5", printifyResyncLoading && "animate-spin")}
-                    />
-                    {printifyResyncLoading ? "Re-syncing…" : "Re-sync from Printify"}
+                    <RefreshCw className={cn("size-3.5", printifyImportLoading && "animate-spin")} />
+                    {printifyImportLoading ? "Importing…" : "Import"}
                   </Button>
-                )}
-              </div>
+                </div>
+              </>
             )}
             <p className="text-sm text-muted-foreground">
               Countries we do not ship to are disabled and cannot be selected.

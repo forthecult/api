@@ -1,16 +1,23 @@
 /**
  * Permanent shipping exclusions: we do not ship to these countries (all products).
  * ISO 3166-1 alpha-2 codes (uppercase).
+ * Aligned with Printful/Printify no-ship list: Russia, Belarus, Ukraine (incl. Crimea, Luhansk, Donetsk),
+ * Ecuador, Cuba, Iran, North Korea, Syria, Gaza Strip (PS). Plus additional policy exclusions below.
  */
 export const EXCLUDED_SHIPPING_COUNTRY_CODES = [
+  // Printful/Printify no-ship (keep in sync with their shipping policy)
   "SY", // Syria
   "KP", // North Korea
   "CU", // Cuba
   "RU", // Russia
   "BY", // Belarus
+  "UA", // Ukraine (incl. Crimea, Luhansk, Donetsk)
+  "EC", // Ecuador
+  "IR", // Iran
+  "PS", // Palestine (Gaza Strip)
+  // Additional policy exclusions
   "VE", // Venezuela
   "NG", // Nigeria
-  "UA", // Ukraine
   "LY", // Libya
   "ZW", // Zimbabwe
   "PK", // Pakistan

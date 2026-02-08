@@ -21,6 +21,7 @@ import {
   sizeChartsTable,
 } from "~/db/schema";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
+import { POD_SHIPPING_COUNTRY_CODES } from "~/lib/pod-shipping-countries";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   fetchSyncProducts,
@@ -140,14 +141,30 @@ export async function importAllPrintfulProducts(
 /**
  * Import a single Printful sync product by ID.
  */
+const PRINTFUL_VARIANT_RETRY_DELAYS_MS = [2000, 5000];
+
 export async function importSinglePrintfulProduct(
   printfulSyncProductId: number,
   overwriteExisting = false,
 ): Promise<{ action: "imported" | "updated" | "skipped"; productId: string }> {
-  // Fetch full product details including variants
-  const syncProductFull = await fetchSyncProduct(printfulSyncProductId);
-  const { sync_product: syncProduct, sync_variants: syncVariants } =
+  // Fetch full product details including variants. On first publish Printful may not have
+  // variants ready yet; retry with short delays so variants (size, color) are present.
+  let syncProductFull = await fetchSyncProduct(printfulSyncProductId);
+  let { sync_product: syncProduct, sync_variants: syncVariants } =
     syncProductFull;
+  if (syncVariants.length === 0 && syncProduct.variants > 0) {
+    for (const delayMs of PRINTFUL_VARIANT_RETRY_DELAYS_MS) {
+      await new Promise((r) => setTimeout(r, delayMs));
+      syncProductFull = await fetchSyncProduct(printfulSyncProductId);
+      syncVariants = syncProductFull.sync_variants;
+      if (syncVariants.length > 0) break;
+    }
+    if (syncVariants.length === 0) {
+      console.warn(
+        `Printful product ${printfulSyncProductId}: sync_variants still empty after retries (expected ${syncProduct.variants}). Product will be created; re-sync later to get variants.`,
+      );
+    }
+  }
 
   // Fetch catalog product for description/brand and shipping/customs (country of origin, HS code)
   let catalogProduct: {
@@ -229,6 +246,26 @@ export async function importSinglePrintfulProduct(
   return { action: "imported", productId };
 }
 
+/** Get size from sync variant: top-level or options array (Printful may use options only). */
+function getVariantSize(v: PrintfulSyncVariant): string | null {
+  if (v.size?.trim()) return v.size.trim();
+  const opt = v.options?.find(
+    (o) => o?.id?.toLowerCase() === "size" || o?.id === "Size",
+  );
+  const val = typeof opt?.value === "string" ? opt.value.trim() : null;
+  return val || null;
+}
+
+/** Get color from sync variant: top-level or options array (Printful may use options only). */
+function getVariantColor(v: PrintfulSyncVariant): string | null {
+  if (v.color?.trim()) return v.color.trim();
+  const opt = v.options?.find(
+    (o) => o?.id?.toLowerCase() === "color" || o?.id === "Color",
+  );
+  const val = typeof opt?.value === "string" ? opt.value.trim() : null;
+  return val || null;
+}
+
 /** Build option definitions (Size, Color) from sync variants for storefront and admin. */
 function buildOptionDefinitionsFromVariants(
   syncVariants: PrintfulSyncVariant[],
@@ -236,8 +273,10 @@ function buildOptionDefinitionsFromVariants(
   const sizeValues = new Set<string>();
   const colorValues = new Set<string>();
   for (const v of syncVariants) {
-    if (v.size?.trim()) sizeValues.add(v.size.trim());
-    if (v.color?.trim()) colorValues.add(v.color.trim());
+    const size = getVariantSize(v);
+    const color = getVariantColor(v);
+    if (size) sizeValues.add(size);
+    if (color) colorValues.add(color);
   }
   const options: Array<{ name: string; values: string[] }> = [];
   if (sizeValues.size > 0) {
@@ -264,23 +303,6 @@ function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | 
   if (fromFile) return fromFile;
   return syncVariant.product?.image ?? null;
 }
-
-/** ISO 3166-1 alpha-2 country codes Printful ships to (populates Markets in admin). */
-const PRINTFUL_SHIPPING_COUNTRY_CODES = [
-  "US", "CA", "MX", "GT", "CU", "HT", "DO", "HN", "NI", "SV", "CR", "PA", "JM",
-  "TT", "BZ", "BS", "BB", "AG", "DM", "GD", "KN", "LC", "VC",
-  "BR", "AR", "CO", "PE", "VE", "CL", "EC", "BO", "PY", "UY", "GY", "SR",
-  "GB", "DE", "FR", "IT", "ES", "NL", "BE", "AT", "CH", "PL", "SE", "NO", "DK",
-  "FI", "IE", "PT", "CZ", "RO", "HU", "GR", "BG", "HR", "SK", "RS", "UA", "LT",
-  "LV", "EE", "SI", "LU", "MT", "CY", "IS", "LI", "AL", "MK", "ME", "BA", "BY",
-  "MD", "RU", "TR",
-  "ZA", "EG", "NG", "KE", "MA", "GH", "TZ", "ET", "TN", "DZ", "CI", "SN", "CM",
-  "UG", "ZW", "LY", "MU", "BW", "NA",
-  "CN", "JP", "IN", "KR", "ID", "TH", "VN", "MY", "SG", "PH", "HK", "TW", "AE",
-  "SA", "IL", "PK", "BD", "LK", "QA", "KW", "BH", "OM", "JO", "LB", "KZ", "UZ",
-  "GE", "AZ", "AM",
-  "AU", "NZ", "FJ", "PG", "WS", "TO", "SB", "VU",
-];
 
 /**
  * Create a new local product from Printful sync product data.
@@ -440,8 +462,8 @@ async function createLocalProductFromPrintful(
     }
   }
 
-  // Shipping countries from Printful API when available; else static list
-  let marketCountryCodes = PRINTFUL_SHIPPING_COUNTRY_CODES;
+  // Shipping countries from Printful API when available; else comprehensive fallback so Markets are populated.
+  let marketCountryCodes: string[] = [];
   if (catalogProductId != null) {
     const apiCountries = await fetchCatalogProductShippingCountries(
       catalogProductId,
@@ -450,7 +472,9 @@ async function createLocalProductFromPrintful(
       marketCountryCodes = apiCountries;
     }
   }
-  // Never ship to our excluded countries (e.g. Cuba, Russia); APIs cannot override
+  if (marketCountryCodes.length === 0) {
+    marketCountryCodes = [...POD_SHIPPING_COUNTRY_CODES];
+  }
   marketCountryCodes = marketCountryCodes.filter((c) => !isShippingExcluded(c));
 
   // Create product (vendor, page title, description, brand, sku from catalog/sync)
@@ -525,13 +549,20 @@ async function createLocalProductFromPrintful(
     });
   }
 
-  // Markets: where Printful ships (from API or static list; admin "Markets" and shipping use this)
+  // Markets: where Printful ships (from API or fallback; admin "Markets" and shipping use this)
   for (const code of marketCountryCodes) {
     await db.insert(productAvailableCountryTable).values({
       productId,
       countryCode: code,
     });
   }
+
+  // Re-host mockup images to UploadThing in background (SEO, our CDN)
+  void import("~/lib/upload-product-mockups")
+    .then((m) => m.triggerMockupUploadForProduct(productId))
+    .catch((err) =>
+      console.warn("Printful post-sync mockup upload failed:", err),
+    );
 
   console.log(`Imported Printful product ${syncProduct.id} as ${productId}`);
   return productId;
@@ -557,16 +588,27 @@ async function updateLocalProductFromPrintful(
   } | null,
 ): Promise<void> {
   const now = new Date();
+  const hasVariantsFromApi = syncVariants.length > 0;
 
-  // Determine price from variants
+  // When API returns no variants (e.g. temporary), preserve existing product/variants and only update basic fields
+  if (!hasVariantsFromApi) {
+    console.warn(
+      `Printful product ${syncProduct.id} (local ${productId}): sync_variants empty on re-sync; keeping existing variants and options. Re-sync again later to refresh.`,
+    );
+  }
+
+  // Determine price from variants (only when we have variants)
   const prices = syncVariants
     .map((v) => Number.parseFloat(v.retail_price || "0") * 100)
     .filter((p) => p > 0);
-  const priceCents = prices.length > 0 ? Math.min(...prices) : undefined;
+  const priceCents =
+    hasVariantsFromApi && prices.length > 0 ? Math.min(...prices) : undefined;
 
   // Product-level SKU when single variant
   const productSku =
-    syncVariants.length === 1 && syncVariants[0]!.sku
+    hasVariantsFromApi &&
+    syncVariants.length === 1 &&
+    syncVariants[0]!.sku
       ? syncVariants[0]!.sku
       : null;
 
@@ -582,7 +624,9 @@ async function updateLocalProductFromPrintful(
           .slice(0, 160)
       : undefined;
 
-  const optionDefs = buildOptionDefinitionsFromVariants(syncVariants);
+  const optionDefs = hasVariantsFromApi
+    ? buildOptionDefinitionsFromVariants(syncVariants)
+    : [];
   const optionDefinitionsJson =
     optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
   // Prefer mockup over raw thumbnail
@@ -617,11 +661,13 @@ async function updateLocalProductFromPrintful(
       name: syncProduct.name,
       imageUrl: productImageUrl ?? syncProduct.thumbnail_url,
       published: !syncProduct.is_ignored,
-      hasVariants: syncVariants.length > 1,
-      optionDefinitionsJson,
+      ...(hasVariantsFromApi && {
+        hasVariants: syncVariants.length > 1,
+        optionDefinitionsJson,
+        ...(productSku != null && { sku: productSku }),
+      }),
       pageTitle: syncProduct.name,
       vendor: "Printful",
-      sku: productSku,
       ...(description !== undefined && { description }),
       ...(brand !== undefined && { brand }),
       ...(model !== undefined && { model }),
@@ -637,37 +683,39 @@ async function updateLocalProductFromPrintful(
     })
     .where(eq(productsTable.id, productId));
 
-  // Sync product images: mockups first, then thumbnail
-  await db
-    .delete(productImagesTable)
-    .where(eq(productImagesTable.productId, productId));
-  const imageUrlsOrdered: string[] = [];
-  const seen = new Set<string>();
-  for (const v of syncVariants) {
-    const url = getPrintfulVariantImageUrl(v);
-    if (url && !seen.has(url)) {
-      seen.add(url);
-      imageUrlsOrdered.push(url);
+  // Sync product images only when we have variants (otherwise keep existing images)
+  if (hasVariantsFromApi) {
+    await db
+      .delete(productImagesTable)
+      .where(eq(productImagesTable.productId, productId));
+    const imageUrlsOrdered: string[] = [];
+    const seen = new Set<string>();
+    for (const v of syncVariants) {
+      const url = getPrintfulVariantImageUrl(v);
+      if (url && !seen.has(url)) {
+        seen.add(url);
+        imageUrlsOrdered.push(url);
+      }
+    }
+    if (syncProduct.thumbnail_url && !seen.has(syncProduct.thumbnail_url)) {
+      seen.add(syncProduct.thumbnail_url);
+      imageUrlsOrdered.push(syncProduct.thumbnail_url);
+    }
+    let sortOrder = 0;
+    for (const url of imageUrlsOrdered) {
+      await db.insert(productImagesTable).values({
+        id: nanoid(),
+        productId,
+        url,
+        alt: syncProduct.name,
+        sortOrder: sortOrder++,
+      });
     }
   }
-  if (syncProduct.thumbnail_url && !seen.has(syncProduct.thumbnail_url)) {
-    seen.add(syncProduct.thumbnail_url);
-    imageUrlsOrdered.push(syncProduct.thumbnail_url);
-  }
-  let sortOrder = 0;
-  for (const url of imageUrlsOrdered) {
-    await db.insert(productImagesTable).values({
-      id: nanoid(),
-      productId,
-      url,
-      alt: syncProduct.name,
-      sortOrder: sortOrder++,
-    });
-  }
 
-  // Sync markets (Printful shipping countries from API or static list)
+  // Sync markets: use Printful API when available; else comprehensive fallback so Markets are populated.
   const catalogProductId = syncVariants[0]?.product?.product_id;
-  let marketCountryCodes = PRINTFUL_SHIPPING_COUNTRY_CODES;
+  let marketCountryCodes: string[] = [];
   if (catalogProductId != null) {
     const apiCountries = await fetchCatalogProductShippingCountries(
       catalogProductId,
@@ -676,7 +724,9 @@ async function updateLocalProductFromPrintful(
       marketCountryCodes = apiCountries;
     }
   }
-  // Never ship to our excluded countries (e.g. Cuba, Russia); APIs cannot override
+  if (marketCountryCodes.length === 0) {
+    marketCountryCodes = [...POD_SHIPPING_COUNTRY_CODES];
+  }
   marketCountryCodes = marketCountryCodes.filter((c) => !isShippingExcluded(c));
   await db
     .delete(productAvailableCountryTable)
@@ -688,34 +738,41 @@ async function updateLocalProductFromPrintful(
     });
   }
 
-  // Sync variants - update existing, create new, delete removed
-  const existingVariants = await db
-    .select()
-    .from(productVariantsTable)
-    .where(eq(productVariantsTable.productId, productId));
+  // Re-host mockup images to UploadThing in background (SEO, our CDN)
+  void import("~/lib/upload-product-mockups")
+    .then((m) => m.triggerMockupUploadForProduct(productId))
+    .catch((err) =>
+      console.warn("Printful post-sync mockup upload failed:", err),
+    );
 
-  const existingVariantMap = new Map(
-    existingVariants.map((v) => [v.printfulSyncVariantId, v]),
-  );
-  const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
+  // Sync variants only when API returned variants (otherwise preserve existing)
+  if (hasVariantsFromApi) {
+    const existingVariants = await db
+      .select()
+      .from(productVariantsTable)
+      .where(eq(productVariantsTable.productId, productId));
 
-  // Update or create variants
-  for (const syncVariant of syncVariants) {
-    const existing = existingVariantMap.get(syncVariant.id);
-    if (existing) {
-      await updateLocalVariantFromPrintful(existing.id, syncVariant);
-    } else {
-      await createLocalVariantFromPrintful(productId, syncVariant);
+    const existingVariantMap = new Map(
+      existingVariants.map((v) => [v.printfulSyncVariantId, v]),
+    );
+    const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
+
+    for (const syncVariant of syncVariants) {
+      const existing = existingVariantMap.get(syncVariant.id);
+      if (existing) {
+        await updateLocalVariantFromPrintful(existing.id, syncVariant);
+      } else {
+        await createLocalVariantFromPrintful(productId, syncVariant);
+      }
     }
-  }
 
-  // Delete variants no longer in Printful
-  for (const [syncVariantId, localVariant] of existingVariantMap) {
-    if (syncVariantId && !incomingVariantIds.has(syncVariantId)) {
-      await db
-        .delete(productVariantsTable)
-        .where(eq(productVariantsTable.id, localVariant.id));
-      console.log(`Deleted variant ${localVariant.id} (no longer in Printful)`);
+    for (const [syncVariantId, localVariant] of existingVariantMap) {
+      if (syncVariantId && !incomingVariantIds.has(syncVariantId)) {
+        await db
+          .delete(productVariantsTable)
+          .where(eq(productVariantsTable.id, localVariant.id));
+        console.log(`Deleted variant ${localVariant.id} (no longer in Printful)`);
+      }
     }
   }
 
@@ -740,13 +797,15 @@ async function createLocalVariantFromPrintful(
 
   const imageUrl = getPrintfulVariantImageUrl(syncVariant);
 
+  const size = getVariantSize(syncVariant);
+  const color = getVariantColor(syncVariant);
   await db.insert(productVariantsTable).values({
     id: variantId,
     productId,
     externalId: String(syncVariant.variant_id), // Printful catalog variant ID for ordering
     printfulSyncVariantId: syncVariant.id,
-    size: syncVariant.size,
-    color: syncVariant.color,
+    size,
+    color,
     sku: syncVariant.sku,
     label: syncVariant.name ?? null,
     priceCents,
@@ -774,12 +833,14 @@ async function updateLocalVariantFromPrintful(
 
   const imageUrl = getPrintfulVariantImageUrl(syncVariant);
 
+  const size = getVariantSize(syncVariant);
+  const color = getVariantColor(syncVariant);
   await db
     .update(productVariantsTable)
     .set({
       externalId: String(syncVariant.variant_id),
-      size: syncVariant.size,
-      color: syncVariant.color,
+      size,
+      color,
       sku: syncVariant.sku,
       label: syncVariant.name ?? undefined,
       priceCents,
