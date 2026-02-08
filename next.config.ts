@@ -186,6 +186,8 @@ const config = {
       { hostname: "cdn.shopify.com", protocol: "https" },
       // Printify product/mockup images (POD sync)
       { hostname: "images-api.printify.com", protocol: "https" },
+      // Seeed Studio curated product images (seed + upload-curated)
+      { hostname: "media-cdn.seeedstudio.com", protocol: "https" },
     ],
   },
 } as NextConfig;

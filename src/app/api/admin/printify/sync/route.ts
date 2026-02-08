@@ -1,5 +1,8 @@
+import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { db } from "~/db";
+import { productsTable } from "~/db/schema";
 import {
   importAllPrintifyProducts,
   importSinglePrintifyProduct,
@@ -17,7 +20,8 @@ import { auth, isAdminUser } from "~/lib/auth";
  * Body options:
  * - { action: "import_all" } - Import all products from Printify
  * - { action: "import_all", overwrite: true } - Import and overwrite existing
- * - { action: "import_single", printifyProductId: "abc123" } - Import one product
+ * - { action: "import_single", printifyProductId: "abc123" } - Import one product by Printify ID
+ * - { action: "import_single", productId: "our-id", overwrite: true } - Re-sync one product by our product ID (refreshes Markets)
  * - { action: "export_single", productId: "abc" } - Push local changes to Printify
  * - { action: "export_all" } - Push all local changes to Printify
  */
@@ -79,17 +83,35 @@ export async function POST(request: NextRequest) {
     }
 
     case "import_single": {
-      if (!body.printifyProductId) {
+      let printifyProductId = body.printifyProductId;
+      if (printifyProductId == null && body.productId) {
+        const [row] = await db
+          .select({ printifyProductId: productsTable.printifyProductId })
+          .from(productsTable)
+          .where(eq(productsTable.id, body.productId))
+          .limit(1);
+        if (!row?.printifyProductId) {
+          return NextResponse.json(
+            {
+              error:
+                "Product not found or is not a Printify product. Use printifyProductId for Printify product ID.",
+            },
+            { status: 400 },
+          );
+        }
+        printifyProductId = row.printifyProductId;
+      }
+      if (!printifyProductId) {
         return NextResponse.json(
-          { error: "printifyProductId required" },
+          { error: "printifyProductId or productId required" },
           { status: 400 },
         );
       }
 
-      console.log(`Importing Printify product ${body.printifyProductId}...`);
+      console.log(`Importing Printify product ${printifyProductId}...`);
       try {
         const result = await importSinglePrintifyProduct(
-          body.printifyProductId,
+          printifyProductId,
           body.overwrite ?? false,
         );
 
@@ -180,7 +202,7 @@ export async function GET(request: NextRequest) {
       import_all:
         "POST with { action: 'import_all' } - Import all Printify products",
       import_single:
-        "POST with { action: 'import_single', printifyProductId: 'abc123' }",
+        "POST with { action: 'import_single', printifyProductId: 'abc123' } or { action: 'import_single', productId: 'our-id', overwrite: true }",
       export_single: "POST with { action: 'export_single', productId: 'abc' }",
       export_all:
         "POST with { action: 'export_all' } - Push prices to Printify",

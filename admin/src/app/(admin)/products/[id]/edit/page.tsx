@@ -3,9 +3,11 @@
 import {
   ChevronDown,
   ChevronUp,
+  CloudUpload,
   GripVertical,
   ImageIcon,
   Plus,
+  RefreshCw,
   Trash2,
   Upload,
   X,
@@ -207,6 +209,9 @@ export default function AdminProductEditPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [printfulResyncLoading, setPrintfulResyncLoading] = useState(false);
+  const [printifyResyncLoading, setPrintifyResyncLoading] = useState(false);
+  const [uploadMockupsLoading, setUploadMockupsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -446,6 +451,96 @@ export default function AdminProductEditPage() {
     void fetchProduct();
     void fetchCategories();
   }, [fetchProduct, fetchCategories]);
+
+  const handlePrintfulResync = useCallback(async () => {
+    if (!product?.id) return;
+    setPrintfulResyncLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printful/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "import_single",
+          productId: product.id,
+          overwrite: true,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Re-sync failed");
+      }
+      await fetchProduct();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Re-sync failed");
+    } finally {
+      setPrintfulResyncLoading(false);
+    }
+  }, [product?.id, fetchProduct]);
+
+  const handlePrintifyResync = useCallback(async () => {
+    if (!product?.id) return;
+    setPrintifyResyncLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          action: "import_single",
+          productId: product.id,
+          overwrite: true,
+        }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+      };
+      if (!res.ok || !json.success) {
+        throw new Error(json.error ?? "Re-sync failed");
+      }
+      await fetchProduct();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Re-sync failed");
+    } finally {
+      setPrintifyResyncLoading(false);
+    }
+  }, [product?.id, fetchProduct]);
+
+  const handleUploadMockups = useCallback(async () => {
+    if (!id) return;
+    setUploadMockupsLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/products/${id}/upload-mockups`, {
+        method: "POST",
+        credentials: "include",
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        message?: string;
+      };
+      if (!res.ok) {
+        throw new Error(json.error ?? "Upload failed");
+      }
+      if (json.success) {
+        await fetchProduct();
+      }
+      if (json.message && !json.success) {
+        setError(json.message);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Re-host failed");
+    } finally {
+      setUploadMockupsLoading(false);
+    }
+  }, [id, fetchProduct]);
 
   const handleSlugFromName = useCallback(() => {
     if (name.trim()) setSlug(slugFromName(name));
@@ -1625,6 +1720,26 @@ export default function AdminProductEditPage() {
                 </div>
               ))}
             </div>
+            {(vendor?.toLowerCase() === "printful" || vendor?.toLowerCase() === "printify") && (
+              <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
+                <p className="text-sm text-muted-foreground">
+                  Images from Printful/Printify are on their CDN. Re-host to UploadThing for SEO (WebP, filenames, alt) and your own hosting.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadMockupsLoading}
+                  onClick={() => void handleUploadMockups()}
+                  className="gap-1.5"
+                >
+                  <CloudUpload
+                    className={cn("size-3.5", uploadMockupsLoading && "animate-pulse")}
+                  />
+                  {uploadMockupsLoading ? "Re-hosting…" : "Re-host images to UploadThing"}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -2215,12 +2330,47 @@ export default function AdminProductEditPage() {
               least one country, the product will only be shown and purchasable
               in those regions (storefront and checkout).
             </p>
-            {vendor?.toLowerCase() === "printful" && (
-              <p className="text-sm text-muted-foreground">
-                Printful products: shipping countries are filled on import or
-                re-sync from Printful. If Markets is empty, re-sync the product
-                to refresh shipping destinations.
-              </p>
+            {(vendor?.toLowerCase() === "printful" || vendor?.toLowerCase() === "printify") && (
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                <p className="basis-full">
+                  {vendor?.toLowerCase() === "printful"
+                    ? "Printful"
+                    : "Printify"}{" "}
+                  products: shipping countries (Markets) are filled on import or
+                  re-sync. If Markets is empty, re-sync to refresh shipping
+                  destinations.
+                </p>
+                {vendor?.toLowerCase() === "printful" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={printfulResyncLoading}
+                    onClick={() => void handlePrintfulResync()}
+                    className="gap-1.5"
+                  >
+                    <RefreshCw
+                      className={cn("size-3.5", printfulResyncLoading && "animate-spin")}
+                    />
+                    {printfulResyncLoading ? "Re-syncing…" : "Re-sync from Printful"}
+                  </Button>
+                )}
+                {vendor?.toLowerCase() === "printify" && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={printifyResyncLoading}
+                    onClick={() => void handlePrintifyResync()}
+                    className="gap-1.5"
+                  >
+                    <RefreshCw
+                      className={cn("size-3.5", printifyResyncLoading && "animate-spin")}
+                    />
+                    {printifyResyncLoading ? "Re-syncing…" : "Re-sync from Printify"}
+                  </Button>
+                )}
+              </div>
             )}
             <p className="text-sm text-muted-foreground">
               Countries we do not ship to are disabled and cannot be selected.

@@ -7,7 +7,7 @@
 
 import "dotenv/config";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
@@ -18,6 +18,7 @@ import {
   productVariantsTable,
   sizeChartsTable,
 } from "../src/db/schema";
+import { isUploadThingUrl } from "../src/lib/product-mockup-upload";
 import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
 import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
@@ -204,10 +205,21 @@ async function seed() {
       },
     });
 
+  // If a curated product already has images on UploadThing, do not overwrite with seed URLs (avoids replacing good images with CDN/thumbnails on re-seed).
+  const existingCurated = await db
+    .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
+    .from(productsTable)
+    .where(inArray(productsTable.id, CURATED_PRODUCTS.map((x) => x.id)));
+  const hasUploadThingImages = new Set(
+    existingCurated
+      .filter((r) => r.imageUrl && isUploadThingUrl(r.imageUrl))
+      .map((r) => r.id),
+  );
+
   for (const p of CURATED_PRODUCTS) {
     const productId = p.id;
 
-    if (p.images?.length) {
+    if (p.images?.length && !hasUploadThingImages.has(productId)) {
       await db
         .delete(productImagesTable)
         .where(eq(productImagesTable.productId, productId));

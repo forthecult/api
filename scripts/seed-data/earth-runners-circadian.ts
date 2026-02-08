@@ -1,7 +1,7 @@
 /**
  * Seed data for Earth Runners Circadian Adventure Sandals.
  * Sourced from https://www.earthrunners.com/products/circadian-adventure-sandals
- * Only Carbon and Sunset lace variants. Cost $94 (list); sell at 4% above ($97.76).
+ * Variants: Men/Women × Size (22 physical sizes). Cost $94 (list); sell at 4% above ($97.76).
  * Brand: Earth Runners. Category: Shoes. Size chart: Men's & Women's (from website).
  */
 
@@ -29,13 +29,13 @@ const FEATURES: string[] = [
   "9mm Vibram® Gumlite outsole—medium thickness, strong wet grip",
   "Grounded Conductive Laces™ with copper plug for earthing on natural surfaces",
   "Earth Grip footbed: GOTS-certified canvas, moisture-wicking",
-  "Zero-drop, minimalist design; Carbon and Sunset lace options",
+  "Zero-drop, minimalist design; Men's & Women's sizes",
   "1% of sales to True Messages (Tarahumara running heritage)",
 ];
 
 const DESCRIPTION = `<p>The Circadian is Earth Runners’ best-selling adventure sandal: a 9mm Vibram Gumlite sole (7.5mm outsole + 1.5mm footbed) that gives solid grip and a moderate ground feel without extra bulk. The footbed is Earth Grip canvas—GOTS-certified, moisture-wicking—and the laces are Grounded Conductive Laces™ with a copper plug so you can earth when you’re on dirt, sand, or grass.</p>
 
-<p>You can choose Carbon or Sunset ergonomic lifestyle laces; both use double tubular webbing and conductive stainless-steel thread. Buckles are injection-molded in Santa Cruz, CA with 25% recycled plastic. Single sandal weight is about 5.9 oz (men’s 9 / women’s 11).</p>
+<p>Laces use double tubular webbing and conductive stainless-steel thread. Buckles are injection-molded in Santa Cruz, CA with 25% recycled plastic. Single sandal weight is about 5.9 oz (men’s 9 / women’s 11).</p>
 
 <p>Earth Runners donates 1% of sales to True Messages, supporting Tarahumara running heritage and youth in the community.</p>`;
 
@@ -112,37 +112,30 @@ export const CIRCADIAN_SIZE_CHART = {
   dataMetric: buildSizeChartMetric(),
 };
 
-const LACE_OPTIONS = [
-  { name: "Carbon", skuPrefix: "CA-CIR", imageUrl: `${CDN}/Carbon_circ2023_7b371855-6ead-49ff-ad30-c1f9c7376936.jpg?v=1749057390`, imageAlt: "Earth Runners Circadian sandals, Carbon Lifestyle Lace", imageTitle: "Circadian Sandals - Carbon" },
-  { name: "Sunset", skuPrefix: "SU-CIR", imageUrl: `${CDN}/Sunset_circ2023_33ad29c4-1741-42e2-a43d-1a181a06e05c.jpg?v=1749180263`, imageAlt: "Earth Runners Circadian sandals, Sunset Lifestyle Lace", imageTitle: "Circadian Sandals - Sunset" },
-] as const;
+/** Option 1: Men's or Women's. Option 2: physical size (same sandal length; 22 sizes). */
+const GENDERS = ["Men's", "Women's"] as const;
 
-/** One display value per size row: "Men's 4", "Women's 6", "Men's 4.5", "Women's 6.5", ... (44 total). */
-function getSizeDisplayValues(): string[] {
-  const out: string[] = [];
-  for (const row of SIZES_ROW) {
-    const [mPart, wPart] = row.usa.split(/\s*\/\s*/).map((s) => s.trim());
-    const menNum = mPart?.replace(/M$/, "").trim() ?? "";
-    const womenNum = wPart?.replace(/W$/, "").trim() ?? "";
-    out.push(`Men's ${menNum}`, `Women's ${womenNum}`);
-  }
-  return out;
-}
-
-const SIZE_DISPLAY_VALUES = getSizeDisplayValues();
-
-/** Size display (e.g. "Men's 4") -> index into SIZES_ROW (0–21) for SKU. */
-function sizeDisplayToRowIndex(sizeDisplay: string): number {
-  const i = SIZE_DISPLAY_VALUES.indexOf(sizeDisplay);
-  return i < 0 ? 0 : Math.floor(i / 2);
-}
+/** Size option values: one per physical sandal length (e.g. "4M / 6W"). */
+const SIZE_OPTION_VALUES = SIZES_ROW.map((r) => r.usa);
 
 const OPTION_DEFINITIONS = [
-  { name: "Lace", values: LACE_OPTIONS.map((l) => l.name) },
-  { name: "Size", values: SIZE_DISPLAY_VALUES },
+  { name: "Men/Women", values: [...GENDERS] },
+  { name: "Size", values: SIZE_OPTION_VALUES },
 ];
 
-/** Lace × Size variants: 2 lace × 44 size options = 88. Men's 4 and Women's 6 share same SKU (same physical size). */
+/** SKU slug from size row (e.g. "4M-6W"). Same SKU for Men's and Women's of same physical size. */
+function sizeRowToSkuSlug(row: (typeof SIZES_ROW)[number]): string {
+  return row.usa.replace(/\s*\/\s*/g, "-").replace(/\s/g, "").replace(/\./g, "");
+}
+
+/** Single default product image for all variants (no lace variant imagery). */
+const DEFAULT_VARIANT_IMAGE = {
+  url: `${CDN}/Carbon_circ2023_7b371855-6ead-49ff-ad30-c1f9c7376936.jpg?v=1749057390`,
+  alt: "Earth Runners Circadian sandals - 9mm Vibram sole",
+  title: "Circadian Sandals — Earth Runners",
+};
+
+/** Men/Women × Size variants: 2 × 22 = 44. Same SKU for (Men's, 4M/6W) and (Women's, 4M/6W). */
 const VARIANTS: Array<{
   id: string;
   color: string;
@@ -154,21 +147,20 @@ const VARIANTS: Array<{
   imageTitle: string;
   stockQuantity: number;
 }> = [];
-for (const lace of LACE_OPTIONS) {
-  for (const sizeDisplay of SIZE_DISPLAY_VALUES) {
-    const rowIndex = sizeDisplayToRowIndex(sizeDisplay);
-    const row = SIZES_ROW[rowIndex]!;
-    const sizeSlug = row.usa.replace(/\s*\/\s*/g, "-").replace(/\./g, "");
-    const id = `${PRODUCT_ID}-${lace.name.toLowerCase()}-${sizeDisplay.replace(/\s+/g, "-").replace(/\./g, "")}`;
+for (const gender of GENDERS) {
+  for (let i = 0; i < SIZES_ROW.length; i++) {
+    const row = SIZES_ROW[i]!;
+    const sizeSlug = sizeRowToSkuSlug(row);
+    const id = `${PRODUCT_ID}-${gender.toLowerCase().replace(/'/g, "")}-${sizeSlug}`;
     VARIANTS.push({
       id,
-      color: lace.name,
-      size: sizeDisplay,
+      color: gender,
+      size: row.usa,
       priceCents: PRICE_CENTS,
-      sku: `${lace.skuPrefix}-${sizeSlug}`,
-      imageUrl: lace.imageUrl,
-      imageAlt: lace.imageAlt,
-      imageTitle: lace.imageTitle,
+      sku: `CA-CIR-${sizeSlug}`,
+      imageUrl: DEFAULT_VARIANT_IMAGE.url,
+      imageAlt: DEFAULT_VARIANT_IMAGE.alt,
+      imageTitle: DEFAULT_VARIANT_IMAGE.title,
       stockQuantity: 99,
     });
   }
@@ -179,7 +171,7 @@ export const EARTH_RUNNERS_CIRCADIAN = {
   name: "Circadian Sandals",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
-  mainImageAlt: "Earth Runners Circadian adventure sandals - 9mm Vibram sole, Carbon or Sunset lace",
+  mainImageAlt: "Earth Runners Circadian adventure sandals - 9mm Vibram sole",
   mainImageTitle: "Circadian Sandals — Earth Runners",
   priceCents: PRICE_CENTS,
   costPerItemCents: COST_CENTS,
@@ -188,7 +180,7 @@ export const EARTH_RUNNERS_CIRCADIAN = {
   model: "Circadian",
   description: DESCRIPTION,
   features: FEATURES,
-  metaDescription: "Earth Runners Circadian sandals—9mm Vibram sole, Carbon & Sunset lace. Earthing, minimalist. Men's & Women's sizes. Shop at Culture.",
+  metaDescription: "Earth Runners Circadian sandals—9mm Vibram sole. Earthing, minimalist. Men's & Women's sizes. Shop at Culture.",
   pageTitle: "Circadian Sandals | Earth Runners 9mm Vibram | Culture",
   sku: "CA-CIR",
   weightGrams: 227,

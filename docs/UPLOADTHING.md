@@ -77,13 +77,15 @@ The lookbook page (`/lookbook`) can serve images from UploadThing instead of `pu
 
 ### 5. Product mockups (Printful / Printify)
 
-After syncing products from Printful or Printify, you can re-host their mockup images on UploadThing for SEO and speed:
+After syncing products from Printful or Printify, re-host their mockup images on UploadThing for SEO and your own hosting:
 
 - **Optimized format:** Images are converted to WebP.
 - **SEO filename:** e.g. `my-product-name-mockup.webp` or `my-product-name-navy-mockup.webp`.
 - **Alt text:** Set on `product_image` and variant `imageAlt` for accessibility and SEO.
 
-Run from the project root (with `UPLOADTHING_TOKEN` in `.env`):
+**From the admin UI:** Edit a Printful or Printify product → in the **Images** section, click **“Re-host images to UploadThing”**. This runs the same flow for that product only (requires `UPLOADTHING_TOKEN` in the app env).
+
+**From the command line** (with `UPLOADTHING_TOKEN` in `.env`):
 
 ```bash
 bun run db:upload-product-mockups
@@ -94,7 +96,7 @@ Options:
 - `--dry-run` — List which URLs would be uploaded and the filenames/alts; no upload or DB changes.
 - `--product-id=xxx` — Only process images for this product.
 
-The script updates `product_image.url`, `product.imageUrl`, and `product_variant.imageUrl` (and related alt fields) to the new UploadThing URLs.
+The script (and the admin action) update `product_image.url`, `product.imageUrl`, and `product_variant.imageUrl` (and related alt fields) to the new UploadThing URLs.
 
 ---
 

@@ -1,5 +1,8 @@
+import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { db } from "~/db";
+import { productsTable } from "~/db/schema";
 import {
   importAllPrintfulProducts,
   importSinglePrintfulProduct,
@@ -17,7 +20,8 @@ import { auth, isAdminUser } from "~/lib/auth";
  * Body options:
  * - { action: "import_all" } - Import all sync products from Printful
  * - { action: "import_all", overwrite: true } - Import and overwrite existing
- * - { action: "import_single", printfulSyncProductId: 123 } - Import one product
+ * - { action: "import_single", printfulSyncProductId: 123 } - Import one product by Printful sync ID
+ * - { action: "import_single", productId: "abc", overwrite: true } - Re-sync one product by our product ID (refreshes Markets)
  * - { action: "export_single", productId: "abc" } - Push local changes to Printful
  * - { action: "export_all" } - Push all local changes to Printful
  */
@@ -76,19 +80,37 @@ export async function POST(request: NextRequest) {
     }
 
     case "import_single": {
-      if (!body.printfulSyncProductId) {
+      let printfulSyncProductId = body.printfulSyncProductId;
+      if (printfulSyncProductId == null && body.productId) {
+        const [row] = await db
+          .select({ printfulSyncProductId: productsTable.printfulSyncProductId })
+          .from(productsTable)
+          .where(eq(productsTable.id, body.productId))
+          .limit(1);
+        if (!row?.printfulSyncProductId) {
+          return NextResponse.json(
+            {
+              error:
+                "Product not found or is not a Printful product. Use printfulSyncProductId for Printful sync product ID.",
+            },
+            { status: 400 },
+          );
+        }
+        printfulSyncProductId = row.printfulSyncProductId;
+      }
+      if (printfulSyncProductId == null) {
         return NextResponse.json(
-          { error: "printfulSyncProductId required" },
+          { error: "printfulSyncProductId or productId required" },
           { status: 400 },
         );
       }
 
       console.log(
-        `Importing Printful product ${body.printfulSyncProductId}...`,
+        `Importing Printful product ${printfulSyncProductId}...`,
       );
       try {
         const result = await importSinglePrintfulProduct(
-          body.printfulSyncProductId,
+          printfulSyncProductId,
           body.overwrite ?? false,
         );
 
@@ -178,7 +200,7 @@ export async function GET(request: NextRequest) {
       import_all:
         "POST with { action: 'import_all' } - Import all Printful products",
       import_single:
-        "POST with { action: 'import_single', printfulSyncProductId: 123 }",
+        "POST with { action: 'import_single', printfulSyncProductId: 123 } or { action: 'import_single', productId: 'our-id', overwrite: true }",
       export_single: "POST with { action: 'export_single', productId: 'abc' }",
       export_all:
         "POST with { action: 'export_all' } - Push prices to Printful",
