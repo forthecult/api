@@ -70,6 +70,16 @@ export async function POST(request: NextRequest) {
         overwriteExisting: body.overwrite ?? false,
       });
 
+      // Always backfill size charts for all Printful products in DB (by brand/model).
+      // So size charts are imported even when sync returns 0/0/0 or products were skipped.
+      const sizeChartsResult = await importSizeChartsForAllPrintfulProducts().catch(
+        (err) => ({
+          success: false as const,
+          upserted: 0,
+          errors: [err instanceof Error ? err.message : String(err)],
+        }),
+      );
+
       return NextResponse.json({
         success: result.success,
         summary: {
@@ -79,6 +89,11 @@ export async function POST(request: NextRequest) {
           errors: result.errors.length,
         },
         errors: result.errors.slice(0, 20), // Limit errors in response
+        sizeCharts: {
+          upserted: sizeChartsResult.upserted,
+          success: sizeChartsResult.success,
+          errors: sizeChartsResult.errors.slice(0, 10),
+        },
       });
     }
 

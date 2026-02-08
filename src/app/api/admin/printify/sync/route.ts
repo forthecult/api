@@ -25,15 +25,28 @@ const REQUIRED_PRODUCT_WEBHOOK_TOPICS = [
   "product:published",
 ] as const;
 
-function getExpectedWebhookUrl(): string {
-  const base = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
+/** Build webhook URL. Prefer request origin (so staging/production use the URL Printify can reach). */
+function getExpectedWebhookUrl(request?: NextRequest): string {
+  let base = "";
+  if (request?.url) {
+    try {
+      base = new URL(request.url).origin;
+    } catch {
+      // ignore
+    }
+  }
+  if (!base) base = process.env.NEXT_PUBLIC_APP_URL?.trim() ?? "";
+  base = base.replace(/\/$/, "");
   const path = "/api/webhooks/printify";
   const secret = process.env.PRINTIFY_WEBHOOK_SECRET?.trim();
   const qs = secret ? `?secret=${encodeURIComponent(secret)}` : "";
-  return base ? `${base.replace(/\/$/, "")}${path}${qs}` : "";
+  return base ? `${base}${path}${qs}` : "";
 }
 
-async function validatePrintifyWebhooks(shopId: string): Promise<{
+async function validatePrintifyWebhooks(
+  shopId: string,
+  request?: NextRequest,
+): Promise<{
   ok: boolean;
   expectedUrl: string;
   registered: Array<{ topic: string; url: string }>;
@@ -41,7 +54,7 @@ async function validatePrintifyWebhooks(shopId: string): Promise<{
   missingProductTopics: string[];
   message: string;
 }> {
-  const expectedUrl = getExpectedWebhookUrl();
+  const expectedUrl = getExpectedWebhookUrl(request);
   let registered: Array<{ topic: string; url: string }> = [];
   try {
     const list = await listPrintifyWebhooks(shopId);
@@ -81,15 +94,18 @@ async function validatePrintifyWebhooks(shopId: string): Promise<{
 }
 
 /** Register any missing product webhooks so Printify can clear "Publishing" when we return 200. Returns summary for the response. */
-async function ensurePrintifyProductWebhooks(shopId: string): Promise<{
+async function ensurePrintifyProductWebhooks(
+  shopId: string,
+  request?: NextRequest,
+): Promise<{
   webhookUrl: string;
   registered: number;
   alreadyRegistered: number;
   failed: number;
   validation: Awaited<ReturnType<typeof validatePrintifyWebhooks>>;
 }> {
-  const expectedUrl = getExpectedWebhookUrl();
-  const validation = await validatePrintifyWebhooks(shopId);
+  const expectedUrl = getExpectedWebhookUrl(request);
+  const validation = await validatePrintifyWebhooks(shopId, request);
   let registered = 0;
   let alreadyRegistered = 0;
   let failed = 0;
@@ -108,7 +124,7 @@ async function ensurePrintifyProductWebhooks(shopId: string): Promise<{
       }
     }
   }
-  const validationAfter = expectedUrl && (registered > 0 || failed > 0) ? await validatePrintifyWebhooks(shopId) : validation;
+  const validationAfter = expectedUrl && (registered > 0 || failed > 0) ? await validatePrintifyWebhooks(shopId, request) : validation;
   return {
     webhookUrl: expectedUrl,
     registered,
@@ -174,7 +190,7 @@ export async function POST(request: NextRequest) {
     case "import_all": {
       console.log("Starting Printify import_all sync...");
       // Ensure product webhooks are registered so Printify can clear "Publishing" when we return 200
-      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId);
+      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId, request);
       const result = await importAllPrintifyProducts({
         visibleOnly: body.visibleOnly ?? true,
         overwriteExisting: body.overwrite ?? false,
@@ -228,7 +244,7 @@ export async function POST(request: NextRequest) {
 
       console.log(`Importing Printify product ${printifyProductId}...`);
       // Ensure product webhooks are registered so Printify can clear "Publishing" when we return 200
-      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId);
+      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId, request);
       try {
         const result = await importSinglePrintifyProduct(
           printifyProductId,
@@ -259,7 +275,7 @@ export async function POST(request: NextRequest) {
 
     case "confirm_publish": {
       // Ensure product webhooks exist, then validate so caller knows if "Publishing" will clear
-      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId);
+      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId, request);
       const webhooksPayload = {
         ok: webhooksResult.validation.ok,
         expectedUrl: webhooksResult.validation.expectedUrl,
@@ -464,13 +480,13 @@ export async function GET(request: NextRequest) {
   const pf = getPrintifyIfConfigured();
   let webhooks: Awaited<ReturnType<typeof validatePrintifyWebhooks>> | null = null;
   if (pf) {
-    webhooks = await validatePrintifyWebhooks(pf.shopId);
+    webhooks = await validatePrintifyWebhooks(pf.shopId, request);
   }
 
   return NextResponse.json({
     configured: pf != null,
     shopId: pf?.shopId ?? null,
-    webhookUrl: getExpectedWebhookUrl(),
+    webhookUrl: getExpectedWebhookUrl(request),
     webhooks: webhooks
       ? {
           ok: webhooks.ok,
