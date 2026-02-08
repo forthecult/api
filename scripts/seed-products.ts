@@ -7,7 +7,7 @@
 
 import "dotenv/config";
 
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
@@ -159,6 +159,17 @@ async function seed() {
     ...DEMO_PRODUCTS.map((p) => ({ productId: p.id, categoryId: p.categoryId })),
     ...CURATED_PRODUCTS.map((p) => ({ productId: p.id, categoryId: p.categoryId })),
   ];
+
+  // Pacsafe backpacks must be in Backpacks only (not Bags). Remove any Bags link so re-seed fixes category.
+  const pacsafeBackpackIds = [PACSAFE_EXP_28L.id, PACSAFE_V_12L.id, PACSAFE_V_20L.id];
+  await db
+    .delete(productCategoriesTable)
+    .where(
+      and(
+        inArray(productCategoriesTable.productId, pacsafeBackpackIds),
+        eq(productCategoriesTable.categoryId, "accessories-bags"),
+      ),
+    );
 
   console.log("Linking products to categories…");
   await db

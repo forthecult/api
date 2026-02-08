@@ -15,12 +15,22 @@ import { readFileSync, existsSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { UTApi } from "uploadthing/server";
 
+import type { LookbookImage } from "../src/lib/lookbook-data";
 import { LOOKBOOK_IMAGES } from "../src/lib/lookbook-data";
 import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
 
 const PUBLIC_LOOKBOOK = join(process.cwd(), "public", "lookbook");
 const DATA_DIR = join(process.cwd(), "data");
 const OUTPUT_PATH = join(DATA_DIR, "lookbook-images.json");
+
+function isUploadThingUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host.includes("utfs.io") || host.includes("ufs.sh") || host.includes("uploadthing");
+  } catch {
+    return false;
+  }
+}
 
 const MIME: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -55,15 +65,42 @@ async function main() {
     process.exit(1);
   }
 
-  const utapi = new UTApi({ token });
-  const result: typeof LOOKBOOK_IMAGES = [];
+  // If we already have a manifest with UploadThing URLs, reuse them so we don't re-upload every run.
+  let existingManifest: LookbookImage[] | null = null;
+  if (existsSync(OUTPUT_PATH)) {
+    try {
+      const raw = readFileSync(OUTPUT_PATH, "utf-8");
+      const parsed = JSON.parse(raw) as unknown;
+      if (Array.isArray(parsed) && parsed.length === LOOKBOOK_IMAGES.length) {
+        const first = parsed[0] as Record<string, unknown>;
+        if (typeof first?.src === "string" && isUploadThingUrl(first.src)) {
+          existingManifest = parsed as LookbookImage[];
+        }
+      }
+    } catch {
+      // ignore invalid or missing file
+    }
+  }
 
-  for (const meta of LOOKBOOK_IMAGES) {
+  const utapi = new UTApi({ token });
+  const result: LookbookImage[] = [];
+  let uploaded = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < LOOKBOOK_IMAGES.length; i++) {
+    const meta = LOOKBOOK_IMAGES[i]!;
+    const existing = existingManifest?.[i];
+    if (existing?.src && isUploadThingUrl(existing.src)) {
+      result.push(existing);
+      skipped++;
+      continue;
+    }
+
     const basename = meta.src.replace(/^\/lookbook\//, "");
     const filePath = join(PUBLIC_LOOKBOOK, basename);
     if (!existsSync(filePath)) {
       console.warn(`Skip (missing): ${basename}`);
-      result.push(meta);
+      result.push(existing ?? meta);
       continue;
     }
 
@@ -85,7 +122,6 @@ async function main() {
         result.push(meta);
         continue;
       }
-      // Use only ufsUrl (file.url / file.appUrl deprecated in uploadthing v9)
       const url = res?.ufsUrl ?? res?.data?.ufsUrl ?? null;
       if (!url) {
         console.error(`No URL for ${basename}`);
@@ -93,6 +129,7 @@ async function main() {
         continue;
       }
       result.push({ ...meta, src: url });
+      uploaded++;
       console.log(`Uploaded ${basename} → ${url.slice(0, 50)}…`);
     } catch (err) {
       console.error(`Failed ${basename}:`, err);
@@ -100,11 +137,17 @@ async function main() {
     }
   }
 
+  if (skipped > 0) {
+    console.log(`Reused ${skipped} existing UploadThing URL(s) (no re-upload).`);
+  }
+
   if (!existsSync(DATA_DIR)) {
     mkdirSync(DATA_DIR, { recursive: true });
   }
   writeFileSync(OUTPUT_PATH, JSON.stringify(result, null, 2), "utf-8");
-  console.log(`Wrote ${OUTPUT_PATH}. Commit this file so staging/prod use UploadThing URLs.`);
+  console.log(
+    `Wrote ${OUTPUT_PATH}. ${uploaded > 0 ? `Uploaded ${uploaded} new image(s). ` : ""}Commit so staging/prod use UploadThing URLs.`,
+  );
 }
 
 main().catch((err) => {

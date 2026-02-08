@@ -10,7 +10,7 @@
 
 import "dotenv/config";
 
-import { asc, eq, isNull } from "drizzle-orm";
+import { asc, eq, inArray, isNull } from "drizzle-orm";
 import { UTApi } from "uploadthing/server";
 
 import { db } from "../src/db";
@@ -38,6 +38,25 @@ import { TREZOR_SAFE_5 } from "./seed-data/trezor-safe-5";
 import { TREZOR_SAFE_7 } from "./seed-data/trezor-safe-7";
 import { TRMNL_7_5_OG_DIY_KIT } from "./seed-data/trmnl-7-5-og-diy-kit";
 import { XIAO_SMART_IR_MATE } from "./seed-data/xiao-smart-ir-mate";
+
+const CURATED_PRODUCT_IDS = [
+  PACSAFE_EXP_28L.id,
+  PACSAFE_V_20L.id,
+  PACSAFE_V_12L.id,
+  PACSAFE_RFIDSAFE_WALLET.id,
+  EARTH_RUNNERS_CIRCADIAN.id,
+  SPOUT_MONOLITH.id,
+  TREZOR_SAFE_7.id,
+  TREZOR_SAFE_5.id,
+  HUSKYLENS_2.id,
+  CRYPTOMATIC_JETSETTER.id,
+  HOME_ASSISTANT_GREEN.id,
+  HOME_ASSISTANT_VOICE.id,
+  LINKSTAR_H68K_1432_V2.id,
+  SENSECAP_WATCHER_W1_A.id,
+  TRMNL_7_5_OG_DIY_KIT.id,
+  XIAO_SMART_IR_MATE.id,
+];
 
 const CURATED_PRODUCTS = [
   PACSAFE_EXP_28L,
@@ -67,7 +86,35 @@ type ImageSpec = {
   index: number;
 };
 
-function collectImageSpecs(): ImageSpec[] {
+/** Set of image URLs currently in DB that are not yet on UploadThing (need upload). */
+async function getDbUrlsNeedingUpload(): Promise<Set<string>> {
+  const out = new Set<string>();
+  const productRows = await db
+    .select({ imageUrl: productsTable.imageUrl })
+    .from(productsTable)
+    .where(inArray(productsTable.id, CURATED_PRODUCT_IDS));
+  for (const r of productRows) {
+    if (r.imageUrl && !isUploadThingUrl(r.imageUrl)) out.add(r.imageUrl);
+  }
+  const imageRows = await db
+    .select({ url: productImagesTable.url })
+    .from(productImagesTable)
+    .where(inArray(productImagesTable.productId, CURATED_PRODUCT_IDS));
+  for (const r of imageRows) {
+    if (r.url && !isUploadThingUrl(r.url)) out.add(r.url);
+  }
+  const variantRows = await db
+    .select({ imageUrl: productVariantsTable.imageUrl })
+    .from(productVariantsTable)
+    .where(inArray(productVariantsTable.productId, CURATED_PRODUCT_IDS));
+  for (const r of variantRows) {
+    if (r.imageUrl && !isUploadThingUrl(r.imageUrl)) out.add(r.imageUrl);
+  }
+  return out;
+}
+
+/** Only include specs for source URLs that are still in the DB and not yet on UploadThing (avoids duplicate uploads on re-run). */
+function collectImageSpecs(urlsNeedingUpload: Set<string>): ImageSpec[] {
   const seen = new Set<string>();
   const out: ImageSpec[] = [];
 
@@ -75,9 +122,8 @@ function collectImageSpecs(): ImageSpec[] {
     const name = p.name;
     const id = p.id;
 
-    // Main product image
     const mainUrl = p.imageUrl;
-    if (mainUrl && !isUploadThingUrl(mainUrl) && !seen.has(mainUrl)) {
+    if (mainUrl && urlsNeedingUpload.has(mainUrl) && !seen.has(mainUrl)) {
       seen.add(mainUrl);
       out.push({
         sourceUrl: mainUrl,
@@ -89,11 +135,10 @@ function collectImageSpecs(): ImageSpec[] {
       });
     }
 
-    // Gallery images
     const images = (p as { images?: Array<{ url: string; alt?: string; title?: string }> }).images ?? [];
     images.forEach((img, i) => {
       const url = img.url;
-      if (!url || isUploadThingUrl(url) || seen.has(url)) return;
+      if (!url || !urlsNeedingUpload.has(url) || seen.has(url)) return;
       seen.add(url);
       out.push({
         sourceUrl: url,
@@ -105,11 +150,10 @@ function collectImageSpecs(): ImageSpec[] {
       });
     });
 
-    // Variant images
     const variants = (p as { variants?: Array<{ imageUrl: string; imageAlt?: string; color?: string; size?: string }> }).variants ?? [];
     variants.forEach((v, i) => {
       const url = v.imageUrl;
-      if (!url || isUploadThingUrl(url) || seen.has(url)) return;
+      if (!url || !urlsNeedingUpload.has(url) || seen.has(url)) return;
       seen.add(url);
       const label = [v.color, v.size].filter(Boolean).join(" ") || null;
       out.push({
@@ -145,13 +189,14 @@ async function main() {
     }
   }
 
-  const specs = collectImageSpecs();
+  const urlsNeedingUpload = await getDbUrlsNeedingUpload();
+  const specs = collectImageSpecs(urlsNeedingUpload);
   if (specs.length === 0) {
     console.log("No curated product image URLs to upload (all may already be on UploadThing).");
     process.exit(0);
   }
 
-  console.log(`Found ${specs.length} image(s) to upload from ${CURATED_PRODUCTS.length} products.`);
+  console.log(`Found ${specs.length} image(s) to upload (${urlsNeedingUpload.size} non-UT URL(s) in DB).`);
 
   if (dryRun) {
     for (const s of specs) {

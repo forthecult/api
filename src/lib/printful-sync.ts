@@ -166,10 +166,10 @@ export async function importSinglePrintfulProduct(
     }
   }
 
-  // Fetch catalog product for description/brand and shipping/customs (country of origin, HS code)
+  // Fetch catalog product for description/brand/model and shipping/customs. Brand/model required for size chart + product page.
   let catalogProduct: {
-    brand: string | null;
-    model: string | null;
+    brand: string;
+    model: string;
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
@@ -182,16 +182,34 @@ export async function importSinglePrintfulProduct(
         fetchCatalogProductShippingCustoms(catalogProductId),
       ]);
       if (catalog?.data) {
+        // Fallback so we always have brand/model for size_chart and product (Printful may omit for some catalog items)
+        const brand = (catalog.data.brand ?? "Printful").trim() || "Printful";
+        const model = (catalog.data.model ?? String(catalogProductId)).trim() || String(catalogProductId);
         catalogProduct = {
-          brand: catalog.data.brand ?? null,
-          model: catalog.data.model ?? null,
+          brand,
+          model,
           description: catalog.data.description ?? null,
           countryOfOrigin: customs.countryOfOrigin,
           hsCode: customs.hsCode,
         };
+      } else {
+        catalogProduct = {
+          brand: "Printful",
+          model: String(catalogProductId),
+          description: null,
+          countryOfOrigin: null,
+          hsCode: null,
+        };
       }
-    } catch {
-      // Optional: continue without catalog details
+    } catch (err) {
+      console.warn("Printful catalog fetch failed for product", catalogProductId, err);
+      catalogProduct = {
+        brand: "Printful",
+        model: String(catalogProductId),
+        description: null,
+        countryOfOrigin: null,
+        hsCode: null,
+      };
     }
   }
 
@@ -205,7 +223,7 @@ export async function importSinglePrintfulProduct(
   if (existingProduct) {
     if (!overwriteExisting) {
       // Still ensure size chart exists for this brand/model (import once per brand/model)
-      if (catalogProductId != null && catalogProduct?.brand && catalogProduct?.model) {
+      if (catalogProductId != null && catalogProduct) {
         await upsertPrintfulSizeChart(
           catalogProductId,
           catalogProduct.brand,
@@ -228,7 +246,7 @@ export async function importSinglePrintfulProduct(
       syncVariants,
       catalogProduct,
     );
-    if (catalogProductId != null && catalogProduct?.brand && catalogProduct?.model) {
+    if (catalogProductId != null && catalogProduct) {
       await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
     }
     return { action: "updated", productId: existingProduct.id };
@@ -240,7 +258,7 @@ export async function importSinglePrintfulProduct(
     syncVariants,
     catalogProduct,
   );
-  if (catalogProductId != null && catalogProduct?.brand && catalogProduct?.model) {
+  if (catalogProductId != null && catalogProduct) {
     await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
   }
   return { action: "imported", productId };
@@ -307,6 +325,22 @@ function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | 
 /**
  * Create a new local product from Printful sync product data.
  */
+function normalizeSizeGuideData(
+  res: { data?: { available_sizes?: string[]; size_tables?: Array<{ type: string; unit: string; description?: string; image_url?: string; measurements?: unknown }> } } | null,
+): { availableSizes: string[]; sizeTables: Array<{ type: string; unit: string; description?: string; image_url?: string; measurements?: unknown }> } | null {
+  if (!res?.data?.size_tables?.length) return null;
+  return {
+    availableSizes: res.data.available_sizes ?? [],
+    sizeTables: res.data.size_tables.map((t) => ({
+      type: t.type,
+      unit: t.unit,
+      description: t.description,
+      image_url: t.image_url,
+      measurements: t.measurements,
+    })),
+  };
+}
+
 /** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). */
 async function upsertPrintfulSizeChart(
   catalogProductId: number,
@@ -318,33 +352,31 @@ async function upsertPrintfulSizeChart(
       fetchProductSizeGuide(catalogProductId, { unit: "inches" }).catch(() => null),
       fetchProductSizeGuide(catalogProductId, { unit: "cm" }).catch(() => null),
     ]);
-    const dataImperial =
-      (imperialRes?.data?.size_tables?.length ?? 0) > 0
-        ? {
-            availableSizes: imperialRes?.data?.available_sizes ?? [],
-            sizeTables: (imperialRes?.data?.size_tables ?? []).map((t) => ({
-              type: t.type,
-              unit: t.unit,
-              description: t.description,
-              image_url: t.image_url,
-              measurements: t.measurements,
-            })),
-          }
-        : null;
-    const dataMetric =
-      (metricRes?.data?.size_tables?.length ?? 0) > 0
-        ? {
-            availableSizes: metricRes?.data?.available_sizes ?? [],
-            sizeTables: (metricRes?.data?.size_tables ?? []).map((t) => ({
-              type: t.type,
-              unit: t.unit,
-              description: t.description,
-              image_url: t.image_url,
-              measurements: t.measurements,
-            })),
-          }
-        : null;
-    if (dataImperial == null && dataMetric == null) return;
+    let dataImperial = normalizeSizeGuideData(imperialRes);
+    let dataMetric = normalizeSizeGuideData(metricRes);
+
+    // Some catalog products return size guide only without unit param
+    if (dataImperial == null && dataMetric == null) {
+      const fallbackRes = await fetchProductSizeGuide(catalogProductId, {}).catch(() => null);
+      const fallback = normalizeSizeGuideData(fallbackRes);
+      if (fallback) {
+        const isMetric = fallback.sizeTables.some((t) => t.unit === "cm" || t.unit === "metric");
+        if (isMetric) dataMetric = fallback;
+        else dataImperial = fallback;
+      }
+    }
+
+    if (dataImperial == null && dataMetric == null) {
+      console.warn(
+        "Printful size guide empty for catalog product",
+        catalogProductId,
+        "brand:",
+        brand,
+        "model:",
+        model,
+      );
+      return;
+    }
 
     const displayName = "T-Shirts"; // default; could derive from catalog product type
     const id = nanoid();

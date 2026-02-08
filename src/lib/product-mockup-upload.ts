@@ -114,6 +114,14 @@ export async function uploadMockupToUploadThing(
       console.warn(`Fetch failed ${res.status}: ${sourceUrl}`);
       return null;
     }
+    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+    if (contentType.startsWith("text/") || contentType.includes("html")) {
+      console.warn(`Source returned non-image (${contentType}): ${sourceUrl}`);
+      return null;
+    }
+    if (contentType.length > 0 && !contentType.startsWith("image/")) {
+      console.warn(`Source may not be image (${contentType}): ${sourceUrl}`);
+    }
     const arr = await res.arrayBuffer();
     buffer = Buffer.from(arr);
   } catch (err) {
@@ -123,6 +131,23 @@ export async function uploadMockupToUploadThing(
 
   if (buffer.length === 0) {
     console.warn(`Empty image: ${sourceUrl}`);
+    return null;
+  }
+
+  let metadata: { width?: number; height?: number };
+  try {
+    metadata = (await sharp(buffer).metadata()) as { width?: number; height?: number };
+  } catch (err) {
+    console.warn(`Invalid image data for ${sourceUrl}:`, err);
+    return null;
+  }
+  const w = metadata?.width ?? 0;
+  const h = metadata?.height ?? 0;
+  const minDimension = 32;
+  if (w < minDimension || h < minDimension) {
+    console.warn(
+      `Image too small or invalid (${w}x${h}) for ${sourceUrl}; skipping to avoid blank/placeholder.`,
+    );
     return null;
   }
 
