@@ -65,7 +65,7 @@ const allocationItems = [
   {
     label: "Public (fair launch)",
     sublabel: "Fair launch bonding curve",
-    pct: "85%",
+    pct: "86.63%",
   },
   {
     label: "Team (locked)",
@@ -81,7 +81,7 @@ const allocationItems = [
 
 const fairLaunchPrinciples = [
   "Team allocation 13.37% (middle of 10-20% range)",
-  "Public allocation exceeds 30% min (85%)",
+  "Public allocation exceeds 30% min (86.63%)",
   "10% locked 6 months via Streamflow (verifiable on-chain)",
   "3.37% unlocked so team can participate in voting from day one",
 ];
@@ -116,7 +116,7 @@ const creatorFeeAllocations = [
     label: "Charity",
     wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS",
   },
-  { value: 15, pct: "13.37%", label: "Marketing and advertising", wallet: null },
+  { value: 15, pct: "15%", label: "Marketing and advertising", wallet: null },
   { value: 20, pct: "20%", label: "Subsidize shipping and product prices", wallet: null },
   { value: 20, pct: "20%", label: "Product inventory and development", wallet: null },
   { value: 30, pct: "30%", label: "Treasury and feature development", wallet: null },
@@ -326,7 +326,7 @@ export default function TokenPage() {
         </section>
 
         {/* Creator Fee Allocation */}
-        <section className="space-y-8 py-12 md:py-6">
+        <section className="space-y-8 py-16 md:py-12">
           <div>
             <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
               Creator Fee Allocation
@@ -337,35 +337,46 @@ export default function TokenPage() {
             </p>
           </div>
           <div className="flex flex-col gap-10">
-            {/* Pie chart with labels; table is below */}
-            <div className="flex flex-col items-center">
-              <div className="relative aspect-square w-full max-w-[340px]">
+            {/* Pie chart with labels spread out; table is below */}
+            <div className="flex flex-col items-center overflow-visible py-8 md:py-10">
+              <div
+                className="relative mx-auto w-full max-w-[380px] overflow-visible"
+                style={{ aspectRatio: "1" }}
+              >
+                {/* Extra space so labels aren't clipped: viewBox has margin; pie is centered and smaller */}
                 <div
-                  className="absolute inset-0 rounded-full border-4 border-background shadow-lg"
+                  className="absolute rounded-full border-4 border-background shadow-lg"
                   style={{
                     background: creatorFeePieGradient(),
+                    top: "50%",
+                    left: "50%",
+                    width: "42.67%",
+                    height: "42.67%",
+                    marginTop: "-21.33%",
+                    marginLeft: "-21.33%",
                   }}
                   aria-hidden
                 />
-                {/* SVG overlay: label lines + labels at slice mid-angles (viewBox 0 0 100 100, center 50,50) */}
                 <svg
                   className="absolute inset-0 h-full w-full overflow-visible"
-                  viewBox="0 0 100 100"
+                  viewBox="-25 -25 150 150"
                   preserveAspectRatio="xMidYMid meet"
                   aria-hidden
                 >
                   {(() => {
-                    const rPie = 42
+                    const cx = 50
+                    const cy = 50
+                    const rPie = 32
                     const rLabel = 58
                     let cum = 0
-                    return creatorFeeAllocations.map((a, i) => {
+                    return creatorFeeAllocations.map((a) => {
                       const midDeg = (cum + a.value / 2) * 3.6
                       cum += a.value
                       const rad = (midDeg * Math.PI) / 180
-                      const xEdge = 50 + rPie * Math.sin(rad)
-                      const yEdge = 50 - rPie * Math.cos(rad)
-                      const xLabel = 50 + rLabel * Math.sin(rad)
-                      const yLabel = 50 - rLabel * Math.cos(rad)
+                      const xEdge = cx + rPie * Math.sin(rad)
+                      const yEdge = cy - rPie * Math.cos(rad)
+                      const xLabel = cx + rLabel * Math.sin(rad)
+                      const yLabel = cy - rLabel * Math.cos(rad)
                       return (
                         <g key={a.label}>
                           <line
@@ -383,7 +394,7 @@ export default function TokenPage() {
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="fill-foreground font-medium"
-                            style={{ fontSize: "14px" }}
+                            style={{ fontSize: "12px" }}
                           >
                             {a.pct} {a.label}
                           </text>
