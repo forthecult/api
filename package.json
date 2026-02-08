@@ -43,6 +43,7 @@
     "printify:sync": "bun run scripts/printify-sync-products.ts",
     "db:list-products": "bun run scripts/list-products.ts",
     "buyback-burn": "bun run scripts/buyback-burn.ts",
+    "vanity:grind": "bun run scripts/solana-vanity-grind.ts",
     "db:crawl-brand-shipping": "bun run scripts/crawl-brand-shipping.ts",
     "db:seed-shipping-by-brand": "bun run scripts/seed-shipping-by-brand.ts",
     "tests": "bun test ./.tests",
