@@ -150,3 +150,9 @@ If you don’t set the token, upload buttons in the app will fail; you can still
 
 - **Product images (curated) missing on the front-end**  
   Curated products (Home Assistant, LinkStar, SenseCAP Watcher, TRMNL, XIAO Smart IR Mate, etc.) should serve images from UploadThing (`*.ufs.sh` or `utfs.io`). If they show placeholders: (1) Ensure the database is running and `UPLOADTHING_TOKEN` is set in `.env`. (2) Run `bun run db:seed-and-upload-curated` (or `db:seed-products` then `db:upload-curated-product-images`) so images are re-fetched from vendor URLs, uploaded to UploadThing, and DB URLs updated. (3) In admin, check that product/gallery image URLs are correct—no typos in the subdomain (e.g. `y0p8x6gowf.ufs.sh` vs `y0p8x6qowf.ufs.sh`); a single wrong character causes 404 and the front-end falls back to the placeholder.
+
+- **`[uploadthing] [deprecated] 'file.url' / 'file.appUrl'`**  
+  The app and scripts use `file.ufsUrl` (and the upload API response’s `ufsUrl`) everywhere. The warning is emitted by the UploadThing SDK internally and will be removed in v9. You can ignore it.
+
+- **`ReferenceError: indexedDB is not defined` after starting seed or Printful sync**  
+  This usually means server-side code (e.g. during an API request or SSR) is pulling in a dependency that uses browser-only APIs (e.g. a wallet or storage library). Run seed and upload scripts from the CLI (`bun run db:seed-products`, `bun run db:upload-curated-product-images`) so they run in a separate process. If the error appears in the server log during Printful import, it may be from a concurrent request or from a client dependency that was bundled for the server; it often does not block the sync from completing.

@@ -29,7 +29,7 @@ import {
   fetchCatalogProduct,
   fetchCatalogProductShippingCountries,
   fetchCatalogProductShippingCustoms,
-  fetchProductSizeGuide,
+  fetchProductSizeGuideSafe,
   fetchVariantPrices,
   updateSyncProduct,
   updateSyncVariant,
@@ -250,8 +250,10 @@ export async function importSizeChartForPrintfulProduct(
     String(catalogProductId);
 
   try {
-    await upsertPrintfulSizeChart(catalogProductId, brand, model);
-    return { success: true };
+    const upserted = await upsertPrintfulSizeChart(catalogProductId, brand, model);
+    return upserted
+      ? { success: true }
+      : { success: false, error: "Printful returned no size guide for this catalog product" };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { success: false, error: message };
@@ -522,29 +524,28 @@ function normalizeSizeGuideData(
   };
 }
 
-/** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). */
+/** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). Returns true if a size chart was upserted. */
 async function upsertPrintfulSizeChart(
   catalogProductId: number,
   brand: string,
   model: string,
-): Promise<void> {
+): Promise<boolean> {
   try {
-    const [imperialRes, metricRes] = await Promise.all([
-      fetchProductSizeGuide(catalogProductId, { unit: "inches" }).catch(() => null),
-      fetchProductSizeGuide(catalogProductId, { unit: "cm" }).catch(() => null),
-    ]);
-    let dataImperial = normalizeSizeGuideData(imperialRes);
-    let dataMetric = normalizeSizeGuideData(metricRes);
-
-    // Some catalog products return size guide only without unit param
-    if (dataImperial == null && dataMetric == null) {
-      const fallbackRes = await fetchProductSizeGuide(catalogProductId, {}).catch(() => null);
-      const fallback = normalizeSizeGuideData(fallbackRes);
-      if (fallback) {
-        const isMetric = fallback.sizeTables.some((t) => t.unit === "cm" || t.unit === "metric");
-        if (isMetric) dataMetric = fallback;
-        else dataImperial = fallback;
-      }
+    // Try without unit first (some catalog products only return one format)
+    const noUnitRes = await fetchProductSizeGuideSafe(catalogProductId, {});
+    const fromNoUnit = normalizeSizeGuideData(noUnitRes);
+    const hasImperial = fromNoUnit?.sizeTables.some((t) => t.unit !== "cm" && t.unit !== "metric");
+    const hasMetric = fromNoUnit?.sizeTables.some((t) => t.unit === "cm" || t.unit === "metric");
+    let dataImperial = fromNoUnit && hasImperial ? fromNoUnit : null;
+    let dataMetric = fromNoUnit && hasMetric ? fromNoUnit : null;
+    // If we don't have both, try explicit units in parallel
+    if (dataImperial == null || dataMetric == null) {
+      const [imperialRes, metricRes] = await Promise.all([
+        fetchProductSizeGuideSafe(catalogProductId, { unit: "inches" }),
+        fetchProductSizeGuideSafe(catalogProductId, { unit: "cm" }),
+      ]);
+      if (dataImperial == null) dataImperial = normalizeSizeGuideData(imperialRes);
+      if (dataMetric == null) dataMetric = normalizeSizeGuideData(metricRes);
     }
 
     if (dataImperial == null && dataMetric == null) {
@@ -556,7 +557,7 @@ async function upsertPrintfulSizeChart(
         "model:",
         model,
       );
-      return;
+      return false;
     }
 
     const displayName = "T-Shirts"; // default; could derive from catalog product type
@@ -586,8 +587,10 @@ async function upsertPrintfulSizeChart(
           updatedAt: now,
         },
       });
+    return true;
   } catch (err) {
     console.warn("Printful size chart import failed for catalog product", catalogProductId, err);
+    return false;
   }
 }
 

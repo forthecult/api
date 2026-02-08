@@ -137,6 +137,7 @@ export async function POST(request: NextRequest) {
           action: result.action,
           productId: result.productId,
           sizeChartImported: sizeChartResult.success,
+          ...(sizeChartResult.success ? {} : { sizeChartError: sizeChartResult.error }),
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

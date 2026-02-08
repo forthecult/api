@@ -15,6 +15,7 @@ import {
   deletePrintifyProduct,
   publishPrintifyProduct,
   listPrintifyWebhooks,
+  createPrintifyWebhook,
 } from "~/lib/printify";
 import { auth, isAdminUser } from "~/lib/auth";
 
@@ -79,6 +80,44 @@ async function validatePrintifyWebhooks(shopId: string): Promise<{
   };
 }
 
+/** Register any missing product webhooks so Printify can clear "Publishing" when we return 200. Returns summary for the response. */
+async function ensurePrintifyProductWebhooks(shopId: string): Promise<{
+  webhookUrl: string;
+  registered: number;
+  alreadyRegistered: number;
+  failed: number;
+  validation: Awaited<ReturnType<typeof validatePrintifyWebhooks>>;
+}> {
+  const expectedUrl = getExpectedWebhookUrl();
+  const validation = await validatePrintifyWebhooks(shopId);
+  let registered = 0;
+  let alreadyRegistered = 0;
+  let failed = 0;
+  if (expectedUrl) {
+    for (const topic of REQUIRED_PRODUCT_WEBHOOK_TOPICS) {
+      if (validation.registeredTopics.includes(topic)) {
+        alreadyRegistered++;
+        continue;
+      }
+      try {
+        await createPrintifyWebhook(shopId, topic, expectedUrl);
+        registered++;
+      } catch (err) {
+        console.warn(`Printify webhook register ${topic} failed:`, err);
+        failed++;
+      }
+    }
+  }
+  const validationAfter = expectedUrl && (registered > 0 || failed > 0) ? await validatePrintifyWebhooks(shopId) : validation;
+  return {
+    webhookUrl: expectedUrl,
+    registered,
+    alreadyRegistered,
+    failed,
+    validation: validationAfter,
+  };
+}
+
 /**
  * POST /api/admin/printify/sync
  *
@@ -134,6 +173,8 @@ export async function POST(request: NextRequest) {
   switch (action) {
     case "import_all": {
       console.log("Starting Printify import_all sync...");
+      // Ensure product webhooks are registered so Printify can clear "Publishing" when we return 200
+      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId);
       const result = await importAllPrintifyProducts({
         visibleOnly: body.visibleOnly ?? true,
         overwriteExisting: body.overwrite ?? false,
@@ -148,6 +189,14 @@ export async function POST(request: NextRequest) {
           errors: result.errors.length,
         },
         errors: result.errors.slice(0, 20), // Limit errors in response
+        webhooks: {
+          ok: webhooksResult.validation.ok,
+          expectedUrl: webhooksResult.validation.expectedUrl,
+          registered: webhooksResult.registered,
+          alreadyRegistered: webhooksResult.alreadyRegistered,
+          failed: webhooksResult.failed,
+          message: webhooksResult.validation.message,
+        },
       });
     }
 
@@ -178,6 +227,8 @@ export async function POST(request: NextRequest) {
       }
 
       console.log(`Importing Printify product ${printifyProductId}...`);
+      // Ensure product webhooks are registered so Printify can clear "Publishing" when we return 200
+      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId);
       try {
         const result = await importSinglePrintifyProduct(
           printifyProductId,
@@ -188,6 +239,14 @@ export async function POST(request: NextRequest) {
           success: true,
           action: result.action,
           productId: result.productId,
+          webhooks: {
+            ok: webhooksResult.validation.ok,
+            expectedUrl: webhooksResult.validation.expectedUrl,
+            registered: webhooksResult.registered,
+            alreadyRegistered: webhooksResult.alreadyRegistered,
+            failed: webhooksResult.failed,
+            message: webhooksResult.validation.message,
+          },
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -199,13 +258,16 @@ export async function POST(request: NextRequest) {
     }
 
     case "confirm_publish": {
-      // Validate webhooks so caller knows if "Publishing" will actually clear
-      const webhooksValidation = await validatePrintifyWebhooks(pf.shopId);
+      // Ensure product webhooks exist, then validate so caller knows if "Publishing" will clear
+      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId);
       const webhooksPayload = {
-        ok: webhooksValidation.ok,
-        expectedUrl: webhooksValidation.expectedUrl,
-        missingProductTopics: webhooksValidation.missingProductTopics,
-        message: webhooksValidation.message,
+        ok: webhooksResult.validation.ok,
+        expectedUrl: webhooksResult.validation.expectedUrl,
+        missingProductTopics: webhooksResult.validation.missingProductTopics,
+        message: webhooksResult.validation.message,
+        registered: webhooksResult.registered,
+        alreadyRegistered: webhooksResult.alreadyRegistered,
+        failed: webhooksResult.failed,
       };
 
       // Re-call Printify publish API so they re-send webhook / clear "Publishing" status

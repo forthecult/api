@@ -168,6 +168,18 @@ export function fetchProductSizeGuide(
   );
 }
 
+/** Same as fetchProductSizeGuide but returns null on 404/5xx instead of throwing. Use for size chart import so one product without a guide doesn't break the flow. */
+export async function fetchProductSizeGuideSafe(
+  catalogProductId: number,
+  params: { unit?: string } = {},
+): Promise<PrintfulSizeGuideResponse | null> {
+  try {
+    return await fetchProductSizeGuide(catalogProductId, params);
+  } catch {
+    return null;
+  }
+}
+
 /** GET /v2/catalog-products/{id} – single product. */
 export function fetchCatalogProduct(catalogProductId: number) {
   return pfFetch<{ data: PrintfulCatalogProduct }>(
