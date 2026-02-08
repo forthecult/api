@@ -402,9 +402,8 @@ function optionValueToString(
 function getVariantSize(v: PrintfulSyncVariant): string | null {
   if (v.size?.trim()) return v.size.trim();
   const opts = v.options ?? [];
-  const sizeOpt =
-    opts.find((o) => o?.id?.toLowerCase() === "size") ??
-    opts.find((o) => /size|garment_size/i.test(o?.id ?? ""));
+  const idLower = (id: string | undefined) => (id ?? "").toLowerCase();
+  const sizeOpt = opts.find((o) => idLower(o?.id).includes("size"));
   return optionValueToString(sizeOpt ?? null);
 }
 
@@ -412,9 +411,8 @@ function getVariantSize(v: PrintfulSyncVariant): string | null {
 function getVariantColor(v: PrintfulSyncVariant): string | null {
   if (v.color?.trim()) return v.color.trim();
   const opts = v.options ?? [];
-  const colorOpt =
-    opts.find((o) => o?.id?.toLowerCase() === "color") ??
-    opts.find((o) => /color|garment_color/i.test(o?.id ?? ""));
+  const idLower = (id: string | undefined) => (id ?? "").toLowerCase();
+  const colorOpt = opts.find((o) => idLower(o?.id).includes("color"));
   return optionValueToString(colorOpt ?? null);
 }
 
@@ -524,6 +522,18 @@ function normalizeSizeGuideData(
   };
 }
 
+/** Derive size chart display name from Printful catalog product type/name (e.g. "Hoodie" → "Hoodies", "T-Shirt" → "T-Shirts", "Shoes" → "Shoes"). */
+function sizeChartDisplayNameFromCatalog(typeOrName: string | null | undefined): string {
+  const raw = (typeOrName ?? "").trim();
+  if (!raw) return "T-Shirts";
+  const titleCased = raw
+    .split(/[\s-]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(raw.includes("-") ? "-" : " ");
+  if (!titleCased) return "T-Shirts";
+  return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
+}
+
 /** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). Returns true if a size chart was upserted. */
 async function upsertPrintfulSizeChart(
   catalogProductId: number,
@@ -531,6 +541,18 @@ async function upsertPrintfulSizeChart(
   model: string,
 ): Promise<boolean> {
   try {
+    // Fetch catalog product for display name (type/name: e.g. Hoodie, T-Shirt, Shoes)
+    let displayName = "T-Shirts";
+    try {
+      const catalogRes = await fetchCatalogProduct(catalogProductId);
+      const catalog = catalogRes?.data;
+      if (catalog?.type ?? catalog?.name) {
+        displayName = sizeChartDisplayNameFromCatalog(catalog.type ?? catalog.name ?? null);
+      }
+    } catch {
+      // keep default
+    }
+
     // Try without unit first (some catalog products only return one format)
     const noUnitRes = await fetchProductSizeGuideSafe(catalogProductId, {});
     const fromNoUnit = normalizeSizeGuideData(noUnitRes);
@@ -559,8 +581,6 @@ async function upsertPrintfulSizeChart(
       );
       return false;
     }
-
-    const displayName = "T-Shirts"; // default; could derive from catalog product type
     const id = nanoid();
     const now = new Date();
     const brandTrimmed = brand.trim() || "Printful";

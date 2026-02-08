@@ -39,6 +39,8 @@ export type ProductVariantOption = {
   color?: string;
   /** Gender/style option (e.g. Men's / Women's). */
   gender?: string;
+  /** Display label (e.g. "Bella + Canvas 3001 / Black / S") – used when size/color not available. */
+  label?: string;
   priceCents: number;
   stockQuantity?: number;
   imageUrl?: string;

@@ -66,6 +66,8 @@ export type ProductBySlugResult = {
     id: string;
     size?: string;
     color?: string;
+    gender?: string;
+    label?: string;
     priceCents: number;
     stockQuantity?: number;
     imageUrl?: string;
@@ -151,6 +153,7 @@ export async function getProductBySlugOrId(
               size: productVariantsTable.size,
               color: productVariantsTable.color,
               gender: productVariantsTable.gender,
+              label: productVariantsTable.label,
               priceCents: productVariantsTable.priceCents,
               stockQuantity: productVariantsTable.stockQuantity,
               imageUrl: productVariantsTable.imageUrl,
@@ -192,6 +195,7 @@ export async function getProductBySlugOrId(
           size: v.size ?? undefined,
           color: v.color ?? undefined,
           gender: v.gender ?? undefined,
+          label: v.label ?? undefined,
           priceCents: v.priceCents,
           stockQuantity: v.stockQuantity ?? undefined,
           imageUrl: v.imageUrl ?? undefined,

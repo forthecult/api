@@ -151,6 +151,9 @@ If you don’t set the token, upload buttons in the app will fail; you can still
 - **Product images (curated) missing on the front-end**  
   Curated products (Home Assistant, LinkStar, SenseCAP Watcher, TRMNL, XIAO Smart IR Mate, etc.) should serve images from UploadThing (`*.ufs.sh` or `utfs.io`). If they show placeholders: (1) Ensure the database is running and `UPLOADTHING_TOKEN` is set in `.env`. (2) Run `bun run db:seed-and-upload-curated` (or `db:seed-products` then `db:upload-curated-product-images`) so images are re-fetched from vendor URLs, uploaded to UploadThing, and DB URLs updated. (3) In admin, check that product/gallery image URLs are correct—no typos in the subdomain (e.g. `y0p8x6gowf.ufs.sh` vs `y0p8x6qowf.ufs.sh`); a single wrong character causes 404 and the front-end falls back to the placeholder.
 
+- **Seed images upload but show as blank/grey placeholder**  
+  Some vendor CDNs (e.g. **Seeed Studio** `media-cdn.seeedstudio.com`) return a small placeholder image instead of the real product photo. The upload script now **skips** images whose source response is under ~12 KB so we don’t upload placeholders to UploadThing. In the seed log you’ll see “Source image too small” and “Skipped (fetch failed or placeholder)” for those URLs. **Fix:** Update the seed data for those products to use real image URLs (e.g. from the product page or another host). Pacsafe and other Shopify CDN URLs return full-size images and upload correctly.
+
 - **`[uploadthing] [deprecated] 'file.url' / 'file.appUrl'`**  
   The app and scripts use `file.ufsUrl` (and the upload API response’s `ufsUrl`) everywhere. The warning is emitted by the UploadThing SDK internally and will be removed in v9. You can ignore it.
 

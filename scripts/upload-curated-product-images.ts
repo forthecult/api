@@ -220,6 +220,8 @@ async function main() {
     if (result) {
       urlToNew.set(s.sourceUrl, { newUrl: result.url, alt: result.alt });
       console.log(`  Uploaded: ${result.filename} → ${result.url}`);
+    } else {
+      console.log(`  Skipped (fetch failed or placeholder): ${s.sourceUrl.slice(0, 80)}...`);
     }
   }
 

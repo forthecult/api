@@ -134,6 +134,15 @@ export async function uploadMockupToUploadThing(
     return null;
   }
 
+  // Skip tiny images (likely placeholders, e.g. Seeed CDN placeholder icon)
+  const MIN_SOURCE_BYTES = 12_000;
+  if (buffer.length < MIN_SOURCE_BYTES) {
+    console.warn(
+      `Source image too small (${buffer.length} bytes) for ${sourceUrl}; skipping to avoid blank/placeholder. Use a real product image URL in seed data.`,
+    );
+    return null;
+  }
+
   let metadata: { width?: number; height?: number };
   try {
     metadata = (await sharp(buffer).metadata()) as { width?: number; height?: number };
