@@ -22,8 +22,8 @@ const SEEED_CACHE =
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
     url: `${SEEED_CACHE}/1/0/4/104991005.jpg`,
-    alt: "TRMNL 7.5 inch OG DIY Kit - e-ink display, XIAO ESP32-S3 PLUS, battery",
-    title: "TRMNL 7.5\" OG DIY Kit - Main",
+    alt: "7.5\" Smart Home Display - e-ink display, XIAO ESP32-S3 PLUS, battery",
+    title: "7.5\" Smart Home Display - Main",
   },
 ];
 
@@ -40,22 +40,22 @@ const DESCRIPTION = `<p>The TRMNL 7.5" (OG) DIY Kit, co-developed by Seeed Studi
 
 export const TRMNL_7_5_OG_DIY_KIT = {
   id: PRODUCT_ID,
-  name: "TRMNL 7.5\" (OG) DIY Kit",
+  name: "7.5\" Smart Home Display",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
   mainImageAlt:
-    "TRMNL 7.5 inch OG DIY Kit - e-ink display, XIAO ESP32-S3 PLUS, battery. Seeed Studio x TRMNL.",
-  mainImageTitle: "TRMNL 7.5\" OG DIY Kit | Seeed Studio x TRMNL",
+    "7.5\" Smart Home Display - e-ink display, XIAO ESP32-S3 PLUS, battery. Seeed Studio x TRMNL.",
+  mainImageTitle: "7.5\" Smart Home Display | Seeed Studio x TRMNL",
   priceCents: PRICE_CENTS,
   costPerItemCents: COST_CENTS,
   categoryId: CATEGORY_ID,
   brand: "Seeed Studio",
-  model: "TRMNL 7.5\" OG",
+  model: "7.5\" Smart Home Display",
   description: DESCRIPTION,
   features: FEATURES,
   metaDescription:
-    "TRMNL 7.5\" OG DIY Kit: e-ink display, XIAO ESP32-S3 PLUS, battery. Home Assistant, 375+ TRMNL plugins. Seeed Studio x TRMNL. Buy at Culture.",
-  pageTitle: "TRMNL 7.5\" OG DIY Kit | Seeed Studio | Culture",
+    "7.5\" Smart Home Display: e-ink display, XIAO ESP32-S3 PLUS, battery. Home Assistant, 375+ TRMNL plugins. Seeed Studio x TRMNL. Buy at Culture.",
+  pageTitle: "7.5\" Smart Home Display | Seeed Studio | Culture",
   sku: "104991005",
   hasVariants: false,
   continueSellingWhenOutOfStock: true,

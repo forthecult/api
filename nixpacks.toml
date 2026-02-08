@@ -1,0 +1,3 @@
+# Force Node/Next.js build and start (avoids Rust detection from programs/Cargo.toml)
+[start]
+cmd = "bun run start"

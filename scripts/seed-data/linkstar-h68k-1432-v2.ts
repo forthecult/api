@@ -23,12 +23,12 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
     url: `${SEEED_CACHE}/1/0/2/102110958.jpg`,
     alt: "LinkStar H68K V2 router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
-    title: "LinkStar H68K-1432 V2 - Main",
+    title: "LinkStar-WiFi Router - Main",
   },
   {
     url: `${SEEED_CACHE}/l/i/linkstar-h68k-v2-02.jpg`,
-    alt: "LinkStar H68K V2 - ports and interfaces",
-    title: "LinkStar H68K V2 - Ports",
+    alt: "LinkStar-WiFi Router - ports and interfaces",
+    title: "LinkStar-WiFi Router - Ports",
   },
 ];
 
@@ -45,22 +45,22 @@ const DESCRIPTION = `<p>LinkStar-H68K-V2 router equips a quad-core Cortex-A55 RK
 
 export const LINKSTAR_H68K_1432_V2 = {
   id: PRODUCT_ID,
-  name: "LinkStar-H68K-1432 V2",
+  name: "LinkStar-WiFi Router",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
   mainImageAlt:
-    "LinkStar H68K-1432 V2 router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
-  mainImageTitle: "LinkStar H68K-1432 V2 | Seeed Studio",
+    "LinkStar-WiFi Router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
+  mainImageTitle: "LinkStar-WiFi Router | Seeed Studio",
   priceCents: PRICE_CENTS,
   costPerItemCents: COST_CENTS,
   categoryId: CATEGORY_ID,
   brand: "Seeed Studio",
-  model: "LinkStar-H68K-1432 V2",
+  model: "LinkStar-WiFi Router",
   description: DESCRIPTION,
   features: FEATURES,
   metaDescription:
-    "LinkStar H68K-1432 V2: quad-core RK3568 router with dual-2.5G and dual-1G Ethernet, Wi-Fi 6. Seeed Studio. Buy at Culture.",
-  pageTitle: "LinkStar H68K-1432 V2 | Seeed Studio | Culture",
+    "LinkStar-WiFi Router: quad-core RK3568 router with dual-2.5G and dual-1G Ethernet, Wi-Fi 6. Seeed Studio. Buy at Culture.",
+  pageTitle: "LinkStar-WiFi Router | Seeed Studio | Culture",
   sku: "102110958",
   hasVariants: false,
   continueSellingWhenOutOfStock: true,

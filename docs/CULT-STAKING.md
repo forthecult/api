@@ -19,17 +19,18 @@ Program-based staking for the CULT token on Solana. Users stake CULT into a pool
 
 ### Build
 
-From the `relivator` directory:
+From the `relivator/programs` directory (Anchor workspace lives here so the app root stays Node-only for deployment):
 
 ```bash
-anchor build
+cd programs && anchor build
 ```
 
-The program binary is in `target/deploy/`. The program ID is in `programs/cult_staking/src/lib.rs` (`declare_id!(...)`). After first build, run `anchor keys list` to see the keypair; deploy with that keypair or replace the ID in the code and rebuild.
+The program binary is in `programs/target/deploy/`. The program ID is in `programs/cult_staking/src/lib.rs` (`declare_id!(...)`). After first build, run `anchor keys list` to see the keypair; deploy with that keypair or replace the ID in the code and rebuild.
 
 ### Deploy (e.g. devnet)
 
 ```bash
+cd programs
 solana config set --url devnet
 anchor deploy --provider.cluster devnet
 ```

@@ -22,8 +22,8 @@ const SEEED_CACHE =
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
     url: `${SEEED_CACHE}/1/0/9/109990586.jpg`,
-    alt: "XIAO Smart IR Mate - Wi-Fi IR remote control hub for Home Assistant",
-    title: "XIAO Smart IR Mate - Main",
+    alt: "Smart Infrared (IR) Mate - Wi-Fi IR remote control hub for Home Assistant",
+    title: "Smart Infrared (IR) Mate - Main",
   },
 ];
 
@@ -37,22 +37,22 @@ const DESCRIPTION = `<p>The XIAO IR Mate is a compact smart infrared remote cont
 
 export const XIAO_SMART_IR_MATE = {
   id: PRODUCT_ID,
-  name: "XIAO Smart IR Mate",
+  name: "Smart Infrared (IR) Mate",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
   mainImageAlt:
-    "XIAO Smart IR Mate - Wi-Fi IR remote hub for Home Assistant. Control TVs, AC, fans.",
-  mainImageTitle: "XIAO Smart IR Mate | Seeed Studio",
+    "Smart Infrared (IR) Mate - Wi-Fi IR remote hub for Home Assistant. Control TVs, AC, fans.",
+  mainImageTitle: "Smart Infrared (IR) Mate | Seeed Studio",
   priceCents: PRICE_CENTS,
   costPerItemCents: COST_CENTS,
   categoryId: CATEGORY_ID,
   brand: "Seeed Studio",
-  model: "XIAO Smart IR Mate",
+  model: "Smart Infrared (IR) Mate",
   description: DESCRIPTION,
   features: FEATURES,
   metaDescription:
-    "XIAO Smart IR Mate: Wi-Fi IR remote hub for Home Assistant. Control TVs, AC, fans. One-touch learning. Seeed Studio. Buy at Culture.",
-  pageTitle: "XIAO Smart IR Mate | Seeed Studio | Culture",
+    "Smart Infrared (IR) Mate: Wi-Fi IR remote hub for Home Assistant. Control TVs, AC, fans. One-touch learning. Seeed Studio. Buy at Culture.",
+  pageTitle: "Smart Infrared (IR) Mate | Seeed Studio | Culture",
   sku: "109990586",
   hasVariants: false,
   continueSellingWhenOutOfStock: true,
