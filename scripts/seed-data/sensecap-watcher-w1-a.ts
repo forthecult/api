@@ -16,22 +16,22 @@ const PRODUCT_ID = "sensecap-watcher-w1-a";
 const PRODUCT_SLUG = "sensecap-watcher-w1-a";
 const CATEGORY_ID = "smart-home";
 
-const SEEED_CACHE =
-  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_CACHE}/1/1/3/113991315.jpg`,
+    url: `${SEEED_MEDIA}/1/1/3/113991315.jpg`,
     alt: "SenseCAP Watcher W1-A - physical AI agent with camera, mic, speaker",
     title: "SenseCAP Watcher W1-A - Main",
   },
   {
-    url: `${SEEED_CACHE}/s/e/sensecap-watcher-w1-a-clear.jpg`,
+    url: `${SEEED_MEDIA}/s/e/sensecap-watcher-w1-a-clear.jpg`,
     alt: "SenseCAP Watcher W1-A Clear Enclosure",
     title: "SenseCAP Watcher - Clear",
   },
   {
-    url: `${SEEED_CACHE}/s/e/sensecap-watcher-w1-a-white.jpg`,
+    url: `${SEEED_MEDIA}/s/e/sensecap-watcher-w1-a-white.jpg`,
     alt: "SenseCAP Watcher W1-A White Enclosure",
     title: "SenseCAP Watcher - White",
   },

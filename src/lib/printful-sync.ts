@@ -209,6 +209,56 @@ export async function importSizeChartsForAllPrintfulProducts(): Promise<{
 }
 
 /**
+ * Import size chart for a single Printful product by our product id.
+ * Uses the product's stored externalId (catalog product id), brand, and model.
+ * Call this after a single-product resync to ensure the size chart is pulled even if the in-flow import was skipped or failed.
+ */
+export async function importSizeChartForPrintfulProduct(
+  productId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return { success: false, error: "Printful not configured" };
+  }
+
+  const [row] = await db
+    .select({
+      source: productsTable.source,
+      externalId: productsTable.externalId,
+      brand: productsTable.brand,
+      model: productsTable.model,
+    })
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (!row || row.source !== "printful" || row.externalId == null) {
+    return {
+      success: false,
+      error: "Product not found or is not a Printful product with catalog id",
+    };
+  }
+
+  const catalogProductId = Number.parseInt(String(row.externalId), 10);
+  if (!Number.isFinite(catalogProductId) || catalogProductId <= 0) {
+    return { success: false, error: "Invalid catalog product id" };
+  }
+
+  const brand = (row.brand?.trim() || "Printful").trim() || "Printful";
+  const model =
+    (row.model?.trim() || String(catalogProductId)).trim() ||
+    String(catalogProductId);
+
+  try {
+    await upsertPrintfulSizeChart(catalogProductId, brand, model);
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { success: false, error: message };
+  }
+}
+
+/**
  * Import a single Printful sync product by ID.
  */
 const PRINTFUL_VARIANT_RETRY_DELAYS_MS = [2000, 5000];

@@ -16,12 +16,12 @@ const PRODUCT_ID = "trmnl-7-5-og-diy-kit";
 const PRODUCT_SLUG = "trmnl-7-5-og-diy-kit";
 const CATEGORY_ID = "smart-home";
 
-const SEEED_CACHE =
-  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_CACHE}/1/0/4/104991005.jpg`,
+    url: `${SEEED_MEDIA}/1/0/4/104991005.jpg`,
     alt: "7.5\" Smart Home Display - e-ink display, XIAO ESP32-S3 PLUS, battery",
     title: "7.5\" Smart Home Display - Main",
   },

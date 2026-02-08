@@ -73,6 +73,14 @@ const CURATED_PRODUCTS = [
   XIAO_SMART_IR_MATE,
 ];
 
+/** Seeed (and similar) product IDs: always replace images from seed on re-seed so source URLs can be re-uploaded to UploadThing. */
+const SEEED_PRODUCT_IDS = new Set([
+  SENSECAP_WATCHER_W1_A.id,
+  LINKSTAR_H68K_1432_V2.id,
+  XIAO_SMART_IR_MATE.id,
+  TRMNL_7_5_OG_DIY_KIT.id,
+]);
+
 async function seed() {
   console.log(
     "Seeding products… (run seed-categories.ts first to create categories)",
@@ -254,6 +262,7 @@ async function seed() {
     });
 
   // If a curated product already has images on UploadThing, do not overwrite with seed URLs (avoids replacing good images with CDN/thumbnails on re-seed).
+  // Exception: Seeed products always get images replaced from seed so we can fix broken/placeholder images and re-upload.
   const existingCurated = await db
     .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
     .from(productsTable)
@@ -266,8 +275,9 @@ async function seed() {
 
   for (const p of CURATED_PRODUCTS) {
     const productId = p.id;
+    const forceReplaceImages = SEEED_PRODUCT_IDS.has(productId);
 
-    if (p.images?.length && !hasUploadThingImages.has(productId)) {
+    if (p.images?.length && (forceReplaceImages || !hasUploadThingImages.has(productId))) {
       await db
         .delete(productImagesTable)
         .where(eq(productImagesTable.productId, productId));

@@ -6,6 +6,7 @@ import { productsTable } from "~/db/schema";
 import {
   importAllPrintfulProducts,
   importSinglePrintfulProduct,
+  importSizeChartForPrintfulProduct,
   importSizeChartsForAllPrintfulProducts,
   exportProductToPrintful,
   exportAllPrintfulProducts,
@@ -116,10 +117,26 @@ export async function POST(request: NextRequest) {
           body.overwrite ?? false,
         );
 
+        // Always try to import size chart after single-product sync (uses DB brand/model/externalId)
+        const sizeChartResult = await importSizeChartForPrintfulProduct(
+          result.productId,
+        ).catch((err) => ({
+          success: false as const,
+          error: err instanceof Error ? err.message : String(err),
+        }));
+        if (!sizeChartResult.success && sizeChartResult.error) {
+          console.warn(
+            "Printful single-product sync: size chart import failed",
+            result.productId,
+            sizeChartResult.error,
+          );
+        }
+
         return NextResponse.json({
           success: true,
           action: result.action,
           productId: result.productId,
+          sizeChartImported: sizeChartResult.success,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

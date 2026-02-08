@@ -16,17 +16,17 @@ const PRODUCT_ID = "linkstar-h68k-1432-v2";
 const PRODUCT_SLUG = "linkstar-h68k-1432-v2";
 const CATEGORY_ID = "smart-home";
 
-const SEEED_CACHE =
-  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_CACHE}/1/0/2/102110958.jpg`,
+    url: `${SEEED_MEDIA}/1/0/2/102110958.jpg`,
     alt: "LinkStar H68K V2 router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
     title: "LinkStar-WiFi Router - Main",
   },
   {
-    url: `${SEEED_CACHE}/l/i/linkstar-h68k-v2-02.jpg`,
+    url: `${SEEED_MEDIA}/l/i/linkstar-h68k-v2-02.jpg`,
     alt: "LinkStar-WiFi Router - ports and interfaces",
     title: "LinkStar-WiFi Router - Ports",
   },

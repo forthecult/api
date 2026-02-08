@@ -16,12 +16,12 @@ const PRODUCT_ID = "xiao-smart-ir-mate";
 const PRODUCT_SLUG = "xiao-smart-ir-mate";
 const CATEGORY_ID = "smart-home";
 
-const SEEED_CACHE =
-  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_CACHE}/1/0/9/109990586.jpg`,
+    url: `${SEEED_MEDIA}/1/0/9/109990586.jpg`,
     alt: "Smart Infrared (IR) Mate - Wi-Fi IR remote control hub for Home Assistant",
     title: "Smart Infrared (IR) Mate - Main",
   },
