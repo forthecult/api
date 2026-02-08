@@ -38,6 +38,22 @@ export function isUploadThingUrl(url: string | null): boolean {
   }
 }
 
+/** Seeed cache URL → direct catalog URL (often returns real image when cache returns placeholder). */
+export function getSeeedDirectUrl(cacheUrl: string): string | null {
+  if (!cacheUrl.includes("seeedstudio.com")) return null;
+  if (!cacheUrl.includes("/cache/")) return null;
+  try {
+    const u = new URL(cacheUrl);
+    const path = u.pathname;
+    const cacheSegment = /\/cache\/[^/]+\/[^/]+\/[^/]+\/[^/]+\//;
+    if (!cacheSegment.test(path)) return null;
+    u.pathname = path.replace(cacheSegment, "/");
+    return u.toString();
+  } catch {
+    return null;
+  }
+}
+
 /** Optimize image buffer to WebP (smaller, fast). */
 export async function optimizeImageToWebP(
   buffer: Buffer,
@@ -100,42 +116,49 @@ export async function uploadMockupToUploadThing(
   const filename = buildSeoFilename(productName, { variantLabel, index });
   const alt = params.alt ?? buildSeoAlt(productName, { variantLabel, index });
 
-  let buffer: Buffer;
-  try {
-    const res = await fetch(sourceUrl, {
-      headers: {
-        Accept: "image/*",
-        "User-Agent":
-          "Mozilla/5.0 (compatible; CultureStore/1.0; image-fetch)",
-      },
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok) {
-      console.warn(`Fetch failed ${res.status}: ${sourceUrl}`);
-      return null;
-    }
-    const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
-    if (contentType.startsWith("text/") || contentType.includes("html")) {
-      console.warn(`Source returned non-image (${contentType}): ${sourceUrl}`);
-      return null;
-    }
-    if (contentType.length > 0 && !contentType.startsWith("image/")) {
-      console.warn(`Source may not be image (${contentType}): ${sourceUrl}`);
-    }
-    const arr = await res.arrayBuffer();
-    buffer = Buffer.from(arr);
-  } catch (err) {
-    console.warn(`Fetch error for ${sourceUrl}:`, err);
-    return null;
-  }
-
-  if (buffer.length === 0) {
-    console.warn(`Empty image: ${sourceUrl}`);
-    return null;
-  }
-
-  // Skip tiny images (likely placeholders, e.g. Seeed CDN placeholder icon)
   const MIN_SOURCE_BYTES = 12_000;
+  const fetchOptions = {
+    headers: {
+      Accept: "image/*",
+      "User-Agent": "Mozilla/5.0 (compatible; CultureStore/1.0; image-fetch)",
+    },
+    signal: AbortSignal.timeout(30_000) as AbortSignal,
+  };
+
+  async function fetchImageBuffer(url: string): Promise<Buffer | null> {
+    try {
+      const res = await fetch(url, fetchOptions);
+      if (!res.ok) return null;
+      const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+      if (contentType.startsWith("text/") || contentType.includes("html"))
+        return null;
+      const arr = await res.arrayBuffer();
+      return Buffer.from(arr);
+    } catch {
+      return null;
+    }
+  }
+
+  let buffer: Buffer | null = await fetchImageBuffer(sourceUrl);
+  if (!buffer || buffer.length === 0) {
+    console.warn(`Empty or failed fetch: ${sourceUrl}`);
+    return null;
+  }
+
+  // If Seeed cache returned a tiny image (placeholder), try direct catalog URL for real image
+  if (
+    buffer.length < MIN_SOURCE_BYTES &&
+    sourceUrl.includes("seeedstudio.com")
+  ) {
+    const directUrl = getSeeedDirectUrl(sourceUrl);
+    if (directUrl && directUrl !== sourceUrl) {
+      const directBuffer = await fetchImageBuffer(directUrl);
+      if (directBuffer && directBuffer.length >= MIN_SOURCE_BYTES) {
+        buffer = directBuffer;
+      }
+    }
+  }
+
   if (buffer.length < MIN_SOURCE_BYTES) {
     console.warn(
       `Source image too small (${buffer.length} bytes) for ${sourceUrl}; skipping to avoid blank/placeholder. Use a real product image URL in seed data.`,

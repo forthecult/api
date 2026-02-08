@@ -208,6 +208,7 @@ async function main() {
 
   const utapi = new UTApi({ token: getUploadThingToken()! });
   const urlToNew = new Map<string, { newUrl: string; alt: string }>();
+  const skippedUrls = new Set<string>();
 
   for (const s of specs) {
     const result = await uploadMockupToUploadThing(utapi, {
@@ -221,11 +222,29 @@ async function main() {
       urlToNew.set(s.sourceUrl, { newUrl: result.url, alt: result.alt });
       console.log(`  Uploaded: ${result.filename} → ${result.url}`);
     } else {
+      skippedUrls.add(s.sourceUrl);
       console.log(`  Skipped (fetch failed or placeholder): ${s.sourceUrl.slice(0, 80)}...`);
     }
   }
 
-  if (urlToNew.size === 0) {
+  // Remove placeholder/failed URLs from DB so we don't display them (e.g. Seeed placeholder images)
+  if (skippedUrls.size > 0) {
+    const now = new Date();
+    for (const url of skippedUrls) {
+      await db.delete(productImagesTable).where(eq(productImagesTable.url, url));
+      await db
+        .update(productsTable)
+        .set({ imageUrl: null, updatedAt: now })
+        .where(eq(productsTable.imageUrl, url));
+      await db
+        .update(productVariantsTable)
+        .set({ imageUrl: null, updatedAt: now })
+        .where(eq(productVariantsTable.imageUrl, url));
+    }
+    console.log(`Removed ${skippedUrls.size} placeholder/failed image URL(s) from DB.`);
+  }
+
+  if (urlToNew.size === 0 && skippedUrls.size === 0) {
     console.log("No images were successfully uploaded. Check source URLs and token.");
     process.exit(1);
   }

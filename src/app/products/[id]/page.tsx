@@ -33,20 +33,8 @@ import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 /*                               Type declarations                            */
 /* -------------------------------------------------------------------------- */
 
-export type ProductVariantOption = {
-  id: string;
-  size?: string;
-  color?: string;
-  /** Gender/style option (e.g. Men's / Women's). */
-  gender?: string;
-  /** Display label (e.g. "Bella + Canvas 3001 / Black / S") – used when size/color not available. */
-  label?: string;
-  priceCents: number;
-  stockQuantity?: number;
-  imageUrl?: string;
-};
-
-export type ProductOptionDefinition = { name: string; values: string[] };
+import type { ProductOptionDefinition, ProductVariantOption } from "./types";
+export type { ProductOptionDefinition, ProductVariantOption };
 
 interface Product {
   category: string;

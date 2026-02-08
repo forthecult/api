@@ -12,7 +12,7 @@ import { ProductShare } from "~/app/products/[id]/product-share";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
-import type { ProductOptionDefinition, ProductVariantOption } from "~/app/products/[id]/page";
+import type { ProductOptionDefinition, ProductVariantOption } from "~/app/products/[id]/types";
 
 export interface LongFormProductProps {
   product: {
