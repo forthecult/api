@@ -146,6 +146,7 @@ const VARIANTS: Array<{
   imageAlt: string;
   imageTitle: string;
   stockQuantity: number;
+  label: string;
 }> = [];
 for (const gender of GENDERS) {
   for (let i = 0; i < SIZES_ROW.length; i++) {
@@ -162,6 +163,7 @@ for (const gender of GENDERS) {
       imageAlt: DEFAULT_VARIANT_IMAGE.alt,
       imageTitle: DEFAULT_VARIANT_IMAGE.title,
       stockQuantity: 99,
+      label: `${gender} ${row.usa}`,
     });
   }
 }

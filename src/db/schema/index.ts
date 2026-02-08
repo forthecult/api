@@ -64,6 +64,8 @@ export * from "./support-tickets/types";
 
 export * from "./token-gate/tables";
 
+export * from "./governance/tables";
+
 export * from "./wishlist/relations";
 export * from "./wishlist/tables";
 export * from "./wishlist/types";

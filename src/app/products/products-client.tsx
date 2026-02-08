@@ -290,7 +290,7 @@ export function ProductsClient({
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 py-10">
-        <div className="container px-4 md:px-6">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
           {/* Compact header: title + one short line of description (SEO/category intro) */}
           <header className="mb-6">
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>

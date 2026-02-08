@@ -98,9 +98,9 @@ const SOLSCAN_BASE = "https://solscan.io/account";
 
 /** Creator fee allocation: value is numeric % for pie chart; chartLabel = short text on pie. subjectToChange = show * and note below table. */
 const creatorFeeAllocations = [
-  { value: 5, pct: "5%", label: "Buy back and burn", chartLabel: "5% Buy back & burn", wallet: "BURNakw9tnzqnKeMi2BqDRjZzT2athWK2CfKTAxrrMYX", subjectToChange: false },
-  { value: 5, pct: "5%", label: "Staked token holders", chartLabel: "5% Staked holders", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: false },
-  { value: 5, pct: "5%", label: "Charity", chartLabel: "5% Charity", wallet: "G1VEprcoHRHa1FE3o64fNpypfbP7adCBsgHW1fJiWdjS", subjectToChange: false },
+  { value: 5, pct: "5%", label: "Buy back and burn", chartLabel: "5% Buy back & burn", wallet: "UvbzCHxWyJc5uFoQc44sFRDucLV3AuWLoB3nfPtBURN", subjectToChange: false },
+  { value: 5, pct: "5%", label: "Staked token holders", chartLabel: "5% Staked holders", wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT", subjectToChange: false },
+  { value: 5, pct: "5%", label: "Charity", chartLabel: "5% Charity", wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE", subjectToChange: false },
   { value: 15, pct: "13.37%", label: "Marketing and advertising", chartLabel: "13.37% Marketing", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: true },
   { value: 20, pct: "20%", label: "Subsidize shipping and product prices", chartLabel: "20% Shipping & prices", wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ", subjectToChange: true },
   { value: 20, pct: "20%", label: "Product inventory and development", chartLabel: "20% Product & inventory", wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm", subjectToChange: true },
@@ -322,7 +322,7 @@ export default function TokenPage() {
             </p>
           </div>
           <div className="flex flex-col gap-10">
-            {/* Pie chart: viewBox 130 so pie ~65% of container (~25% bigger); lines 25% longer (rLabel 67) */}
+            {/* Pie chart: viewBox 130; pie radius 42. Lines run from pie to fixed rLineEnd (equal length); labels at rLabel so text sits behind lines (drawn first). */}
             <div className="flex flex-col items-center overflow-visible px-2 py-8 md:px-6 md:py-10">
               <div
                 className="relative w-full max-w-[380px] overflow-visible"
@@ -342,44 +342,58 @@ export default function TokenPage() {
                 >
                   {(() => {
                     const rPie = 42
-                    const rLabel = 67
+                    const rLineEnd = 58
+                    const rLabel = 70
                     let cum = 0
-                    return creatorFeeAllocations.map((a) => {
+                    const points = creatorFeeAllocations.map((a) => {
                       const midDeg = (cum + a.value / 2) * 3.6
                       cum += a.value
                       const rad = (midDeg * Math.PI) / 180
-                      const xEdge = 50 + rPie * Math.sin(rad)
-                      const yEdge = 50 - rPie * Math.cos(rad)
-                      const xLabel = 50 + rLabel * Math.sin(rad)
-                      const yLabel = 50 - rLabel * Math.cos(rad)
-                      const chartText =
-                        "chartLabel" in a && typeof a.chartLabel === "string"
-                          ? a.chartLabel
-                          : `${a.pct} ${a.label}`
-                      return (
-                        <g key={a.label}>
-                          <line
-                            x1={xEdge}
-                            y1={yEdge}
-                            x2={xLabel}
-                            y2={yLabel}
-                            stroke="var(--muted-foreground)"
-                            strokeWidth="0.8"
-                            strokeOpacity={0.8}
-                          />
+                      return {
+                        key: a.label,
+                        xEdge: 50 + rPie * Math.sin(rad),
+                        yEdge: 50 - rPie * Math.cos(rad),
+                        xLineEnd: 50 + rLineEnd * Math.sin(rad),
+                        yLineEnd: 50 - rLineEnd * Math.cos(rad),
+                        xLabel: 50 + rLabel * Math.sin(rad),
+                        yLabel: 50 - rLabel * Math.cos(rad),
+                        chartText:
+                          "chartLabel" in a && typeof a.chartLabel === "string"
+                            ? a.chartLabel
+                            : `${a.pct} ${a.label}`,
+                      }
+                    })
+                    return (
+                      <>
+                        {/* Labels drawn first so lines render on top (words behind lines) */}
+                        {points.map((p) => (
                           <text
-                            x={xLabel}
-                            y={yLabel}
+                            key={`${p.key}-text`}
+                            x={p.xLabel}
+                            y={p.yLabel}
                             textAnchor="middle"
                             dominantBaseline="middle"
                             className="fill-foreground font-medium"
                             style={{ fontSize: "6px" }}
                           >
-                            {chartText}
+                            {p.chartText}
                           </text>
-                        </g>
-                      )
-                    })
+                        ))}
+                        {/* Connector lines: same length for all (pie edge to rLineEnd), drawn on top of text */}
+                        {points.map((p) => (
+                          <line
+                            key={`${p.key}-line`}
+                            x1={p.xEdge}
+                            y1={p.yEdge}
+                            x2={p.xLineEnd}
+                            y2={p.yLineEnd}
+                            stroke="var(--muted-foreground)"
+                            strokeWidth="0.8"
+                            strokeOpacity={0.8}
+                          />
+                        ))}
+                      </>
+                    )
                   })()}
                 </svg>
               </div>
@@ -515,12 +529,20 @@ export default function TokenPage() {
 
         {/* CTA */}
         <section className="flex flex-col items-center gap-4 py-6 text-center">
-          <Link href="/products">
-            <Button size="lg" className="gap-2">
-              Shop with CULT at checkout
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link href="/token/stake">
+              <Button size="lg" variant="default" className="gap-2">
+                Stake &amp; Vote
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+            <Link href="/products">
+              <Button size="lg" variant="outline" className="gap-2">
+                Shop with CULT at checkout
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
           <p className="text-sm text-muted-foreground">
             Use CULT token at checkout for up to 20% off eligible purchases.
           </p>

@@ -323,15 +323,64 @@ function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | 
 }
 
 /**
- * Create a new local product from Printful sync product data.
+ * Normalize Printful size guide API response to our stored JSON shape.
+ * Supports: res.data (v2), res.result (v1), or direct payload (size_tables at top level).
  */
 function normalizeSizeGuideData(
-  res: { data?: { available_sizes?: string[]; size_tables?: Array<{ type: string; unit: string; description?: string; image_url?: string; measurements?: unknown }> } } | null,
+  res:
+    | {
+        data?: {
+          available_sizes?: string[];
+          size_tables?: Array<{
+            type: string;
+            unit: string;
+            description?: string;
+            image_url?: string;
+            measurements?: unknown;
+          }>;
+        };
+        result?: {
+          available_sizes?: string[];
+          size_tables?: Array<{
+            type: string;
+            unit: string;
+            description?: string;
+            image_url?: string;
+            measurements?: unknown;
+          }>;
+        };
+        available_sizes?: string[];
+        size_tables?: Array<{
+          type: string;
+          unit: string;
+          description?: string;
+          image_url?: string;
+          measurements?: unknown;
+        }>;
+      }
+    | null,
 ): { availableSizes: string[]; sizeTables: Array<{ type: string; unit: string; description?: string; image_url?: string; measurements?: unknown }> } | null {
-  if (!res?.data?.size_tables?.length) return null;
+  type Payload = {
+    available_sizes?: string[];
+    size_tables?: Array<{
+      type: string;
+      unit: string;
+      description?: string;
+      image_url?: string;
+      measurements?: unknown;
+    }>;
+  };
+  const raw =
+    res == null
+      ? null
+      : (res as { data?: Payload; result?: Payload }).data ??
+        (res as { result?: Payload }).result ??
+        (res as Payload);
+  const payload: Payload | null = raw;
+  if (!payload?.size_tables?.length) return null;
   return {
-    availableSizes: res.data.available_sizes ?? [],
-    sizeTables: res.data.size_tables.map((t) => ({
+    availableSizes: payload.available_sizes ?? [],
+    sizeTables: payload.size_tables.map((t) => ({
       type: t.type,
       unit: t.unit,
       description: t.description,
@@ -381,13 +430,15 @@ async function upsertPrintfulSizeChart(
     const displayName = "T-Shirts"; // default; could derive from catalog product type
     const id = nanoid();
     const now = new Date();
+    const brandTrimmed = brand.trim() || "Printful";
+    const modelTrimmed = model.trim() || String(catalogProductId);
     await db
       .insert(sizeChartsTable)
       .values({
         id,
         provider: "printful",
-        brand,
-        model,
+        brand: brandTrimmed,
+        model: modelTrimmed,
         displayName,
         dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
         dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,

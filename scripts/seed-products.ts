@@ -7,7 +7,7 @@
 
 import "dotenv/config";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
@@ -19,6 +19,8 @@ import {
   sizeChartsTable,
 } from "../src/db/schema";
 import { isUploadThingUrl } from "../src/lib/product-mockup-upload";
+import { isShippingExcluded } from "../src/lib/shipping-restrictions";
+import { POD_SHIPPING_COUNTRY_CODES } from "../src/lib/pod-shipping-countries";
 import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
 import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
@@ -137,18 +139,53 @@ async function seed() {
     return;
   }
 
+  // Upsert products so re-seed updates optionDefinitionsJson, hasVariants, etc. (fixes Earth Runners Men/Women + Size)
   await db
     .insert(productsTable)
     .values(allProductRows)
-    .onConflictDoNothing({ target: productsTable.id });
+    .onConflictDoUpdate({
+      target: productsTable.id,
+      set: {
+        name: sql`excluded.name`,
+        slug: sql`excluded.slug`,
+        imageUrl: sql`excluded.image_url`,
+        mainImageAlt: sql`excluded.main_image_alt`,
+        mainImageTitle: sql`excluded.main_image_title`,
+        priceCents: sql`excluded.price_cents`,
+        compareAtPriceCents: sql`excluded.compare_at_price_cents`,
+        costPerItemCents: sql`excluded.cost_per_item_cents`,
+        model: sql`excluded.model`,
+        description: sql`excluded.description`,
+        featuresJson: sql`excluded.features_json`,
+        brand: sql`excluded.brand`,
+        metaDescription: sql`excluded.meta_description`,
+        pageTitle: sql`excluded.page_title`,
+        sku: sql`excluded.sku`,
+        weightGrams: sql`excluded.weight_grams`,
+        weightUnit: sql`excluded.weight_unit`,
+        hasVariants: sql`excluded.has_variants`,
+        optionDefinitionsJson: sql`excluded.option_definitions_json`,
+        pageLayout: sql`excluded.page_layout`,
+        handlingDaysMin: sql`excluded.handling_days_min`,
+        handlingDaysMax: sql`excluded.handling_days_max`,
+        updatedAt: sql`excluded.updated_at`,
+      },
+    });
 
-  // Restrict availability by country when product defines availableCountryCodes (e.g. US-only for Spout)
+  // Seed markets (shipping countries) for every curated product: explicit list or full POD list minus exclusions
+  const shippingAllowedCountries = POD_SHIPPING_COUNTRY_CODES.filter(
+    (c) => !isShippingExcluded(c),
+  );
   for (const p of CURATED_PRODUCTS) {
-    const codes = (p as { availableCountryCodes?: readonly string[] }).availableCountryCodes;
-    if (codes?.length) {
-      await db
-        .delete(productAvailableCountryTable)
-        .where(eq(productAvailableCountryTable.productId, p.id));
+    const explicit = (p as { availableCountryCodes?: readonly string[] }).availableCountryCodes;
+    const codes =
+      explicit?.length && explicit.length > 0
+        ? explicit.filter((c) => !isShippingExcluded(c))
+        : shippingAllowedCountries;
+    await db
+      .delete(productAvailableCountryTable)
+      .where(eq(productAvailableCountryTable.productId, p.id));
+    if (codes.length > 0) {
       await db.insert(productAvailableCountryTable).values(
         codes.map((countryCode) => ({ productId: p.id, countryCode })),
       );
@@ -257,6 +294,7 @@ async function seed() {
         imageAlt?: string;
         imageTitle?: string;
         stockQuantity?: number;
+        label?: string;
       }>;
     }).variants;
     if (variants?.length) {
@@ -275,6 +313,7 @@ async function seed() {
           imageAlt: v.imageAlt ?? null,
           imageTitle: v.imageTitle ?? null,
           stockQuantity: v.stockQuantity ?? null,
+          label: (v as { label?: string }).label ?? null,
           availabilityStatus: (v.stockQuantity ?? 0) > 0 ? "in_stock" : null,
           createdAt: now,
           updatedAt: now,

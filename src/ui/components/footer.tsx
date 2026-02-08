@@ -166,6 +166,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground
                     hover:text-foreground
                   `}
+                  href="/token/stake"
+                >
+                  Stake &amp; Vote
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground
+                    hover:text-foreground
+                  `}
                   href="/lookbook"
                 >
                   Lookbook
