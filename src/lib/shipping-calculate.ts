@@ -25,6 +25,7 @@ import { userMeetsTokenHolderCondition } from "~/lib/token-holder-balance";
 import {
   fetchShippingRates,
   getPrintfulIfConfigured,
+  type PrintfulRecipient,
   type PrintfulShippingOrderItem,
   type PrintfulShippingRateOption,
 } from "~/lib/printful";
@@ -326,7 +327,9 @@ async function calculatePrintfulShipping(
 
   const pf = getPrintfulIfConfigured();
   if (!pf) {
-    console.warn("Printful not configured, cannot calculate Printful shipping");
+    console.warn(
+      "[Printful shipping] PRINTFUL_API_TOKEN is not set; cannot calculate Printful shipping.",
+    );
     return { shippingCents: 0, rate: null };
   }
 
@@ -350,16 +353,28 @@ async function calculatePrintfulShipping(
       input.countryCode,
       input.stateCode,
     );
+    // US, CA, AU require state_code for Printful to return rates
+    const needsState = /^(US|CA|AU)$/i.test(input.countryCode);
+    if (needsState && !stateCode?.trim()) {
+      console.warn(
+        "[Printful shipping] state_code required for US/CA/AU but missing or invalid; request may return no rates.",
+        { countryCode: input.countryCode, stateCode: input.stateCode },
+      );
+    }
+
+    const address1 = (input.address1 ?? "").trim() || undefined;
+    const recipient: PrintfulRecipient = {
+      country_code: input.countryCode,
+      ...(stateCode && { state_code: stateCode }),
+      ...(input.city?.trim() && { city: input.city.trim() }),
+      ...(input.zip?.trim() && { zip: input.zip.trim() }),
+      // Printful needs address1 for accurate rates; omit or use placeholder only when missing
+      address1: address1 || "TBD",
+    };
 
     const response = await fetchShippingRates(
       {
-        recipient: {
-          country_code: input.countryCode,
-          state_code: stateCode,
-          city: input.city,
-          zip: input.zip,
-          address1: input.address1 || "TBD", // Printful needs at least something
-        },
+        recipient,
         order_items: orderItems,
         currency: "USD",
       },
@@ -368,8 +383,12 @@ async function calculatePrintfulShipping(
 
     if (response.data.length === 0) {
       console.warn(
-        "No Printful shipping rates available (check address: US/CA/AU require state_code)",
-        { country: input.countryCode, hasState: Boolean(stateCode) },
+        "[Printful shipping] No rates returned (check address: US/CA/AU require state_code; use full address when possible).",
+        {
+          country: input.countryCode,
+          stateCode: stateCode ?? input.stateCode,
+          hasAddress1: Boolean(address1),
+        },
       );
       return { shippingCents: 0, rate: null };
     }
@@ -385,7 +404,10 @@ async function calculatePrintfulShipping(
       rate: selectedRate,
     };
   } catch (error) {
-    console.error("Failed to fetch Printful shipping rates:", error);
+    console.error(
+      "[Printful shipping] Failed to fetch rates:",
+      error instanceof Error ? error.message : error,
+    );
     return { shippingCents: 0, rate: null };
   }
 }
@@ -829,6 +851,7 @@ export async function runShippingCalculate(
     }
   }
 
+  const hasPrintfulProductsInCart = products.some((p) => p.source === "printful");
   if (printfulMissingCatalogVariantIds.size > 0) {
     const logged = (globalThis as unknown as { __printfulMissingLogged?: Set<string> }).__printfulMissingLogged ?? new Set<string>();
     (globalThis as unknown as { __printfulMissingLogged: Set<string> }).__printfulMissingLogged = logged;
@@ -839,9 +862,14 @@ export async function runShippingCalculate(
     });
     if (toLog.length > 0) {
       console.warn(
-        `Printful product(s) missing catalog_variant_id for shipping (re-sync from Printful to fix): ${toLog.join(", ")}`,
+        `[Printful shipping] Product(s) missing catalog_variant_id (re-sync from Printful to fix): ${toLog.join(", ")}`,
       );
     }
+  }
+  if (hasPrintfulProductsInCart && printfulItems.length === 0) {
+    console.warn(
+      "[Printful shipping] Cart has Printful product(s) but no catalog variant IDs could be resolved. Re-sync products from Printful (admin sync or webhook) so variants have externalId.",
+    );
   }
 
   // Calculate Printful shipping (if any Printful items)

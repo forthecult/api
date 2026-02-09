@@ -71,7 +71,7 @@ type ProductVariant = {
   optionValues?: Record<string, string>;
 };
 type OptionDef = { name: string; values: string[]; isExpanded?: boolean };
-type CategoryOption = { id: string; name: string; parentName?: string | null };
+type CategoryOption = { id: string; name: string; parentName?: string | null; slug?: string | null };
 
 function slugFromName(name: string): string {
   return name

@@ -14,8 +14,10 @@ import { cn } from "~/lib/cn";
 export interface CategoryOption {
   id: string;
   name: string;
-  /** When set, show "parentName > name" in the dropdown so subcategories are distinguishable. */
+  /** When set, show "parentName → name" in the dropdown so subcategories are distinguishable. */
   parentName?: string | null;
+  /** Optional slug; used to disambiguate when two options have the same display label (e.g. two "Hoodies" under same parent). */
+  slug?: string | null;
 }
 
 interface CategorySelectProps {
@@ -49,10 +51,31 @@ export function CategorySelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  const displayName = useCallback((c: CategoryOption) => {
+  const baseDisplayName = useCallback((c: CategoryOption) => {
     if (c.parentName?.trim()) return `${c.parentName.trim()} → ${c.name}`;
     return c.name;
   }, []);
+
+  const displayNameCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of options) {
+      const label = baseDisplayName(c);
+      counts.set(label, (counts.get(label) ?? 0) + 1);
+    }
+    return counts;
+  }, [options, baseDisplayName]);
+
+  const displayName = useCallback(
+    (c: CategoryOption) => {
+      const label = baseDisplayName(c);
+      const isDuplicate = (displayNameCounts.get(label) ?? 0) > 1;
+      if (isDuplicate && c.slug?.trim()) {
+        return `${label} (${c.slug.trim()})`;
+      }
+      return label;
+    },
+    [baseDisplayName, displayNameCounts],
+  );
 
   const selectedOption = useMemo(
     () => options.find((c) => c.id === value) ?? null,

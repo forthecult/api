@@ -29,9 +29,9 @@ const ALLOWED_TAGS = [
 
 const ALLOWED_ATTRS: Record<string, string[]> = {
   a: ["href", "title", "target", "rel"],
-  span: ["class"],
+  span: ["class", "style"],
   div: ["class"],
-  p: ["class"],
+  p: ["class", "dir"],
   h2: ["class"],
   h3: ["class"],
   h4: ["class"],

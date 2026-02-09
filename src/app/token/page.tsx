@@ -257,6 +257,9 @@ export default function TokenPage() {
                 <strong className="text-foreground">Participation</strong> in
                 product offering decisions
               </li>
+                            <li>
+                <strong className="text-foreground">Future</strong> member perks and discounts as we grow
+              </li>
             </ul>
           </div>
         </section>

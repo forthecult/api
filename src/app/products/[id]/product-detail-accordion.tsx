@@ -7,6 +7,7 @@ import * as React from "react";
 import { getPaymentOptionsForDisplay } from "~/lib/checkout-payment-options";
 import { cn } from "~/lib/cn";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
+import { sanitizeProductDescription } from "~/lib/sanitize-product-description";
 
 const BASE_ITEMS = [
   { id: "description", label: "Description" },
@@ -118,6 +119,26 @@ function isApparelCategory(category: string): boolean {
   );
 }
 
+/** Render size chart description as HTML when it contains tags, otherwise as plain text. */
+function renderSizeChartDescription(description: string | null | undefined) {
+  if (!description?.trim()) return null;
+  const trimmed = description.trim();
+  const looksLikeHtml = /<[a-z][\s\S]*>/i.test(trimmed);
+  if (looksLikeHtml) {
+    const sanitized = sanitizeProductDescription(trimmed);
+    if (!sanitized) return null;
+    return (
+      <div
+        className="mb-3 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert [&_p]:mb-1 [&_p:last-child]:mb-0"
+        dangerouslySetInnerHTML={{ __html: sanitized }}
+      />
+    );
+  }
+  return (
+    <p className="mb-3 text-sm text-muted-foreground">{trimmed}</p>
+  );
+}
+
 function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: string) {
   if (!data?.sizeTables?.length) return null;
   return (
@@ -137,9 +158,7 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
           const columns = ["Size", ...measurements.map((m) => m.type_label)];
           return (
             <div key={idx} className="mb-6">
-              {table.description && (
-                <p className="mb-3 text-sm text-muted-foreground">{table.description}</p>
-              )}
+              {table.description != null && renderSizeChartDescription(table.description)}
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full min-w-[320px] border-collapse text-sm">
                   <thead>
@@ -192,9 +211,7 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
 
         return (
           <div key={idx} className="mb-4">
-            {table.description && (
-              <p className="mb-2 text-sm text-muted-foreground">{table.description}</p>
-            )}
+            {table.description != null && renderSizeChartDescription(table.description)}
             {measurements.map((m, midx) => (
               <div key={midx} className="mb-3 overflow-x-auto rounded-md border border-border">
                 <table className="w-full min-w-[200px] border-collapse text-sm">
