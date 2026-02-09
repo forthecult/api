@@ -16,7 +16,8 @@ import type { OrderPayload } from "../checkout-shared";
 export interface UseSolanaPayCheckoutArgs {
   buildOrderPayload: () => OrderPayload;
   total: number;
-  onComplete: (orderId: string | null) => void;
+  /** Called after payment is confirmed and before redirect. */
+  onComplete?: (orderId: string | null) => void;
 }
 
 export interface UseSolanaPayCheckoutResult {
@@ -59,7 +60,7 @@ export function useSolanaPayCheckout({
   const handleConfirmed = useCallback(
     (id: string) => {
       closeDialog();
-      onComplete(id);
+      onComplete?.(id);
       router.push(
         id
           ? `/checkout/success?orderId=${encodeURIComponent(id)}`

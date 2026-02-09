@@ -103,16 +103,6 @@ export const USDC_SUB_OPTIONS: {
   { value: "polygon", label: "USDC (Polygon)" },
 ];
 
-export const USDC_LOGO_SRC: Partial<
-  Record<(typeof USDC_SUB_OPTIONS)[number]["value"], string>
-> = {
-  solana: "/crypto/solana/solanaLogoMark.svg",
-  ethereum: "/crypto/ethereum/ethereum-logo.svg",
-  arbitrum: "/crypto/ethereum/ethereum-logo.svg",
-  base: "/crypto/ethereum/ethereum-logo.svg",
-  polygon: "/crypto/ethereum/ethereum-logo.svg",
-};
-
 export const USDT_SUB_OPTIONS: {
   value: "ethereum" | "arbitrum" | "bnb" | "polygon";
   label: string;
@@ -123,12 +113,3 @@ export const USDT_SUB_OPTIONS: {
   { value: "polygon", label: "USDT (Polygon)" },
 ];
 
-export const USDT_LOGO_SRC: Partial<
-  Record<(typeof USDT_SUB_OPTIONS)[number]["value"] | "base", string>
-> = {
-  ethereum: "/crypto/ethereum/ethereum-logo.svg",
-  arbitrum: "/crypto/ethereum/ethereum-logo.svg",
-  base: "/crypto/ethereum/ethereum-logo.svg",
-  polygon: "/crypto/ethereum/ethereum-logo.svg",
-  bnb: "/crypto/bnb/bnb-smart-chain.svg",
-};

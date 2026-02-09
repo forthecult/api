@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -17,8 +16,6 @@ import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import { SEO_CONFIG } from "~/app";
-import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,

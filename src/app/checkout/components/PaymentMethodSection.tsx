@@ -148,9 +148,6 @@ export function PaymentMethodSection({
   const [cryptoEthChain, setCryptoEthChain] = useState<
     "ethereum" | "arbitrum" | "base" | "polygon"
   >("ethereum");
-  const [ethereumNetwork, setEthereumNetwork] = useState<"ethereum" | "base">(
-    "ethereum",
-  );
   const [cardForm, setCardForm] = useState({
     cardNumber: "",
     cardExpiry: "",
@@ -174,7 +171,6 @@ export function PaymentMethodSection({
   } = useSolanaPayCheckout({
     buildOrderPayload,
     total,
-    onComplete: () => {},
   });
 
   const [cryptoPrices, setCryptoPrices] = useState<{
@@ -372,8 +368,9 @@ export function PaymentMethodSection({
 
   const handlePayWithSolana = useCallback(() => {
     if (!validateForPayment()) return;
+    shippingFormRef.current?.persistForm();
     openSolanaPayDialog();
-  }, [validateForPayment, openSolanaPayDialog]);
+  }, [validateForPayment, openSolanaPayDialog, shippingFormRef]);
 
   const handleGoToCryptoPay = useCallback(async () => {
     if (!validateForPayment()) return;
@@ -473,6 +470,7 @@ export function PaymentMethodSection({
     buildOrderPayload,
     paymentSubOption,
     router,
+    shippingFormRef,
     setNavigatingToPay,
     setValidationErrors,
   ]);
@@ -541,6 +539,7 @@ export function PaymentMethodSection({
     stablecoinToken,
     cryptoEthChain,
     router,
+    shippingFormRef,
     setNavigatingToPay,
     setValidationErrors,
   ]);
@@ -576,6 +575,7 @@ export function PaymentMethodSection({
     validateForPayment,
     buildOrderPayload,
     router,
+    shippingFormRef,
     setNavigatingToPay,
     setValidationErrors,
   ]);
