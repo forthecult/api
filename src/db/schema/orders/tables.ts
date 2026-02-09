@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   index,
   integer,
@@ -75,7 +76,8 @@ export const productsTable = pgTable("product", {
   weightUnit: text("weight_unit"), // "kg" | "lb"
 
   // Printful Sync Product – stores the sync_product_id from Printful for bidirectional sync
-  printfulSyncProductId: integer("printful_sync_product_id").unique(),
+  // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
+  printfulSyncProductId: bigint("printful_sync_product_id", { mode: "number" }).unique(),
   // Printify Product ID – stores the product ID from Printify for bidirectional sync
   printifyProductId: text("printify_product_id").unique(),
   // Printify print provider ID – required for Printify shipping calculation (catalog shipping profiles)
@@ -118,7 +120,8 @@ export const productVariantsTable = pgTable(
     updatedAt: timestamp("updated_at").notNull(),
 
     // Printful Sync Variant ID – stores the sync_variant_id from Printful for bidirectional sync
-    printfulSyncVariantId: integer("printful_sync_variant_id"),
+    // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
+    printfulSyncVariantId: bigint("printful_sync_variant_id", { mode: "number" }),
     // Printify Variant ID – stores the variant ID from Printify for bidirectional sync
     printifyVariantId: text("printify_variant_id"),
   },

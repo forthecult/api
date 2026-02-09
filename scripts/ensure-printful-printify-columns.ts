@@ -10,15 +10,19 @@ import "dotenv/config";
 import { conn } from "../src/db";
 
 /** Critical: must succeed or deploy fails (Printful sync + shipping need these). */
+// BIGINT: Printful sync variant/product IDs can exceed 32-bit INTEGER max (2,147,483,647)
 const criticalStatements: string[] = [
-  `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id INTEGER`,
+  `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
   `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
   `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
+  // Upgrade existing INTEGER columns to BIGINT (safe, no data loss)
+  `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
+  `ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`,
 ];
 
 /** Best-effort: indexes/constraints; may already exist under different names. */
 const optionalStatements: string[] = [
-  `ALTER TABLE product ADD COLUMN IF NOT EXISTS printful_sync_product_id INTEGER UNIQUE`,
+  `ALTER TABLE product ADD COLUMN IF NOT EXISTS printful_sync_product_id BIGINT UNIQUE`,
   `ALTER TABLE product ADD COLUMN IF NOT EXISTS printify_product_id TEXT UNIQUE`,
   `ALTER TABLE product ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP`,
   `CREATE INDEX IF NOT EXISTS idx_product_printful_sync_product_id ON product (printful_sync_product_id)`,

@@ -27,9 +27,12 @@ async function ensurePrintfulPrintifyVariantColumns(): Promise<boolean> {
   if (ensureColumnsPromise != null) return ensureColumnsPromise;
   ensureColumnsPromise = (async () => {
     const stmts = [
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id INTEGER`,
+      // Use BIGINT: Printful sync variant IDs can exceed 32-bit INTEGER max (2,147,483,647)
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
       `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
       `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
+      // Upgrade existing INTEGER columns to BIGINT (safe, no data loss)
+      `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
     ];
     for (const sql of stmts) {
       try {
@@ -42,6 +45,12 @@ async function ensurePrintfulPrintifyVariantColumns(): Promise<boolean> {
         );
         return false;
       }
+    }
+    // Best-effort: upgrade product table column too (non-blocking for variant sync)
+    try {
+      await conn.unsafe(`ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`);
+    } catch (e) {
+      console.warn("[Printful sync] Could not upgrade product.printful_sync_product_id to BIGINT:", (e as Error).message);
     }
     try {
       await conn.unsafe(
