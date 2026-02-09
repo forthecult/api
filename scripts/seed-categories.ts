@@ -93,6 +93,18 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     parentId: null,
   },
   {
+    id: "hardware-wallets",
+    name: "Hardware Wallets",
+    slug: "hardware-wallets",
+    title: "Hardware Wallets — Trezor, Ledger | Culture",
+    metaDescription:
+      "Hardware wallets for Bitcoin and crypto: Trezor, Ledger. Self-custody, secure storage. We've sold them since 2015. Pay with 50+ cryptos or card. Culture.",
+    description:
+      "Protect your assets. Hardware wallets (Trezor, Ledger) give you self-custody—your keys, your coins. We've sold them since 2015. No intermediaries holding your funds. Pay with 50+ cryptocurrencies or card.",
+    level: 1,
+    parentId: null,
+  },
+  {
     id: "shoes",
     name: "Shoes",
     slug: "shoes",
@@ -525,18 +537,6 @@ const ACCESSORIES_SUB: CategoryRow[] = [
       "Wallets and card holders. RFID-blocking, minimalist. Premium quality. Culture.",
     description:
       "Wallets and card holders for everyday carry. RFID-blocking and minimalist options. We curate for quality and durability.",
-    level: 2,
-    parentId: "accessories",
-  },
-  {
-    id: "accessories-hardware-wallets",
-    name: "Hardware Wallets",
-    slug: "hardware-wallets",
-    title: "Hardware Wallets — Trezor, Ledger | Culture",
-    metaDescription:
-      "Hardware wallets for Bitcoin and crypto: Trezor, Ledger. Self-custody, secure storage. We've sold them since 2015. Pay with 50+ cryptos or card. Culture.",
-    description:
-      "Protect your assets. Hardware wallets (Trezor, Ledger) give you self-custody—your keys, your coins. We've sold them since 2015. No intermediaries holding your funds. Pay with 50+ cryptocurrencies or card.",
     level: 2,
     parentId: "accessories",
   },

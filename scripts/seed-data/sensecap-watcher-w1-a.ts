@@ -1,6 +1,6 @@
 /**
  * Seed data for SenseCAP Watcher W1-A — physical AI agent (ESP32S3 + Himax WiseEye2).
- * Sourced from Seeed Studio (US). Brand: Seeed Studio. Category: Smart Home.
+ * Sourced from Seeed Studio (US). Brand: Seeed Studio. Category: AI.
  * US price $78; we add 5% → $81.90. Variants: Clear Enclosure, White Enclosure.
  * https://www.seeedstudio.com/SenseCAP-Watcher-W1-A-p-5979.html
  *
@@ -14,7 +14,7 @@ const PRICE_CENTS = Math.round(COST_CENTS * PRICE_MARKUP); // $81.90
 
 const PRODUCT_ID = "sensecap-watcher-w1-a";
 const PRODUCT_SLUG = "sensecap-watcher-w1-a";
-const CATEGORY_ID = "smart-home";
+const CATEGORY_ID = "ai";
 
 /** Direct catalog paths (no cache) so fetch/upload works reliably. From product page gallery + variant images. */
 const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";

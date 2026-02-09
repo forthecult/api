@@ -20,6 +20,45 @@ import {
   productImagesTable,
   sizeChartsTable,
 } from "~/db/schema";
+
+/** Ensure product_variant has Printful/Printify columns so sync and shipping work. Runs once per process before first sync. */
+let ensureColumnsPromise: Promise<void> | null = null;
+async function ensurePrintfulPrintifyVariantColumns(): Promise<void> {
+  if (ensureColumnsPromise) return ensureColumnsPromise;
+  ensureColumnsPromise = (async () => {
+    const stmts = [
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id INTEGER`,
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
+    ];
+    for (const sql of stmts) {
+      try {
+        await conn.unsafe(sql);
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[Printful sync] ensure columns failed:", msg);
+        throw new Error(
+          `Printful sync cannot add required DB column. Ensure your database user has ALTER permission on product_variant. Error: ${msg}`,
+        );
+      }
+    }
+    // Verify column exists (raw query so we definitely reference the column)
+    try {
+      await conn.unsafe(
+        "SELECT id, printful_sync_variant_id FROM product_variant LIMIT 0",
+      );
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (msg.includes("printful_sync_variant_id") || msg.includes("does not exist")) {
+        throw new Error(
+          "Column product_variant.printful_sync_variant_id still missing after ALTER. Database user may need ALTER permission. Run once: bun run db:ensure-printful-printify",
+        );
+      }
+      throw e;
+    }
+  })();
+  return ensureColumnsPromise;
+}
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { POD_SHIPPING_COUNTRY_CODES } from "~/lib/pod-shipping-countries";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
@@ -270,6 +309,7 @@ export async function importSinglePrintfulProduct(
   printfulSyncProductId: number,
   overwriteExisting = false,
 ): Promise<{ action: "imported" | "updated" | "skipped"; productId: string }> {
+  await ensurePrintfulPrintifyVariantColumns();
   // Fetch full product details including variants. Printful often returns empty sync_variants
   // right after publish; retry with delays so admin sync reliably gets size/color for the storefront.
   let syncProductFull = await fetchSyncProduct(printfulSyncProductId);
@@ -1169,12 +1209,45 @@ async function createLocalVariantFromPrintful(
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // Only treat as "column missing" when Postgres says something does not exist (e.g. column name)
+    // Duplicate key: row already exists (e.g. from partial sync). Update it and return its id.
+    const isUniqueViolation =
+      msg.includes("unique constraint") ||
+      msg.includes("duplicate key") ||
+      msg.includes("product_variant_printful_unique");
+    if (isUniqueViolation) {
+      const [existingRow] = await db
+        .select({ id: productVariantsTable.id })
+        .from(productVariantsTable)
+        .where(
+          and(
+            eq(productVariantsTable.productId, productId),
+            eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
+          ),
+        )
+        .limit(1);
+      if (existingRow) {
+        await db
+          .update(productVariantsTable)
+          .set({
+            externalId,
+            size: size ?? null,
+            color: color ?? null,
+            sku: syncVariant.sku ?? null,
+            label,
+            priceCents: safePriceCents,
+            imageUrl: imageUrl ?? null,
+            availabilityStatus: syncVariant.availability_status ?? null,
+            updatedAt: now,
+          })
+          .where(eq(productVariantsTable.id, existingRow.id));
+        return existingRow.id;
+      }
+    }
+    // Column missing: fallback INSERT without printful_sync_variant_id so external_id is stored
     const columnMissing =
       (msg.includes("does not exist") && msg.includes("printful_sync_variant_id")) ||
       (msg.includes("does not exist") && msg.includes("column"));
     if (columnMissing) {
-      // Fallback: raw INSERT without printful_sync_variant_id so external_id is stored and shipping works
       try {
         await conn`INSERT INTO product_variant (id, product_id, external_id, size, color, sku, label, price_cents, image_url, availability_status, created_at, updated_at)
           VALUES (${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null}, ${syncVariant.sku ?? null}, ${label}, ${safePriceCents}, ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now})`;
@@ -1186,9 +1259,9 @@ async function createLocalVariantFromPrintful(
           `Printful sync failed. If columns are missing run: bun run db:ensure-printful-printify then re-sync. Details: ${fallbackMsg}`,
         );
       }
-    } else {
-      throw err;
+      return variantId;
     }
+    throw err;
   }
 
   return variantId;

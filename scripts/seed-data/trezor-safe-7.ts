@@ -8,7 +8,7 @@
 const PRICE_CENTS = 21900; // ~$219
 const PRODUCT_ID = "trezor-safe-7";
 const PRODUCT_SLUG = "trezor-safe-7";
-const CATEGORY_ID = "accessories-hardware-wallets";
+const CATEGORY_ID = "hardware-wallets";
 
 // Product images from trezor.io/trezor-safe-7 (hero, color variants, device shots only)
 const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";

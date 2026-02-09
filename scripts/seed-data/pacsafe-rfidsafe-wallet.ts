@@ -1,7 +1,7 @@
 /**
  * Seed data for Pacsafe® RFIDsafe™ RFID blocking card wallet.
  * Sourced from https://pacsafe.com/products/pacsafe-rfidsafe-rfid-blocking-card-wallet
- * Pacsafe list price = our cost; sell at 4% above ($29.95 → $31.15). Brand: Pacsafe. Category: Travel Accessories.
+ * Pacsafe list price = our cost; sell at 4% above ($29.95 → $31.15). Brand: Pacsafe. Category: Wallets.
  */
 
 const LIST_PRICE_USD = 29.95;
@@ -13,7 +13,7 @@ const CDN = "https://cdn.shopify.com/s/files/1/0041/7638/0013/files";
 
 const PRODUCT_ID = "pacsafe-rfidsafe-card-wallet";
 const PRODUCT_SLUG = "pacsafe-rfidsafe-rfid-blocking-card-wallet";
-const CATEGORY_ID = "accessories-travel";
+const CATEGORY_ID = "accessories-wallets";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   { url: `${CDN}/RFIDsafe_CardWallet_11085340_Rose_1.jpg?v=1768982782`, alt: "Pacsafe RFIDsafe RFID blocking card wallet, Rose", title: "Pacsafe RFIDsafe Card Wallet - Rose" },

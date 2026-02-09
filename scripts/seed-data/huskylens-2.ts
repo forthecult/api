@@ -1,7 +1,7 @@
 /**
  * Seed data for DFRobot HUSKYLENS 2 — 6 TOPS AI Vision Sensor with MCP & LLM support.
  * Sourced from https://www.dfrobot.com/huskylens/huskylens2 and https://www.dfrobot.com/product-2995.html
- * Brand: DFRobot. Category: Tech Accessories. US price $84.90; we add 5% → $89.15.
+ * Brand: DFRobot. Category: AI. US price $84.90; we add 5% → $89.15.
  * Shipping: DFRobot sells in USD/EUR/GBP; no explicit country list. No product_available_country restriction = available everywhere.
  * Images: vendor CDN (dfimg.dfrobot.com). Run db:upload-curated-product-images to pull, optimize, and upload to UploadThing.
  */
@@ -12,7 +12,7 @@ const PRICE_CENTS = Math.round(COST_CENTS * PRICE_MARKUP); // $89.15
 
 const PRODUCT_ID = "dfrobot-huskylens-2";
 const PRODUCT_SLUG = "dfrobot-huskylens-2";
-const CATEGORY_ID = "accessories-tech";
+const CATEGORY_ID = "ai";
 
 // Product images from DFRobot CDN — carousel uses 1220x813; intro section uses _0x0 (https://www.dfrobot.com/product-2995.html)
 const DFR_IMG = "https://dfimg.dfrobot.com/enshop/image/data/SEN0638";

@@ -220,6 +220,38 @@ async function seed() {
       ),
     );
 
+  // Hardware wallets use main category "hardware-wallets". Remove legacy accessories-hardware-wallets link on re-seed.
+  const hardwareWalletProductIds = [TREZOR_SAFE_5.id, TREZOR_SAFE_7.id];
+  await db
+    .delete(productCategoriesTable)
+    .where(
+      and(
+        inArray(productCategoriesTable.productId, hardwareWalletProductIds),
+        eq(productCategoriesTable.categoryId, "accessories-hardware-wallets"),
+      ),
+    );
+
+  // Pacsafe RFIDsafe wallet uses main category Wallets. Remove legacy accessories-travel link on re-seed.
+  await db
+    .delete(productCategoriesTable)
+    .where(
+      and(
+        eq(productCategoriesTable.productId, PACSAFE_RFIDSAFE_WALLET.id),
+        eq(productCategoriesTable.categoryId, "accessories-travel"),
+      ),
+    );
+
+  // SenseCAP Watcher W1-A and HUSKYLENS 2 use main category AI. Remove legacy category links on re-seed.
+  const aiProductIds = [SENSECAP_WATCHER_W1_A.id, HUSKYLENS_2.id];
+  await db
+    .delete(productCategoriesTable)
+    .where(
+      and(
+        inArray(productCategoriesTable.productId, aiProductIds),
+        inArray(productCategoriesTable.categoryId, ["smart-home", "accessories-tech"]),
+      ),
+    );
+
   console.log("Linking products to categories…");
   await db
     .insert(productCategoriesTable)
