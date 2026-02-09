@@ -9,28 +9,25 @@ import "dotenv/config";
 
 import { conn } from "../src/db";
 
-const statements: string[] = [
-  // product
-  `ALTER TABLE product
-   ADD COLUMN IF NOT EXISTS printful_sync_product_id INTEGER UNIQUE,
-   ADD COLUMN IF NOT EXISTS printify_product_id TEXT UNIQUE,
-   ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP`,
+/** Critical: must succeed or deploy fails (Printful sync + shipping need these). */
+const criticalStatements: string[] = [
+  `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id INTEGER`,
+  `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
+  `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
+];
+
+/** Best-effort: indexes/constraints; may already exist under different names. */
+const optionalStatements: string[] = [
+  `ALTER TABLE product ADD COLUMN IF NOT EXISTS printful_sync_product_id INTEGER UNIQUE`,
+  `ALTER TABLE product ADD COLUMN IF NOT EXISTS printify_product_id TEXT UNIQUE`,
+  `ALTER TABLE product ADD COLUMN IF NOT EXISTS last_synced_at TIMESTAMP`,
   `CREATE INDEX IF NOT EXISTS idx_product_printful_sync_product_id ON product (printful_sync_product_id)`,
   `CREATE INDEX IF NOT EXISTS idx_product_printify_product_id ON product (printify_product_id)`,
   `CREATE INDEX IF NOT EXISTS idx_product_source ON product (source)`,
-  // product_variant (required for Printful sync and shipping catalog_variant_id)
-  `ALTER TABLE product_variant
-   ADD COLUMN IF NOT EXISTS printful_sync_variant_id INTEGER,
-   ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
   `CREATE INDEX IF NOT EXISTS idx_product_variant_printful_sync_variant_id ON product_variant (printful_sync_variant_id)`,
   `CREATE INDEX IF NOT EXISTS idx_product_variant_printify_variant_id ON product_variant (printify_variant_id)`,
-  // composite unique (allow same external id across products, unique per product)
-  `CREATE UNIQUE INDEX IF NOT EXISTS product_variant_printful_unique
-   ON product_variant (product_id, printful_sync_variant_id)
-   WHERE printful_sync_variant_id IS NOT NULL`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS product_variant_printify_unique
-   ON product_variant (product_id, printify_variant_id)
-   WHERE printify_variant_id IS NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS product_variant_printful_unique ON product_variant (product_id, printful_sync_variant_id) WHERE printful_sync_variant_id IS NOT NULL`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS product_variant_printify_unique ON product_variant (product_id, printify_variant_id) WHERE printify_variant_id IS NOT NULL`,
   `CREATE INDEX IF NOT EXISTS product_variant_product_id_idx ON product_variant (product_id)`,
 ];
 
@@ -39,12 +36,19 @@ async function main() {
     console.error("DATABASE_URL not set");
     process.exit(1);
   }
-  for (const sql of statements) {
+  for (const sql of criticalStatements) {
     try {
       await conn.unsafe(sql);
     } catch (e) {
-      console.warn("ensure-printful-printify-columns:", (e as Error).message);
-      // Continue; some statements may fail if constraints already exist under different names
+      console.error("ensure-printful-printify-columns (critical failed):", (e as Error).message);
+      process.exit(1);
+    }
+  }
+  for (const sql of optionalStatements) {
+    try {
+      await conn.unsafe(sql);
+    } catch (e) {
+      console.warn("ensure-printful-printify-columns (optional):", (e as Error).message);
     }
   }
   console.log("ensure-printful-printify-columns: done");

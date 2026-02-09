@@ -123,6 +123,8 @@ type Product = {
   hasVariants: boolean;
   optionDefinitionsJson: string | null;
   categoryId: string | null;
+  categoryIds?: string[];
+  mainCategoryId?: string | null;
   tokenGated?: boolean;
   tokenGates?: TokenGateRow[];
   availableCountryCodes?: string[];
@@ -264,7 +266,9 @@ export default function AdminProductEditPage() {
   const [shipsFromRegion, setShipsFromRegion] = useState("");
   const [shipsFromCity, setShipsFromCity] = useState("");
   const [shipsFromPostalCode, setShipsFromPostalCode] = useState("");
-  const [categoryId, setCategoryId] = useState("");
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
+  const [mainCategoryId, setMainCategoryId] = useState("");
+  const [addCategoryValue, setAddCategoryValue] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [images, setImages] = useState<ProductImage[]>([]);
   const [hasVariants, setHasVariants] = useState(false);
@@ -417,7 +421,16 @@ export default function AdminProductEditPage() {
       setShipsFromRegion(data.shipsFromRegion ?? "");
       setShipsFromCity(data.shipsFromCity ?? "");
       setShipsFromPostalCode(data.shipsFromPostalCode ?? "");
-      setCategoryId(data.categoryId ?? "");
+      setCategoryIds(
+        Array.isArray(data.categoryIds) && data.categoryIds.length > 0
+          ? data.categoryIds
+          : data.categoryId
+            ? [data.categoryId]
+            : [],
+      );
+      setMainCategoryId(
+        data.mainCategoryId ?? data.categoryId ?? "",
+      );
       setTagsInput(data.tags?.length ? data.tags.join(", ") : "");
       setImages(data.images?.length ? data.images : []);
       setHasVariants(data.hasVariants);
@@ -791,7 +804,8 @@ export default function AdminProductEditPage() {
           quantity: quantity.trim() ? Number.parseInt(quantity, 10) : null,
           hsCode: hsCode.trim() || null,
           countryOfOrigin: countryOfOrigin.trim() || null,
-          categoryId: categoryId || null,
+          categoryIds,
+          mainCategoryId: mainCategoryId || (categoryIds[0] ?? null),
           hasVariants,
           optionDefinitionsJson:
             hasVariants && optionDefinitions.length > 0
@@ -918,7 +932,8 @@ export default function AdminProductEditPage() {
       shipsFromRegion,
       shipsFromCity,
       shipsFromPostalCode,
-      categoryId,
+      categoryIds,
+      mainCategoryId,
       tagsInput,
       images,
       hasVariants,
@@ -1128,6 +1143,21 @@ export default function AdminProductEditPage() {
     setOptionDefinitions((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const [draggedOptionIndex, setDraggedOptionIndex] = useState<number | null>(
+    null,
+  );
+
+  const reorderOptions = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    setOptionDefinitions((prev) => {
+      const next = [...prev];
+      const [removed] = next.splice(fromIndex, 1);
+      if (!removed) return prev;
+      next.splice(toIndex, 0, removed);
+      return next;
+    });
+  }, []);
+
   const toggleOptionExpanded = useCallback((index: number) => {
     setOptionDefinitions((prev) => {
       const next = [...prev];
@@ -1271,17 +1301,76 @@ export default function AdminProductEditPage() {
                 />
               </div>
               <div className="space-y-2">
-                <label id="categoryId-label" htmlFor="categoryId" className={labelClass}>
-                  Category
+                <label id="categoryIds-label" className={labelClass}>
+                  Categories
                 </label>
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Add multiple categories. One is used as the primary (for URL/breadcrumbs).
+                </p>
+                {categoryIds.length > 0 && (
+                  <ul className="mb-2 flex flex-wrap gap-2">
+                    {categoryIds.map((cid) => {
+                      const opt = categoryOptions.find((c) => c.id === cid);
+                      const label = opt
+                        ? (opt.parentName?.trim() ? `${opt.parentName.trim()} → ${opt.name}` : opt.name)
+                        : cid;
+                      const isPrimary = cid === mainCategoryId;
+                      return (
+                        <li
+                          key={cid}
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1.5 text-sm",
+                            isPrimary && "border-primary/50 ring-1 ring-primary/30",
+                          )}
+                        >
+                          {isPrimary && (
+                            <span className="text-xs font-medium text-primary">Primary</span>
+                          )}
+                          <span className="truncate max-w-[200px]">{label}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCategoryIds((prev) => prev.filter((id) => id !== cid));
+                              if (mainCategoryId === cid) {
+                                const rest = categoryIds.filter((id) => id !== cid);
+                                setMainCategoryId(rest[0] ?? "");
+                              }
+                            }}
+                            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            title="Remove category"
+                            aria-label={`Remove ${label}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          {!isPrimary && (
+                            <button
+                              type="button"
+                              onClick={() => setMainCategoryId(cid)}
+                              className="shrink-0 text-xs text-muted-foreground underline hover:text-foreground"
+                            >
+                              Set primary
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
                 <CategorySelect
-                  id="categoryId"
-                  value={categoryId}
-                  onChange={setCategoryId}
-                  options={categoryOptions}
+                  id="categoryIds-add"
+                  value={addCategoryValue}
+                  onChange={(id) => {
+                    if (id && !categoryIds.includes(id)) {
+                      setCategoryIds((prev) => [...prev, id]);
+                      if (!mainCategoryId) setMainCategoryId(id);
+                    }
+                    setAddCategoryValue("");
+                  }}
+                  options={categoryOptions.filter((c) => !categoryIds.includes(c.id))}
                   className={inputClass}
                   labelClass={labelClass}
                   placeholder="Search categories…"
+                  emptyLabel="Add a category…"
                 />
               </div>
             </div>
@@ -2020,11 +2109,37 @@ export default function AdminProductEditPage() {
                 {/* Option Definitions */}
                 <div className="space-y-3">
                   {optionDefinitions.map((opt, oi) => (
-                    <div key={oi} className="rounded-lg border bg-card">
+                    <div
+                      key={oi}
+                      className={`rounded-lg border bg-card ${draggedOptionIndex === oi ? "opacity-60" : ""}`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const from = draggedOptionIndex;
+                        if (from == null) return;
+                        setDraggedOptionIndex(null);
+                        reorderOptions(from, oi);
+                      }}
+                    >
                       {/* Collapsed view */}
                       {!opt.isExpanded ? (
                         <div className="flex items-center gap-3 p-3">
-                          <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <div
+                            draggable
+                            onDragStart={(e) => {
+                              setDraggedOptionIndex(oi);
+                              e.dataTransfer.effectAllowed = "move";
+                              e.dataTransfer.setData("text/plain", String(oi));
+                            }}
+                            onDragEnd={() => setDraggedOptionIndex(null)}
+                            className="cursor-grab active:cursor-grabbing touch-none"
+                            title="Drag to reorder"
+                          >
+                            <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          </div>
                           <div className="flex-1">
                             <div className="font-medium text-sm">
                               {opt.name || "Unnamed option"}
@@ -2055,7 +2170,19 @@ export default function AdminProductEditPage() {
                         /* Expanded view */
                         <div className="space-y-3 p-3">
                           <div className="flex items-start gap-3">
-                            <GripVertical className="mt-2.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <div
+                              draggable
+                              onDragStart={(e) => {
+                                setDraggedOptionIndex(oi);
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData("text/plain", String(oi));
+                              }}
+                              onDragEnd={() => setDraggedOptionIndex(null)}
+                              className="mt-2.5 cursor-grab active:cursor-grabbing touch-none shrink-0"
+                              title="Drag to reorder"
+                            >
+                              <GripVertical className="h-4 w-4 text-muted-foreground" />
+                            </div>
                             <div className="flex-1 space-y-3">
                               <div>
                                 <label className="mb-1 block text-sm font-medium">

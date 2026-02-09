@@ -60,18 +60,15 @@ export async function GET(
     }
     const productId = product.id;
 
-    const [mainPc, images, tags, variants, availableCountries, tokenGatesRows] =
+    const [productCategoriesRows, images, tags, variants, availableCountries, tokenGatesRows] =
       await Promise.all([
         db
-          .select({ categoryId: productCategoriesTable.categoryId })
+          .select({
+            categoryId: productCategoriesTable.categoryId,
+            isMain: productCategoriesTable.isMain,
+          })
           .from(productCategoriesTable)
-          .where(
-            and(
-              eq(productCategoriesTable.productId, productId),
-              eq(productCategoriesTable.isMain, true),
-            ),
-          )
-          .limit(1),
+          .where(eq(productCategoriesTable.productId, productId)),
         db
           .select()
           .from(productImagesTable)
@@ -170,7 +167,9 @@ export async function GET(
       tokenGateNetwork: product.tokenGateNetwork,
       tokenGateContractAddress: product.tokenGateContractAddress,
       tokenGates,
-      categoryId: mainPc[0]?.categoryId ?? null,
+      categoryId: productCategoriesRows.find((r) => r.isMain)?.categoryId ?? productCategoriesRows[0]?.categoryId ?? null,
+      categoryIds: productCategoriesRows.map((r) => r.categoryId),
+      mainCategoryId: productCategoriesRows.find((r) => r.isMain)?.categoryId ?? null,
       availableCountryCodes: availableCountries
         .map((r) => r.countryCode)
         .filter((c) => !isShippingExcluded(c)),
@@ -267,6 +266,8 @@ export async function PATCH(
       tokenGateNetwork?: string | null;
       tokenGateContractAddress?: string | null;
       categoryId?: string | null;
+      categoryIds?: string[];
+      mainCategoryId?: string | null;
       images?: Array<{
         id?: string;
         url: string;
@@ -398,16 +399,23 @@ export async function PATCH(
         .where(eq(productTokenGateTable.productId, id));
     }
 
-    if (body.categoryId !== undefined) {
-      const categoryId = body.categoryId?.trim() || null;
+    if (body.categoryIds !== undefined || body.categoryId !== undefined) {
+      const categoryIds = Array.isArray(body.categoryIds)
+        ? body.categoryIds.filter((c): c is string => typeof c === "string" && c.trim() !== "")
+        : body.categoryId !== undefined && body.categoryId?.trim()
+          ? [body.categoryId.trim()]
+          : [];
+      const mainCategoryId = typeof body.mainCategoryId === "string" && body.mainCategoryId.trim()
+        ? body.mainCategoryId.trim()
+        : categoryIds[0] ?? null;
       await db
         .delete(productCategoriesTable)
         .where(eq(productCategoriesTable.productId, id));
-      if (categoryId) {
+      for (const categoryId of categoryIds) {
         await db.insert(productCategoriesTable).values({
           productId: id,
           categoryId,
-          isMain: true,
+          isMain: categoryId === mainCategoryId,
         });
       }
     }

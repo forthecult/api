@@ -1209,12 +1209,9 @@ async function createLocalVariantFromPrintful(
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // Duplicate key: row already exists (e.g. from partial sync). Update it and return its id.
-    const isUniqueViolation =
-      msg.includes("unique constraint") ||
-      msg.includes("duplicate key") ||
-      msg.includes("product_variant_printful_unique");
-    if (isUniqueViolation) {
+    // On any INSERT failure, try to find existing row and UPDATE (handles duplicate key, constraint, etc.)
+    let existingId: string | null = null;
+    try {
       const [existingRow] = await db
         .select({ id: productVariantsTable.id })
         .from(productVariantsTable)
@@ -1225,7 +1222,25 @@ async function createLocalVariantFromPrintful(
           ),
         )
         .limit(1);
-      if (existingRow) {
+      if (existingRow) existingId = existingRow.id;
+    } catch (_) {
+      // Drizzle SELECT failed; try raw SQL in case driver/schema is out of sync
+      try {
+        const rows = await conn`
+          SELECT id FROM product_variant
+          WHERE product_id = ${productId} AND printful_sync_variant_id = ${printfulSyncVariantId}
+          LIMIT 1
+        `;
+        const first = Array.isArray(rows) ? rows[0] : null;
+        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
+          existingId = first.id;
+        }
+      } catch (_2) {
+        /* column or table missing */
+      }
+    }
+    if (existingId) {
+      try {
         await db
           .update(productVariantsTable)
           .set({
@@ -1239,9 +1254,23 @@ async function createLocalVariantFromPrintful(
             availabilityStatus: syncVariant.availability_status ?? null,
             updatedAt: now,
           })
-          .where(eq(productVariantsTable.id, existingRow.id));
-        return existingRow.id;
+          .where(eq(productVariantsTable.id, existingId));
+      } catch (_) {
+        await conn`
+          UPDATE product_variant SET
+            external_id = ${externalId},
+            size = ${size ?? null},
+            color = ${color ?? null},
+            sku = ${syncVariant.sku ?? null},
+            label = ${label},
+            price_cents = ${safePriceCents},
+            image_url = ${imageUrl ?? null},
+            availability_status = ${syncVariant.availability_status ?? null},
+            updated_at = ${now}
+          WHERE id = ${existingId}
+        `;
       }
+      return existingId;
     }
     // Column missing: fallback INSERT without printful_sync_variant_id so external_id is stored
     const columnMissing =

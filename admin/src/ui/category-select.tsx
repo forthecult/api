@@ -30,6 +30,8 @@ interface CategorySelectProps {
   labelClass?: string;
   disabled?: boolean;
   placeholder?: string;
+  /** When value is empty, show this instead of "None" (e.g. "Add a category…"). */
+  emptyLabel?: string;
 }
 
 const MAX_VISIBLE = 100;
@@ -81,7 +83,7 @@ export function CategorySelect({
     () => options.find((c) => c.id === value) ?? null,
     [options, value],
   );
-  const selectedLabel = selectedOption ? displayName(selectedOption) : "None";
+  const selectedLabel = selectedOption ? displayName(selectedOption) : (emptyLabel ?? "None");
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
