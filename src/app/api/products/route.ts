@@ -1,6 +1,10 @@
 import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 import { db } from "~/db";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
@@ -38,6 +42,10 @@ export type ProductsSort =
  */
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
+
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -83,14 +91,16 @@ export async function GET(request: NextRequest) {
         .where(eq(categoriesTable.slug, categorySlugToFilter));
       productIdsFilter = rows.map((r) => r.productId);
       if (productIdsFilter.length === 0) {
-        return NextResponse.json({
-          items: [],
-          total: 0,
-          page: 1,
-          limit,
-          totalPages: 0,
-          categories: await getCategoriesWithProductsAndDisplayImage(),
-        });
+        return withPublicApiCors(
+          NextResponse.json({
+            items: [],
+            total: 0,
+            page: 1,
+            limit,
+            totalPages: 0,
+            categories: await getCategoriesWithProductsAndDisplayImage(),
+          }),
+        );
       }
     }
 
@@ -300,26 +310,30 @@ export async function GET(request: NextRequest) {
           ) || DEFAULT_LIMIT,
         ),
       );
-      return NextResponse.json(
-        {
-          items: [],
-          total: 0,
-          page: 1,
-          limit,
-          totalPages: 0,
-          categories: [],
-        },
-        {
-          headers: {
-            "Cache-Control":
-              "public, s-maxage=60, stale-while-revalidate=120",
+      return withPublicApiCors(
+        NextResponse.json(
+          {
+            items: [],
+            total: 0,
+            page: 1,
+            limit,
+            totalPages: 0,
+            categories: [],
           },
-        },
+          {
+            headers: {
+              "Cache-Control":
+                "public, s-maxage=60, stale-while-revalidate=120",
+            },
+          },
+        ),
       );
     }
-    return NextResponse.json(
-      { error: "Failed to load products" },
-      { status: 500 },
+    return withPublicApiCors(
+      NextResponse.json(
+        { error: "Failed to load products" },
+        { status: 500 },
+      ),
     );
   }
 }

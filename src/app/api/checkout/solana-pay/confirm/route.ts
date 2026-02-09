@@ -1,5 +1,11 @@
 import { validateTransfer } from "@solana/pay";
-import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemInstruction,
+  SystemProgram,
+  TransactionMessage,
+} from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { type NextRequest, NextResponse } from "next/server";
 import { eq, or } from "drizzle-orm";
@@ -28,6 +34,41 @@ import {
   PUMP_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
+
+const NATIVE_SOL_SENTINEL = "native";
+
+/** Verify that the given signature is a native SOL transfer to depositAddress with at least expectedLamports. */
+async function verifyNativeSolTransfer(
+  connection: Connection,
+  signature: string,
+  depositAddress: PublicKey,
+  expectedLamports: number,
+): Promise<boolean> {
+  const tx = await connection.getTransaction(signature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+  if (!tx?.transaction?.message) return false;
+  const message = tx.transaction.message as Parameters<
+    typeof TransactionMessage.decompile
+  >[0];
+  const txMessage = TransactionMessage.decompile(message);
+  for (const ix of txMessage.instructions) {
+    if (!ix.programId.equals(SystemProgram.programId)) continue;
+    try {
+      const decoded = SystemInstruction.decodeTransfer(ix);
+      if (
+        decoded.toPubkey.equals(depositAddress) &&
+        decoded.lamports >= expectedLamports
+      ) {
+        return true;
+      }
+    } catch {
+      // not a transfer instruction
+    }
+  }
+  return false;
+}
 
 /**
  * Mark order as paid only after verifying the Solana transfer on-chain.
@@ -125,14 +166,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const isNativeSol = splToken === NATIVE_SOL_SENTINEL;
     const splTokenMint =
-      splToken === WHITEWHALE_MINT_MAINNET
-        ? WHITEWHALE_MINT_MAINNET
-        : splToken === CRUST_MINT_MAINNET
-          ? CRUST_MINT_MAINNET
-          : splToken === PUMP_MINT_MAINNET
-            ? PUMP_MINT_MAINNET
-            : USDC_MINT_MAINNET;
+      splToken === NATIVE_SOL_SENTINEL
+        ? USDC_MINT_MAINNET
+        : splToken === WHITEWHALE_MINT_MAINNET
+          ? WHITEWHALE_MINT_MAINNET
+          : splToken === CRUST_MINT_MAINNET
+            ? CRUST_MINT_MAINNET
+            : splToken === PUMP_MINT_MAINNET
+              ? PUMP_MINT_MAINNET
+              : USDC_MINT_MAINNET;
 
     try {
       const connection = new Connection(getSolanaRpcUrlServer(), {
@@ -140,11 +184,27 @@ export async function POST(request: NextRequest) {
       });
       const depositPk = new PublicKey(depositAddressStr);
       const amountBn = new BigNumber(amountStr);
-      await validateTransfer(connection, sigTrim, {
-        recipient: depositPk,
-        amount: amountBn,
-        splToken: new PublicKey(splTokenMint),
-      });
+      if (isNativeSol) {
+        const expectedLamports = amountBn.integerValue().toNumber();
+        const valid = await verifyNativeSolTransfer(
+          connection,
+          sigTrim,
+          depositPk,
+          expectedLamports,
+        );
+        if (!valid) {
+          return NextResponse.json(
+            { error: "Transfer verification failed (native SOL)" },
+            { status: 400 },
+          );
+        }
+      } else {
+        await validateTransfer(connection, sigTrim, {
+          recipient: depositPk,
+          amount: amountBn,
+          splToken: new PublicKey(splTokenMint),
+        });
+      }
     } catch (verifyErr) {
       return NextResponse.json(
         {

@@ -1,5 +1,11 @@
 import { findReference, validateTransfer } from "@solana/pay";
-import { Connection, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemInstruction,
+  SystemProgram,
+  TransactionMessage,
+} from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import BigNumber from "bignumber.js";
 
@@ -13,6 +19,51 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const NATIVE_SOL_SENTINEL = "native";
+
+/** Check for a confirmed native SOL (system) transfer to depositAddress. */
+async function findNativeSolTransferToAddress(
+  connection: Connection,
+  depositAddress: PublicKey,
+  expectedLamports: number,
+): Promise<string | null> {
+  const sigs = await connection.getSignaturesForAddress(
+    depositAddress,
+    { limit: 30 },
+    "confirmed",
+  );
+  for (const { signature } of sigs) {
+    try {
+      const tx = await connection.getTransaction(signature, {
+        commitment: "confirmed",
+        maxSupportedTransactionVersion: 0,
+      });
+      if (!tx?.transaction?.message) continue;
+      const message = tx.transaction.message as Parameters<
+        typeof TransactionMessage.decompile
+      >[0];
+      const txMessage = TransactionMessage.decompile(message);
+      for (const ix of txMessage.instructions) {
+        if (!ix.programId.equals(SystemProgram.programId)) continue;
+        try {
+          const decoded = SystemInstruction.decodeTransfer(ix);
+          if (
+            decoded.toPubkey.equals(depositAddress) &&
+            decoded.lamports >= expectedLamports
+          ) {
+            return signature;
+          }
+        } catch {
+          // not a transfer instruction
+        }
+      }
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
+
 /** check for a confirmed transfer to depositAddress (works for manual paste — no reference needed) */
 async function findTransferToAddress(
   connection: Connection,
@@ -20,8 +71,6 @@ async function findTransferToAddress(
   amountBn: BigNumber,
   splTokenMint: string,
 ): Promise<string | null> {
-  // Use "confirmed" commitment so we see the tx within ~1–2s of user sending,
-  // instead of waiting for "finalized" (default), which can delay detection.
   const sigs = await connection.getSignaturesForAddress(
     depositAddress,
     { limit: 30 },
@@ -50,15 +99,20 @@ export async function GET(request: Request) {
   const recipient = searchParams.get("recipient");
   const amount = searchParams.get("amount");
   const splTokenParam = searchParams.get("splToken");
+  const isNativeSol =
+    splTokenParam === NATIVE_SOL_SENTINEL ||
+    searchParams.get("nativeSol") === "1";
 
   const splTokenMint =
-    splTokenParam === WHITEWHALE_MINT_MAINNET
-      ? WHITEWHALE_MINT_MAINNET
-      : splTokenParam === CRUST_MINT_MAINNET
-        ? CRUST_MINT_MAINNET
-        : splTokenParam === PUMP_MINT_MAINNET
-          ? PUMP_MINT_MAINNET
-          : USDC_MINT_MAINNET;
+    splTokenParam === NATIVE_SOL_SENTINEL
+      ? USDC_MINT_MAINNET // unused when isNativeSol
+      : splTokenParam === WHITEWHALE_MINT_MAINNET
+        ? WHITEWHALE_MINT_MAINNET
+        : splTokenParam === CRUST_MINT_MAINNET
+          ? CRUST_MINT_MAINNET
+          : splTokenParam === PUMP_MINT_MAINNET
+            ? PUMP_MINT_MAINNET
+            : USDC_MINT_MAINNET;
 
   if (!amount) {
     return NextResponse.json(
@@ -67,7 +121,6 @@ export async function GET(request: Request) {
     );
   }
 
-  // Use "confirmed" commitment so we detect payments soon after they land, not after finalized delay
   const connection = new Connection(getSolanaRpcUrlServer(), {
     commitment: "confirmed",
   });
@@ -76,6 +129,18 @@ export async function GET(request: Request) {
   if (depositAddressParam) {
     try {
       const depositPk = new PublicKey(depositAddressParam);
+      if (isNativeSol) {
+        const expectedLamports = amountBn.integerValue().toNumber();
+        const signature = await findNativeSolTransferToAddress(
+          connection,
+          depositPk,
+          expectedLamports,
+        );
+        if (signature) {
+          return NextResponse.json({ status: "confirmed", signature });
+        }
+        return NextResponse.json({ status: "pending" });
+      }
       const signature = await findTransferToAddress(
         connection,
         depositPk,

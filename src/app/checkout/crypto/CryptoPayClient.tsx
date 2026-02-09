@@ -366,19 +366,24 @@ export function CryptoPayClient() {
   useEffect(() => {
     if (token === "sui" || !order?.depositAddress || amountUsd <= 0 || isExpired)
       return;
-    const splTokenMint =
-      token === "crust"
+    const isNativeSol = token === "solana";
+    const splTokenMint = isNativeSol
+      ? "native"
+      : token === "crust"
         ? CRUST_MINT_MAINNET
         : token === "pump"
           ? PUMP_MINT_MAINNET
           : token === "whitewhale"
             ? WHITEWHALE_MINT_MAINNET
             : USDC_MINT_MAINNET;
-    const amountStr =
-      token === "crust" &&
-      crustSolPerToken != null &&
-      crustSolPerToken > 0 &&
-      rate > 0
+    const amountStr = isNativeSol
+      ? String(
+          Math.ceil(amountSol * LAMPORTS_PER_SOL) + TX_FEE_BUFFER_LAMPORTS,
+        )
+      : token === "crust" &&
+          crustSolPerToken != null &&
+          crustSolPerToken > 0 &&
+          rate > 0
         ? tokenAmountFromUsdWithPrice(
             amountUsd,
             crustSolPerToken,
@@ -453,6 +458,7 @@ export function CryptoPayClient() {
     order?.depositAddress,
     order?.orderId,
     amountUsd,
+    amountSol,
     isExpired,
     crustSolPerToken,
     pumpSolPerToken,

@@ -1,6 +1,10 @@
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 import { db } from "~/db";
 import {
   categoriesTable,
@@ -148,16 +152,20 @@ export async function GET(request: NextRequest) {
       })),
     ].slice(0, SUGGESTIONS_LIMIT + CATEGORIES_LIMIT);
 
-    return NextResponse.json({
-      query: q,
-      suggestions,
-      categories,
-    });
+    return withPublicApiCors(
+      NextResponse.json({
+        query: q,
+        suggestions,
+        categories,
+      }),
+    );
   } catch (err) {
     console.error("Products suggestions error:", err);
-    return NextResponse.json(
-      { error: "Failed to load suggestions" },
-      { status: 500 },
+    return withPublicApiCors(
+      NextResponse.json(
+        { error: "Failed to load suggestions" },
+        { status: 500 },
+      ),
     );
   }
 }

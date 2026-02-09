@@ -1,6 +1,10 @@
 import { and, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 import { db } from "~/db";
 import {
   categoriesTable,
@@ -19,6 +23,10 @@ const BEST_SELLERS_LIMIT = 8;
  * GET /api/products/featured
  * Agent discovery: see what's popular/new.
  */
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
+}
+
 export async function GET() {
   try {
     const [featuredProducts, trendingProducts, bestSellersProducts] =
@@ -125,23 +133,27 @@ export async function GET() {
             .slice(0, FEATURED_LIMIT)
             .map((p) => ({ ...p, badge: "New Arrival" as const }));
 
-    return NextResponse.json({
-      featured,
-      trending: trendingProducts,
-      bestSellers: bestSellersProducts,
-      deals: [] as Array<{
-        id: string;
-        name: string;
-        category?: string;
-        price: { usd: number; crypto: Record<string, string> };
-        badge: string;
-      }>,
-    });
+    return withPublicApiCors(
+      NextResponse.json({
+        featured,
+        trending: trendingProducts,
+        bestSellers: bestSellersProducts,
+        deals: [] as Array<{
+          id: string;
+          name: string;
+          category?: string;
+          price: { usd: number; crypto: Record<string, string> };
+          badge: string;
+        }>,
+      }),
+    );
   } catch (err) {
     console.error("Products featured error:", err);
-    return NextResponse.json(
-      { error: "Failed to load featured products" },
-      { status: 500 },
+    return withPublicApiCors(
+      NextResponse.json(
+        { error: "Failed to load featured products" },
+        { status: 500 },
+      ),
     );
   }
 }
