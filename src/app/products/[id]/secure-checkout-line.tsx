@@ -32,15 +32,15 @@ export function SecureCheckoutLine() {
           {icons.map(({ src, alt }) => (
             <span
               key={src + alt}
-              className="relative flex h-4 w-5 shrink-0 items-center justify-center"
+              className="relative flex h-7 w-9 shrink-0 items-center justify-center"
               title={alt}
             >
               <Image
                 alt={alt}
                 className="object-contain"
-                height={17}
+                height={28}
                 src={src}
-                width={22}
+                width={36}
                 unoptimized={src.endsWith(".svg")}
               />
             </span>

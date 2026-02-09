@@ -173,7 +173,7 @@ async function ensurePrintifyProductWebhooks(
  * Trigger product synchronization between Printify and local database.
  *
  * Body options:
- * - { action: "import_all" } - Import all products from Printify
+ * - { action: "import_all" } - Import all products from Printify; then call publish for each so Printify clears "Publishing" (set confirmPublishAfterImport: false to skip)
  * - { action: "import_all", overwrite: true } - Import and overwrite existing
  * - { action: "import_single", printifyProductId: "abc123" } - Import one product by Printify ID (e.g. stuck in "Publishing")
  * - { action: "import_single", productId: "our-id", overwrite: true } - Re-sync one product by our product ID (refreshes Markets)
@@ -209,6 +209,8 @@ export async function POST(request: NextRequest) {
     productId?: string;
     overwrite?: boolean;
     visibleOnly?: boolean;
+    /** After import_all, call Printify publish for each product so "Publishing" clears (default true). */
+    confirmPublishAfterImport?: boolean;
   };
 
   try {
@@ -229,6 +231,26 @@ export async function POST(request: NextRequest) {
         overwriteExisting: body.overwrite ?? false,
       });
 
+      // After import, re-call Printify publish for each local Printify product so they re-send
+      // webhooks; when we return 200, Printify clears "Publishing". Default true so staging sync
+      // clears status without a separate confirm_publish step.
+      let confirmPublishCount = 0;
+      const confirmPublishAfterImport = body.confirmPublishAfterImport !== false;
+      if (confirmPublishAfterImport && result.success) {
+        const printifyProducts = await db
+          .select({
+            id: productsTable.id,
+            printifyProductId: productsTable.printifyProductId,
+          })
+          .from(productsTable)
+          .where(eq(productsTable.source, "printify"));
+        const withIds = printifyProducts.filter((p) => p.printifyProductId != null);
+        for (const p of withIds) {
+          const res = await publishPrintifyProduct(pf.shopId, p.printifyProductId!);
+          if (res.success) confirmPublishCount++;
+        }
+      }
+
       return NextResponse.json({
         success: result.success,
         summary: {
@@ -236,6 +258,7 @@ export async function POST(request: NextRequest) {
           updated: result.updated,
           skipped: result.skipped,
           errors: result.errors.length,
+          confirmPublish: confirmPublishAfterImport ? confirmPublishCount : undefined,
         },
         errors: result.errors.slice(0, 20), // Limit errors in response
         webhooks: {
