@@ -56,7 +56,9 @@ Your application exposes these webhook endpoints:
 
 ### Printify Webhooks
 
-Printify requires **programmatic webhook registration** via their API. Use the admin endpoint:
+**Note: The only way to register or update Printify webhooks is via our app’s API.** Printify has no webhook configuration UI in their front-end/dashboard for API stores—you must use the endpoints below.
+
+Printify requires **programmatic webhook registration** via their API. Use our admin endpoint (which calls Printify’s API):
 
 **1. Check current webhook status:**
 

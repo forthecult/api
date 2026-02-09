@@ -1,3 +1,8 @@
+/**
+ * Printify webhook registration API.
+ * This is the only way to register or update Printify webhooks—Printify has no webhook UI
+ * in their front-end/dashboard for API stores. Do not direct users to Printify's site for webhooks.
+ */
 import { type NextRequest, NextResponse } from "next/server";
 
 import {

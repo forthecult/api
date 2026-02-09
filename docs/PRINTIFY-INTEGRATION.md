@@ -59,13 +59,18 @@ Product sync events are handled automatically:
 
 We return HTTP 200 right away for product events so Printify can clear the "Publishing" status. If we waited for the full import before responding, Printify could timeout and leave products stuck in "Publishing".
 
-**Webhooks are configured via the Printify API only** (there is no webhook UI in Printify for API stores). **The app auto-registers** the required product webhooks (`product:publish:started`, `product:published`) whenever you run **import_all**, **import_single**, or **confirm_publish** from `POST /api/admin/printify/sync`, so you don’t have to register them manually. The webhook URL is built from `NEXT_PUBLIC_APP_URL` (and `PRINTIFY_WEBHOOK_SECRET` if set). Ensure `NEXT_PUBLIC_APP_URL` is your public store URL (e.g. `https://your-store.com`) so Printify can reach the endpoint. **Validate webhooks**: `GET /api/admin/printify/sync` returns a `webhooks` object; sync responses include `webhooks.ok`, `webhooks.expectedUrl`, and `webhooks.message`. If `webhooks.ok` is false, fix `NEXT_PUBLIC_APP_URL` or register manually via `POST /api/admin/printify/webhooks` with `{ "action": "register_all" }`.
+**Important: the only way to register or update Printify webhooks is via our app’s API.** Printify has no webhook UI in their front-end for API stores—do not try to configure webhooks in the Printify dashboard.
+
+- **Register webhooks:** `POST /api/admin/printify/webhooks` with `{ "action": "register_all" }`.
+- **Check status:** `GET /api/admin/printify/webhooks` (or `GET /api/admin/printify/sync` for `webhooks` in the response).
+- The app may auto-register the required product webhooks when you run **import_all**, **import_single**, or **confirm_publish** from `POST /api/admin/printify/sync` (if `NEXT_PUBLIC_APP_URL` is a public URL Printify can reach). If auto-registration fails (e.g. staging URL not yet reachable), register explicitly via `POST /api/admin/printify/webhooks` with `{ "action": "register_all" }`.
+- Webhook URL is built from `NEXT_PUBLIC_APP_URL` (and `PRINTIFY_WEBHOOK_SECRET` if set). Ensure `NEXT_PUBLIC_APP_URL` is your public or staging store URL so Printify can reach the endpoint.
 
 ### Product not showing in store?
 
 1. **"Publishing" status** — Printify can show "Publishing" for a few minutes after you click Publish. The product is synced when the webhook fires (`product:publish:started` or `product:published`). If your webhook isn’t set up or the request failed, the product won’t appear until you sync manually.
 
-2. **Clear stuck "Publishing"** — Use **confirm_publish** to re-call Printify's publish API so they re-send the webhook; when we return 200, they mark as "Published". `POST /api/admin/printify/sync` with `{ "action": "confirm_publish" }` (all) or `{ "action": "confirm_publish", "printifyProductId": "abc123" }` or `{ "productId": "our-id" }` for one. Ensure your [webhook URL](#webhooks) is registered.
+2. **Clear stuck "Publishing"** — Use **confirm_publish** to re-call Printify's publish API so they re-send the webhook; when we return 200, they mark as "Published". `POST /api/admin/printify/sync` with `{ "action": "confirm_publish" }` (all) or `{ "action": "confirm_publish", "printifyProductId": "abc123" }` or `{ "productId": "our-id" }` for one. Ensure [webhooks are registered](#webhooks) via our API (only way—no Printify front-end for this).
 
 3. **Manual import** — Pull all products from Printify into the store. **Run from the relivator directory** so the script uses the same `.env` and `DATABASE_URL` as the app:
    ```bash

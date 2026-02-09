@@ -43,6 +43,17 @@ function getExpectedWebhookUrl(request?: NextRequest): string {
   return base ? `${base}${path}${qs}` : "";
 }
 
+/** True if Printify can reach this URL (not localhost). Registration will fail with 9004 otherwise. */
+function isWebhookUrlReachableByPrintify(url: string): boolean {
+  if (!url?.trim()) return false;
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    return host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".local");
+  } catch {
+    return false;
+  }
+}
+
 async function validatePrintifyWebhooks(
   shopId: string,
   request?: NextRequest,
@@ -77,9 +88,9 @@ async function validatePrintifyWebhooks(
   const ok = missingProductTopics.length === 0 && !urlMismatch;
   let message: string;
   if (missingProductTopics.length > 0) {
-    message = `Missing webhooks for: ${missingProductTopics.join(", ")}. Register these via Printify API (POST /shops/{shop_id}/webhooks.json) so "Publishing" can clear.`;
+    message = `Missing webhooks for: ${missingProductTopics.join(", ")}. Register via our app API only: POST /api/admin/printify/webhooks with { "action": "register_all" }. Do not use Printify's front-end—there is no webhook UI there.`;
   } else if (urlMismatch) {
-    message = `Webhooks point to different URL(s). Expected: ${expectedUrl}. Update via Printify API if needed.`;
+    message = `Webhooks point to different URL(s). Expected: ${expectedUrl}. Update via our app API only: POST /api/admin/printify/webhooks (do not use Printify's front-end).`;
   } else {
     message = "Product webhooks registered; Printify can clear Publishing when we return 200.";
   }
@@ -109,7 +120,10 @@ async function ensurePrintifyProductWebhooks(
   let registered = 0;
   let alreadyRegistered = 0;
   let failed = 0;
-  if (expectedUrl) {
+  let validationMessageOverride: string | null = null;
+
+  const canRegister = expectedUrl && isWebhookUrlReachableByPrintify(expectedUrl);
+  if (canRegister) {
     for (const topic of REQUIRED_PRODUCT_WEBHOOK_TOPICS) {
       if (validation.registeredTopics.includes(topic)) {
         alreadyRegistered++;
@@ -119,18 +133,37 @@ async function ensurePrintifyProductWebhooks(
         await createPrintifyWebhook(shopId, topic, expectedUrl);
         registered++;
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        const isValidationFailed =
+          msg.includes("9004") ||
+          msg.toLowerCase().includes("webhook validation failed");
+        if (isValidationFailed) {
+          validationMessageOverride =
+            "Printify could not validate the webhook URL (code 9004). Ensure NEXT_PUBLIC_APP_URL is a public URL Printify can reach and returns 200 for GET /api/webhooks/printify. Register webhooks via our API only: POST /api/admin/printify/webhooks with { action: 'register_all' } (Printify has no webhook UI).";
+        }
         console.warn(`Printify webhook register ${topic} failed:`, err);
         failed++;
       }
     }
+  } else if (expectedUrl && validation.missingProductTopics.length > 0) {
+    validationMessageOverride =
+      "Webhook URL is local or unset (Printify cannot reach it). Set NEXT_PUBLIC_APP_URL to your public URL and register webhooks via our API only: POST /api/admin/printify/webhooks with { action: 'register_all' } (do not use Printify's front-end—there is no webhook UI).";
   }
-  const validationAfter = expectedUrl && (registered > 0 || failed > 0) ? await validatePrintifyWebhooks(shopId, request) : validation;
+
+  const validationAfter =
+    expectedUrl && (registered > 0 || failed > 0)
+      ? await validatePrintifyWebhooks(shopId, request)
+      : validation;
   return {
     webhookUrl: expectedUrl,
     registered,
     alreadyRegistered,
     failed,
-    validation: validationAfter,
+    validation: {
+      ...validationAfter,
+      message:
+        validationMessageOverride ?? validationAfter.message,
+    },
   };
 }
 
@@ -502,9 +535,9 @@ export async function GET(request: NextRequest) {
       import_single:
         "POST with { action: 'import_single', printifyProductId: 'abc123' } or { action: 'import_single', productId: 'our-id', overwrite: true }",
       webhooks:
-        "GET returns webhooks validation (ok, expectedUrl, missingProductTopics). Register via Printify API: POST /v1/shops/{shop_id}/webhooks.json with topic and url.",
+        "GET returns webhooks validation (ok, expectedUrl, missingProductTopics). Register/update webhooks only via our API: POST /api/admin/printify/webhooks with { action: 'register_all' }. Do not use Printify's front-end—there is no webhook UI.",
       confirm_publish:
-        "POST with { action: 'confirm_publish' } (all) or printifyProductId/productId to re-call publish API and clear stuck 'Publishing'. Response includes webhooks validation.",
+        "POST with { action: 'confirm_publish' } (all) or printifyProductId/productId to re-call publish API and clear stuck 'Publishing'. Response includes webhooks validation. To register webhooks use POST /api/admin/printify/webhooks with { action: 'register_all' } (only way—Printify has no webhook UI).",
       delete_in_printify:
         "POST with { action: 'delete_in_printify', printifyProductId: 'abc123' } or { productId: 'our-id' } to delete in Printify (unstick Publishing)",
       export_single: "POST with { action: 'export_single', productId: 'abc' }",

@@ -448,7 +448,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                     const b = product.brand?.trim();
                     const m = product.model?.trim();
                     const isProviderBrand =
-                      b?.toLowerCase() === "printful" || b?.toLowerCase() === "printify";
+                      b?.toLowerCase() === "printful" ||
+                      b?.toLowerCase() === "printify" ||
+                      b?.toLowerCase() === "generic brand";
                     if (!b && !m) return null;
                     if (isProviderBrand) return null;
                     return (
