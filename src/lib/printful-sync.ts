@@ -1036,71 +1036,101 @@ async function updateLocalProductFromPrintful(
 
   // Sync variants only when API returned variants (otherwise preserve existing)
   if (hasVariantsFromApi) {
-    const existingVariants = await db
+    const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
+
+    const runVariantSync = async (existingVariants: typeof productVariantsTable.$inferSelect[]) => {
+      type VariantRow = (typeof existingVariants)[number];
+      const existingVariantMap = new Map<number | null, VariantRow[]>();
+      for (const v of existingVariants) {
+        const raw = v.printfulSyncVariantId;
+        const key =
+          raw == null
+            ? null
+            : typeof raw === "number"
+              ? raw
+              : Number.parseInt(String(raw), 10);
+        const keyNorm = key !== null && !Number.isNaN(key) ? key : null;
+        const list = existingVariantMap.get(keyNorm) ?? [];
+        list.push(v);
+        existingVariantMap.set(keyNorm, list);
+      }
+      const matchedLocalIds = new Set<string>();
+
+      for (const syncVariant of syncVariants) {
+        const bySyncId = existingVariantMap.get(syncVariant.id);
+        const existing = bySyncId?.[0];
+        if (existing) {
+          matchedLocalIds.add(existing.id);
+          await updateLocalVariantFromPrintful(existing.id, syncVariant);
+          continue;
+        }
+        // Backfill: match by size/color/label when variants have no printfulSyncVariantId
+        const syncSize = getVariantSize(syncVariant)?.trim() ?? "";
+        const syncColor = getVariantColor(syncVariant)?.trim() ?? "";
+        const syncLabel = (syncVariant.name ?? "").trim();
+        const unmatched = existingVariants.filter(
+          (v) =>
+            !matchedLocalIds.has(v.id) &&
+            (v.size?.trim() ?? "") === syncSize &&
+            (v.color?.trim() ?? "") === syncColor &&
+            (v.label?.trim() ?? "") === syncLabel,
+        );
+        const toUpdate = unmatched[0];
+        if (toUpdate) {
+          matchedLocalIds.add(toUpdate.id);
+          await updateLocalVariantFromPrintful(toUpdate.id, syncVariant);
+        } else {
+          await createLocalVariantFromPrintful(productId, syncVariant);
+        }
+      }
+
+      // Remove variants no longer in Printful
+      for (const v of existingVariants) {
+        const syncId =
+          typeof v.printfulSyncVariantId === "number"
+            ? v.printfulSyncVariantId
+            : Number.parseInt(String(v.printfulSyncVariantId ?? ""), 10);
+        if (
+          !Number.isNaN(syncId) &&
+          syncId > 0 &&
+          !incomingVariantIds.has(syncId)
+        ) {
+          await db
+            .delete(productVariantsTable)
+            .where(eq(productVariantsTable.id, v.id));
+          console.log(`Deleted variant ${v.id} (no longer in Printful)`);
+        }
+      }
+    };
+
+    let existingVariants = await db
       .select()
       .from(productVariantsTable)
       .where(eq(productVariantsTable.productId, productId));
 
-    type VariantRow = (typeof existingVariants)[number];
-    const existingVariantMap = new Map<number | null, VariantRow[]>();
-    for (const v of existingVariants) {
-      const raw = v.printfulSyncVariantId;
-      const key =
-        raw == null
-          ? null
-          : typeof raw === "number"
-            ? raw
-            : Number.parseInt(String(raw), 10);
-      const keyNorm = key !== null && !Number.isNaN(key) ? key : null;
-      const list = existingVariantMap.get(keyNorm) ?? [];
-      list.push(v);
-      existingVariantMap.set(keyNorm, list);
-    }
-    const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
-    const matchedLocalIds = new Set<string>();
-
-    for (const syncVariant of syncVariants) {
-      const bySyncId = existingVariantMap.get(syncVariant.id);
-      const existing = bySyncId?.[0];
-      if (existing) {
-        matchedLocalIds.add(existing.id);
-        await updateLocalVariantFromPrintful(existing.id, syncVariant);
-        continue;
-      }
-      // Backfill: match by size/color/label when variants have no printfulSyncVariantId (e.g. after first sync or legacy data)
-      const syncSize = getVariantSize(syncVariant)?.trim() ?? "";
-      const syncColor = getVariantColor(syncVariant)?.trim() ?? "";
-      const syncLabel = (syncVariant.name ?? "").trim();
-      const unmatched = existingVariants.filter(
-        (v) =>
-          !matchedLocalIds.has(v.id) &&
-          (v.size?.trim() ?? "") === syncSize &&
-          (v.color?.trim() ?? "") === syncColor &&
-          (v.label?.trim() ?? "") === syncLabel,
-      );
-      const toUpdate = unmatched[0];
-      if (toUpdate) {
-        matchedLocalIds.add(toUpdate.id);
-        await updateLocalVariantFromPrintful(toUpdate.id, syncVariant);
+    try {
+      await runVariantSync(existingVariants);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isInsertOrDuplicate =
+        msg.includes("insert") ||
+        msg.includes("duplicate") ||
+        msg.includes("unique constraint");
+      if (isInsertOrDuplicate) {
+        // Replace unreferenced variants then retry (fixes stuck rows that find/update missed)
+        const deleted = await deleteUnreferencedPrintfulVariants(productId);
+        if (deleted > 0) {
+          console.log(`[Printful sync] Replaced ${deleted} unreferenced variant(s) for product ${productId}, retrying sync`);
+          existingVariants = await db
+            .select()
+            .from(productVariantsTable)
+            .where(eq(productVariantsTable.productId, productId));
+          await runVariantSync(existingVariants);
+        } else {
+          throw err;
+        }
       } else {
-        await createLocalVariantFromPrintful(productId, syncVariant);
-      }
-    }
-
-    for (const v of existingVariants) {
-      const syncId =
-        typeof v.printfulSyncVariantId === "number"
-          ? v.printfulSyncVariantId
-          : Number.parseInt(String(v.printfulSyncVariantId ?? ""), 10);
-      if (
-        !Number.isNaN(syncId) &&
-        syncId > 0 &&
-        !incomingVariantIds.has(syncId)
-      ) {
-        await db
-          .delete(productVariantsTable)
-          .where(eq(productVariantsTable.id, v.id));
-        console.log(`Deleted variant ${v.id} (no longer in Printful)`);
+        throw err;
       }
     }
   }
@@ -1108,6 +1138,21 @@ async function updateLocalProductFromPrintful(
   console.log(
     `Updated Printful product ${syncProduct.id} (local: ${productId})`,
   );
+}
+
+/**
+ * Delete product variants that are not referenced in any order.
+ * Used when find/update repeatedly fails so we can replace with fresh rows from Printful.
+ * Returns number of variants deleted.
+ */
+async function deleteUnreferencedPrintfulVariants(productId: string): Promise<number> {
+  const rows = await conn`
+    DELETE FROM product_variant
+    WHERE product_id = ${productId}
+      AND id NOT IN (SELECT product_variant_id FROM order_item WHERE product_variant_id IS NOT NULL)
+    RETURNING id
+  `;
+  return Array.isArray(rows) ? rows.length : 0;
 }
 
 /**
@@ -1239,12 +1284,47 @@ async function createLocalVariantFromPrintful(
         /* column or table missing */
       }
     }
-    // If still no row, try by (product_id, external_id) – row may have been created with external_id but null printful_sync_variant_id
+    // Type mismatch: DB may store bigint as string; match by text comparison
+    if (!existingId) {
+      try {
+        const rows = await conn`
+          SELECT id FROM product_variant
+          WHERE product_id = ${productId} AND printful_sync_variant_id::text = ${String(printfulSyncVariantId)}
+          LIMIT 1
+        `;
+        const first = Array.isArray(rows) ? rows[0] : null;
+        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
+          existingId = first.id;
+        }
+      } catch (_2) {
+        /* ignore */
+      }
+    }
+    // By (product_id, external_id) – row may have been created with external_id but null printful_sync_variant_id
     if (!existingId) {
       try {
         const rows = await conn`
           SELECT id FROM product_variant
           WHERE product_id = ${productId} AND external_id = ${externalId}
+          LIMIT 1
+        `;
+        const first = Array.isArray(rows) ? rows[0] : null;
+        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
+          existingId = first.id;
+        }
+      } catch (_2) {
+        /* ignore */
+      }
+    }
+    // By (product_id, size, color, label) – legacy row with null ids
+    if (!existingId) {
+      try {
+        const rows = await conn`
+          SELECT id FROM product_variant
+          WHERE product_id = ${productId}
+            AND (size IS NOT DISTINCT FROM ${size ?? null})
+            AND (color IS NOT DISTINCT FROM ${color ?? null})
+            AND (label IS NOT DISTINCT FROM ${label})
           LIMIT 1
         `;
         const first = Array.isArray(rows) ? rows[0] : null;

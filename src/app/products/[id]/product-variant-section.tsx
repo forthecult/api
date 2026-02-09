@@ -146,28 +146,7 @@ export function ProductVariantSection({
         ? deriveOptionDefinitionsFromVariants(variants)
         : [];
 
-  // Initialize selection from first variant so we always have a valid combination
-  React.useEffect(() => {
-    if (!hasVariants || optionDefinitions.length === 0 || variants.length === 0)
-      return;
-    const first = variants[0];
-    if (!first) return;
-    const initial: Record<number, string> = {};
-    optionDefinitions.forEach((opt, idx) => {
-      const value =
-        opt.name === "Variant"
-          ? first.label
-          : getVariantKey(opt.name, idx) === "color"
-            ? first.color
-            : getVariantKey(opt.name, idx) === "gender"
-              ? first.gender
-              : first.size;
-      if (value) initial[idx] = value;
-    });
-    setSelectedByIndex((prev) =>
-      Object.keys(initial).length > 0 ? initial : prev,
-    );
-  }, [hasVariants, optionDefinitions, variants]);
+  // No auto-selection: customer must choose size/color/etc. before adding to cart.
 
   const selectedVariant =
     hasVariants && optionDefinitions.length > 0 && variants.length > 0
