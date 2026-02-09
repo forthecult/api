@@ -262,15 +262,16 @@ export async function importSizeChartForPrintfulProduct(
 
 /**
  * Import a single Printful sync product by ID.
+ * When admin runs sync, we retry if Printful returns no variants (they often need a few seconds after publish).
  */
-const PRINTFUL_VARIANT_RETRY_DELAYS_MS = [2000, 5000];
+const PRINTFUL_VARIANT_RETRY_DELAYS_MS = [2000, 5000, 10000];
 
 export async function importSinglePrintfulProduct(
   printfulSyncProductId: number,
   overwriteExisting = false,
 ): Promise<{ action: "imported" | "updated" | "skipped"; productId: string }> {
-  // Fetch full product details including variants. On first publish Printful may not have
-  // variants ready yet; retry with short delays so variants (size, color) are present.
+  // Fetch full product details including variants. Printful often returns empty sync_variants
+  // right after publish; retry with delays so admin sync reliably gets size/color for the storefront.
   let syncProductFull = await fetchSyncProduct(printfulSyncProductId);
   let { sync_product: syncProduct, sync_variants: syncVariants } =
     syncProductFull;
@@ -283,7 +284,7 @@ export async function importSinglePrintfulProduct(
     }
     if (syncVariants.length === 0) {
       console.warn(
-        `Printful product ${printfulSyncProductId}: sync_variants still empty after retries (expected ${syncProduct.variants}). Product will be created; re-sync later to get variants.`,
+        `Printful product ${printfulSyncProductId}: sync_variants still empty after retries (expected ${syncProduct.variants}). Product will be created/updated without variants; run sync again later to get size/color.`,
       );
     }
   }

@@ -284,55 +284,57 @@ export function getPaymentOptionsForDisplay(
   };
 }
 
+export type PaymentIconItem = { src: string; alt: string; type: "card" | "crypto" };
+
 /** Icon paths for payment methods (for product page "Secure Checkout" strip). Only visible methods. */
 export function getPaymentIconPaths(
   visibility?: PaymentVisibility | null,
-): { src: string; alt: string }[] {
+): PaymentIconItem[] {
   const hideCard = visibility ? !visibility.creditCard : HIDDEN_PAYMENT_OPTIONS.creditCard;
-  const icons: { src: string; alt: string }[] = [];
+  const icons: PaymentIconItem[] = [];
   if (!hideCard) {
     icons.push(
-      { src: "/payments/visa.svg", alt: "Visa" },
-      { src: "/payments/mastercard.svg", alt: "Mastercard" },
-      { src: "/payments/amex.svg", alt: "American Express" },
+      { src: "/payments/visa.svg", alt: "Visa", type: "card" },
+      { src: "/payments/mastercard.svg", alt: "Mastercard", type: "card" },
+      { src: "/payments/amex.svg", alt: "American Express", type: "card" },
     );
   }
   if (visibility) {
     if (visibility.cryptoBitcoin)
-      icons.push({ src: "/crypto/bitcoin/bitcoin-logo.svg", alt: "Bitcoin" });
+      icons.push({ src: "/crypto/bitcoin/bitcoin-logo.svg", alt: "Bitcoin", type: "crypto" });
     if (visibility.cryptoEthereum)
-      icons.push({ src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum" });
+      icons.push({ src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum", type: "crypto" });
     if (visibility.cryptoSolana)
-      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana" });
+      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana", type: "crypto" });
     if (visibility.cryptoDogecoin)
-      icons.push({ src: "/payments/doge.svg", alt: "Dogecoin" });
+      icons.push({ src: "/payments/doge.svg", alt: "Dogecoin", type: "crypto" });
     if (visibility.cryptoMonero)
-      icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero" });
+      icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero", type: "crypto" });
     if (visibility.cryptoCrust)
-      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" });
+      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST", type: "crypto" });
     if (visibility.cryptoPump)
-      icons.push({ src: "/crypto/pump/pump-logomark.svg", alt: "Pump" });
+      icons.push({ src: "/crypto/pump/pump-logomark.svg", alt: "Pump", type: "crypto" });
     if (visibility.stablecoinUsdc)
-      icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC" });
+      icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" });
     if (visibility.stablecoinUsdt)
-      icons.push({ src: "/crypto/usdt/tether-usdt-logo.svg", alt: "USDT" });
+      icons.push({ src: "/crypto/usdt/tether-usdt-logo.svg", alt: "USDT", type: "crypto" });
   } else {
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin) {
-      icons.push({ src: "/crypto/bitcoin/bitcoin-logo.svg", alt: "Bitcoin" });
+      icons.push({ src: "/crypto/bitcoin/bitcoin-logo.svg", alt: "Bitcoin", type: "crypto" });
     }
     icons.push(
-      { src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum" },
-      { src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana" },
+      { src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum", type: "crypto" },
+      { src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana", type: "crypto" },
     );
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin) {
-      icons.push({ src: "/payments/doge.svg", alt: "Dogecoin" });
+      icons.push({ src: "/payments/doge.svg", alt: "Dogecoin", type: "crypto" });
     }
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero) {
-      icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero" });
+      icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero", type: "crypto" });
     }
     icons.push(
-      { src: "/crypto/usdc/usdc-logo.svg", alt: "USDC" },
-      { src: "/crypto/usdt/tether-usdt-logo.svg", alt: "USDT" },
+      { src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" },
+      { src: "/crypto/usdt/tether-usdt-logo.svg", alt: "USDT", type: "crypto" },
     );
   }
   return icons;

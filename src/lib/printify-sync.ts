@@ -157,6 +157,22 @@ export async function importSinglePrintifyProduct(
     printifyProductId,
   );
 
+  // Do not sync unpublished products to the store (Printify "visible" = not hidden in store)
+  if (!printifyProduct.visible) {
+    const [existingProduct] = await db
+      .select({ id: productsTable.id })
+      .from(productsTable)
+      .where(eq(productsTable.printifyProductId, printifyProductId))
+      .limit(1);
+    if (existingProduct) {
+      await db
+        .update(productsTable)
+        .set({ published: false, updatedAt: new Date() })
+        .where(eq(productsTable.id, existingProduct.id));
+    }
+    return { action: "skipped", productId: existingProduct?.id ?? "" };
+  }
+
   // Check if we already have this product
   const [existingProduct] = await db
     .select()

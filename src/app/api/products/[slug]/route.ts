@@ -3,8 +3,8 @@ import type { NextRequest } from "next/server";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 import { apiError, apiSuccess } from "~/lib/api-error";
 
-/** Cache for 1 minute (product data) */
-export const revalidate = 60;
+/** Always return fresh product data so variants (e.g. Printful size/color) are never stale on customer frontend. */
+export const dynamic = "force-dynamic";
 
 /**
  * Single product details by slug. 404 if not found or not published.

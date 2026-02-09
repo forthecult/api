@@ -85,7 +85,7 @@ async function fetchProductById(id: string): Promise<Product | null> {
     "http://localhost:3000";
   try {
     const res = await fetch(`${baseUrl}/api/products/${id}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const data = (await res.json()) as {

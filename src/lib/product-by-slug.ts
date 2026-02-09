@@ -4,6 +4,7 @@
  */
 
 import { and, asc, eq, or } from "drizzle-orm";
+import { nanoid } from "nanoid";
 
 import { db } from "~/db";
 import {
@@ -17,6 +18,64 @@ import {
 } from "~/db/schema";
 
 type OptionDefinition = { name: string; values: string[] };
+
+/**
+ * Create variant rows from option definitions (Cartesian product) when a product has options
+ * (e.g. from Printful) but no variant rows — so the storefront shows size/color like the admin.
+ * Returns true if any rows were inserted.
+ */
+async function createVariantRowsFromOptionDefinitions(
+  productId: string,
+  priceCents: number,
+  optionDefinitions: OptionDefinition[],
+): Promise<boolean> {
+  const valid = optionDefinitions.filter(
+    (o) => o.name?.trim() && o.values?.length && o.values.some((v) => v?.trim()),
+  );
+  if (valid.length === 0) return false;
+
+  const combinations: Record<string, string>[] = [{}];
+  for (const opt of valid) {
+    const next: Record<string, string>[] = [];
+    const name = opt.name.trim();
+    const values = opt.values.map((v) => v?.trim()).filter(Boolean);
+    for (const combo of combinations) {
+      for (const value of values) {
+        next.push({ ...combo, [name]: value });
+      }
+    }
+    combinations.length = 0;
+    combinations.push(...next);
+  }
+
+  if (combinations.length === 0) return false;
+
+  const now = new Date();
+
+  for (const combo of combinations) {
+    const size = combo["Size"] ?? combo["size"] ?? null;
+    const color = combo["Color"] ?? combo["color"] ?? null;
+    const gender = combo["Gender"] ?? combo["gender"] ?? null;
+    const label =
+      Object.entries(combo)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" / ") || null;
+
+    await db.insert(productVariantsTable).values({
+      id: nanoid(),
+      productId,
+      size,
+      color,
+      gender,
+      label,
+      priceCents,
+      createdAt: now,
+      updatedAt: now,
+    });
+  }
+
+  return true;
+}
 
 export type ProductBySlugResult = {
   id: string;
@@ -186,8 +245,21 @@ export async function getProductBySlugOrId(
       // ignore invalid JSON
     }
   }
-  // When we have variant rows but no option definitions (e.g. Printful sync or legacy), derive from variant data
   const hasVariantRows = variantsRows.length > 0;
+
+  // Product has option definitions (e.g. from Printful sync) but no variant rows yet — admin sees
+  // Options (Size, Color) from JSON; customer section requires variant rows. Create variant rows
+  // from the Cartesian product of option values so storefront shows the same as admin (no external sync).
+  if (!hasVariantRows && optionDefinitions.length > 0) {
+    const created = await createVariantRowsFromOptionDefinitions(
+      id,
+      product.priceCents,
+      optionDefinitions,
+    );
+    if (created) return getProductBySlugOrId(slugOrId);
+  }
+
+  // When we have variant rows but no option definitions (e.g. Printful sync or legacy), derive from variant data
   if (hasVariantRows && optionDefinitions.length === 0) {
     const sizeValues = new Set<string>();
     const colorValues = new Set<string>();

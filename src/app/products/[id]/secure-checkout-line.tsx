@@ -29,22 +29,25 @@ export function SecureCheckoutLine() {
       </div>
       {icons.length > 0 && (
         <div className="mx-auto mt-2 w-fit flex flex-wrap items-center justify-center gap-2">
-          {icons.map(({ src, alt }) => (
-            <span
-              key={src + alt}
-              className="relative flex h-7 w-9 shrink-0 items-center justify-center"
-              title={alt}
-            >
-              <Image
-                alt={alt}
-                className="object-contain"
-                height={28}
-                src={src}
-                width={36}
-                unoptimized={src.endsWith(".svg")}
-              />
-            </span>
-          ))}
+          {icons.map(({ src, alt, type }) => {
+            const isCard = type === "card";
+            return (
+              <span
+                key={src + alt}
+                className={`relative flex shrink-0 items-center justify-center ${isCard ? "h-7 w-9" : "h-5 w-6"}`}
+                title={alt}
+              >
+                <Image
+                  alt={alt}
+                  className="object-contain"
+                  height={isCard ? 28 : 20}
+                  src={src}
+                  width={isCard ? 36 : 24}
+                  unoptimized={src.endsWith(".svg")}
+                />
+              </span>
+            );
+          })}
         </div>
       )}
     </div>
