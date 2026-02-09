@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
   const { action } = body;
 
   // Build webhook URL - use custom URL if provided, otherwise use app URL
-  const baseUrl = body.customUrl || process.env.NEXT_PUBLIC_APP_URL;
+  let baseUrl = (body.customUrl || process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/+$/, "");
   if (!baseUrl) {
     return NextResponse.json(
       { error: "NEXT_PUBLIC_APP_URL not set and no customUrl provided" },
@@ -124,8 +124,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Add secret to URL if configured
-  const secret = process.env.PRINTIFY_WEBHOOK_SECRET;
+  // Add secret to URL if configured (Printify will send this URL when delivering events; GET returns 200 so their validation succeeds)
+  const secret = process.env.PRINTIFY_WEBHOOK_SECRET?.trim();
   const webhookUrl = secret
     ? `${baseUrl}/api/webhooks/printify?secret=${encodeURIComponent(secret)}`
     : `${baseUrl}/api/webhooks/printify`;

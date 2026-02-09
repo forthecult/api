@@ -1004,10 +1004,17 @@ async function updateLocalProductFromPrintful(
     type VariantRow = (typeof existingVariants)[number];
     const existingVariantMap = new Map<number | null, VariantRow[]>();
     for (const v of existingVariants) {
-      const key = v.printfulSyncVariantId ?? null;
-      const list = existingVariantMap.get(key) ?? [];
+      const raw = v.printfulSyncVariantId;
+      const key =
+        raw == null
+          ? null
+          : typeof raw === "number"
+            ? raw
+            : Number.parseInt(String(raw), 10);
+      const keyNorm = key !== null && !Number.isNaN(key) ? key : null;
+      const list = existingVariantMap.get(keyNorm) ?? [];
       list.push(v);
-      existingVariantMap.set(key, list);
+      existingVariantMap.set(keyNorm, list);
     }
     const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
     const matchedLocalIds = new Set<string>();
@@ -1041,9 +1048,14 @@ async function updateLocalProductFromPrintful(
     }
 
     for (const v of existingVariants) {
+      const syncId =
+        typeof v.printfulSyncVariantId === "number"
+          ? v.printfulSyncVariantId
+          : Number.parseInt(String(v.printfulSyncVariantId ?? ""), 10);
       if (
-        v.printfulSyncVariantId != null &&
-        !incomingVariantIds.has(v.printfulSyncVariantId)
+        !Number.isNaN(syncId) &&
+        syncId > 0 &&
+        !incomingVariantIds.has(syncId)
       ) {
         await db
           .delete(productVariantsTable)
@@ -1076,7 +1088,7 @@ async function createLocalVariantFromPrintful(
 
   const size = getVariantSize(syncVariant);
   const color = getVariantColor(syncVariant);
-  await db.insert(productVariantsTable).values({
+  const values = {
     id: variantId,
     productId,
     externalId: String(syncVariant.variant_id), // Printful catalog variant ID for ordering
@@ -1090,9 +1102,31 @@ async function createLocalVariantFromPrintful(
     availabilityStatus: syncVariant.availability_status ?? null,
     createdAt: now,
     updatedAt: now,
-  });
+  };
 
-  return variantId;
+  const rows = await db
+    .insert(productVariantsTable)
+    .values(values)
+    .onConflictDoUpdate({
+      target: [
+        productVariantsTable.productId,
+        productVariantsTable.printfulSyncVariantId,
+      ],
+      set: {
+        externalId: values.externalId,
+        size: values.size,
+        color: values.color,
+        sku: values.sku,
+        label: values.label,
+        priceCents: values.priceCents,
+        imageUrl: values.imageUrl,
+        availabilityStatus: values.availabilityStatus,
+        updatedAt: now,
+      },
+    })
+    .returning({ id: productVariantsTable.id });
+
+  return rows[0]?.id ?? variantId;
 }
 
 /**

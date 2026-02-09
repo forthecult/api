@@ -199,17 +199,12 @@ export async function POST(request: NextRequest) {
 
 /**
  * GET /api/webhooks/printify
- * Health check / verification endpoint
+ * Health check and Printify webhook validation endpoint.
+ * Always returns 200 so Printify's URL validation (code 9004) succeeds when they
+ * GET this URL during registration. Event delivery uses POST and still requires
+ * the secret when PRINTIFY_WEBHOOK_SECRET is set.
  */
-export async function GET(request: NextRequest) {
-  // Optionally verify secret
-  const secretParam = request.nextUrl.searchParams.get("secret");
-  const expectedSecret = process.env.PRINTIFY_WEBHOOK_SECRET;
-
-  if (expectedSecret && secretParam !== expectedSecret) {
-    return NextResponse.json({ error: "Invalid secret" }, { status: 401 });
-  }
-
+export async function GET(_request: NextRequest) {
   return NextResponse.json({
     status: "ok",
     service: "printify-webhook",

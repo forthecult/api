@@ -16,39 +16,60 @@ const PRODUCT_ID = "linkstar-h68k-1432-v2";
 const PRODUCT_SLUG = "linkstar-h68k-1432-v2";
 const CATEGORY_ID = "smart-home";
 
-/** Direct catalog paths (no cache) so fetch/upload works reliably. From product page pattern. */
-const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
+/** Cache path from product gallery (from Seeed product page; real images). */
+const SEEED_CACHE =
+  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/bb49d3ec4ee05b6f018e93f896b8a25d";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_MEDIA}/1/0/2/102110958.jpg`,
+    url: `${SEEED_CACHE}/1/-/1-102110958-linkstar-h68k-1432-v2-45font.jpg`,
     alt: "LinkStar H68K V2 router - quad-core RK3568, dual-2.5G and dual-1G Ethernet, Wi-Fi 6",
     title: "LinkStar-WiFi Router - Main",
   },
   {
-    url: `${SEEED_MEDIA}/l/i/linkstar-h68k-v2-02.jpg`,
-    alt: "LinkStar-WiFi Router - ports and interfaces",
-    title: "LinkStar-WiFi Router - Ports",
+    url: `${SEEED_CACHE}/2/-/2-102110958-linkstar-h68k-1432-v2-font.jpg`,
+    alt: "LinkStar H68K V2 - front view",
+    title: "LinkStar-WiFi Router - Front",
   },
   {
-    url: `${SEEED_MEDIA}/1/-/1-102110958-linkstar-h68k-v2.jpg`,
-    alt: "LinkStar H68K V2 - view 1",
-    title: "LinkStar-WiFi Router - View 1",
+    url: `${SEEED_CACHE}/3/-/3-102110958-linkstar-h68k-1432-v2-back.jpg`,
+    alt: "LinkStar H68K V2 - back view",
+    title: "LinkStar-WiFi Router - Back",
   },
   {
-    url: `${SEEED_MEDIA}/3/-/3-102110958-linkstar-h68k-v2.jpg`,
-    alt: "LinkStar H68K V2 - view 3",
-    title: "LinkStar-WiFi Router - View 3",
+    url: `${SEEED_CACHE}/4/-/4-102110958-linkstar-h68k-1432-v2-45back.jpg`,
+    alt: "LinkStar H68K V2 - 45° back view",
+    title: "LinkStar-WiFi Router - 45° Back",
   },
   {
-    url: `${SEEED_MEDIA}/4/-/4-102110958-linkstar-h68k-v2.jpg`,
-    alt: "LinkStar H68K V2 - view 4",
-    title: "LinkStar-WiFi Router - View 4",
+    url: `${SEEED_CACHE}/5/-/5-102110958-linkstar-h68k-1432-v2-all.jpg`,
+    alt: "LinkStar H68K V2 - all components",
+    title: "LinkStar-WiFi Router - All",
   },
   {
-    url: `${SEEED_MEDIA}/5/-/5-102110958-linkstar-h68k-v2.jpg`,
-    alt: "LinkStar H68K V2 - view 5",
-    title: "LinkStar-WiFi Router - View 5",
+    url: `${SEEED_CACHE}/6/-/6-102110958-linkstar-h68k-1432-v2-feature.jpg`,
+    alt: "LinkStar H68K V2 - feature",
+    title: "LinkStar-WiFi Router - Feature 6",
+  },
+  {
+    url: `${SEEED_CACHE}/7/-/7-102110958-linkstar-h68k-1432-v2-feature.jpg`,
+    alt: "LinkStar H68K V2 - feature",
+    title: "LinkStar-WiFi Router - Feature 7",
+  },
+  {
+    url: `${SEEED_CACHE}/8/-/8-102110958-linkstar-h68k-1432-v2-feature.jpg`,
+    alt: "LinkStar H68K V2 - feature",
+    title: "LinkStar-WiFi Router - Feature 8",
+  },
+  {
+    url: `${SEEED_CACHE}/9/-/9-102110958-linkstar-h68k-1432-v2-feature.jpg`,
+    alt: "LinkStar H68K V2 - feature",
+    title: "LinkStar-WiFi Router - Feature 9",
+  },
+  {
+    url: `${SEEED_CACHE}/1/0/10-102110958-linkstar-h68k-1432-v2-feature.jpg`,
+    alt: "LinkStar H68K V2 - feature",
+    title: "LinkStar-WiFi Router - Feature 10",
   },
 ];
 

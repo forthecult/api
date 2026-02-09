@@ -3456,11 +3456,6 @@ export function CheckoutClient() {
                         <FiatPrice usdAmount={taxCents / 100} />
                       </span>
                     </div>
-                    {taxNote ? (
-                      <span className="w-full text-right text-xs text-muted-foreground">
-                        {taxNote}
-                      </span>
-                    ) : null}
                   </div>
                   {customsDutiesNote ? (
                     <p className="text-xs text-muted-foreground">

@@ -64,7 +64,7 @@ We return HTTP 200 right away for product events so Printify can clear the "Publ
 - **Register webhooks:** `POST /api/admin/printify/webhooks` with `{ "action": "register_all" }`.
 - **Check status:** `GET /api/admin/printify/webhooks` (or `GET /api/admin/printify/sync` for `webhooks` in the response).
 - The app may auto-register the required product webhooks when you run **import_all**, **import_single**, or **confirm_publish** from `POST /api/admin/printify/sync` (if `NEXT_PUBLIC_APP_URL` is a public URL Printify can reach). If auto-registration fails (e.g. staging URL not yet reachable), register explicitly via `POST /api/admin/printify/webhooks` with `{ "action": "register_all" }`.
-- Webhook URL is built from `NEXT_PUBLIC_APP_URL` (and `PRINTIFY_WEBHOOK_SECRET` if set). Ensure `NEXT_PUBLIC_APP_URL` is your public or staging store URL so Printify can reach the endpoint.
+- Webhook URL is built from `NEXT_PUBLIC_APP_URL` (and `PRINTIFY_WEBHOOK_SECRET` if set). Ensure `NEXT_PUBLIC_APP_URL` is your **public** store URL (not localhost) so Printify's servers can reach it. `GET /api/webhooks/printify` always returns 200 so Printify's URL validation (error 9004) succeeds during registration.
 
 ### Product not showing in store?
 
