@@ -1,5 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 import { auth } from "~/lib/auth";
 import {
   getPublicShippingResponse,
@@ -10,6 +14,10 @@ import {
   shippingCalculateSchema,
   validateBody,
 } from "~/lib/validations/checkout";
+
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
+}
 
 /**
  * Public API: calculates shipping cost for a given country, order value, and line items.
@@ -25,7 +33,9 @@ export async function POST(request: NextRequest) {
     const validation = validateBody(shippingCalculateSchema, rawBody);
     if (!validation.success) {
       console.warn("Shipping calculate: validation failed", validation.error);
-      return NextResponse.json(getPublicShippingResponse(ZERO_SHIPPING));
+      return withPublicApiCors(
+        NextResponse.json(getPublicShippingResponse(ZERO_SHIPPING)),
+      );
     }
 
     const session = await auth.api.getSession({ headers: request.headers });
@@ -47,12 +57,16 @@ export async function POST(request: NextRequest) {
     };
 
     const result = await runShippingCalculate(extendedInput);
-    return NextResponse.json(getPublicShippingResponse(result));
+    return withPublicApiCors(
+      NextResponse.json(getPublicShippingResponse(result)),
+    );
   } catch (err) {
     console.error("Shipping calculate error:", err);
-    return NextResponse.json(
-      { error: "Failed to calculate shipping" },
-      { status: 500 },
+    return withPublicApiCors(
+      NextResponse.json(
+        { error: "Failed to calculate shipping" },
+        { status: 500 },
+      ),
     );
   }
 }

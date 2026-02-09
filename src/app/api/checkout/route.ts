@@ -2,6 +2,10 @@ import { createId } from "@paralleldrive/cuid2";
 import { inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
 import { deriveDepositAddress } from "~/lib/solana-deposit";
@@ -40,6 +44,10 @@ type CheckoutBody = {
  * POST /api/checkout
  * Supports USDC; poll GET /api/orders/{orderId}/status until paid.
  */
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
+}
+
 export async function POST(request: NextRequest) {
   // Rate limit checkout to prevent order spam and abuse
   const ip = getClientIp(request.headers);
@@ -48,50 +56,58 @@ export async function POST(request: NextRequest) {
     RATE_LIMITS.checkout,
   );
   if (!rateLimitResult.success) {
-    return rateLimitResponse(rateLimitResult);
+    return withPublicApiCors(rateLimitResponse(rateLimitResult));
   }
 
   try {
     const body = (await request.json()) as CheckoutBody;
     const { items: rawItems, email, payment } = body;
     if (!email || typeof email !== "string" || !email.trim()) {
-      return NextResponse.json(
-        { error: { code: "INVALID_REQUEST", message: "email required" } },
-        { status: 400 },
+      return withPublicApiCors(
+        NextResponse.json(
+          { error: { code: "INVALID_REQUEST", message: "email required" } },
+          { status: 400 },
+        ),
       );
     }
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
-      return NextResponse.json(
-        {
-          error: {
-            code: "INVALID_REQUEST",
-            message: "items required (non-empty array)",
+      return withPublicApiCors(
+        NextResponse.json(
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message: "items required (non-empty array)",
+            },
           },
-        },
-        { status: 400 },
+          { status: 400 },
+        ),
       );
     }
     if (!payment || payment.chain !== "solana") {
-      return NextResponse.json(
-        {
-          error: {
-            code: "INVALID_REQUEST",
-            message: "payment.chain must be 'solana'",
+      return withPublicApiCors(
+        NextResponse.json(
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message: "payment.chain must be 'solana'",
+            },
           },
-        },
-        { status: 400 },
+          { status: 400 },
+        ),
       );
     }
     if (payment.token !== "USDC") {
-      return NextResponse.json(
-        {
-          error: {
-            code: "INVALID_REQUEST",
-            message:
-              "Only USDC is supported for agent checkout; use payment.token: 'USDC'",
+      return withPublicApiCors(
+        NextResponse.json(
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message:
+                "Only USDC is supported for agent checkout; use payment.token: 'USDC'",
+            },
           },
-        },
-        { status: 400 },
+          { status: 400 },
+        ),
       );
     }
 
@@ -166,14 +182,16 @@ export async function POST(request: NextRequest) {
         "~/lib/shipping-restrictions"
       );
       if (isShippingExcluded(shipping.countryCode)) {
-        return NextResponse.json(
-          {
-            error: {
-              code: "INVALID_REQUEST",
-              message: "We do not ship to this country.",
+        return withPublicApiCors(
+          NextResponse.json(
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: "We do not ship to this country.",
+              },
             },
-          },
-          { status: 400 },
+            { status: 400 },
+          ),
         );
       }
     }
@@ -228,39 +246,43 @@ export async function POST(request: NextRequest) {
     params.set("message", message);
     const solanaPayUrl = `solana:${depositAddress}?${params.toString()}`;
 
-    return NextResponse.json(
-      {
-        orderId,
-        status: "awaiting_payment",
-        expiresAt,
-        payment: {
-          chain: "solana",
-          method: "solana_pay",
-          url: solanaPayUrl,
-          recipient: depositAddress,
-          amount: amountBaseUnits,
-          amountHuman: totalUsd.toFixed(2),
-          token,
-          tokenMint: tokenMint ?? undefined,
-          decimals,
-          label: `Order ${orderId}`,
-          message,
+    return withPublicApiCors(
+      NextResponse.json(
+        {
+          orderId,
+          status: "awaiting_payment",
+          expiresAt,
+          payment: {
+            chain: "solana",
+            method: "solana_pay",
+            url: solanaPayUrl,
+            recipient: depositAddress,
+            amount: amountBaseUnits,
+            amountHuman: totalUsd.toFixed(2),
+            token,
+            tokenMint: tokenMint ?? undefined,
+            decimals,
+            label: `Order ${orderId}`,
+            message,
+          },
+          totals: {
+            subtotalUsd,
+            shippingUsd: 0,
+            totalUsd,
+          },
         },
-        totals: {
-          subtotalUsd,
-          shippingUsd: 0,
-          totalUsd,
-        },
-      },
-      { status: 201 },
+        { status: 201 },
+      ),
     );
   } catch (err) {
     console.error("Checkout error:", err);
-    return NextResponse.json(
-      {
-        error: { code: "INTERNAL_ERROR", message: "Failed to create checkout" },
-      },
-      { status: 500 },
+    return withPublicApiCors(
+      NextResponse.json(
+        {
+          error: { code: "INTERNAL_ERROR", message: "Failed to create checkout" },
+        },
+        { status: 500 },
+      ),
     );
   }
 }
