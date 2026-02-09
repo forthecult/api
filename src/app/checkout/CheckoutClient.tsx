@@ -335,19 +335,17 @@ export function CheckoutClient() {
   >("idle");
   const solanaPayPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
-  const [shippingCents, setShippingCents] = useState<number>(0);
-  const [shippingLabel, setShippingLabel] = useState<string | null>(null);
-  const [shippingFree, setShippingFree] = useState(false);
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingSpeed, setShippingSpeed] = useState<"standard" | "express">(
-    "standard",
-  );
-  const [canShipToCountry, setCanShipToCountry] = useState(true);
-  const [taxCents, setTaxCents] = useState<number>(0);
-  const [taxNote, setTaxNote] = useState<string | null>(null);
-  const [customsDutiesNote, setCustomsDutiesNote] = useState<string | null>(
-    null,
-  );
+  const [shipping, setShipping] = useState<ShippingUpdate>({
+    shippingCents: 0,
+    shippingLabel: null,
+    shippingFree: false,
+    shippingLoading: false,
+    canShipToCountry: true,
+    shippingSpeed: "standard",
+    taxCents: 0,
+    taxNote: null,
+    customsDutiesNote: null,
+  });
   const [navigatingToPay, setNavigatingToPay] = useState(false);
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -376,16 +374,20 @@ export function CheckoutClient() {
   const router = useRouter();
 
   const handleShippingUpdate = useCallback((update: ShippingUpdate) => {
-    setShippingCents(update.shippingCents);
-    setShippingLabel(update.shippingLabel);
-    setShippingFree(update.shippingFree);
-    setShippingLoading(update.shippingLoading);
-    setCanShipToCountry(update.canShipToCountry);
-    setShippingSpeed(update.shippingSpeed);
-    setTaxCents(update.taxCents);
-    setTaxNote(update.taxNote);
-    setCustomsDutiesNote(update.customsDutiesNote);
+    setShipping(update);
   }, []);
+
+  // Destructure shipping state for easy access throughout the component
+  const {
+    shippingCents,
+    shippingFree,
+    shippingLoading,
+    canShipToCountry,
+    shippingSpeed,
+    taxCents,
+    taxNote,
+    customsDutiesNote,
+  } = shipping;
 
   const EVM_CHAINS = ["ethereum", "arbitrum", "base", "polygon"] as const;
   const EVM_CHAINS_AND_BNB = [
@@ -477,7 +479,8 @@ export function CheckoutClient() {
       paymentSubOption === "dogecoin" ||
       paymentSubOption === "monero");
 
-  const openSolanaPayDialog = useCallback(async () => {
+  /** Build the common order payload used by all payment handlers. */
+  const buildOrderPayload = useCallback(() => {
     const form = shippingFormRef.current?.getForm();
     const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
     const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
@@ -497,26 +500,61 @@ export function CheckoutClient() {
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
       subtotalCents - discountCentsForOrder + shippingFeeCentsRounded + taxCentsRounded;
+    const emailRaw = form?.email?.trim();
+    const emailValid =
+      typeof emailRaw === "string" &&
+      emailRaw.length > 0 &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
+    const email = emailValid ? emailRaw! : "guest@checkout.local";
+    return {
+      form,
+      emailNewsVal,
+      textNewsVal,
+      orderItems,
+      subtotalCents,
+      orderTotalCents,
+      shippingFeeCentsRounded,
+      taxCentsRounded,
+      email,
+      /** Common body fields shared by all create-order APIs */
+      commonBody: {
+        email: email.toLowerCase(),
+        orderItems,
+        totalCents: orderTotalCents,
+        shippingFeeCents: shippingFeeCentsRounded,
+        taxCents: taxCentsRounded,
+        userId: user?.id ?? null,
+        emailMarketingConsent:
+          isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
+        smsMarketingConsent:
+          isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
+        ...getTelegramOrderPayload(),
+        ...getAffiliatePayload(),
+        ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
+      },
+    };
+  }, [items, shippingCents, taxCents, user?.id, isLoggedIn, userReceiveMarketing, userReceiveSmsMarketing, appliedCoupon]);
+
+  /** Validate shipping + billing, set errors. Returns true if valid. */
+  const validateForPayment = useCallback((): boolean => {
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
+    const useShippingAsBillingVal = billingFormRef.current?.getUseShippingAsBilling() ?? true;
+    const billingErr = !useShippingAsBillingVal
+      ? (billingFormRef.current?.validate() ?? [])
+      : [];
+    const all = [...shippingErr, ...billingErr];
+    setValidationErrors(all);
+    return all.length === 0;
+  }, []);
+
+  const openSolanaPayDialog = useCallback(async () => {
+    const { orderTotalCents, commonBody } = buildOrderPayload();
     setSolanaPayStatus("pending");
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: form?.email?.trim() || "guest@checkout.local",
-          orderItems,
-          totalCents: orderTotalCents,
-          shippingFeeCents: shippingFeeCentsRounded,
-          taxCents: taxCentsRounded,
-          userId: user?.id ?? null,
-          emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
-          smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
-          ...getTelegramOrderPayload(),
-          ...getAffiliatePayload(),
-          ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-        }),
+        body: JSON.stringify(commonBody),
       });
       if (!createRes.ok) {
         setSolanaPayStatus("error");
@@ -544,17 +582,7 @@ export function CheckoutClient() {
     } catch {
       setSolanaPayStatus("error");
     }
-  }, [
-    subtotal,
-    shippingCents,
-    taxCents,
-    items,
-    user?.id,
-    isLoggedIn,
-    userReceiveMarketing,
-    userReceiveSmsMarketing,
-    appliedCoupon,
-  ]);
+  }, [buildOrderPayload]);
 
   const closeSolanaPayDialog = useCallback(() => {
     setSolanaPayOpen(false);
@@ -847,10 +875,9 @@ export function CheckoutClient() {
     const cardErr = paymentMethod === "credit-card" ? validateCreditCard() : [];
     const all = [...shippingErr, ...billingErr, ...cardErr];
     setValidationErrors(all);
-    if (all.length === 0) {
-      setNavigatingToPay(true);
-      requestAnimationFrame(() => router.push("/checkout/success"));
-    }
+    if (all.length > 0) return;
+    setNavigatingToPay(true);
+    requestAnimationFrame(() => router.push("/checkout/success"));
   }, [paymentMethod, validateCreditCard, router]);
 
   const setPaymentTop = useCallback((method: PaymentMethodTop) => {
@@ -866,93 +893,33 @@ export function CheckoutClient() {
   }, []);
 
   const handlePayWithSolana = useCallback(() => {
-    const shippingErr = shippingFormRef.current?.validate() ?? [];
-    const useShippingAsBillingVal = billingFormRef.current?.getUseShippingAsBilling() ?? true;
-    const billingErr = !useShippingAsBillingVal
-      ? (billingFormRef.current?.validate() ?? [])
-      : [];
-    const all = [...shippingErr, ...billingErr];
-    setValidationErrors(all);
-    if (all.length > 0) return;
+    if (!validateForPayment()) return;
     openSolanaPayDialog();
-  }, [openSolanaPayDialog]);
+  }, [validateForPayment, openSolanaPayDialog]);
 
   const handleGoToCryptoPay = useCallback(async () => {
-    const shippingErr = shippingFormRef.current?.validate() ?? [];
-    const useShippingAsBillingVal = billingFormRef.current?.getUseShippingAsBilling() ?? true;
-    const billingErr = !useShippingAsBillingVal
-      ? (billingFormRef.current?.validate() ?? [])
-      : [];
-    const all = [...shippingErr, ...billingErr];
-    setValidationErrors(all);
-    if (all.length > 0) return;
+    if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
     const isSui = paymentMethod === "crypto" && cryptoOtherSubOption === "sui";
     if (isSui) {
-      // Sui is its own chain; no Solana order. Put amount/expires in hash (not query).
       const invoiceId = crypto.randomUUID();
       const amount = total;
       const expires = Date.now() + 60 * 60 * 1000;
-      const url = `/checkout/${invoiceId}#sui-${amount.toFixed(2)}-${expires}`;
-      router.push(url);
+      router.push(`/checkout/${invoiceId}#sui-${amount.toFixed(2)}-${expires}`);
       return;
     }
-    const orderItems = items.map((item) => ({
-      productId: item.productId ?? item.id,
-      ...(item.productVariantId && { productVariantId: item.productVariantId }),
-      name: item.name,
-      priceCents: Math.round(item.price * 100),
-      quantity: item.quantity,
-    }));
-    const subtotalCents = orderItems.reduce(
-      (sum, i) => sum + i.priceCents * i.quantity,
-      0,
-    );
-    const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
-    const shippingCentsRounded = Math.round(shippingCents);
-    const taxCentsRounded = Math.round(taxCents);
-    const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
-    const form = shippingFormRef.current?.getForm();
-    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
-    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
-    const emailRaw = form?.email?.trim();
-    const emailValid =
-      typeof emailRaw === "string" &&
-      emailRaw.length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
-    const email = emailValid ? emailRaw : "guest@checkout.local";
+    const { commonBody } = buildOrderPayload();
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.toLowerCase(),
-          orderItems,
-          totalCents: orderTotalCents,
-          shippingFeeCents: shippingCentsRounded,
-          taxCents: taxCentsRounded,
-          userId: user?.id ?? null,
-          emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
-          smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
-          ...getTelegramOrderPayload(),
-          ...getAffiliatePayload(),
-          ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-        }),
+        body: JSON.stringify(commonBody),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
-        const body = (await createRes.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        const message =
-          typeof body?.error === "string" && body.error.length > 0
-            ? body.error
-            : "Could not create order. Please try again.";
-        setValidationErrors([message]);
+        const body = (await createRes.json().catch(() => ({}))) as { error?: string };
+        setValidationErrors([body?.error || "Could not create order. Please try again."]);
         return;
       }
       const data = (await createRes.json()) as { orderId: string };
@@ -964,65 +931,18 @@ export function CheckoutClient() {
             : paymentMethod === "stablecoins" && stablecoinToken === "usdc" && paymentSubOption === "solana"
               ? "usdc"
               : "solana";
-      const url = `/checkout/${data.orderId}#${token}`;
-      router.push(url);
+      router.push(`/checkout/${data.orderId}#${token}`);
     } catch {
       setNavigatingToPay(false);
       setValidationErrors(["Could not create order. Please try again."]);
     }
-  }, [
-    user?.id,
-    subtotal,
-    shippingCents,
-    taxCents,
-    items,
-    total,
-    paymentMethod,
-    paymentSubOption,
-    cryptoOtherSubOption,
-    router,
-    isLoggedIn,
-    userReceiveMarketing,
-    userReceiveSmsMarketing,
-    appliedCoupon,
-  ]);
+  }, [validateForPayment, buildOrderPayload, paymentMethod, paymentSubOption, cryptoOtherSubOption, stablecoinToken, total, router]);
 
   const handleGoToBtcPay = useCallback(async () => {
-    const shippingErr = shippingFormRef.current?.validate() ?? [];
-    const useShippingAsBillingVal = billingFormRef.current?.getUseShippingAsBilling() ?? true;
-    const billingErr = !useShippingAsBillingVal
-      ? (billingFormRef.current?.validate() ?? [])
-      : [];
-    const all = [...shippingErr, ...billingErr];
-    setValidationErrors(all);
-    if (all.length > 0) return;
+    if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
-    const orderItems = items.map((item) => ({
-      productId: item.productId ?? item.id,
-      ...(item.productVariantId && { productVariantId: item.productVariantId }),
-      name: item.name,
-      priceCents: Math.round(item.price * 100),
-      quantity: item.quantity,
-    }));
-    const subtotalCents = orderItems.reduce(
-      (sum, i) => sum + i.priceCents * i.quantity,
-      0,
-    );
-    const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
-    const shippingCentsRounded = Math.round(shippingCents);
-    const taxCentsRounded = Math.round(taxCents);
-    const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
-    const form = shippingFormRef.current?.getForm();
-    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
-    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
-    const emailRaw = form?.email?.trim();
-    const emailValid =
-      typeof emailRaw === "string" &&
-      emailRaw.length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
-    const email = emailValid ? emailRaw : "guest@checkout.local";
+    const { commonBody } = buildOrderPayload();
     const token =
       paymentSubOption === "bitcoin"
         ? "bitcoin"
@@ -1033,65 +953,24 @@ export function CheckoutClient() {
       const createRes = await fetch("/api/checkout/btcpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.toLowerCase(),
-          orderItems,
-          totalCents: orderTotalCents,
-          shippingFeeCents: shippingCentsRounded,
-          taxCents: taxCentsRounded,
-          userId: user?.id ?? null,
-          token,
-          emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
-          smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
-          ...getTelegramOrderPayload(),
-          ...getAffiliatePayload(),
-          ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-        }),
+        body: JSON.stringify({ ...commonBody, token }),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
-        const body = (await createRes.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        const message =
-          typeof body?.error === "string" && body.error.length > 0
-            ? body.error
-            : "Could not create order. Please try again.";
-        setValidationErrors([message]);
+        const body = (await createRes.json().catch(() => ({}))) as { error?: string };
+        setValidationErrors([body?.error || "Could not create order. Please try again."]);
         return;
       }
       const data = (await createRes.json()) as { orderId: string };
-      const url = `/checkout/${data.orderId}#${token}`;
-      router.push(url);
+      router.push(`/checkout/${data.orderId}#${token}`);
     } catch {
       setNavigatingToPay(false);
       setValidationErrors(["Could not create order. Please try again."]);
     }
-  }, [
-    user?.id,
-    shippingCents,
-    taxCents,
-    items,
-    total,
-    paymentSubOption,
-    router,
-    isLoggedIn,
-    userReceiveMarketing,
-    userReceiveSmsMarketing,
-    appliedCoupon,
-  ]);
+  }, [validateForPayment, buildOrderPayload, paymentSubOption, router]);
 
   const handleGoToEthPay = useCallback(async () => {
-    const shippingErr = shippingFormRef.current?.validate() ?? [];
-    const useShippingAsBillingVal = billingFormRef.current?.getUseShippingAsBilling() ?? true;
-    const billingErr = !useShippingAsBillingVal
-      ? (billingFormRef.current?.validate() ?? [])
-      : [];
-    const all = [...shippingErr, ...billingErr];
-    setValidationErrors(all);
-    if (all.length > 0) return;
+    if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
     const chain =
@@ -1108,53 +987,15 @@ export function CheckoutClient() {
         : paymentMethod === "stablecoins" && stablecoinToken === "usdc"
           ? "usdc"
           : "usdt";
-
-    const orderItems = items.map((item) => ({
-      productId: item.productId ?? item.id,
-      ...(item.productVariantId && { productVariantId: item.productVariantId }),
-      name: item.name,
-      priceCents: Math.round(item.price * 100),
-      quantity: item.quantity,
-    }));
-    const subtotalCents = orderItems.reduce(
-      (sum, i) => sum + i.priceCents * i.quantity,
-      0,
-    );
-    const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
-    const shippingFeeCentsRounded = Math.round(shippingCents);
-    const taxCentsRounded = Math.round(taxCents);
-    const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingFeeCentsRounded + taxCentsRounded;
-    const form = shippingFormRef.current?.getForm();
-    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
-    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
+    const { commonBody, form } = buildOrderPayload();
     try {
-      // Create order via API
       const res = await fetch("/api/checkout/eth-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: user?.email ?? form?.email ?? "",
-          orderItems: orderItems.map(
-            ({ productId, productVariantId, quantity }) => ({
-              productId,
-              ...(productVariantId && { productVariantId }),
-              quantity,
-            }),
-          ),
-          totalCents: Math.round(orderTotalCents),
-          shippingFeeCents: shippingFeeCentsRounded,
-          taxCents: taxCentsRounded,
+          ...commonBody,
           chain,
           token,
-          userId: user?.id,
-          emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
-          smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
-          ...getTelegramOrderPayload(),
-          ...getAffiliatePayload(),
-          ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
           shipping: form
             ? {
                 name: `${form.firstName} ${form.lastName}`.trim(),
@@ -1169,54 +1010,12 @@ export function CheckoutClient() {
             : undefined,
         }),
       });
-
       if (!res.ok) {
-        const data = (await res.json()) as {
-          error?: string;
-          expectedTotalCents?: number;
-          receivedTotalCents?: number;
-          subtotalCents?: number;
-          shippingCents?: number;
-          productNames?: string[];
-          productPriceCents?: Array<{
-            name: string;
-            priceCents: number;
-            quantity: number;
-          }>;
-        };
-        const msg = data.error ?? "Failed to create order";
-        let hint = "";
-        if (typeof data.expectedTotalCents === "number") {
-          hint = ` Expected total: $${(data.expectedTotalCents / 100).toFixed(2)}.`;
-          if (
-            typeof data.subtotalCents === "number" &&
-            typeof data.shippingCents === "number"
-          ) {
-            hint += ` Backend computed: subtotal $${(data.subtotalCents / 100).toFixed(2)} + shipping $${(data.shippingCents / 100).toFixed(2)} = $${(data.expectedTotalCents / 100).toFixed(2)}.`;
-          }
-          if (
-            Array.isArray(data.productPriceCents) &&
-            data.productPriceCents.length > 0
-          ) {
-            const lines = data.productPriceCents.map(
-              (p) =>
-                ` ${p.name}: $${(p.priceCents / 100).toFixed(2)} × ${p.quantity}`,
-            );
-            hint += ` Backend matched:${lines.join(";")}.`;
-          }
-          hint +=
-            " If your cart shows different prices, product data may have changed—refresh and try again.";
-        }
-        throw new Error(msg + hint);
+        const data = (await res.json()) as { error?: string };
+        throw new Error(data.error ?? "Failed to create order");
       }
-
       const { orderId } = await res.json();
-
-      // Navigate to payment page with clean URL: /checkout/{orderId}#eth
-      const url = `/checkout/${orderId}#${token}`;
-      requestAnimationFrame(() => {
-        router.push(url);
-      });
+      router.push(`/checkout/${orderId}#${token}`);
     } catch (err) {
       console.error("ETH order creation error:", err);
       setNavigatingToPay(false);
@@ -1226,96 +1025,23 @@ export function CheckoutClient() {
           : "Could not create order. Please try again.",
       ]);
     }
-  }, [
-    user?.email,
-    user?.id,
-    total,
-    shippingCents,
-    taxCents,
-    items,
-    paymentMethod,
-    paymentSubOption,
-    stablecoinToken,
-    cryptoEthChain,
-    router,
-    isLoggedIn,
-    userReceiveMarketing,
-    userReceiveSmsMarketing,
-    appliedCoupon,
-  ]);
+  }, [validateForPayment, buildOrderPayload, paymentMethod, paymentSubOption, stablecoinToken, cryptoEthChain, router]);
 
   const handleGoToTonPay = useCallback(async () => {
-    const shippingErr = shippingFormRef.current?.validate() ?? [];
-    const useShippingAsBillingVal = billingFormRef.current?.getUseShippingAsBilling() ?? true;
-    const billingErr = !useShippingAsBillingVal
-      ? (billingFormRef.current?.validate() ?? [])
-      : [];
-    const all = [...shippingErr, ...billingErr];
-    setValidationErrors(all);
-    if (all.length > 0) return;
+    if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
-    const orderItems = items.map((item) => ({
-      productId: item.productId ?? item.id,
-      ...(item.productVariantId && { productVariantId: item.productVariantId }),
-      name: item.name,
-      priceCents: Math.round(item.price * 100),
-      quantity: item.quantity,
-    }));
-    const subtotalCents = orderItems.reduce(
-      (sum, i) => sum + i.priceCents * i.quantity,
-      0,
-    );
-    const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
-    const shippingCentsRounded = Math.round(shippingCents);
-    const taxCentsRounded = Math.round(taxCents);
-    const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
-    const form = shippingFormRef.current?.getForm();
-    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
-    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
-    const emailRaw = form?.email?.trim();
-    const emailValid =
-      typeof emailRaw === "string" &&
-      emailRaw.length > 0 &&
-      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
-    const email = emailValid ? emailRaw : "guest@checkout.local";
+    const { commonBody } = buildOrderPayload();
     try {
       const createRes = await fetch("/api/checkout/ton-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email.toLowerCase(),
-          orderItems: orderItems.map(
-            ({ productId, productVariantId, quantity }) => ({
-              productId,
-              ...(productVariantId && { productVariantId }),
-              quantity,
-            }),
-          ),
-          totalCents: Math.round(orderTotalCents),
-          shippingFeeCents: shippingCentsRounded,
-          taxCents: taxCentsRounded,
-          userId: user?.id ?? null,
-          emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
-          smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
-          ...getTelegramOrderPayload(),
-          ...getAffiliatePayload(),
-          ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-        }),
+        body: JSON.stringify(commonBody),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
-        const body = (await createRes.json().catch(() => ({}))) as {
-          error?: string;
-        };
-        const message =
-          typeof body?.error === "string" && body.error.length > 0
-            ? body.error
-            : "Could not create order. Please try again.";
-        setValidationErrors([message]);
+        const body = (await createRes.json().catch(() => ({}))) as { error?: string };
+        setValidationErrors([body?.error || "Could not create order. Please try again."]);
         return;
       }
       const data = (await createRes.json()) as { orderId: string };
@@ -1324,17 +1050,7 @@ export function CheckoutClient() {
       setNavigatingToPay(false);
       setValidationErrors(["Could not create order. Please try again."]);
     }
-  }, [
-    user?.id,
-    shippingCents,
-    taxCents,
-    items,
-    router,
-    isLoggedIn,
-    userReceiveMarketing,
-    userReceiveSmsMarketing,
-    appliedCoupon,
-  ]);
+  }, [validateForPayment, buildOrderPayload, router]);
 
   if (!isHydrated) {
     return (

@@ -134,23 +134,30 @@ export const ShippingAddressForm = forwardRef<
   );
   const [emailNews, setEmailNews] = useState(true);
   const [textNews, setTextNews] = useState(false);
-  const [shippingCents, setShippingCents] = useState<number>(0);
-  const [shippingLabel, setShippingLabel] = useState<string | null>(null);
-  const [shippingFree, setShippingFree] = useState(false);
-  const [shippingLoading, setShippingLoading] = useState(false);
-  const [shippingSpeed, setShippingSpeed] = useState<"standard" | "express">(
-    "standard",
-  );
-  const [canShipToCountry, setCanShipToCountry] = useState(true);
-  const [taxCents, setTaxCents] = useState<number>(0);
-  const [taxNote, setTaxNote] = useState<string | null>(null);
-  const [customsDutiesNote, setCustomsDutiesNote] = useState<string | null>(
-    null,
-  );
+  /** Local shipping state for rendering the Shipping Method card and
+   *  for validating express-shipping phone requirements. All changes
+   *  are also pushed to the parent via onShippingUpdate. */
+  const [localShipping, setLocalShipping] = useState<ShippingUpdate>({
+    shippingCents: 0,
+    shippingLabel: null,
+    shippingFree: false,
+    shippingLoading: false,
+    canShipToCountry: true,
+    shippingSpeed: "standard",
+    taxCents: 0,
+    taxNote: null,
+    customsDutiesNote: null,
+  });
 
   const update = useCallback((field: keyof CheckoutFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   }, []);
+
+  /** Update local shipping state and push to parent in one call. */
+  const updateShipping = useCallback((next: ShippingUpdate) => {
+    setLocalShipping(next);
+    onShippingUpdate(next);
+  }, [onShippingUpdate]);
 
   const onLoqateSelect = useCallback((mapped: MappedShippingAddress) => {
     setForm((prev) => ({
@@ -231,24 +238,20 @@ export const ShippingAddressForm = forwardRef<
   }, [form]);
 
   useEffect(() => {
+    const EMPTY_SHIPPING: ShippingUpdate = {
+      shippingCents: 0,
+      shippingLabel: null,
+      shippingFree: false,
+      shippingLoading: false,
+      canShipToCountry: true,
+      shippingSpeed: "standard",
+      taxCents: 0,
+      taxNote: null,
+      customsDutiesNote: null,
+    };
     const country = form.country?.trim();
     if (!country || items.length === 0) {
-      setShippingCents(0);
-      setShippingLabel(null);
-      setShippingFree(false);
-      setShippingLoading(false);
-      setCanShipToCountry(true);
-      onShippingUpdate({
-        shippingCents: 0,
-        shippingLabel: null,
-        shippingFree: false,
-        shippingLoading: false,
-        canShipToCountry: true,
-        shippingSpeed: "standard",
-        taxCents: 0,
-        taxNote: null,
-        customsDutiesNote: null,
-      });
+      updateShipping(EMPTY_SHIPPING);
       return;
     }
     let cancelled = false;
@@ -257,18 +260,7 @@ export const ShippingAddressForm = forwardRef<
       () => ac.abort(),
       SHIPPING_CALCULATE_TIMEOUT_MS,
     );
-    setShippingLoading(true);
-    onShippingUpdate({
-      shippingCents: 0,
-      shippingLabel: null,
-      shippingFree: false,
-      shippingLoading: true,
-      canShipToCountry: true,
-      shippingSpeed: "standard",
-      taxCents: 0,
-      taxNote: null,
-      customsDutiesNote: null,
-    });
+    updateShipping({ ...EMPTY_SHIPPING, shippingLoading: true });
     fetch("/api/shipping/calculate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -305,64 +297,28 @@ export const ShippingAddressForm = forwardRef<
           taxNote?: string | null;
         }) => {
           if (!cancelled) {
-            const cents =
-              typeof data.shippingCents === "number" ? data.shippingCents : 0;
-            const label = data.label ?? null;
-            const free = Boolean(data.freeShipping);
-            const canShip = data.canShipToCountry !== false;
-            const speed =
-              data.shippingSpeed === "express" ? "express" : "standard";
-            const tax = typeof data.taxCents === "number" ? data.taxCents : 0;
-            const taxN = data.taxNote ?? null;
-            const customs = data.customsDutiesNote ?? null;
-            setShippingCents(cents);
-            setShippingLabel(label);
-            setShippingFree(free);
-            setCanShipToCountry(canShip);
-            setShippingSpeed(speed);
-            setTaxCents(tax);
-            setTaxNote(taxN);
-            setCustomsDutiesNote(customs);
-            onShippingUpdate({
-              shippingCents: cents,
-              shippingLabel: label,
-              shippingFree: free,
+            updateShipping({
+              shippingCents:
+                typeof data.shippingCents === "number" ? data.shippingCents : 0,
+              shippingLabel: data.label ?? null,
+              shippingFree: Boolean(data.freeShipping),
               shippingLoading: false,
-              canShipToCountry: canShip,
-              shippingSpeed: speed,
-              taxCents: tax,
-              taxNote: taxN,
-              customsDutiesNote: customs,
+              canShipToCountry: data.canShipToCountry !== false,
+              shippingSpeed:
+                data.shippingSpeed === "express" ? "express" : "standard",
+              taxCents:
+                typeof data.taxCents === "number" ? data.taxCents : 0,
+              taxNote: data.taxNote ?? null,
+              customsDutiesNote: data.customsDutiesNote ?? null,
             });
           }
         },
       )
       .catch(() => {
-        if (!cancelled) {
-          setShippingCents(0);
-          setShippingLabel(null);
-          setShippingFree(false);
-          setCanShipToCountry(true);
-          setShippingSpeed("standard");
-          setTaxCents(0);
-          setTaxNote(null);
-          setCustomsDutiesNote(null);
-          onShippingUpdate({
-            shippingCents: 0,
-            shippingLabel: null,
-            shippingFree: false,
-            shippingLoading: false,
-            canShipToCountry: true,
-            shippingSpeed: "standard",
-            taxCents: 0,
-            taxNote: null,
-            customsDutiesNote: null,
-          });
-        }
+        if (!cancelled) updateShipping(EMPTY_SHIPPING);
       })
       .finally(() => {
         clearTimeout(timeoutId);
-        if (!cancelled) setShippingLoading(false);
       });
     return () => {
       cancelled = true;
@@ -379,12 +335,12 @@ export const ShippingAddressForm = forwardRef<
     subtotal,
     appliedCoupon?.code,
     appliedCoupon?.freeShipping,
-    onShippingUpdate,
+    updateShipping,
   ]);
 
   const validate = useCallback(() => {
-    return validateShippingForm(form, shippingSpeed);
-  }, [form, shippingSpeed]);
+    return validateShippingForm(form, localShipping.shippingSpeed);
+  }, [form, localShipping.shippingSpeed]);
 
   useImperativeHandle(
     ref,
@@ -398,6 +354,14 @@ export const ShippingAddressForm = forwardRef<
     [form, emailNews, textNews, validate],
   );
 
+  const {
+    shippingCents,
+    shippingLabel,
+    shippingFree,
+    shippingLoading,
+    canShipToCountry,
+    shippingSpeed,
+  } = localShipping;
   const isUS = form.country === "US";
 
   return (
