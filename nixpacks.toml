@@ -1,4 +1,3 @@
 # Force Node/Next.js build and start (avoids Rust detection from programs/Cargo.toml)
-# On deploy: push schema to DB then start the app
 [start]
-cmd = "bun run db:ensure-printful-printify && bun run db:push && bun run start"
+cmd = "bun run start"
