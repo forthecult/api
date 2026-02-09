@@ -288,6 +288,7 @@ export function ProductVariantSection({
                 }
               : undefined
           }
+          variantRequired
         />
       </div>
       <div className="w-full min-w-0">

@@ -38,6 +38,8 @@ interface ProductActionsProps {
   product: Product;
   /** When present, price/stock/image and add-to-cart use this variant. */
   selectedVariant?: SelectedVariant | null;
+  /** When true, Add to Cart is disabled until a variant is selected. */
+  variantRequired?: boolean;
 }
 
 interface ProductPriceDisplayProps {
@@ -68,6 +70,7 @@ export function ProductPriceDisplay({
 export function ProductActions({
   product,
   selectedVariant,
+  variantRequired = false,
 }: ProductActionsProps) {
   const { addItem } = useCart();
   const { selectedCountry: footerCountry } = useCountryCurrency();
@@ -109,6 +112,7 @@ export function ProductActions({
   }, []);
 
   const handleAddToCart = React.useCallback(async () => {
+    if (variantRequired && selectedVariant == null) return;
     setIsAdding(true);
     if (selectedVariant != null) {
       const lineId = `${product.id}__${selectedVariant.id}`;
@@ -142,7 +146,7 @@ export function ProductActions({
     toast.success(`${product.name} added to cart`);
     await new Promise((r) => setTimeout(r, 400));
     setIsAdding(false);
-  }, [addItem, product, selectedVariant, image, price, quantity]);
+  }, [addItem, product, selectedVariant, image, price, quantity, variantRequired]);
 
   const handleWishlistToggle = React.useCallback(async () => {
     if (inWishlist) {
@@ -249,11 +253,19 @@ export function ProductActions({
       {/* Add to cart */}
       <Button
         className="flex-1 min-h-[4.5rem]"
-        disabled={!inStock || isAdding}
+        disabled={
+          !inStock ||
+          isAdding ||
+          (variantRequired && selectedVariant == null)
+        }
         onClick={handleAddToCart}
       >
         <ShoppingCart className="mr-2 h-4 w-4" />
-        {isAdding ? "Adding…" : "Add to Cart"}
+        {isAdding
+          ? "Adding…"
+          : variantRequired && selectedVariant == null
+            ? "Select options"
+            : "Add to Cart"}
       </Button>
 
       {/* Add to wishlist */}
