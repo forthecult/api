@@ -145,6 +145,7 @@ export async function GET(
       published: product.published,
       brand: product.brand,
       vendor: product.vendor,
+      source: product.source ?? "manual",
       slug,
       sku: product.sku,
       barcode: product.barcode,

@@ -96,6 +96,8 @@ type Product = {
   published: boolean;
   brand: string | null;
   vendor: string | null;
+  /** "manual" | "printful" | "printify" – used to show the correct sync button. */
+  source?: string | null;
   slug: string | null;
   sku: string | null;
   barcode: string | null;
@@ -1883,7 +1885,7 @@ export default function AdminProductEditPage() {
                 </div>
               ))}
             </div>
-            {(vendor?.toLowerCase() === "printful" || vendor?.toLowerCase() === "printify") && (
+            {(product?.source === "printful" || product?.source === "printify") && (
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
                 <p className="text-sm text-muted-foreground">
                   Images from Printful/Printify are on their CDN. Re-host to UploadThing for SEO (WebP, filenames, alt) and your own hosting.
@@ -2495,17 +2497,17 @@ export default function AdminProductEditPage() {
               least one country, the product will only be shown and purchasable
               in those regions (storefront and checkout).
             </p>
-            {(vendor?.toLowerCase() === "printful" || vendor?.toLowerCase() === "printify") && (
+            {(product?.source === "printful" || product?.source === "printify") && (
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <p className="basis-full">
-                  {vendor?.toLowerCase() === "printful"
+                  {product?.source === "printful"
                     ? "Printful"
                     : "Printify"}{" "}
                   products: shipping countries (Markets) are filled on import or
                   re-sync. If Markets is empty, re-sync to refresh shipping
                   destinations.
                 </p>
-                {vendor?.toLowerCase() === "printful" && (
+                {product?.source === "printful" && (
                   <Button
                     type="button"
                     variant="outline"
@@ -2517,10 +2519,10 @@ export default function AdminProductEditPage() {
                     <RefreshCw
                       className={cn("size-3.5", printfulResyncLoading && "animate-spin")}
                     />
-                    {printfulResyncLoading ? "Re-syncing…" : "Re-sync from Printful"}
+                    {printfulResyncLoading ? "Re-syncing…" : "Sync from Printful"}
                   </Button>
                 )}
-                {vendor?.toLowerCase() === "printify" && (
+                {product?.source === "printify" && (
                   <>
                     <Button
                       type="button"
@@ -2533,7 +2535,7 @@ export default function AdminProductEditPage() {
                       <RefreshCw
                         className={cn("size-3.5", printifyResyncLoading && "animate-spin")}
                       />
-                      {printifyResyncLoading ? "Re-syncing…" : "Re-sync from Printify"}
+                      {printifyResyncLoading ? "Re-syncing…" : "Sync from Printify"}
                     </Button>
                     <Button
                       type="button"
@@ -2569,7 +2571,7 @@ export default function AdminProductEditPage() {
                 )}
               </div>
             )}
-            {vendor?.toLowerCase() === "printify" && (
+            {product?.source === "printify" && (
               <>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-muted-foreground">

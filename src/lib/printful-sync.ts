@@ -416,7 +416,7 @@ function getVariantColor(v: PrintfulSyncVariant): string | null {
   return optionValueToString(colorOpt ?? null);
 }
 
-/** Build option definitions (Size, Color) from sync variants for storefront and admin. */
+/** Build option definitions (Size, Color) from sync variants for storefront and admin. Fallback to variant names when size/color not extracted. */
 function buildOptionDefinitionsFromVariants(
   syncVariants: PrintfulSyncVariant[],
 ): Array<{ name: string; values: string[] }> {
@@ -434,6 +434,16 @@ function buildOptionDefinitionsFromVariants(
   }
   if (colorValues.size > 0) {
     options.push({ name: "Color", values: [...colorValues].sort() });
+  }
+  if (options.length === 0 && syncVariants.length > 1) {
+    const labels = new Set<string>();
+    for (const v of syncVariants) {
+      const name = v.name?.trim();
+      if (name) labels.add(name);
+    }
+    if (labels.size > 0) {
+      options.push({ name: "Variant", values: [...labels].sort() });
+    }
   }
   return options;
 }

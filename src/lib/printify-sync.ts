@@ -400,6 +400,10 @@ async function createLocalProductFromPrintify(
   const brand = blueprint?.brand?.trim() ?? null;
   const model = blueprint?.model?.trim() ?? null;
 
+  const optionDefs = hasVariants ? buildOptionDefinitionsFromPrintify(printifyProduct) : [];
+  const optionDefinitionsJson =
+    optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
+
   // Create product
   await db.insert(productsTable).values({
     id: productId,
@@ -412,6 +416,7 @@ async function createLocalProductFromPrintify(
     printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
     priceCents,
     hasVariants,
+    optionDefinitionsJson,
     published: printifyProduct.visible, // visible = not "hide in store"
     imageUrl,
     pageTitle,
@@ -556,6 +561,12 @@ async function updateLocalProductFromPrintify(
   const defaultImage = printifyProduct.images.find((img) => img.is_default);
   const imageUrl = defaultImage?.src || printifyProduct.images[0]?.src || null;
 
+  const optionDefs = enabledVariants.length > 1
+    ? buildOptionDefinitionsFromPrintify(printifyProduct)
+    : [];
+  const optionDefinitionsJson =
+    optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
+
   // Update product - Printify-managed fields (including cost, weight, vendor, sku, handling days, print provider)
   await db
     .update(productsTable)
@@ -565,6 +576,7 @@ async function updateLocalProductFromPrintify(
       imageUrl,
       published: printifyProduct.visible,
       hasVariants: enabledVariants.length > 1,
+      optionDefinitionsJson,
       pageTitle: printifyProduct.title,
       metaDescription,
       costPerItemCents,
@@ -672,10 +684,9 @@ async function createLocalVariantFromPrintify(
   const variantId = nanoid();
   const now = new Date();
 
-  // Parse variant options to get size/color
   const variantOptions = getVariantOptions(printifyProduct, variant);
+  const label = getVariantLabel(printifyProduct, variant);
 
-  // Get image for this variant
   const variantImage = printifyProduct.images.find((img) =>
     img.variant_ids.includes(variant.id),
   );
@@ -684,10 +695,12 @@ async function createLocalVariantFromPrintify(
   await db.insert(productVariantsTable).values({
     id: variantId,
     productId,
-    externalId: String(variant.id), // Printify variant ID for ordering
+    externalId: String(variant.id),
     printifyVariantId: String(variant.id),
     size: variantOptions.size,
     color: variantOptions.color,
+    gender: variantOptions.gender,
+    label,
     sku: variant.sku || null,
     priceCents: variant.price,
     weightGrams: variant.grams || null,
@@ -709,10 +722,9 @@ async function updateLocalVariantFromPrintify(
 ): Promise<void> {
   const now = new Date();
 
-  // Parse variant options
   const variantOptions = getVariantOptions(printifyProduct, variant);
+  const label = getVariantLabel(printifyProduct, variant);
 
-  // Get image for this variant
   const variantImage = printifyProduct.images.find((img) =>
     img.variant_ids.includes(variant.id),
   );
@@ -724,6 +736,8 @@ async function updateLocalVariantFromPrintify(
       externalId: String(variant.id),
       size: variantOptions.size,
       color: variantOptions.color,
+      gender: variantOptions.gender,
+      label: label ?? undefined,
       sku: variant.sku || null,
       priceCents: variant.price,
       weightGrams: variant.grams || null,
@@ -734,21 +748,37 @@ async function updateLocalVariantFromPrintify(
 }
 
 /**
- * Extract size and color from Printify variant options.
+ * Build option definitions for storefront (Size, Color, Phone Model, etc.) from Printify product.options.
+ */
+function buildOptionDefinitionsFromPrintify(
+  product: PrintifyProduct,
+): Array<{ name: string; values: string[] }> {
+  if (!product.options?.length) return [];
+  return product.options
+    .map((opt) => ({
+      name: opt.name.trim() || "Option",
+      values: (opt.values ?? [])
+        .map((v) => v.title?.trim())
+        .filter((t): t is string => Boolean(t)),
+    }))
+    .filter((opt) => opt.values.length > 0);
+}
+
+/**
+ * Extract size, color, and first other option (e.g. Phone Model) from Printify variant options.
+ * Front-end maps option names to color / size / gender; we store "other" (e.g. device) in gender.
  */
 function getVariantOptions(
   product: PrintifyProduct,
   variant: PrintifyProduct["variants"][0],
-): { size: string | null; color: string | null } {
+): { size: string | null; color: string | null; gender: string | null } {
   let size: string | null = null;
   let color: string | null = null;
+  let gender: string | null = null;
 
-  // variant.options is an array of option value IDs
-  // product.options contains the option definitions
   for (let i = 0; i < variant.options.length; i++) {
     const optionValueId = variant.options[i];
     const optionDef = product.options[i];
-
     if (!optionDef) continue;
 
     const optionValue = optionDef.values.find((v) => v.id === optionValueId);
@@ -759,10 +789,32 @@ function getVariantOptions(
       size = optionValue.title;
     } else if (optionName.includes("color") || optionName.includes("colour")) {
       color = optionValue.title;
+    } else {
+      // First "other" option (e.g. Phone Model, Device) → store in gender for storefront
+      if (!gender) gender = optionValue.title;
     }
   }
 
-  return { size, color };
+  return { size, color, gender };
+}
+
+/**
+ * Build display label for a variant. Printify often returns variant.title as "Default" for
+ * phone cases and other products; use option value titles (e.g. "iPhone 16", "White / M") instead.
+ */
+function getVariantLabel(
+  product: PrintifyProduct,
+  variant: PrintifyProduct["variants"][0],
+): string | null {
+  const title = variant.title?.trim();
+  if (title && title.toLowerCase() !== "default") {
+    return title;
+  }
+  const opts = getVariantOptions(product, variant);
+  const parts = [opts.color, opts.size, opts.gender].filter(
+    (t): t is string => Boolean(t?.trim()),
+  );
+  return parts.length > 0 ? parts.join(" / ") : title || null;
 }
 
 // ============================================================================

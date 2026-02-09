@@ -22,7 +22,10 @@ function getVariantKey(
     lower.includes("men") ||
     lower.includes("women") ||
     lower.includes("gender") ||
-    lower.includes("style")
+    lower.includes("style") ||
+    lower.includes("phone") ||
+    lower.includes("model") ||
+    lower.includes("device")
   )
     return "gender";
   return index === 0 ? "color" : index === 1 ? "gender" : "size";
