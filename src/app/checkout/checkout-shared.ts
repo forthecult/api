@@ -4,6 +4,7 @@
  */
 
 import { cn } from "~/lib/cn";
+import { secureStorageSync } from "~/lib/secure-storage";
 
 export interface CheckoutFormState {
   apartment: string;
@@ -135,6 +136,52 @@ export const US_STATE_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export const CHECKOUT_SHIPPING_STORAGE_KEY = "checkout-shipping";
+
+/**
+ * Get persisted shipping form from encrypted storage (PII encrypted at rest).
+ */
+export function getPersistedShippingForm(): CheckoutFormState {
+  if (typeof window === "undefined") return defaultForm;
+  try {
+    const raw = secureStorageSync.getItem(CHECKOUT_SHIPPING_STORAGE_KEY);
+    if (!raw) return defaultForm;
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      ...defaultForm,
+      ...(typeof parsed.email === "string" && { email: parsed.email }),
+      ...(typeof parsed.firstName === "string" && {
+        firstName: parsed.firstName,
+      }),
+      ...(typeof parsed.lastName === "string" && { lastName: parsed.lastName }),
+      ...(typeof parsed.country === "string" && { country: parsed.country }),
+      ...(typeof parsed.street === "string" && { street: parsed.street }),
+      ...(typeof parsed.apartment === "string" && {
+        apartment: parsed.apartment,
+      }),
+      ...(typeof parsed.city === "string" && { city: parsed.city }),
+      ...(typeof parsed.state === "string" && { state: parsed.state }),
+      ...(typeof parsed.zip === "string" && { zip: parsed.zip }),
+      ...(typeof parsed.phone === "string" && { phone: parsed.phone }),
+      ...(typeof parsed.company === "string" && { company: parsed.company }),
+    };
+  } catch {
+    return defaultForm;
+  }
+}
+
+/**
+ * Persist shipping form to encrypted storage.
+ */
+export function persistShippingForm(form: CheckoutFormState): void {
+  try {
+    secureStorageSync.setItem(
+      CHECKOUT_SHIPPING_STORAGE_KEY,
+      JSON.stringify(form),
+    );
+  } catch {
+    // Ignore quota or private mode errors
+  }
+}
 
 // Field and layout CSS
 export const checkoutFieldHeight = "h-11";

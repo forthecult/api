@@ -168,7 +168,7 @@ export const metadata: Metadata = {
 const featuresWhyChooseUs = [
   {
     description:
-      "Free shipping on orders over $100. Fast, reliable delivery worldwide. Members get free shipping on most orders.",
+      "Free shipping on orders over $200. Fast, reliable delivery worldwide. Members get free shipping on most orders.",
     icon: <Truck className="h-6 w-6 text-primary" />,
     title: "Free shipping",
   },
@@ -299,7 +299,7 @@ export default async function HomePage() {
                 >
                   <div className="flex items-center gap-1.5">
                     <Truck className="h-5 w-5 text-primary/70" />
-                    <span>Free shipping over $100</span>
+                    <span>Free shipping over $200</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Clock className="h-5 w-5 text-primary/70" />
@@ -546,7 +546,7 @@ export default async function HomePage() {
                   md:text-lg
                 `}
               >
-                Secure checkout, crypto or card, free shipping over $100, and
+                Secure checkout, crypto or card, free shipping over $200, and
                 support when you need it
               </p>
             </div>
@@ -653,7 +653,7 @@ export default async function HomePage() {
                   `}
                 >
                   Join for member discounts, early access to new arrivals, and
-                  free shipping over $100. Pay with Solana, $CULT, or card. Sign
+                  free shipping over $200. Pay with Solana, $CULT, or card. Sign
                   up today.
                 </p>
                 <div

@@ -132,10 +132,6 @@ export function ProductVariantSection({
   optionDefinitions: optionDefinitionsProp,
   variants,
 }: ProductVariantSectionProps) {
-  const [selectedByIndex, setSelectedByIndex] = React.useState<
-    Record<number, string>
-  >({});
-
   const unavailableInCountry = useUnavailableInCountry(product);
 
   // Use option definitions from API, or derive from variants when missing (e.g. after Printful sync fix)
@@ -146,7 +142,19 @@ export function ProductVariantSection({
         ? deriveOptionDefinitionsFromVariants(variants)
         : [];
 
-  // No auto-selection: customer must choose size/color/etc. before adding to cart.
+  // Auto-select single-value options (e.g. only "White" for Color) so they are defaulted on the backend and hidden from the UI
+  const [selectedByIndex, setSelectedByIndex] = React.useState<
+    Record<number, string>
+  >(() => {
+    const initial: Record<number, string> = {};
+    optionDefinitions.forEach((opt, idx) => {
+      const values = (opt.values ?? []).filter(Boolean);
+      if (values.length === 1) initial[idx] = values[0]!;
+    });
+    return initial;
+  });
+
+  // Options with only one value are hidden; customer selection defaults to that value. Multiple options (even if only one in stock) are always shown.
 
   const selectedVariant =
     hasVariants && optionDefinitions.length > 0 && variants.length > 0
@@ -214,39 +222,65 @@ export function ProductVariantSection({
 
   return (
     <>
-      {/* Variant option rows */}
+      {/* Variant option rows: hide options with only one value (e.g. Color when only White); they are auto-selected and defaulted on the backend */}
       <div className="mb-4 space-y-4">
-        {optionDefinitions.map((opt, optionIndex) => (
-          <div key={optionIndex}>
-            <span className="mb-2 block text-sm font-medium text-foreground">
-              {opt.name}
-            </span>
-            <div className="flex flex-wrap gap-2">
-              {(opt.name === "Size" || opt.name.toLowerCase().includes("size")
-                ? sortClothingSizes((opt.values ?? []).filter(Boolean))
-                : (opt.values ?? []).filter(Boolean)
-              ).map((value) => {
-                const isSelected = selectedByIndex[optionIndex] === value;
-                return (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => handleOptionSelect(optionIndex, value)}
-                    className={cn(
-                      "rounded-md border px-3 py-2 text-sm font-medium transition-colors",
-                      isSelected
-                        ? "border-foreground bg-foreground text-background"
-                        : "border-input bg-background hover:border-foreground/50 hover:bg-muted/50",
-                    )}
-                    aria-pressed={isSelected}
-                  >
-                    {value}
-                  </button>
-                );
-              })}
+        {optionDefinitions
+          .map((opt, optionIndex) => ({ opt, optionIndex }))
+          .filter(
+            ({ opt }) => (opt.values ?? []).filter(Boolean).length > 1,
+          )
+          .map(({ opt, optionIndex }) => (
+            <div key={optionIndex}>
+              <span className="mb-2 block text-sm font-medium text-foreground">
+                {opt.name}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                {(opt.name === "Size" ||
+                opt.name.toLowerCase().includes("size")
+                  ? sortClothingSizes((opt.values ?? []).filter(Boolean))
+                  : (opt.values ?? []).filter(Boolean)
+                ).map((value) => {
+                  const isSelected = selectedByIndex[optionIndex] === value;
+                  const testSelection = {
+                    ...selectedByIndex,
+                    [optionIndex]: value,
+                  };
+                  const variantForValue = findVariant(
+                    variants,
+                    optionDefinitions,
+                    testSelection,
+                  );
+                  const outOfStock =
+                    !product.continueSellingWhenOutOfStock &&
+                    variantForValue != null &&
+                    (variantForValue.stockQuantity ?? 0) <= 0;
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      disabled={outOfStock}
+                      onClick={() => handleOptionSelect(optionIndex, value)}
+                      className={cn(
+                        "rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                        isSelected
+                          ? "border-foreground bg-foreground text-background"
+                          : outOfStock
+                            ? "cursor-not-allowed border-input bg-muted text-muted-foreground"
+                            : "border-input bg-background hover:border-foreground/50 hover:bg-muted/50",
+                      )}
+                      aria-pressed={isSelected}
+                      aria-disabled={outOfStock}
+                    >
+                      {value}
+                      {outOfStock && (
+                        <span className="ml-1 text-xs">(out of stock)</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {/* Variant-specific price */}

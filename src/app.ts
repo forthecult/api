@@ -1,6 +1,6 @@
 export const SEO_CONFIG = {
   description:
-    "For the Cult is a lifestyle store for people who invest in themselves. Curated tech, premium apparel, wellness gear, and travel essentials. Pay with crypto or card. Free shipping over $100.",
+    "For the Cult is a lifestyle store for people who invest in themselves. Curated tech, premium apparel, wellness gear, and travel essentials. Pay with crypto or card. Hold 250,000 CULT for free shipping.",
   fullName: "For the Cult",
   name: "For the Culture",
   slogan: "Where smart living and technology meet.",
@@ -8,7 +8,7 @@ export const SEO_CONFIG = {
   brandLogoUrl: undefined as string | undefined,
   /** used in meta description and open graph; keep under ~160 chars for SEO */
   metaDescription:
-    "Curated tech, apparel & wellness gear. Pay with Solana, $CULT or card. Free shipping over $100. Join for member discounts and early access.",
+    "Curated tech, apparel & wellness gear. Pay with Solana, $CULT or card. Hold CULT for free shipping, member discounts, and early access.",
   keywords:
     "For the Cult, lifestyle store, crypto store, Solana pay, pay with crypto, premium apparel, tech gear, wellness, travel essentials, curated essentials, member discounts, free shipping",
 };

@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         shippingCents = subtotalCents >= 5000 ? 0 : 599; // Free shipping over $50
         estimatedDays = "3-5 business days";
       } else if (["CA", "GB", "AU", "DE", "FR"].includes(country)) {
-        shippingCents = subtotalCents >= 10000 ? 0 : 1499; // Free shipping over $100
+        shippingCents = subtotalCents >= 10000 ? 0 : 1499; // Free shipping over $200
         estimatedDays = "7-14 business days";
       } else {
         shippingCents = 1999;

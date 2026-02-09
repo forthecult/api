@@ -17,7 +17,6 @@ import { useRouter } from "next/navigation";
 import {
   useCallback,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -35,10 +34,7 @@ import {
   visibleUsdtNetworks,
 } from "~/lib/checkout-payment-options";
 import { useCurrentUser } from "~/lib/auth-client";
-import { secureStorageSync } from "~/lib/secure-storage";
-import {
-  isShippingExcluded,
-} from "~/lib/shipping-restrictions";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   useCountryCurrency,
@@ -80,11 +76,7 @@ import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import type { MappedShippingAddress } from "~/lib/loqate";
 import {
   type BillingFormState,
-  type CheckoutFormState,
-  COUNTRIES_REQUIRING_STATE,
-  COUNTRIES_WITHOUT_POSTAL,
   defaultBillingForm,
-  defaultForm,
   checkoutFieldHeight,
   paymentButtonClass,
   paymentOptionRowClass,
@@ -94,9 +86,13 @@ import {
   selectInputClass,
   SHIPPING_POLICY_CONTENT,
   US_STATE_OPTIONS,
-  CHECKOUT_SHIPPING_STORAGE_KEY,
 } from "./checkout-shared";
 import { OrderSummary } from "./components/OrderSummary";
+import {
+  ShippingAddressForm,
+  type ShippingAddressFormRef,
+  type ShippingUpdate,
+} from "./components/ShippingAddressForm";
 
 function getAffiliatePayload(): { affiliateCode?: string } {
   const code = getAffiliateCodeFromDocument();
@@ -122,54 +118,6 @@ function getTelegramOrderPayload(): {
     ...(user.username ? { telegramUsername: user.username } : {}),
     ...(user.first_name ? { telegramFirstName: user.first_name } : {}),
   };
-}
-
-/**
- * Get persisted shipping form from encrypted storage
- * PII (email, address, phone) is encrypted at rest to protect customer data
- */
-function getPersistedShippingForm(): CheckoutFormState {
-  if (typeof window === "undefined") return defaultForm;
-  try {
-    // Use secure storage for PII protection
-    const raw = secureStorageSync.getItem(CHECKOUT_SHIPPING_STORAGE_KEY);
-    if (!raw) return defaultForm;
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    return {
-      ...defaultForm,
-      ...(typeof parsed.email === "string" && { email: parsed.email }),
-      ...(typeof parsed.firstName === "string" && {
-        firstName: parsed.firstName,
-      }),
-      ...(typeof parsed.lastName === "string" && { lastName: parsed.lastName }),
-      ...(typeof parsed.country === "string" && { country: parsed.country }),
-      ...(typeof parsed.street === "string" && { street: parsed.street }),
-      ...(typeof parsed.apartment === "string" && {
-        apartment: parsed.apartment,
-      }),
-      ...(typeof parsed.city === "string" && { city: parsed.city }),
-      ...(typeof parsed.state === "string" && { state: parsed.state }),
-      ...(typeof parsed.zip === "string" && { zip: parsed.zip }),
-      ...(typeof parsed.phone === "string" && { phone: parsed.phone }),
-      ...(typeof parsed.company === "string" && { company: parsed.company }),
-    };
-  } catch {
-    return defaultForm;
-  }
-}
-
-/**
- * Persist shipping form to encrypted storage
- */
-function persistShippingForm(form: CheckoutFormState): void {
-  try {
-    secureStorageSync.setItem(
-      CHECKOUT_SHIPPING_STORAGE_KEY,
-      JSON.stringify(form),
-    );
-  } catch {
-    // Ignore quota or private mode errors
-  }
 }
 
 /** All countries we ship to (from site country list, excluding restricted). */
@@ -322,39 +270,7 @@ export function CheckoutClient() {
   const userReceiveSmsMarketing =
     (user as { receiveSmsMarketing?: boolean } | null)?.receiveSmsMarketing ===
     true;
-  const [form, setForm] = useState<CheckoutFormState>(() =>
-    getPersistedShippingForm(),
-  );
-  const [emailNews, setEmailNews] = useState(true);
-
-  // Auto-fill shipping country from the country the customer was on (footer/geo)
-  useEffect(() => {
-    if (
-      !selectedCountry ||
-      form.country?.trim() ||
-      isShippingExcluded(selectedCountry)
-    )
-      return;
-    setForm((prev) => ({ ...prev, country: selectedCountry }));
-  }, [selectedCountry, form.country]); // Don't overwrite once user has a country
-
-  // When opened from Telegram Mini App (/telegram/checkout or ?source=telegram), prefill email with synthetic value so backend has a valid email
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const pathname = window.location.pathname ?? "";
-    const fromTelegram =
-      params.get("source") === "telegram" || pathname.startsWith("/telegram");
-    const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
-    if (!fromTelegram || !user) return;
-    const syntheticEmail = `telegram_${user.id}@telegram.user`;
-    setForm((prev) =>
-      !prev.email?.trim() || prev.email === syntheticEmail
-        ? { ...prev, email: syntheticEmail }
-        : prev,
-    );
-  }, []);
-  const [textNews, setTextNews] = useState(false);
+  const shippingFormRef = useRef<ShippingAddressFormRef>(null);
   const [useShippingAsBilling, setUseShippingAsBilling] = useState(true);
   const [billingForm, setBillingForm] =
     useState<BillingFormState>(defaultBillingForm);
@@ -402,25 +318,6 @@ export function CheckoutClient() {
   const cardLogosCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const onShippingLoqateSelect = useCallback(
-    (mapped: MappedShippingAddress) => {
-      setForm((prev) => ({
-        ...prev,
-        street: mapped.street,
-        apartment: mapped.apartment || prev.apartment,
-        city: mapped.city,
-        state: mapped.state,
-        zip: mapped.zip,
-        country: mapped.country || prev.country,
-      }));
-    },
-    [],
-  );
-  const shippingLoqate = useLoqateAutocomplete({
-    text: form.street ?? "",
-    country: form.country,
-    onSelect: onShippingLoqateSelect,
-  });
 
   const onBillingLoqateSelect = useCallback(
     (mapped: MappedShippingAddress) => {
@@ -498,8 +395,19 @@ export function CheckoutClient() {
     PUMP?: number;
   }>({});
   const router = useRouter();
-  const isUS = form.country === "US";
   const isBillingUS = billingForm.country === "US";
+
+  const handleShippingUpdate = useCallback((update: ShippingUpdate) => {
+    setShippingCents(update.shippingCents);
+    setShippingLabel(update.shippingLabel);
+    setShippingFree(update.shippingFree);
+    setShippingLoading(update.shippingLoading);
+    setCanShipToCountry(update.canShipToCountry);
+    setShippingSpeed(update.shippingSpeed);
+    setTaxCents(update.taxCents);
+    setTaxNote(update.taxNote);
+    setCustomsDutiesNote(update.customsDutiesNote);
+  }, []);
 
   const EVM_CHAINS = ["ethereum", "arbitrum", "base", "polygon"] as const;
   const EVM_CHAINS_AND_BNB = [
@@ -592,6 +500,9 @@ export function CheckoutClient() {
       paymentSubOption === "monero");
 
   const openSolanaPayDialog = useCallback(async () => {
+    const form = shippingFormRef.current?.getForm();
+    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
+    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
     const orderItems = items.map((item) => ({
       productId: item.productId ?? item.id,
       ...(item.productVariantId && { productVariantId: item.productVariantId }),
@@ -614,16 +525,16 @@ export function CheckoutClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: form.email?.trim() || "guest@checkout.local",
+          email: form?.email?.trim() || "guest@checkout.local",
           orderItems,
           totalCents: orderTotalCents,
           shippingFeeCents: shippingFeeCentsRounded,
           taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNews,
+            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
           smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNews,
+            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
           ...getTelegramOrderPayload(),
           ...getAffiliatePayload(),
           ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
@@ -660,10 +571,7 @@ export function CheckoutClient() {
     shippingCents,
     taxCents,
     items,
-    form.email,
     user?.id,
-    emailNews,
-    textNews,
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
@@ -684,152 +592,6 @@ export function CheckoutClient() {
     setSolanaPayStatus("idle");
     if (qrContainerRef.current) qrContainerRef.current.innerHTML = "";
   }, []);
-
-  // persist shipping form: restore from localStorage on mount and when returning (back from payment / Change / bfcache).
-  // do not remove — data must persist until successful checkout.
-  const restoreShippingForm = useCallback(() => {
-    setForm(getPersistedShippingForm());
-  }, []);
-  useLayoutEffect(() => {
-    restoreShippingForm();
-  }, [restoreShippingForm]);
-  useEffect(() => {
-    window.addEventListener("pageshow", restoreShippingForm);
-    const onVisible = () => restoreShippingForm();
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      window.removeEventListener("pageshow", restoreShippingForm);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, [restoreShippingForm]);
-
-  // Auto-fill shipping first name, last name, and email from logged-in user when fields are empty
-  useEffect(() => {
-    const u = user as {
-      email?: string;
-      firstName?: string;
-      lastName?: string;
-    } | null;
-    if (!u) return;
-    const updates: Partial<CheckoutFormState> = {};
-    if (u.email && !form.email) updates.email = u.email;
-    if (u.firstName && !form.firstName) updates.firstName = u.firstName;
-    if (u.lastName && !form.lastName) updates.lastName = u.lastName;
-    if (Object.keys(updates).length > 0) {
-      setForm((prev) => ({ ...prev, ...updates }));
-    }
-  }, [user, form.email, form.firstName, form.lastName]);
-
-  useEffect(() => {
-    persistShippingForm(form);
-  }, [form]);
-
-  // dynamic shipping: recalc when country, cart, or subtotal changes (with timeout so slow API doesn't block UI)
-  // Also includes address fields for more accurate fulfillment shipping rates
-  const SHIPPING_CALCULATE_TIMEOUT_MS = 15_000;
-  useEffect(() => {
-    const country = form.country?.trim();
-    if (!country || items.length === 0) {
-      setShippingCents(0);
-      setShippingLabel(null);
-      setShippingFree(false);
-      setShippingLoading(false);
-      setCanShipToCountry(true);
-      return;
-    }
-    let cancelled = false;
-    const ac = new AbortController();
-    const timeoutId = setTimeout(
-      () => ac.abort(),
-      SHIPPING_CALCULATE_TIMEOUT_MS,
-    );
-    setShippingLoading(true);
-    fetch("/api/shipping/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        countryCode: country,
-        orderValueCents: Math.round(subtotal * 100),
-        items: items.map((i) => ({
-          productId: i.productId ?? i.id,
-          productVariantId: i.productVariantId,
-          quantity: i.quantity,
-        })),
-        // Additional fields for more accurate fulfillment shipping rates
-        stateCode: form.state?.trim() || undefined,
-        city: form.city?.trim() || undefined,
-        zip: form.zip?.trim() || undefined,
-        address1: form.street?.trim() || undefined,
-        // When a free_shipping coupon is applied, backend returns 0 shipping
-        ...(appliedCoupon?.freeShipping && appliedCoupon?.code
-          ? { couponCode: appliedCoupon.code }
-          : {}),
-      }),
-      signal: ac.signal,
-    })
-      .then((res) =>
-        res.ok ? res.json() : Promise.reject(new Error("Failed to calculate")),
-      )
-      .then(
-        (data: {
-          shippingCents?: number;
-          label?: string | null;
-          freeShipping?: boolean;
-          canShipToCountry?: boolean;
-          adminShippingCents?: number;
-          shippingSpeed?: "standard" | "express";
-          customsDutiesNote?: string | null;
-          taxCents?: number;
-          taxNote?: string | null;
-        }) => {
-          if (!cancelled) {
-            setShippingCents(
-              typeof data.shippingCents === "number" ? data.shippingCents : 0,
-            );
-            setShippingLabel(data.label ?? null);
-            setShippingFree(Boolean(data.freeShipping));
-            setCanShipToCountry(data.canShipToCountry !== false);
-            setShippingSpeed(
-              data.shippingSpeed === "express" ? "express" : "standard",
-            );
-            setTaxCents(typeof data.taxCents === "number" ? data.taxCents : 0);
-            setTaxNote(data.taxNote ?? null);
-            setCustomsDutiesNote(data.customsDutiesNote ?? null);
-          }
-        },
-      )
-      .catch(() => {
-        if (!cancelled) {
-          setShippingCents(0);
-          setShippingLabel(null);
-          setShippingFree(false);
-          setCanShipToCountry(true);
-          setShippingSpeed("standard");
-          setTaxCents(0);
-          setTaxNote(null);
-          setCustomsDutiesNote(null);
-        }
-      })
-      .finally(() => {
-        clearTimeout(timeoutId);
-        if (!cancelled) setShippingLoading(false);
-      });
-    return () => {
-      cancelled = true;
-      ac.abort();
-      clearTimeout(timeoutId);
-    };
-  }, [
-    form.country,
-    form.state,
-    form.city,
-    form.zip,
-    form.street,
-    items,
-    subtotal,
-    appliedCoupon?.code,
-    appliedCoupon?.freeShipping,
-  ]);
 
   const discountCents = appliedCoupon?.discountCents ?? 0;
   const totalCents =
@@ -1084,60 +846,11 @@ export function CheckoutClient() {
     closeSolanaPayDialog,
   ]);
 
-  const update = (field: keyof CheckoutFormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
-
   const updateBilling = (field: keyof BillingFormState, value: string) => {
     setBillingForm((prev) => ({ ...prev, [field]: value }));
   };
 
   // Loqate address autocomplete handled by useLoqateAutocomplete hooks above
-
-  const validateShipping = useCallback((): string[] => {
-    const err: string[] = [];
-    const country = form.country?.trim();
-    if (!country) err.push("Country is required");
-    if (!form.firstName?.trim()) err.push("First name is required");
-    if (!form.lastName?.trim()) err.push("Last name is required");
-    if (!form.street?.trim()) err.push("Address is required");
-    if (!form.city?.trim()) err.push("City is required");
-    if (
-      country &&
-      !COUNTRIES_WITHOUT_POSTAL.has(country) &&
-      !form.zip?.trim()
-    ) {
-      err.push(
-        country === "US" ? "ZIP code is required" : "Postal code is required",
-      );
-    }
-    if (
-      country &&
-      COUNTRIES_REQUIRING_STATE.has(country) &&
-      !form.state?.trim()
-    ) {
-      err.push(
-        country === "US" ? "State is required" : "State / Province is required",
-      );
-    }
-    if (
-      shippingSpeed === "express" &&
-      !form.phone?.trim()
-    ) {
-      err.push("Phone number is required for Express shipping");
-    }
-    return err;
-  }, [
-    form.country,
-    form.firstName,
-    form.lastName,
-    form.street,
-    form.city,
-    form.zip,
-    form.state,
-    form.phone,
-    shippingSpeed,
-  ]);
 
   const validateBilling = useCallback((): string[] => {
     const err: string[] = [];
@@ -1170,7 +883,7 @@ export function CheckoutClient() {
   ]);
 
   const handlePlaceOrder = useCallback(() => {
-    const shippingErr = validateShipping();
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
     const billingErr = !useShippingAsBilling ? validateBilling() : [];
     const cardErr = paymentMethod === "credit-card" ? validateCreditCard() : [];
     const all = [...shippingErr, ...billingErr, ...cardErr];
@@ -1182,7 +895,6 @@ export function CheckoutClient() {
   }, [
     paymentMethod,
     useShippingAsBilling,
-    validateShipping,
     validateBilling,
     validateCreditCard,
     router,
@@ -1201,27 +913,22 @@ export function CheckoutClient() {
   }, []);
 
   const handlePayWithSolana = useCallback(() => {
-    const shippingErr = validateShipping();
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
     const billingErr = !useShippingAsBilling ? validateBilling() : [];
     const all = [...shippingErr, ...billingErr];
     setValidationErrors(all);
     if (all.length > 0) return;
     openSolanaPayDialog();
-  }, [
-    validateShipping,
-    validateBilling,
-    useShippingAsBilling,
-    openSolanaPayDialog,
-  ]);
+  }, [validateBilling, useShippingAsBilling, openSolanaPayDialog]);
 
   const handleGoToCryptoPay = useCallback(async () => {
-    const shippingErr = validateShipping();
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
     const billingErr = !useShippingAsBilling ? validateBilling() : [];
     const all = [...shippingErr, ...billingErr];
     setValidationErrors(all);
     if (all.length > 0) return;
     setNavigatingToPay(true);
-    persistShippingForm(form);
+    shippingFormRef.current?.persistForm();
     const isSui = paymentMethod === "crypto" && cryptoOtherSubOption === "sui";
     if (isSui) {
       // Sui is its own chain; no Solana order. Put amount/expires in hash (not query).
@@ -1248,7 +955,10 @@ export function CheckoutClient() {
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
       subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
-    const emailRaw = form.email?.trim();
+    const form = shippingFormRef.current?.getForm();
+    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
+    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
+    const emailRaw = form?.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
       emailRaw.length > 0 &&
@@ -1266,9 +976,9 @@ export function CheckoutClient() {
           taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNews,
+            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
           smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNews,
+            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
           ...getTelegramOrderPayload(),
           ...getAffiliatePayload(),
           ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
@@ -1302,9 +1012,7 @@ export function CheckoutClient() {
       setValidationErrors(["Could not create order. Please try again."]);
     }
   }, [
-    form,
     user?.id,
-    validateShipping,
     validateBilling,
     useShippingAsBilling,
     subtotal,
@@ -1316,8 +1024,6 @@ export function CheckoutClient() {
     paymentSubOption,
     cryptoOtherSubOption,
     router,
-    emailNews,
-    textNews,
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
@@ -1325,13 +1031,13 @@ export function CheckoutClient() {
   ]);
 
   const handleGoToBtcPay = useCallback(async () => {
-    const shippingErr = validateShipping();
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
     const billingErr = !useShippingAsBilling ? validateBilling() : [];
     const all = [...shippingErr, ...billingErr];
     setValidationErrors(all);
     if (all.length > 0) return;
     setNavigatingToPay(true);
-    persistShippingForm(form);
+    shippingFormRef.current?.persistForm();
     const orderItems = items.map((item) => ({
       productId: item.productId ?? item.id,
       ...(item.productVariantId && { productVariantId: item.productVariantId }),
@@ -1348,7 +1054,10 @@ export function CheckoutClient() {
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
       subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
-    const emailRaw = form.email?.trim();
+    const form = shippingFormRef.current?.getForm();
+    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
+    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
+    const emailRaw = form?.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
       emailRaw.length > 0 &&
@@ -1373,9 +1082,9 @@ export function CheckoutClient() {
           userId: user?.id ?? null,
           token,
           emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNews,
+            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
           smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNews,
+            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
           ...getTelegramOrderPayload(),
           ...getAffiliatePayload(),
           ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
@@ -1401,9 +1110,7 @@ export function CheckoutClient() {
       setValidationErrors(["Could not create order. Please try again."]);
     }
   }, [
-    form,
     user?.id,
-    validateShipping,
     validateBilling,
     useShippingAsBilling,
     shippingCents,
@@ -1412,8 +1119,6 @@ export function CheckoutClient() {
     total,
     paymentSubOption,
     router,
-    emailNews,
-    textNews,
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
@@ -1421,13 +1126,13 @@ export function CheckoutClient() {
   ]);
 
   const handleGoToEthPay = useCallback(async () => {
-    const shippingErr = validateShipping();
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
     const billingErr = !useShippingAsBilling ? validateBilling() : [];
     const all = [...shippingErr, ...billingErr];
     setValidationErrors(all);
     if (all.length > 0) return;
     setNavigatingToPay(true);
-    persistShippingForm(form);
+    shippingFormRef.current?.persistForm();
     const chain =
       paymentMethod === "crypto"
         ? paymentSubOption === "eth"
@@ -1459,13 +1164,16 @@ export function CheckoutClient() {
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
       subtotalCents - discountCentsForOrder + shippingFeeCentsRounded + taxCentsRounded;
+    const form = shippingFormRef.current?.getForm();
+    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
+    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
     try {
       // Create order via API
       const res = await fetch("/api/checkout/eth-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: user?.email ?? form.email ?? "",
+          email: user?.email ?? form?.email ?? "",
           orderItems: orderItems.map(
             ({ productId, productVariantId, quantity }) => ({
               productId,
@@ -1480,22 +1188,24 @@ export function CheckoutClient() {
           token,
           userId: user?.id,
           emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNews,
+            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
           smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNews,
+            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
           ...getTelegramOrderPayload(),
           ...getAffiliatePayload(),
           ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
-          shipping: {
-            name: `${form.firstName} ${form.lastName}`.trim(),
-            address1: form.street,
-            address2: form.apartment,
-            city: form.city,
-            stateCode: form.state,
-            countryCode: form.country,
-            zip: form.zip,
-            phone: form.phone,
-          },
+          shipping: form
+            ? {
+                name: `${form.firstName} ${form.lastName}`.trim(),
+                address1: form.street,
+                address2: form.apartment,
+                city: form.city,
+                stateCode: form.state,
+                countryCode: form.country,
+                zip: form.zip,
+                phone: form.phone,
+              }
+            : undefined,
         }),
       });
 
@@ -1556,10 +1266,8 @@ export function CheckoutClient() {
       ]);
     }
   }, [
-    form,
     user?.email,
     user?.id,
-    validateShipping,
     validateBilling,
     useShippingAsBilling,
     total,
@@ -1571,8 +1279,6 @@ export function CheckoutClient() {
     stablecoinToken,
     cryptoEthChain,
     router,
-    emailNews,
-    textNews,
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
@@ -1580,13 +1286,13 @@ export function CheckoutClient() {
   ]);
 
   const handleGoToTonPay = useCallback(async () => {
-    const shippingErr = validateShipping();
+    const shippingErr = shippingFormRef.current?.validate() ?? [];
     const billingErr = !useShippingAsBilling ? validateBilling() : [];
     const all = [...shippingErr, ...billingErr];
     setValidationErrors(all);
     if (all.length > 0) return;
     setNavigatingToPay(true);
-    persistShippingForm(form);
+    shippingFormRef.current?.persistForm();
     const orderItems = items.map((item) => ({
       productId: item.productId ?? item.id,
       ...(item.productVariantId && { productVariantId: item.productVariantId }),
@@ -1603,7 +1309,10 @@ export function CheckoutClient() {
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
       subtotalCents - discountCentsForOrder + shippingCentsRounded + taxCentsRounded;
-    const emailRaw = form.email?.trim();
+    const form = shippingFormRef.current?.getForm();
+    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
+    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
+    const emailRaw = form?.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
       emailRaw.length > 0 &&
@@ -1627,9 +1336,9 @@ export function CheckoutClient() {
           taxCents: taxCentsRounded,
           userId: user?.id ?? null,
           emailMarketingConsent:
-            isLoggedIn && userReceiveMarketing ? true : emailNews,
+            isLoggedIn && userReceiveMarketing ? true : emailNewsVal,
           smsMarketingConsent:
-            isLoggedIn && userReceiveSmsMarketing ? true : textNews,
+            isLoggedIn && userReceiveSmsMarketing ? true : textNewsVal,
           ...getTelegramOrderPayload(),
           ...getAffiliatePayload(),
           ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
@@ -1654,17 +1363,13 @@ export function CheckoutClient() {
       setValidationErrors(["Could not create order. Please try again."]);
     }
   }, [
-    form,
     user?.id,
-    validateShipping,
     validateBilling,
     useShippingAsBilling,
     shippingCents,
     taxCents,
     items,
     router,
-    emailNews,
-    textNews,
     isLoggedIn,
     userReceiveMarketing,
     userReceiveSmsMarketing,
@@ -1709,380 +1414,21 @@ export function CheckoutClient() {
         <div className="grid gap-8 pt-4 sm:grid-cols-[1fr,340px] md:grid-cols-[1fr,380px] lg:grid-cols-[1fr,400px]">
           {/* Left: contact, address, shipping method, payment, place order + policy links */}
           <div className="min-w-0 space-y-6 sm:col-start-1">
-            {/* Contact */}
-            <Card className="shadow-none">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle>Contact</CardTitle>
-                {!isLoggedIn && (
-                  <Link
-                    className="text-sm font-medium text-primary hover:underline"
-                    href="/login"
-                  >
-                    Sign in
-                  </Link>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoggedIn ? (
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-medium text-foreground">Email:</span>{" "}
-                    {user?.email}
-                  </p>
-                ) : (
-                  <>
-                    <Input
-                      aria-label="Email"
-                      className={checkoutFieldHeight}
-                      placeholder="Email"
-                      type="email"
-                      value={form.email}
-                      onChange={(e) => update("email", e.target.value)}
-                    />
-                    {!(isLoggedIn && userReceiveMarketing) && (
-                      <label className="flex items-center gap-2 text-sm">
-                        <Checkbox
-                          checked={emailNews}
-                          onCheckedChange={(v) => setEmailNews(v === true)}
-                        />
-                        <span>Email me with news and offers</span>
-                      </label>
-                    )}
-                    {!authPending && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          className="text-sm"
-                          size="sm"
-                          type="button"
-                          variant="outline"
-                          asChild
-                        >
-                          <Link
-                            href={`/signup?email=${encodeURIComponent(form.email || "")}`}
-                          >
-                            Save and create account
-                          </Link>
-                        </Button>
-                        <span className="text-xs text-muted-foreground">
-                          Optional — create an account to track orders.
-                        </span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Shipping address — country first, then names, address, etc. */}
-            <Card className="shadow-none">
-              <CardHeader>
-                <CardTitle>Shipping address</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2">
-                <div className="sm:col-span-2">
-                  <select
-                    aria-label="Country"
-                    aria-invalid={
-                      validationErrors.includes("Country is required") ||
-                      !canShipToCountry
-                    }
-                    value={form.country}
-                    onChange={(e) => update("country", e.target.value)}
-                    className={cn(
-                      selectInputClass,
-                      (validationErrors.includes("Country is required") ||
-                        !canShipToCountry) &&
-                        "border-destructive",
-                    )}
-                  >
-                    {COUNTRY_OPTIONS.map((opt) => (
-                      <option key={opt.value || "empty"} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                  {!canShipToCountry && form.country?.trim() && (
-                    <p className="mt-1.5 text-sm text-destructive" role="alert">
-                      We do not ship to this country.
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Input
-                    aria-label="First name"
-                    aria-invalid={validationErrors.includes(
-                      "First name is required",
-                    )}
-                    className={cn(
-                      checkoutFieldHeight,
-                      validationErrors.includes("First name is required") &&
-                        "border-destructive",
-                    )}
-                    placeholder="First name"
-                    value={form.firstName}
-                    onChange={(e) => update("firstName", e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Input
-                    aria-label="Last name"
-                    aria-invalid={validationErrors.includes(
-                      "Last name is required",
-                    )}
-                    className={cn(
-                      checkoutFieldHeight,
-                      validationErrors.includes("Last name is required") &&
-                        "border-destructive",
-                    )}
-                    placeholder="Last name"
-                    value={form.lastName}
-                    onChange={(e) => update("lastName", e.target.value)}
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <Input
-                    aria-label="Company (optional)"
-                    className={checkoutFieldHeight}
-                    placeholder="Company (optional)"
-                    value={form.company}
-                    onChange={(e) => update("company", e.target.value)}
-                  />
-                </div>
-                <div
-                  className="relative sm:col-span-2"
-                  ref={shippingLoqate.containerRef}
-                >
-                  <Input
-                    aria-label="Address"
-                    aria-autocomplete="list"
-                    aria-expanded={shippingLoqate.open}
-                    aria-invalid={validationErrors.includes(
-                      "Address is required",
-                    )}
-                    className={cn(
-                      checkoutFieldHeight,
-                      validationErrors.includes("Address is required") &&
-                        "border-destructive",
-                    )}
-                    placeholder="Address"
-                    value={form.street}
-                    onChange={(e) => update("street", e.target.value)}
-                    onFocus={() => {
-                      shippingLoqate.inputFocusedRef.current = true;
-                      if (shippingLoqate.suggestions.length > 0) shippingLoqate.setOpen(true);
-                    }}
-                    onBlur={() => {
-                      shippingLoqate.inputFocusedRef.current = false;
-                      setTimeout(() => {
-                        if (
-                          !shippingLoqate.containerRef.current?.contains(
-                            document.activeElement,
-                          )
-                        ) {
-                          shippingLoqate.setOpen(false);
-                        }
-                      }, 200);
-                    }}
-                  />
-                  {shippingLoqate.open &&
-                    (shippingLoqate.suggestions.length > 0 || shippingLoqate.loading) && (
-                      <div
-                        className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
-                        role="listbox"
-                      >
-                        {shippingLoqate.loading && shippingLoqate.suggestions.length === 0 ? (
-                          <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
-                            <Loader2
-                              className="h-4 w-4 animate-spin shrink-0"
-                              aria-hidden
-                            />
-                            Finding addresses…
-                          </div>
-                        ) : (
-                          shippingLoqate.suggestions
-                            .filter((item) => item.Type === "Address")
-                            .map((item) => (
-                              <button
-                                key={item.Id}
-                                type="button"
-                                className="w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
-                                role="option"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  shippingLoqate.selectAddress(item.Id);
-                                }}
-                              >
-                                <span className="font-medium">{item.Text}</span>
-                                {item.Description ? (
-                                  <span className="ml-1 text-muted-foreground">
-                                    {item.Description}
-                                  </span>
-                                ) : null}
-                              </button>
-                            ))
-                        )}
-                      </div>
-                    )}
-                </div>
-                <div className="sm:col-span-2">
-                  <Input
-                    aria-label="Apartment, suite, etc (optional)"
-                    className={checkoutFieldHeight}
-                    placeholder="Apartment, suite, etc (optional)"
-                    value={form.apartment}
-                    onChange={(e) => update("apartment", e.target.value)}
-                  />
-                </div>
-                {/* desktop: city, state, zip on one row */}
-                <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
-                  <div>
-                    <Input
-                      aria-label="City"
-                      aria-invalid={validationErrors.includes(
-                        "City is required",
-                      )}
-                      className={cn(
-                        checkoutFieldHeight,
-                        validationErrors.includes("City is required") &&
-                          "border-destructive",
-                      )}
-                      placeholder="City"
-                      value={form.city}
-                      onChange={(e) => update("city", e.target.value)}
-                    />
-                  </div>
-                  {isUS ? (
-                    <div>
-                      <select
-                        aria-label="State"
-                        aria-invalid={validationErrors.includes(
-                          "State is required",
-                        )}
-                        value={form.state}
-                        onChange={(e) => update("state", e.target.value)}
-                        className={cn(
-                          selectInputClass,
-                          validationErrors.includes("State is required") &&
-                            "border-destructive",
-                        )}
-                      >
-                        {US_STATE_OPTIONS.map((opt) => (
-                          <option key={opt.value || "empty"} value={opt.value}>
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <div>
-                      <Input
-                        aria-label="State / Province"
-                        aria-invalid={validationErrors.includes(
-                          "State / Province is required",
-                        )}
-                        className={cn(
-                          checkoutFieldHeight,
-                          validationErrors.includes(
-                            "State / Province is required",
-                          ) && "border-destructive",
-                        )}
-                        placeholder="State / Province"
-                        value={form.state}
-                        onChange={(e) => update("state", e.target.value)}
-                      />
-                    </div>
-                  )}
-                  <div>
-                    <Input
-                      aria-label={isUS ? "ZIP code" : "Postal code"}
-                      aria-invalid={
-                        validationErrors.includes("ZIP code is required") ||
-                        validationErrors.includes("Postal code is required")
-                      }
-                      className={cn(
-                        checkoutFieldHeight,
-                        (validationErrors.includes("ZIP code is required") ||
-                          validationErrors.includes(
-                            "Postal code is required",
-                          )) &&
-                          "border-destructive",
-                      )}
-                      placeholder={isUS ? "ZIP code" : "Postal code"}
-                      value={form.zip}
-                      onChange={(e) => update("zip", e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="sm:col-span-2 flex items-center gap-2">
-                  <Input
-                    aria-label={
-                      shippingSpeed === "express" ? "Phone (required)" : "Phone"
-                    }
-                    aria-required={shippingSpeed === "express"}
-                    className={cn(checkoutFieldHeight, "flex-1 min-w-0")}
-                    placeholder={
-                      shippingSpeed === "express"
-                        ? "Phone"
-                        : "Phone (optional)"
-                    }
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => update("phone", e.target.value)}
-                  />
-                  <Popover>
-                    <PopoverTrigger
-                      type="button"
-                      className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      aria-label="Why we ask for phone"
-                    >
-                      <CircleHelp className="size-5" aria-hidden />
-                    </PopoverTrigger>
-                    <PopoverContent
-                      align="end"
-                      className="max-w-56 border-0 bg-neutral-900 px-3 py-2 text-sm text-white shadow-lg dark:bg-neutral-100 dark:text-neutral-900"
-                      side="top"
-                    >
-                      In case we need to contact you about your order
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                {!(isLoggedIn && userReceiveSmsMarketing) && (
-                  <div className="sm:col-span-2">
-                    <label className="flex items-center gap-2 text-sm">
-                      <Checkbox
-                        checked={textNews}
-                        onCheckedChange={(v) => setTextNews(v === true)}
-                      />
-                      <span>Text me with news and offers</span>
-                    </label>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Shipping method — driven by admin shipping options (single result from API) */}
-            <Card className="shadow-none">
-              <CardHeader>
-                <CardTitle>Shipping method</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between rounded-md border border-border p-3">
-                  <span className="text-sm font-medium">
-                    {shippingLoading
-                      ? "Calculating…"
-                      : (shippingLabel ?? "Shipping")}
-                  </span>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    {shippingLoading ? (
-                      "…"
-                    ) : shippingFree ? (
-                      "Free"
-                    ) : (
-                      <FiatPrice usdAmount={shippingCents / 100} />
-                    )}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
+            <ShippingAddressForm
+              ref={shippingFormRef}
+              countryOptions={COUNTRY_OPTIONS}
+              items={items}
+              subtotal={subtotal}
+              appliedCoupon={appliedCoupon}
+              selectedCountry={selectedCountry}
+              user={user}
+              isLoggedIn={isLoggedIn}
+              userReceiveMarketing={userReceiveMarketing}
+              userReceiveSmsMarketing={userReceiveSmsMarketing}
+              authPending={authPending}
+              validationErrors={validationErrors}
+              onShippingUpdate={handleShippingUpdate}
+            />
 
             {/* Payment */}
             <Card className="shadow-none">
