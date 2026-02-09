@@ -296,7 +296,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       <div className="flex min-h-screen flex-col">
         <main className="flex-1 py-10">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <Breadcrumbs items={breadcrumbTrail} />
             {/* Back link */}
             <Link href="/products">

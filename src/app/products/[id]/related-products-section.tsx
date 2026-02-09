@@ -50,9 +50,9 @@ export function RelatedProductsSection({
   return (
     <section
       aria-labelledby="related-products-heading"
-      className="mt-12 w-full pb-14"
+      className="mt-12 flex w-full flex-col items-center pb-14"
     >
-      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2
           id="related-products-heading"
           className="mb-6 text-left text-2xl font-bold text-foreground"
@@ -66,6 +66,7 @@ export function RelatedProductsSection({
         {products.map((product) => (
           <ProductCard
             key={product.id}
+            imageAspect="wide"
             isInWishlist={isInWishlist(product.id)}
             onAddToCart={handleAddToCart}
             onAddToWishlist={addToWishlist}

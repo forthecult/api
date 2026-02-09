@@ -948,24 +948,30 @@ export function CheckoutClient() {
 
   /** When paying with crypto, show equivalent amount (e.g. "≈ 0.0875 SOL") below fiat total. */
   const cryptoTotalLabel = useMemo(() => {
+    const formatCrypto = (value: number, maxFractionDigits = 6) =>
+      new Intl.NumberFormat(undefined, {
+        maximumFractionDigits: maxFractionDigits,
+        minimumFractionDigits: 0,
+        useGrouping: true,
+      }).format(value);
     if (paymentMethod !== "crypto" || total <= 0) return null;
     if (paymentSubOption === "solana") {
       const rate = cryptoPrices.SOL;
       if (typeof rate !== "number" || rate <= 0) return null;
       const amount = total / rate;
-      return `≈ ${amount.toFixed(4).replace(/\.?0+$/, "")} SOL`;
+      return `≈ ${formatCrypto(amount, 4)} SOL`;
     }
     if (paymentSubOption === "crust") {
       const rate = cryptoPrices.CRUST;
       if (typeof rate !== "number" || rate <= 0) return null;
       const amount = total / rate;
-      return `≈ ${amount.toFixed(6).replace(/\.?0+$/, "")} CRUST`;
+      return `≈ ${formatCrypto(amount, 6)} CRUST`;
     }
     if (paymentSubOption === "pump") {
       const rate = cryptoPrices.PUMP;
       if (typeof rate !== "number" || rate <= 0) return null;
       const amount = total / rate;
-      return `≈ ${amount.toFixed(6).replace(/\.?0+$/, "")} PUMP`;
+      return `≈ ${formatCrypto(amount, 6)} PUMP`;
     }
     return null;
   }, [paymentMethod, paymentSubOption, total, cryptoPrices.SOL, cryptoPrices.CRUST, cryptoPrices.PUMP]);
@@ -3404,17 +3410,19 @@ export function CheckoutClient() {
                             usdAmount={appliedCoupon.discountCents / 100}
                           />
                         )}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setAppliedCoupon(null);
-                            setCouponError("");
-                            setDiscountEvalKey((k) => k + 1);
-                          }}
-                          className="text-xs text-primary underline-offset-4 hover:underline"
-                        >
-                          Remove
-                        </button>
+                        {appliedCoupon.source === "code" ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAppliedCoupon(null);
+                              setCouponError("");
+                              setDiscountEvalKey((k) => k + 1);
+                            }}
+                            className="text-xs text-primary underline-offset-4 hover:underline"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
                       </span>
                     </div>
                   ) : null}

@@ -35,7 +35,6 @@ interface CartClientProps {
 }
 
 export function CartClient({ className }: CartClientProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
@@ -44,6 +43,8 @@ export function CartClient({ className }: CartClientProps) {
     updateQuantity,
     itemCount: totalItems,
     subtotal,
+    cartOpen: isOpen,
+    setCartOpen: setIsOpen,
   } = useCart();
 
   React.useEffect(() => {

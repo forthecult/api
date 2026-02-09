@@ -25,6 +25,8 @@ type ProductCardProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
   "onError"
 > & {
+  /** When "wide", thumbnail uses 4/3 aspect so the image area is wider. Default "square". */
+  imageAspect?: "square" | "wide";
   onAddToCart?: (productId: string) => void;
   onAddToWishlist?: (productId: string) => void;
   onRemoveFromWishlist?: (productId: string) => void;
@@ -85,6 +87,7 @@ const StarRating = React.memo(function StarRating({
 
 function ProductCardInner({
   className,
+  imageAspect = "square",
   onAddToCart,
   onAddToWishlist,
   onRemoveFromWishlist,
@@ -185,7 +188,8 @@ function ProductCardInner({
         >
           <div
             className={cn(
-              "relative aspect-square overflow-hidden",
+              "relative overflow-hidden",
+              imageAspect === "wide" ? "aspect-[4/3]" : "aspect-square",
               product.tokenGated ? "rounded-lg" : "rounded-t-lg",
             )}
           >

@@ -9,7 +9,7 @@
  * blank catalog items. This service syncs those finished products to your store.
  */
 
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
@@ -1072,6 +1072,8 @@ async function updateLocalProductFromPrintful(
 
 /**
  * Create a local variant from Printful sync variant data.
+ * Uses upsert on (productId, printfulSyncVariantId) so existing rows are updated with externalId/label.
+ * Variants always get a stable id and a non-empty label (required for display and shipping).
  */
 async function createLocalVariantFromPrintful(
   productId: string,
@@ -1081,27 +1083,41 @@ async function createLocalVariantFromPrintful(
   const now = new Date();
 
   const priceCents = Math.round(
-    Number.parseFloat(syncVariant.retail_price || "0") * 100,
+    Number.parseFloat(String(syncVariant.retail_price || "0")) * 100,
   );
+  const safePriceCents = Number.isFinite(priceCents) ? priceCents : 0;
 
   const imageUrl = getPrintfulVariantImageUrl(syncVariant);
-
   const size = getVariantSize(syncVariant);
   const color = getVariantColor(syncVariant);
+
+  // Guarantee a non-empty label: variant name, or "Size / Color", or "Variant" (required for display/shipping)
+  const labelRaw = (syncVariant.name ?? "").trim();
+  const labelFallback =
+    [size, color].filter(Boolean).join(" / ") || "Variant";
+  const label = labelRaw || labelFallback;
+
   const values = {
     id: variantId,
     productId,
-    externalId: String(syncVariant.variant_id), // Printful catalog variant ID for ordering
+    externalId: String(syncVariant.variant_id),
     printfulSyncVariantId: syncVariant.id,
-    size,
-    color,
-    sku: syncVariant.sku,
-    label: syncVariant.name ?? null,
-    priceCents,
-    imageUrl,
+    size: size ?? null,
+    color: color ?? null,
+    gender: null,
+    colorCode: null,
+    sku: syncVariant.sku ?? null,
+    label,
+    stockQuantity: null,
+    priceCents: safePriceCents,
+    weightGrams: null,
+    imageUrl: imageUrl ?? null,
+    imageAlt: null,
+    imageTitle: null,
     availabilityStatus: syncVariant.availability_status ?? null,
     createdAt: now,
     updatedAt: now,
+    printifyVariantId: null,
   };
 
   const rows = await db
@@ -1113,14 +1129,14 @@ async function createLocalVariantFromPrintful(
         productVariantsTable.printfulSyncVariantId,
       ],
       set: {
-        externalId: values.externalId,
-        size: values.size,
-        color: values.color,
-        sku: values.sku,
-        label: values.label,
-        priceCents: values.priceCents,
-        imageUrl: values.imageUrl,
-        availabilityStatus: values.availabilityStatus,
+        externalId: sql`excluded.external_id`,
+        size: sql`excluded.size`,
+        color: sql`excluded.color`,
+        sku: sql`excluded.sku`,
+        label: sql`excluded.label`,
+        priceCents: sql`excluded.price_cents`,
+        imageUrl: sql`excluded.image_url`,
+        availabilityStatus: sql`excluded.availability_status`,
         updatedAt: now,
       },
     })

@@ -980,8 +980,13 @@ export async function runShippingCalculate(
       adminShippingCents === 0;
   }
 
+  // Single label for UI: when all admin options use the same name (e.g. two brands both "Standard Shipping"), show it once
   const adminLabel =
-    adminLabels.length > 0 ? adminLabels.join(" + ") : null;
+    adminLabels.length > 0
+      ? new Set(adminLabels).size === 1
+        ? adminLabels[0]!
+        : "Standard Shipping"
+      : null;
 
   // Combine shipping costs
   const totalShippingCents =

@@ -14,9 +14,13 @@ export interface CartContextType {
   isHydrated: boolean;
   itemCount: number;
   items: CartItem[];
+  openCart: () => void;
   removeItem: (id: string) => void;
+  setCartOpen: (open: boolean) => void;
   subtotal: number;
   updateQuantity: (id: string, quantity: number) => void;
+  /** Controlled open state for cart drawer/sheet (used by CartClient). */
+  cartOpen: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -54,6 +58,7 @@ const loadCartFromStorage = (): CartItem[] => {
 export function CartProvider({ children }: React.PropsWithChildren) {
   const [items, setItems] = React.useState<CartItem[]>([]);
   const [cartHydrated, setCartHydrated] = React.useState(false);
+  const [cartOpen, setCartOpen] = React.useState(false);
 
   /* -------------------- Restore from localStorage on mount --------------- */
   React.useEffect(() => {
@@ -85,16 +90,25 @@ export function CartProvider({ children }: React.PropsWithChildren) {
       if (qty <= 0) return;
       setItems((prev) => {
         const existing = prev.find((i) => i.id === newItem.id);
+        const wasEmpty = prev.length === 0;
+        let next: CartItem[];
         if (existing) {
-          return prev.map((i) =>
+          next = prev.map((i) =>
             i.id === newItem.id ? { ...i, quantity: i.quantity + qty } : i,
           );
+        } else {
+          next = [...prev, { ...newItem, quantity: qty }];
         }
-        return [...prev, { ...newItem, quantity: qty }];
+        if (wasEmpty && next.length > 0) {
+          React.startTransition(() => setCartOpen(true));
+        }
+        return next;
       });
     },
     [],
   );
+
+  const openCart = React.useCallback(() => setCartOpen(true), []);
 
   const removeItem = React.useCallback((id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
@@ -128,19 +142,25 @@ export function CartProvider({ children }: React.PropsWithChildren) {
   const value = React.useMemo<CartContextType>(
     () => ({
       addItem,
+      cartOpen,
       clearCart,
       isHydrated: cartHydrated,
       itemCount,
       items,
+      openCart,
       removeItem,
+      setCartOpen,
       subtotal,
       updateQuantity,
     }),
     [
       items,
       cartHydrated,
+      cartOpen,
       addItem,
+      openCart,
       removeItem,
+      setCartOpen,
       updateQuantity,
       clearCart,
       itemCount,
