@@ -1,4 +1,4 @@
-import { asc, desc, ilike, or, sql } from "drizzle-orm";
+import { asc, desc, ilike, inArray, or, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -102,6 +102,7 @@ export async function GET(request: NextRequest) {
           imageUrl: true,
           level: true,
           featured: true,
+          parentId: true,
         },
         limit,
         offset,
@@ -129,15 +130,32 @@ export async function GET(request: NextRequest) {
       productCounts.map((r) => [r.categoryId, r.count]),
     );
 
-    const items = categories.map((c) => ({
-      id: c.id,
-      name: c.name,
-      slug: c.slug,
-      imageUrl: c.imageUrl,
-      level: c.level,
-      featured: c.featured,
-      productCount: countByCategory.get(c.id) ?? 0,
-    }));
+    const parentIds = [...new Set(categories.map((c) => c.parentId).filter(Boolean))] as string[];
+    const parentNames = new Map<string, string>();
+    if (parentIds.length > 0) {
+      const parents = await db
+        .select({ id: categoriesTable.id, name: categoriesTable.name })
+        .from(categoriesTable)
+        .where(inArray(categoriesTable.id, parentIds));
+      for (const p of parents) {
+        parentNames.set(p.id, p.name);
+      }
+    }
+
+    const items = categories.map((c) => {
+      // When category has a parent, expose parent name so dropdowns can show "Parent → Child"
+      const parentName = c.parentId ? parentNames.get(c.parentId) ?? null : null;
+      return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        imageUrl: c.imageUrl,
+        level: c.level,
+        featured: c.featured,
+        productCount: countByCategory.get(c.id) ?? 0,
+        parentName: parentName ?? undefined,
+      };
+    });
 
     return NextResponse.json({
       items,

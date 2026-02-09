@@ -97,6 +97,7 @@ const COLUMNS = [
 interface CategoryOption {
   id: string;
   name: string;
+  parentName?: string | null;
 }
 
 export default function AdminProductsPage() {
@@ -131,7 +132,7 @@ export default function AdminProductsPage() {
           }),
         ]);
         if (catRes.ok) {
-          const catJson = (await catRes.json()) as { items?: { id: string; name: string }[] };
+          const catJson = (await catRes.json()) as { items?: CategoryOption[] };
           const items = catJson.items ?? [];
           setCategoryOptions([{ id: "", name: "All categories" }, ...items]);
         }

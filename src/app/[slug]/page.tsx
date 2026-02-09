@@ -47,6 +47,9 @@ import { getTokenGateConfig } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 
+/** Always fetch product/category data from DB so variants match admin (no stale cache). */
+export const dynamic = "force-dynamic";
+
 /* -------------------------------------------------------------------------- */
 /*                               Types                                        */
 /* -------------------------------------------------------------------------- */

@@ -14,6 +14,8 @@ import { cn } from "~/lib/cn";
 export interface CategoryOption {
   id: string;
   name: string;
+  /** When set, show "parentName > name" in the dropdown so subcategories are distinguishable. */
+  parentName?: string | null;
 }
 
 interface CategorySelectProps {
@@ -47,18 +49,25 @@ export function CategorySelect({
   const containerRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
+  const displayName = useCallback((c: CategoryOption) => {
+    if (c.parentName?.trim()) return `${c.parentName.trim()} → ${c.name}`;
+    return c.name;
+  }, []);
+
   const selectedOption = useMemo(
     () => options.find((c) => c.id === value) ?? null,
     [options, value],
   );
+  const selectedLabel = selectedOption ? displayName(selectedOption) : "None";
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return options;
-    return options.filter((c) =>
-      c.name.toLowerCase().includes(q),
-    );
-  }, [options, searchQuery]);
+    return options.filter((c) => {
+      const label = displayName(c);
+      return label.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+    });
+  }, [options, searchQuery, displayName]);
 
   const visible = useMemo(
     () => filtered.slice(0, MAX_VISIBLE),
@@ -184,7 +193,7 @@ export function CategorySelect({
           />
         ) : (
           <span className="flex-1 truncate text-left">
-            {selectedOption ? selectedOption.name : "None"}
+            {selectedLabel}
           </span>
         )}
         <ChevronDown
@@ -227,7 +236,7 @@ export function CategorySelect({
               onClick={() => handleSelect(c.id)}
               onMouseEnter={() => setFocusedIndex(i + 1)}
             >
-              {c.name}
+              {displayName(c)}
             </li>
           ))}
           {filtered.length > MAX_VISIBLE && (

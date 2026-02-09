@@ -137,6 +137,8 @@ export async function uploadMockupToUploadThing(
   const alt = params.alt ?? buildSeoAlt(productName, { variantLabel, index });
 
   const MIN_SOURCE_BYTES = 12_000;
+  /** Seeed often serves a second placeholder (gray with icon) that is ≥12KB; require larger min to skip it. */
+  const MIN_SOURCE_BYTES_SEEED = 35_000;
   const fetchOptions = {
     headers: {
       Accept: "image/*",
@@ -165,32 +167,32 @@ export async function uploadMockupToUploadThing(
     return null;
   }
 
-  // If Seeed returned a tiny image (placeholder), try alternate URL: cache→direct or direct→cache
-  if (
-    buffer.length < MIN_SOURCE_BYTES &&
-    sourceUrl.includes("seeedstudio.com")
-  ) {
+  const isSeeed = sourceUrl.includes("seeedstudio.com");
+  const minBytesForSource = isSeeed ? MIN_SOURCE_BYTES_SEEED : MIN_SOURCE_BYTES;
+
+  // If Seeed returned a tiny or "second" placeholder (gray with icon, often 12–35KB), try alternate URL: cache→direct or direct→cache
+  if (buffer.length < minBytesForSource && isSeeed) {
     const directUrl = getSeeedDirectUrl(sourceUrl);
     if (directUrl && directUrl !== sourceUrl) {
       const altBuffer = await fetchImageBuffer(directUrl);
-      if (altBuffer && altBuffer.length >= MIN_SOURCE_BYTES) {
+      if (altBuffer && altBuffer.length >= minBytesForSource) {
         buffer = altBuffer;
       }
     }
-    if (buffer.length < MIN_SOURCE_BYTES) {
+    if (buffer.length < minBytesForSource) {
       const cacheUrl = getSeeedCacheUrl(sourceUrl);
       if (cacheUrl && cacheUrl !== sourceUrl) {
         const altBuffer = await fetchImageBuffer(cacheUrl);
-        if (altBuffer && altBuffer.length >= MIN_SOURCE_BYTES) {
+        if (altBuffer && altBuffer.length >= minBytesForSource) {
           buffer = altBuffer;
         }
       }
     }
   }
 
-  if (buffer.length < MIN_SOURCE_BYTES) {
+  if (buffer.length < minBytesForSource) {
     console.warn(
-      `Source image too small (${buffer.length} bytes) for ${sourceUrl}; skipping to avoid blank/placeholder. Use a real product image URL in seed data.`,
+      `Source image too small (${buffer.length} bytes, min ${minBytesForSource} for ${isSeeed ? "Seeed" : "source"}) for ${sourceUrl}; skipping to avoid blank/placeholder. Use a real product image URL in seed data.`,
     );
     return null;
   }

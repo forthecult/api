@@ -125,7 +125,7 @@ type Product = {
   variants: ProductVariant[];
 };
 
-type CategoryOption = { id: string; name: string };
+type CategoryOption = { id: string; name: string; parentName?: string | null };
 
 function slugFromName(name: string): string {
   return name
