@@ -2,6 +2,7 @@ import { and, eq, inArray, ne, notInArray, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
+import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import {
   categoriesTable,
   productCategoriesTable,
@@ -250,19 +251,35 @@ export async function GET(
       }
     }
 
-    const items = collected.slice(0, RELATED_LIMIT).map((p) => ({
-      id: p.id,
-      slug: p.slug ?? p.id,
-      name: p.name,
-      category: p.categoryName,
-      image: p.imageUrl ?? "/placeholder.svg",
-      price: p.priceCents / 100,
-      originalPrice:
-        p.compareAtPriceCents != null ? p.compareAtPriceCents / 100 : undefined,
-      inStock: true,
-      rating: 0,
-      tokenGated: p.tokenGated,
-    }));
+    const cookieHeader = _request.headers.get("cookie") ?? "";
+    const tgCookieMatch = cookieHeader
+      .split(";")
+      .map((s) => s.trim())
+      .find((s) => s.toLowerCase().startsWith("tg="));
+    const tgCookieValue = tgCookieMatch
+      ? decodeURIComponent(tgCookieMatch.slice(tgCookieMatch.indexOf("=") + 1).trim())
+      : undefined;
+
+    const items = collected.slice(0, RELATED_LIMIT).map((p) => {
+      const resourceId = p.slug ?? p.id;
+      const tokenGatePassed =
+        p.tokenGated &&
+        hasValidTokenGateCookie(tgCookieValue, "product", resourceId);
+      return {
+        id: p.id,
+        slug: p.slug ?? p.id,
+        name: p.name,
+        category: p.categoryName,
+        image: p.imageUrl ?? "/placeholder.svg",
+        price: p.priceCents / 100,
+        originalPrice:
+          p.compareAtPriceCents != null ? p.compareAtPriceCents / 100 : undefined,
+        inStock: true,
+        rating: 0,
+        tokenGated: p.tokenGated,
+        tokenGatePassed: tokenGatePassed ?? false,
+      };
+    });
 
     return NextResponse.json({ items });
   } catch (err) {

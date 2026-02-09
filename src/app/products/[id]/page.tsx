@@ -176,6 +176,7 @@ type RelatedProduct = {
 
 async function fetchRelatedProducts(
   productId: string,
+  cookieHeader?: string,
 ): Promise<RelatedProduct[]> {
   const baseUrl =
     process.env.NEXT_SERVER_APP_URL ||
@@ -184,6 +185,7 @@ async function fetchRelatedProducts(
   try {
     const res = await fetch(`${baseUrl}/api/products/${productId}/related`, {
       next: { revalidate: 60 },
+      ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as { items?: RelatedProduct[] };
@@ -241,9 +243,15 @@ export async function generateMetadata({
 
 export default async function ProductDetailPage({ params }: PageProps) {
   const { id } = await params;
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
   const [product, relatedProducts] = await Promise.all([
     fetchProductById(id),
-    fetchRelatedProducts(id),
+    fetchRelatedProducts(id, cookieHeader),
   ]);
 
   if (!product) {
@@ -257,7 +265,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
     : 0;
 
   const tokenGateConfig = await getTokenGateConfig("product", product.id);
-  const cookieStore = await cookies();
   const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
   const passed = hasValidTokenGateCookie(tgCookie, "product", product.id);
 

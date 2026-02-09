@@ -24,6 +24,7 @@ interface Product {
   rating: number;
   slug?: string;
   tokenGated?: boolean;
+  tokenGatePassed?: boolean;
 }
 
 interface CategoryOption {
@@ -170,6 +171,7 @@ export function ProductsClient({
             ...p,
             inStock: p.inStock ?? true,
             rating: p.rating ?? 0,
+            tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
           })),
         );
         setTotal(data.total ?? 0);

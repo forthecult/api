@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import nextDynamic from "next/dynamic";
+import { cookies } from "next/headers";
 import { ArrowRight, Clock, ShoppingBag, Star, Truck } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -94,7 +95,7 @@ async function fetchCategories(): Promise<
   }
 }
 
-async function fetchFeaturedProducts(): Promise<
+async function fetchFeaturedProducts(cookieHeader?: string): Promise<
   Array<{
     category: string;
     id: string;
@@ -106,12 +107,14 @@ async function fetchFeaturedProducts(): Promise<
     rating: number;
     slug?: string;
     tokenGated?: boolean;
+    tokenGatePassed?: boolean;
   }>
 > {
   const baseUrl = getServerBaseUrl();
   try {
     const res = await fetch(`${baseUrl}/api/products?page=1&limit=8`, {
       next: { revalidate: 60 },
+      ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
@@ -126,6 +129,7 @@ async function fetchFeaturedProducts(): Promise<
         rating?: number;
         slug?: string;
         tokenGated?: boolean;
+        tokenGatePassed?: boolean;
       }>;
     };
     return (data.items ?? []).map((p) => ({
@@ -139,6 +143,7 @@ async function fetchFeaturedProducts(): Promise<
       rating: p.rating ?? 0,
       slug: p.slug,
       tokenGated: p.tokenGated,
+      tokenGatePassed: p.tokenGatePassed ?? false,
     }));
   } catch {
     return [];
@@ -188,9 +193,15 @@ const featuresWhyChooseUs = [
 ];
 
 export default async function HomePage() {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
   const [featuredProducts, shopCategories, reviewTestimonials] =
     await Promise.all([
-      fetchFeaturedProducts(),
+      fetchFeaturedProducts(cookieHeader),
       fetchCategories(),
       fetchReviewsForTestimonials(),
     ]);

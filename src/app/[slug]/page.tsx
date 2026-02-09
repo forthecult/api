@@ -187,12 +187,16 @@ async function fetchProductBySlug(slug: string): Promise<Product | null> {
   };
 }
 
-async function fetchRelatedProducts(slug: string): Promise<RelatedProduct[]> {
+async function fetchRelatedProducts(
+  slug: string,
+  cookieHeader?: string,
+): Promise<RelatedProduct[]> {
   try {
     const res = await fetch(
       `${baseUrl()}/api/products/${encodeURIComponent(slug)}/related`,
       {
         next: { revalidate: 60 },
+        ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
       },
     );
     if (!res.ok) return [];
@@ -210,6 +214,7 @@ async function fetchCategoryPage(
   sort?: string,
   subcategory?: string,
   q?: string,
+  cookieHeader?: string,
 ): Promise<ProductListResponse> {
   const params = new URLSearchParams({
     page: String(page),
@@ -222,6 +227,7 @@ async function fetchCategoryPage(
   try {
     const res = await fetch(`${baseUrl()}/api/products?${params}`, {
       next: { revalidate: 60 },
+      ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return { items: [], total: 0, totalPages: 1, categories: [] };
     return res.json();
@@ -325,7 +331,11 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       );
     }
 
-    const relatedProducts = await fetchRelatedProducts(slug);
+    const productCookieHeader = cookieStore
+      .getAll()
+      .map((c) => `${c.name}=${c.value}`)
+      .join("; ");
+    const relatedProducts = await fetchRelatedProducts(slug, productCookieHeader);
     const discountPercentage = product.originalPrice
       ? Math.round(
           ((product.originalPrice - product.price) / product.originalPrice) *
@@ -628,8 +638,22 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   const searchQuery = resolvedSearchParams.q?.trim() ?? "";
   const limit = 12;
 
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
   const [data, subcategories, parent] = await Promise.all([
-    fetchCategoryPage(slug, page, limit, sort, subcategoryParam || undefined, searchQuery || undefined),
+    fetchCategoryPage(
+      slug,
+      page,
+      limit,
+      sort,
+      subcategoryParam || undefined,
+      searchQuery || undefined,
+      cookieHeader,
+    ),
     getSubcategories(category.id),
     category.parentId ? getCategoryParent(category.parentId) : Promise.resolve(null),
   ]);
@@ -639,6 +663,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
     tokenGated: p.tokenGated ?? false,
+    tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
   }));
   // First row: All + current category (no subcategory pills to avoid duplicating the second row).
   const categories: CategoryOption[] = [

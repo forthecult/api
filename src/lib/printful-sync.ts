@@ -9,7 +9,7 @@
  * blank catalog items. This service syncs those finished products to your store.
  */
 
-import { eq, and, isNotNull, sql } from "drizzle-orm";
+import { eq, and, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
@@ -1071,15 +1071,14 @@ async function updateLocalProductFromPrintful(
 }
 
 /**
- * Create a local variant from Printful sync variant data.
- * Uses upsert on (productId, printfulSyncVariantId) so existing rows are updated with externalId/label.
- * Variants always get a stable id and a non-empty label (required for display and shipping).
+ * Create or update a local variant from Printful sync variant data.
+ * Printful has two IDs we store: printfulSyncVariantId (sync variant id) and externalId (catalog_variant_id for shipping).
+ * We try UPDATE first by (productId, printfulSyncVariantId) to avoid ON CONFLICT issues; then INSERT if no row exists.
  */
 async function createLocalVariantFromPrintful(
   productId: string,
   syncVariant: PrintfulSyncVariant,
 ): Promise<string> {
-  const variantId = nanoid();
   const now = new Date();
 
   const priceCents = Math.round(
@@ -1091,58 +1090,63 @@ async function createLocalVariantFromPrintful(
   const size = getVariantSize(syncVariant);
   const color = getVariantColor(syncVariant);
 
-  // Guarantee a non-empty label: variant name, or "Size / Color", or "Variant" (required for display/shipping)
   const labelRaw = (syncVariant.name ?? "").trim();
   const labelFallback =
     [size, color].filter(Boolean).join(" / ") || "Variant";
   const label = labelRaw || labelFallback;
 
-  const values = {
+  const externalId = String(syncVariant.variant_id);
+  const printfulSyncVariantId = syncVariant.id;
+
+  // 1) Try to update an existing row with this (productId, printfulSyncVariantId) so we persist externalId
+  const existing = await db
+    .select({ id: productVariantsTable.id })
+    .from(productVariantsTable)
+    .where(
+      and(
+        eq(productVariantsTable.productId, productId),
+        eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
+      ),
+    )
+    .limit(1);
+
+  if (existing[0]) {
+    await db
+      .update(productVariantsTable)
+      .set({
+        externalId,
+        size: size ?? null,
+        color: color ?? null,
+        sku: syncVariant.sku ?? null,
+        label,
+        priceCents: safePriceCents,
+        imageUrl: imageUrl ?? null,
+        availabilityStatus: syncVariant.availability_status ?? null,
+        updatedAt: now,
+      })
+      .where(eq(productVariantsTable.id, existing[0].id));
+    return existing[0].id;
+  }
+
+  // 2) No existing row: insert new variant (id + externalId + printfulSyncVariantId required for shipping)
+  const variantId = nanoid();
+  await db.insert(productVariantsTable).values({
     id: variantId,
     productId,
-    externalId: String(syncVariant.variant_id),
-    printfulSyncVariantId: syncVariant.id,
+    externalId,
+    printfulSyncVariantId,
     size: size ?? null,
     color: color ?? null,
-    gender: null,
-    colorCode: null,
     sku: syncVariant.sku ?? null,
     label,
-    stockQuantity: null,
     priceCents: safePriceCents,
-    weightGrams: null,
     imageUrl: imageUrl ?? null,
-    imageAlt: null,
-    imageTitle: null,
     availabilityStatus: syncVariant.availability_status ?? null,
     createdAt: now,
     updatedAt: now,
-    printifyVariantId: null,
-  };
+  });
 
-  const rows = await db
-    .insert(productVariantsTable)
-    .values(values)
-    .onConflictDoUpdate({
-      target: [
-        productVariantsTable.productId,
-        productVariantsTable.printfulSyncVariantId,
-      ],
-      set: {
-        externalId: sql`excluded.external_id`,
-        size: sql`excluded.size`,
-        color: sql`excluded.color`,
-        sku: sql`excluded.sku`,
-        label: sql`excluded.label`,
-        priceCents: sql`excluded.price_cents`,
-        imageUrl: sql`excluded.image_url`,
-        availabilityStatus: sql`excluded.availability_status`,
-        updatedAt: now,
-      },
-    })
-    .returning({ id: productVariantsTable.id });
-
-  return rows[0]?.id ?? variantId;
+  return variantId;
 }
 
 /**

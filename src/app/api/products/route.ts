@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
+import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import {
   categoriesTable,
   orderItemsTable,
@@ -223,7 +224,7 @@ export async function GET(request: NextRequest) {
     type ProductWithRelations = (typeof rows)[number] & {
       productCategories?: Array<{ isMain?: boolean; category?: { name?: string; slug?: string } }>;
     };
-    const items = rows.map((p: ProductWithRelations) => {
+    const rawItems = rows.map((p: ProductWithRelations) => {
       const mainPc =
         p.productCategories?.find((pc: { isMain?: boolean }) => pc.isMain) ??
         p.productCategories?.[0];
@@ -247,6 +248,22 @@ export async function GET(request: NextRequest) {
           ? { tokenGateSummary: tokenGateSummaryByProductId.get(p.id) }
           : {}),
       };
+    });
+
+    const cookieHeader = request.headers.get("cookie") ?? "";
+    const tgCookieMatch = cookieHeader
+      .split(";")
+      .map((s) => s.trim())
+      .find((s) => s.toLowerCase().startsWith("tg="));
+    const tgCookieValue = tgCookieMatch
+      ? decodeURIComponent(tgCookieMatch.slice(tgCookieMatch.indexOf("=") + 1).trim())
+      : undefined;
+
+    const items = rawItems.map((item) => {
+      const tokenGatePassed =
+        item.tokenGated &&
+        hasValidTokenGateCookie(tgCookieValue, "product", item.slug ?? item.id);
+      return { ...item, tokenGatePassed: tokenGatePassed ?? false };
     });
 
     return NextResponse.json(

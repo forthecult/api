@@ -17,6 +17,7 @@ export type RelatedProduct = {
   price: number;
   rating?: number;
   tokenGated?: boolean;
+  tokenGatePassed?: boolean;
 };
 
 interface RelatedProductsSectionProps {

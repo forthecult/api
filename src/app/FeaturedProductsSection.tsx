@@ -18,6 +18,7 @@ type Product = {
   rating?: number;
   slug?: string;
   tokenGated?: boolean;
+  tokenGatePassed?: boolean;
 };
 
 export function FeaturedProductsSection({ products }: { products: Product[] }) {

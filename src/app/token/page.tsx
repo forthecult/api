@@ -135,7 +135,7 @@ const faqItems = [
   },
   {
     q: "Why 13.37% team allocation?",
-    a: "Fair launch standards recommend team allocations between 10-20%. We chose 13.37%—the middle path. 10% is locked for 6 months via Streamflow (verifiable on-chain). 5% is unlocked so the team can participate in DAO governance from day one.",
+    a: "Fair launch standards recommend team allocations between 10-20%. We chose 13.37%—the middle path. 10% is locked for 6 months via Streamflow (verifiable on-chain). 3.37% is unlocked so the team can participate in DAO governance from day one.",
   },
   {
     q: "What creates demand for CULT?",

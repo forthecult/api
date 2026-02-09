@@ -44,6 +44,8 @@ type ProductCardProps = Omit<
     slug?: string;
     /** When true, show only thumbnail with lock overlay (no name, price, add to cart). */
     tokenGated?: boolean;
+    /** When true and tokenGated, user has passed the gate — show normal product (thumbnail, price, add to cart). */
+    tokenGatePassed?: boolean;
     /** When tokenGated, optional requirement text e.g. "≥ 1000 CULT on the Solana network". */
     tokenGateSummary?: string;
   };
@@ -110,6 +112,9 @@ function ProductCardInner({
   const [tokenGateOpen, setTokenGateOpen] = React.useState(false);
   const isInWishlist =
     typeof isInWishlistProp === "boolean" ? isInWishlistProp : localWishlist;
+
+  /** Show lock overlay only when token-gated and user has not passed the gate. */
+  const isGated = Boolean(product.tokenGated && !product.tokenGatePassed);
 
   React.useEffect(() => {
     setImageError(false);
@@ -190,7 +195,7 @@ function ProductCardInner({
             className={cn(
               "relative overflow-hidden",
               imageAspect === "wide" ? "aspect-[4/3]" : "aspect-square",
-              product.tokenGated ? "rounded-lg" : "rounded-t-lg",
+              isGated ? "rounded-lg" : "rounded-t-lg",
             )}
           >
             {(imageSrc === "/placeholder.svg" || product.image) && (
@@ -198,7 +203,7 @@ function ProductCardInner({
                 alt={product.name}
                 className={cn(
                   "object-cover transition-transform duration-300 ease-in-out",
-                  isHovered && !product.tokenGated && "scale-105",
+                  isHovered && !isGated && "scale-105",
                 )}
                 fill
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -209,7 +214,7 @@ function ProductCardInner({
             )}
 
             {/* Token-gated: strong overlay, message, and ungate from thumbnail */}
-            {product.tokenGated && (
+            {isGated && (
               <div
                 role="button"
                 tabIndex={0}
@@ -270,7 +275,7 @@ function ProductCardInner({
             )}
 
             {/* Category badge (hidden for token-gated) */}
-            {!product.tokenGated && (
+            {!isGated && (
               <Badge
                 className={`
                   absolute top-2 left-2 bg-background/80 backdrop-blur-sm
@@ -282,7 +287,7 @@ function ProductCardInner({
             )}
 
             {/* Discount badge */}
-            {!product.tokenGated && discount > 0 && (
+            {!isGated && discount > 0 && (
               <Badge
                 className={`
                 absolute top-2 right-2 bg-destructive
@@ -294,7 +299,7 @@ function ProductCardInner({
             )}
 
             {/* Wishlist button (hidden for token-gated) */}
-            {!product.tokenGated && (
+            {!isGated && (
               <Button
                 className={cn(
                   `
@@ -324,7 +329,7 @@ function ProductCardInner({
             )}
           </div>
 
-          {!product.tokenGated && (
+          {!isGated && (
           <CardContent className="flex flex-1 flex-col p-4 pt-4 min-h-0">
             {/* Product name with line clamp */}
             <h3
@@ -365,7 +370,7 @@ function ProductCardInner({
           </CardContent>
           )}
 
-          {!product.tokenGated && variant === "default" && (
+          {!isGated && variant === "default" && (
             <CardFooter className="mt-auto p-4 pt-0">
               <Button
                 className={cn(
@@ -390,7 +395,7 @@ function ProductCardInner({
             </CardFooter>
           )}
 
-          {!product.tokenGated && variant === "compact" && (
+          {!isGated && variant === "compact" && (
             <CardFooter className="p-4 pt-0">
               <div className="flex w-full items-center justify-between">
                 <div className="flex flex-col gap-0.5">
@@ -437,7 +442,7 @@ function ProductCardInner({
             </CardFooter>
           )}
 
-          {!product.tokenGated && !product.inStock && (
+          {!isGated && !product.inStock && (
             <div
               className={`
                 absolute inset-0 flex items-center justify-center
