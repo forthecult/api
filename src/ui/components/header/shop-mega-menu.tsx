@@ -16,7 +16,12 @@ type CategoryItem = {
   name: string;
   slug?: string;
   productCount?: number;
-  subcategories?: Array<{ id: string; name: string; productCount?: number }>;
+  subcategories?: Array<{
+    id: string;
+    name: string;
+    slug?: string;
+    productCount?: number;
+  }>;
 };
 
 export function ShopMegaMenu({
@@ -72,22 +77,28 @@ export function ShopMegaMenu({
                 </Link>
                 {cat.subcategories && cat.subcategories.length > 0 && (
                   <ul className="mt-1 space-y-0.5 pl-0">
-                    {cat.subcategories.map((sub) => (
-                      <li key={sub.id}>
-                        <Link
-                          href={href}
-                          className="block rounded px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                          onClick={() => setOpen(false)}
-                        >
-                          {sub.name}
-                          {sub.productCount != null && sub.productCount > 0 && (
-                            <span className="ml-1 tabular-nums">
-                              ({sub.productCount})
-                            </span>
-                          )}
-                        </Link>
-                      </li>
-                    ))}
+                    {cat.subcategories.map((sub) => {
+                      const subHref =
+                        cat.slug && sub.slug
+                          ? `/${cat.slug}?subcategory=${encodeURIComponent(sub.slug)}`
+                          : href;
+                      return (
+                        <li key={sub.id}>
+                          <Link
+                            href={subHref}
+                            className="block rounded px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            onClick={() => setOpen(false)}
+                          >
+                            {sub.name}
+                            {sub.productCount != null && sub.productCount > 0 && (
+                              <span className="ml-1 tabular-nums">
+                                ({sub.productCount})
+                              </span>
+                            )}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

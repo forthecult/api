@@ -1001,26 +1001,54 @@ async function updateLocalProductFromPrintful(
       .from(productVariantsTable)
       .where(eq(productVariantsTable.productId, productId));
 
-    const existingVariantMap = new Map(
-      existingVariants.map((v) => [v.printfulSyncVariantId, v]),
-    );
+    type VariantRow = (typeof existingVariants)[number];
+    const existingVariantMap = new Map<number | null, VariantRow[]>();
+    for (const v of existingVariants) {
+      const key = v.printfulSyncVariantId ?? null;
+      const list = existingVariantMap.get(key) ?? [];
+      list.push(v);
+      existingVariantMap.set(key, list);
+    }
     const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
+    const matchedLocalIds = new Set<string>();
 
     for (const syncVariant of syncVariants) {
-      const existing = existingVariantMap.get(syncVariant.id);
+      const bySyncId = existingVariantMap.get(syncVariant.id);
+      const existing = bySyncId?.[0];
       if (existing) {
+        matchedLocalIds.add(existing.id);
         await updateLocalVariantFromPrintful(existing.id, syncVariant);
+        continue;
+      }
+      // Backfill: match by size/color/label when variants have no printfulSyncVariantId (e.g. after first sync or legacy data)
+      const syncSize = getVariantSize(syncVariant)?.trim() ?? "";
+      const syncColor = getVariantColor(syncVariant)?.trim() ?? "";
+      const syncLabel = (syncVariant.name ?? "").trim();
+      const unmatched = existingVariants.filter(
+        (v) =>
+          !matchedLocalIds.has(v.id) &&
+          (v.size?.trim() ?? "") === syncSize &&
+          (v.color?.trim() ?? "") === syncColor &&
+          (v.label?.trim() ?? "") === syncLabel,
+      );
+      const toUpdate = unmatched[0];
+      if (toUpdate) {
+        matchedLocalIds.add(toUpdate.id);
+        await updateLocalVariantFromPrintful(toUpdate.id, syncVariant);
       } else {
         await createLocalVariantFromPrintful(productId, syncVariant);
       }
     }
 
-    for (const [syncVariantId, localVariant] of existingVariantMap) {
-      if (syncVariantId && !incomingVariantIds.has(syncVariantId)) {
+    for (const v of existingVariants) {
+      if (
+        v.printfulSyncVariantId != null &&
+        !incomingVariantIds.has(v.printfulSyncVariantId)
+      ) {
         await db
           .delete(productVariantsTable)
-          .where(eq(productVariantsTable.id, localVariant.id));
-        console.log(`Deleted variant ${localVariant.id} (no longer in Printful)`);
+          .where(eq(productVariantsTable.id, v.id));
+        console.log(`Deleted variant ${v.id} (no longer in Printful)`);
       }
     }
   }
@@ -1088,6 +1116,7 @@ async function updateLocalVariantFromPrintful(
     .update(productVariantsTable)
     .set({
       externalId: String(syncVariant.variant_id),
+      printfulSyncVariantId: syncVariant.id,
       size,
       color,
       sku: syncVariant.sku,

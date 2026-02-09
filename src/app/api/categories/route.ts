@@ -68,6 +68,7 @@ export async function GET() {
         name: child.name,
         description: child.description ?? undefined,
         productCount: countByCategoryId.get(child.id) ?? 0,
+        slug: child.slug ?? undefined,
       }));
       return {
         id: parent.id,
