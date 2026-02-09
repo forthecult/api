@@ -10,6 +10,7 @@
     "dev": "next dev -p 3000",
     "dev:turbo": "next dev --turbopack -p 3000",
     "db:migrate-printful": "psql $DATABASE_URL -f scripts/migrate-printful-schema.sql",
+    "db:migrate-printful-printify-sync": "psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql && psql $DATABASE_URL -f scripts/migrate-variant-composite-unique.sql",
     "db:push": "drizzle-kit push",
     "db:seed": "bun run scripts/seed-products.ts",
     "db:seed-products": "bun run scripts/seed-products.ts",

@@ -65,6 +65,12 @@ type ProductImage = {
 };
 type ProductVariant = {
   id?: string;
+  /** Catalog variant ID (Printful/Printify) – used for shipping rate calculation */
+  externalId?: string | null;
+  /** Printful sync_variant.id – set when synced from Printful */
+  printfulSyncVariantId?: number | null;
+  /** Printify variant id – set when synced from Printify */
+  printifyVariantId?: string | null;
   size?: string;
   color?: string;
   sku?: string;
@@ -2207,6 +2213,7 @@ export default function AdminProductEditPage() {
                               />
                             </th>
                             <th className="p-2 text-left">Variant</th>
+                            <th className="p-2 text-left">Variant ID</th>
                             <th className="p-2 text-left">Label</th>
                             <th className="p-2 text-left">Price</th>
                             <th className="p-2 text-left">Quantity</th>
@@ -2249,6 +2256,35 @@ export default function AdminProductEditPage() {
                                   <span className="font-medium">
                                     {getVariantLabel(v, optionDefinitions)}
                                   </span>
+                                </div>
+                              </td>
+                              <td className="p-2">
+                                <div className="min-w-[8rem] font-mono text-xs text-muted-foreground" title="Internal ID and Printful/Printify variant ID (for sync and shipping)">
+                                  {v.id ? (
+                                    <span className="block truncate" title={v.id}>
+                                      {v.id}
+                                    </span>
+                                  ) : (
+                                    <span className="italic">—</span>
+                                  )}
+                                  {v.printfulSyncVariantId != null && (
+                                    <span className="mt-0.5 block text-muted-foreground">
+                                      Printful: {v.printfulSyncVariantId}
+                                    </span>
+                                  )}
+                                  {v.printifyVariantId != null && !v.printfulSyncVariantId && (
+                                    <span className="mt-0.5 block text-muted-foreground">
+                                      Printify: {v.printifyVariantId}
+                                    </span>
+                                  )}
+                                  {v.externalId != null && (
+                                    <span className="mt-0.5 block text-muted-foreground" title="Catalog ID (shipping)">
+                                      Catalog: {v.externalId}
+                                    </span>
+                                  )}
+                                  {!v.id && !v.printfulSyncVariantId && !v.printifyVariantId && !v.externalId && (
+                                    <span className="italic">—</span>
+                                  )}
                                 </div>
                               </td>
                               <td className="p-2">

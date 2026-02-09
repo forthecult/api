@@ -184,6 +184,9 @@ export async function GET(
       tags: tags.map((t) => t.tag),
       variants: variants.map((v) => ({
         id: v.id,
+        externalId: v.externalId ?? null,
+        printfulSyncVariantId: v.printfulSyncVariantId ?? null,
+        printifyVariantId: v.printifyVariantId ?? null,
         size: v.size,
         color: v.color,
         sku: v.sku,

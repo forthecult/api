@@ -1098,17 +1098,35 @@ async function createLocalVariantFromPrintful(
   const externalId = String(syncVariant.variant_id);
   const printfulSyncVariantId = syncVariant.id;
 
-  // 1) Try to update an existing row with this (productId, printfulSyncVariantId) so we persist externalId
-  const existing = await db
-    .select({ id: productVariantsTable.id })
-    .from(productVariantsTable)
-    .where(
-      and(
-        eq(productVariantsTable.productId, productId),
-        eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
-      ),
-    )
-    .limit(1);
+  // 1) Try to update an existing row by (productId, printfulSyncVariantId) so we persist externalId.
+  // If the column doesn't exist yet (migration not run), the SELECT will throw — we catch and proceed to INSERT.
+  let existing: { id: string }[] = [];
+  try {
+    existing = await db
+      .select({ id: productVariantsTable.id })
+      .from(productVariantsTable)
+      .where(
+        and(
+          eq(productVariantsTable.productId, productId),
+          eq(
+            productVariantsTable.printfulSyncVariantId,
+            printfulSyncVariantId,
+          ),
+        ),
+      )
+      .limit(1);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (
+      msg.includes("printful_sync_variant_id") ||
+      msg.includes("does not exist")
+    ) {
+      console.warn(
+        "[Printful sync] product_variant.printful_sync_variant_id missing? Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql",
+      );
+    }
+    existing = [];
+  }
 
   if (existing[0]) {
     await db
@@ -1130,21 +1148,35 @@ async function createLocalVariantFromPrintful(
 
   // 2) No existing row: insert new variant (id + externalId + printfulSyncVariantId required for shipping)
   const variantId = nanoid();
-  await db.insert(productVariantsTable).values({
-    id: variantId,
-    productId,
-    externalId,
-    printfulSyncVariantId,
-    size: size ?? null,
-    color: color ?? null,
-    sku: syncVariant.sku ?? null,
-    label,
-    priceCents: safePriceCents,
-    imageUrl: imageUrl ?? null,
-    availabilityStatus: syncVariant.availability_status ?? null,
-    createdAt: now,
-    updatedAt: now,
-  });
+  try {
+    await db.insert(productVariantsTable).values({
+      id: variantId,
+      productId,
+      externalId,
+      printfulSyncVariantId,
+      size: size ?? null,
+      color: color ?? null,
+      sku: syncVariant.sku ?? null,
+      label,
+      priceCents: safePriceCents,
+      imageUrl: imageUrl ?? null,
+      availabilityStatus: syncVariant.availability_status ?? null,
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (
+      msg.includes("printful_sync_variant_id") ||
+      msg.includes("column") ||
+      msg.includes("does not exist")
+    ) {
+      throw new Error(
+        "Printful sync needs product_variant.printful_sync_variant_id. Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql then re-sync.",
+      );
+    }
+    throw err;
+  }
 
   return variantId;
 }
