@@ -34,6 +34,7 @@ import {
   getSolanaPayLabel,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
+  TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
   usdcAmountFromUsd,
@@ -60,6 +61,7 @@ const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
   whitewhale: { src: "/crypto/solana/solanaLogoMark.svg", alt: "WhiteWhale" },
   crust: { src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" },
   pump: { src: "/crypto/pump/pump-logomark.svg", alt: "Pump" },
+  troll: { src: "/crypto/solana/solanaLogoMark.svg", alt: "TROLL" },
   sui: { src: "/crypto/sui/sui-logo.svg", alt: "Sui" },
 };
 
@@ -69,6 +71,7 @@ const PAYMENT_TITLE: Record<string, string> = {
   whitewhale: "Pay with WhiteWhale",
   crust: "Pay with Crustafarian (CRUST)",
   pump: "Pay with Pump",
+  troll: "Pay with Troll (TROLL)",
   sui: "Pay with Sui",
 };
 
@@ -100,7 +103,7 @@ export function CryptoPayClient() {
   const [mounted, setMounted] = useState(false);
   const pathId = (params?.invoiceId as string) ?? "";
   const [token, setToken] = useState<
-    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "sui"
+    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "troll" | "sui"
   >("usdc");
   const [suiFromHash, setSuiFromHash] = useState<{
     amountUsd: number;
@@ -156,6 +159,7 @@ export function CryptoPayClient() {
       hash === "whitewhale" ||
       hash === "crust" ||
       hash === "pump" ||
+      hash === "troll" ||
       hash === "sui"
     ) {
       setToken(hash);
@@ -221,6 +225,8 @@ export function CryptoPayClient() {
           ? "1 USDC = 1 USD"
           : token === "whitewhale"
             ? "1 WhiteWhale ≈ 1 USD"
+            : token === "troll"
+              ? "1 TROLL ≈ 1 USD"
             : `1 SOL = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
   const { user } = useCurrentUser();
@@ -234,6 +240,8 @@ export function CryptoPayClient() {
           ? "Crustafarian (CRUST)"
           : token === "pump"
             ? "Pump (PUMP)"
+            : token === "troll"
+              ? "Troll (TROLL)"
             : token === "sui"
               ? "Sui (SUI)"
               : "Solana";
@@ -303,10 +311,13 @@ export function CryptoPayClient() {
     const keypair = Keypair.generate();
     const reference = keypair.publicKey;
     const isWhiteWhale = token === "whitewhale";
+    const isTroll = token === "troll";
     const splTokenMint = isWhiteWhale
       ? WHITEWHALE_MINT_MAINNET
-      : USDC_MINT_MAINNET;
-    const amount = isWhiteWhale
+      : isTroll
+        ? TROLL_MINT_MAINNET
+        : USDC_MINT_MAINNET;
+    const amount = isWhiteWhale || isTroll
       ? tokenAmountFromUsd(amountUsd)
       : usdcAmountFromUsd(amountUsd);
     const url = encodeURL({
@@ -375,7 +386,9 @@ export function CryptoPayClient() {
           ? PUMP_MINT_MAINNET
           : token === "whitewhale"
             ? WHITEWHALE_MINT_MAINNET
-            : USDC_MINT_MAINNET;
+            : token === "troll"
+              ? TROLL_MINT_MAINNET
+              : USDC_MINT_MAINNET;
     const amountStr = isNativeSol
       ? String(
           Math.ceil(amountSol * LAMPORTS_PER_SOL) + TX_FEE_BUFFER_LAMPORTS,
@@ -400,7 +413,7 @@ export function CryptoPayClient() {
               rate,
               6,
             ).toString()
-          : token === "whitewhale"
+          : token === "whitewhale" || token === "troll"
             ? tokenAmountFromUsd(amountUsd).toString()
             : usdcAmountFromUsd(amountUsd).toString();
     const params = new URLSearchParams({
@@ -480,7 +493,7 @@ export function CryptoPayClient() {
       ? amountCrustStr
       : token === "pump"
         ? amountPumpStr
-        : token === "usdc" || token === "whitewhale"
+        : token === "usdc" || token === "whitewhale" || token === "troll"
           ? amountUsdStr
           : amountSolStr;
   const amountUnit =
@@ -492,7 +505,9 @@ export function CryptoPayClient() {
           ? "USDC"
           : token === "whitewhale"
             ? "WhiteWhale"
-            : "SOL";
+            : token === "troll"
+              ? "TROLL"
+              : "SOL";
 
   const copyAmount = useCallback(() => {
     void navigator.clipboard.writeText(`${amountDisplayStr} ${amountUnit}`);
@@ -566,6 +581,9 @@ export function CryptoPayClient() {
         } else if (token === "usdc") {
           amountBigNumber = usdcAmountFromUsd(amountUsd);
           splTokenMint = new PublicKey(USDC_MINT_MAINNET);
+        } else if (token === "troll") {
+          amountBigNumber = tokenAmountFromUsd(amountUsd);
+          splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
         } else {
           // whitewhale
           amountBigNumber = tokenAmountFromUsd(amountUsd);
@@ -730,6 +748,9 @@ export function CryptoPayClient() {
       } else if (token === "whitewhale") {
         amountBigNumber = tokenAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(WHITEWHALE_MINT_MAINNET);
+      } else if (token === "troll") {
+        amountBigNumber = tokenAmountFromUsd(amountUsd);
+        splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
       } else {
         return false;
       }
@@ -1291,7 +1312,9 @@ export function CryptoPayClient() {
                             ? `${amountUsdStr} USDC`
                             : token === "whitewhale"
                               ? `${amountUsdStr} WhiteWhale`
-                              : `${amountSolStr} SOL`}
+                              : token === "troll"
+                                ? `${amountUsdStr} TROLL`
+                                : `${amountSolStr} SOL`}
                   </dd>
                 </div>
               </dl>
@@ -1310,7 +1333,9 @@ export function CryptoPayClient() {
                         ? `Pay in USDC (Solana). ${rateLabel}.`
                         : token === "whitewhale"
                           ? `Pay in WhiteWhale. ${rateLabel}.`
-                          : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
+                          : token === "troll"
+                            ? `Pay in TROLL. ${rateLabel}.`
+                            : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
               </p>
             </div>
           </div>

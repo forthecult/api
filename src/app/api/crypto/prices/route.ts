@@ -38,6 +38,7 @@ export type CryptoPricesResponse = {
   TON?: number;
   CRUST?: number;
   PUMP?: number;
+  TROLL?: number;
   XMR?: number;
   /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
   XAU?: number;
@@ -54,6 +55,7 @@ const FALLBACK_PRICES: CryptoPricesResponse = {
   TON: 5.5,
   CRUST: 0.0001,
   PUMP: 0.01,
+  TROLL: 1,
   XMR: 150,
   XAU: 2650,
 };
@@ -119,6 +121,11 @@ export async function GET() {
       } catch {
         // pump.fun price fetch failed, continue with CoinGecko-only prices
       }
+    }
+
+    // TROLL: 1 USD placeholder (wire real price feed when available)
+    if (prices.TROLL == null || prices.TROLL <= 0) {
+      prices.TROLL = 1;
     }
 
     return NextResponse.json(prices);

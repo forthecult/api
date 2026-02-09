@@ -30,6 +30,10 @@ export const CRUST_MINT_MAINNET =
 export const PUMP_MINT_MAINNET =
   "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn";
 
+/** $TROLL SPL token on Solana. CA: 5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2 */
+export const TROLL_MINT_MAINNET =
+  "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2";
+
 export function getSolanaPayRecipient(): string | undefined {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined

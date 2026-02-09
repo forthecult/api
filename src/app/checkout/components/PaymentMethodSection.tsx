@@ -97,6 +97,7 @@ type CryptoSub =
   | "monero"
   | "crust"
   | "pump"
+  | "troll"
   | "other";
 type UsdcSub = "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
 type UsdtSub = "ethereum" | "arbitrum" | "bnb" | "polygon";
@@ -179,6 +180,7 @@ export function PaymentMethodSection({
     SOL?: number;
     CRUST?: number;
     PUMP?: number;
+    TROLL?: number;
   }>({});
 
   const { visibility } = usePaymentMethodSettings();
@@ -195,7 +197,7 @@ export function PaymentMethodSection({
     if (paymentMethod !== "crypto") return;
     fetch("/api/crypto/prices")
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number }) => {
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number }) => {
         if (data && typeof data === "object") setCryptoPrices(data);
       })
       .catch(() => {});
@@ -237,6 +239,7 @@ export function PaymentMethodSection({
       paymentSubOption === "solana") ||
       (paymentMethod === "crypto" && paymentSubOption === "crust") ||
       (paymentMethod === "crypto" && paymentSubOption === "pump") ||
+      (paymentMethod === "crypto" && paymentSubOption === "troll") ||
       (paymentMethod === "crypto" && paymentSubOption === "solana"));
 
   const isEvmPaySupported =
@@ -292,6 +295,12 @@ export function PaymentMethodSection({
       const amount = total / rate;
       return `≈ ${formatCrypto(amount, 6)} PUMP`;
     }
+    if (paymentSubOption === "troll") {
+      const rate = cryptoPrices.TROLL;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${formatCrypto(amount, 6)} TROLL`;
+    }
     return null;
   }, [
     paymentMethod,
@@ -300,6 +309,7 @@ export function PaymentMethodSection({
     cryptoPrices.SOL,
     cryptoPrices.CRUST,
     cryptoPrices.PUMP,
+    cryptoPrices.TROLL,
   ]);
 
   useEffect(() => {
@@ -410,7 +420,9 @@ export function PaymentMethodSection({
           ? "crust"
           : paymentMethod === "crypto" && paymentSubOption === "pump"
             ? "pump"
-            : paymentMethod === "stablecoins" &&
+            : paymentMethod === "crypto" && paymentSubOption === "troll"
+              ? "troll"
+              : paymentMethod === "stablecoins" &&
                 stablecoinToken === "usdc" &&
                 paymentSubOption === "solana"
               ? "usdc"
@@ -1174,7 +1186,9 @@ export function PaymentMethodSection({
                 ? "Pay with CRUST"
                 : paymentMethod === "crypto" && paymentSubOption === "pump"
                   ? "Pay with Pump"
-                  : paymentMethod === "stablecoins" &&
+                  : paymentMethod === "crypto" && paymentSubOption === "troll"
+                    ? "Pay with TROLL"
+                    : paymentMethod === "stablecoins" &&
                       stablecoinToken === "usdc" &&
                       paymentSubOption === "solana"
                     ? "Pay with USDC (Solana)"

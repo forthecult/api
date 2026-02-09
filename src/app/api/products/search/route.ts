@@ -31,6 +31,7 @@ export async function OPTIONS() {
 
 /**
  * Search products via GET (query params). Matches docs and AI clients that call GET /api/products/search?q=...
+ * CORS: Allow-Origin * (see cors-public-api). If clients see "Failed to fetch", try GET /api/health first to confirm reachability.
  */
 export async function GET(request: NextRequest) {
   try {
