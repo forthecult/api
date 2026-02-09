@@ -21,7 +21,10 @@ We support **bidirectional synchronization** with Printful Sync Products:
 
 - `product.printfulSyncProductId` — Printful sync_product.id for bidirectional sync
 - `product_variant.printfulSyncVariantId` — Printful sync_variant.id for variant sync
+- `product_variant.externalId` — **Required for shipping.** Printful catalog variant ID; sent as `catalog_variant_id` to the shipping-rates API. Sync always persists this when creating/updating variants.
 - `product.lastSyncedAt` — When product was last synced
+
+**Shipping:** Printful shipping at checkout needs `product_variant.external_id` (catalog variant ID). Sync sets it when creating/updating variants. If shipping shows $0 or logs "missing catalog_variant_id", ensure the schema has the sync columns (one-time: `bun run db:migrate-printful-printify-sync` or `bun run db:ensure-printful-printify`), then **re-sync Printful products** so variants get `external_id` populated.
 
 ### API Endpoints
 

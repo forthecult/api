@@ -12,7 +12,7 @@
 import { eq, and, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
-import { db } from "~/db";
+import { conn, db } from "~/db";
 import {
   productAvailableCountryTable,
   productsTable,
@@ -1146,36 +1146,46 @@ async function createLocalVariantFromPrintful(
     return existing[0].id;
   }
 
-  // 2) No existing row: insert new variant (id + externalId + printfulSyncVariantId required for shipping)
+  // 2) No existing row: insert new variant (id + externalId required for shipping; printfulSyncVariantId for re-sync)
   const variantId = nanoid();
+  const baseValues = {
+    id: variantId,
+    productId,
+    externalId,
+    size: size ?? null,
+    color: color ?? null,
+    sku: syncVariant.sku ?? null,
+    label,
+    priceCents: safePriceCents,
+    imageUrl: imageUrl ?? null,
+    availabilityStatus: syncVariant.availability_status ?? null,
+    createdAt: now,
+    updatedAt: now,
+  };
   try {
     await db.insert(productVariantsTable).values({
-      id: variantId,
-      productId,
-      externalId,
+      ...baseValues,
       printfulSyncVariantId,
-      size: size ?? null,
-      color: color ?? null,
-      sku: syncVariant.sku ?? null,
-      label,
-      priceCents: safePriceCents,
-      imageUrl: imageUrl ?? null,
-      availabilityStatus: syncVariant.availability_status ?? null,
-      createdAt: now,
-      updatedAt: now,
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (
+    const columnMissing =
       msg.includes("printful_sync_variant_id") ||
       msg.includes("column") ||
-      msg.includes("does not exist")
-    ) {
-      throw new Error(
-        "Printful sync needs product_variant.printful_sync_variant_id. Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql then re-sync.",
-      );
+      msg.includes("does not exist");
+    if (columnMissing) {
+      // Fallback: raw INSERT without printful_sync_variant_id so external_id is stored and shipping works
+      try {
+        await conn`INSERT INTO product_variant (id, product_id, external_id, size, color, sku, label, price_cents, image_url, availability_status, created_at, updated_at)
+          VALUES (${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null}, ${syncVariant.sku ?? null}, ${label}, ${safePriceCents}, ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now})`;
+      } catch (fallbackErr) {
+        throw new Error(
+          "Printful sync needs product_variant columns. Run: bun run scripts/ensure-printful-printify-columns.ts (or psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql) then re-sync.",
+        );
+      }
+    } else {
+      throw err;
     }
-    throw err;
   }
 
   return variantId;

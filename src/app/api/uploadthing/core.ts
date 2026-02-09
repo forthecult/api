@@ -22,7 +22,7 @@ export const ourFileRouter = {
     },
   })
     // Set permissions and file types for this FileRoute
-    .middleware(async ({ req }) => {
+    .middleware(async ({ req }: { req: { headers: Headers } }) => {
       // This code runs on your server before upload
       // Get the user session using auth.api.getSession
       const session = await auth.api.getSession({ headers: req.headers });
@@ -34,7 +34,7 @@ export const ourFileRouter = {
       // Ensure userId is correctly passed
       return { userId: session.user.id };
     })
-    .onUploadComplete(async ({ file, metadata }) => {
+    .onUploadComplete(async ({ file, metadata }: { file: { key: string; ufsUrl: string }; metadata: { userId: string } }) => {
       // This code RUNS ON THE SERVER after upload
       console.log("Upload complete for userId (image):", metadata.userId);
       console.log("file url", file.ufsUrl); // Public CDN URL is useful info
@@ -76,13 +76,13 @@ export const ourFileRouter = {
   videoUploader: f({
     video: { maxFileCount: 5, maxFileSize: "64MB" },
   })
-    .middleware(async ({ req }) => {
+    .middleware(async ({ req }: { req: { headers: Headers } }) => {
       // Same middleware logic as imageUploader
       const session = await auth.api.getSession({ headers: req.headers });
       if (!session?.user?.id) throw new UploadThingError("Unauthorized");
       return { userId: session.user.id };
     })
-    .onUploadComplete(async ({ file, metadata }) => {
+    .onUploadComplete(async ({ file, metadata }: { file: { key: string; ufsUrl: string }; metadata: { userId: string } }) => {
       console.log("Upload complete for userId (video):", metadata.userId);
       console.log("file url", file.ufsUrl); // Public CDN URL is useful info
       console.log("file key", file.key);
