@@ -178,6 +178,9 @@ export default function TokenPage() {
             <p className="text-sm font-medium text-muted-foreground">
               {SEO_CONFIG.name}
             </p>
+            <p className="text-base font-medium italic text-foreground/90 sm:text-lg">
+              A new Age of eCommerce
+            </p>
             <h1
               className={`
                 font-display text-4xl font-bold leading-tight tracking-tight

@@ -208,6 +208,26 @@ export const PRIVACY_POLICY_SUMMARY =
 export const TERMS_POLICY_SUMMARY =
   'By using Culture you agree to these terms and our Privacy, Refund, and Shipping policies. You must be the age of majority to use the service. We may refuse or cancel orders, limit quantities, and correct pricing errors. Products are provided "as is." We are not liable for indirect or consequential damages. We encourage contacting us first for disputes; governing law is the United States.';
 
+/** Common order payload built by CheckoutClient and passed to PaymentMethodSection for create-order APIs */
+export interface OrderPayload {
+  form: CheckoutFormState | undefined;
+  emailNewsVal: boolean;
+  textNewsVal: boolean;
+  orderItems: Array<{
+    productId: string;
+    productVariantId?: string;
+    name: string;
+    priceCents: number;
+    quantity: number;
+  }>;
+  subtotalCents: number;
+  orderTotalCents: number;
+  shippingFeeCentsRounded: number;
+  taxCentsRounded: number;
+  email: string;
+  commonBody: Record<string, unknown>;
+}
+
 /** Applied coupon as returned from validate/automatic APIs */
 export interface AppliedCoupon {
   couponId: string;
