@@ -21,10 +21,10 @@ import {
   sizeChartsTable,
 } from "~/db/schema";
 
-/** Ensure product_variant has Printful/Printify columns so sync and shipping work. Runs once per process before first sync. */
-let ensureColumnsPromise: Promise<void> | null = null;
-async function ensurePrintfulPrintifyVariantColumns(): Promise<void> {
-  if (ensureColumnsPromise) return ensureColumnsPromise;
+/** Ensure product_variant has Printful/Printify columns. Returns true if columns exist (or were added), false if not (e.g. no ALTER permission). */
+let ensureColumnsPromise: Promise<boolean> | null = null;
+async function ensurePrintfulPrintifyVariantColumns(): Promise<boolean> {
+  if (ensureColumnsPromise != null) return ensureColumnsPromise;
   ensureColumnsPromise = (async () => {
     const stmts = [
       `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id INTEGER`,
@@ -36,23 +36,25 @@ async function ensurePrintfulPrintifyVariantColumns(): Promise<void> {
         await conn.unsafe(sql);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        console.error("[Printful sync] ensure columns failed:", msg);
-        throw new Error(
-          `Printful sync cannot add required DB column. Ensure your database user has ALTER permission on product_variant. Error: ${msg}`,
+        console.warn(
+          "[Printful sync] Could not add column (run once with a user that has ALTER: bun run db:ensure-printful-printify or psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql):",
+          msg,
         );
+        return false;
       }
     }
-    // Verify column exists (raw query so we definitely reference the column)
     try {
       await conn.unsafe(
         "SELECT id, printful_sync_variant_id FROM product_variant LIMIT 0",
       );
+      return true;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       if (msg.includes("printful_sync_variant_id") || msg.includes("does not exist")) {
-        throw new Error(
-          "Column product_variant.printful_sync_variant_id still missing after ALTER. Database user may need ALTER permission. Run once: bun run db:ensure-printful-printify",
+        console.warn(
+          "[Printful sync] Column printful_sync_variant_id missing after ALTER. Run: bun run db:ensure-printful-printify",
         );
+        return false;
       }
       throw e;
     }
@@ -808,6 +810,14 @@ async function createLocalProductFromPrintful(
     createdAt: now,
   });
 
+  // Markets first so they are always set even if variant creation fails later
+  for (const code of marketCountryCodes) {
+    await db.insert(productAvailableCountryTable).values({
+      productId,
+      countryCode: code,
+    });
+  }
+
   // Create variants (with variant images and size/color)
   for (const syncVariant of syncVariants) {
     await createLocalVariantFromPrintful(productId, syncVariant);
@@ -835,14 +845,6 @@ async function createLocalProductFromPrintful(
       url,
       alt: syncProduct.name,
       sortOrder: sortOrder++,
-    });
-  }
-
-  // Markets: where Printful ships (from API or fallback; admin "Markets" and shipping use this)
-  for (const code of marketCountryCodes) {
-    await db.insert(productAvailableCountryTable).values({
-      productId,
-      countryCode: code,
     });
   }
 
@@ -1164,6 +1166,7 @@ async function createLocalVariantFromPrintful(
   productId: string,
   syncVariant: PrintfulSyncVariant,
 ): Promise<string> {
+  const columnsOk = await ensurePrintfulPrintifyVariantColumns();
   const now = new Date();
 
   const priceCents = Math.round(
@@ -1183,75 +1186,77 @@ async function createLocalVariantFromPrintful(
   const externalId = String(syncVariant.variant_id);
   const printfulSyncVariantId = syncVariant.id;
 
-  // 1) Try to update an existing row by (productId, printfulSyncVariantId) so we persist externalId.
-  // If the column doesn't exist yet (migration not run), the SELECT will throw — we catch and proceed to INSERT.
-  let existing: { id: string }[] = [];
+  // When columns are missing (e.g. no ALTER permission), only insert with base columns so external_id is set for shipping
+  if (!columnsOk) {
+    const variantId = nanoid();
+    await conn`
+      INSERT INTO product_variant (id, product_id, external_id, size, color, sku, label, price_cents, image_url, availability_status, created_at, updated_at)
+      VALUES (${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null}, ${syncVariant.sku ?? null}, ${label}, ${safePriceCents}, ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now})
+    `;
+    return variantId;
+  }
+
+  // 1) Find existing row by (productId, printfulSyncVariantId) using raw SQL
+  let existingId: string | null = null;
   try {
-    existing = await db
-      .select({ id: productVariantsTable.id })
-      .from(productVariantsTable)
-      .where(
-        and(
-          eq(productVariantsTable.productId, productId),
-          eq(
-            productVariantsTable.printfulSyncVariantId,
-            printfulSyncVariantId,
-          ),
-        ),
-      )
-      .limit(1);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (
-      msg.includes("printful_sync_variant_id") ||
-      msg.includes("does not exist")
-    ) {
-      console.warn(
-        "[Printful sync] product_variant.printful_sync_variant_id missing? Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql",
-      );
+    const rows = await conn`
+      SELECT id FROM product_variant
+      WHERE product_id = ${productId} AND printful_sync_variant_id = ${printfulSyncVariantId}
+      LIMIT 1
+    `;
+    const first = Array.isArray(rows) ? rows[0] : null;
+    if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
+      existingId = first.id;
     }
-    existing = [];
+  } catch (_) {
+    try {
+      const rows = await conn`
+        SELECT id FROM product_variant
+        WHERE product_id = ${productId} AND printful_sync_variant_id::text = ${String(printfulSyncVariantId)}
+        LIMIT 1
+      `;
+      const first = Array.isArray(rows) ? rows[0] : null;
+      if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
+        existingId = first.id;
+      }
+    } catch (_2) {
+      /* ignore */
+    }
   }
 
-  if (existing[0]) {
-    await db
-      .update(productVariantsTable)
-      .set({
-        externalId,
-        size: size ?? null,
-        color: color ?? null,
-        sku: syncVariant.sku ?? null,
-        label,
-        priceCents: safePriceCents,
-        imageUrl: imageUrl ?? null,
-        availabilityStatus: syncVariant.availability_status ?? null,
-        updatedAt: now,
-      })
-      .where(eq(productVariantsTable.id, existing[0].id));
-    return existing[0].id;
+  if (existingId) {
+    await conn`
+      UPDATE product_variant SET
+        external_id = ${externalId},
+        printful_sync_variant_id = ${printfulSyncVariantId},
+        size = ${size ?? null},
+        color = ${color ?? null},
+        sku = ${syncVariant.sku ?? null},
+        label = ${label},
+        price_cents = ${safePriceCents},
+        image_url = ${imageUrl ?? null},
+        availability_status = ${syncVariant.availability_status ?? null},
+        updated_at = ${now}
+      WHERE id = ${existingId}
+    `;
+    return existingId;
   }
 
-  // 2) No existing row: insert new variant (id + externalId required for shipping; printfulSyncVariantId for re-sync)
+  // 2) No existing row: insert with raw SQL
   const variantId = nanoid();
-  const baseValues = {
-    id: variantId,
-    productId,
-    externalId,
-    size: size ?? null,
-    color: color ?? null,
-    sku: syncVariant.sku ?? null,
-    label,
-    priceCents: safePriceCents,
-    imageUrl: imageUrl ?? null,
-    availabilityStatus: syncVariant.availability_status ?? null,
-    createdAt: now,
-    updatedAt: now,
-  };
   try {
-    await db.insert(productVariantsTable).values({
-      ...baseValues,
-      printfulSyncVariantId,
-    });
+    await conn`
+      INSERT INTO product_variant (
+        id, product_id, external_id, size, color, sku, label, price_cents,
+        image_url, availability_status, created_at, updated_at, printful_sync_variant_id
+      ) VALUES (
+        ${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null},
+        ${syncVariant.sku ?? null}, ${label}, ${safePriceCents},
+        ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now},
+        ${printfulSyncVariantId}
+      )
+    `;
+    return variantId;
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     // On any INSERT failure, try to find existing row and UPDATE (handles duplicate key, constraint, etc.)
