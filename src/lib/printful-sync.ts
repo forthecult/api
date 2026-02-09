@@ -1239,26 +1239,29 @@ async function createLocalVariantFromPrintful(
         /* column or table missing */
       }
     }
-    if (existingId) {
+    // If still no row, try by (product_id, external_id) – row may have been created with external_id but null printful_sync_variant_id
+    if (!existingId) {
       try {
-        await db
-          .update(productVariantsTable)
-          .set({
-            externalId,
-            size: size ?? null,
-            color: color ?? null,
-            sku: syncVariant.sku ?? null,
-            label,
-            priceCents: safePriceCents,
-            imageUrl: imageUrl ?? null,
-            availabilityStatus: syncVariant.availability_status ?? null,
-            updatedAt: now,
-          })
-          .where(eq(productVariantsTable.id, existingId));
-      } catch (_) {
+        const rows = await conn`
+          SELECT id FROM product_variant
+          WHERE product_id = ${productId} AND external_id = ${externalId}
+          LIMIT 1
+        `;
+        const first = Array.isArray(rows) ? rows[0] : null;
+        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
+          existingId = first.id;
+        }
+      } catch (_2) {
+        /* ignore */
+      }
+    }
+    if (existingId) {
+      // Always use raw SQL for the update so we don't depend on Drizzle; ensures external_id is set for shipping
+      try {
         await conn`
           UPDATE product_variant SET
             external_id = ${externalId},
+            printful_sync_variant_id = ${printfulSyncVariantId},
             size = ${size ?? null},
             color = ${color ?? null},
             sku = ${syncVariant.sku ?? null},
@@ -1269,6 +1272,10 @@ async function createLocalVariantFromPrintful(
             updated_at = ${now}
           WHERE id = ${existingId}
         `;
+        console.log("[Printful sync] Updated existing variant", existingId, "with external_id for shipping");
+      } catch (updateErr) {
+        console.error("[Printful sync] Update existing variant failed:", updateErr);
+        throw updateErr;
       }
       return existingId;
     }

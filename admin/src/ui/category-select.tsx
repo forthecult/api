@@ -46,6 +46,7 @@ export function CategorySelect({
   labelClass,
   disabled = false,
   placeholder = "Search categories…",
+  emptyLabel,
 }: CategorySelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
