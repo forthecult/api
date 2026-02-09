@@ -95,11 +95,19 @@ export function LongFormProductPage({
                 </div>
               </ProductVariantImageProvider>
               <div className="flex flex-col justify-center">
-                {(product.brand ?? product.model) && (
-                  <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                    {[product.brand, product.model].filter(Boolean).join(" · ")}
-                  </p>
-                )}
+                {(() => {
+                  const b = product.brand?.trim();
+                  const m = product.model?.trim();
+                  const isProviderBrand =
+                    b?.toLowerCase() === "printful" || b?.toLowerCase() === "printify";
+                  if (!b && !m) return null;
+                  if (isProviderBrand) return null;
+                  return (
+                    <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                      {[b, m].filter(Boolean).join(" · ")}
+                    </p>
+                  );
+                })()}
                 <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">
                   {product.name}
                 </h1>

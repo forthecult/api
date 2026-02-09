@@ -38,6 +38,9 @@ export function isUploadThingUrl(url: string | null): boolean {
   }
 }
 
+const SEEED_CACHE_BASE =
+  "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
+
 /** Seeed cache URL → direct catalog URL (often returns real image when cache returns placeholder). */
 export function getSeeedDirectUrl(cacheUrl: string): string | null {
   if (!cacheUrl.includes("seeedstudio.com")) return null;
@@ -49,6 +52,23 @@ export function getSeeedDirectUrl(cacheUrl: string): string | null {
     if (!cacheSegment.test(path)) return null;
     u.pathname = path.replace(cacheSegment, "/");
     return u.toString();
+  } catch {
+    return null;
+  }
+}
+
+/** Seeed direct catalog URL → 1200x1200 cache URL (often returns full-size image when direct returns placeholder). */
+export function getSeeedCacheUrl(directUrl: string): string | null {
+  if (!directUrl.includes("seeedstudio.com")) return null;
+  if (directUrl.includes("/cache/")) return null;
+  try {
+    const u = new URL(directUrl);
+    const path = u.pathname;
+    const prefix = "/media/catalog/product/";
+    if (!path.startsWith(prefix)) return null;
+    const rest = path.slice(prefix.length);
+    if (!rest) return null;
+    return `${SEEED_CACHE_BASE}/${rest}${u.search}`;
   } catch {
     return null;
   }
@@ -145,16 +165,25 @@ export async function uploadMockupToUploadThing(
     return null;
   }
 
-  // If Seeed cache returned a tiny image (placeholder), try direct catalog URL for real image
+  // If Seeed returned a tiny image (placeholder), try alternate URL: cache→direct or direct→cache
   if (
     buffer.length < MIN_SOURCE_BYTES &&
     sourceUrl.includes("seeedstudio.com")
   ) {
     const directUrl = getSeeedDirectUrl(sourceUrl);
     if (directUrl && directUrl !== sourceUrl) {
-      const directBuffer = await fetchImageBuffer(directUrl);
-      if (directBuffer && directBuffer.length >= MIN_SOURCE_BYTES) {
-        buffer = directBuffer;
+      const altBuffer = await fetchImageBuffer(directUrl);
+      if (altBuffer && altBuffer.length >= MIN_SOURCE_BYTES) {
+        buffer = altBuffer;
+      }
+    }
+    if (buffer.length < MIN_SOURCE_BYTES) {
+      const cacheUrl = getSeeedCacheUrl(sourceUrl);
+      if (cacheUrl && cacheUrl !== sourceUrl) {
+        const altBuffer = await fetchImageBuffer(cacheUrl);
+        if (altBuffer && altBuffer.length >= MIN_SOURCE_BYTES) {
+          buffer = altBuffer;
+        }
       }
     }
   }

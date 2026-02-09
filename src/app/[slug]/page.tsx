@@ -444,22 +444,28 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       {product.category}
                     </p>
                   </div>
-                  {(product.brand ?? product.model) && (
-                    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      {product.brand?.trim() && (
-                        <span>
-                          <span className="font-medium text-foreground">Brand:</span>{" "}
-                          {product.brand.trim()}
-                        </span>
-                      )}
-                      {product.model?.trim() && (
-                        <span>
-                          <span className="font-medium text-foreground">Model:</span>{" "}
-                          {product.model.trim()}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    const b = product.brand?.trim();
+                    const m = product.model?.trim();
+                    const isProviderBrand =
+                      b?.toLowerCase() === "printful" || b?.toLowerCase() === "printify";
+                    if (!b && !m) return null;
+                    if (isProviderBrand) return null;
+                    return (
+                      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        {b && (
+                          <span>
+                            <span className="font-medium text-foreground">Brand:</span> {b}
+                          </span>
+                        )}
+                        {m && (
+                          <span>
+                            <span className="font-medium text-foreground">Model:</span> {m}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                   {/* Features only at top; description is in accordion below */}
                   {product.features.length > 0 && (
                     <ul className="mb-6 space-y-2 text-muted-foreground">

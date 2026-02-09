@@ -146,21 +146,20 @@ export async function getProductBySlugOrId(
         .select({ countryCode: productAvailableCountryTable.countryCode })
         .from(productAvailableCountryTable)
         .where(eq(productAvailableCountryTable.productId, product.id)),
-      product.hasVariants
-        ? db
-            .select({
-              id: productVariantsTable.id,
-              size: productVariantsTable.size,
-              color: productVariantsTable.color,
-              gender: productVariantsTable.gender,
-              label: productVariantsTable.label,
-              priceCents: productVariantsTable.priceCents,
-              stockQuantity: productVariantsTable.stockQuantity,
-              imageUrl: productVariantsTable.imageUrl,
-            })
-            .from(productVariantsTable)
-            .where(eq(productVariantsTable.productId, id))
-        : Promise.resolve([]),
+      // Always fetch variant rows so we show variants even if hasVariants flag was wrong (e.g. Printful sync)
+      db
+        .select({
+          id: productVariantsTable.id,
+          size: productVariantsTable.size,
+          color: productVariantsTable.color,
+          gender: productVariantsTable.gender,
+          label: productVariantsTable.label,
+          priceCents: productVariantsTable.priceCents,
+          stockQuantity: productVariantsTable.stockQuantity,
+          imageUrl: productVariantsTable.imageUrl,
+        })
+        .from(productVariantsTable)
+        .where(eq(productVariantsTable.productId, id)),
       db
         .select({ url: productImagesTable.url })
         .from(productImagesTable)
@@ -171,7 +170,7 @@ export async function getProductBySlugOrId(
   const availableCountryCodes = availableCountries.map((r) => r.countryCode);
 
   let optionDefinitions: OptionDefinition[] = [];
-  if (product.hasVariants && product.optionDefinitionsJson) {
+  if (product.optionDefinitionsJson) {
     try {
       const parsed = JSON.parse(product.optionDefinitionsJson) as unknown;
       if (Array.isArray(parsed)) {
@@ -187,20 +186,53 @@ export async function getProductBySlugOrId(
       // ignore invalid JSON
     }
   }
+  // When we have variant rows but no option definitions (e.g. Printful sync or legacy), derive from variant data
+  const hasVariantRows = variantsRows.length > 0;
+  if (hasVariantRows && optionDefinitions.length === 0) {
+    const sizeValues = new Set<string>();
+    const colorValues = new Set<string>();
+    const genderValues = new Set<string>();
+    const labelValues = new Set<string>();
+    for (const v of variantsRows) {
+      if (v.size?.trim()) sizeValues.add(v.size.trim());
+      if (v.color?.trim()) colorValues.add(v.color.trim());
+      if (v.gender?.trim()) genderValues.add(v.gender.trim());
+      if (v.label?.trim()) labelValues.add(v.label.trim());
+    }
+    if (colorValues.size > 0)
+      optionDefinitions.push({
+        name: "Color",
+        values: [...colorValues].sort(),
+      });
+    if (genderValues.size > 0)
+      optionDefinitions.push({
+        name: "Gender",
+        values: [...genderValues].sort(),
+      });
+    if (sizeValues.size > 0)
+      optionDefinitions.push({
+        name: "Size",
+        values: [...sizeValues].sort(),
+      });
+    if (optionDefinitions.length === 0 && labelValues.size > 0)
+      optionDefinitions.push({
+        name: "Variant",
+        values: [...labelValues].sort(),
+      });
+  }
 
-  const variants =
-    product.hasVariants && variantsRows.length > 0
-      ? variantsRows.map((v) => ({
-          id: v.id,
-          size: v.size ?? undefined,
-          color: v.color ?? undefined,
-          gender: v.gender ?? undefined,
-          label: v.label ?? undefined,
-          priceCents: v.priceCents,
-          stockQuantity: v.stockQuantity ?? undefined,
-          imageUrl: v.imageUrl ?? undefined,
-        }))
-      : undefined;
+  const variants = hasVariantRows
+    ? variantsRows.map((v) => ({
+        id: v.id,
+        size: v.size ?? undefined,
+        color: v.color ?? undefined,
+        gender: v.gender ?? undefined,
+        label: v.label ?? undefined,
+        priceCents: v.priceCents,
+        stockQuantity: v.stockQuantity ?? undefined,
+        imageUrl: v.imageUrl ?? undefined,
+      }))
+    : undefined;
 
   const basePriceUsd = product.priceCents / 100;
 
@@ -222,10 +254,10 @@ export async function getProductBySlugOrId(
     // Not tracking inventory - assume in stock
     inStock = true;
     stockStatus = "in_stock";
-  } else if (product.hasVariants) {
+  } else if (hasVariantRows && variants) {
     // Check variant stock quantities
-    const hasStock = variants?.some((v) => (v.stockQuantity ?? 0) > 0) ?? false;
-    const hasLowStock = variants?.some(
+    const hasStock = variants.some((v) => (v.stockQuantity ?? 0) > 0);
+    const hasLowStock = variants.some(
       (v) => (v.stockQuantity ?? 0) > 0 && (v.stockQuantity ?? 0) < 5,
     );
     inStock = hasStock;
@@ -314,7 +346,7 @@ export async function getProductBySlugOrId(
     slug: product.slug ?? undefined,
     availableCountryCodes,
     features: features.length > 0 ? features : undefined,
-    hasVariants: product.hasVariants ?? false,
+    hasVariants: hasVariantRows || (product.hasVariants ?? false),
     optionDefinitions:
       optionDefinitions.length > 0 ? optionDefinitions : undefined,
     shipsFrom,
