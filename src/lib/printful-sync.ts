@@ -1169,18 +1169,21 @@ async function createLocalVariantFromPrintful(
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    // Only treat as "column missing" when Postgres says something does not exist (e.g. column name)
     const columnMissing =
-      msg.includes("printful_sync_variant_id") ||
-      msg.includes("column") ||
-      msg.includes("does not exist");
+      (msg.includes("does not exist") && msg.includes("printful_sync_variant_id")) ||
+      (msg.includes("does not exist") && msg.includes("column"));
     if (columnMissing) {
       // Fallback: raw INSERT without printful_sync_variant_id so external_id is stored and shipping works
       try {
         await conn`INSERT INTO product_variant (id, product_id, external_id, size, color, sku, label, price_cents, image_url, availability_status, created_at, updated_at)
           VALUES (${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null}, ${syncVariant.sku ?? null}, ${label}, ${safePriceCents}, ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now})`;
       } catch (fallbackErr) {
+        const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+        console.error("[Printful sync] First insert failed:", msg);
+        console.error("[Printful sync] Fallback insert failed:", fallbackMsg);
         throw new Error(
-          "Printful sync needs product_variant columns. Run: bun run scripts/ensure-printful-printify-columns.ts (or psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql) then re-sync.",
+          `Printful sync failed. If columns are missing run: bun run db:ensure-printful-printify then re-sync. Details: ${fallbackMsg}`,
         );
       }
     } else {

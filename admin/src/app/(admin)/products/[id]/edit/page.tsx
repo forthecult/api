@@ -2268,8 +2268,10 @@ export default function AdminProductEditPage() {
                                     <span className="italic">—</span>
                                   )}
                                   {v.printfulSyncVariantId != null && (
-                                    <span className="mt-0.5 block text-muted-foreground">
-                                      Printful: {v.printfulSyncVariantId}
+                                    <span className="mt-0.5 block text-muted-foreground" title={`Sync variant ID (decimal: ${v.printfulSyncVariantId})`}>
+                                      Printful: #{typeof v.printfulSyncVariantId === "number" && Number.isSafeInteger(v.printfulSyncVariantId)
+                                        ? v.printfulSyncVariantId.toString(16)
+                                        : String(v.printfulSyncVariantId)}
                                     </span>
                                   )}
                                   {v.printifyVariantId != null && !v.printfulSyncVariantId && (
