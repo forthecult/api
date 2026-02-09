@@ -45,6 +45,7 @@ export async function GET() {
         .where(
           and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             isNotNull(productsTable.brand),
           ),
         )
@@ -62,6 +63,7 @@ export async function GET() {
         .where(
           and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             isNotNull(productsTable.brand),
           ),
         ),

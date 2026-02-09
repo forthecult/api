@@ -85,6 +85,7 @@ export async function GET(
         .where(
           and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             ne(productsTable.id, id),
             inArray(productTagsTable.tag, tagList),
           ),
@@ -163,6 +164,7 @@ export async function GET(
           .where(
             and(
               eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
               inArray(productCategoriesTable.categoryId, myCategoryIds),
               ne(productsTable.id, id),
             ),
@@ -204,6 +206,7 @@ export async function GET(
         .where(
           and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             excludeIds.length > 0
               ? notInArray(productsTable.id, excludeIds)
               : undefined,

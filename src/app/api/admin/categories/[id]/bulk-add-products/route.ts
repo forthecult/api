@@ -83,7 +83,10 @@ export async function POST(
         !!tc || cwd !== null || !!b || !!tag;
       if (!hasFilter) return [];
 
-      const conditions = [eq(productsTable.published, true)];
+      const conditions = [
+        eq(productsTable.published, true),
+        eq(productsTable.hidden, false),
+      ];
       if (tc) {
         const pattern = getWholeWordRegexPattern(tc);
         if (pattern) {

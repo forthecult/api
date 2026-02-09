@@ -126,7 +126,8 @@ export function ConnectWalletModal({
     "solana" | "sui" | null
   >(null);
   const isMetaMaskDetected = useIsMetaMaskDetected();
-  const { wallets, select, connect, connecting, connected } = useWallet();
+  const { wallets, select, connect, connecting, connected, publicKey } =
+    useWallet();
   const suiWallets = useWallets();
   const { mutateAsync: connectSui } = useConnectWallet();
   const connectedRef = useRef(connected);
@@ -148,12 +149,23 @@ export function ConnectWalletModal({
     }
   }, [open, connected]);
 
-  // Close modal when wallet connects successfully (only if it wasn't already connected when opened)
+  // Close modal only when Solana connection is stable (connected + publicKey) to avoid closing
+  // on WalletNotSelectedError or other adapter flicker; short delay so we don't close on a transient state.
+  const closeAfterStableMs = 400;
   useEffect(() => {
-    if (open && connected && !wasConnectedOnOpen && step === "requesting") {
+    if (
+      !open ||
+      !connected ||
+      wasConnectedOnOpen ||
+      step !== "requesting" ||
+      !publicKey
+    )
+      return;
+    const t = setTimeout(() => {
       onOpenChange(false);
-    }
-  }, [open, connected, wasConnectedOnOpen, step, onOpenChange]);
+    }, closeAfterStableMs);
+    return () => clearTimeout(t);
+  }, [open, connected, wasConnectedOnOpen, step, publicKey, onOpenChange]);
 
   useEffect(() => {
     if (!open) {
@@ -226,7 +238,8 @@ export function ConnectWalletModal({
         setStep("requesting");
         try {
           select(selectedWallet.adapter.name);
-          await new Promise((r) => setTimeout(r, 150));
+          // Give the adapter time to register the selected wallet before connect() to reduce WalletNotSelectedError
+          await new Promise((r) => setTimeout(r, 400));
           const connectPromise = connect();
           const timeoutPromise = new Promise<"timeout">((resolve) =>
             setTimeout(() => resolve("timeout"), CONNECT_WAIT_MS),
@@ -242,10 +255,17 @@ export function ConnectWalletModal({
             );
             setStep("network");
           }
-        } catch {
+        } catch (err) {
           const catchName = selectedWallet?.adapter.name ?? "your wallet";
+          const isNotSelected =
+            err instanceof Error &&
+            (err.name === "WalletNotSelectedError" ||
+              err.message?.includes("WalletNotSelected") ||
+              err.message?.includes("not selected"));
           setConnectError(
-            `Connection failed. Open the ${catchName} extension and try again, or use another wallet.`,
+            isNotSelected
+              ? `Please approve the connection in your ${catchName} window. If you closed it without approving, click Connect again and approve when prompted.`
+              : `Connection failed. Open the ${catchName} extension and try again, or use another wallet.`,
           );
           setStep("network");
         } finally {

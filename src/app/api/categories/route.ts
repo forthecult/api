@@ -1,4 +1,4 @@
-import { asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -47,7 +47,12 @@ export async function GET() {
         productsTable,
         eq(productCategoriesTable.productId, productsTable.id),
       )
-      .where(eq(productsTable.published, true))
+      .where(
+        and(
+          eq(productsTable.published, true),
+          eq(productsTable.hidden, false),
+        ),
+      )
       .groupBy(productCategoriesTable.categoryId);
 
     const countByCategoryId = new Map(

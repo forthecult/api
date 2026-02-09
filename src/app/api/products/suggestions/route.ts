@@ -56,6 +56,7 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             ilike(productsTable.name, pattern),
           ),
         )
@@ -84,6 +85,7 @@ export async function GET(request: NextRequest) {
         .where(
           and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             ilike(categoriesTable.name, pattern),
           ),
         )

@@ -91,6 +91,7 @@ export async function GET(
           .where(
             and(
               eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
               eq(productCategoriesTable.categoryId, category.id),
             ),
           )
@@ -109,6 +110,7 @@ export async function GET(
             and(
               eq(productCategoriesTable.categoryId, category.id),
               eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
             ),
           ),
         db
@@ -126,6 +128,7 @@ export async function GET(
             and(
               eq(productCategoriesTable.categoryId, category.id),
               eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
             ),
           )
           .orderBy(desc(productsTable.createdAt))
@@ -144,6 +147,7 @@ export async function GET(
               .where(
                 and(
                   eq(productsTable.published, true),
+                  eq(productsTable.hidden, false),
                   eq(productCategoriesTable.categoryId, child.id),
                 ),
               );
