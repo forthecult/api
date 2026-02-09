@@ -17,7 +17,9 @@ import type { NotificationType } from "~/lib/notification-templates";
 import { createId } from "@paralleldrive/cuid2";
 import { sendOrderConfirmationEmail } from "~/lib/send-order-confirmation-email";
 import { sendOrderShippedEmail } from "~/lib/send-order-shipped-email";
-import { notifyOrderUpdate } from "~/lib/telegram-notify";
+import { sendRefundRequestSubmittedEmail } from "~/lib/send-refund-request-submitted-email";
+import { notifyOrderUpdate, notifyTransactionalTelegram } from "~/lib/telegram-notify";
+import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface CreateUserNotificationOptions {
   userId: string;
@@ -226,6 +228,58 @@ export async function onOrderStatusUpdate(
       orderId,
       trackingNumber: options?.trackingNumber,
       trackingUrl: options?.trackingUrl,
+    });
+  }
+}
+
+/**
+ * Called when a customer submits a refund request. Sends transactional notifications
+ * on the channels they have selected (website, email, Telegram).
+ */
+export async function onRefundRequestSubmitted(orderId: string): Promise<void> {
+  const [order] = await db
+    .select({
+      userId: ordersTable.userId,
+      email: ordersTable.email,
+    })
+    .from(ordersTable)
+    .where(eq(ordersTable.id, orderId))
+    .limit(1);
+  if (!order?.email?.trim()) return;
+
+  let userId: string | null = order.userId;
+  if (!userId) {
+    const [userByEmail] = await db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.email, order.email!.trim()))
+      .limit(1);
+    userId = userByEmail?.id ?? null;
+  }
+
+  const template = getNotificationTemplate("refund_request_submitted");
+  const shortId = orderId.slice(0, 8);
+
+  if (userId) {
+    void notifyTransactionalTelegram(userId, "refund_request_submitted");
+    if (await userWantsTransactionalWebsite(userId)) {
+      await createUserNotification({
+        userId,
+        type: "refund_request_submitted",
+        title: template.title,
+        description: `Order ${shortId}: ${template.body}`,
+        metadata: { orderId },
+      });
+    }
+  }
+
+  if (
+    order.email.trim() &&
+    (await userWantsTransactionalEmail(userId))
+  ) {
+    void sendRefundRequestSubmittedEmail({
+      to: order.email.trim(),
+      orderId,
     });
   }
 }

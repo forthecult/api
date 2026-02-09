@@ -17,6 +17,7 @@ const CATEGORY_ID = "smart-home";
 const SEEED_CACHE =
   "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
 
+/** From product page gallery (skip video thumbnail). */
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
     url: `${SEEED_CACHE}/h/o/home_assitant_voice.jpg`,
@@ -29,6 +30,11 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
     title: "Home Assistant Voice - Top",
   },
   {
+    url: `${SEEED_CACHE}/v/o/voice_preview_edition_-_device_-_6._bottom.png`,
+    alt: "Home Assistant Voice - bottom view",
+    title: "Home Assistant Voice - Bottom",
+  },
+  {
     url: `${SEEED_CACHE}/v/o/voice_preview_edition_-_device_-_7._front.png`,
     alt: "Home Assistant Voice - front",
     title: "Home Assistant Voice - Front",
@@ -37,6 +43,11 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
     url: `${SEEED_CACHE}/v/o/voice_preview_edition_-_device_-_8._back.png`,
     alt: "Home Assistant Voice - back",
     title: "Home Assistant Voice - Back",
+  },
+  {
+    url: `${SEEED_CACHE}/v/o/voice_preview_edition_-_packaging_-_2._top.png`,
+    alt: "Home Assistant Voice - packaging top",
+    title: "Home Assistant Voice - Packaging",
   },
   {
     url: `${SEEED_CACHE}/v/o/voice_preview_edition_-_packaging_-_4._open_with_contents.png`,

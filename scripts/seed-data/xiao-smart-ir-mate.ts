@@ -16,14 +16,44 @@ const PRODUCT_ID = "xiao-smart-ir-mate";
 const PRODUCT_SLUG = "xiao-smart-ir-mate";
 const CATEGORY_ID = "smart-home";
 
-/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+/** Direct catalog paths (no cache) so fetch/upload works reliably. From product page gallery. */
 const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_MEDIA}/1/0/9/109990586.jpg`,
+    url: `${SEEED_MEDIA}/_/1/_109_2x.png`,
     alt: "Smart Infrared (IR) Mate - Wi-Fi IR remote control hub for Home Assistant",
     title: "Smart Infrared (IR) Mate - Main",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/-/1-109990586-xiao-smart-ir-mate.jpg`,
+    alt: "XIAO Smart IR Mate - front view",
+    title: "Smart IR Mate - Front",
+  },
+  {
+    url: `${SEEED_MEDIA}/2/-/2-109990586-xiao-smart-ir-mate.jpg`,
+    alt: "XIAO Smart IR Mate - view 2",
+    title: "Smart IR Mate - View 2",
+  },
+  {
+    url: `${SEEED_MEDIA}/3/-/3-109990586-xiao-smart-ir-mate.jpg`,
+    alt: "XIAO Smart IR Mate - view 3",
+    title: "Smart IR Mate - View 3",
+  },
+  {
+    url: `${SEEED_MEDIA}/4/-/4-109990586-xiao-smart-ir-mate.jpg`,
+    alt: "XIAO Smart IR Mate - view 4",
+    title: "Smart IR Mate - View 4",
+  },
+  {
+    url: `${SEEED_MEDIA}/5/-/5-109990586-xiao-smart-ir-mate.jpg`,
+    alt: "XIAO Smart IR Mate - view 5",
+    title: "Smart IR Mate - View 5",
+  },
+  {
+    url: `${SEEED_MEDIA}/6/-/6-109990586-xiao-smart-ir-mate.jpg`,
+    alt: "XIAO Smart IR Mate - view 6",
+    title: "Smart IR Mate - View 6",
   },
 ];
 

@@ -297,3 +297,23 @@ export const customPrintsTable = pgTable("custom_print", {
   createdAt: timestamp("created_at").notNull(),
   expiresAt: timestamp("expires_at"), // optional: auto-cleanup if not ordered
 });
+
+/** Customer refund requests. Status: requested → approved/refunded/rejected. */
+export const refundRequestsTable = pgTable(
+  "refund_request",
+  {
+    id: text("id").primaryKey(),
+    orderId: text("order_id")
+      .notNull()
+      .references(() => ordersTable.id, { onDelete: "cascade" }),
+    status: text("status").notNull(), // "requested" | "approved" | "refunded" | "rejected"
+    refundAddress: text("refund_address"), // for crypto orders (stablecoin)
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+  },
+  (t) => [
+    index("refund_request_order_id_idx").on(t.orderId),
+    index("refund_request_status_idx").on(t.status),
+    index("refund_request_created_at_idx").on(t.createdAt),
+  ],
+);

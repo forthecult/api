@@ -16,7 +16,7 @@ const PRODUCT_ID = "linkstar-h68k-1432-v2";
 const PRODUCT_SLUG = "linkstar-h68k-1432-v2";
 const CATEGORY_ID = "smart-home";
 
-/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+/** Direct catalog paths (no cache) so fetch/upload works reliably. From product page pattern. */
 const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
@@ -29,6 +29,26 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
     url: `${SEEED_MEDIA}/l/i/linkstar-h68k-v2-02.jpg`,
     alt: "LinkStar-WiFi Router - ports and interfaces",
     title: "LinkStar-WiFi Router - Ports",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/-/1-102110958-linkstar-h68k-v2.jpg`,
+    alt: "LinkStar H68K V2 - view 1",
+    title: "LinkStar-WiFi Router - View 1",
+  },
+  {
+    url: `${SEEED_MEDIA}/3/-/3-102110958-linkstar-h68k-v2.jpg`,
+    alt: "LinkStar H68K V2 - view 3",
+    title: "LinkStar-WiFi Router - View 3",
+  },
+  {
+    url: `${SEEED_MEDIA}/4/-/4-102110958-linkstar-h68k-v2.jpg`,
+    alt: "LinkStar H68K V2 - view 4",
+    title: "LinkStar-WiFi Router - View 4",
+  },
+  {
+    url: `${SEEED_MEDIA}/5/-/5-102110958-linkstar-h68k-v2.jpg`,
+    alt: "LinkStar H68K V2 - view 5",
+    title: "LinkStar-WiFi Router - View 5",
   },
 ];
 

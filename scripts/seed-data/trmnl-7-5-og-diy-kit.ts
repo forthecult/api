@@ -16,14 +16,59 @@ const PRODUCT_ID = "trmnl-7-5-og-diy-kit";
 const PRODUCT_SLUG = "trmnl-7-5-og-diy-kit";
 const CATEGORY_ID = "smart-home";
 
-/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+/** Direct catalog paths (no cache) so fetch/upload works reliably. From product page gallery. */
 const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_MEDIA}/1/0/4/104991005.jpg`,
+    url: `${SEEED_MEDIA}/1/x/1x1a0509-2.jpg`,
     alt: "7.5\" Smart Home Display - e-ink display, XIAO ESP32-S3 PLUS, battery",
     title: "7.5\" Smart Home Display - Main",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/x/1x1a0513.jpg`,
+    alt: "7.5\" Smart Home Display - e-ink display angle",
+    title: "7.5\" Smart Home Display - Angle",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/x/1x1a0521-2.jpg`,
+    alt: "7.5\" Smart Home Display - display detail",
+    title: "7.5\" Smart Home Display - Detail",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/x/1x1a0559.jpg`,
+    alt: "7.5\" Smart Home Display - components",
+    title: "7.5\" Smart Home Display - Components",
+  },
+  {
+    url: `${SEEED_MEDIA}/2/-/2-104991005-trmnl-7.5-epaper-display-diy-kit.jpg`,
+    alt: "7.5\" Smart Home Display - e-paper display kit",
+    title: "7.5\" Smart Home Display - Kit 2",
+  },
+  {
+    url: `${SEEED_MEDIA}/3/-/3-104991005-trmnl-7.5-epaper-display-diy-kit.jpg`,
+    alt: "7.5\" Smart Home Display - kit view 3",
+    title: "7.5\" Smart Home Display - Kit 3",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/-/1-104991005-trmnl-7.5-epaper-display-diy-kit.jpg`,
+    alt: "7.5\" Smart Home Display - kit view 1",
+    title: "7.5\" Smart Home Display - Kit 1",
+  },
+  {
+    url: `${SEEED_MEDIA}/4/-/4-104991005-trmnl-7.5-epaper-display-diy-kit.jpg`,
+    alt: "7.5\" Smart Home Display - kit view 4",
+    title: "7.5\" Smart Home Display - Kit 4",
+  },
+  {
+    url: `${SEEED_MEDIA}/5/-/5-104991005-trmnl-7.5-epaper-display-diy-kit.jpg`,
+    alt: "7.5\" Smart Home Display - kit view 5",
+    title: "7.5\" Smart Home Display - Kit 5",
+  },
+  {
+    url: `${SEEED_MEDIA}/6/-/6-104991005-trmnl-7.5-epaper-display-diy-kit.jpg`,
+    alt: "7.5\" Smart Home Display - kit view 6",
+    title: "7.5\" Smart Home Display - Kit 6",
   },
 ];
 

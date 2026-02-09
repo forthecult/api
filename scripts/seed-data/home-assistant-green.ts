@@ -14,7 +14,7 @@ const PRODUCT_ID = "home-assistant-green";
 const PRODUCT_SLUG = "home-assistant-green";
 const CATEGORY_ID = "smart-home";
 
-/** Source URLs: 1200x1200 cache (full-size). Run db:upload-curated-product-images to re-host on UploadThing. Do not use thumbnail cache. */
+/** Source URLs: 1200x1200 cache (full-size). Run db:upload-curated-product-images to re-host on UploadThing. From product page gallery. */
 const SEEED_CACHE =
   "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
 
@@ -35,14 +35,39 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
     title: "Home Assistant Green - Back",
   },
   {
+    url: `${SEEED_CACHE}/4/-/4-113110024--home-assistant-green-45back_1.jpg`,
+    alt: "Home Assistant Green - 45° back",
+    title: "Home Assistant Green - 45° Back",
+  },
+  {
     url: `${SEEED_CACHE}/6/-/6-113110024--home-assistant-green-feature_1.jpg`,
     alt: "Home Assistant Green - feature",
     title: "Home Assistant Green - Feature",
   },
   {
+    url: `${SEEED_CACHE}/7/-/7-113110024--home-assistant-green-feature_1.jpg`,
+    alt: "Home Assistant Green - feature 2",
+    title: "Home Assistant Green - Feature 2",
+  },
+  {
+    url: `${SEEED_CACHE}/8/-/8-113110024--home-assistant-green-feature_1.jpg`,
+    alt: "Home Assistant Green - feature 3",
+    title: "Home Assistant Green - Feature 3",
+  },
+  {
+    url: `${SEEED_CACHE}/9/-/9-113110024--home-assistant-green-feature_1.jpg`,
+    alt: "Home Assistant Green - feature 4",
+    title: "Home Assistant Green - Feature 4",
+  },
+  {
     url: `${SEEED_CACHE}/1/0/10-113110024--home-assistant-green-first.jpg`,
     alt: "Home Assistant Green - first setup",
     title: "Home Assistant Green - Setup",
+  },
+  {
+    url: `${SEEED_CACHE}/1/1/11-113110024--home-assistant-green-size.jpg`,
+    alt: "Home Assistant Green - size",
+    title: "Home Assistant Green - Size",
   },
 ];
 

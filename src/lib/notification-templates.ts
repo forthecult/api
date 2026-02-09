@@ -18,6 +18,7 @@ export const NOTIFICATION_CLASSIFICATION = {
     "order_on_hold",
     "order_cancelled",
     "refund",
+    "refund_request_submitted",
     "support_ticket_reply",
   ] as const,
   marketing: [
@@ -106,6 +107,14 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     body: "Your refund has been processed. It may take a few days to appear on your statement.",
     emailSubject: "Refund processed",
     emailBody: "Your refund has been processed. It may take a few business days to appear on your statement.",
+    transactional: true,
+  },
+  refund_request_submitted: {
+    id: "refund_request_submitted",
+    title: "Refund request received",
+    body: "Your refund request has been submitted. We'll process it and notify you when it's complete.",
+    emailSubject: "Refund request received",
+    emailBody: "We've received your refund request. We'll process it and notify you on your chosen channels when it's complete.",
     transactional: true,
   },
   support_ticket_reply: {

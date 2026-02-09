@@ -7,6 +7,7 @@ import { and, asc, eq, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
+import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import {
   categoriesTable,
   productAvailableCountryTable,
@@ -259,16 +260,18 @@ export async function getProductBySlugOrId(
     if (created) return getProductBySlugOrId(slugOrId);
   }
 
-  // When we have variant rows but no option definitions (e.g. Printful sync or legacy), derive from variant data
+  // When we have variant rows but no option definitions (e.g. legacy sync), derive from variant data.
+  // Use "Option" for the gender column: it holds "other" options (Grind, Device, Model, etc.), not just Gender.
+  // Re-sync from Printify/Printful to restore real labels (e.g. "Grind", "Size") in optionDefinitionsJson.
   if (hasVariantRows && optionDefinitions.length === 0) {
     const sizeValues = new Set<string>();
     const colorValues = new Set<string>();
-    const genderValues = new Set<string>();
+    const otherOptionValues = new Set<string>();
     const labelValues = new Set<string>();
     for (const v of variantsRows) {
       if (v.size?.trim()) sizeValues.add(v.size.trim());
       if (v.color?.trim()) colorValues.add(v.color.trim());
-      if (v.gender?.trim()) genderValues.add(v.gender.trim());
+      if (v.gender?.trim()) otherOptionValues.add(v.gender.trim());
       if (v.label?.trim()) labelValues.add(v.label.trim());
     }
     if (colorValues.size > 0)
@@ -276,15 +279,15 @@ export async function getProductBySlugOrId(
         name: "Color",
         values: [...colorValues].sort(),
       });
-    if (genderValues.size > 0)
+    if (otherOptionValues.size > 0)
       optionDefinitions.push({
-        name: "Gender",
-        values: [...genderValues].sort(),
+        name: "Option",
+        values: [...otherOptionValues].sort(),
       });
     if (sizeValues.size > 0)
       optionDefinitions.push({
         name: "Size",
-        values: [...sizeValues].sort(),
+        values: sortClothingSizes([...sizeValues]),
       });
     if (optionDefinitions.length === 0 && labelValues.size > 0)
       optionDefinitions.push({

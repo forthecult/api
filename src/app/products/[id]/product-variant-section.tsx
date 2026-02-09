@@ -5,6 +5,7 @@ import * as React from "react";
 import { cn } from "~/lib/cn";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import { useProductVariantImage } from "./product-variant-image-context";
 import { ProductActions, ProductPriceDisplay } from "./product-detail-client";
 import { SecureCheckoutLine } from "./secure-checkout-line";
@@ -18,6 +19,7 @@ function getVariantKey(
   const lower = optionName.toLowerCase();
   if (lower.includes("color")) return "color";
   if (lower.includes("size")) return "size";
+  if (lower === "option") return "gender"; // neutral fallback when real label unknown (Grind, Device, etc.)
   if (
     lower.includes("men") ||
     lower.includes("women") ||
@@ -25,7 +27,8 @@ function getVariantKey(
     lower.includes("style") ||
     lower.includes("phone") ||
     lower.includes("model") ||
-    lower.includes("device")
+    lower.includes("device") ||
+    lower.includes("grind")
   )
     return "gender";
   return index === 0 ? "color" : index === 1 ? "gender" : "size";
@@ -96,27 +99,28 @@ function useUnavailableInCountry(product: {
   );
 }
 
-/** Build option definitions from variant size/color/label when product has variants but optionDefinitions are missing (e.g. legacy Printful sync). */
+/** Build option definitions from variant size/color/label when optionDefinitions are missing (e.g. legacy sync). */
 function deriveOptionDefinitionsFromVariants(
   variants: ProductVariantOption[],
 ): ProductOptionDefinition[] {
   const sizeValues = new Set<string>();
   const colorValues = new Set<string>();
-  const genderValues = new Set<string>();
+  const otherOptionValues = new Set<string>();
   const labelValues = new Set<string>();
   for (const v of variants) {
     if (v.size?.trim()) sizeValues.add(v.size.trim());
     if (v.color?.trim()) colorValues.add(v.color.trim());
-    if (v.gender?.trim()) genderValues.add(v.gender.trim());
+    if (v.gender?.trim()) otherOptionValues.add(v.gender.trim());
     if (v.label?.trim()) labelValues.add(v.label.trim());
   }
   const opts: ProductOptionDefinition[] = [];
   if (colorValues.size > 0)
     opts.push({ name: "Color", values: [...colorValues].sort() });
-  if (genderValues.size > 0)
-    opts.push({ name: "Gender", values: [...genderValues].sort() });
+  // "gender" column holds any "other" option (Grind, Device, Model, etc.) — use neutral label until re-sync restores real name
+  if (otherOptionValues.size > 0)
+    opts.push({ name: "Option", values: [...otherOptionValues].sort() });
   if (sizeValues.size > 0)
-    opts.push({ name: "Size", values: [...sizeValues].sort() });
+    opts.push({ name: "Size", values: sortClothingSizes([...sizeValues]) });
   if (opts.length === 0 && labelValues.size > 0)
     opts.push({ name: "Variant", values: [...labelValues].sort() });
   return opts;
@@ -239,7 +243,10 @@ export function ProductVariantSection({
               {opt.name}
             </span>
             <div className="flex flex-wrap gap-2">
-              {(opt.values ?? []).filter(Boolean).map((value) => {
+              {(opt.name === "Size" || opt.name.toLowerCase().includes("size")
+                ? sortClothingSizes((opt.values ?? []).filter(Boolean))
+                : (opt.values ?? []).filter(Boolean)
+              ).map((value) => {
                 const isSelected = selectedByIndex[optionIndex] === value;
                 return (
                   <button

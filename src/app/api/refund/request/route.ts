@@ -1,8 +1,11 @@
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { createId } from "@paralleldrive/cuid2";
+
 import { db } from "~/db";
-import { ordersTable } from "~/db/schema";
+import { ordersTable, refundRequestsTable } from "~/db/schema";
+import { onRefundRequestSubmitted } from "~/lib/create-user-notification";
 import {
   getClientIp,
   checkRateLimit,
@@ -233,6 +236,18 @@ export async function POST(request: NextRequest) {
         refundAddress: isCrypto ? refundAddress : "—",
       });
     }
+
+    const now = new Date();
+    await db.insert(refundRequestsTable).values({
+      id: createId(),
+      orderId,
+      status: "requested",
+      refundAddress: isCrypto && refundAddress ? refundAddress : null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    void onRefundRequestSubmitted(orderId);
 
     return NextResponse.json({ success: true });
   } catch (err) {

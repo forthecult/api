@@ -215,6 +215,8 @@ export default function AdminProductEditPage() {
   const [printifyResyncLoading, setPrintifyResyncLoading] = useState(false);
   const [printifyConfirmPublishLoading, setPrintifyConfirmPublishLoading] =
     useState(false);
+  const [printifyRegisterWebhooksLoading, setPrintifyRegisterWebhooksLoading] =
+    useState(false);
   const [printifyDeleteLoading, setPrintifyDeleteLoading] = useState(false);
   const [printifyIdToDelete, setPrintifyIdToDelete] = useState("");
   const [printifyIdToImport, setPrintifyIdToImport] = useState("");
@@ -556,6 +558,35 @@ export default function AdminProductEditPage() {
       setPrintifyConfirmPublishLoading(false);
     }
   }, [product?.id]);
+
+  const handlePrintifyRegisterWebhooks = useCallback(async () => {
+    setPrintifyRegisterWebhooksLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/webhooks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "register_all" }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        registered?: number;
+        message?: string;
+      };
+      if (!res.ok) {
+        throw new Error(json.error ?? "Register webhooks failed");
+      }
+      if (json.message) {
+        setError(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Register webhooks failed");
+    } finally {
+      setPrintifyRegisterWebhooksLoading(false);
+    }
+  }, []);
 
   const handleDeleteFromPrintify = useCallback(async () => {
     if (!product?.id) return;
@@ -2567,6 +2598,25 @@ export default function AdminProductEditPage() {
                       <Trash2 className="size-3.5" />
                       {printifyDeleteLoading ? "Deleting…" : "Delete from Printify"}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={printifyRegisterWebhooksLoading}
+                      onClick={() => void handlePrintifyRegisterWebhooks()}
+                      className="gap-1.5"
+                      title="Register product webhooks with Printify so Publishing can clear when we return 200"
+                    >
+                      <RefreshCw
+                        className={cn(
+                          "size-3.5",
+                          printifyRegisterWebhooksLoading && "animate-spin",
+                        )}
+                      />
+                      {printifyRegisterWebhooksLoading
+                        ? "Registering…"
+                        : "Register webhooks"}
+                    </Button>
                   </>
                 )}
               </div>
@@ -2575,7 +2625,7 @@ export default function AdminProductEditPage() {
               <>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-muted-foreground">
-                    Stuck in Publishing? Use &quot;Confirm publish in Printify&quot; above first (or for all: POST /api/admin/printify/sync with {`{ "action": "confirm_publish" }`}). Or delete by Printify product ID:
+                    Stuck in Publishing? Sync and Confirm publish often do not change status for already-stuck products (Printify may not re-send the webhook). Reliable fix: 1) Click &quot;Register webhooks&quot; above. 2) Delete this product in Printify (or by ID below). 3) Re-create or re-publish the product in Printify—the webhook will fire and status will become Published. Or delete by Printify product ID:
                   </span>
                   <input
                     type="text"

@@ -762,7 +762,8 @@ export async function runShippingCalculate(
     totalWeightGrams += weight;
 
     if (product.source === "printful") {
-      // Get catalog_variant_id for Printful shipping (required for rate calculation)
+      // Get catalog_variant_id for Printful shipping (required for rate calculation).
+      // Variant externalId is set by Printful sync (printful-sync.ts); re-sync fixes missing IDs without any frontend change.
       let catalogVariantId: number | null = null;
 
       if (item.productVariantId) {

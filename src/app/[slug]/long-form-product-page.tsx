@@ -105,9 +105,18 @@ export function LongFormProductPage({
                   if (!b && !m) return null;
                   if (isProviderBrand) return null;
                   return (
-                    <p className="mb-2 text-sm font-medium uppercase tracking-wide text-muted-foreground">
-                      {[b, m].filter(Boolean).join(" · ")}
-                    </p>
+                    <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      {b && (
+                        <span>
+                          <span className="font-medium text-foreground">Brand:</span> {b}
+                        </span>
+                      )}
+                      {m && (
+                        <span>
+                          <span className="font-medium text-foreground">Model:</span> {m}
+                        </span>
+                      )}
+                    </div>
                   );
                 })()}
                 <h1 className="text-3xl font-bold tracking-tight md:text-4xl lg:text-5xl">

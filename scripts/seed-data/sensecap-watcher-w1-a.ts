@@ -16,14 +16,64 @@ const PRODUCT_ID = "sensecap-watcher-w1-a";
 const PRODUCT_SLUG = "sensecap-watcher-w1-a";
 const CATEGORY_ID = "smart-home";
 
-/** Direct catalog paths (no cache) so fetch/upload works reliably. */
+/** Direct catalog paths (no cache) so fetch/upload works reliably. From product page gallery + variant images. */
 const SEEED_MEDIA = "https://media-cdn.seeedstudio.com/media/catalog/product";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SEEED_MEDIA}/1/1/3/113991315.jpg`,
+    url: `${SEEED_MEDIA}/1/-/1-113991315-sensecap-watcher-w1-a_1.jpg`,
     alt: "SenseCAP Watcher W1-A - physical AI agent with camera, mic, speaker",
     title: "SenseCAP Watcher W1-A - Main",
+  },
+  {
+    url: `${SEEED_MEDIA}/2/-/2-113991315-sensecap-watcher-w1-a-45font_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - 45° front",
+    title: "SenseCAP Watcher - 45° Front",
+  },
+  {
+    url: `${SEEED_MEDIA}/3/-/3-113991315-sensecap-watcher-w1-a-font_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - front",
+    title: "SenseCAP Watcher - Front",
+  },
+  {
+    url: `${SEEED_MEDIA}/4/-/4-113991315-sensecap-watcher-w1-a-back_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - back",
+    title: "SenseCAP Watcher - Back",
+  },
+  {
+    url: `${SEEED_MEDIA}/5/-/5-113991315-sensecap-watcher-w1-a-45back_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - 45° back",
+    title: "SenseCAP Watcher - 45° Back",
+  },
+  {
+    url: `${SEEED_MEDIA}/6/-/6-113991315-sensecap-watcher-w1-a-all_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - all components",
+    title: "SenseCAP Watcher - All",
+  },
+  {
+    url: `${SEEED_MEDIA}/7/-/7-113991315-sensecap-watcher-w1-a-package_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - packaging",
+    title: "SenseCAP Watcher - Package",
+  },
+  {
+    url: `${SEEED_MEDIA}/8/-/8-113991315-sensecap-watcher-w1-a-side_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - side",
+    title: "SenseCAP Watcher - Side",
+  },
+  {
+    url: `${SEEED_MEDIA}/9/-/9-113991315-sensecap-watcher-w1-a_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - view 9",
+    title: "SenseCAP Watcher - View 9",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/0/10-113991315-sensecap-watcher-w1-a_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - view 10",
+    title: "SenseCAP Watcher - View 10",
+  },
+  {
+    url: `${SEEED_MEDIA}/1/1/11-113991315-sensecap-watcher-w1-a_1.jpg`,
+    alt: "SenseCAP Watcher W1-A - view 11",
+    title: "SenseCAP Watcher - View 11",
   },
   {
     url: `${SEEED_MEDIA}/s/e/sensecap-watcher-w1-a-clear.jpg`,
@@ -68,7 +118,7 @@ const VARIANTS: Array<{
     size: null,
     priceCents: PRICE_CENTS,
     sku: "113991315-Clear",
-    imageUrl: PRODUCT_IMAGES[1]!.url,
+    imageUrl: PRODUCT_IMAGES[11]!.url,
     imageAlt: "SenseCAP Watcher W1-A Clear Enclosure",
     imageTitle: "SenseCAP Watcher - Clear Enclosure",
   },
@@ -78,7 +128,7 @@ const VARIANTS: Array<{
     size: null,
     priceCents: PRICE_CENTS,
     sku: "113991315-White",
-    imageUrl: PRODUCT_IMAGES[2]!.url,
+    imageUrl: PRODUCT_IMAGES[12]!.url,
     imageAlt: "SenseCAP Watcher W1-A White Enclosure",
     imageTitle: "SenseCAP Watcher - White Enclosure",
   },

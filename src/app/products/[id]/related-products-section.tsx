@@ -50,19 +50,19 @@ export function RelatedProductsSection({
   return (
     <section
       aria-labelledby="related-products-heading"
-      className="mt-12 pb-14 px-4 sm:px-6 lg:px-8"
+      className="mt-12 w-full pb-14 px-4 sm:px-6 lg:px-8"
     >
-      <div className="mx-auto max-w-5xl">
+      <div className="mx-auto w-full max-w-7xl">
         <h2
           id="related-products-heading"
-          className="mb-6 text-right text-2xl font-bold text-foreground"
+          className="mb-6 text-left text-2xl font-bold text-foreground"
         >
           Related Products
         </h2>
       {products.length === 0 ? (
         <p className="text-muted-foreground">No related products at the moment.</p>
       ) : (
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 sm:gap-12 lg:grid-cols-4 lg:gap-14">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {products.map((product) => (
           <ProductCard
             key={product.id}

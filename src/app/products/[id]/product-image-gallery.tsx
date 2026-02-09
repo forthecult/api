@@ -107,13 +107,14 @@ export function ProductImageGallery({
         onClick={() => hasMultiple && setZoomOpen((v) => !v)}
       >
         <Image
+          key={selectedVariant?.id ?? mainSrc ?? "main"}
           alt={mainAlt}
           className={cn(
             "object-cover transition-transform duration-150",
             zoomOpen && "cursor-zoom-out scale-150",
           )}
           fill
-          priority
+          priority={!selectedVariant?.id}
           sizes="(max-width: 768px) 100vw, 50vw"
           src={mainSrc}
           unoptimized={isExternalImageUrl(mainSrc)}
