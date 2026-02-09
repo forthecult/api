@@ -121,6 +121,12 @@ Use the URLs Railway gives you (e.g. `https://xxx.up.railway.app` and `https://y
 
 ## Staging won't deploy (troubleshooting)
 
+**Build timeout:** Railway limits build time by plan (Trial &lt; Hobby 20 min &lt; Pro 60 min). If the build times out:
+
+- **Give the build more memory** – In the service **Variables**, add `NODE_OPTIONS` = `--max-old-space-size=4096` (or `6144`). Low memory can cause slow swapping and timeouts.
+- **Upgrade plan** – Pro has a 60-minute build limit if you need more time.
+- **Speed up the build** – The app uses `next build --webpack`; the main app has many routes and dependencies, so the first build can take several minutes. Cached installs (e.g. Railpack) help on later deploys.
+
 If the **build** succeeds (e.g. Railpack shows green checkmarks) but the staging service never goes live or the deployment never completes:
 
 1. **Config as code** — The repo includes **`railway.json`** in the app root with explicit `buildCommand` and `startCommand`. That applies to any service whose **Root directory** is the repo root. It overrides dashboard settings and avoids "No start command could be found." Push and redeploy after changing that file.

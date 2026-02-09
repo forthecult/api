@@ -240,6 +240,9 @@ export default function TokenPage() {
           </div>
 
           <div className="space-y-4">
+            <p className="text-base font-medium italic text-foreground/90 sm:text-lg">
+              A new Age of eCommerce
+            </p>
             <h3 className="font-display text-xl font-semibold text-foreground md:text-2xl">
               What CULT gets you
             </h3>
@@ -541,12 +544,7 @@ export default function TokenPage() {
         {/* CTA */}
         <section className="flex flex-col items-center gap-4 py-6 text-center">
           <div className="flex flex-wrap justify-center gap-3">
-            <Link href="/token/stake">
-              <Button size="lg" variant="default" className="gap-2">
-                Stake &amp; Vote
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            {/* Stake & Vote link hidden until prod testing complete */}
             <Link href="/products">
               <Button size="lg" variant="outline" className="gap-2">
                 Shop with CULT at checkout

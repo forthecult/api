@@ -76,6 +76,8 @@ import {
   HIDDEN_PAYMENT_OPTIONS,
   INITIAL_CRYPTO_SUB,
   OTHER_SUB_OPTIONS,
+  STABLECOIN_CHAIN_LOGO,
+  STABLECOIN_TOKEN_LOGO,
   USDC_SUB_OPTIONS,
   USDT_SUB_OPTIONS,
   VISIBLE_CRYPTO_SUB_OPTIONS,
@@ -964,6 +966,22 @@ export function PaymentMethodSection({
                   />
                   <span className="text-sm font-medium">Stablecoins (USDC / USDT)</span>
                 </div>
+                <div className="flex shrink-0 items-center gap-2">
+                  <Image
+                    alt="USDC"
+                    className="size-5 shrink-0 object-contain"
+                    height={20}
+                    src={STABLECOIN_TOKEN_LOGO.usdc}
+                    width={20}
+                  />
+                  <Image
+                    alt="USDT"
+                    className="size-5 shrink-0 object-contain"
+                    height={20}
+                    src={STABLECOIN_TOKEN_LOGO.usdt}
+                    width={20}
+                  />
+                </div>
               </label>
               {paymentMethod === "stablecoins" && (
                 <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
@@ -979,6 +997,13 @@ export function PaymentMethodSection({
                         }}
                         className="size-4 border-input text-primary focus:ring-primary"
                       />
+                      <Image
+                        alt="USDC"
+                        className="h-5 w-5 shrink-0 object-contain"
+                        height={20}
+                        src={STABLECOIN_TOKEN_LOGO.usdc}
+                        width={20}
+                      />
                       <span className="text-sm">USDC</span>
                     </label>
                     <label className="flex cursor-pointer items-center gap-2">
@@ -991,6 +1016,13 @@ export function PaymentMethodSection({
                           setPaymentSubOption("ethereum" as UsdtSub);
                         }}
                         className="size-4 border-input text-primary focus:ring-primary"
+                      />
+                      <Image
+                        alt="USDT"
+                        className="h-5 w-5 shrink-0 object-contain"
+                        height={20}
+                        src={STABLECOIN_TOKEN_LOGO.usdt}
+                        width={20}
                       />
                       <span className="text-sm">USDT</span>
                     </label>
@@ -1015,7 +1047,7 @@ export function PaymentMethodSection({
                           alt={opt.label}
                           className="ml-auto h-7 w-9 shrink-0 object-contain"
                           height={28}
-                          src="/crypto/ethereum/ethereum-logo.svg"
+                          src={STABLECOIN_CHAIN_LOGO[opt.value as keyof typeof STABLECOIN_CHAIN_LOGO]}
                           width={36}
                         />
                       </label>
@@ -1040,7 +1072,7 @@ export function PaymentMethodSection({
                           alt={opt.label}
                           className="ml-auto h-7 w-9 shrink-0 object-contain"
                           height={28}
-                          src="/crypto/ethereum/ethereum-logo.svg"
+                          src={STABLECOIN_CHAIN_LOGO[opt.value as keyof typeof STABLECOIN_CHAIN_LOGO]}
                           width={36}
                         />
                       </label>

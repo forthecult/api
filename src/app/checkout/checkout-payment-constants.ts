@@ -113,3 +113,22 @@ export const USDT_SUB_OPTIONS: {
   { value: "polygon", label: "USDT (Polygon)" },
 ];
 
+/** Chain logo for stablecoin network options (USDC/USDT). Solana and EVM chains. */
+export const STABLECOIN_CHAIN_LOGO: Record<
+  "solana" | "ethereum" | "arbitrum" | "base" | "polygon" | "bnb",
+  string
+> = {
+  solana: "/crypto/solana/solanaLogoMark.svg",
+  ethereum: "/crypto/ethereum/ethereum-logo.svg",
+  arbitrum: "/crypto/ethereum/ethereum-logo.svg",
+  base: "/crypto/ethereum/ethereum-logo.svg",
+  polygon: "/crypto/polygon/polygon-logo.svg",
+  bnb: "/crypto/bnb/bnb-smart-chain.svg",
+};
+
+/** Stablecoin token logo (for USDC / USDT labels). */
+export const STABLECOIN_TOKEN_LOGO = {
+  usdc: "/crypto/usdc/usdc-logo.svg",
+  usdt: "/crypto/usdt/tether-usdt-logo.svg",
+} as const;
+

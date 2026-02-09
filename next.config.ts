@@ -150,7 +150,6 @@ const config = {
       "@safe-global/safe-apps-sdk": false,
       "pino-pretty": false,
     };
-    // Stub optional connectors we don't use; WalletConnect we use so resolve real package when present
     config.resolve.alias = {
       ...config.resolve.alias,
       "@base-org/account": wagmiStub,
