@@ -14,7 +14,7 @@
 import "dotenv/config";
 
 import { createId } from "@paralleldrive/cuid2";
-import { inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
 import {
@@ -1195,11 +1195,10 @@ const ALL_CATEGORIES: CategoryRow[] = [
 async function seed() {
   console.log("Seeding Culture categories…");
 
-  // Bulk upsert in chunks to avoid driver/DB limits; ~4 round-trips instead of 81 (was ~14m over remote DB).
+  // Bulk upsert in chunks; conflict on slug so re-runs (e.g. staging) update existing rows instead of failing on duplicate slug.
   const BATCH = 25;
   const conflictSet = {
     name: sql.raw(`excluded.${categoriesTable.name.name}`),
-    slug: sql.raw(`excluded.${categoriesTable.slug.name}`),
     title: sql.raw(`excluded.${categoriesTable.title.name}`),
     metaDescription: sql.raw(
       `excluded.${categoriesTable.metaDescription.name}`,
@@ -1207,7 +1206,6 @@ async function seed() {
     description: sql.raw(`excluded.${categoriesTable.description.name}`),
     imageUrl: sql.raw(`excluded.${categoriesTable.imageUrl.name}`),
     level: sql.raw(`excluded.${categoriesTable.level.name}`),
-    parentId: sql.raw(`excluded.${categoriesTable.parentId.name}`),
     updatedAt: sql.raw(`excluded.${categoriesTable.updatedAt.name}`),
   };
   for (let i = 0; i < ALL_CATEGORIES.length; i += BATCH) {
@@ -1229,19 +1227,43 @@ async function seed() {
       .insert(categoriesTable)
       .values(chunk)
       .onConflictDoUpdate({
-        target: categoriesTable.id,
+        target: categoriesTable.slug,
         set: conflictSet,
       });
   }
+
+  // Resolve slug -> id so we can set parentId and rule categoryIds (existing rows may have different ids).
+  const seedSlugs = ALL_CATEGORIES.map((c) => c.slug);
+  const slugRows = await db
+    .select({ id: categoriesTable.id, slug: categoriesTable.slug })
+    .from(categoriesTable)
+    .where(inArray(categoriesTable.slug, seedSlugs));
+  const slugToId = new Map<string, string>();
+  for (const r of slugRows) {
+    if (r.slug != null) slugToId.set(r.slug, r.id);
+  }
+
+  // Set parentId from resolved ids (in case we updated existing rows that had different ids).
+  for (const c of ALL_CATEGORIES) {
+    if (c.parentId != null && slugToId.has(c.slug)) {
+      const parentId = slugToId.get(c.parentId) ?? c.parentId;
+      await db
+        .update(categoriesTable)
+        .set({ parentId, updatedAt: now })
+        .where(eq(categoriesTable.slug, c.slug));
+    }
+  }
+
   console.log(`Done. ${ALL_CATEGORIES.length} categories seeded.`);
 
   // Seed "Bulk add products" rules: delete for all bulk-add categories, then bulk insert.
   const cryptoCategoryIds = CRYPTO_BULK_ADD_CONFIG.map((c) => c.categoryId);
   const productCategoryIds = PRODUCT_BULK_ADD_CONFIG.map((c) => c.categoryId);
   const allBulkAddCategoryIds = [...new Set([...cryptoCategoryIds, ...productCategoryIds])];
+  const actualBulkAddIds = [...new Set(allBulkAddCategoryIds.map((id) => slugToId.get(id) ?? id))];
   await db
     .delete(categoryAutoAssignRuleTable)
-    .where(inArray(categoryAutoAssignRuleTable.categoryId, allBulkAddCategoryIds));
+    .where(inArray(categoryAutoAssignRuleTable.categoryId, actualBulkAddIds));
 
   const ruleRows: Array<{
     id: string;
@@ -1255,6 +1277,7 @@ async function seed() {
     updatedAt: Date;
   }> = [];
   for (const { categoryId, fullName, ticker } of CRYPTO_BULK_ADD_CONFIG) {
+    const resolvedId = slugToId.get(categoryId) ?? categoryId;
     const tagFull = fullName.toLowerCase();
     const tagTicker = ticker.toLowerCase();
     const rules: Array<{ titleContains: string | null; tagContains: string | null }> = [
@@ -1266,7 +1289,7 @@ async function seed() {
     for (const r of rules) {
       ruleRows.push({
         id: createId(),
-        categoryId,
+        categoryId: resolvedId,
         titleContains: r.titleContains,
         tagContains: r.tagContains,
         createdWithinDays: null,
@@ -1278,10 +1301,11 @@ async function seed() {
     }
   }
   for (const { categoryId, titleContains, tagContains } of PRODUCT_BULK_ADD_CONFIG) {
+    const resolvedId = slugToId.get(categoryId) ?? categoryId;
     const tagLower = tagContains.toLowerCase();
     ruleRows.push({
       id: createId(),
-      categoryId,
+      categoryId: resolvedId,
       titleContains,
       tagContains: null,
       createdWithinDays: null,
@@ -1292,7 +1316,7 @@ async function seed() {
     });
     ruleRows.push({
       id: createId(),
-      categoryId,
+      categoryId: resolvedId,
       titleContains: null,
       tagContains: tagLower,
       createdWithinDays: null,
