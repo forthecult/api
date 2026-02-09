@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 
 import { db } from "~/db";
 import { sizeChartsTable } from "~/db/schema";
-import { requireAdmin } from "~/lib/api-auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import { apiError } from "~/lib/api-error";
 
 const PROVIDERS = ["printful", "printify", "manual"] as const;
@@ -15,10 +15,12 @@ const PROVIDERS = ["printful", "printify", "manual"] as const;
  * List all size charts (admin). Optional: provider, brand, model filters.
  */
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin(request);
-  if (!auth.ok) return auth.response;
-
   try {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get("provider")?.trim();
     const brand = searchParams.get("brand")?.trim();
@@ -50,10 +52,12 @@ export async function GET(request: NextRequest) {
  * Create a size chart. Body: { provider, brand, model, displayName, dataImperial?, dataMetric? }
  */
 export async function POST(request: NextRequest) {
-  const auth = await requireAdmin(request);
-  if (!auth.ok) return auth.response;
-
   try {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const body = (await request.json()) as {
       provider?: string;
       brand?: string;

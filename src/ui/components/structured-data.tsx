@@ -1,4 +1,5 @@
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 
 interface ProductStructuredDataProps {
   product: {
@@ -20,7 +21,7 @@ interface ProductStructuredDataProps {
  * Renders as a script tag that search engines parse.
  */
 export function ProductStructuredData({ product }: ProductStructuredDataProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const siteUrl = getPublicSiteUrl();
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -69,7 +70,7 @@ export function ProductStructuredData({ product }: ProductStructuredDataProps) {
  * Include in root layout or footer.
  */
 export function OrganizationStructuredData() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const siteUrl = getPublicSiteUrl();
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -131,7 +132,7 @@ export function BreadcrumbStructuredData({
  * WebSite structured data for sitelinks search box.
  */
 export function WebSiteStructuredData() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const siteUrl = getPublicSiteUrl();
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -160,7 +161,7 @@ export function WebSiteStructuredData() {
  * AboutPage structured data for about pages.
  */
 export function AboutPageStructuredData() {
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const siteUrl = getPublicSiteUrl();
 
   const structuredData = {
     "@context": "https://schema.org",

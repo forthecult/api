@@ -9,13 +9,12 @@ import "dotenv/config";
 
 import { conn } from "../src/db";
 
-/** Critical: must succeed or deploy fails (Printful sync + shipping need these). */
-// BIGINT: Printful sync variant/product IDs can exceed 32-bit INTEGER max (2,147,483,647)
+/** Critical: must succeed or deploy fails (Printful sync + shipping need these).
+ *  BIGINT required: Printful IDs exceed 32-bit INTEGER max (2,147,483,647). */
 const criticalStatements: string[] = [
   `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
   `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
   `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
-  // Upgrade existing INTEGER columns to BIGINT (safe, no data loss)
   `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
   `ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`,
 ];

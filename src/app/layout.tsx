@@ -8,6 +8,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { extractRouterConfig } from "uploadthing/server";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
@@ -36,12 +37,8 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
 });
 
-// Ensure full URL (https://) so metadataBase doesn't throw Invalid URL when env is host-only (e.g. Railway)
-const siteUrlRaw = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
-const siteUrl =
-  /^https?:\/\//i.test(siteUrlRaw.trim()) ?
-    siteUrlRaw.trim()
-  : `https://${siteUrlRaw.trim().replace(/^\/+/, "")}`;
+// getPublicSiteUrl() ensures full https:// URL and handles host-only env values (e.g. Railway)
+const siteUrl = getPublicSiteUrl();
 
 /** Staging: Vercel preview deploys or explicit STAGING=1. Block indexing only on staging. */
 const isStaging =

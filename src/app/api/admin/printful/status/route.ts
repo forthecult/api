@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { getPrintfulIfConfigured, fetchCatalogProducts } from "~/lib/printful";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * GET /api/admin/printful/status
@@ -9,12 +9,9 @@ import { auth, isAdminUser } from "~/lib/auth";
  * Admin endpoint to check Printful API configuration and connectivity.
  */
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintfulIfConfigured();

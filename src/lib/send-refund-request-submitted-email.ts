@@ -3,6 +3,7 @@
  * Uses Resend when RESEND_API_KEY is set. Caller should check userWantsTransactionalEmail.
  */
 
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendRefundRequestSubmittedEmailParams {
@@ -17,12 +18,7 @@ export async function sendRefundRequestSubmittedEmail(
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("refund_request_submitted");
   const subject = template.emailSubject ?? "Refund request received";
-  const baseUrl =
-    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
-      process.env.NEXT_PUBLIC_APP_URL.trim()) ||
-    (typeof process.env.NEXT_SERVER_APP_URL === "string" &&
-      process.env.NEXT_SERVER_APP_URL.trim()) ||
-    "https://example.com";
+  const baseUrl = getPublicSiteUrl();
   const refundPageUrl = `${baseUrl.replace(/\/$/, "")}/refund`;
   let body =
     template.emailBody ??

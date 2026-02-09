@@ -27,6 +27,8 @@ import { Input } from "~/ui/primitives/input";
 import { Skeleton } from "~/ui/primitives/skeleton";
 import { toast } from "sonner";
 
+// ─── Constants & Helpers ────────────────────────────────────────────
+
 const CULT_DECIMALS = 6;
 
 function base64ToUint8Array(base64: string): Uint8Array {
@@ -35,6 +37,22 @@ function base64ToUint8Array(base64: string): Uint8Array {
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 }
+
+function formatPower(raw: number): string {
+  const human = raw / Math.pow(10, CULT_DECIMALS);
+  if (human >= 1e6) return (human / 1e6).toFixed(2) + "M";
+  if (human >= 1e3) return (human / 1e3).toFixed(2) + "K";
+  return human.toFixed(2);
+}
+
+function formatDate(s: string): string {
+  return new Date(s).toLocaleDateString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+// ─── Types ──────────────────────────────────────────────────────────
 
 type Proposal = {
   id: string;
@@ -53,171 +71,27 @@ type ProposalDetail = Proposal & {
   userVote: { choice: string; votingPower: number } | null;
 };
 
-function formatPower(raw: number): string {
-  const human = raw / Math.pow(10, CULT_DECIMALS);
-  if (human >= 1e6) return (human / 1e6).toFixed(2) + "M";
-  if (human >= 1e3) return (human / 1e3).toFixed(2) + "K";
-  return human.toFixed(2);
-}
+// ─── StakeForm ──────────────────────────────────────────────────────
 
-function formatDate(s: string): string {
-  return new Date(s).toLocaleDateString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
+type StakeFormProps = {
+  wallet: string | null;
+  sendTransaction: ReturnType<typeof useWallet>["sendTransaction"];
+  connection: ReturnType<typeof useConnection>["connection"];
+  openConnectModal: () => void;
+  refreshBalances: () => void;
+};
 
-export function StakeVoteClient() {
-  const { connection } = useConnection();
-  const { publicKey, connected, sendTransaction } = useWallet();
-  const wallet = publicKey?.toBase58() ?? null;
-
-  const [votingPower, setVotingPower] = useState<number | null>(null);
-  const [walletBalanceRaw, setWalletBalanceRaw] = useState<number | null>(null);
-  const [stakedBalanceRaw, setStakedBalanceRaw] = useState<number | null>(null);
-  const [votingPowerLoading, setVotingPowerLoading] = useState(false);
+function StakeForm({
+  wallet,
+  sendTransaction,
+  connection,
+  openConnectModal,
+  refreshBalances,
+}: StakeFormProps) {
   const [stakeAmount, setStakeAmount] = useState("");
   const [unstakeAmount, setUnstakeAmount] = useState("");
   const [stakeTxPending, setStakeTxPending] = useState(false);
   const [unstakeTxPending, setUnstakeTxPending] = useState(false);
-  const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [proposalsLoading, setProposalsLoading] = useState(true);
-  const [details, setDetails] = useState<Record<string, ProposalDetail>>({});
-  const [votingId, setVotingId] = useState<string | null>(null);
-
-  const openConnectModal = useCallback(() => {
-    window.dispatchEvent(new CustomEvent(OPEN_AUTH_WALLET_MODAL));
-  }, []);
-
-  const refreshBalances = useCallback(() => {
-    if (!wallet) return;
-    setVotingPowerLoading(true);
-    fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const total = data.votingPowerRaw ? BigInt(data.votingPowerRaw) : 0n;
-        const walletRaw = data.walletBalanceRaw ? BigInt(data.walletBalanceRaw) : 0n;
-        const stakedRaw = data.stakedBalanceRaw ? BigInt(data.stakedBalanceRaw) : 0n;
-        setVotingPower(Number(total));
-        setWalletBalanceRaw(Number(walletRaw));
-        setStakedBalanceRaw(Number(stakedRaw));
-      })
-      .catch(() => {
-        setVotingPower(0);
-        setWalletBalanceRaw(0);
-        setStakedBalanceRaw(0);
-      })
-      .finally(() => setVotingPowerLoading(false));
-  }, [wallet]);
-
-  useEffect(() => {
-    if (!wallet) {
-      setVotingPower(null);
-      setWalletBalanceRaw(null);
-      setStakedBalanceRaw(null);
-      return;
-    }
-    let cancelled = false;
-    setVotingPowerLoading(true);
-    fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (cancelled) return;
-        const total = data.votingPowerRaw ? BigInt(data.votingPowerRaw) : 0n;
-        const walletRaw = data.walletBalanceRaw ? BigInt(data.walletBalanceRaw) : 0n;
-        const stakedRaw = data.stakedBalanceRaw ? BigInt(data.stakedBalanceRaw) : 0n;
-        setVotingPower(Number(total));
-        setWalletBalanceRaw(Number(walletRaw));
-        setStakedBalanceRaw(Number(stakedRaw));
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setVotingPower(0);
-          setWalletBalanceRaw(0);
-          setStakedBalanceRaw(0);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setVotingPowerLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [wallet]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setProposalsLoading(true);
-    fetch("/api/governance/proposals")
-      .then((r) => r.json())
-      .then((data) => {
-        if (!cancelled && data.proposals) setProposals(data.proposals ?? []);
-      })
-      .catch(() => {
-        if (!cancelled) setProposals([]);
-      })
-      .finally(() => {
-        if (!cancelled) setProposalsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const fetchProposalDetail = useCallback(async (id: string) => {
-    const url = wallet
-      ? `/api/governance/proposals/${id}?wallet=${encodeURIComponent(wallet)}`
-      : `/api/governance/proposals/${id}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      proposal: Proposal;
-      totals: { for: number; against: number; abstain: number };
-      userVote: { choice: string; votingPower: number } | null;
-    };
-    setDetails((prev) => ({
-      ...prev,
-      [id]: {
-        ...data.proposal,
-        totals: data.totals,
-        userVote: data.userVote,
-      },
-    }));
-    return data;
-  }, [wallet]);
-
-  useEffect(() => {
-    for (const p of proposals) {
-      void fetchProposalDetail(p.id);
-    }
-  }, [proposals, fetchProposalDetail]);
-
-  const vote = useCallback(
-    async (proposalId: string, choice: "for" | "against" | "abstain") => {
-      if (!wallet) {
-        openConnectModal();
-        return;
-      }
-      setVotingId(proposalId);
-      try {
-        const res = await fetch(`/api/governance/proposals/${proposalId}/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, choice }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          toast.error(data.error ?? "Failed to vote");
-          return;
-        }
-        toast.success("Vote recorded");
-        await fetchProposalDetail(proposalId);
-      } finally {
-        setVotingId(null);
-      }
-    },
-    [wallet, openConnectModal, fetchProposalDetail],
-  );
 
   const handleStake = useCallback(async () => {
     if (!wallet || !sendTransaction) {
@@ -303,6 +177,326 @@ export function StakeVoteClient() {
     }
   }, [wallet, sendTransaction, connection, unstakeAmount, openConnectModal, refreshBalances]);
 
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <Lock className="h-5 w-5 text-primary" />
+          Stake CULT
+        </CardTitle>
+        <CardDescription>
+          Stake CULT on-chain to keep it in the pool. Staked balance counts toward voting power. You can unstake anytime.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Stake (CULT)</label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                placeholder="0"
+                value={stakeAmount}
+                onChange={(e) => setStakeAmount(e.target.value)}
+                className="font-mono"
+              />
+              <Button
+                onClick={handleStake}
+                disabled={stakeTxPending || !stakeAmount.trim()}
+              >
+                {stakeTxPending ? "Sending…" : "Stake"}
+              </Button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Unstake (CULT)</label>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                min={0}
+                step="any"
+                placeholder="0"
+                value={unstakeAmount}
+                onChange={(e) => setUnstakeAmount(e.target.value)}
+                className="font-mono"
+              />
+              <Button
+                variant="secondary"
+                onClick={handleUnstake}
+                disabled={unstakeTxPending || !unstakeAmount.trim()}
+              >
+                {unstakeTxPending ? "Sending…" : "Unstake"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── ProposalCard ───────────────────────────────────────────────────
+
+type ProposalCardProps = {
+  proposal: Proposal;
+  detail: ProposalDetail | undefined;
+  wallet: string | null;
+  votingId: string | null;
+  onVote: (proposalId: string, choice: "for" | "against" | "abstain") => void;
+  openConnectModal: () => void;
+};
+
+function ProposalCard({
+  proposal,
+  detail,
+  wallet,
+  votingId,
+  onVote,
+  openConnectModal,
+}: ProposalCardProps) {
+  const isActive = proposal.status === "active";
+  const totalVotes = detail
+    ? detail.totals.for + detail.totals.against + detail.totals.abstain
+    : 0;
+  const forPct =
+    totalVotes > 0 && detail ? (detail.totals.for / totalVotes) * 100 : 0;
+
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <CardTitle className="text-lg">{proposal.title}</CardTitle>
+          <span
+            className={`
+              rounded-full px-2.5 py-0.5 text-xs font-medium
+              ${isActive ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-muted text-muted-foreground"}
+            `}
+          >
+            {isActive ? "Active" : "Ended"}
+          </span>
+        </div>
+        <CardDescription className="whitespace-pre-wrap">
+          {proposal.description}
+        </CardDescription>
+        <p className="text-xs text-muted-foreground">
+          Ends: {formatDate(proposal.endAt)}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {detail && (
+          <>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">
+                  For {formatPower(detail.totals.for)} · Against{" "}
+                  {formatPower(detail.totals.against)}
+                  {detail.totals.abstain > 0 &&
+                    ` · Abstain ${formatPower(detail.totals.abstain)}`}
+                </span>
+              </div>
+              <div
+                className="h-2 w-full overflow-hidden rounded-full bg-muted"
+                title={`For ${forPct.toFixed(0)}%`}
+                role="progressbar"
+                aria-valuenow={forPct}
+                aria-valuemin={0}
+                aria-valuemax={100}
+              >
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${forPct}%` }}
+                />
+              </div>
+            </div>
+            {detail.userVote && (
+              <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                You voted{" "}
+                <span className="font-medium text-foreground">
+                  {detail.userVote.choice}
+                </span>{" "}
+                with{" "}
+                {(
+                  detail.userVote.votingPower /
+                  Math.pow(10, CULT_DECIMALS)
+                ).toLocaleString()}{" "}
+                CULT
+              </p>
+            )}
+          </>
+        )}
+        {isActive && !detail?.userVote && (
+          <div className="flex flex-wrap gap-2 pt-2">
+            <Button
+              size="sm"
+              variant="default"
+              disabled={!wallet || votingId === proposal.id}
+              onClick={() => onVote(proposal.id, "for")}
+            >
+              {votingId === proposal.id ? "Submitting…" : "Vote For"}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!wallet || votingId === proposal.id}
+              onClick={() => onVote(proposal.id, "against")}
+            >
+              Vote Against
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={!wallet || votingId === proposal.id}
+              onClick={() => onVote(proposal.id, "abstain")}
+            >
+              Abstain
+            </Button>
+            {!wallet && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={openConnectModal}
+              >
+                Connect wallet to vote
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────
+
+export function StakeVoteClient() {
+  const { connection } = useConnection();
+  const { publicKey, connected, sendTransaction } = useWallet();
+  const wallet = publicKey?.toBase58() ?? null;
+
+  const [votingPower, setVotingPower] = useState<number | null>(null);
+  const [walletBalanceRaw, setWalletBalanceRaw] = useState<number | null>(null);
+  const [stakedBalanceRaw, setStakedBalanceRaw] = useState<number | null>(null);
+  const [votingPowerLoading, setVotingPowerLoading] = useState(false);
+  const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [proposalsLoading, setProposalsLoading] = useState(true);
+  const [details, setDetails] = useState<Record<string, ProposalDetail>>({});
+  const [votingId, setVotingId] = useState<string | null>(null);
+
+  const openConnectModal = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(OPEN_AUTH_WALLET_MODAL));
+  }, []);
+
+  const refreshBalances = useCallback(() => {
+    if (!wallet) return;
+    setVotingPowerLoading(true);
+    fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        const total = data.votingPowerRaw ? BigInt(data.votingPowerRaw) : 0n;
+        const walletRaw = data.walletBalanceRaw ? BigInt(data.walletBalanceRaw) : 0n;
+        const stakedRaw = data.stakedBalanceRaw ? BigInt(data.stakedBalanceRaw) : 0n;
+        setVotingPower(Number(total));
+        setWalletBalanceRaw(Number(walletRaw));
+        setStakedBalanceRaw(Number(stakedRaw));
+      })
+      .catch(() => {
+        setVotingPower(0);
+        setWalletBalanceRaw(0);
+        setStakedBalanceRaw(0);
+      })
+      .finally(() => setVotingPowerLoading(false));
+  }, [wallet]);
+
+  // Fetch balances when wallet changes
+  useEffect(() => {
+    if (!wallet) {
+      setVotingPower(null);
+      setWalletBalanceRaw(null);
+      setStakedBalanceRaw(null);
+      return;
+    }
+    refreshBalances();
+  }, [wallet, refreshBalances]);
+
+  // Fetch proposals on mount
+  useEffect(() => {
+    let cancelled = false;
+    setProposalsLoading(true);
+    fetch("/api/governance/proposals")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data.proposals) setProposals(data.proposals ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setProposals([]);
+      })
+      .finally(() => {
+        if (!cancelled) setProposalsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const fetchProposalDetail = useCallback(async (id: string) => {
+    const url = wallet
+      ? `/api/governance/proposals/${id}?wallet=${encodeURIComponent(wallet)}`
+      : `/api/governance/proposals/${id}`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const data = (await res.json()) as {
+      proposal: Proposal;
+      totals: { for: number; against: number; abstain: number };
+      userVote: { choice: string; votingPower: number } | null;
+    };
+    setDetails((prev) => ({
+      ...prev,
+      [id]: {
+        ...data.proposal,
+        totals: data.totals,
+        userVote: data.userVote,
+      },
+    }));
+    return data;
+  }, [wallet]);
+
+  // Fetch details for each proposal
+  useEffect(() => {
+    for (const p of proposals) {
+      void fetchProposalDetail(p.id);
+    }
+  }, [proposals, fetchProposalDetail]);
+
+  const vote = useCallback(
+    async (proposalId: string, choice: "for" | "against" | "abstain") => {
+      if (!wallet) {
+        openConnectModal();
+        return;
+      }
+      setVotingId(proposalId);
+      try {
+        const res = await fetch(`/api/governance/proposals/${proposalId}/vote`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ wallet, choice }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(data.error ?? "Failed to vote");
+          return;
+        }
+        toast.success("Vote recorded");
+        await fetchProposalDetail(proposalId);
+      } finally {
+        setVotingId(null);
+      }
+    },
+    [wallet, openConnectModal, fetchProposalDetail],
+  );
+
   const totalPower =
     votingPower !== null ? votingPower / Math.pow(10, CULT_DECIMALS) : 0;
   const walletPower =
@@ -386,62 +580,13 @@ export function StakeVoteClient() {
 
       {/* On-chain staking */}
       {connected && (
-        <Card className="border-border bg-card">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <Lock className="h-5 w-5 text-primary" />
-              Stake CULT
-            </CardTitle>
-            <CardDescription>
-              Stake CULT on-chain to keep it in the pool. Staked balance counts toward voting power. You can unstake anytime.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Stake (CULT)</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step="any"
-                    placeholder="0"
-                    value={stakeAmount}
-                    onChange={(e) => setStakeAmount(e.target.value)}
-                    className="font-mono"
-                  />
-                  <Button
-                    onClick={handleStake}
-                    disabled={stakeTxPending || !stakeAmount.trim()}
-                  >
-                    {stakeTxPending ? "Sending…" : "Stake"}
-                  </Button>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Unstake (CULT)</label>
-                <div className="flex gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    step="any"
-                    placeholder="0"
-                    value={unstakeAmount}
-                    onChange={(e) => setUnstakeAmount(e.target.value)}
-                    className="font-mono"
-                  />
-                  <Button
-                    variant="secondary"
-                    onClick={handleUnstake}
-                    disabled={unstakeTxPending || !unstakeAmount.trim()}
-                  >
-                    {unstakeTxPending ? "Sending…" : "Unstake"}
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StakeForm
+          wallet={wallet}
+          sendTransaction={sendTransaction}
+          connection={connection}
+          openConnectModal={openConnectModal}
+          refreshBalances={refreshBalances}
+        />
       )}
 
       {/* Proposals */}
@@ -475,127 +620,17 @@ export function StakeVoteClient() {
           </Card>
         ) : (
           <div className="space-y-6">
-            {proposals.map((p) => {
-              const detail = details[p.id];
-              const isActive = p.status === "active";
-              const totalVotes =
-                detail
-                  ? detail.totals.for + detail.totals.against + detail.totals.abstain
-                  : 0;
-              const forPct =
-                totalVotes > 0 && detail
-                  ? (detail.totals.for / totalVotes) * 100
-                  : 0;
-              const againstPct =
-                totalVotes > 0 && detail
-                  ? (detail.totals.against / totalVotes) * 100
-                  : 0;
-
-              return (
-                <Card key={p.id} className="border-border bg-card">
-                  <CardHeader className="pb-2">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <CardTitle className="text-lg">{p.title}</CardTitle>
-                      <span
-                        className={`
-                          rounded-full px-2.5 py-0.5 text-xs font-medium
-                          ${isActive ? "bg-green-500/15 text-green-700 dark:text-green-400" : "bg-muted text-muted-foreground"}
-                        `}
-                      >
-                        {isActive ? "Active" : "Ended"}
-                      </span>
-                    </div>
-                    <CardDescription className="whitespace-pre-wrap">
-                      {p.description}
-                    </CardDescription>
-                    <p className="text-xs text-muted-foreground">
-                      Ends: {formatDate(p.endAt)}
-                    </p>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {detail && (
-                      <>
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">
-                              For {formatPower(detail.totals.for)} · Against{" "}
-                              {formatPower(detail.totals.against)}
-                              {detail.totals.abstain > 0 &&
-                                ` · Abstain ${formatPower(detail.totals.abstain)}`}
-                            </span>
-                          </div>
-                          <div
-                            className="h-2 w-full overflow-hidden rounded-full bg-muted"
-                            title={`For ${forPct.toFixed(0)}%`}
-                            role="progressbar"
-                            aria-valuenow={forPct}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                          >
-                            <div
-                              className="h-full rounded-full bg-primary transition-all"
-                              style={{ width: `${forPct}%` }}
-                            />
-                          </div>
-                        </div>
-                        {detail.userVote && (
-                          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                            You voted{" "}
-                            <span className="font-medium text-foreground">
-                              {detail.userVote.choice}
-                            </span>{" "}
-                            with{" "}
-                            {(
-                              detail.userVote.votingPower /
-                              Math.pow(10, CULT_DECIMALS)
-                            ).toLocaleString()}{" "}
-                            CULT
-                          </p>
-                        )}
-                      </>
-                    )}
-                    {isActive && !detail?.userVote && (
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        <Button
-                          size="sm"
-                          variant="default"
-                          disabled={!wallet || votingId === p.id}
-                          onClick={() => vote(p.id, "for")}
-                        >
-                          {votingId === p.id ? "Submitting…" : "Vote For"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          disabled={!wallet || votingId === p.id}
-                          onClick={() => vote(p.id, "against")}
-                        >
-                          Vote Against
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={!wallet || votingId === p.id}
-                          onClick={() => vote(p.id, "abstain")}
-                        >
-                          Abstain
-                        </Button>
-                        {!wallet && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={openConnectModal}
-                          >
-                            Connect wallet to vote
-                          </Button>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {proposals.map((p) => (
+              <ProposalCard
+                key={p.id}
+                proposal={p}
+                detail={details[p.id]}
+                wallet={wallet}
+                votingId={votingId}
+                onVote={vote}
+                openConnectModal={openConnectModal}
+              />
+            ))}
           </div>
         )}
       </div>

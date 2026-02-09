@@ -13,6 +13,7 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
+import { slugify } from "~/lib/slugify";
 import {
   productAvailableCountryTable,
   productsTable,
@@ -1041,17 +1042,6 @@ export async function handlePrintifyProductDeleted(data: {
 // ============================================================================
 // Utilities
 // ============================================================================
-
-/**
- * Convert a string to a URL-friendly slug.
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 100);
-}
 
 /**
  * Get sync status for a product.

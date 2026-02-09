@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+import { getPublicSiteUrl } from "~/lib/app-url";
+
+const siteUrl = getPublicSiteUrl();
 
 /** Staging: Vercel preview deploys or explicit STAGING=1 (e.g. Railway). Production allows crawlers. */
 const isStaging =

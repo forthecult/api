@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { pageTokenGateTable } from "~/db/schema";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * GET /api/admin/token-gate/pages
@@ -11,12 +11,9 @@ import { auth, isAdminUser } from "~/lib/auth";
  */
 export async function GET(_request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: _request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const slugs = await db

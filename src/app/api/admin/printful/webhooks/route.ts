@@ -6,7 +6,7 @@ import {
   disableWebhook,
   getPrintfulIfConfigured,
 } from "~/lib/printful";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * All webhook event types we want to subscribe to for full order/product sync.
@@ -38,12 +38,9 @@ const REQUIRED_WEBHOOK_TYPES = [
  * Get current webhook configuration from Printful.
  */
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintfulIfConfigured();
@@ -91,12 +88,9 @@ export async function GET(request: NextRequest) {
  * - { action: "disable" } - Disable all webhooks
  */
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintfulIfConfigured();

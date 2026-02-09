@@ -12,7 +12,7 @@ import {
   exportAllPrintfulProducts,
 } from "~/lib/printful-sync";
 import { getPrintfulIfConfigured } from "~/lib/printful";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * POST /api/admin/printful/sync
@@ -29,12 +29,9 @@ import { auth, isAdminUser } from "~/lib/auth";
  * - { action: "import_size_charts" } - Backfill size charts for all Printful products (by brand/model)
  */
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Check if Printful is configured
@@ -99,11 +96,12 @@ export async function POST(request: NextRequest) {
 
     case "import_single": {
       let printfulSyncProductId = body.printfulSyncProductId;
-      if (printfulSyncProductId == null && body.productId) {
+      const productIdRaw = body.productId != null ? String(body.productId) : null;
+      if (printfulSyncProductId == null && productIdRaw) {
         const [row] = await db
           .select({ printfulSyncProductId: productsTable.printfulSyncProductId })
           .from(productsTable)
-          .where(eq(productsTable.id, body.productId))
+          .where(eq(productsTable.id, productIdRaw))
           .limit(1);
         if (!row?.printfulSyncProductId) {
           return NextResponse.json(
@@ -228,12 +226,9 @@ export async function POST(request: NextRequest) {
  * Get sync status information.
  */
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintfulIfConfigured();

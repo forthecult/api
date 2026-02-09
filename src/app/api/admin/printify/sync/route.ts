@@ -17,7 +17,7 @@ import {
   listPrintifyWebhooks,
   createPrintifyWebhook,
 } from "~/lib/printify";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /** Required product webhook topics so Printify can clear "Publishing" when we return 200. */
 const REQUIRED_PRODUCT_WEBHOOK_TOPICS = [
@@ -183,12 +183,9 @@ async function ensurePrintifyProductWebhooks(
  * - { action: "export_all" } - Push all local changes to Printify
  */
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   // Check if Printify is configured
@@ -525,12 +522,9 @@ export async function POST(request: NextRequest) {
  * Get sync status information.
  */
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintifyIfConfigured();

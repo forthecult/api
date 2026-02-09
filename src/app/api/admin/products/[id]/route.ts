@@ -17,15 +17,7 @@ import { syncProductCategoriesWithAutoRules } from "~/lib/category-auto-assign";
 import { exportProductToPrintful } from "~/lib/printful-sync";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { exportProductToPrintify } from "~/lib/printify-sync";
-
-/** Generate URL-safe slug from name when slug is empty. */
-function slugFromName(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
+import { slugify } from "~/lib/slugify";
 
 /** Resolve route param (id or slug) to a product; returns product or null. */
 async function getProductByParam(param: string) {
@@ -102,7 +94,7 @@ export async function GET(
           .where(eq(productTokenGateTable.productId, productId)),
       ]);
 
-    const slug = product.slug?.trim() || slugFromName(product.name) || null;
+    const slug = product.slug?.trim() || slugify(product.name) || null;
 
     const tokenGates = tokenGatesRows.map((r) => ({
       id: r.id,

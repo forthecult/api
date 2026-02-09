@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { getProductBreadcrumbTrail } from "~/lib/categories";
 import {
   sanitizeProductDescription,
@@ -79,10 +80,7 @@ interface Product {
 /* -------------------------------------------------------------------------- */
 
 async function fetchProductById(id: string): Promise<Product | null> {
-  const baseUrl =
-    process.env.NEXT_SERVER_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const baseUrl = getServerBaseUrl();
   try {
     const res = await fetch(`${baseUrl}/api/products/${id}`, {
       cache: "no-store",
@@ -178,10 +176,7 @@ async function fetchRelatedProducts(
   productId: string,
   cookieHeader?: string,
 ): Promise<RelatedProduct[]> {
-  const baseUrl =
-    process.env.NEXT_SERVER_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    "http://localhost:3000";
+  const baseUrl = getServerBaseUrl();
   try {
     const res = await fetch(`${baseUrl}/api/products/${productId}/related`, {
       next: { revalidate: 60 },
@@ -272,7 +267,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     return <TokenGateGuard resourceType="product" resourceId={product.id} />;
   }
 
-  const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const siteUrl = getPublicSiteUrl();
   const breadcrumbTrail = await getProductBreadcrumbTrail(
     product.id,
     product.name,

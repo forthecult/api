@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 const MAIN_APP_BASE =
   process.env.NEXT_SERVER_APP_URL ||
@@ -22,12 +22,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;

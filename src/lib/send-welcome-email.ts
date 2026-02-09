@@ -1,3 +1,4 @@
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 /**
@@ -24,7 +25,7 @@ export async function sendWelcomeEmail(params: {
           ? process.env.RESEND_FROM_EMAIL
           : "onboarding@resend.dev";
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://fortheculture.com";
+      const appUrl = getPublicSiteUrl();
 
       await resend.emails.send({
         from,

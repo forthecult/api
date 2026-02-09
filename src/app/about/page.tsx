@@ -3,10 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { AboutPageStructuredData } from "~/ui/components/structured-data";
 import { Button } from "~/ui/primitives/button";
 
-const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+const siteUrl = getPublicSiteUrl();
 
 export const metadata: Metadata = {
   description:

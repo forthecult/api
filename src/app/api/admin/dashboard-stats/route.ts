@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 type Range = "daily" | "monthly" | "yearly";
 
@@ -24,12 +24,9 @@ function getRangeBounds(range: Range): { start: Date; end: Date } {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const range = (request.nextUrl.searchParams.get("range") ??

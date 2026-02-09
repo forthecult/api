@@ -14,6 +14,7 @@ import {
 } from "~/db/schema";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { slugify } from "~/lib/slugify";
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
@@ -329,11 +330,7 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const id = crypto.randomUUID();
     const name = body.name.trim();
-    const slugFromName = name
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-    const slug = body.slug?.trim() || slugFromName || null;
+    const slug = body.slug?.trim() || slugify(name) || null;
 
     await db.insert(productsTable).values({
       id,

@@ -5,7 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
@@ -51,12 +51,9 @@ function fulfillmentStatusFromLegacy(status: string): string {
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const page = Math.max(
@@ -348,12 +345,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const body = (await request.json()) as {

@@ -1,36 +1,31 @@
 import { createId } from "@paralleldrive/cuid2";
-import { eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { db } from "~/db";
-import {
-  affiliateTable,
-  couponRedemptionTable,
-  orderItemsTable,
-  ordersTable,
-  productVariantsTable,
-  productsTable,
-} from "~/db/schema";
-import { userTable } from "~/db/schema/users/tables";
 import { auth } from "~/lib/auth";
-import { resolveAffiliateForOrder } from "~/lib/affiliate";
-import { resolveCouponForCheckout } from "~/lib/coupon";
+import {
+  buildOrderErrorMessage,
+  insertOrder,
+  insertOrderItems,
+  postOrderBookkeeping,
+  resolveDiscounts,
+  validateAndFetchProducts,
+  validateTotal,
+} from "~/lib/checkout/create-order-helpers";
+import {
+  getPaymentReceiverAddress,
+  isFactoryDeployed,
+  isTokenSupportedOnChain,
+  usdCentsToTokenAmount,
+  getTokenAddress,
+  orderIdToBytes32,
+  FACTORY_ADDRESSES,
+} from "~/lib/contracts/evm-payment";
 import {
   checkRateLimit,
   getClientIp,
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-import {
-  getPaymentReceiverAddress,
-  isFactoryDeployed,
-  isTokenSupportedOnChain,
-  usdCentsToTokenAmount,
-  formatTokenAmount,
-  getTokenAddress,
-  orderIdToBytes32,
-  FACTORY_ADDRESSES,
-} from "~/lib/contracts/evm-payment";
 import { runShippingCalculate } from "~/lib/shipping-calculate";
 import { normalizeCountryCode } from "~/lib/validations/checkout";
 
@@ -57,14 +52,6 @@ function deriveEthDepositAddress(
   const address = getPaymentReceiverAddress(chainId, orderId);
   return address;
 }
-
-type OrderItemBody = {
-  productId: string;
-  productVariantId?: string;
-  name: string;
-  priceCents: number;
-  quantity: number;
-};
 
 interface CreateEthOrderBody {
   email: string;
@@ -131,7 +118,7 @@ export async function POST(request: NextRequest) {
       telegramFirstName,
     } = body;
 
-    // Validate required fields
+    // Validate required fields (custom validation, not createOrderSchema)
     if (!email?.trim()) {
       return NextResponse.json({ error: "email required" }, { status: 400 });
     }
@@ -154,80 +141,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "token required" }, { status: 400 });
     }
 
-    // Validate products
-    const productIds = [
-      ...new Set(rawItems.map((i) => i?.productId).filter(Boolean)),
-    ] as string[];
-    const products =
-      productIds.length > 0
-        ? await db
-            .select({
-              id: productsTable.id,
-              name: productsTable.name,
-              priceCents: productsTable.priceCents,
-            })
-            .from(productsTable)
-            .where(inArray(productsTable.id, productIds))
-        : [];
-    const productMap = new Map(products.map((p) => [p.id, p]));
-
-    const variantIds = rawItems
-      .map((i) => i?.productVariantId)
-      .filter((v): v is string => typeof v === "string" && v.length > 0);
-    const variants =
-      variantIds.length > 0
-        ? await db
-            .select({
-              id: productVariantsTable.id,
-              productId: productVariantsTable.productId,
-              priceCents: productVariantsTable.priceCents,
-            })
-            .from(productVariantsTable)
-            .where(inArray(productVariantsTable.id, variantIds))
-        : [];
-    const variantMap = new Map(variants.map((v) => [v.id, v]));
-
-    const orderItems: OrderItemBody[] = [];
-    for (const item of rawItems) {
-      if (
-        typeof item?.productId !== "string" ||
-        typeof item?.quantity !== "number" ||
-        item.quantity < 1
-      )
-        continue;
-      const product = productMap.get(item.productId);
-      if (!product) continue;
-      if (item.productVariantId) {
-        const variant = variantMap.get(item.productVariantId);
-        if (!variant || variant.productId !== item.productId) continue;
-        orderItems.push({
-          productId: product.id,
-          productVariantId: variant.id,
-          name: product.name,
-          priceCents: variant.priceCents,
-          quantity: item.quantity,
-        });
-      } else {
-        orderItems.push({
-          productId: product.id,
-          name: product.name,
-          priceCents: product.priceCents,
-          quantity: item.quantity,
-        });
-      }
-    }
-    if (orderItems.length === 0) {
+    // ── Validate products & compute subtotal ───────────────────────────
+    const productResult = await validateAndFetchProducts(rawItems);
+    if (!productResult) {
       return NextResponse.json(
         { error: "No valid order items" },
         { status: 400 },
       );
     }
+    const { validatedItems, productIds, subtotalCents } = productResult;
 
-    // Validate totals: use server-side subtotal (DB prices) and server-side shipping when address provided
-    const subtotalCents = orderItems.reduce(
-      (sum, i) => sum + i.priceCents * i.quantity,
-      0,
-    );
+    // ── Server-side shipping calculation ───────────────────────────────
     const rawCountry = shipping?.countryCode?.trim();
     const countryCode =
       rawCountry && rawCountry.length >= 2
@@ -260,30 +184,25 @@ export async function POST(request: NextRequest) {
       shippingCentsForTotal = Number(shippingFeeCents) || 0;
     }
     const shippingRounded = Math.round(shippingCentsForTotal);
-    const affiliateResult = await resolveAffiliateForOrder(
-      affiliateCode,
-      subtotalCents,
-      shippingRounded,
-    );
-    const couponResult = couponCode
-      ? await resolveCouponForCheckout(
-          couponCode,
-          subtotalCents,
-          shippingRounded,
-          {
-            userId: session?.user?.id ?? undefined,
-            productIds: orderItems.map((i) => i.productId),
-          },
-        )
-      : null;
-    const baseTotal = subtotalCents + shippingRounded;
-    const expectedTotal =
-      couponResult?.totalAfterDiscountCents ??
-      affiliateResult?.totalAfterDiscountCents ??
-      baseTotal;
-    const TOLERANCE_CENTS = 500; // $5: display rounding, cart vs DB price drift, shipping timing
-    if (Math.abs(totalCents - expectedTotal) > TOLERANCE_CENTS) {
-      // Log detailed error server-side only (never expose to client)
+
+    // ── Resolve discounts ──────────────────────────────────────────────
+    const { affiliateResult, couponResult, expectedTotal } =
+      await resolveDiscounts({
+        affiliateCode,
+        couponCode,
+        subtotalCents,
+        shippingFeeCents: shippingRounded,
+        userId: session?.user?.id,
+        productIds,
+      });
+
+    // ── Validate client total ($5 tolerance for crypto price drift) ───
+    const totalCheck = validateTotal({
+      clientTotalCents: totalCents,
+      expectedTotal,
+      toleranceCents: 500,
+    });
+    if (!totalCheck.valid) {
       if (process.env.NODE_ENV === "development") {
         console.error(
           "[eth-pay create-order] totalCents mismatch:",
@@ -293,14 +212,13 @@ export async function POST(request: NextRequest) {
               expectedTotalCents: expectedTotal,
               subtotalCents,
               shippingCents: shippingRounded,
-              itemCount: orderItems.length,
+              itemCount: validatedItems.length,
             },
             null,
             2,
           ),
         );
       }
-      // Return generic error to client (no internal details)
       return NextResponse.json(
         {
           error: "Order total does not match. Please refresh and try again.",
@@ -310,8 +228,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // ── ETH-specific: chain / token / deposit address ─────────────────
     const orderId = createId();
-    const now = new Date();
     // Use session user ID directly - never trust userId from request body
     const userIdVal = session?.user?.id ?? null;
     const chainId = CHAIN_IDS[chain.toLowerCase()] ?? 1;
@@ -357,7 +275,10 @@ export async function POST(request: NextRequest) {
       cryptoAmount = null;
     } else {
       // USDC/USDT: 1:1 with USD, 6 decimals
-      const amountWei = usdCentsToTokenAmount(expectedTotal, tokenUpper);
+      const amountWei = usdCentsToTokenAmount(
+        totalCheck.expectedTotal,
+        tokenUpper,
+      );
       cryptoAmount = amountWei.toString();
       tokenAddress = getTokenAddress(chainId, tokenUpper);
     }
@@ -365,101 +286,55 @@ export async function POST(request: NextRequest) {
     // Get the bytes32 salt for reference
     const orderIdBytes32 = orderIdToBytes32(orderId);
 
-    await db.insert(ordersTable).values({
-      id: orderId,
-      createdAt: now,
-      email: email.trim(),
-      fulfillmentStatus: "unfulfilled",
-      paymentMethod: "eth_pay",
-      paymentStatus: "pending",
-      shippingFeeCents: shippingRounded,
-      taxCents,
-      solanaPayDepositAddress: depositAddress, // Reuse this field for all crypto deposit addresses
-      status: "pending",
-      totalCents: expectedTotal,
-      updatedAt: now,
+    // ── Insert order ───────────────────────────────────────────────────
+    await insertOrder(
+      {
+        orderId,
+        email,
+        paymentMethod: "eth_pay",
+        totalCents: totalCheck.expectedTotal,
+        shippingFeeCents: shippingRounded,
+        taxCents,
+        userId: userIdVal,
+        telegramUserId,
+        telegramUsername,
+        telegramFirstName,
+        affiliateResult,
+      },
+      {
+        solanaPayDepositAddress: depositAddress, // Reuse this field for all crypto deposit addresses
+        cryptoCurrencyNetwork: chain.toLowerCase(),
+        cryptoCurrency: tokenUpper,
+        cryptoAmount,
+        chainId,
+        // Shipping fields
+        ...(shipping?.name && { shippingName: shipping.name }),
+        ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
+        ...(shipping?.address2 && { shippingAddress2: shipping.address2 }),
+        ...(shipping?.city && { shippingCity: shipping.city }),
+        ...(shipping?.stateCode && { shippingStateCode: shipping.stateCode }),
+        ...(shipping?.zip && { shippingZip: shipping.zip }),
+        ...(shipping?.countryCode && {
+          shippingCountryCode: shipping.countryCode,
+        }),
+        ...(shipping?.phone && { shippingPhone: shipping.phone }),
+      },
+    );
+
+    // ── Insert order items ─────────────────────────────────────────────
+    await insertOrderItems(validatedItems, orderId);
+
+    // ── Post-order bookkeeping ─────────────────────────────────────────
+    await postOrderBookkeeping({
+      orderId,
       userId: userIdVal,
-      cryptoCurrencyNetwork: chain.toLowerCase(),
-      cryptoCurrency: tokenUpper,
-      cryptoAmount: cryptoAmount,
-      chainId,
-      // Shipping fields
-      ...(shipping?.name && { shippingName: shipping.name }),
-      ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
-      ...(shipping?.address2 && { shippingAddress2: shipping.address2 }),
-      ...(shipping?.city && { shippingCity: shipping.city }),
-      ...(shipping?.stateCode && { shippingStateCode: shipping.stateCode }),
-      ...(shipping?.zip && { shippingZip: shipping.zip }),
-      ...(shipping?.countryCode && {
-        shippingCountryCode: shipping.countryCode,
-      }),
-      ...(shipping?.phone && { shippingPhone: shipping.phone }),
-      ...(telegramUserId ? { telegramUserId: String(telegramUserId) } : {}),
-      ...(telegramUsername ? { telegramUsername } : {}),
-      ...(telegramFirstName ? { telegramFirstName } : {}),
-      ...(affiliateResult && {
-        affiliateId: affiliateResult.affiliate.affiliateId,
-        affiliateCode: affiliateResult.affiliate.affiliateCode,
-        affiliateCommissionCents: affiliateResult.affiliate.commissionCents,
-        affiliateDiscountCents: affiliateResult.affiliate.discountCents,
-      }),
+      affiliateResult,
+      couponResult,
+      emailMarketingConsent,
+      smsMarketingConsent,
     });
 
-    if (orderItems.length > 0) {
-      await db.insert(orderItemsTable).values(
-        orderItems.map((item) => ({
-          id: createId(),
-          name: item.name,
-          orderId,
-          priceCents: item.priceCents,
-          productId: item.productId,
-          productVariantId: item.productVariantId ?? null,
-          quantity: item.quantity,
-        })),
-      );
-    }
-
-    if (
-      userIdVal &&
-      (emailMarketingConsent === true || smsMarketingConsent === true)
-    ) {
-      await db
-        .update(userTable)
-        .set({
-          updatedAt: now,
-          ...(emailMarketingConsent === true && { receiveMarketing: true }),
-          ...(smsMarketingConsent === true && { receiveSmsMarketing: true }),
-        })
-        .where(eq(userTable.id, userIdVal));
-    }
-
-    if (affiliateResult) {
-      const [row] = await db
-        .select({ totalEarnedCents: affiliateTable.totalEarnedCents })
-        .from(affiliateTable)
-        .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId))
-        .limit(1);
-      const current = row?.totalEarnedCents ?? 0;
-      await db
-        .update(affiliateTable)
-        .set({
-          updatedAt: now,
-          totalEarnedCents: current + affiliateResult.affiliate.commissionCents,
-        })
-        .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId));
-    }
-
-    if (couponResult) {
-      await db.insert(couponRedemptionTable).values({
-        id: createId(),
-        couponId: couponResult.couponId,
-        orderId,
-        userId: userIdVal,
-        createdAt: now,
-      });
-    }
-
-    const expiresAt = new Date(now.getTime() + 60 * 60 * 1000).toISOString(); // 1 hour
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
     return NextResponse.json({
       orderId,
@@ -467,10 +342,10 @@ export async function POST(request: NextRequest) {
       chain: chain.toLowerCase(),
       token: tokenUpper,
       chainId,
-      totalCents: expectedTotal,
+      totalCents: totalCheck.expectedTotal,
       // Include crypto amount for USDC/USDT (null for ETH - calculated on frontend)
-      cryptoAmount: cryptoAmount,
-      tokenAddress: tokenAddress,
+      cryptoAmount,
+      tokenAddress,
       // Factory address for contract interaction
       factoryAddress: FACTORY_ADDRESSES[chainId],
       orderIdBytes32,
@@ -484,12 +359,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error("ETH Pay create-order error:", err);
-    const message =
-      err instanceof Error &&
-      (err.message?.includes("relation") ||
-        err.message?.includes("does not exist"))
-        ? "Database tables missing. Run: bun run db:push"
-        : "Failed to create order";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json(
+      { error: buildOrderErrorMessage(err) },
+      { status: 500 },
+    );
   }
 }

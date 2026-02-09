@@ -5,19 +5,16 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { customerCommentsTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: _request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id: customerId } = await params;
@@ -72,13 +69,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const user = authResult.method === "session" ? authResult.user : null;
 
     const { id: customerId } = await params;
     const body = (await request.json().catch(() => ({}))) as { body?: unknown };
@@ -96,7 +91,7 @@ export async function POST(
     await db.insert(customerCommentsTable).values({
       id,
       customerId,
-      authorId: session.user.id,
+      authorId: user!.id,
       body: bodyText,
       createdAt: now,
     });
@@ -105,8 +100,8 @@ export async function POST(
       id,
       body: bodyText,
       createdAt: now.toISOString(),
-      authorId: session.user.id,
-      authorName: session.user.name ?? session.user.email ?? "—",
+      authorId: user!.id,
+      authorName: user?.email ?? "—",
     });
   } catch (err) {
     console.error("Admin customer comments POST error:", err);

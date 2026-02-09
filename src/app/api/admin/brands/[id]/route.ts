@@ -3,27 +3,17 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { brandAssetTable, brandTable } from "~/db/schema";
-import { auth, isAdminUser } from "~/lib/auth";
-
-function slugFromName(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
+import { getAdminAuth } from "~/lib/admin-api-auth";
+import { slugify } from "~/lib/slugify";
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: _request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -77,12 +67,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;
@@ -119,7 +106,7 @@ export async function PATCH(
         ? body.name.trim()
         : existing.name;
     const slug =
-      (typeof body.slug === "string" && body.slug.trim()) || slugFromName(name);
+      (typeof body.slug === "string" && body.slug.trim()) || slugify(name);
 
     await db
       .update(brandTable)
@@ -174,12 +161,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: _request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id } = await params;

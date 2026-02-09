@@ -8,7 +8,7 @@ import {
   getPrintifyProductSyncStatus,
 } from "~/lib/printify-sync";
 import { fetchPrintifyProduct, getPrintifyIfConfigured } from "~/lib/printify";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * GET /api/admin/printify/products
@@ -22,12 +22,9 @@ import { auth, isAdminUser } from "~/lib/auth";
  * - printifyId=<id>: Get full details from Printify API
  */
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintifyIfConfigured();

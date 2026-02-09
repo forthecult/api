@@ -3,6 +3,7 @@
  * Uses Resend when RESEND_API_KEY is set. Caller should check userWantsTransactionalEmail.
  */
 
+import { getPublicSiteUrl } from "~/lib/app-url";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderConfirmationEmailParams {
@@ -17,12 +18,7 @@ export async function sendOrderConfirmationEmail(
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("order_placed");
   const subject = template.emailSubject ?? "Order confirmed";
-  const baseUrl =
-    (typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
-      process.env.NEXT_PUBLIC_APP_URL.trim()) ||
-    (typeof process.env.NEXT_SERVER_APP_URL === "string" &&
-      process.env.NEXT_SERVER_APP_URL.trim()) ||
-    "https://example.com";
+  const baseUrl = getPublicSiteUrl();
   const orderStatusUrl = `${baseUrl.replace(/\/$/, "")}/dashboard/orders/${orderId}`;
   let body =
     template.emailBody ??

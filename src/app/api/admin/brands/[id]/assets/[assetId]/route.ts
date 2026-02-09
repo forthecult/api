@@ -3,19 +3,16 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { brandAssetTable } from "~/db/schema";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string; assetId: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: _request.headers });
-    if (!session?.user) {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id: brandId, assetId } = await params;

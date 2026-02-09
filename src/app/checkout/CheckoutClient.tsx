@@ -76,7 +76,8 @@ import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
 import { cn } from "~/lib/cn";
 import { getAffiliateCodeFromDocument } from "~/lib/affiliate-tracking";
-import { type LoqateFindItem, mapRetrieveToShipping } from "~/lib/loqate";
+import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
+import type { MappedShippingAddress } from "~/lib/loqate";
 
 function getAffiliatePayload(): { affiliateCode?: string } {
   const code = getAffiliateCodeFromDocument();
@@ -531,27 +532,46 @@ export function CheckoutClient() {
   const cardLogosCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const [loqateSuggestions, setLoqateSuggestions] = useState<LoqateFindItem[]>(
+  const onShippingLoqateSelect = useCallback(
+    (mapped: MappedShippingAddress) => {
+      setForm((prev) => ({
+        ...prev,
+        street: mapped.street,
+        apartment: mapped.apartment || prev.apartment,
+        city: mapped.city,
+        state: mapped.state,
+        zip: mapped.zip,
+        country: mapped.country || prev.country,
+      }));
+    },
     [],
   );
-  const [loqateLoading, setLoqateLoading] = useState(false);
-  const [loqateOpen, setLoqateOpen] = useState(false);
-  const loqateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipNextFindRef = useRef(false);
-  const loqateWarmedRef = useRef(false);
-  const addressContainerRef = useRef<HTMLDivElement | null>(null);
-  const addressInputFocusedRef = useRef(false);
-  const [billingLoqateSuggestions, setBillingLoqateSuggestions] = useState<
-    LoqateFindItem[]
-  >([]);
-  const [billingLoqateLoading, setBillingLoqateLoading] = useState(false);
-  const [billingLoqateOpen, setBillingLoqateOpen] = useState(false);
-  const billingLoqateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
+  const shippingLoqate = useLoqateAutocomplete({
+    text: form.street ?? "",
+    country: form.country,
+    onSelect: onShippingLoqateSelect,
+  });
+
+  const onBillingLoqateSelect = useCallback(
+    (mapped: MappedShippingAddress) => {
+      setBillingForm((prev) => ({
+        ...prev,
+        street: mapped.street,
+        apartment: mapped.apartment || prev.apartment,
+        city: mapped.city,
+        state: mapped.state,
+        zip: mapped.zip,
+        country: mapped.country || prev.country,
+      }));
+    },
+    [],
   );
-  const skipNextBillingFindRef = useRef(false);
-  const billingAddressContainerRef = useRef<HTMLDivElement | null>(null);
-  const billingAddressInputFocusedRef = useRef(false);
+  const billingLoqate = useLoqateAutocomplete({
+    text: billingForm.street ?? "",
+    country: billingForm.country,
+    enabled: !useShippingAsBilling,
+    onSelect: onBillingLoqateSelect,
+  });
   const [solanaPayOpen, setSolanaPayOpen] = useState(false);
   const [solanaPayUrl, setSolanaPayUrl] = useState<URL | null>(null);
   const [solanaPayOrderId, setSolanaPayOrderId] = useState<string | null>(null);
@@ -1202,143 +1222,7 @@ export function CheckoutClient() {
     setBillingForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Loqate address autocomplete: debounced Find when shipping street/country change (with timeout so 503/slow API doesn't hang)
-  const LOQATE_FIND_TIMEOUT_MS = 10_000;
-  const LOQATE_DEBOUNCE_MS = 200;
-  useEffect(() => {
-    const text = form.street?.trim() ?? "";
-    if (text.length < 2) {
-      setLoqateSuggestions([]);
-      setLoqateOpen(false);
-      return;
-    }
-    if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
-    loqateDebounceRef.current = setTimeout(() => {
-      loqateDebounceRef.current = null;
-      if (skipNextFindRef.current) {
-        skipNextFindRef.current = false;
-        return;
-      }
-      setLoqateLoading(true);
-      if (addressInputFocusedRef.current) setLoqateOpen(true);
-      const params = new URLSearchParams({ text, limit: "6" });
-      if (form.country?.trim()) params.set("countries", form.country.trim());
-      const ac = new AbortController();
-      const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
-      fetch(`/api/loqate/find?${params.toString()}`, { signal: ac.signal })
-        .then((res) => (res.ok ? res.json() : { Items: [] }))
-        .then((data: { Items?: LoqateFindItem[] }) => {
-          setLoqateSuggestions(data.Items ?? []);
-          setLoqateOpen((data.Items?.length ?? 0) > 0);
-        })
-        .catch(() => setLoqateSuggestions([]))
-        .finally(() => {
-          clearTimeout(timeoutId);
-          setLoqateLoading(false);
-        });
-    }, LOQATE_DEBOUNCE_MS);
-    return () => {
-      if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
-    };
-  }, [form.street, form.country]);
-
-  const onSelectLoqateAddress = useCallback((id: string) => {
-    setLoqateLoading(true);
-    fetch(`/api/loqate/retrieve?id=${encodeURIComponent(id)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Retrieve failed");
-        return res.json();
-      })
-      .then((addr) => {
-        const mapped = mapRetrieveToShipping(addr);
-        setForm((prev) => ({
-          ...prev,
-          street: mapped.street,
-          apartment: mapped.apartment || prev.apartment,
-          city: mapped.city,
-          state: mapped.state,
-          zip: mapped.zip,
-          country: mapped.country || prev.country,
-        }));
-        skipNextFindRef.current = true;
-        setLoqateOpen(false);
-        setLoqateSuggestions([]);
-      })
-      .catch(() => {})
-      .finally(() => setLoqateLoading(false));
-  }, []);
-
-  // Loqate for billing address (when billing differs from shipping)
-  useEffect(() => {
-    if (useShippingAsBilling) {
-      setBillingLoqateSuggestions([]);
-      setBillingLoqateOpen(false);
-      return;
-    }
-    const text = billingForm.street?.trim() ?? "";
-    if (text.length < 2) {
-      setBillingLoqateSuggestions([]);
-      setBillingLoqateOpen(false);
-      return;
-    }
-    if (billingLoqateDebounceRef.current)
-      clearTimeout(billingLoqateDebounceRef.current);
-    billingLoqateDebounceRef.current = setTimeout(() => {
-      billingLoqateDebounceRef.current = null;
-      if (skipNextBillingFindRef.current) {
-        skipNextBillingFindRef.current = false;
-        return;
-      }
-      setBillingLoqateLoading(true);
-      if (billingAddressInputFocusedRef.current) setBillingLoqateOpen(true);
-      const params = new URLSearchParams({ text, limit: "6" });
-      if (billingForm.country?.trim())
-        params.set("countries", billingForm.country.trim());
-      const ac = new AbortController();
-      const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
-      fetch(`/api/loqate/find?${params.toString()}`, { signal: ac.signal })
-        .then((res) => (res.ok ? res.json() : { Items: [] }))
-        .then((data: { Items?: LoqateFindItem[] }) => {
-          setBillingLoqateSuggestions(data.Items ?? []);
-          setBillingLoqateOpen((data.Items?.length ?? 0) > 0);
-        })
-        .catch(() => setBillingLoqateSuggestions([]))
-        .finally(() => {
-          clearTimeout(timeoutId);
-          setBillingLoqateLoading(false);
-        });
-    }, LOQATE_DEBOUNCE_MS);
-    return () => {
-      if (billingLoqateDebounceRef.current)
-        clearTimeout(billingLoqateDebounceRef.current);
-    };
-  }, [useShippingAsBilling, billingForm.street, billingForm.country]);
-
-  const onSelectBillingLoqateAddress = useCallback((id: string) => {
-    setBillingLoqateLoading(true);
-    fetch(`/api/loqate/retrieve?id=${encodeURIComponent(id)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Retrieve failed");
-        return res.json();
-      })
-      .then((addr) => {
-        const mapped = mapRetrieveToShipping(addr);
-        setBillingForm((prev) => ({
-          ...prev,
-          street: mapped.street,
-          apartment: mapped.apartment || prev.apartment,
-          city: mapped.city,
-          state: mapped.state,
-          zip: mapped.zip,
-          country: mapped.country || prev.country,
-        }));
-        skipNextBillingFindRef.current = true;
-        setBillingLoqateOpen(false);
-        setBillingLoqateSuggestions([]);
-      })
-      .catch(() => {})
-      .finally(() => setBillingLoqateLoading(false));
-  }, []);
+  // Loqate address autocomplete handled by useLoqateAutocomplete hooks above
 
   const validateShipping = useCallback((): string[] => {
     const err: string[] = [];
@@ -2095,12 +1979,12 @@ export function CheckoutClient() {
                 </div>
                 <div
                   className="relative sm:col-span-2"
-                  ref={addressContainerRef}
+                  ref={shippingLoqate.containerRef}
                 >
                   <Input
                     aria-label="Address"
                     aria-autocomplete="list"
-                    aria-expanded={loqateOpen}
+                    aria-expanded={shippingLoqate.open}
                     aria-invalid={validationErrors.includes(
                       "Address is required",
                     )}
@@ -2113,34 +1997,29 @@ export function CheckoutClient() {
                     value={form.street}
                     onChange={(e) => update("street", e.target.value)}
                     onFocus={() => {
-                      addressInputFocusedRef.current = true;
-                      if (loqateSuggestions.length > 0) setLoqateOpen(true);
-                      // One-time warm-up: prefetch so first real request reuses connection
-                      if (!loqateWarmedRef.current) {
-                        loqateWarmedRef.current = true;
-                        fetch("/api/loqate/find?text=a&limit=1").catch(() => {});
-                      }
+                      shippingLoqate.inputFocusedRef.current = true;
+                      if (shippingLoqate.suggestions.length > 0) shippingLoqate.setOpen(true);
                     }}
                     onBlur={() => {
-                      addressInputFocusedRef.current = false;
+                      shippingLoqate.inputFocusedRef.current = false;
                       setTimeout(() => {
                         if (
-                          !addressContainerRef.current?.contains(
+                          !shippingLoqate.containerRef.current?.contains(
                             document.activeElement,
                           )
                         ) {
-                          setLoqateOpen(false);
+                          shippingLoqate.setOpen(false);
                         }
                       }, 200);
                     }}
                   />
-                  {loqateOpen &&
-                    (loqateSuggestions.length > 0 || loqateLoading) && (
+                  {shippingLoqate.open &&
+                    (shippingLoqate.suggestions.length > 0 || shippingLoqate.loading) && (
                       <div
                         className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
                         role="listbox"
                       >
-                        {loqateLoading && loqateSuggestions.length === 0 ? (
+                        {shippingLoqate.loading && shippingLoqate.suggestions.length === 0 ? (
                           <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
                             <Loader2
                               className="h-4 w-4 animate-spin shrink-0"
@@ -2149,7 +2028,7 @@ export function CheckoutClient() {
                             Finding addresses…
                           </div>
                         ) : (
-                          loqateSuggestions
+                          shippingLoqate.suggestions
                             .filter((item) => item.Type === "Address")
                             .map((item) => (
                               <button
@@ -2159,7 +2038,7 @@ export function CheckoutClient() {
                                 role="option"
                                 onMouseDown={(e) => {
                                   e.preventDefault();
-                                  onSelectLoqateAddress(item.Id);
+                                  shippingLoqate.selectAddress(item.Id);
                                 }}
                               >
                                 <span className="font-medium">{item.Text}</span>
@@ -2627,12 +2506,12 @@ export function CheckoutClient() {
                               </div>
                               <div
                                 className="relative sm:col-span-2"
-                                ref={billingAddressContainerRef}
+                                ref={billingLoqate.containerRef}
                               >
                                 <Input
                                   aria-label="Address (billing)"
                                   aria-autocomplete="list"
-                                  aria-expanded={billingLoqateOpen}
+                                  aria-expanded={billingLoqate.open}
                                   aria-invalid={validationErrors.includes(
                                     "Billing address is required",
                                   )}
@@ -2648,40 +2527,32 @@ export function CheckoutClient() {
                                     updateBilling("street", e.target.value)
                                   }
                                   onFocus={() => {
-                                    billingAddressInputFocusedRef.current =
-                                      true;
-                                    if (billingLoqateSuggestions.length > 0)
-                                      setBillingLoqateOpen(true);
-                                    if (!loqateWarmedRef.current) {
-                                      loqateWarmedRef.current = true;
-                                      fetch(
-                                        "/api/loqate/find?text=a&limit=1",
-                                      ).catch(() => {});
-                                    }
+                                    billingLoqate.inputFocusedRef.current = true;
+                                    if (billingLoqate.suggestions.length > 0)
+                                      billingLoqate.setOpen(true);
                                   }}
                                   onBlur={() => {
-                                    billingAddressInputFocusedRef.current =
-                                      false;
+                                    billingLoqate.inputFocusedRef.current = false;
                                     setTimeout(() => {
                                       if (
-                                        !billingAddressContainerRef.current?.contains(
+                                        !billingLoqate.containerRef.current?.contains(
                                           document.activeElement,
                                         )
                                       ) {
-                                        setBillingLoqateOpen(false);
+                                        billingLoqate.setOpen(false);
                                       }
                                     }, 200);
                                   }}
                                 />
-                                {billingLoqateOpen &&
-                                  (billingLoqateSuggestions.length > 0 ||
-                                    billingLoqateLoading) && (
+                                {billingLoqate.open &&
+                                  (billingLoqate.suggestions.length > 0 ||
+                                    billingLoqate.loading) && (
                                     <div
                                       className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
                                       role="listbox"
                                     >
-                                      {billingLoqateLoading &&
-                                      billingLoqateSuggestions.length === 0 ? (
+                                      {billingLoqate.loading &&
+                                      billingLoqate.suggestions.length === 0 ? (
                                         <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
                                           <Loader2
                                             className="h-4 w-4 animate-spin shrink-0"
@@ -2690,7 +2561,7 @@ export function CheckoutClient() {
                                           Finding addresses…
                                         </div>
                                       ) : (
-                                        billingLoqateSuggestions
+                                        billingLoqate.suggestions
                                           .filter(
                                             (item) => item.Type === "Address",
                                           )
@@ -2702,7 +2573,7 @@ export function CheckoutClient() {
                                               role="option"
                                               onMouseDown={(e) => {
                                                 e.preventDefault();
-                                                onSelectBillingLoqateAddress(
+                                                billingLoqate.selectAddress(
                                                   item.Id,
                                                 );
                                               }}

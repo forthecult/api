@@ -13,6 +13,7 @@ import { eq, and, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { conn, db } from "~/db";
+import { slugify } from "~/lib/slugify";
 import {
   productAvailableCountryTable,
   productsTable,
@@ -20,56 +21,6 @@ import {
   productImagesTable,
   sizeChartsTable,
 } from "~/db/schema";
-
-/** Ensure product_variant has Printful/Printify columns. Returns true if columns exist (or were added), false if not (e.g. no ALTER permission). */
-let ensureColumnsPromise: Promise<boolean> | null = null;
-async function ensurePrintfulPrintifyVariantColumns(): Promise<boolean> {
-  if (ensureColumnsPromise != null) return ensureColumnsPromise;
-  ensureColumnsPromise = (async () => {
-    const stmts = [
-      // Use BIGINT: Printful sync variant IDs can exceed 32-bit INTEGER max (2,147,483,647)
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
-      // Upgrade existing INTEGER columns to BIGINT (safe, no data loss)
-      `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
-    ];
-    for (const sql of stmts) {
-      try {
-        await conn.unsafe(sql);
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : String(e);
-        console.warn(
-          "[Printful sync] Could not add column (run once with a user that has ALTER: bun run db:ensure-printful-printify or psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql):",
-          msg,
-        );
-        return false;
-      }
-    }
-    // Best-effort: upgrade product table column too (non-blocking for variant sync)
-    try {
-      await conn.unsafe(`ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`);
-    } catch (e) {
-      console.warn("[Printful sync] Could not upgrade product.printful_sync_product_id to BIGINT:", (e as Error).message);
-    }
-    try {
-      await conn.unsafe(
-        "SELECT id, printful_sync_variant_id FROM product_variant LIMIT 0",
-      );
-      return true;
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (msg.includes("printful_sync_variant_id") || msg.includes("does not exist")) {
-        console.warn(
-          "[Printful sync] Column printful_sync_variant_id missing after ALTER. Run: bun run db:ensure-printful-printify",
-        );
-        return false;
-      }
-      throw e;
-    }
-  })();
-  return ensureColumnsPromise;
-}
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { POD_SHIPPING_COUNTRY_CODES } from "~/lib/pod-shipping-countries";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
@@ -82,12 +33,43 @@ import {
   fetchProductSizeGuideSafe,
   fetchVariantPrices,
   updateSyncProduct,
-  updateSyncVariant,
   getPrintfulIfConfigured,
   type PrintfulSyncProduct,
-  type PrintfulSyncProductFull,
   type PrintfulSyncVariant,
 } from "./printful";
+
+/**
+ * Ensure product_variant has Printful/Printify columns with correct types.
+ * BIGINT is required because Printful sync variant IDs exceed 32-bit INTEGER max (2,147,483,647).
+ * Runs once per process; safe to call repeatedly.
+ */
+let ensureColumnsPromise: Promise<void> | null = null;
+async function ensurePrintfulColumns(): Promise<void> {
+  if (ensureColumnsPromise != null) return ensureColumnsPromise;
+  ensureColumnsPromise = (async () => {
+    const stmts = [
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
+      `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
+    ];
+    for (const sql of stmts) {
+      try {
+        await conn.unsafe(sql);
+      } catch (e) {
+        console.warn(
+          "[Printful sync] Column setup failed. Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql",
+          (e as Error).message,
+        );
+      }
+    }
+    // Best-effort: upgrade product table too
+    try {
+      await conn.unsafe(`ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`);
+    } catch { /* non-blocking */ }
+  })();
+  return ensureColumnsPromise;
+}
 
 // ============================================================================
 // Types
@@ -320,7 +302,7 @@ export async function importSinglePrintfulProduct(
   printfulSyncProductId: number,
   overwriteExisting = false,
 ): Promise<{ action: "imported" | "updated" | "skipped"; productId: string }> {
-  await ensurePrintfulPrintifyVariantColumns();
+  await ensurePrintfulColumns();
   // Fetch full product details including variants. Printful often returns empty sync_variants
   // right after publish; retry with delays so admin sync reliably gets size/color for the storefront.
   let syncProductFull = await fetchSyncProduct(printfulSyncProductId);
@@ -1053,17 +1035,10 @@ async function updateLocalProductFromPrintful(
       type VariantRow = (typeof existingVariants)[number];
       const existingVariantMap = new Map<number | null, VariantRow[]>();
       for (const v of existingVariants) {
-        const raw = v.printfulSyncVariantId;
-        const key =
-          raw == null
-            ? null
-            : typeof raw === "number"
-              ? raw
-              : Number.parseInt(String(raw), 10);
-        const keyNorm = key !== null && !Number.isNaN(key) ? key : null;
-        const list = existingVariantMap.get(keyNorm) ?? [];
+        const key = v.printfulSyncVariantId ?? null;
+        const list = existingVariantMap.get(key) ?? [];
         list.push(v);
-        existingVariantMap.set(keyNorm, list);
+        existingVariantMap.set(key, list);
       }
       const matchedLocalIds = new Set<string>();
 
@@ -1097,15 +1072,8 @@ async function updateLocalProductFromPrintful(
 
       // Remove variants no longer in Printful
       for (const v of existingVariants) {
-        const syncId =
-          typeof v.printfulSyncVariantId === "number"
-            ? v.printfulSyncVariantId
-            : Number.parseInt(String(v.printfulSyncVariantId ?? ""), 10);
-        if (
-          !Number.isNaN(syncId) &&
-          syncId > 0 &&
-          !incomingVariantIds.has(syncId)
-        ) {
+        const syncId = v.printfulSyncVariantId;
+        if (syncId != null && syncId > 0 && !incomingVariantIds.has(syncId)) {
           await db
             .delete(productVariantsTable)
             .where(eq(productVariantsTable.id, v.id));
@@ -1168,110 +1136,74 @@ async function deleteUnreferencedPrintfulVariants(productId: string): Promise<nu
 
 /**
  * Create or update a local variant from Printful sync variant data.
- * Printful has two IDs we store: printfulSyncVariantId (sync variant id) and externalId (catalog_variant_id for shipping).
- * We try UPDATE first by (productId, printfulSyncVariantId) to avoid ON CONFLICT issues; then INSERT if no row exists.
+ * Stores two Printful IDs: printfulSyncVariantId (sync variant id) and externalId (catalog_variant_id for shipping).
+ * Uses upsert pattern: find existing by printfulSyncVariantId → update, else insert.
  */
 async function createLocalVariantFromPrintful(
   productId: string,
   syncVariant: PrintfulSyncVariant,
 ): Promise<string> {
-  const columnsOk = await ensurePrintfulPrintifyVariantColumns();
   const now = new Date();
-
   const priceCents = Math.round(
     Number.parseFloat(String(syncVariant.retail_price || "0")) * 100,
   );
   const safePriceCents = Number.isFinite(priceCents) ? priceCents : 0;
-
   const imageUrl = getPrintfulVariantImageUrl(syncVariant);
   const size = getVariantSize(syncVariant);
   const color = getVariantColor(syncVariant);
-
   const labelRaw = (syncVariant.name ?? "").trim();
-  const labelFallback =
-    [size, color].filter(Boolean).join(" / ") || "Variant";
-  const label = labelRaw || labelFallback;
-
+  const label = labelRaw || [size, color].filter(Boolean).join(" / ") || "Variant";
   const externalId = String(syncVariant.variant_id);
   const printfulSyncVariantId = syncVariant.id;
 
-  // When columns are missing (e.g. no ALTER permission), only insert with base columns so external_id is set for shipping
-  if (!columnsOk) {
-    const variantId = nanoid();
-    await conn`
-      INSERT INTO product_variant (id, product_id, external_id, size, color, sku, label, price_cents, image_url, availability_status, created_at, updated_at)
-      VALUES (${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null}, ${syncVariant.sku ?? null}, ${label}, ${safePriceCents}, ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now})
-    `;
-    return variantId;
+  const variantFields = {
+    externalId,
+    printfulSyncVariantId,
+    size: size ?? null,
+    color: color ?? null,
+    sku: syncVariant.sku ?? null,
+    label,
+    priceCents: safePriceCents,
+    imageUrl: imageUrl ?? null,
+    availabilityStatus: syncVariant.availability_status ?? null,
+    updatedAt: now,
+  };
+
+  // 1) Find existing variant by (productId, printfulSyncVariantId) → update
+  const [existing] = await db
+    .select({ id: productVariantsTable.id })
+    .from(productVariantsTable)
+    .where(
+      and(
+        eq(productVariantsTable.productId, productId),
+        eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(productVariantsTable)
+      .set(variantFields)
+      .where(eq(productVariantsTable.id, existing.id));
+    return existing.id;
   }
 
-  // 1) Find existing row by (productId, printfulSyncVariantId) using raw SQL
-  let existingId: string | null = null;
-  try {
-    const rows = await conn`
-      SELECT id FROM product_variant
-      WHERE product_id = ${productId} AND printful_sync_variant_id = ${printfulSyncVariantId}
-      LIMIT 1
-    `;
-    const first = Array.isArray(rows) ? rows[0] : null;
-    if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
-      existingId = first.id;
-    }
-  } catch (_) {
-    try {
-      const rows = await conn`
-        SELECT id FROM product_variant
-        WHERE product_id = ${productId} AND printful_sync_variant_id::text = ${String(printfulSyncVariantId)}
-        LIMIT 1
-      `;
-      const first = Array.isArray(rows) ? rows[0] : null;
-      if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
-        existingId = first.id;
-      }
-    } catch (_2) {
-      /* ignore */
-    }
-  }
-
-  if (existingId) {
-    await conn`
-      UPDATE product_variant SET
-        external_id = ${externalId},
-        printful_sync_variant_id = ${printfulSyncVariantId},
-        size = ${size ?? null},
-        color = ${color ?? null},
-        sku = ${syncVariant.sku ?? null},
-        label = ${label},
-        price_cents = ${safePriceCents},
-        image_url = ${imageUrl ?? null},
-        availability_status = ${syncVariant.availability_status ?? null},
-        updated_at = ${now}
-      WHERE id = ${existingId}
-    `;
-    return existingId;
-  }
-
-  // 2) No existing row: insert with raw SQL
+  // 2) No existing row → insert
   const variantId = nanoid();
   try {
-    await conn`
-      INSERT INTO product_variant (
-        id, product_id, external_id, size, color, sku, label, price_cents,
-        image_url, availability_status, created_at, updated_at, printful_sync_variant_id
-      ) VALUES (
-        ${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null},
-        ${syncVariant.sku ?? null}, ${label}, ${safePriceCents},
-        ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now},
-        ${printfulSyncVariantId}
-      )
-    `;
+    await db.insert(productVariantsTable).values({
+      id: variantId,
+      productId,
+      ...variantFields,
+      createdAt: now,
+    });
     return variantId;
   } catch (err) {
+    // Race condition: another process inserted between our SELECT and INSERT
     const msg = err instanceof Error ? err.message : String(err);
-    // On any INSERT failure, try to find existing row and UPDATE (handles duplicate key, constraint, etc.)
-    let existingId: string | null = null;
-    try {
-      const [existingRow] = await db
+    if (msg.includes("duplicate") || msg.includes("unique constraint")) {
+      const [found] = await db
         .select({ id: productVariantsTable.id })
         .from(productVariantsTable)
         .where(
@@ -1281,120 +1213,16 @@ async function createLocalVariantFromPrintful(
           ),
         )
         .limit(1);
-      if (existingRow) existingId = existingRow.id;
-    } catch (_) {
-      // Drizzle SELECT failed; try raw SQL in case driver/schema is out of sync
-      try {
-        const rows = await conn`
-          SELECT id FROM product_variant
-          WHERE product_id = ${productId} AND printful_sync_variant_id = ${printfulSyncVariantId}
-          LIMIT 1
-        `;
-        const first = Array.isArray(rows) ? rows[0] : null;
-        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
-          existingId = first.id;
-        }
-      } catch (_2) {
-        /* column or table missing */
+      if (found) {
+        await db
+          .update(productVariantsTable)
+          .set(variantFields)
+          .where(eq(productVariantsTable.id, found.id));
+        return found.id;
       }
-    }
-    // Type mismatch: DB may store bigint as string; match by text comparison
-    if (!existingId) {
-      try {
-        const rows = await conn`
-          SELECT id FROM product_variant
-          WHERE product_id = ${productId} AND printful_sync_variant_id::text = ${String(printfulSyncVariantId)}
-          LIMIT 1
-        `;
-        const first = Array.isArray(rows) ? rows[0] : null;
-        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
-          existingId = first.id;
-        }
-      } catch (_2) {
-        /* ignore */
-      }
-    }
-    // By (product_id, external_id) – row may have been created with external_id but null printful_sync_variant_id
-    if (!existingId) {
-      try {
-        const rows = await conn`
-          SELECT id FROM product_variant
-          WHERE product_id = ${productId} AND external_id = ${externalId}
-          LIMIT 1
-        `;
-        const first = Array.isArray(rows) ? rows[0] : null;
-        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
-          existingId = first.id;
-        }
-      } catch (_2) {
-        /* ignore */
-      }
-    }
-    // By (product_id, size, color, label) – legacy row with null ids
-    if (!existingId) {
-      try {
-        const rows = await conn`
-          SELECT id FROM product_variant
-          WHERE product_id = ${productId}
-            AND (size IS NOT DISTINCT FROM ${size ?? null})
-            AND (color IS NOT DISTINCT FROM ${color ?? null})
-            AND (label IS NOT DISTINCT FROM ${label})
-          LIMIT 1
-        `;
-        const first = Array.isArray(rows) ? rows[0] : null;
-        if (first && first != null && typeof first === "object" && "id" in first && typeof first.id === "string") {
-          existingId = first.id;
-        }
-      } catch (_2) {
-        /* ignore */
-      }
-    }
-    if (existingId) {
-      // Always use raw SQL for the update so we don't depend on Drizzle; ensures external_id is set for shipping
-      try {
-        await conn`
-          UPDATE product_variant SET
-            external_id = ${externalId},
-            printful_sync_variant_id = ${printfulSyncVariantId},
-            size = ${size ?? null},
-            color = ${color ?? null},
-            sku = ${syncVariant.sku ?? null},
-            label = ${label},
-            price_cents = ${safePriceCents},
-            image_url = ${imageUrl ?? null},
-            availability_status = ${syncVariant.availability_status ?? null},
-            updated_at = ${now}
-          WHERE id = ${existingId}
-        `;
-        console.log("[Printful sync] Updated existing variant", existingId, "with external_id for shipping");
-      } catch (updateErr) {
-        console.error("[Printful sync] Update existing variant failed:", updateErr);
-        throw updateErr;
-      }
-      return existingId;
-    }
-    // Column missing: fallback INSERT without printful_sync_variant_id so external_id is stored
-    const columnMissing =
-      (msg.includes("does not exist") && msg.includes("printful_sync_variant_id")) ||
-      (msg.includes("does not exist") && msg.includes("column"));
-    if (columnMissing) {
-      try {
-        await conn`INSERT INTO product_variant (id, product_id, external_id, size, color, sku, label, price_cents, image_url, availability_status, created_at, updated_at)
-          VALUES (${variantId}, ${productId}, ${externalId}, ${size ?? null}, ${color ?? null}, ${syncVariant.sku ?? null}, ${label}, ${safePriceCents}, ${imageUrl ?? null}, ${syncVariant.availability_status ?? null}, ${now}, ${now})`;
-      } catch (fallbackErr) {
-        const fallbackMsg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-        console.error("[Printful sync] First insert failed:", msg);
-        console.error("[Printful sync] Fallback insert failed:", fallbackMsg);
-        throw new Error(
-          `Printful sync failed. If columns are missing run: bun run db:ensure-printful-printify then re-sync. Details: ${fallbackMsg}`,
-        );
-      }
-      return variantId;
     }
     throw err;
   }
-
-  return variantId;
 }
 
 /**
@@ -1666,16 +1494,6 @@ export async function handleProductDeleted(data: {
 // Utilities
 // ============================================================================
 
-/**
- * Convert a string to a URL-friendly slug.
- */
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(0, 100);
-}
 
 /**
  * Get sync status for a product.

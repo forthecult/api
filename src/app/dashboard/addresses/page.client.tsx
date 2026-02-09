@@ -2,7 +2,7 @@
 
 import { Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import {
   createAddress,
@@ -11,8 +11,8 @@ import {
   updateAddress,
 } from "~/app/dashboard/addresses/actions";
 import type { Address } from "~/db/schema/addresses/types";
-import type { LoqateFindItem } from "~/lib/loqate";
-import { mapRetrieveToShipping } from "~/lib/loqate";
+import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
+import type { MappedShippingAddress } from "~/lib/loqate";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -83,8 +83,6 @@ function formatAddress(addr: Address): string {
   return parts.join(", ");
 }
 
-const LOQATE_FIND_TIMEOUT_MS = 10_000;
-
 export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const router = useRouter();
   const [addOpen, setAddOpen] = useState(false);
@@ -92,90 +90,34 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const [editing, setEditing] = useState<Address | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [pending, setPending] = useState(false);
-  const [loqateSuggestions, setLoqateSuggestions] = useState<LoqateFindItem[]>(
+  const onLoqateSelect = useCallback(
+    (mapped: MappedShippingAddress) => {
+      setForm((prev) => ({
+        ...prev,
+        address1: mapped.street,
+        address2: mapped.apartment || prev.address2,
+        city: mapped.city,
+        stateCode: mapped.state,
+        zip: mapped.zip,
+        countryCode: mapped.country || prev.countryCode,
+      }));
+    },
     [],
   );
-  const [loqateLoading, setLoqateLoading] = useState(false);
-  const [loqateOpen, setLoqateOpen] = useState(false);
-  const loqateDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const skipNextFindRef = useRef(false);
+
+  const loqate = useLoqateAutocomplete({
+    text: form.address1 ?? "",
+    country: form.countryCode,
+    enabled: addOpen,
+    onSelect: onLoqateSelect,
+  });
 
   const openAdd = () => {
     setEditing(null);
     setForm(emptyForm);
-    setLoqateSuggestions([]);
-    setLoqateOpen(false);
+    loqate.reset();
     setAddOpen(true);
   };
-
-  // Loqate address finder: debounced Find when Add modal is open and address1/countryCode change
-  useEffect(() => {
-    if (!addOpen) {
-      setLoqateSuggestions([]);
-      setLoqateOpen(false);
-      return;
-    }
-    const text = form.address1?.trim() ?? "";
-    if (text.length < 2) {
-      setLoqateSuggestions([]);
-      setLoqateOpen(false);
-      return;
-    }
-    if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
-    loqateDebounceRef.current = setTimeout(() => {
-      loqateDebounceRef.current = null;
-      if (skipNextFindRef.current) {
-        skipNextFindRef.current = false;
-        return;
-      }
-      setLoqateLoading(true);
-      const params = new URLSearchParams({ text });
-      if (form.countryCode?.trim())
-        params.set("countries", form.countryCode.trim());
-      const ac = new AbortController();
-      const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
-      fetch(`/api/loqate/find?${params.toString()}`, { signal: ac.signal })
-        .then((res) => (res.ok ? res.json() : { Items: [] }))
-        .then((data: { Items?: LoqateFindItem[] }) => {
-          setLoqateSuggestions(data.Items ?? []);
-          setLoqateOpen((data.Items?.length ?? 0) > 0);
-        })
-        .catch(() => setLoqateSuggestions([]))
-        .finally(() => {
-          clearTimeout(timeoutId);
-          setLoqateLoading(false);
-        });
-    }, 300);
-    return () => {
-      if (loqateDebounceRef.current) clearTimeout(loqateDebounceRef.current);
-    };
-  }, [addOpen, form.address1, form.countryCode]);
-
-  const onSelectLoqateAddress = useCallback((id: string) => {
-    setLoqateLoading(true);
-    fetch(`/api/loqate/retrieve?id=${encodeURIComponent(id)}`)
-      .then((res) => {
-        if (!res.ok) throw new Error("Retrieve failed");
-        return res.json();
-      })
-      .then((addr) => {
-        const mapped = mapRetrieveToShipping(addr);
-        setForm((prev) => ({
-          ...prev,
-          address1: mapped.street,
-          address2: mapped.apartment || prev.address2,
-          city: mapped.city,
-          stateCode: mapped.state,
-          zip: mapped.zip,
-          countryCode: mapped.country || prev.countryCode,
-        }));
-        skipNextFindRef.current = true;
-        setLoqateOpen(false);
-        setLoqateSuggestions([]);
-      })
-      .catch(() => {})
-      .finally(() => setLoqateLoading(false));
-  }, []);
 
   const openEdit = (addr: Address) => {
     setEditing(addr);
@@ -288,28 +230,30 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                     <Input
                       id="add-address1"
                       aria-autocomplete="list"
-                      aria-expanded={loqateOpen}
+                      aria-expanded={loqate.open}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, address1: e.target.value }))
                       }
                       onFocus={() => {
-                        if (loqateSuggestions.length > 0) setLoqateOpen(true);
+                        loqate.inputFocusedRef.current = true;
+                        if (loqate.suggestions.length > 0) loqate.setOpen(true);
                       }}
                       onBlur={() => {
-                        setTimeout(() => setLoqateOpen(false), 200);
+                        loqate.inputFocusedRef.current = false;
+                        setTimeout(() => loqate.setOpen(false), 200);
                       }}
                       placeholder="Start typing to search address"
                       required
                       value={form.address1}
                     />
-                    {loqateOpen &&
-                      (loqateSuggestions.length > 0 || loqateLoading) && (
+                    {loqate.open &&
+                      (loqate.suggestions.length > 0 || loqate.loading) && (
                         <div
                           className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
                           role="listbox"
                         >
-                          {loqateLoading &&
-                          loqateSuggestions.length === 0 ? (
+                          {loqate.loading &&
+                          loqate.suggestions.length === 0 ? (
                             <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
                               <Loader2
                                 className="h-4 w-4 shrink-0 animate-spin"
@@ -318,7 +262,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                               Finding addresses…
                             </div>
                           ) : (
-                            loqateSuggestions
+                            loqate.suggestions
                               .filter((item) => item.Type === "Address")
                               .map((item) => (
                                 <button
@@ -331,7 +275,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                                   role="option"
                                   onMouseDown={(e) => {
                                     e.preventDefault();
-                                    onSelectLoqateAddress(item.Id);
+                                    loqate.selectAddress(item.Id);
                                   }}
                                 >
                                   <span className="font-medium">

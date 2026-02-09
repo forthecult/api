@@ -9,6 +9,7 @@
 
 import { and, eq } from "drizzle-orm";
 
+import { getServerBaseUrl } from "~/lib/app-url";
 import { db } from "~/db";
 import { accountTable, ordersTable, userTable } from "~/db/schema";
 import { getNotificationTemplate } from "~/lib/notification-templates";
@@ -33,11 +34,7 @@ export interface OrderNotificationOptions {
 const TELEGRAM_API_BASE = "https://api.telegram.org";
 
 function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.trim() ||
-    process.env.NEXT_SERVER_APP_URL?.trim() ||
-    "https://forthecult.store"
-  ).replace(/\/$/, "");
+  return getServerBaseUrl().replace(/\/$/, "");
 }
 
 function buildMessage(

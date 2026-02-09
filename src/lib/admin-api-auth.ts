@@ -7,9 +7,12 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY?.trim() ?? "";
 
 /** Timing-safe comparison to prevent key extraction via timing attacks. */
 function constantTimeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  const bufA = Buffer.from(a, "utf8");
-  const bufB = Buffer.from(b, "utf8");
+  // Coerce to string so Buffer.from never receives a Date or other non-string (avoids Node error)
+  const sA = typeof a === "string" ? a : String(a);
+  const sB = typeof b === "string" ? b : String(b);
+  if (sA.length !== sB.length) return false;
+  const bufA = Buffer.from(sA, "utf8");
+  const bufB = Buffer.from(sB, "utf8");
   if (bufA.length !== bufB.length) return false;
   return crypto.timingSafeEqual(bufA, bufB);
 }

@@ -12,7 +12,7 @@ import {
   getPrintifyIfConfigured,
   type PrintifyWebhookEventType,
 } from "~/lib/printify";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /** All webhook topics we want to subscribe to for full sync */
 const REQUIRED_WEBHOOK_TOPICS: PrintifyWebhookEventType[] = [
@@ -32,12 +32,9 @@ const REQUIRED_WEBHOOK_TOPICS: PrintifyWebhookEventType[] = [
  * List all registered Printify webhooks for the shop.
  */
 export async function GET(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintifyIfConfigured();
@@ -84,12 +81,9 @@ export async function GET(request: NextRequest) {
  * - { action: "delete_all" } - Delete all webhooks
  */
 export async function POST(request: NextRequest) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  if (!session?.user) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-  if (!isAdminUser(session.user)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const pf = getPrintifyIfConfigured();

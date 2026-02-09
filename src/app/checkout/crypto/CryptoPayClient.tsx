@@ -45,7 +45,13 @@ import { Button } from "~/ui/primitives/button";
 
 import { openConnectWalletModal } from "./open-wallet-modal";
 
-const EXPIRY_MINUTES = 60;
+import {
+  useCryptoOrder,
+  type OrderPaymentInfo,
+} from "~/hooks/use-crypto-order";
+import { useCryptoPrices } from "~/hooks/use-crypto-prices";
+import { usePaymentCountdown } from "~/hooks/use-payment-countdown";
+
 const SOL_USD_FALLBACK = 200;
 
 const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
@@ -66,15 +72,6 @@ const PAYMENT_TITLE: Record<string, string> = {
   sui: "Pay with Sui",
 };
 
-function getInitialTimeLeft(expiresAt: string | null): number {
-  if (!expiresAt) return EXPIRY_MINUTES * 60;
-  const ts = expiresAt.includes("T")
-    ? Date.parse(expiresAt)
-    : Number(expiresAt);
-  if (!Number.isFinite(ts)) return EXPIRY_MINUTES * 60;
-  return Math.max(0, Math.floor((ts - Date.now()) / 1000));
-}
-
 const LAMPORTS_PER_SOL = 1e9;
 const TX_FEE_BUFFER_LAMPORTS = 10_000;
 /** Minimum SOL needed for tx fee (and possible ATA creation) when paying with SPL token */
@@ -94,14 +91,6 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}.....${address.slice(-4)}`;
 }
 
-type OrderPaymentInfo = {
-  orderId: string;
-  depositAddress: string;
-  totalCents: number;
-  email?: string;
-  expiresAt: string;
-};
-
 export function CryptoPayClient() {
   const { connection } = useConnection();
   const { connected, publicKey, wallet, disconnect, sendTransaction } =
@@ -113,9 +102,6 @@ export function CryptoPayClient() {
   const [token, setToken] = useState<
     "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "sui"
   >("usdc");
-  const [order, setOrder] = useState<OrderPaymentInfo | null>(null);
-  const [orderLoading, setOrderLoading] = useState(true);
-  const [orderError, setOrderError] = useState<string | null>(null);
   const [suiFromHash, setSuiFromHash] = useState<{
     amountUsd: number;
     expiresAt: string;
@@ -123,17 +109,21 @@ export function CryptoPayClient() {
   const [hashParsed, setHashParsed] = useState(false);
 
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
-  const [timeLeft, setTimeLeft] = useState(EXPIRY_MINUTES * 60);
-  const [solUsdRate, setSolUsdRate] = useState<number | null>(null);
-  const [suiUsdRate, setSuiUsdRate] = useState<number | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<URL | null>(null);
   const [suiPaymentUri, setSuiPaymentUri] = useState<string | null>(null);
   const [paymentAddress, setPaymentAddress] = useState<string>("");
   const [payStatus, setPayStatus] = useState<PayStatus>("idle");
   const [payError, setPayError] = useState<string | null>(null);
-  const [crustPriceUsd, setCrustPriceUsd] = useState<number | null>(null);
-  const [pumpPriceUsd, setPumpPriceUsd] = useState<number | null>(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
+    orderId: pathId,
+    token,
+    enabled: mounted && hashParsed,
+    suiFromHash,
+  });
+  const { solUsdRate, suiUsdRate, crustPriceUsd, pumpPriceUsd } =
+    useCryptoPrices();
 
   useEffect(() => {
     setMounted(true);
@@ -174,54 +164,6 @@ export function CryptoPayClient() {
     setHashParsed(true);
   }, [mounted]);
 
-  useEffect(() => {
-    if (!hashParsed) return;
-    if (token === "sui") {
-      setOrderLoading(false);
-      setOrderError(
-        suiFromHash
-          ? null
-          : "Invalid Sui link: missing amount or expiry in URL hash.",
-      );
-      if (suiFromHash) setTimeLeft(getInitialTimeLeft(suiFromHash.expiresAt));
-      return;
-    }
-    if (!pathId?.trim() || !mounted) {
-      setOrderLoading(false);
-      setOrderError(!pathId?.trim() ? "Missing order" : null);
-      return;
-    }
-    let cancelled = false;
-    setOrderLoading(true);
-    setOrderError(null);
-    fetch(`/api/checkout/orders/${encodeURIComponent(pathId)}`)
-      .then((res) => {
-        if (!res.ok) {
-          if (res.status === 404) throw new Error("Order not found");
-          throw new Error("Failed to load order");
-        }
-        return res.json();
-      })
-      .then((data: OrderPaymentInfo) => {
-        if (!cancelled) {
-          setOrder(data);
-          setTimeLeft(getInitialTimeLeft(data.expiresAt));
-        }
-      })
-      .catch((err) => {
-        if (!cancelled)
-          setOrderError(
-            err instanceof Error ? err.message : "Failed to load order",
-          );
-      })
-      .finally(() => {
-        if (!cancelled) setOrderLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [token, pathId, mounted, hashParsed, suiFromHash]);
-
   const amountUsd =
     token === "sui" && suiFromHash
       ? suiFromHash.amountUsd
@@ -232,6 +174,8 @@ export function CryptoPayClient() {
     token === "sui" && suiFromHash
       ? suiFromHash.expiresAt
       : (order?.expiresAt ?? null);
+
+  const { isExpired, formattedTime } = usePaymentCountdown({ expiresAt });
 
   const rate = solUsdRate ?? SOL_USD_FALLBACK;
   const crustSolPerToken =
@@ -293,25 +237,6 @@ export function CryptoPayClient() {
             : token === "sui"
               ? "Sui (SUI)"
               : "Solana";
-
-  // Use cached /api/crypto/prices for all crypto prices (single request, server caches 60s)
-  useEffect(() => {
-    fetch("/api/crypto/prices")
-      .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number }) => {
-        if (typeof data?.SOL === "number" && data.SOL > 0)
-          setSolUsdRate(data.SOL);
-        if (typeof data?.CRUST === "number" && data.CRUST > 0)
-          setCrustPriceUsd(data.CRUST);
-        if (typeof data?.PUMP === "number" && data.PUMP > 0)
-          setPumpPriceUsd(data.PUMP);
-      })
-      .catch(() => {
-        setSolUsdRate(SOL_USD_FALLBACK);
-        setCrustPriceUsd(null);
-        setPumpPriceUsd(null);
-      });
-  }, []);
 
   useEffect(() => {
     if (token === "sui") {
@@ -404,9 +329,8 @@ export function CryptoPayClient() {
     order?.orderId,
   ]);
 
-  const expired = timeLeft === 0;
   const showQrView =
-    !expired && (token === "sui" ? true : !connected || payStatus === "idle");
+    !isExpired && (token === "sui" ? true : !connected || payStatus === "idle");
   const qrUrlString =
     token === "sui" ? suiPaymentUri : (paymentUrl?.toString() ?? null);
   useEffect(() => {
@@ -440,7 +364,7 @@ export function CryptoPayClient() {
   // poll for Solana Pay confirmation when user pays to dynamic deposit address (solana/usdc/crust/whitewhale)
   const solanaPayPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
-    if (token === "sui" || !order?.depositAddress || amountUsd <= 0 || expired)
+    if (token === "sui" || !order?.depositAddress || amountUsd <= 0 || isExpired)
       return;
     const splTokenMint =
       token === "crust"
@@ -529,34 +453,13 @@ export function CryptoPayClient() {
     order?.depositAddress,
     order?.orderId,
     amountUsd,
-    expired,
+    isExpired,
     crustSolPerToken,
     pumpSolPerToken,
     rate,
     router,
     publicKey,
   ]);
-
-  useEffect(() => {
-    setTimeLeft(getInitialTimeLeft(expiresAt));
-  }, [expiresAt]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (expiresAt) {
-        const ts = expiresAt.includes("T")
-          ? Date.parse(expiresAt)
-          : Number(expiresAt);
-        if (Number.isFinite(ts)) {
-          const remaining = Math.max(0, Math.floor((ts - Date.now()) / 1000));
-          setTimeLeft(remaining);
-          return;
-        }
-      }
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [expiresAt]);
 
   const copyAddress = useCallback(() => {
     if (paymentAddress) {
@@ -905,10 +808,6 @@ export function CryptoPayClient() {
     router.push("/checkout");
   }, [router]);
 
-  const minutes = Math.floor(timeLeft / 60);
-  const seconds = timeLeft % 60;
-  const expiryDisplay = `${minutes}:${seconds.toString().padStart(2, "0")}`;
-
   const logo = PAYMENT_LOGO[token] ?? PAYMENT_LOGO.solana;
   const title = PAYMENT_TITLE[token] ?? PAYMENT_TITLE.solana;
 
@@ -1000,7 +899,7 @@ export function CryptoPayClient() {
                     Back to checkout
                   </Link>
                 </div>
-              ) : expired ? (
+              ) : isExpired ? (
                 <div className="flex flex-col gap-6">
                   <div>
                     <div className="mb-2 flex items-center gap-2">
@@ -1140,7 +1039,7 @@ export function CryptoPayClient() {
                       <div className="text-base">
                         <p className="mb-1 text-muted-foreground">Expires in</p>
                         <p className="font-mono font-medium tabular-nums">
-                          {expiryDisplay}
+                          {formattedTime}
                         </p>
                       </div>
                     </div>
@@ -1285,7 +1184,7 @@ export function CryptoPayClient() {
                 </div>
               )}
 
-              {!expired && token === "sui" && suiPaymentUri && (
+              {!isExpired && token === "sui" && suiPaymentUri && (
                 <div className="flex justify-center">
                   <Button className="min-w-[12rem]" size="lg" asChild>
                     <a
@@ -1298,7 +1197,7 @@ export function CryptoPayClient() {
                   </Button>
                 </div>
               )}
-              {!expired &&
+              {!isExpired &&
                 token !== "sui" &&
                 (!connected || payStatus === "idle") && (
                   <div className="flex justify-center">

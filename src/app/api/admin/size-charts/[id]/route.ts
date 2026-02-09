@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { sizeChartsTable } from "~/db/schema";
-import { requireAdmin } from "~/lib/api-auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import { apiError } from "~/lib/api-error";
 
 const PROVIDERS = ["printful", "printify", "manual"] as const;
@@ -16,8 +16,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdmin(request);
-  if (!auth.ok) return auth.response;
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
@@ -35,8 +37,10 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdmin(request);
-  if (!auth.ok) return auth.response;
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
@@ -68,8 +72,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const auth = await requireAdmin(request);
-  if (!auth.ok) return auth.response;
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });

@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { supportChatConversationTable } from "~/db/schema";
-import { auth, isAdminUser } from "~/lib/auth";
+import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * POST /api/admin/support-chat/conversations/[id]/takeover
@@ -14,12 +14,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth.api.getSession({ headers: request.headers });
-    if (!session?.user?.id) {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    if (!isAdminUser(session.user)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const { id: conversationId } = await params;
@@ -43,7 +40,7 @@ export async function POST(
       );
     }
 
-    const adminUserId = session.user.id;
+    const adminUserId = authResult.method === "session" ? authResult.user.id : null;
     const now = new Date();
     await db
       .update(supportChatConversationTable)

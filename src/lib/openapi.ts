@@ -635,70 +635,12 @@ export const openApiSpec = {
         },
       },
     },
-    "/shipping/estimate": {
-      post: {
-        tags: ["Checkout"],
-        summary: "Get shipping options and cost",
-        description:
-          "Estimate shipping for a country and optional line items. Same contract as /shipping/calculate. No auth required.",
-        operationId: "postShippingEstimate",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["countryCode"],
-                properties: {
-                  countryCode: {
-                    type: "string",
-                    description: "ISO 2–3 letter country code (e.g. US)",
-                  },
-                  items: {
-                    type: "array",
-                    default: [],
-                    items: {
-                      type: "object",
-                      properties: {
-                        productId: { type: "string" },
-                        quantity: { type: "integer" },
-                      },
-                    },
-                  },
-                  orderValueCents: { type: "integer", default: 0 },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          "200": {
-            description: "Shipping cost and options",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    shippingCents: { type: "integer" },
-                    canShipToCountry: { type: "boolean" },
-                    shippingSpeed: { type: "string" },
-                  },
-                },
-              },
-            },
-          },
-          "400": {
-            description: "Invalid request (countryCode required)",
-          },
-        },
-      },
-    },
     "/shipping/calculate": {
       post: {
         tags: ["Checkout"],
         summary: "Calculate shipping (with optional address)",
         description:
-          "Calculate shipping; accepts same body as /shipping/estimate plus optional zip, stateCode, city for accurate rates.",
+          "Calculate shipping for a country and optional line items/address fields. No auth required.",
         operationId: "postShippingCalculate",
         requestBody: {
           content: {

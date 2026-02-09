@@ -11,10 +11,8 @@ export function formatDateShort(date: Date | string | number): string {
   }).format(typeof date === "object" ? date : new Date(date));
 }
 
-/** e.g. "Feb 4, 2026" — same as short, alias for medium style */
-export function formatDate(date: Date | string | number): string {
-  return formatDateShort(date);
-}
+/** e.g. "Feb 4, 2026" — convenience alias for formatDateShort */
+export const formatDate = formatDateShort;
 
 /** e.g. "February 4, 2026" */
 export function formatDateLong(date: Date | string | number): string {
@@ -45,10 +43,3 @@ export function formatCents(cents: number): string {
   }).format(cents / 100);
 }
 
-/** Format USD amount e.g. "$12.34" */
-export function formatUsd(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    style: "currency",
-  }).format(amount);
-}

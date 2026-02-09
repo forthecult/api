@@ -1,5 +1,5 @@
 /**
- * Shared shipping calculation logic for POST /api/shipping/calculate and POST /api/shipping/estimate.
+ * Shared shipping calculation logic for POST /api/shipping/calculate.
  *
  * Supports:
  * - Admin-configured shipping options (flat rate, per-item, free over X)
