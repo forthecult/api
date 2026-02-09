@@ -21,7 +21,7 @@ interface CategoryItem {
 
 async function fetchAllProducts(): Promise<ProductItem[]> {
   try {
-    // Fetch all products for sitemap (paginated, get all pages)
+    // GET /api/products already excludes hidden products, so sitemap only includes listable products
     const res = await fetch(`${siteUrl}/api/products?limit=1000`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });

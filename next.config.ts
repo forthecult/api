@@ -28,6 +28,7 @@ const CATEGORY_REDIRECTS: [string, string][] = [
   ["/ton", "/toncoin"],
   ["/sol", "/solana"],
   ["/pump", "/pump-fun"],
+  ["/stickers", "/crypto-stickers"],
 ];
 
 const config = {

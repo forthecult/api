@@ -161,9 +161,12 @@ export async function applyCategoryAutoRules(
  * Sync a product's category membership with all perpetual auto-assign rules.
  * Call when a product is updated (e.g. name or brand changed): adds the product
  * to categories it now matches and removes it from categories it no longer matches.
+ * @param preserveCategoryIds - If provided, do not remove the product from these
+ *   category IDs (e.g. when the user just explicitly assigned them in admin).
  */
 export async function syncProductCategoriesWithAutoRules(
   product: ProductForAutoAssign,
+  preserveCategoryIds?: string[],
 ): Promise<{ added: number; removed: number }> {
   const rules = await db
     .select()
@@ -205,6 +208,7 @@ export async function syncProductCategoriesWithAutoRules(
         .returning({ productId: productCategoriesTable.productId });
       if (result.length > 0) added += 1;
     } else {
+      if (preserveCategoryIds?.includes(rule.categoryId)) continue;
       const result = await db
         .delete(productCategoriesTable)
         .where(

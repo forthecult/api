@@ -20,9 +20,13 @@ async function findTransferToAddress(
   amountBn: BigNumber,
   splTokenMint: string,
 ): Promise<string | null> {
-  const sigs = await connection.getSignaturesForAddress(depositAddress, {
-    limit: 20,
-  });
+  // Use "confirmed" commitment so we see the tx within ~1–2s of user sending,
+  // instead of waiting for "finalized" (default), which can delay detection.
+  const sigs = await connection.getSignaturesForAddress(
+    depositAddress,
+    { limit: 30 },
+    "confirmed",
+  );
   const splTokenPk = new PublicKey(splTokenMint);
   for (const { signature } of sigs) {
     try {
@@ -63,7 +67,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const connection = new Connection(getSolanaRpcUrlServer());
+  // Use "confirmed" commitment so we detect payments soon after they land, not after finalized delay
+  const connection = new Connection(getSolanaRpcUrlServer(), {
+    commitment: "confirmed",
+  });
   const amountBn = new BigNumber(amount);
 
   if (depositAddressParam) {

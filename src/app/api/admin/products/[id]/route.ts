@@ -394,6 +394,7 @@ export async function PATCH(
         .where(eq(productTokenGateTable.productId, id));
     }
 
+    let savedCategoryIds: string[] | undefined;
     if (body.categoryIds !== undefined || body.categoryId !== undefined) {
       const categoryIds = Array.isArray(body.categoryIds)
         ? body.categoryIds.filter((c): c is string => typeof c === "string" && c.trim() !== "")
@@ -413,16 +414,21 @@ export async function PATCH(
           isMain: categoryId === mainCategoryId,
         });
       }
+      savedCategoryIds = categoryIds;
     }
 
     // Sync perpetual category auto-assign: add to categories product now matches,
     // remove from categories it no longer matches (e.g. after name/brand change).
-    await syncProductCategoriesWithAutoRules({
-      id: updated.id,
-      name: updated.name,
-      brand: updated.brand ?? null,
-      createdAt: updated.createdAt,
-    });
+    // Preserve categories the user just explicitly set so they are not removed by rules.
+    await syncProductCategoriesWithAutoRules(
+      {
+        id: updated.id,
+        name: updated.name,
+        brand: updated.brand ?? null,
+        createdAt: updated.createdAt,
+      },
+      savedCategoryIds,
+    );
 
     if (body.images !== undefined) {
       await db

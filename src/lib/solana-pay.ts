@@ -8,6 +8,10 @@
  *   by watching that address. No reference needed.
  * Server derives the address deterministically from orderId + SOLANA_DEPOSIT_SECRET
  * in the create-order API; set SOLANA_DEPOSIT_SECRET (server-only) for Solana Pay checkout.
+ *
+ * Where do the funds go? Payments land in the per-order deposit address (not in
+ * NEXT_PUBLIC_SOLANA_PAY_RECIPIENT). To get funds into your main wallet, run the
+ * sweep script: `bun run scripts/sweep-solana-deposits.ts` (see that script for env vars).
  */
 
 import BigNumber from "bignumber.js";

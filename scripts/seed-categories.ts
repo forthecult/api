@@ -597,7 +597,7 @@ const ACCESSORIES_SUB: CategoryRow[] = [
   {
     id: "accessories-stickers",
     name: "Cryptocurrency Stickers",
-    slug: "stickers",
+    slug: "crypto-stickers",
     title: "Stickers — Crypto & Decentralization | Culture",
     metaDescription: "Stickers. Crypto, decentralization, community. Culture.",
     description:

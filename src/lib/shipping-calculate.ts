@@ -1021,12 +1021,18 @@ export async function runShippingCalculate(
     printifyShippingCents === 0;
 
   const finalShippingCents = isFreeShipping ? 0 : totalShippingCents;
-  const { taxCents, note: taxNote } = estimateTaxCents(
-    input.orderValueCents,
-    finalShippingCents,
-    input.countryCode,
-    input.stateCode,
+  // Tax estimate only for Printful/Printify products (fulfillers may charge tax). Manual products: no tax in this flow.
+  const hasPODProductsInCart = products.some(
+    (p) => p.source === "printful" || p.source === "printify",
   );
+  const { taxCents, note: taxNote } = hasPODProductsInCart
+    ? estimateTaxCents(
+        input.orderValueCents,
+        finalShippingCents,
+        input.countryCode,
+        input.stateCode,
+      )
+    : { taxCents: 0, note: null as string | null };
   const customsDutiesNote = null; // Hidden from checkout per product request
 
   return {

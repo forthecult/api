@@ -135,7 +135,9 @@ export async function POST(request: NextRequest) {
             : USDC_MINT_MAINNET;
 
     try {
-      const connection = new Connection(getSolanaRpcUrlServer());
+      const connection = new Connection(getSolanaRpcUrlServer(), {
+        commitment: "confirmed",
+      });
       const depositPk = new PublicKey(depositAddressStr);
       const amountBn = new BigNumber(amountStr);
       await validateTransfer(connection, sigTrim, {
