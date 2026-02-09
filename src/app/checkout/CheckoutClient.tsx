@@ -78,6 +78,25 @@ import { cn } from "~/lib/cn";
 import { getAffiliateCodeFromDocument } from "~/lib/affiliate-tracking";
 import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import type { MappedShippingAddress } from "~/lib/loqate";
+import {
+  type BillingFormState,
+  type CheckoutFormState,
+  COUNTRIES_REQUIRING_STATE,
+  COUNTRIES_WITHOUT_POSTAL,
+  defaultBillingForm,
+  defaultForm,
+  checkoutFieldHeight,
+  paymentButtonClass,
+  paymentOptionRowClass,
+  REFUND_POLICY_SUMMARY,
+  PRIVACY_POLICY_SUMMARY,
+  TERMS_POLICY_SUMMARY,
+  selectInputClass,
+  SHIPPING_POLICY_CONTENT,
+  US_STATE_OPTIONS,
+  CHECKOUT_SHIPPING_STORAGE_KEY,
+} from "./checkout-shared";
+import { OrderSummary } from "./components/OrderSummary";
 
 function getAffiliatePayload(): { affiliateCode?: string } {
   const code = getAffiliateCodeFromDocument();
@@ -104,62 +123,6 @@ function getTelegramOrderPayload(): {
     ...(user.first_name ? { telegramFirstName: user.first_name } : {}),
   };
 }
-
-interface CheckoutFormState {
-  apartment: string;
-  city: string;
-  company: string;
-  country: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  state: string;
-  street: string;
-  zip: string;
-}
-
-interface BillingFormState {
-  country: string;
-  firstName: string;
-  lastName: string;
-  company: string;
-  street: string;
-  apartment: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone: string;
-}
-
-const defaultBillingForm: BillingFormState = {
-  apartment: "",
-  city: "",
-  company: "",
-  country: "",
-  firstName: "",
-  lastName: "",
-  phone: "",
-  state: "",
-  street: "",
-  zip: "",
-};
-
-const defaultForm: CheckoutFormState = {
-  apartment: "",
-  city: "",
-  company: "",
-  country: "",
-  email: "",
-  firstName: "",
-  lastName: "",
-  phone: "",
-  state: "",
-  street: "",
-  zip: "",
-};
-
-const CHECKOUT_SHIPPING_STORAGE_KEY = "checkout-shipping";
 
 /**
  * Get persisted shipping form from encrypted storage
@@ -209,11 +172,6 @@ function persistShippingForm(form: CheckoutFormState): void {
   }
 }
 
-/** Countries that use state/province as a distinct required field (e.g. US states, CA provinces, AU states). */
-const COUNTRIES_REQUIRING_STATE = new Set(["US", "CA", "AU", "MX", "BR", "IN"]);
-/** Countries that do not use postal/zip codes (rare; most countries do). */
-const COUNTRIES_WITHOUT_POSTAL = new Set<string>(["HK"]);
-
 /** All countries we ship to (from site country list, excluding restricted). */
 const COUNTRY_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Select country" },
@@ -221,86 +179,6 @@ const COUNTRY_OPTIONS: { value: string; label: string }[] = [
     (o) => ({ value: o.code, label: o.countryName }),
   ),
 ];
-
-const US_STATE_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "State" },
-  { value: "AL", label: "Alabama" },
-  { value: "AK", label: "Alaska" },
-  { value: "AZ", label: "Arizona" },
-  { value: "AR", label: "Arkansas" },
-  { value: "CA", label: "California" },
-  { value: "CO", label: "Colorado" },
-  { value: "CT", label: "Connecticut" },
-  { value: "DE", label: "Delaware" },
-  { value: "DC", label: "District of Columbia" },
-  { value: "FL", label: "Florida" },
-  { value: "GA", label: "Georgia" },
-  { value: "HI", label: "Hawaii" },
-  { value: "ID", label: "Idaho" },
-  { value: "IL", label: "Illinois" },
-  { value: "IN", label: "Indiana" },
-  { value: "IA", label: "Iowa" },
-  { value: "KS", label: "Kansas" },
-  { value: "KY", label: "Kentucky" },
-  { value: "LA", label: "Louisiana" },
-  { value: "ME", label: "Maine" },
-  { value: "MD", label: "Maryland" },
-  { value: "MA", label: "Massachusetts" },
-  { value: "MI", label: "Michigan" },
-  { value: "MN", label: "Minnesota" },
-  { value: "MS", label: "Mississippi" },
-  { value: "MO", label: "Missouri" },
-  { value: "MT", label: "Montana" },
-  { value: "NE", label: "Nebraska" },
-  { value: "NV", label: "Nevada" },
-  { value: "NH", label: "New Hampshire" },
-  { value: "NJ", label: "New Jersey" },
-  { value: "NM", label: "New Mexico" },
-  { value: "NY", label: "New York" },
-  { value: "NC", label: "North Carolina" },
-  { value: "ND", label: "North Dakota" },
-  { value: "OH", label: "Ohio" },
-  { value: "OK", label: "Oklahoma" },
-  { value: "OR", label: "Oregon" },
-  { value: "PA", label: "Pennsylvania" },
-  { value: "RI", label: "Rhode Island" },
-  { value: "SC", label: "South Carolina" },
-  { value: "SD", label: "South Dakota" },
-  { value: "TN", label: "Tennessee" },
-  { value: "TX", label: "Texas" },
-  { value: "UT", label: "Utah" },
-  { value: "VT", label: "Vermont" },
-  { value: "VA", label: "Virginia" },
-  { value: "WA", label: "Washington" },
-  { value: "WV", label: "West Virginia" },
-  { value: "WI", label: "Wisconsin" },
-  { value: "WY", label: "Wyoming" },
-  { value: "AA", label: "Armed Forces Americas" },
-  { value: "AE", label: "Armed Forces Europe" },
-  { value: "AP", label: "Armed Forces Pacific" },
-  { value: "AS", label: "American Samoa" },
-  { value: "GU", label: "Guam" },
-  { value: "MP", label: "Northern Mariana Islands" },
-  { value: "PR", label: "Puerto Rico" },
-  { value: "VI", label: "U.S. Virgin Islands" },
-];
-
-const SHIPPING_POLICY_CONTENT =
-  "We partner with a number of fulfillment partners in an effort to ship all orders as quickly as possible. Most orders ship within 1 business day, domestic order deliver within 2-4 business days, and international orders deliver within 2 weeks. During high-demand and peak seasons, shipping can sometimes take up to 2 weeks. Unfortunately we cannot ship to a P.O Box.";
-
-/** Shortened policy text for checkout footer popups. */
-const REFUND_POLICY_SUMMARY =
-  "We want you to be happy with your purchase. You have 30 days from delivery to request a return; items must be unworn/unused, with tags and original packaging. Contact us first for a return label. Refunds are processed within 10 business days after we receive and inspect your return. EU/UK: 14-day right to cancel for any reason.";
-const PRIVACY_POLICY_SUMMARY =
-  "Your privacy matters to us. We collect only what we need—contact and account details, order and shipping info, and basic usage data for security. We do not sell your data or use it for targeted advertising. We use only essential cookies (sign-in, cart, security). You have rights to access, correct, delete, or port your data.";
-const TERMS_POLICY_SUMMARY =
-  'By using Culture you agree to these terms and our Privacy, Refund, and Shipping policies. You must be the age of majority to use the service. We may refuse or cancel orders, limit quantities, and correct pricing errors. Products are provided "as is." We are not liable for indirect or consequential damages. We encourage contacting us first for disputes; governing law is the United States.';
-
-// taller fields on checkout (h-11 ≈ 22% more than default h-9)
-const checkoutFieldHeight = "h-11";
-// uniform height for all payment option rows (match credit card row)
-const paymentOptionRowClass =
-  "min-h-12 flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-card p-3 transition-colors hover:bg-muted/30 dark:hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/20";
 
 /** Fallback when payment method API has not loaded; hide card/paypal/crypto by default. */
 const HIDDEN_PAYMENT_OPTIONS = {
@@ -310,14 +188,6 @@ const HIDDEN_PAYMENT_OPTIONS = {
   cryptoDogecoin: true,
   cryptoMonero: true,
 } as const;
-// uniform height for all payment CTA buttons (Place order / Pay with X)
-const paymentButtonClass = "h-[3.75rem] w-full";
-const selectInputClass = cn(
-  "flex w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground",
-  checkoutFieldHeight,
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-  "disabled:pointer-events-none disabled:opacity-50",
-);
 
 /** top-level crypto options; "eth" shows nested chain choices, "other" shows nested options (e.g. Sui, TON), "crust" = Crustafarian, "pump" = Pump */
 const CRYPTO_SUB_OPTIONS: {
@@ -3170,191 +3040,35 @@ export function CheckoutClient() {
 
           {/* Right: Your order only — sticky offset below header (max-h-24) so header doesn't overlap */}
           <div className="min-w-0 space-y-6 sm:col-start-2 sm:sticky sm:top-28 sm:self-start">
-            <Card className="shadow-none">
-              <CardHeader>
-                <CardTitle>Your order</CardTitle>
-                <CardDescription>
-                  {itemCount} item{itemCount !== 1 ? "s" : ""} in your cart
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {items.map((item) => (
-                  <div
-                    className="flex gap-4 rounded-lg border border-border/60 bg-muted/30 p-3"
-                    key={item.id}
-                  >
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-                      <Image
-                        alt={item.name}
-                        className="object-cover"
-                        fill
-                        sizes="64px"
-                        src={item.image}
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium">{item.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.quantity} × <FiatPrice usdAmount={item.price} />
-                      </p>
-                    </div>
-                    <p className="font-medium">
-                      <FiatPrice usdAmount={item.price * item.quantity} />
-                    </p>
-                  </div>
-                ))}
-                <div className="space-y-2 border-t border-border pt-3 text-sm">
-                  <div className="space-y-2">
-                    {!showDiscountCode ? (
-                      <button
-                        type="button"
-                        onClick={() => setShowDiscountCode(true)}
-                        className="text-primary underline-offset-4 hover:underline"
-                      >
-                        Have a code?
-                      </button>
-                    ) : (
-                      <div className="flex w-full max-w-[65%] flex-col gap-2">
-                        <div className="flex gap-2">
-                          <Input
-                            type="text"
-                            placeholder="Discount code or gift card"
-                            value={discountCodeInput}
-                            onChange={(e) => {
-                              setDiscountCodeInput(e.target.value);
-                              setCouponError("");
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                e.preventDefault();
-                                handleApplyCoupon();
-                              }
-                            }}
-                            className={cn(checkoutFieldHeight, "min-w-0 flex-1")}
-                            disabled={couponLoading}
-                            aria-label="Discount code"
-                          />
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            className={cn(checkoutFieldHeight, "shrink-0")}
-                            onClick={handleApplyCoupon}
-                            disabled={
-                              couponLoading || !discountCodeInput.trim()
-                            }
-                          >
-                            {couponLoading ? (
-                              <Loader2 className="size-4 animate-spin" aria-hidden />
-                            ) : (
-                              "Apply"
-                            )}
-                          </Button>
-                        </div>
-                        {couponError ? (
-                          <p className="text-xs text-destructive">{couponError}</p>
-                        ) : null}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">
-                      <FiatPrice usdAmount={subtotal} />
-                    </span>
-                  </div>
-                  {appliedCoupon ? (
-                    <div className="flex items-center justify-between">
-                      <span className="text-muted-foreground">
-                        Discount
-                        {appliedCoupon.source === "automatic" ? (
-                          <span className="ml-1 font-normal text-muted-foreground/80">
-                            (automatic)
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="flex items-center gap-2 font-medium">
-                        {appliedCoupon.freeShipping ? (
-                          "Free shipping"
-                        ) : (
-                          <FiatPrice
-                            usdAmount={appliedCoupon.discountCents / 100}
-                          />
-                        )}
-                        {appliedCoupon.source === "code" ? (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setAppliedCoupon(null);
-                              setCouponError("");
-                              setDiscountEvalKey((k) => k + 1);
-                            }}
-                            className="text-xs text-primary underline-offset-4 hover:underline"
-                          >
-                            Remove
-                          </button>
-                        ) : null}
-                      </span>
-                    </div>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-1">
-                    <span className="flex items-center gap-1.5 text-muted-foreground">
-                      Shipping
-                      <Dialog>
-                        <DialogTrigger
-                          type="button"
-                          className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          aria-label="Shipping information"
-                        >
-                          <CircleHelp className="size-4" aria-hidden />
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Shipping</DialogTitle>
-                          </DialogHeader>
-                          <p className="text-sm text-foreground">
-                            {SHIPPING_POLICY_CONTENT}
-                          </p>
-                        </DialogContent>
-                      </Dialog>
-                    </span>
-                    <span className="font-medium">
-                      {shippingLoading ? (
-                        "…"
-                      ) : shippingFree ? (
-                        "Free"
-                      ) : (
-                        <FiatPrice usdAmount={shippingCents / 100} />
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end gap-0.5">
-                    <div className="flex w-full justify-between">
-                      <span className="text-muted-foreground">Tax</span>
-                      <span className="font-medium">
-                        <FiatPrice usdAmount={taxCents / 100} />
-                      </span>
-                    </div>
-                  </div>
-                  {customsDutiesNote ? (
-                    <p className="text-xs text-muted-foreground">
-                      {customsDutiesNote}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">
-                  <span>Total</span>
-                  <span>
-                    <FiatPrice usdAmount={total} />
-                  </span>
-                </div>
-                {cryptoTotalLabel ? (
-                  <p className="text-right text-sm text-muted-foreground">
-                    {cryptoTotalLabel}
-                  </p>
-                ) : null}
-              </CardContent>
-            </Card>
+            <OrderSummary
+              items={items}
+              itemCount={itemCount}
+              subtotal={subtotal}
+              shippingCents={shippingCents}
+              shippingLoading={shippingLoading}
+              shippingFree={shippingFree}
+              taxCents={taxCents}
+              taxNote={taxNote}
+              customsDutiesNote={customsDutiesNote}
+              appliedCoupon={appliedCoupon}
+              total={total}
+              cryptoTotalLabel={cryptoTotalLabel}
+              showDiscountCode={showDiscountCode}
+              discountCodeInput={discountCodeInput}
+              couponError={couponError}
+              couponLoading={couponLoading}
+              onShowDiscountCode={() => setShowDiscountCode(true)}
+              onDiscountCodeInputChange={(v) => {
+                setDiscountCodeInput(v);
+                setCouponError("");
+              }}
+              onApplyCoupon={handleApplyCoupon}
+              onRemoveCoupon={() => {
+                setAppliedCoupon(null);
+                setCouponError("");
+                setDiscountEvalKey((k) => k + 1);
+              }}
+            />
           </div>
         </div>
       </div>

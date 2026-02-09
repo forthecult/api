@@ -1,0 +1,252 @@
+"use client";
+
+import Image from "next/image";
+import { CircleHelp, Loader2 } from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/primitives/card";
+import { Button } from "~/ui/primitives/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/ui/primitives/dialog";
+import { Input } from "~/ui/primitives/input";
+import { FiatPrice } from "~/ui/components/FiatPrice";
+import {
+  checkoutFieldHeight,
+  SHIPPING_POLICY_CONTENT,
+  type AppliedCoupon,
+} from "../checkout-shared";
+import type { CartItem } from "~/ui/components/cart";
+
+export interface OrderSummaryProps {
+  items: CartItem[];
+  itemCount: number;
+  subtotal: number;
+  shippingCents: number;
+  shippingLoading: boolean;
+  shippingFree: boolean;
+  taxCents: number;
+  taxNote: string | null;
+  customsDutiesNote: string | null;
+  appliedCoupon: AppliedCoupon | null;
+  total: number;
+  cryptoTotalLabel: string | null;
+  /** Discount code UI (state lives in parent so it can drive API/coupon logic). */
+  showDiscountCode: boolean;
+  discountCodeInput: string;
+  couponError: string;
+  couponLoading: boolean;
+  onShowDiscountCode: () => void;
+  onDiscountCodeInputChange: (value: string) => void;
+  onApplyCoupon: () => void;
+  onRemoveCoupon: () => void;
+}
+
+export function OrderSummary({
+  items,
+  itemCount,
+  subtotal,
+  shippingCents,
+  shippingLoading,
+  shippingFree,
+  taxCents,
+  customsDutiesNote,
+  appliedCoupon,
+  total,
+  cryptoTotalLabel,
+  showDiscountCode,
+  discountCodeInput,
+  couponError,
+  couponLoading,
+  onShowDiscountCode,
+  onDiscountCodeInputChange,
+  onApplyCoupon,
+  onRemoveCoupon,
+}: OrderSummaryProps) {
+  return (
+    <Card className="shadow-none">
+      <CardHeader>
+        <CardTitle>Your order</CardTitle>
+        <CardDescription>
+          {itemCount} item{itemCount !== 1 ? "s" : ""} in your cart
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {items.map((item) => (
+          <div
+            className="flex gap-4 rounded-lg border border-border/60 bg-muted/30 p-3"
+            key={item.id}
+          >
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
+              <Image
+                alt={item.name}
+                className="object-cover"
+                fill
+                sizes="64px"
+                src={item.image}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{item.name}</p>
+              <p className="text-sm text-muted-foreground">
+                {item.quantity} × <FiatPrice usdAmount={item.price} />
+              </p>
+            </div>
+            <p className="font-medium">
+              <FiatPrice usdAmount={item.price * item.quantity} />
+            </p>
+          </div>
+        ))}
+        <div className="space-y-2 border-t border-border pt-3 text-sm">
+          <div className="space-y-2">
+            {!showDiscountCode ? (
+              <button
+                type="button"
+                onClick={onShowDiscountCode}
+                className="text-primary underline-offset-4 hover:underline"
+              >
+                Have a code?
+              </button>
+            ) : (
+              <div className="flex w-full max-w-[65%] flex-col gap-2">
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    placeholder="Discount code or gift card"
+                    value={discountCodeInput}
+                    onChange={(e) => onDiscountCodeInputChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        onApplyCoupon();
+                      }
+                    }}
+                    className={`${checkoutFieldHeight} min-w-0 flex-1`}
+                    disabled={couponLoading}
+                    aria-label="Discount code"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    className={`${checkoutFieldHeight} shrink-0`}
+                    onClick={onApplyCoupon}
+                    disabled={couponLoading || !discountCodeInput.trim()}
+                  >
+                    {couponLoading ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
+                      "Apply"
+                    )}
+                  </Button>
+                </div>
+                {couponError ? (
+                  <p className="text-xs text-destructive">{couponError}</p>
+                ) : null}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Subtotal</span>
+            <span className="font-medium">
+              <FiatPrice usdAmount={subtotal} />
+            </span>
+          </div>
+          {appliedCoupon ? (
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">
+                Discount
+                {appliedCoupon.source === "automatic" ? (
+                  <span className="ml-1 font-normal text-muted-foreground/80">
+                    (automatic)
+                  </span>
+                ) : null}
+              </span>
+              <span className="flex items-center gap-2 font-medium">
+                {appliedCoupon.freeShipping ? (
+                  "Free shipping"
+                ) : (
+                  <FiatPrice
+                    usdAmount={appliedCoupon.discountCents / 100}
+                  />
+                )}
+                {appliedCoupon.source === "code" ? (
+                  <button
+                    type="button"
+                    onClick={onRemoveCoupon}
+                    className="text-xs text-primary underline-offset-4 hover:underline"
+                  >
+                    Remove
+                  </button>
+                ) : null}
+              </span>
+            </div>
+          ) : null}
+          <div className="flex items-center justify-between gap-1">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              Shipping
+              <Dialog>
+                <DialogTrigger
+                  type="button"
+                  className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label="Shipping information"
+                >
+                  <CircleHelp className="size-4" aria-hidden />
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Shipping</DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-foreground">
+                    {SHIPPING_POLICY_CONTENT}
+                  </p>
+                </DialogContent>
+              </Dialog>
+            </span>
+            <span className="font-medium">
+              {shippingLoading ? (
+                "…"
+              ) : shippingFree ? (
+                "Free"
+              ) : (
+                <FiatPrice usdAmount={shippingCents / 100} />
+              )}
+            </span>
+          </div>
+          <div className="flex flex-col items-end gap-0.5">
+            <div className="flex w-full justify-between">
+              <span className="text-muted-foreground">Tax</span>
+              <span className="font-medium">
+                <FiatPrice usdAmount={taxCents / 100} />
+              </span>
+            </div>
+          </div>
+          {customsDutiesNote ? (
+            <p className="text-xs text-muted-foreground">
+              {customsDutiesNote}
+            </p>
+          ) : null}
+        </div>
+        <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">
+          <span>Total</span>
+          <span>
+            <FiatPrice usdAmount={total} />
+          </span>
+        </div>
+        {cryptoTotalLabel ? (
+          <p className="text-right text-sm text-muted-foreground">
+            {cryptoTotalLabel}
+          </p>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
