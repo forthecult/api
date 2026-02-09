@@ -57,9 +57,17 @@ export async function GET(request: NextRequest) {
       next: { revalidate: 0 },
     });
     if (!res.ok) {
-      return NextResponse.json(
-        { error: "Address retrieve failed" },
-        { status: 502 },
+      const body = await res.text().catch(() => "");
+      console.error(
+        `Loqate Retrieve upstream error: ${res.status} ${res.statusText}`,
+        body.slice(0, 200),
+      );
+      return addCorsIfAdminOrigin(
+        request,
+        NextResponse.json(
+          { error: "Address retrieve failed" },
+          { status: 502 },
+        ),
       );
     }
     const data = (await res.json()) as {

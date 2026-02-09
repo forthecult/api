@@ -72,7 +72,10 @@ export async function runProductSearch(
   );
   const offset = Math.max(0, Number(params.offset) || 0);
 
-  const conditions = [eq(productsTable.published, true)];
+  const conditions = [
+    eq(productsTable.published, true),
+    eq(productsTable.hidden, false),
+  ];
 
   if (query.length > 0) {
     const pattern = `%${query}%`;
@@ -107,6 +110,7 @@ export async function runProductSearch(
       .where(
         and(
           eq(productsTable.published, true),
+          eq(productsTable.hidden, false),
           sql`${productsTable.brand} is not null`,
         ),
       );

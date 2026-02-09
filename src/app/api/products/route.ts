@@ -96,9 +96,10 @@ export async function GET(request: NextRequest) {
 
     let whereClause =
       productIdsFilter === null
-        ? eq(productsTable.published, true)
+        ? and(eq(productsTable.published, true), eq(productsTable.hidden, false))
         : and(
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
             inArray(productsTable.id, productIdsFilter),
           );
     if (q.length > 0) {

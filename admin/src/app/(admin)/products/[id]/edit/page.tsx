@@ -100,6 +100,7 @@ type Product = {
   compareAtPriceCents: number | null;
   costPerItemCents: number | null;
   published: boolean;
+  hidden: boolean;
   brand: string | null;
   vendor: string | null;
   /** "manual" | "printful" | "printify" – used to show the correct sync button. */
@@ -247,6 +248,7 @@ export default function AdminProductEditPage() {
   const [compareAtPriceCents, setCompareAtPriceCents] = useState("");
   const [costPerItemCents, setCostPerItemCents] = useState("");
   const [published, setPublished] = useState(true);
+  const [hidden, setHidden] = useState(false);
   const [brand, setBrand] = useState("");
   const [vendor, setVendor] = useState("");
   const [slug, setSlug] = useState("");
@@ -395,6 +397,7 @@ export default function AdminProductEditPage() {
         data.costPerItemCents != null ? String(data.costPerItemCents) : "",
       );
       setPublished(data.published);
+      setHidden(data.hidden ?? false);
       setBrand(data.brand ?? "");
       setVendor(data.vendor ?? "");
       setSlug(data.slug ?? slugFromName(data.name));
@@ -791,6 +794,7 @@ export default function AdminProductEditPage() {
             ? Number.parseInt(costPerItemCents, 10)
             : null,
           published,
+          hidden,
           brand: brand.trim() || null,
           vendor: vendor.trim() || null,
           slug: slug.trim() || null,
@@ -914,6 +918,7 @@ export default function AdminProductEditPage() {
       compareAtPriceCents,
       costPerItemCents,
       published,
+      hidden,
       brand,
       vendor,
       slug,
@@ -2960,7 +2965,7 @@ export default function AdminProductEditPage() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -2970,6 +2975,17 @@ export default function AdminProductEditPage() {
             />
             <span className="text-sm font-medium">
               Published (visible on storefront)
+            </span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={hidden}
+              onChange={(e) => setHidden(e.target.checked)}
+              className="size-4 rounded border-input"
+            />
+            <span className="text-sm font-medium">
+              Hidden (only reachable by direct link; not listed in categories)
             </span>
           </label>
         </div>

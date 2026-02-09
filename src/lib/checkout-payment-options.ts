@@ -377,6 +377,17 @@ export function getFooterPaymentItems(
       items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
   }
 
+  // Stablecoins (USDC, USDT)
+  if (visibility === null) {
+    items.push({ name: "USDC", src: "/crypto/usdc/usdc-logo.svg" });
+    items.push({ name: "USDT", src: "/crypto/usdt/tether-usdt-logo.svg" });
+  } else {
+    if (visibility.stablecoinUsdc)
+      items.push({ name: "USDC", src: "/crypto/usdc/usdc-logo.svg" });
+    if (visibility.stablecoinUsdt)
+      items.push({ name: "USDT", src: "/crypto/usdt/tether-usdt-logo.svg" });
+  }
+
   if (showPaypal) items.push({ name: "PayPal", src: "/payments/paypal.svg" });
   if (showCc) {
     items.push({ name: "American Express", src: "/payments/amex.svg" });

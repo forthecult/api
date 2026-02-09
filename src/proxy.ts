@@ -88,49 +88,14 @@ const GEO_TO_COUNTRY: Record<string, string> = {
 
 const COUNTRY_CURRENCY_COOKIE = "country-currency";
 
-// Simple in-memory rate limit for proxy (edge-compatible)
-const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
-
 function proxyHandler(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const isAuthApi = path.startsWith("/api/auth/");
   const isAdminApi = path.startsWith("/api/admin/");
   const isUserApi = path.startsWith("/api/user/");
 
-  // API auth/admin/user: CORS for admin app (e.g. profile from localhost:3001), OPTIONS, rate limit for admin
+  // API auth/admin/user: CORS for admin app (e.g. profile from localhost:3001), OPTIONS
   if (isAuthApi || isAdminApi || isUserApi) {
-    if (isAdminApi) {
-      const ip =
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-        request.headers.get("x-real-ip") ||
-        "unknown";
-      const now = Date.now();
-      const key = `mw:${ip}`;
-      let entry = rateLimitStore.get(key);
-
-      if (!entry || entry.resetAt < now) {
-        entry = { count: 1, resetAt: now + 60_000 };
-        rateLimitStore.set(key, entry);
-      } else {
-        entry.count++;
-        if (entry.count > 60) {
-          const cors = getCorsHeaders(request);
-          return new NextResponse(
-            JSON.stringify({ error: "Too many requests" }),
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "Retry-After": "60",
-                "X-RateLimit-Remaining": "0",
-                ...cors,
-              },
-              status: 429,
-            },
-          );
-        }
-      }
-    }
-
     const corsHeaders = getCorsHeaders(request);
 
     if (request.method === "OPTIONS") {

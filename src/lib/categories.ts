@@ -119,6 +119,7 @@ export async function getCategoriesWithProductsAndDisplayImage(): Promise<
       and(
         eq(productCategoriesTable.productId, productsTable.id),
         eq(productsTable.published, true),
+        eq(productsTable.hidden, false),
       ),
     );
 
@@ -216,6 +217,7 @@ export async function getCategoriesWithProductsAndDisplayImage(): Promise<
           and(
             inArray(productCategoriesTable.categoryId, stillNeed),
             eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
           ),
         )
         .orderBy(desc(productsTable.createdAt));

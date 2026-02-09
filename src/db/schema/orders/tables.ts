@@ -47,6 +47,8 @@ export const productsTable = pgTable("product", {
   physicalProduct: boolean("physical_product").notNull().default(true),
   priceCents: integer("price_cents").notNull(),
   published: boolean("published").notNull().default(true),
+  /** When true, product is still published but only reachable by direct slug URL; excluded from category and product listings. */
+  hidden: boolean("hidden").notNull().default(false),
   // Ships from: full address (when set) or composed from city/region/postal/country for display and shipping-time estimates
   shipsFromDisplay: text("ships_from_display"), // optional freeform full address
   shipsFromCountry: text("ships_from_country"), // ISO 2-letter or country name

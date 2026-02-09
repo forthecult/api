@@ -26,6 +26,8 @@ const CATEGORY_REDIRECTS: [string, string][] = [
   ["/atom", "/cosmos"],
   ["/fil", "/filecoin"],
   ["/ton", "/toncoin"],
+  ["/sol", "/solana"],
+  ["/pump", "/pump-fun"],
 ];
 
 const config = {

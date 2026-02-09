@@ -14,8 +14,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import { COUNTRIES_BY_CONTINENT } from "~/lib/countries-by-continent";
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 import { BrandSelect } from "~/ui/brand-select";
@@ -166,6 +168,7 @@ export default function AdminProductsCreatePage() {
   const [compareAtPriceCents, setCompareAtPriceCents] = useState("");
   const [costPerItemCents, setCostPerItemCents] = useState("");
   const [published, setPublished] = useState(true);
+  const [hidden, setHidden] = useState(false);
   const [brand, setBrand] = useState("");
   const [vendor, setVendor] = useState("");
   const [slug, setSlug] = useState("");
@@ -196,7 +199,79 @@ export default function AdminProductsCreatePage() {
   );
   const [tokenGated, setTokenGated] = useState(false);
   const [tokenGates, setTokenGates] = useState<TokenGateRow[]>([]);
+  const [availableCountryCodes, setAvailableCountryCodes] = useState<string[]>(
+    [],
+  );
   const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
+
+  const availableCountrySet = useMemo(
+    () => new Set(availableCountryCodes),
+    [availableCountryCodes],
+  );
+  const setCountry = useCallback((code: string, checked: boolean) => {
+    if (isShippingExcluded(code)) return;
+    setAvailableCountryCodes((prev) => {
+      const set = new Set(prev);
+      if (checked) set.add(code);
+      else set.delete(code);
+      return [...set];
+    });
+  }, []);
+  const setContinent = useCallback(
+    (continentIndex: number, checked: boolean) => {
+      const entry = COUNTRIES_BY_CONTINENT[continentIndex];
+      if (!entry) return;
+      const codes = entry.countries
+        .map((c) => c.code)
+        .filter((c) => !isShippingExcluded(c));
+      setAvailableCountryCodes((prev) => {
+        const set = new Set(prev);
+        for (const code of codes) {
+          if (checked) set.add(code);
+          else set.delete(code);
+        }
+        return [...set];
+      });
+    },
+    [],
+  );
+  const isContinentFullySelected = useCallback(
+    (continentIndex: number) => {
+      const entry = COUNTRIES_BY_CONTINENT[continentIndex];
+      if (!entry) return false;
+      const selectable = entry.countries.filter(
+        (c) => !isShippingExcluded(c.code),
+      );
+      return (
+        selectable.length > 0 &&
+        selectable.every((c) => availableCountrySet.has(c.code))
+      );
+    },
+    [availableCountrySet],
+  );
+  const isContinentPartiallySelected = useCallback(
+    (continentIndex: number) => {
+      const entry = COUNTRIES_BY_CONTINENT[continentIndex];
+      if (!entry) return false;
+      const selectable = entry.countries.filter(
+        (c) => !isShippingExcluded(c.code),
+      );
+      const count = selectable.filter((c) =>
+        availableCountrySet.has(c.code),
+      ).length;
+      return count > 0 && count < selectable.length;
+    },
+    [availableCountrySet],
+  );
+  const continentCheckboxRefs = useRef<Record<number, HTMLInputElement | null>>(
+    {},
+  );
+  useEffect(() => {
+    COUNTRIES_BY_CONTINENT.forEach((_, i) => {
+      const el = continentCheckboxRefs.current[i];
+      if (el) el.indeterminate = isContinentPartiallySelected(i);
+    });
+  }, [availableCountrySet, isContinentPartiallySelected]);
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -435,6 +510,7 @@ export default function AdminProductsCreatePage() {
             ? Number.parseInt(costPerItemCents, 10)
             : null,
           published,
+          hidden,
           brand: brand.trim() || null,
           vendor: vendor.trim() || null,
           slug: slug.trim() || null,
@@ -490,6 +566,10 @@ export default function AdminProductsCreatePage() {
             : undefined,
           tokenGated,
           tokenGates,
+          availableCountryCodes:
+            availableCountryCodes.length > 0
+              ? availableCountryCodes.filter((c) => !isShippingExcluded(c))
+              : undefined,
         };
         const res = await fetch(`${API_BASE}/api/admin/products`, {
           method: "POST",
@@ -524,6 +604,7 @@ export default function AdminProductsCreatePage() {
       compareAtPriceCents,
       costPerItemCents,
       published,
+      hidden,
       brand,
       vendor,
       slug,
@@ -545,6 +626,7 @@ export default function AdminProductsCreatePage() {
       variants,
       tokenGated,
       tokenGates,
+      availableCountryCodes,
       router,
     ],
   );
@@ -1651,6 +1733,78 @@ export default function AdminProductsCreatePage() {
           </div>
         )}
 
+        {/* Markets */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Markets</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Choose which countries this product is available in. Leave all
+              unchecked for &quot;available everywhere&quot;. If you select at
+              least one country, the product will only be shown and purchasable
+              in those regions (storefront and checkout).
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Countries we do not ship to are disabled and cannot be selected.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {COUNTRIES_BY_CONTINENT.map((entry, continentIndex) => (
+              <div key={entry.continent} className="space-y-2">
+                <label className="flex items-center gap-2 font-medium">
+                  <input
+                    type="checkbox"
+                    checked={isContinentFullySelected(continentIndex)}
+                    ref={(el) => {
+                      continentCheckboxRefs.current[continentIndex] = el;
+                    }}
+                    onChange={(e) =>
+                      setContinent(continentIndex, e.target.checked)
+                    }
+                    className="size-4 rounded border-input"
+                  />
+                  <span>{entry.continent}</span>
+                </label>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 md:grid-cols-4">
+                  {entry.countries.map((country) => {
+                    const noShip = isShippingExcluded(country.code);
+                    return (
+                      <label
+                        key={country.code}
+                        className={cn(
+                          "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground",
+                          noShip && "cursor-not-allowed opacity-60",
+                        )}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={
+                            !noShip && availableCountrySet.has(country.code)
+                          }
+                          disabled={noShip}
+                          onChange={(e) =>
+                            !noShip &&
+                            setCountry(country.code, e.target.checked)
+                          }
+                          className="size-4 rounded border-input"
+                          title={
+                            noShip
+                              ? "We do not ship to this country"
+                              : undefined
+                          }
+                        />
+                        <span>
+                          {country.name}
+                          {noShip ? " (no ship)" : ""}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
         {/* Token gating */}
         <TokenGatesList
           gates={tokenGates}
@@ -1723,7 +1877,7 @@ export default function AdminProductsCreatePage() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -1733,6 +1887,17 @@ export default function AdminProductsCreatePage() {
             />
             <span className="text-sm font-medium">
               Published (visible on storefront)
+            </span>
+          </label>
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={hidden}
+              onChange={(e) => setHidden(e.target.checked)}
+              className="size-4 rounded border-input"
+            />
+            <span className="text-sm font-medium">
+              Hidden (only reachable by direct link; not listed in categories)
             </span>
           </label>
         </div>

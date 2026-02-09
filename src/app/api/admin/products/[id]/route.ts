@@ -132,6 +132,7 @@ export async function GET(
       compareAtPriceCents: product.compareAtPriceCents,
       costPerItemCents: product.costPerItemCents,
       published: product.published,
+      hidden: product.hidden,
       brand: product.brand,
       vendor: product.vendor,
       source: product.source ?? "manual",
@@ -222,6 +223,7 @@ export async function PATCH(
     const id = existing.id;
     const body = (await request.json()) as {
       published?: boolean;
+      hidden?: boolean;
       name?: string;
       description?: string | null;
       imageUrl?: string | null;
@@ -294,6 +296,7 @@ export async function PATCH(
     const updates: Record<string, unknown> = { updatedAt: new Date() };
 
     if (typeof body.published === "boolean") updates.published = body.published;
+    if (typeof body.hidden === "boolean") updates.hidden = body.hidden;
     if (typeof body.name === "string") updates.name = body.name;
     if (body.description !== undefined)
       updates.description = body.description ?? null;

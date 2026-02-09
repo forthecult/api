@@ -53,7 +53,7 @@ If you do run seeds locally (with `DATABASE_URL` in `.env` or on the command lin
 
 1. **Get these from Railway**
    - **DATABASE_URL** – In your Railway project, open the **main app** service (or the Postgres service) → **Variables** → copy the value of `DATABASE_URL` (the Postgres connection string).
-   - **Main app URL** – Your staging store URL, e.g. `https://bythecult-production.up.railway.app`.
+   - **Main app URL** – Your staging store URL, e.g. `https://forthecult.store`.
    - **ADMIN_EMAILS** – The email you want to use for admin (e.g. `you@forthecult.store`). This must match what you set in Railway’s `ADMIN_EMAILS` for the main app.
 
 2. **Schema (if you haven’t already)**
@@ -76,7 +76,7 @@ If you do run seeds locally (with `DATABASE_URL` in `.env` or on the command lin
    Over HTTPS the app hashes the password before storing. For staging you must set `ADMIN_SEED_PASSWORD` in your env (never commit it). It needs the **app URL**, not `DATABASE_URL`:
    ```bash
    ADMIN_EMAILS='you@forthecult.store' \
-   NEXT_PUBLIC_APP_URL='https://bythecult-production.up.railway.app' \
+   NEXT_PUBLIC_APP_URL='https://forthecult.store' \
    ADMIN_SEED_PASSWORD='your-one-time-password' \
    bun run db:seed-admin
    ```

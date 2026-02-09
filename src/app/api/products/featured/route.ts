@@ -42,6 +42,7 @@ export async function GET() {
           .where(
             and(
               eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
               eq(categoriesTable.featured, true),
             ),
           )
@@ -67,7 +68,12 @@ export async function GET() {
             imageUrl: productsTable.imageUrl,
           })
           .from(productsTable)
-          .where(eq(productsTable.published, true))
+          .where(
+            and(
+              eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
+            ),
+          )
           .orderBy(desc(productsTable.createdAt))
           .limit(TRENDING_LIMIT)
           .then((rows: ProductRow[]) =>
@@ -90,7 +96,12 @@ export async function GET() {
             imageUrl: productsTable.imageUrl,
           })
           .from(productsTable)
-          .where(eq(productsTable.published, true))
+          .where(
+            and(
+              eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
+            ),
+          )
           .orderBy(desc(productsTable.updatedAt))
           .limit(BEST_SELLERS_LIMIT)
           .then((rows: ProductRow[]) =>

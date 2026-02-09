@@ -966,6 +966,18 @@ const NETWORK_SUB: CategoryRow[] = [
     level: 2,
     parentId: "network-artificial-organism",
   },
+  {
+    id: "solana",
+    name: "Solana (SOL)",
+    slug: "solana",
+    title: "Solana Merchandise — SOL Apparel, Hardware & Gear | Culture",
+    metaDescription:
+      "Solana (SOL) apparel, hoodies, hardware wallets, and merchandise. Fast, low-fee layer-1. Pay with SOL, USDC, or card. Culture.",
+    description:
+      "Solana (SOL) merchandise for the community. Premium apparel, hoodies, hardware wallets, and gear. Solana is a high-performance layer-1 blockchain—fast, low fees, and a thriving NFT and DeFi ecosystem. We accept SOL and USDC at checkout. Pay with SOL or card. Culture.",
+    level: 2,
+    parentId: "network-artificial-organism",
+  },
 ];
 
 /** Application Token subcategories. Slugs: full project names people search (1inch, aave, uniswap, decentraland, …). */
@@ -1090,6 +1102,18 @@ const APPLICATION_SUB: CategoryRow[] = [
     level: 2,
     parentId: "application-token",
   },
+  {
+    id: "pump-fun",
+    name: "Pump Fun (PUMP)",
+    slug: "pump-fun",
+    title: "Pump Fun Merchandise — PUMP Apparel & Gear | Culture",
+    metaDescription:
+      "Pump Fun (PUMP) apparel and merchandise. Fair launch, bonding curves, memecoins. Pay with PUMP, SOL, or card. Culture.",
+    description:
+      "Pump Fun (PUMP) merchandise for the community. Premium apparel and gear. Pump.fun is the fair-launch platform on Solana—bonding curves, no presales, equal access. We accept PUMP and SOL at checkout. Pay with PUMP or card. Culture.",
+    level: 2,
+    parentId: "application-token",
+  },
 ];
 
 /**
@@ -1119,6 +1143,7 @@ const CRYPTO_BULK_ADD_CONFIG: CryptoBulkAddConfig[] = [
   { categoryId: "ethereum", fullName: "Ethereum", ticker: "ETH" },
   { categoryId: "filecoin", fullName: "Filecoin", ticker: "FIL" },
   { categoryId: "toncoin", fullName: "Toncoin", ticker: "TON" },
+  { categoryId: "solana", fullName: "Solana", ticker: "SOL" },
   // Application / dApp
   { categoryId: "1inch", fullName: "1inch", ticker: "1INCH" },
   { categoryId: "aave", fullName: "Aave", ticker: "AAVE" },
@@ -1130,6 +1155,7 @@ const CRYPTO_BULK_ADD_CONFIG: CryptoBulkAddConfig[] = [
   { categoryId: "synthetix", fullName: "Synthetix", ticker: "SNX" },
   { categoryId: "the-sandbox", fullName: "The Sandbox", ticker: "SAND" },
   { categoryId: "uniswap", fullName: "Uniswap", ticker: "UNI" },
+  { categoryId: "pump-fun", fullName: "Pump Fun", ticker: "PUMP" },
 ];
 
 /**

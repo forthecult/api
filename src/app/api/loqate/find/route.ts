@@ -102,6 +102,11 @@ export async function GET(request: NextRequest) {
       next: { revalidate: 0 },
     });
     if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(
+        `Loqate Find upstream error: ${res.status} ${res.statusText}`,
+        body.slice(0, 200),
+      );
       return addCorsIfAdminOrigin(
         request,
         NextResponse.json(

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "~/db";
 import {
   categoriesTable,
+  productAvailableCountryTable,
   productCategoriesTable,
   productImagesTable,
   productTokenGateTable,
@@ -12,6 +13,7 @@ import {
   productTagsTable,
   productVariantsTable,
 } from "~/db/schema";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import { slugify } from "~/lib/slugify";
@@ -280,6 +282,7 @@ export async function POST(request: NextRequest) {
       shipsFromCity?: string | null;
       shipsFromPostalCode?: string | null;
       published?: boolean;
+      hidden?: boolean;
       categoryId?: string | null;
       hasVariants?: boolean;
       optionDefinitionsJson?: string | null;
@@ -312,6 +315,7 @@ export async function POST(request: NextRequest) {
         priceCents: number;
         imageUrl?: string | null;
       }>;
+      availableCountryCodes?: string[];
     };
 
     if (typeof body.name !== "string" || !body.name.trim()) {
@@ -370,6 +374,7 @@ export async function POST(request: NextRequest) {
       shipsFromCity: body.shipsFromCity?.trim() ?? null,
       shipsFromPostalCode: body.shipsFromPostalCode?.trim() ?? null,
       published: body.published ?? true,
+      hidden: body.hidden ?? false,
       hasVariants: body.hasVariants ?? false,
       optionDefinitionsJson: body.optionDefinitionsJson ?? null,
       tokenGated:
@@ -409,6 +414,23 @@ export async function POST(request: NextRequest) {
         categoryId,
         isMain: true,
       });
+    }
+
+    if (Array.isArray(body.availableCountryCodes) && body.availableCountryCodes.length > 0) {
+      const codes = [
+        ...new Set(
+          body.availableCountryCodes
+            .map((c) => c.trim().toUpperCase())
+            .filter(Boolean)
+            .filter((c) => !isShippingExcluded(c)),
+        ),
+      ];
+      for (const code of codes) {
+        await db.insert(productAvailableCountryTable).values({
+          productId: id,
+          countryCode: code,
+        });
+      }
     }
 
     if (body.images?.length) {
