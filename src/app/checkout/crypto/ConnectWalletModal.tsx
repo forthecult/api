@@ -98,7 +98,7 @@ const NETWORK_OPTIONS = [
   { id: "sui", name: "Sui", icon: "/crypto/sui/sui-logo.svg" },
 ] as const;
 
-const CONNECT_WAIT_MS = 120_000;
+const CONNECT_WAIT_MS = 30_000;
 
 function useIsMetaMaskDetected(): boolean {
   const [detected, setDetected] = useState(false);
@@ -236,14 +236,16 @@ export function ConnectWalletModal({
             timeoutPromise,
           ]);
           if (result === "timeout" && !connectedRef.current) {
+            const timeoutName = selectedWallet?.adapter.name ?? "your wallet";
             setConnectError(
-              "Connection is taking a while. Check that the Phantom popup isn’t behind other windows, or try again.",
+              `Connection is taking a while. Open the ${timeoutName} extension to approve, or use Back to try again.`,
             );
             setStep("network");
           }
         } catch {
+          const catchName = selectedWallet?.adapter.name ?? "your wallet";
           setConnectError(
-            "Connection failed. Try opening Phantom manually, or refresh the page and try again.",
+            `Connection failed. Open the ${catchName} extension and try again, or use another wallet.`,
           );
           setStep("network");
         } finally {
@@ -256,7 +258,13 @@ export function ConnectWalletModal({
   );
 
   const handleBack = useCallback(() => {
-    if (step === "requesting") return;
+    if (step === "requesting") {
+      setStep("network");
+      setConnectingWallet(null);
+      setConnectingToNetwork(null);
+      setConnectError(null);
+      return;
+    }
     setStep("wallet");
     setSelectedWallet(null);
     setConnectError(null);
@@ -275,8 +283,7 @@ export function ConnectWalletModal({
             <button
               type="button"
               onClick={handleBack}
-              disabled={step === "requesting"}
-              className="-ml-1 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:pointer-events-none"
+              className="-ml-1 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Back"
             >
               <ChevronRight className="size-5 rotate-180" />
@@ -399,6 +406,9 @@ export function ConnectWalletModal({
               <p className="max-w-[280px] text-sm text-muted-foreground">
                 Open the {selectedWallet.adapter.name} browser extension to
                 connect your wallet.
+              </p>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Use Back above if the extension doesn’t respond.
               </p>
             </div>
           )}

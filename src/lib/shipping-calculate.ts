@@ -1027,10 +1027,7 @@ export async function runShippingCalculate(
     input.countryCode,
     input.stateCode,
   );
-  const customsDutiesNote =
-    printfulResult.rate?.shipments?.some((s) => s.customs_fees_possible) === true
-      ? "Customs or import duties may apply on delivery depending on your country."
-      : null;
+  const customsDutiesNote = null; // Hidden from checkout per product request
 
   return {
     shippingCents: finalShippingCents,
