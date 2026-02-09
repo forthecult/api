@@ -59,14 +59,21 @@ export async function GET(request: NextRequest) {
     const couponRows = await db
       .select({
         id: couponsTable.id,
+        method: couponsTable.method,
         code: couponsTable.code,
         dateStart: couponsTable.dateStart,
         dateEnd: couponsTable.dateEnd,
+        discountKind: couponsTable.discountKind,
         discountType: couponsTable.discountType,
         discountValue: couponsTable.discountValue,
         appliesTo: couponsTable.appliesTo,
+        buyQuantity: couponsTable.buyQuantity,
+        getQuantity: couponsTable.getQuantity,
+        getDiscountType: couponsTable.getDiscountType,
+        getDiscountValue: couponsTable.getDiscountValue,
         maxUses: couponsTable.maxUses,
         maxUsesPerCustomer: couponsTable.maxUsesPerCustomer,
+        maxUsesPerCustomerType: couponsTable.maxUsesPerCustomerType,
         createdAt: couponsTable.createdAt,
         updatedAt: couponsTable.updatedAt,
       })
@@ -98,26 +105,21 @@ export async function GET(request: NextRequest) {
 
     let items = coupons.map((c) => ({
       id: c.id,
-      method: (c as { method?: string }).method ?? "code",
+      method: c.method ?? "code",
       code: c.code,
       dateStart: c.dateStart?.toISOString() ?? null,
       dateEnd: c.dateEnd?.toISOString() ?? null,
-      discountKind:
-        (c as { discountKind?: string }).discountKind ?? "amount_off_order",
+      discountKind: c.discountKind ?? "amount_off_order",
       discountType: c.discountType,
       discountValue: c.discountValue,
       appliesTo: c.appliesTo,
-      buyQuantity: (c as { buyQuantity?: number | null }).buyQuantity ?? null,
-      getQuantity: (c as { getQuantity?: number | null }).getQuantity ?? null,
-      getDiscountType:
-        (c as { getDiscountType?: string | null }).getDiscountType ?? null,
-      getDiscountValue:
-        (c as { getDiscountValue?: number | null }).getDiscountValue ?? null,
+      buyQuantity: c.buyQuantity ?? null,
+      getQuantity: c.getQuantity ?? null,
+      getDiscountType: c.getDiscountType ?? null,
+      getDiscountValue: c.getDiscountValue ?? null,
       maxUses: c.maxUses,
       maxUsesPerCustomer: c.maxUsesPerCustomer,
-      maxUsesPerCustomerType:
-        (c as { maxUsesPerCustomerType?: string | null })
-          .maxUsesPerCustomerType ?? null,
+      maxUsesPerCustomerType: c.maxUsesPerCustomerType ?? null,
       redemptionCount: countByCoupon.get(c.id) ?? 0,
       createdAt: c.createdAt?.toISOString?.() ?? new Date().toISOString(),
       updatedAt: c.updatedAt?.toISOString?.() ?? new Date().toISOString(),
