@@ -68,6 +68,8 @@ import {
   type BillingAddressFormRef,
 } from "./BillingAddressForm";
 import { PolicyPopup } from "./PolicyPopup";
+import { SolanaPayDialog } from "./solana-pay-dialog";
+import { useSolanaPayCheckout } from "../hooks/useSolanaPayCheckout";
 import {
   CRYPTO_LOGO_SRC,
   ETH_CHAIN_OPTIONS,
@@ -160,23 +162,20 @@ export function PaymentMethodSection({
     null,
   );
 
-  const [solanaPayOpen, setSolanaPayOpen] = useState(false);
-  const [solanaPayUrl, setSolanaPayUrl] = useState<URL | null>(null);
-  const [solanaPayOrderId, setSolanaPayOrderId] = useState<string | null>(null);
-  const [solanaPayRecipient, setSolanaPayRecipient] = useState<string | null>(
-    null,
-  );
-  const [solanaPayAmount, setSolanaPayAmount] = useState<BigNumber | null>(
-    null,
-  );
-  const [solanaPaySplToken, setSolanaPaySplToken] = useState<string | null>(
-    null,
-  );
-  const [solanaPayStatus, setSolanaPayStatus] = useState<
-    "idle" | "pending" | "confirmed" | "error" | "connection-error"
-  >("idle");
-  const solanaPayPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const qrContainerRef = useRef<HTMLDivElement | null>(null);
+  const {
+    open: solanaPayOpen,
+    openDialog: openSolanaPayDialog,
+    closeDialog: closeSolanaPayDialog,
+    paymentUrl: solanaPayPaymentUrl,
+    status: solanaPayStatus,
+    orderId: solanaPayOrderId,
+    amountUsd: solanaPayAmountUsd,
+    recipientAddress: solanaPayRecipientAddress,
+  } = useSolanaPayCheckout({
+    buildOrderPayload,
+    total,
+    onComplete: () => {},
+  });
 
   const [cryptoPrices, setCryptoPrices] = useState<{
     SOL?: number;
@@ -346,174 +345,6 @@ export function PaymentMethodSection({
       setPaymentSubOption("solana" as UsdcSub);
     }
   }, [setValidationErrors]);
-
-  const closeSolanaPayDialog = useCallback(() => {
-    setSolanaPayOpen(false);
-    if (solanaPayPollRef.current) {
-      clearInterval(solanaPayPollRef.current);
-      solanaPayPollRef.current = null;
-    }
-    setSolanaPayUrl(null);
-    setSolanaPayOrderId(null);
-    setSolanaPayRecipient(null);
-    setSolanaPayAmount(null);
-    setSolanaPaySplToken(null);
-    setSolanaPayStatus("idle");
-    if (qrContainerRef.current) {
-      while (qrContainerRef.current.firstChild) {
-        qrContainerRef.current.removeChild(qrContainerRef.current.firstChild);
-      }
-    }
-  }, []);
-
-  const openSolanaPayDialog = useCallback(async () => {
-    const { orderTotalCents, commonBody } = buildOrderPayload();
-    setSolanaPayStatus("pending");
-    try {
-      const createRes = await fetch("/api/checkout/solana-pay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(commonBody),
-      });
-      if (!createRes.ok) {
-        setSolanaPayStatus("error");
-        return;
-      }
-      const data = (await createRes.json()) as {
-        orderId: string;
-        depositAddress: string;
-      };
-      const { orderId, depositAddress } = data;
-      const amount = usdcAmountFromUsd(orderTotalCents / 100);
-      const url = encodeURL({
-        recipient: new PublicKey(depositAddress),
-        amount,
-        splToken: new PublicKey(USDC_MINT_MAINNET),
-        label: getSolanaPayLabel(),
-        message: `Order total: $${total.toFixed(2)}`,
-      });
-      setSolanaPayUrl(url);
-      setSolanaPayOrderId(orderId);
-      setSolanaPayRecipient(depositAddress);
-      setSolanaPayAmount(amount);
-      setSolanaPaySplToken(USDC_MINT_MAINNET);
-      setSolanaPayOpen(true);
-    } catch {
-      setSolanaPayStatus("error");
-    }
-  }, [buildOrderPayload, total]);
-
-  useEffect(() => {
-    if (!solanaPayOpen || !solanaPayUrl) return;
-    let cancelled = false;
-    const timeoutId = setTimeout(() => {
-      if (cancelled) return;
-      const container = qrContainerRef.current;
-      if (!container) return;
-      while (container.firstChild) {
-        container.removeChild(container.firstChild);
-      }
-      const qr = createQR(solanaPayUrl.toString(), 256, "white", "black");
-      qr.append(container);
-    }, 100);
-    return () => {
-      cancelled = true;
-      clearTimeout(timeoutId);
-      if (qrContainerRef.current) {
-        while (qrContainerRef.current.firstChild) {
-          qrContainerRef.current.removeChild(
-            qrContainerRef.current.firstChild,
-          );
-        }
-      }
-    };
-  }, [solanaPayOpen, solanaPayUrl]);
-
-  useEffect(() => {
-    if (
-      !solanaPayOpen ||
-      !solanaPayRecipient ||
-      !solanaPayAmount ||
-      !solanaPaySplToken
-    )
-      return;
-    const params = new URLSearchParams({
-      depositAddress: solanaPayRecipient,
-      amount: solanaPayAmount.toString(),
-      splToken: solanaPaySplToken,
-    });
-    const interval = setInterval(async () => {
-      try {
-        const res = await fetch(
-          `/api/payments/solana-pay/status?${params.toString()}`,
-        );
-        const data = (await res.json()) as {
-          status: string;
-          message?: string;
-          signature?: string;
-        };
-        if (data.status === "confirmed") {
-          setSolanaPayStatus("confirmed");
-          if (solanaPayPollRef.current) {
-            clearInterval(solanaPayPollRef.current);
-            solanaPayPollRef.current = null;
-          }
-          const orderId = solanaPayOrderId;
-          closeSolanaPayDialog();
-          try {
-            await fetch("/api/checkout/solana-pay/confirm", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                depositAddress: solanaPayRecipient,
-                orderId,
-                signature: data.signature,
-                amount: solanaPayAmount.toString(),
-                splToken: solanaPaySplToken,
-              }),
-            });
-          } catch {
-            // order stays pending; can be reconciled later
-          }
-          router.push(
-            orderId
-              ? `/checkout/success?orderId=${encodeURIComponent(orderId)}`
-              : "/checkout/success",
-          );
-          return;
-        }
-        if (data.status === "error") {
-          setSolanaPayStatus("error");
-          if (solanaPayPollRef.current) {
-            clearInterval(solanaPayPollRef.current);
-            solanaPayPollRef.current = null;
-          }
-          return;
-        }
-      } catch {
-        setSolanaPayStatus("connection-error");
-        if (solanaPayPollRef.current) {
-          clearInterval(solanaPayPollRef.current);
-          solanaPayPollRef.current = null;
-        }
-      }
-    }, 1500);
-    solanaPayPollRef.current = interval;
-    return () => {
-      if (solanaPayPollRef.current) {
-        clearInterval(solanaPayPollRef.current);
-        solanaPayPollRef.current = null;
-      }
-    };
-  }, [
-    solanaPayOpen,
-    solanaPayOrderId,
-    solanaPayRecipient,
-    solanaPayAmount,
-    solanaPaySplToken,
-    router,
-    closeSolanaPayDialog,
-  ]);
 
   const handlePlaceOrder = useCallback(() => {
     const shippingErr = shippingFormRef.current?.validate() ?? [];
@@ -1393,53 +1224,16 @@ export function PaymentMethodSection({
         </div>
       </div>
 
-      <Dialog
-        onOpenChange={(open) => !open && closeSolanaPayDialog()}
+      <SolanaPayDialog
         open={solanaPayOpen}
-      >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Pay with Solana</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Scan the QR code with your wallet or open the link below to pay
-              with USDC.
-            </p>
-            <div
-              ref={qrContainerRef}
-              className="flex min-h-[256px] min-w-[256px] justify-center rounded-lg border border-border bg-white p-4"
-              aria-hidden
-            />
-            {solanaPayUrl && (
-              <Button asChild className="w-full" size="lg" variant="outline">
-                <a href={solanaPayUrl.toString()}>Open in wallet</a>
-              </Button>
-            )}
-            {solanaPayStatus === "pending" && (
-              <p className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" aria-hidden />
-                Waiting for payment…
-              </p>
-            )}
-            {solanaPayStatus === "confirmed" && (
-              <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                Payment confirmed. Redirecting…
-              </p>
-            )}
-            {solanaPayStatus === "error" && (
-              <p className="text-sm text-destructive">
-                Payment validation failed. Please try again.
-              </p>
-            )}
-            {solanaPayStatus === "connection-error" && (
-              <p className="text-sm text-destructive">
-                Connection error. Please check your network and try again.
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+        onOpenChange={(open) => !open && closeSolanaPayDialog()}
+        paymentUrl={solanaPayPaymentUrl}
+        status={solanaPayStatus}
+        amountUsd={solanaPayAmountUsd}
+        tokenSymbol="USDC"
+        recipientAddress={solanaPayRecipientAddress ?? undefined}
+        orderId={solanaPayOrderId ?? undefined}
+      />
     </>
   );
 }

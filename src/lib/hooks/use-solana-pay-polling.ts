@@ -21,10 +21,12 @@ interface UseSolanaPayPollingOptions {
   splToken: string | null;
   /** Whether to enable polling */
   enabled: boolean;
-  /** Callback when payment is confirmed */
-  onConfirmed?: () => void;
-  /** Custom success redirect URL */
+  /** Callback when payment is confirmed (receives orderId; called before redirect unless skipRedirect) */
+  onConfirmed?: (orderId: string) => void;
+  /** Custom success redirect URL (used only when skipRedirect is false) */
   successUrl?: string;
+  /** When true, do not call router.push; caller handles navigation via onConfirmed */
+  skipRedirect?: boolean;
   /** Polling interval in ms (default: 1500) */
   pollInterval?: number;
   /** Payer wallet address (so we can link order to user when they sign up later) */
@@ -49,6 +51,7 @@ export function useSolanaPayPolling({
   enabled,
   onConfirmed,
   successUrl,
+  skipRedirect = false,
   pollInterval = 1500,
   payerWalletAddress,
 }: UseSolanaPayPollingOptions): UseSolanaPayPollingResult {
@@ -115,13 +118,14 @@ export function useSolanaPayPolling({
             // order stays pending; can be reconciled later
           }
 
-          onConfirmed?.();
+          onConfirmed?.(orderId);
 
-          // Navigate to success page
-          const url =
-            successUrl ||
-            `/checkout/success?orderId=${encodeURIComponent(orderId)}`;
-          router.push(url);
+          if (!skipRedirect) {
+            const url =
+              successUrl ||
+              `/checkout/success?orderId=${encodeURIComponent(orderId)}`;
+            router.push(url);
+          }
           return;
         }
 
@@ -152,6 +156,7 @@ export function useSolanaPayPolling({
     pollInterval,
     onConfirmed,
     successUrl,
+    skipRedirect,
     router,
     stopPolling,
   ]);

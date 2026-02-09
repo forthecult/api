@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
-  useEffect,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -39,6 +39,11 @@ import {
   type BillingAddressFormRef,
 } from "./components/BillingAddressForm";
 import { PaymentMethodSection } from "./components/PaymentMethodSection";
+import {
+  checkoutReducer,
+  initialCheckoutState,
+} from "./checkout-reducer";
+import { useCoupons } from "./hooks/useCoupons";
 
 function getAffiliatePayload(): { affiliateCode?: string } {
   const code = getAffiliateCodeFromDocument();
@@ -87,7 +92,18 @@ export function CheckoutClient() {
   const shippingFormRef = useRef<ShippingAddressFormRef>(null);
   const billingFormRef = useRef<BillingAddressFormRef>(null);
 
-  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [checkoutState, dispatch] = useReducer(
+    checkoutReducer,
+    initialCheckoutState,
+  );
+  const { validationErrors, navigatingToPay } = checkoutState;
+  const setValidationErrors = useCallback((errors: string[]) => {
+    dispatch({ type: "SET_VALIDATION_ERRORS", errors });
+  }, []);
+  const setNavigatingToPay = useCallback((navigating: boolean) => {
+    dispatch({ type: "SET_NAVIGATING", navigating });
+  }, []);
+
   const [shipping, setShipping] = useState<ShippingUpdate>({
     shippingCents: 0,
     shippingLabel: null,
@@ -99,25 +115,6 @@ export function CheckoutClient() {
     taxNote: null,
     customsDutiesNote: null,
   });
-  const [navigatingToPay, setNavigatingToPay] = useState(false);
-  const [discountCodeInput, setDiscountCodeInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<{
-    couponId: string;
-    code: string;
-    discountKind: string;
-    discountType: string;
-    discountValue: number;
-    discountCents: number;
-    freeShipping: boolean;
-    totalAfterDiscountCents: number;
-    source: "code" | "automatic";
-  } | null>(null);
-  const [couponError, setCouponError] = useState("");
-  const [couponLoading, setCouponLoading] = useState(false);
-  const [showDiscountCode, setShowDiscountCode] = useState(false);
-  const [automaticCouponLoading, setAutomaticCouponLoading] = useState(false);
-  /** Bump when user removes discount so we re-evaluate automatic. */
-  const [discountEvalKey, setDiscountEvalKey] = useState(0);
   /** Crypto total label (e.g. "≈ 0.0875 SOL") set by PaymentMethodSection for OrderSummary. */
   const [cryptoTotalLabel, setCryptoTotalLabel] = useState<string | null>(null);
 
@@ -125,7 +122,6 @@ export function CheckoutClient() {
     setShipping(update);
   }, []);
 
-  // Destructure shipping state for easy access throughout the component
   const {
     shippingCents,
     shippingFree,
@@ -136,6 +132,23 @@ export function CheckoutClient() {
     taxNote,
     customsDutiesNote,
   } = shipping;
+
+  const coupons = useCoupons({
+    subtotal,
+    shippingCents,
+    items,
+  });
+  const {
+    appliedCoupon,
+    discountCodeInput,
+    setDiscountCodeInput,
+    couponError,
+    couponLoading,
+    showDiscountCode,
+    setShowDiscountCode,
+    handleApplyCoupon,
+    removeCoupon,
+  } = coupons;
 
   /** Build the common order payload used by all payment handlers. */
   const buildOrderPayload = useCallback(() => {
@@ -197,108 +210,6 @@ export function CheckoutClient() {
   const totalCents =
     Math.round(subtotal * 100) - discountCents + shippingCents + taxCents;
   const total = Math.max(0, totalCents) / 100;
-
-  const handleApplyCoupon = useCallback(async () => {
-    const code = discountCodeInput.trim();
-    if (!code) return;
-    setCouponError("");
-    setCouponLoading(true);
-    try {
-      const res = await fetch("/api/checkout/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          code,
-          subtotalCents: Math.round(subtotal * 100),
-          shippingFeeCents: Math.round(shippingCents),
-          productIds: items.map((i) => i.productId ?? i.id),
-        }),
-      });
-      const data = (await res.json()) as
-        | { valid: true; couponId: string; code: string; discountKind: string; discountType: string; discountValue: number; discountCents: number; freeShipping: boolean; totalAfterDiscountCents: number }
-        | { valid: false; error?: string };
-      if (data.valid) {
-        setAppliedCoupon({
-          couponId: data.couponId,
-          code: data.code,
-          discountKind: data.discountKind,
-          discountType: data.discountType,
-          discountValue: data.discountValue,
-          discountCents: data.discountCents,
-          freeShipping: data.freeShipping,
-          totalAfterDiscountCents: data.totalAfterDiscountCents,
-          source: "code",
-        });
-        setDiscountCodeInput("");
-      } else {
-        setCouponError(
-          typeof data.error === "string" && data.error.length > 0
-            ? data.error
-            : "This discount code is invalid or expired.",
-        );
-      }
-    } catch {
-      setCouponError("Could not validate discount code. Please try again.");
-    } finally {
-      setCouponLoading(false);
-    }
-  }, [discountCodeInput, subtotal, shippingCents, items]);
-
-  // Fetch and apply best automatic discount when no code has been applied (or only automatic was applied)
-  useEffect(() => {
-    // Don't overwrite a discount the customer applied via code
-    if (appliedCoupon?.source === "code") return;
-    if (items.length === 0) {
-      setAppliedCoupon(null);
-      return;
-    }
-    let cancelled = false;
-    setAutomaticCouponLoading(true);
-    const productCount = items.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
-    fetch("/api/checkout/coupons/automatic", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        subtotalCents: Math.round(subtotal * 100),
-        shippingFeeCents: Math.round(shippingCents),
-        productCount,
-        productIds: items.map((i) => i.productId ?? i.id),
-      }),
-    })
-      .then((res) => res.json())
-      .then((data: { applied: boolean } & Record<string, unknown>) => {
-        if (cancelled) return;
-        if (data.applied && data.couponId && data.code != null) {
-          setAppliedCoupon({
-            couponId: data.couponId as string,
-            code: data.code as string,
-            discountKind: (data.discountKind as string) ?? "amount_off_order",
-            discountType: (data.discountType as string) ?? "percent",
-            discountValue: typeof data.discountValue === "number" ? data.discountValue : 0,
-            discountCents: typeof data.discountCents === "number" ? data.discountCents : 0,
-            freeShipping: data.freeShipping === true,
-            totalAfterDiscountCents:
-              typeof data.totalAfterDiscountCents === "number"
-                ? data.totalAfterDiscountCents
-                : 0,
-            source: "automatic",
-          });
-        } else {
-          setAppliedCoupon(null);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setAppliedCoupon(null);
-      })
-      .finally(() => {
-        if (!cancelled) setAutomaticCouponLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [items, subtotal, shippingCents, discountEvalKey]);
 
   if (!isHydrated) {
     return (
@@ -388,16 +299,9 @@ export function CheckoutClient() {
               couponError={couponError}
               couponLoading={couponLoading}
               onShowDiscountCode={() => setShowDiscountCode(true)}
-              onDiscountCodeInputChange={(v) => {
-                setDiscountCodeInput(v);
-                setCouponError("");
-              }}
+              onDiscountCodeInputChange={setDiscountCodeInput}
               onApplyCoupon={handleApplyCoupon}
-              onRemoveCoupon={() => {
-                setAppliedCoupon(null);
-                setCouponError("");
-                setDiscountEvalKey((k) => k + 1);
-              }}
+              onRemoveCoupon={removeCoupon}
             />
           </div>
         </div>
