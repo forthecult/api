@@ -32,7 +32,7 @@ Railway will assign a URL like `https://your-app.up.railway.app`. That’s your 
 - `NEXT_SERVER_APP_URL` = `http://localhost:PORT` (e.g. `http://localhost:8080`) for server-side fetches only; auth email links use `NEXT_PUBLIC_APP_URL`.
 - `DATABASE_URL`, `AUTH_SECRET`, and any other env your app needs.
 
-**Database schema (required):** The app expects tables such as `brand`, `category`, `product`, etc. If you see errors like `relation "brand" does not exist` (PostgreSQL 42P01), run migrations against the **staging** `DATABASE_URL` from your machine (or a one-off deploy step), for example:
+**Database schema (required):** The app expects tables such as `brand`, `category`, `product`, etc. The **start command** runs `bun run db:push && bun run start` (see `railway.json` and `nixpacks.toml`), so each deploy pushes the Drizzle schema to the DB before starting. If you ever need to run it manually (e.g. before first deploy or from your machine):
 
 ```bash
 # From repo root, with DATABASE_URL pointing at Railway Postgres
@@ -40,7 +40,7 @@ bun run db:push
 # or: npx drizzle-kit push
 ```
 
-Use the same `DATABASE_URL` you set on the Railway service. After the schema exists, build and runtime will succeed.
+Use the same `DATABASE_URL` you set on the Railway service.
 
 **Seeding staging from your machine (schema + categories + admin):** You do **not** run these inside Railway. Run them on your own computer, in the **repo root** (`relivator/`), with env vars set so they talk to your staging app and DB.
 
