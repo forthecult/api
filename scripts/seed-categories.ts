@@ -605,6 +605,18 @@ const ACCESSORIES_SUB: CategoryRow[] = [
     level: 2,
     parentId: "accessories",
   },
+  {
+    id: "accessories-speakers",
+    name: "Speakers",
+    slug: "speakers",
+    title: "Speakers — Portable Bluetooth & Subwoofers | Culture",
+    metaDescription:
+      "Portable Bluetooth speakers and subwoofers. Minirig and premium brands. Loud, durable, UK-made. Pay with crypto or card. Culture.",
+    description:
+      "Portable sound that goes where you go. Bluetooth speakers and subwoofers for crisp, powerful audio—indoors, outdoors, and on the move. We curate brands like Minirig: designed and built in the UK, up to 100 hours playtime, wireless link-up, and modular systems. Pay with 50+ cryptocurrencies or card.",
+    level: 2,
+    parentId: "accessories",
+  },
 ];
 
 /** Home & Living subcategories. Protect Health (coffee, toxin-free), quality, premium. */
@@ -1143,6 +1155,11 @@ const PRODUCT_BULK_ADD_CONFIG: ProductBulkAddConfig[] = [
     categoryId: "accessories-wallets",
     titleContains: "wallet",
     tagContains: "wallet",
+  },
+  {
+    categoryId: "accessories-speakers",
+    titleContains: "speaker",
+    tagContains: "speaker",
   },
 ];
 

@@ -130,6 +130,14 @@ const BRANDS: Array<{
       "Hardware wallets for Bitcoin and crypto. Open-source security, self-custody, and support for 1000s of coins. Trezor Safe 3, Safe 5, and Safe 7.",
     featured: true,
   },
+  {
+    name: "Minirig",
+    websiteUrl: "https://minirigs.co.uk/",
+    description:
+      "Portable Bluetooth speakers and subwoofers designed and made in Bristol, UK. The loudest small speakers—Minirig 4, Mini 2, Subwoofer 4—with up to 100 hours playtime, wireless link-up, and modular sound systems.",
+    featured: true,
+    logoUrl: "https://files.minirigs.co.uk/mr4/minirig-4-logo-white.png",
+  },
 ];
 
 async function main() {

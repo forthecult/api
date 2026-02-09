@@ -119,4 +119,40 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       estimatedDaysText: "1-2 weeks",
     },
   ],
+  /** UK: £5.00; US: £26.00 (+ tax where applicable). Ships 1–5 working days (minirigs.co.uk). */
+  minirig: [
+    {
+      name: "Minirig UK — 1-5 working days",
+      countryCode: "GB",
+      minOrderCents: null,
+      maxOrderCents: null,
+      type: "flat",
+      amountCents: 500, // £5.00
+      additionalItemCents: null,
+      priority: 1,
+      estimatedDaysText: "1-5 working days",
+    },
+    {
+      name: "Minirig UK Express — £30.82",
+      countryCode: "GB",
+      minOrderCents: null,
+      maxOrderCents: null,
+      type: "flat",
+      amountCents: 3082, // £30.82
+      additionalItemCents: null,
+      priority: 2,
+      estimatedDaysText: "1-5 working days",
+    },
+    {
+      name: "Minirig US — £26 + tax (e.g. 10%)",
+      countryCode: "US",
+      minOrderCents: null,
+      maxOrderCents: null,
+      type: "flat",
+      amountCents: 2600, // £26.00 (display as applicable; tax ~10% e.g. £16.36 on order)
+      additionalItemCents: null,
+      priority: 1,
+      estimatedDaysText: "1-5 working days",
+    },
+  ],
 };

@@ -27,6 +27,8 @@ import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
 import { HOME_ASSISTANT_VOICE } from "./seed-data/home-assistant-voice";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
 import { LINKSTAR_H68K_1432_V2 } from "./seed-data/linkstar-h68k-1432-v2";
+import { MINIRIG_4 } from "./seed-data/minirig-4";
+import { MINIRIG_SUBWOOFER_4 } from "./seed-data/minirig-subwoofer-4";
 import { PACSAFE_EXP_28L } from "./seed-data/pacsafe-exp-28l";
 import { PACSAFE_RFIDSAFE_WALLET } from "./seed-data/pacsafe-rfidsafe-wallet";
 import { PACSAFE_V_12L } from "./seed-data/pacsafe-v-12l";
@@ -68,6 +70,8 @@ const CURATED_PRODUCTS = [
   HOME_ASSISTANT_GREEN,
   HOME_ASSISTANT_VOICE,
   LINKSTAR_H68K_1432_V2,
+  MINIRIG_4,
+  MINIRIG_SUBWOOFER_4,
   SENSECAP_WATCHER_W1_A,
   TRMNL_7_5_OG_DIY_KIT,
   XIAO_SMART_IR_MATE,
