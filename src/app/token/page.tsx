@@ -90,7 +90,8 @@ const cultureUnique = [
   "Clean, quality, products that improve physical and mental wellness.",
   "We make it easy for our AI companion to make purchases.",
   "No trackers. We won't follow you around the internet.",
-  "We use technology to lower costs, make the supply chain more transparent, and improve our customers lives.",
+  "We use technology to lower costs, make the supply chain more transparent, and improve our customers' lives.",
+  "Bringing digital to physical to make the supply chain more transparent and the metaverse more interactive.",
   "Data deletion. No required account creation. No Shopify. We remove your address, phone number, and email 30 days after order placement (unless you want us to send you feature updates).",
 ];
 
@@ -501,7 +502,7 @@ export default function TokenPage() {
               </CardHeader>
               <CardContent>
                 <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
-                  <li>Better ]capital management</li>
+                  <li>Better capital management</li>
                   <li>Clear framework for decentralized operations</li>
                   <li>Path to community governance</li>
                 </ul>
