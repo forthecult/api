@@ -914,6 +914,16 @@ export async function exportProductToPrintify(
     return { success: true, printifyProductId: product.printifyProductId };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
+    const isDisabledForEditing =
+      message.includes("8252") ||
+      /disabled for editing/i.test(message);
+    if (isDisabledForEditing) {
+      return {
+        success: false,
+        error:
+          "Product is in Publishing in Printify; Printify blocks edits until it is Published. Register webhooks, then delete and re-publish the product in Printify to clear status.",
+      };
+    }
     return { success: false, error: message };
   }
 }

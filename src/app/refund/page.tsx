@@ -33,9 +33,7 @@ export default function RefundPage() {
               <strong className="font-medium text-foreground">
                 Orders that haven’t shipped
               </strong>{" "}
-              are cancelled immediately. If your order was placed with an
-              fulfillment partner, we cancel it with that partner as
-              well.
+              are cancelled immediately.
             </li>
             <li>
               <strong className="font-medium text-foreground">

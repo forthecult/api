@@ -7,7 +7,6 @@ import Link from "next/link";
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
-import { HeroBadge } from "~/ui/components/hero-badge";
 import {
   PageContainer,
   PageSection,
@@ -226,8 +225,6 @@ export default async function HomePage() {
             >
               <div className="flex flex-col justify-center space-y-6">
                 <div className="space-y-4">
-                  <HeroBadge />
-
                   <h1
                     className={`
                       font-display text-4xl leading-tight font-bold

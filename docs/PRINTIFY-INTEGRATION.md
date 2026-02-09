@@ -57,7 +57,7 @@ Product sync events are handled automatically:
 - `product:published` — Publish completed → same: 200 first, import in background
 - `product:deleted` — Product deleted in Printify → 200 first, unpublish local product in background
 
-We return HTTP 200 right away for product events so Printify can clear the "Publishing" status. If we waited for the full import before responding, Printify could timeout and leave products stuck in "Publishing".
+We return HTTP 200 right away for product events so Printify can clear the "Publishing" status. While a product is in "Publishing", Printify's API returns **400 code 8252 "Product is disabled for editing"** for any update (including our export-after-save); we treat that as expected and log at info level. If we waited for the full import before responding, Printify could timeout and leave products stuck in "Publishing".
 
 **Important: the only way to register or update Printify webhooks is via our app’s API.** Printify has no webhook UI in their front-end for API stores—do not try to configure webhooks in the Printify dashboard.
 

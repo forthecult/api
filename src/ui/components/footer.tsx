@@ -4,6 +4,7 @@ import { SEO_CONFIG } from "~/app";
 import { FooterBottom } from "~/ui/components/footer/FooterBottom";
 import { FooterDogePeek } from "~/ui/components/footer/FooterDogePeek";
 import { FooterPaymentsBar } from "~/ui/components/footer/FooterPaymentsBar";
+import { GitHubIcon } from "~/ui/components/icons/github";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 
@@ -94,6 +95,21 @@ export function Footer({ className }: { className?: string }) {
                   aria-label="Telegram @bytheculture"
                 >
                   <TelegramIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="h-8 w-8 rounded-full"
+                size="icon"
+                variant="ghost"
+              >
+                <Link
+                  href="https://github.com/forthecult"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  aria-label="GitHub forthecult"
+                >
+                  <GitHubIcon className="h-4 w-4" />
                 </Link>
               </Button>
             </div>

@@ -587,9 +587,18 @@ export async function PATCH(
       const exportResult = await exportProductToPrintify(id);
       if (!exportResult.success) {
         printifyExportError = exportResult.error ?? "Printify export failed";
-        console.warn(
-          `Printify export after admin save failed: ${printifyExportError}`,
-        );
+        const isPublishingBlock =
+          printifyExportError.includes("Publishing") ||
+          printifyExportError.includes("8252");
+        if (isPublishingBlock) {
+          console.info(
+            "Printify export skipped: product is in Publishing (edits blocked until Published).",
+          );
+        } else {
+          console.warn(
+            `Printify export after admin save failed: ${printifyExportError}`,
+          );
+        }
       }
     }
 

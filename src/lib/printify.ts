@@ -74,9 +74,18 @@ async function printifyFetch<T>(
 
   if (!res.ok) {
     const errorBody = await res.text();
-    console.error(
-      `Printify API Error (${res.status} ${res.statusText}): ${errorBody}`,
-    );
+    const isDisabledForEditing =
+      res.status === 400 &&
+      (errorBody.includes("8252") || /disabled for editing/i.test(errorBody));
+    if (isDisabledForEditing) {
+      console.info(
+        "Printify API: product is in Publishing (disabled for editing, code 8252).",
+      );
+    } else {
+      console.error(
+        `Printify API Error (${res.status} ${res.statusText}): ${errorBody}`,
+      );
+    }
     throw new Error(
       `Printify API Error: ${res.status} ${res.statusText} - ${errorBody}`,
     );
