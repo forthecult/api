@@ -1,15 +1,20 @@
 ---
-description: Do not expose fulfillment/vendor names (e.g. Printful, Printify) in public-facing APIs or user copy
-globs: src/app/api/**/*.ts, src/lib/openapi.ts, src/app/**/*.tsx
+description: Vendor names only in admin; never in customer-facing front-end or customer/AI API
+globs: src/app/api/**/*.ts, src/lib/openapi.ts, src/app/**/*.tsx, public/**/*
 alwaysApply: false
 ---
 
-# No vendor names in public-facing APIs
+# Vendor information: public vs admin
 
-Do **not** expose the names of fulfillment or payment vendors (e.g. Printful, Printify) in:
+**Vendor information (e.g. fulfillment or payment vendor names like Printful, Printify) must NOT be displayed publicly.**
 
-- **Public API responses** – Response bodies for routes that are not behind admin or internal auth (e.g. `/api/shipping/*`, `/api/checkout/*`, `/api/orders/*`, `/api/cart/*`, `/api/agent/*`, `/api/openapi.json`). Use generic terms instead (e.g. `fulfillmentError`, `fulfillmentOrderId`, shipping breakdown without vendor-named keys).
-- **OpenAPI spec** – Descriptions and examples in `src/lib/openapi.ts` must not mention specific vendor names.
-- **User-facing copy** – Storefront pages, refund/checkout copy, and error messages shown to customers must not name vendors; use “fulfillment partner”, “fulfillment provider”, or “our partners” instead.
+- **Allowed:** Admin front-end and admin API. You may show and use vendor names in:
+  - Routes under `/api/admin/*` (responses, logs, error messages).
+  - Admin UI (e.g. `admin/` app, any page or component used only by authenticated admin users).
+  - Internal code: webhooks, server-only libs, database column names, logs.
 
-Internal code (admin routes, webhooks, server-only libs, logs, database column names) may still use vendor names where needed for integration.
+- **Not allowed:** Customer-facing front-end and customer/AI API. Do not expose vendor names in:
+  - **Public API responses** – Any route that is not behind admin auth (e.g. `/api/shipping/*`, `/api/checkout/*`, `/api/orders/*`, `/api/cart/*`, `/api/agent/*`, `/api/openapi.json`). Use generic terms (e.g. `fulfillmentError`, `fulfillmentOrderId`).
+  - **OpenAPI spec** – Descriptions and examples in `src/lib/openapi.ts` must not mention specific vendor names.
+  - **Storefront / customer copy** – Product pages, checkout, refund flows, and any error messages shown to customers. Use “fulfillment partner”, “fulfillment provider”, or “our partners” instead.
+  - **Public docs and LLM-facing content** – Files under `public/` (e.g. `public/llm/*`), public API documentation, or any material that customers or AI agents may see.

@@ -18,7 +18,7 @@
 10. 📅 **tables**: [react-table](https://tanstack.com/table)
 11. 🌐 **i18n**: [next-intl](https://next-intl.dev) _(🔜 w.i.p)_
 12. 💌 **email**: [resend](https://resend.com) _(🔜 w.i.p)_
-13. 💳 **payments**: [polar](https://polar.sh)
+13. 💳 **payments**: subscription provider (see billing integration below)
 14. 🔑 **api**: [orpc](https://orpc.unnoq.com) _(🔜 w.i.p)_
 
 > these features define the main reliverse stack. for an alternative setup—featuring clerk, stripe, trpc, and more—check out [versator](https://github.com/blefnk/versator).
@@ -92,9 +92,9 @@ After deploying (e.g. Vercel, Railway) and creating a **staging** (or production
 To seed only categories and products (no brands): `bun run db:seed:all`.  
 To run seeds individually: `bun run db:seed-categories`, `bun run db:seed-brands`, `bun run db:seed-shipping-by-brand`, `bun run db:seed`, `bun run db:seed-reviews`.
 
-## polar integration
+## Subscription / billing integration
 
-relivator now integrates with [polar](https://polar.sh) for payment processing and subscription management.
+relivator integrates with a subscription provider for payment processing and subscription management.
 
 ### features
 
@@ -106,22 +106,17 @@ relivator now integrates with [polar](https://polar.sh) for payment processing a
 
 ### setup instructions
 
-1. create an account on [polar](https://polar.sh)
-2. create an organization and get an organization access token
-3. configure your environment variables in `.env`:
-   ```
-   POLAR_ACCESS_TOKEN="your_access_token"
-   POLAR_WEBHOOK_SECRET="your_webhook_secret"
-   POLAR_ENVIRONMENT="production" # or "sandbox" for testing
-   ```
-4. create products in the polar dashboard
-5. update the product IDs in `src/lib/auth.ts` to match your polar products:
+1. create an account with your chosen subscription provider and create an organization.
+2. obtain an organization access token and webhook secret from the provider dashboard.
+3. configure your environment variables in `.env` (use the variable names required by your provider).
+4. create products in the subscription dashboard.
+5. update the product IDs in `src/lib/auth.ts` to match your subscription products:
    ```typescript
    checkout: {
      enabled: true,
      products: [
        {
-         productId: "your-product-id", // Replace with actual product ID from Polar Dashboard
+         productId: "your-product-id", // Replace with actual product ID from your subscription dashboard
          slug: "pro" // Custom slug for easy reference in Checkout URL
        }
      ]

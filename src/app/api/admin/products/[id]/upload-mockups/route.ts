@@ -1,12 +1,12 @@
 /**
  * POST /api/admin/products/[id]/upload-mockups
  *
- * Re-host product images from Printful/Printify CDN to UploadThing:
+ * Re-host product images from POD provider CDN to UploadThing:
  * fetch, optimize to WebP, SEO filename/alt, upload, update product_image,
  * product.imageUrl, and product_variant.imageUrl.
  *
- * Only applies to products with source "printful" or "printify" that still
- * have provider image URLs. Requires UPLOADTHING_TOKEN.
+ * Only applies to products with POD source that still have provider image URLs.
+ * Requires UPLOADTHING_TOKEN.
  */
 
 import { eq } from "drizzle-orm";
@@ -65,7 +65,7 @@ export async function POST(
       return NextResponse.json(
         {
           error:
-            "Only Printful or Printify products can have mockups re-hosted. This product is not from a POD provider.",
+            "Only POD-sourced products can have mockups re-hosted. This product is not from a POD provider.",
         },
         { status: 400 },
       );
@@ -100,7 +100,7 @@ export async function POST(
           ? "Images are already hosted on UploadThing."
           : hasProviderUrl
             ? "No provider image URLs to process (check product images and variants)."
-            : "No Printful/Printify image URLs found for this product.",
+            : "No POD provider image URLs found for this product.",
         ...result,
       });
     }

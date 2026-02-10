@@ -84,9 +84,9 @@ interface Product {
   handlingDaysMax?: number | null;
   transitDaysMin?: number | null;
   transitDaysMax?: number | null;
-  /** Blank product brand (synced from Printful/Printify). */
+  /** Blank product brand (synced from fulfillment). */
   brand?: string | null;
-  /** Blank product model (synced from Printful/Printify). */
+  /** Blank product model (synced from fulfillment). */
   model?: string | null;
   metaDescription?: string | null;
   pageTitle?: string | null;

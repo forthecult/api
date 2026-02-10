@@ -1,6 +1,6 @@
 # API Reference (summary for LLMs)
 
-Base: same origin as this site. Example: https://your-domain.com/api
+Base: same origin as this site. Example: https://forthecult.store/api
 Format: JSON. Timestamps: ISO 8601. Optional auth: Authorization: Bearer API_KEY, X-Agent-Id, X-Agent-Name.
 
 ## First call for agents

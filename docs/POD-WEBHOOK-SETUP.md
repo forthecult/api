@@ -69,7 +69,7 @@ fetch('/api/admin/printify/webhooks', { credentials: 'include' })
 
 # Or via curl:
 curl -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
-  https://your-domain.com/api/admin/printify/webhooks
+  https://forthecult.store/api/admin/printify/webhooks
 ```
 
 **2. Register all webhooks:**
@@ -88,7 +88,7 @@ curl -X POST \
   -H "Authorization: Bearer YOUR_ADMIN_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"action": "register_all"}' \
-  https://your-domain.com/api/admin/printify/webhooks
+  https://forthecult.store/api/admin/printify/webhooks
 ```
 
 **3. Delete all webhooks (if needed):**
@@ -234,7 +234,7 @@ fetch('/api/admin/printful/sync', {
 2. **Verify your app URL is accessible:**
    - Webhooks require a publicly accessible HTTPS URL
    - `NEXT_PUBLIC_APP_URL` must be set correctly
-   - Test: `curl https://your-domain.com/api/webhooks/printify` should return `{"status":"ok"}`
+   - Test: `curl https://forthecult.store/api/webhooks/printify` should return `{"status":"ok"}`
 
 3. **Check logs:**
    - Railway: View logs in the Railway dashboard
@@ -259,7 +259,7 @@ fetch('/api/admin/printful/sync', {
 ### Printify
 - Uses URL-based secret: `?secret=YOUR_SECRET`
 - Set `PRINTIFY_WEBHOOK_SECRET` in `.env`
-- Webhook URL becomes: `https://your-domain.com/api/webhooks/printify?secret=YOUR_SECRET`
+- Webhook URL becomes: `https://forthecult.store/api/webhooks/printify?secret=YOUR_SECRET`
 
 ### Printful
 - Uses HMAC-SHA256 signature verification

@@ -134,7 +134,7 @@ export function ProductVariantSection({
 }: ProductVariantSectionProps) {
   const unavailableInCountry = useUnavailableInCountry(product);
 
-  // Use option definitions from API, or derive from variants when missing (e.g. after Printful sync fix)
+  // Use option definitions from API, or derive from variants when missing (e.g. after fulfillment sync)
   const optionDefinitions =
     optionDefinitionsProp.length > 0
       ? optionDefinitionsProp

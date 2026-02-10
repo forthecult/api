@@ -29,7 +29,7 @@
 
 | | |
 |---|---|
-| **Base URL** | `https://your-domain.com/api` |
+| **Base URL** | `https://forthecult.store/api` |
 | **OpenAPI spec** | `GET /api/openapi.json` |
 | **Interactive docs** | `/api/docs` |
 | **AI capabilities** | `GET /api/agent/capabilities` ← **Start here!** |

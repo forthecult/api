@@ -18,7 +18,7 @@
  *
  * Security: Printify doesn't sign webhooks with HMAC like Printful.
  * In production, set PRINTIFY_WEBHOOK_SECRET and configure your webhook URL
- * to include it (e.g. https://your-domain.com/api/webhooks/printify?secret=YOUR_SECRET).
+ * to include it (e.g. https://forthecult.store/api/webhooks/printify?secret=YOUR_SECRET).
  * When the secret is set, requests without the matching secret are rejected.
  */
 

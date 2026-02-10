@@ -63,9 +63,9 @@ interface Product {
   transitDaysMax?: number | null;
   /** When non-empty, product ships only to these countries (ISO 2-letter). */
   availableCountryCodes?: string[];
-  /** Blank product brand (synced from Printful/Printify). */
+  /** Blank product brand (synced from fulfillment). */
   brand?: string | null;
-  /** Blank product model (synced from Printful/Printify). */
+  /** Blank product model (synced from fulfillment). */
   model?: string | null;
   /** Size chart for accordion when product has brand+model (e.g. apparel). */
   sizeChart?: {
@@ -360,7 +360,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   </p>
                 </div>
 
-                {/* Brand & model: show only when brand is not the POD provider (Printful/Printify) */}
+                {/* Brand & model: show only when brand is not the fulfillment provider placeholder */}
                 {(() => {
                   const b = product.brand?.trim();
                   const m = product.model?.trim();
