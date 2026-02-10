@@ -32,15 +32,6 @@ GET /api/agent/capabilities — Returns features, payment options, shipping coun
 
 Payment flow (crypto): checkout → get deposit address and amount → user/agent sends transfer → poll status. Solana Pay URL is returned for wallet deep links.
 
-## Admin (create/edit products)
-
-Auth: API key (Authorization: Bearer ADMIN_API_KEY or X-API-Key) or session (admin user).
-
-- GET /api/admin/products — List products. Query: page, limit, search, sortBy, sortOrder.
-- POST /api/admin/products — Create product. Min body: name, priceCents; optional: description, imageUrl, published, categoryId, variants, etc.
-- GET /api/admin/products/{id} — Get one product.
-- PATCH /api/admin/products/{id} — Update product (partial body).
-
 ## Errors
 
 Responses use structured errors: code, message, details, requestId, _suggestions (next steps). Responses may include _actions (suggested API calls).

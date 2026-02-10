@@ -44,6 +44,19 @@ export const createOrderSchema = z.object({
   token: z
     .enum(["solana", "usdc", "whitewhale", "crust", "pump", "troll"])
     .optional(),
+  // Shipping address (optional). Only required for physical goods; digital-only orders often omit it.
+  shipping: z
+    .object({
+      name: z.string().max(200).optional(),
+      address1: z.string().max(500).optional(),
+      address2: z.string().max(200).optional(),
+      city: z.string().max(100).optional(),
+      stateCode: z.string().max(20).optional(),
+      zip: z.string().max(20).optional(),
+      countryCode: z.string().max(10).optional(),
+      phone: z.string().max(30).optional(),
+    })
+    .optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

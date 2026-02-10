@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import { auth, isAdminUser } from "~/lib/auth";
 
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY?.trim() ?? "";
+const ADMIN_AI_API_KEY = process.env.ADMIN_AI_API_KEY?.trim() ?? "";
 
 /** Timing-safe comparison to prevent key extraction via timing attacks. */
 function constantTimeEqual(a: string, b: string): boolean {
@@ -19,14 +20,15 @@ function constantTimeEqual(a: string, b: string): boolean {
 
 /**
  * Resolve admin authentication from either:
- * 1. API key: Authorization: Bearer <key> or X-API-Key: <key> (must match ADMIN_API_KEY)
+ * 1. API key: Authorization: Bearer <key> or X-API-Key: <key> (must match ADMIN_API_KEY or ADMIN_AI_API_KEY)
  * 2. Session: cookie-based session for a user whose email is in ADMIN_EMAILS
  *
- * Use this for admin APIs that should be callable by an AI/agent (with API key)
- * or by the admin dashboard (with session).
+ * Use ADMIN_AI_API_KEY for temporary AI/agent access so you can rotate or revoke it
+ * without affecting human admin or scripts using ADMIN_API_KEY. See
+ * forthecult-api/guides/ai-admin-temporary-access.md.
  */
 export async function getAdminAuth(request: NextRequest): Promise<
-  | { ok: true; method: "api_key" }
+  | { ok: true; method: "api_key"; source?: "ai" }
   | { ok: true; method: "session"; user: { id: string; email?: string } }
   | { ok: false }
 > {
@@ -37,8 +39,13 @@ export async function getAdminAuth(request: NextRequest): Promise<
     authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
   const key = bearer ?? apiKeyHeader?.trim() ?? null;
 
-  if (ADMIN_API_KEY && key && constantTimeEqual(ADMIN_API_KEY, key)) {
-    return { ok: true, method: "api_key" };
+  if (key) {
+    if (ADMIN_AI_API_KEY && constantTimeEqual(ADMIN_AI_API_KEY, key)) {
+      return { ok: true, method: "api_key", source: "ai" };
+    }
+    if (ADMIN_API_KEY && constantTimeEqual(ADMIN_API_KEY, key)) {
+      return { ok: true, method: "api_key" };
+    }
   }
 
   const session = await auth.api.getSession({ headers: request.headers });

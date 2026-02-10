@@ -13,10 +13,8 @@ This site is an ecommerce store (Culture Store) built on the Relivator stack: Ne
 - Products: Published products with variants (size, color), categories, brands. Search via POST /api/products/semantic-search or POST /api/v1/products/search.
 - Checkout: POST /api/checkout with items, email, payment (chain/token or card), shipping. Returns order ID and payment details (crypto address + amount or payment link).
 - Orders: Poll GET /api/orders/{orderId}/status until status is "paid". Webhooks for fulfillment (Printful/Printify) update order status.
-- Admin: Create/edit products via /api/admin/products with Authorization: Bearer ADMIN_API_KEY or session cookie (admin emails in ADMIN_EMAILS).
-
 ## Customer-facing
 
 - Storefront, product pages, cart, checkout. Auth via better-auth (email, OAuth). Subscriptions and billing via Polar (dashboard/billing).
 
-Use /llm/api.txt for full API summary and /llm/integrations.txt for payments, webhooks, and auth.
+Use /llm/api.txt for full API summary. For full endpoint reference, call GET /api/agent/capabilities.

@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       telegramFirstName,
       affiliateCode,
       couponCode,
+      shipping,
     } = validation.data;
 
     const token = (rawBody as { token?: string }).token?.toLowerCase() ?? "bitcoin";
@@ -169,6 +170,17 @@ export async function POST(request: NextRequest) {
         ...(reference && typeof reference === "string" && reference.trim()
           ? { customerNote: reference.trim() }
           : {}),
+        // Shipping address for admin order details
+        ...(shipping?.name && { shippingName: shipping.name }),
+        ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
+        ...(shipping?.address2 && { shippingAddress2: shipping.address2 }),
+        ...(shipping?.city && { shippingCity: shipping.city }),
+        ...(shipping?.stateCode && { shippingStateCode: shipping.stateCode }),
+        ...(shipping?.zip && { shippingZip: shipping.zip }),
+        ...(shipping?.countryCode && {
+          shippingCountryCode: shipping.countryCode,
+        }),
+        ...(shipping?.phone && { shippingPhone: shipping.phone }),
       },
     );
 

@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       affiliateCode,
       couponCode,
       token: tokenFromBody,
+      shipping,
     } = validation.data;
 
     // Map frontend token to stored crypto currency (for balance check / UI on payment page)
@@ -146,6 +147,17 @@ export async function POST(request: NextRequest) {
           ? { solanaPayReference: reference.trim() }
           : {}),
         ...(cryptoCurrency ? { cryptoCurrency } : {}),
+        // Shipping address for admin order details
+        ...(shipping?.name && { shippingName: shipping.name }),
+        ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
+        ...(shipping?.address2 && { shippingAddress2: shipping.address2 }),
+        ...(shipping?.city && { shippingCity: shipping.city }),
+        ...(shipping?.stateCode && { shippingStateCode: shipping.stateCode }),
+        ...(shipping?.zip && { shippingZip: shipping.zip }),
+        ...(shipping?.countryCode && {
+          shippingCountryCode: shipping.countryCode,
+        }),
+        ...(shipping?.phone && { shippingPhone: shipping.phone }),
       },
     );
 

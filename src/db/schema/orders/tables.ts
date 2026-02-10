@@ -154,8 +154,8 @@ export const ordersTable = pgTable(
     email: text("email").notNull(),
     fulfillmentStatus: text("fulfillment_status"), // "unfulfilled" | "on_hold" | "partially_fulfilled" | "fulfilled"
     internalNotes: text("internal_notes"),
-    paymentStatus: text("payment_status"), // "pending" | "paid" | "refunded" | "cancelled"
-    status: text("status").notNull(), // legacy: "pending" | "paid" | "fulfilled" | "cancelled"
+    paymentStatus: text("payment_status"), // "pending" | "paid" | "refund_pending" | "refunded" | "cancelled"
+    status: text("status").notNull(), // legacy: "pending" | "paid" | "fulfilled" | "cancelled" | "refund_pending" | "refunded"
     taxCents: integer("tax_cents").notNull().default(0),
     totalCents: integer("total_cents").notNull(),
     shippingFeeCents: integer("shipping_fee_cents").notNull().default(0),

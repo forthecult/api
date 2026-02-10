@@ -397,7 +397,7 @@ export function PaymentMethodSection({
       router.push(`/checkout/${invoiceId}#sui-${amount.toFixed(2)}-${expires}`);
       return;
     }
-    const { commonBody } = buildOrderPayload();
+    const { commonBody, form } = buildOrderPayload();
     const token =
       paymentMethod === "crypto" && paymentSubOption === "crust"
         ? "crust"
@@ -414,7 +414,22 @@ export function PaymentMethodSection({
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...commonBody, token }),
+        body: JSON.stringify({
+          ...commonBody,
+          token,
+          shipping: form
+            ? {
+                name: `${form.firstName} ${form.lastName}`.trim(),
+                address1: form.street,
+                address2: form.apartment,
+                city: form.city,
+                stateCode: form.state,
+                countryCode: form.country,
+                zip: form.zip,
+                phone: form.phone,
+              }
+            : undefined,
+        }),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
@@ -450,7 +465,7 @@ export function PaymentMethodSection({
     if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
-    const { commonBody } = buildOrderPayload();
+    const { commonBody, form } = buildOrderPayload();
     const token =
       paymentSubOption === "bitcoin"
         ? "bitcoin"
@@ -461,7 +476,22 @@ export function PaymentMethodSection({
       const createRes = await fetch("/api/checkout/btcpay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...commonBody, token }),
+        body: JSON.stringify({
+          ...commonBody,
+          token,
+          shipping: form
+            ? {
+                name: `${form.firstName} ${form.lastName}`.trim(),
+                address1: form.street,
+                address2: form.apartment,
+                city: form.city,
+                stateCode: form.state,
+                countryCode: form.country,
+                zip: form.zip,
+                phone: form.phone,
+              }
+            : undefined,
+        }),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
@@ -562,12 +592,26 @@ export function PaymentMethodSection({
     if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
-    const { commonBody } = buildOrderPayload();
+    const { commonBody, form } = buildOrderPayload();
     try {
       const createRes = await fetch("/api/checkout/ton-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(commonBody),
+        body: JSON.stringify({
+          ...commonBody,
+          shipping: form
+            ? {
+                name: `${form.firstName} ${form.lastName}`.trim(),
+                address1: form.street,
+                address2: form.apartment,
+                city: form.city,
+                stateCode: form.state,
+                countryCode: form.country,
+                zip: form.zip,
+                phone: form.phone,
+              }
+            : undefined,
+        }),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);

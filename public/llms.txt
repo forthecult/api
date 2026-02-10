@@ -5,8 +5,7 @@ This file is for AI assistants and LLMs. Fetch it to discover all available docu
 ## Pages
 
 - /llm/overview.txt — What this site is, main concepts, and entry points for AI agents.
-- /llm/api.txt — REST API summary: capabilities, checkout flow, products, orders, admin. Start with GET /api/agent/capabilities.
-- /llm/integrations.txt — Payments (Polar, crypto/Solana Pay), webhooks (Printful, Printify), auth, and optional services.
+- /llm/api.txt — REST API summary: capabilities, checkout flow, products, orders. Start with GET /api/agent/capabilities.
 
 ## API quick links (same origin)
 

@@ -39,6 +39,7 @@ const US_STATE_OPTIONS = [
 const PAYMENT_STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "paid", label: "Paid" },
+  { value: "refund_pending", label: "Refund pending" },
   { value: "refunded", label: "Refunded" },
   { value: "cancelled", label: "Cancelled" },
 ];
@@ -524,7 +525,11 @@ export default function AdminOrderDetailsPage() {
             type="button"
             variant="outline"
             onClick={() => void handleRefund()}
-            disabled={refunding || paymentStatus === "refunded"}
+            disabled={
+              refunding ||
+              paymentStatus === "refunded" ||
+              paymentStatus === "refund_pending"
+            }
             aria-label="Mark order as refunded"
           >
             {refunding ? (
@@ -555,10 +560,12 @@ export default function AdminOrderDetailsPage() {
               ? "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
               : (paymentStatus ?? "pending").toLowerCase() === "paid"
                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
-                : (paymentStatus ?? "pending").toLowerCase() === "refunded" ||
-                    (paymentStatus ?? "pending").toLowerCase() === "cancelled"
-                  ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
-                  : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                : (paymentStatus ?? "pending").toLowerCase() === "refund_pending"
+                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                  : (paymentStatus ?? "pending").toLowerCase() === "refunded" ||
+                      (paymentStatus ?? "pending").toLowerCase() === "cancelled"
+                    ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
+                    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
           )}
         >
           Payment:{" "}

@@ -14,6 +14,7 @@ const SORT_BY_VALUES = ["date", "customer", "total", "items"] as const;
 const PAYMENT_STATUS_VALUES = [
   "pending",
   "paid",
+  "refund_pending",
   "refunded",
   "cancelled",
 ] as const;
@@ -37,6 +38,7 @@ function channel(order: {
 
 /** Derive payment status from legacy status when paymentStatus is null. */
 function paymentStatusFromLegacy(status: string): string {
+  if (status === "refund_pending") return "refund_pending";
   if (status === "refunded") return "refunded";
   if (status === "paid" || status === "fulfilled") return "paid";
   if (status === "cancelled") return "cancelled";

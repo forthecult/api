@@ -100,6 +100,29 @@ export async function POST(request: NextRequest) {
         ? userIdFromMeta
         : null;
 
+    // Shipping/customer address from Stripe Checkout (when collection enabled)
+    const addr = session.customer_details?.address;
+    const shippingFromSession =
+      session.customer_details?.name ||
+      addr?.line1 ||
+      addr?.city ||
+      addr?.country
+        ? {
+            ...(session.customer_details?.name && {
+              shippingName: session.customer_details.name,
+            }),
+            ...(addr?.line1 && { shippingAddress1: addr.line1 }),
+            ...(addr?.line2 && { shippingAddress2: addr.line2 }),
+            ...(addr?.city && { shippingCity: addr.city }),
+            ...(addr?.state && { shippingStateCode: addr.state }),
+            ...(addr?.postal_code && { shippingZip: addr.postal_code }),
+            ...(addr?.country && { shippingCountryCode: addr.country }),
+            ...(session.customer_details?.phone && {
+              shippingPhone: session.customer_details.phone,
+            }),
+          }
+        : {};
+
     await db.insert(ordersTable).values({
       id: orderId,
       createdAt: now,
@@ -112,6 +135,7 @@ export async function POST(request: NextRequest) {
       totalCents,
       updatedAt: now,
       userId,
+      ...shippingFromSession,
       ...(affiliateResult && {
         affiliateId: affiliateResult.affiliate.affiliateId,
         affiliateCode: affiliateResult.affiliate.affiliateCode,

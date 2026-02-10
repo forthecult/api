@@ -189,13 +189,15 @@ export async function GET(
 
     const paymentStatus =
       order.paymentStatus ??
-      (order.status === "refunded"
-        ? "refunded"
-        : order.status === "paid" || order.status === "fulfilled"
-          ? "paid"
-          : order.status === "cancelled"
-            ? "cancelled"
-            : "pending");
+      (order.status === "refund_pending"
+        ? "refund_pending"
+        : order.status === "refunded"
+          ? "refunded"
+          : order.status === "paid" || order.status === "fulfilled"
+            ? "paid"
+            : order.status === "cancelled"
+              ? "cancelled"
+              : "pending");
     const fulfillmentStatus =
       order.fulfillmentStatus ??
       (order.status === "fulfilled" ? "fulfilled" : "unfulfilled");
@@ -296,10 +298,23 @@ export async function PATCH(
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (typeof body.status === "string" && body.status.trim()) {
-      const allowed = ["pending", "paid", "fulfilled", "cancelled", "refunded"];
+      const allowed = [
+      "pending",
+      "paid",
+      "fulfilled",
+      "cancelled",
+      "refunded",
+      "refund_pending",
+    ];
       if (allowed.includes(body.status)) updates.status = body.status;
     }
-    const paymentAllowed = ["pending", "paid", "refunded", "cancelled"];
+    const paymentAllowed = [
+      "pending",
+      "paid",
+      "refunded",
+      "refund_pending",
+      "cancelled",
+    ];
     const rawPayment =
       typeof body.paymentStatus === "string"
         ? body.paymentStatus.trim().toLowerCase()
@@ -310,7 +325,8 @@ export async function PATCH(
       if (rawPayment === "paid") updates.status = "paid";
       else if (
         rawPayment === "cancelled" ||
-        rawPayment === "refunded"
+        rawPayment === "refunded" ||
+        rawPayment === "refund_pending"
       )
         updates.status = rawPayment;
       else if (rawPayment === "pending") updates.status = "pending";
@@ -473,13 +489,15 @@ export async function PATCH(
 
     const paymentStatus =
       updated.paymentStatus ??
-      (updated.status === "refunded"
-        ? "refunded"
-        : updated.status === "paid" || updated.status === "fulfilled"
-          ? "paid"
-          : updated.status === "cancelled"
-            ? "cancelled"
-            : "pending");
+      (updated.status === "refund_pending"
+        ? "refund_pending"
+        : updated.status === "refunded"
+          ? "refunded"
+          : updated.status === "paid" || updated.status === "fulfilled"
+            ? "paid"
+            : updated.status === "cancelled"
+              ? "cancelled"
+              : "pending");
     const fulfillmentStatus =
       updated.fulfillmentStatus ??
       (updated.status === "fulfilled" ? "fulfilled" : "unfulfilled");

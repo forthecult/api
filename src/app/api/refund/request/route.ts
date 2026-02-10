@@ -6,6 +6,8 @@ import { createId } from "@paralleldrive/cuid2";
 import { db } from "~/db";
 import { ordersTable, refundRequestsTable } from "~/db/schema";
 import { onRefundRequestSubmitted } from "~/lib/create-user-notification";
+import { cancelPrintfulOrder } from "~/lib/printful-orders";
+import { cancelPrintifyOrder } from "~/lib/printify-orders";
 import {
   getClientIp,
   checkRateLimit,
@@ -108,6 +110,10 @@ export async function POST(request: NextRequest) {
         shippingZip: ordersTable.shippingZip,
         paymentMethod: ordersTable.paymentMethod,
         paymentStatus: ordersTable.paymentStatus,
+        status: ordersTable.status,
+        fulfillmentStatus: ordersTable.fulfillmentStatus,
+        printfulOrderId: ordersTable.printfulOrderId,
+        printifyOrderId: ordersTable.printifyOrderId,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
@@ -246,6 +252,55 @@ export async function POST(request: NextRequest) {
       createdAt: now,
       updatedAt: now,
     });
+
+    // If order has not been shipped, set status to refund_pending and cancel Printful/Printify
+    const notShipped =
+      order.status !== "fulfilled" &&
+      order.fulfillmentStatus !== "fulfilled" &&
+      order.fulfillmentStatus !== "partially_fulfilled";
+    if (notShipped) {
+      await db
+        .update(ordersTable)
+        .set({
+          status: "refund_pending",
+          paymentStatus: "refund_pending",
+          updatedAt: now,
+        })
+        .where(eq(ordersTable.id, orderId));
+
+      let printfulCleared = false;
+      let printifyCleared = false;
+      if (order.printfulOrderId) {
+        const pf = await cancelPrintfulOrder(orderId);
+        if (pf.success) printfulCleared = true;
+        else
+          console.warn(
+            `[Refund request] Printful cancel failed for order ${orderId}: ${pf.error}`,
+          );
+      }
+      if (order.printifyOrderId) {
+        const py = await cancelPrintifyOrder(orderId);
+        if (py.success) printifyCleared = true;
+        else
+          console.warn(
+            `[Refund request] Printify cancel failed for order ${orderId}: ${py.error}`,
+          );
+      }
+      if (printfulCleared || printifyCleared) {
+        await db
+          .update(ordersTable)
+          .set({
+            updatedAt: new Date(),
+            ...(printfulCleared && order.printfulOrderId
+              ? { printfulOrderId: null }
+              : {}),
+            ...(printifyCleared && order.printifyOrderId
+              ? { printifyOrderId: null }
+              : {}),
+          })
+          .where(eq(ordersTable.id, orderId));
+      }
+    }
 
     void onRefundRequestSubmitted(orderId);
 
