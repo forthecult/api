@@ -44,6 +44,7 @@ const CRYPTO_COLORS: Record<CryptoCode, string> = {
   DOGE: "#C2A633",
   CRUST: "#9945FF",
   PUMP: "#00D26A",
+  TROLL: "#6B7280",
   TON: "#0088CC",
   XMR: "#FF6600",
   XAU: "#FFD700",
@@ -82,6 +83,7 @@ export function FooterBottom() {
           if (
             selectedCrypto === "DOGE" ||
             selectedCrypto === "PUMP" ||
+            selectedCrypto === "TROLL" ||
             selectedCrypto === "XMR"
           ) {
             return new Intl.NumberFormat(undefined, {

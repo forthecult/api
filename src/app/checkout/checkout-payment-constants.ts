@@ -93,7 +93,7 @@ export const CRYPTO_LOGO_SRC: Partial<
   monero: "/crypto/monero/monero-xmr-logo.svg",
   crust: "/crypto/solana/solanaLogoMark.svg",
   pump: "/crypto/pump/pump-logomark.svg",
-  troll: "/crypto/solana/solanaLogoMark.svg",
+  troll: "/crypto/troll/troll-logomark.png",
 };
 
 export const USDC_SUB_OPTIONS: {

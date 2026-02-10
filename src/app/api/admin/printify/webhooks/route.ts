@@ -118,16 +118,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Add secret to URL if configured (Printify will send this URL when delivering events; GET returns 200 so their validation succeeds)
   const secret = process.env.PRINTIFY_WEBHOOK_SECRET?.trim();
-  const webhookUrl = secret
-    ? `${baseUrl}/api/webhooks/printify?secret=${encodeURIComponent(secret)}`
-    : `${baseUrl}/api/webhooks/printify`;
+  // If customUrl is already the full webhook path, use it as-is (allows registering without secret to debug 9004)
+  const isFullWebhookUrl = baseUrl.includes("/api/webhooks/printify");
+  const webhookUrl = isFullWebhookUrl
+    ? secret
+      ? `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}secret=${encodeURIComponent(secret)}`
+      : baseUrl
+    : secret
+      ? `${baseUrl}/api/webhooks/printify?secret=${encodeURIComponent(secret)}`
+      : `${baseUrl}/api/webhooks/printify`;
 
   switch (action) {
     case "register_all": {
-      console.log(`Registering all Printify webhooks for shop ${pf.shopId}...`);
-      
+      console.log(
+        `Registering all Printify webhooks for shop ${pf.shopId}; URL: ${webhookUrl}`,
+      );
+
       // First, get existing webhooks to avoid duplicates
       const existing = await listPrintifyWebhooks(pf.shopId);
       const existingTopics = new Set(existing.map((w) => w.topic));
@@ -155,6 +162,9 @@ export async function POST(request: NextRequest) {
       const alreadyRegistered = results.filter((r) => r.success && !r.id).length;
       const failedCount = results.filter((r) => !r.success).length;
 
+      const has9004 = results.some(
+        (r) => r.error?.includes("9004") || r.error?.toLowerCase().includes("validation failed"),
+      );
       return NextResponse.json({
         success: failedCount === 0,
         summary: {
@@ -164,6 +174,11 @@ export async function POST(request: NextRequest) {
         },
         results,
         webhookUrl,
+        hint: !baseUrl.startsWith("https://")
+          ? "NEXT_PUBLIC_APP_URL should be https in production so Printify can reach it."
+          : has9004
+            ? "9004: When you click Register, check server logs for '[Printify webhook] GET received' or 'POST received'. If none appear, Printify's request is not reaching this app (wrong URL or blocked). Try registering with customUrl without secret: { \"action\": \"register_all\", \"customUrl\": \"https://YOUR_DOMAIN/api/webhooks/printify\" } to see if validation passes."
+            : undefined,
       });
     }
 

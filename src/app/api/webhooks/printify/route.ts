@@ -57,12 +57,29 @@ type PrintifyWebhookPayload = {
  * When PRINTIFY_WEBHOOK_SECRET is set, the secret must be present in the URL (?secret=...) and match.
  */
 export async function POST(request: NextRequest) {
+  const rawBody = await request.text();
+  console.info(
+    `[Printify webhook] POST received (body length: ${rawBody?.length ?? 0}, has secret: ${!!request.nextUrl.searchParams.get("secret")})`,
+  );
   try {
-    const rawBody = await request.text();
+
+    // Validation-style request (empty or non-webhook payload): return 200 before checking secret.
+    // Printify may validate the URL without the secret query param, which would otherwise cause 401 and 9004.
+    if (!rawBody?.trim()) {
+      return NextResponse.json({ received: true });
+    }
+    let payload: PrintifyWebhookPayload | null = null;
+    try {
+      payload = JSON.parse(rawBody) as PrintifyWebhookPayload;
+    } catch {
+      return NextResponse.json({ received: true });
+    }
+    if (!payload?.type || !payload?.resource) {
+      return NextResponse.json({ received: true });
+    }
 
     const secretParam = request.nextUrl.searchParams.get("secret");
     const expectedSecret = process.env.PRINTIFY_WEBHOOK_SECRET?.trim();
-
     if (expectedSecret) {
       if (!secretParam || secretParam !== expectedSecret) {
         console.warn("Printify webhook: Missing or invalid secret");
@@ -71,15 +88,6 @@ export async function POST(request: NextRequest) {
           { status: 401 },
         );
       }
-    }
-
-    // Parse payload
-    let payload: PrintifyWebhookPayload;
-    try {
-      payload = JSON.parse(rawBody) as PrintifyWebhookPayload;
-    } catch {
-      console.error("Printify webhook: Invalid JSON payload");
-      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
     const eventType = payload.type;
@@ -201,13 +209,22 @@ export async function POST(request: NextRequest) {
  * GET /api/webhooks/printify
  * Health check and Printify webhook validation endpoint.
  * Always returns 200 so Printify's URL validation (code 9004) succeeds when they
- * GET this URL during registration. Event delivery uses POST and still requires
- * the secret when PRINTIFY_WEBHOOK_SECRET is set.
+ * GET this URL during registration.
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
+  console.info("[Printify webhook] GET received (validation check)");
   return NextResponse.json({
     status: "ok",
     service: "printify-webhook",
     timestamp: new Date().toISOString(),
   });
+}
+
+/**
+ * HEAD /api/webhooks/printify
+ * Some providers validate with HEAD; return 200 so registration (9004) succeeds.
+ */
+export async function HEAD() {
+  console.info("[Printify webhook] HEAD received (validation check)");
+  return new NextResponse(null, { status: 200 });
 }
