@@ -75,6 +75,16 @@ const PAYMENT_TITLE: Record<string, string> = {
   sui: "Pay with Sui",
 };
 
+/** Short label for the payment token (for error messages). */
+const TOKEN_LABEL: Record<string, string> = {
+  solana: "SOL",
+  usdc: "USDC",
+  whitewhale: "WhiteWhale",
+  crust: "CRUST",
+  pump: "PUMP",
+  troll: "TROLL",
+};
+
 const LAMPORTS_PER_SOL = 1e9;
 const TX_FEE_BUFFER_LAMPORTS = 10_000;
 /** Minimum SOL needed for tx fee (and possible ATA creation) when paying with SPL token */
@@ -117,6 +127,10 @@ export function CryptoPayClient() {
   const [paymentAddress, setPaymentAddress] = useState<string>("");
   const [payStatus, setPayStatus] = useState<PayStatus>("idle");
   const [payError, setPayError] = useState<string | null>(null);
+  /** When insufficient: was it SOL for fees or the payment token? */
+  const [insufficientReason, setInsufficientReason] = useState<
+    "sol_for_fees" | "token" | null
+  >(null);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
@@ -132,6 +146,7 @@ export function CryptoPayClient() {
     setMounted(true);
   }, []);
 
+  // Parse URL hash only for Sui (sui-amount-expiry); Solana token comes from order API
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
     const raw = window.location.hash.slice(1);
@@ -153,20 +168,27 @@ export function CryptoPayClient() {
       } else {
         setSuiFromHash(null);
       }
-    } else if (
-      hash === "solana" ||
-      hash === "usdc" ||
-      hash === "whitewhale" ||
-      hash === "crust" ||
-      hash === "pump" ||
-      hash === "troll" ||
-      hash === "sui"
-    ) {
-      setToken(hash);
-      if (hash !== "sui") setSuiFromHash(null);
     }
     setHashParsed(true);
   }, [mounted]);
+
+  // Sync token from order when available so balance check matches selected payment method
+  // (e.g. if URL hash is missing or wrong, we still check SOL vs USDC vs SPL correctly)
+  const SOLANA_TOKENS = [
+    "solana",
+    "usdc",
+    "whitewhale",
+    "crust",
+    "pump",
+    "troll",
+  ] as const;
+  useEffect(() => {
+    if (!hashParsed || !order?.token) return;
+    const orderToken = order.token.toLowerCase();
+    if (SOLANA_TOKENS.includes(orderToken as (typeof SOLANA_TOKENS)[number])) {
+      setToken(orderToken as (typeof SOLANA_TOKENS)[number]);
+    }
+  }, [hashParsed, order?.token]);
 
   const amountUsd =
     token === "sui" && suiFromHash
@@ -711,20 +733,27 @@ export function CryptoPayClient() {
   ]);
 
   /** Check if wallet has sufficient balance before sending. Used to show "insufficient" flow instead of prompting to sign. */
-  const checkBalanceSufficient = useCallback(async (): Promise<boolean> => {
-    if (!publicKey || !connection) return false;
-    try {
-      const solBalance = await connection.getBalance(publicKey);
-      if (token === "solana") {
-        return solBalance >= requiredLamports;
-      }
-      // SPL token: need enough token balance and enough SOL for fees
-      if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS) return false;
+  const checkBalanceSufficient = useCallback(
+    async (): Promise<{ sufficient: boolean; reason?: "sol_for_fees" | "token" }> => {
+      if (!publicKey || !connection)
+        return { sufficient: false, reason: "token" };
+      try {
+        const solBalance = await connection.getBalance(publicKey);
+        if (token === "solana") {
+          return {
+            sufficient: solBalance >= requiredLamports,
+            reason:
+              solBalance >= requiredLamports ? undefined : "token",
+          };
+        }
+        // SPL token: need enough SOL for fees first, then enough token balance
+        if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS)
+          return { sufficient: false, reason: "sol_for_fees" };
       let splTokenMint: PublicKeyType;
       let amountBigNumber: BigNumber;
       if (token === "crust") {
         if (crustSolPerToken == null || crustSolPerToken <= 0 || rate <= 0)
-          return false;
+          return { sufficient: false, reason: "token" };
         amountBigNumber = tokenAmountFromUsdWithPrice(
           amountUsd,
           crustSolPerToken,
@@ -734,7 +763,7 @@ export function CryptoPayClient() {
         splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
       } else if (token === "pump") {
         if (pumpSolPerToken == null || pumpSolPerToken <= 0 || rate <= 0)
-          return false;
+          return { sufficient: false, reason: "token" };
         amountBigNumber = tokenAmountFromUsdWithPrice(
           amountUsd,
           pumpSolPerToken,
@@ -752,7 +781,7 @@ export function CryptoPayClient() {
         amountBigNumber = tokenAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
       } else {
-        return false;
+        return { sufficient: false, reason: "token" };
       }
       let mint;
       let tokenProgramId = TOKEN_PROGRAM_ID;
@@ -773,7 +802,7 @@ export function CryptoPayClient() {
           );
           tokenProgramId = TOKEN_2022_PROGRAM_ID;
         } catch {
-          return false;
+          return { sufficient: false, reason: "token" };
         }
       }
       const senderATA = getAssociatedTokenAddressSync(
@@ -782,18 +811,30 @@ export function CryptoPayClient() {
         false,
         tokenProgramId,
       );
-      const account = await getTokenAccount(
-        connection,
-        senderATA,
-        "confirmed",
-        tokenProgramId,
-      );
+      let balance: bigint;
+      try {
+        const account = await getTokenAccount(
+          connection,
+          senderATA,
+          "confirmed",
+          tokenProgramId,
+        );
+        balance = account.amount;
+      } catch {
+        // No ATA or RPC error: treat as 0 balance
+        balance = 0n;
+      }
       const requiredTokens = amountBigNumber
         .times(new BigNumber(10).pow(mint.decimals))
         .integerValue(BigNumber.ROUND_CEIL);
-      return BigInt(requiredTokens.toString()) <= account.amount;
+      const tokenSufficient =
+        BigInt(requiredTokens.toString()) <= balance;
+      return {
+        sufficient: tokenSufficient,
+        reason: tokenSufficient ? undefined : "token",
+      };
     } catch {
-      return false;
+      return { sufficient: false, reason: "token" };
     }
   }, [
     connection,
@@ -812,8 +853,10 @@ export function CryptoPayClient() {
       return;
     setPayError(null);
     setPayStatus("checking");
-    const sufficient = await checkBalanceSufficient();
-    if (!sufficient) {
+    setInsufficientReason(null);
+    const result = await checkBalanceSufficient();
+    if (!result.sufficient) {
+      setInsufficientReason(result.reason ?? "token");
       setPayStatus("insufficient");
       return;
     }
@@ -829,6 +872,7 @@ export function CryptoPayClient() {
 
   const handlePayManually = useCallback(() => {
     setPayStatus("idle");
+    setInsufficientReason(null);
   }, []);
 
   const handleRecreateOrder = useCallback(() => {
@@ -1173,9 +1217,9 @@ export function CryptoPayClient() {
                       <div className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4">
                         <AlertCircle className="size-5 shrink-0 text-amber-600 dark:text-amber-500" />
                         <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
-                          You don&apos;t have enough funds in your wallet for
-                          this order (including network fees). Add funds or pay
-                          manually below.
+                          {insufficientReason === "sol_for_fees"
+                            ? `You have enough ${TOKEN_LABEL[token] ?? "funds"} for this order, but you need a small amount of SOL in your wallet for network fees (e.g. ~0.00005 SOL). Add a little SOL and try again, or pay manually below.`
+                            : `You don't have enough ${TOKEN_LABEL[token] ?? "funds"} in your wallet for this order${token !== "solana" ? " (you also need a small amount of SOL for network fees)" : ""}. Add funds or pay manually below.`}
                         </p>
                       </div>
                       <Button

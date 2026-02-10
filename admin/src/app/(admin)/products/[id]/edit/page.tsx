@@ -226,6 +226,8 @@ export default function AdminProductEditPage() {
     useState(false);
   const [printifyRegisterWebhooksLoading, setPrintifyRegisterWebhooksLoading] =
     useState(false);
+  const [printifyDeleteAllWebhooksLoading, setPrintifyDeleteAllWebhooksLoading] =
+    useState(false);
   const [printifyDeleteLoading, setPrintifyDeleteLoading] = useState(false);
   const [printifyIdToDelete, setPrintifyIdToDelete] = useState("");
   const [printifyIdToImport, setPrintifyIdToImport] = useState("");
@@ -607,6 +609,39 @@ export default function AdminProductEditPage() {
       setError(err instanceof Error ? err.message : "Register webhooks failed");
     } finally {
       setPrintifyRegisterWebhooksLoading(false);
+    }
+  }, []);
+
+  const handlePrintifyDeleteAllWebhooks = useCallback(async () => {
+    if (
+      !window.confirm(
+        "Delete all webhooks for this Printify shop? This removes every registered webhook (including staging). Then register from production so products go to production only.",
+      )
+    ) {
+      return;
+    }
+    setPrintifyDeleteAllWebhooksLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printify/webhooks`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "delete_all" }),
+      });
+      const json = (await res.json().catch(() => ({}))) as {
+        success?: boolean;
+        error?: string;
+        deleted?: number;
+      };
+      if (!res.ok) {
+        throw new Error(json.error ?? "Delete all webhooks failed");
+      }
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete all webhooks failed");
+    } finally {
+      setPrintifyDeleteAllWebhooksLoading(false);
     }
   }, []);
 
@@ -2787,6 +2822,25 @@ export default function AdminProductEditPage() {
                         ? "Registering…"
                         : "Register webhooks"}
                     </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={printifyDeleteAllWebhooksLoading}
+                      onClick={() => void handlePrintifyDeleteAllWebhooks()}
+                      className="gap-1.5 text-destructive hover:text-destructive"
+                      title="Remove all webhooks for this shop (e.g. staging). Then register from production."
+                    >
+                      <Trash2
+                        className={cn(
+                          "size-3.5",
+                          printifyDeleteAllWebhooksLoading && "animate-spin",
+                        )}
+                      />
+                      {printifyDeleteAllWebhooksLoading
+                        ? "Deleting…"
+                        : "Delete all webhooks"}
+                    </Button>
                   </>
                 )}
               </div>
@@ -2795,7 +2849,7 @@ export default function AdminProductEditPage() {
               <>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-muted-foreground">
-                    Stuck in Publishing? Sync and Confirm publish often do not change status for already-stuck products (Printify may not re-send the webhook). Reliable fix: 1) Click &quot;Register webhooks&quot; above. 2) Delete this product in Printify (or by ID below). 3) Re-create or re-publish the product in Printify—the webhook will fire and status will become Published. Or delete by Printify product ID:
+                    Products going to staging? Use &quot;Delete all webhooks&quot; above (from production), then &quot;Register webhooks&quot; so only production URL is registered. Stuck in Publishing? Sync and Confirm publish often do not change status for already-stuck products (Printify may not re-send the webhook). Reliable fix: 1) Click &quot;Register webhooks&quot; above. 2) Delete this product in Printify (or by ID below). 3) Re-create or re-publish the product in Printify—the webhook will fire and status will become Published. Or delete by Printify product ID:
                   </span>
                   <input
                     type="text"

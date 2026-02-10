@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { useSearchParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 
 import { MetaMaskProvider } from "~/lib/metamask-sdk";
 import { WagmiProvider } from "~/lib/wagmi-provider";
@@ -17,11 +17,10 @@ import {
 import { SolanaWalletProvider } from "../crypto/SolanaWalletProvider";
 import { SuiWalletProvider } from "../crypto/SuiWalletProvider";
 
-// Detect if this is an ETH/EVM payment from the hash
-function isEvmPayment(): boolean {
+// Detect if this is an ETH/EVM payment (from hash or from order API when URL has no hash)
+function isEvmPaymentFromHash(): boolean {
   if (typeof window === "undefined") return false;
   const hash = window.location.hash.slice(1).toLowerCase();
-  // ETH payments use #eth hash
   return hash === "eth";
 }
 
@@ -30,14 +29,41 @@ export default function CheckoutInvoiceLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const params = useParams();
+  const orderId = (params?.invoiceId as string) ?? "";
   const [open, setOpen] = useState(false);
   const [isEvm, setIsEvm] = useState(false);
   const searchParams = useSearchParams();
   const openModal = useCallback(() => setOpen(true), []);
 
   useEffect(() => {
-    setIsEvm(isEvmPayment());
-    const handleHashChange = () => setIsEvm(isEvmPayment());
+    if (isEvmPaymentFromHash()) {
+      setIsEvm(true);
+      return;
+    }
+    if (!orderId?.trim()) {
+      setIsEvm(false);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { paymentType?: string } | null) => {
+        if (cancelled) return;
+        setIsEvm(data?.paymentType === "eth");
+      })
+      .catch(() => {
+        if (!cancelled) setIsEvm(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
+
+  useEffect(() => {
+    const handleHashChange = () => {
+      if (isEvmPaymentFromHash()) setIsEvm(true);
+    };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);

@@ -34,6 +34,7 @@
   "include": [
     "next-env.d.ts",
     "cheerio.d.ts",
+    "x402-next.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",

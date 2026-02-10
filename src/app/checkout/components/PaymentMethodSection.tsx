@@ -398,11 +398,23 @@ export function PaymentMethodSection({
       return;
     }
     const { commonBody } = buildOrderPayload();
+    const token =
+      paymentMethod === "crypto" && paymentSubOption === "crust"
+        ? "crust"
+        : paymentMethod === "crypto" && paymentSubOption === "pump"
+          ? "pump"
+          : paymentMethod === "crypto" && paymentSubOption === "troll"
+            ? "troll"
+            : paymentMethod === "stablecoins" &&
+              stablecoinToken === "usdc" &&
+              paymentSubOption === "solana"
+              ? "usdc"
+              : "solana";
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(commonBody),
+        body: JSON.stringify({ ...commonBody, token }),
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
@@ -415,19 +427,7 @@ export function PaymentMethodSection({
         return;
       }
       const data = (await createRes.json()) as { orderId: string };
-      const token =
-        paymentMethod === "crypto" && paymentSubOption === "crust"
-          ? "crust"
-          : paymentMethod === "crypto" && paymentSubOption === "pump"
-            ? "pump"
-            : paymentMethod === "crypto" && paymentSubOption === "troll"
-              ? "troll"
-              : paymentMethod === "stablecoins" &&
-                stablecoinToken === "usdc" &&
-                paymentSubOption === "solana"
-              ? "usdc"
-              : "solana";
-      router.push(`/checkout/${data.orderId}#${token}`);
+      router.push(`/checkout/${data.orderId}`);
     } catch {
       setNavigatingToPay(false);
       setValidationErrors(["Could not create order. Please try again."]);
@@ -474,7 +474,7 @@ export function PaymentMethodSection({
         return;
       }
       const data = (await createRes.json()) as { orderId: string };
-      router.push(`/checkout/${data.orderId}#${token}`);
+      router.push(`/checkout/${data.orderId}`);
     } catch {
       setNavigatingToPay(false);
       setValidationErrors(["Could not create order. Please try again."]);
@@ -535,7 +535,7 @@ export function PaymentMethodSection({
         throw new Error(data.error ?? "Failed to create order");
       }
       const { orderId } = await res.json();
-      router.push(`/checkout/${orderId}#${token}`);
+      router.push(`/checkout/${orderId}`);
     } catch (err) {
       console.error("ETH order creation error:", err);
       setNavigatingToPay(false);
@@ -580,7 +580,7 @@ export function PaymentMethodSection({
         return;
       }
       const data = (await createRes.json()) as { orderId: string };
-      router.push(`/checkout/${data.orderId}#ton`);
+      router.push(`/checkout/${data.orderId}`);
     } catch {
       setNavigatingToPay(false);
       setValidationErrors(["Could not create order. Please try again."]);

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getAgentBaseUrl } from "~/lib/app-url";
+import { x402Enabled, x402Network } from "~/lib/x402-config";
 
 /**
  * AI-agent discovery: returns comprehensive API capabilities, limitations, and quick-start guide.
@@ -110,6 +111,40 @@ export async function GET() {
         checkout: "10 requests/minute",
         _note: "Contact support for higher limits",
       },
+
+      // x402: optional paid-data APIs (exchange rates, metals only). Product prices in fiat/crypto, shipping, tax, inventory, catalog, search, shop, images are free.
+      ...(x402Enabled && {
+        x402: {
+          description:
+            "Optional paid data APIs: exchange rates and precious metals only. Product prices (fiat/crypto), shipping, tax, inventory, catalog/category trees, product search, browse, checkout, and images are always free. x402 is for index/large-data use cases, not shopping.",
+          network: x402Network,
+          networksSupported: ["base", "base-sepolia", "solana", "solana-devnet"],
+          pricePerRequest: "$0.01",
+          paidEndpoints: [
+            "GET /api/x402/rates/fiat?from=USD&to=EUR",
+            "GET /api/x402/rates/crypto-fiat?crypto=ETH&fiat=USD",
+            "GET /api/x402/rates/crypto?from=ETH&to=BTC",
+            "GET /api/x402/rates/metals-fiat?metal=XAU&fiat=USD",
+            "GET /api/x402/rates/metals-crypto?metal=XAU&crypto=ETH",
+          ],
+          freeForAgents: [
+            "GET /api/agent/products",
+            "GET and POST /api/products/search",
+            "POST /api/products/semantic-search",
+            "GET /api/products/{slug}",
+            "POST /api/x402/media/product-images (body: { productIds })",
+            "POST /api/x402/rates/products-fiat (body: { productIds })",
+            "POST /api/x402/rates/products-crypto (body: { productIds, token })",
+            "GET /api/x402/rates/shipping?countryCode=US",
+            "POST /api/shipping/calculate (cart shipping)",
+            "GET /api/categories (catalog / category tree)",
+            "Tax estimates, inventory — not behind x402",
+          ],
+          protocol: "https://x402.org",
+          howToPay:
+            "On 402 response, follow the payment instructions in the response body (JSON or HTML). After paying, retry with the X-PAYMENT header or as indicated.",
+        },
+      }),
 
       // Sign in with Moltbook (optional): agents can identify themselves and get a store identity
       authentication: {

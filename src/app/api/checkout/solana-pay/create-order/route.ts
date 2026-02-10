@@ -62,7 +62,22 @@ export async function POST(request: NextRequest) {
       telegramFirstName,
       affiliateCode,
       couponCode,
+      token: tokenFromBody,
     } = validation.data;
+
+    // Map frontend token to stored crypto currency (for balance check / UI on payment page)
+    const SOLANA_TOKEN_TO_CURRENCY: Record<string, string> = {
+      solana: "SOL",
+      usdc: "USDC",
+      whitewhale: "WHITEWHALE",
+      crust: "CRUST",
+      pump: "PUMP",
+      troll: "TROLL",
+    };
+    const cryptoCurrency =
+      tokenFromBody && SOLANA_TOKEN_TO_CURRENCY[tokenFromBody]
+        ? SOLANA_TOKEN_TO_CURRENCY[tokenFromBody]
+        : null;
 
     // ── Validate products & compute subtotal ───────────────────────────
     const productResult = await validateAndFetchProducts(rawItems);
@@ -130,6 +145,7 @@ export async function POST(request: NextRequest) {
         ...(reference && typeof reference === "string" && reference.trim()
           ? { solanaPayReference: reference.trim() }
           : {}),
+        ...(cryptoCurrency ? { cryptoCurrency } : {}),
       },
     );
 

@@ -99,6 +99,8 @@ export async function POST(request: NextRequest) {
     topic?: PrintifyWebhookEventType;
     webhookId?: string;
     customUrl?: string;
+    /** For delete_where_url_contains: delete only webhooks whose URL contains this string (e.g. "staging") */
+    urlContains?: string;
   };
 
   try {
@@ -220,13 +222,18 @@ export async function POST(request: NextRequest) {
 
     case "delete_all": {
       console.log(`Deleting all Printify webhooks for shop ${pf.shopId}...`);
-      
+
       const existing = await listPrintifyWebhooks(pf.shopId);
-      const results: { id: string; topic: string; success: boolean }[] = [];
+      const results: { id: string; topic: string; url: string; success: boolean }[] = [];
 
       for (const webhook of existing) {
         const result = await deletePrintifyWebhook(pf.shopId, webhook.id);
-        results.push({ id: webhook.id, topic: webhook.topic, success: result.success });
+        results.push({
+          id: webhook.id,
+          topic: webhook.topic,
+          url: webhook.url,
+          success: result.success,
+        });
       }
 
       return NextResponse.json({
@@ -236,9 +243,45 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    case "delete_where_url_contains": {
+      const fragment = body.urlContains?.trim();
+      if (!fragment) {
+        return NextResponse.json(
+          { error: "urlContains required (e.g. \"staging\" to remove staging webhooks)" },
+          { status: 400 },
+        );
+      }
+      console.log(
+        `Deleting Printify webhooks for shop ${pf.shopId} where URL contains "${fragment}"...`,
+      );
+
+      const existing = await listPrintifyWebhooks(pf.shopId);
+      const toDelete = existing.filter((w) => w.url.includes(fragment));
+      const results: { id: string; topic: string; url: string; success: boolean }[] = [];
+
+      for (const webhook of toDelete) {
+        const result = await deletePrintifyWebhook(pf.shopId, webhook.id);
+        results.push({
+          id: webhook.id,
+          topic: webhook.topic,
+          url: webhook.url,
+          success: result.success,
+        });
+      }
+
+      return NextResponse.json({
+        success: results.every((r) => r.success),
+        deleted: results.filter((r) => r.success).length,
+        message: `Removed ${results.filter((r) => r.success).length} webhook(s) whose URL contains "${fragment}".`,
+        results,
+      });
+    }
+
     default:
       return NextResponse.json(
-        { error: `Unknown action: ${action}. Valid: register_all, register, delete, delete_all` },
+        {
+          error: `Unknown action: ${action}. Valid: register_all, register, delete, delete_all, delete_where_url_contains`,
+        },
         { status: 400 },
       );
   }

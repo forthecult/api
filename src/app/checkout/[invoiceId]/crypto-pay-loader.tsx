@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Skeleton } from "~/ui/primitives/skeleton";
@@ -65,8 +66,8 @@ const TonPayClient = dynamic(
   },
 );
 
-// Detect payment type from hash: #eth (EVM), #btcpay (Bitcoin/Doge/Monero), #ton, #solana, #crust, #sui-...
-// The order type is determined by the API based on what was created
+// Detect payment type from hash when present: #eth, #btcpay, #ton, #solana, #sui-...
+// When no hash, payment type is loaded from the order API (clean URL).
 function getPaymentTypeFromHash(): "eth" | "btcpay" | "ton" | "solana" | null {
   if (typeof window === "undefined") return null;
   const hash = window.location.hash.slice(1).toLowerCase();
@@ -80,23 +81,60 @@ function getPaymentTypeFromHash(): "eth" | "btcpay" | "ton" | "solana" | null {
   )
     return "btcpay";
   if (hash === "ton") return "ton";
+  if (hash.startsWith("sui-")) return "solana";
   return "solana";
 }
 
 export function CryptoPayLoader() {
+  const params = useParams();
+  const orderId = (params?.invoiceId as string) ?? "";
   const [paymentType, setPaymentType] = useState<
     "eth" | "btcpay" | "ton" | "solana" | null
   >(null);
+  const [fetchedFromApi, setFetchedFromApi] = useState(false);
 
   useEffect(() => {
-    setPaymentType(getPaymentTypeFromHash());
+    const fromHash = getPaymentTypeFromHash();
+    if (fromHash) {
+      setPaymentType(fromHash);
+      setFetchedFromApi(false);
+      return;
+    }
+    // No hash: fetch order and use paymentType from API (clean URL)
+    if (!orderId?.trim()) {
+      setPaymentType(null);
+      return;
+    }
+    let cancelled = false;
+    setPaymentType(null);
+    setFetchedFromApi(true);
+    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
+      .then((res) => {
+        if (!res.ok || cancelled) return null;
+        return res.json();
+      })
+      .then((data: { paymentType?: "eth" | "btcpay" | "ton" | "solana" }) => {
+        if (cancelled) return;
+        if (data?.paymentType) setPaymentType(data.paymentType);
+        else setPaymentType("solana");
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentType("solana");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
 
+  useEffect(() => {
+    if (fetchedFromApi) return;
     const handleHashChange = () => {
-      setPaymentType(getPaymentTypeFromHash());
+      const fromHash = getPaymentTypeFromHash();
+      if (fromHash) setPaymentType(fromHash);
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, []);
+  }, [fetchedFromApi]);
 
   if (paymentType === null) {
     return (

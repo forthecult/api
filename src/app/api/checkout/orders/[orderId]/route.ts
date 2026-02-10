@@ -68,12 +68,31 @@ export async function GET(
         order.cryptoCurrency?.toLowerCase() ?? "",
       );
 
+    // Solana Pay: return token so payment page checks the correct balance (SOL vs USDC vs SPL)
+    const isSolanaPay = order.paymentMethod === "solana_pay" && hasDeposit;
+    const SOLANA_CURRENCY_TO_TOKEN: Record<string, string> = {
+      SOL: "solana",
+      USDC: "usdc",
+      WHITEWHALE: "whitewhale",
+      CRUST: "crust",
+      PUMP: "pump",
+      TROLL: "troll",
+    };
+    const solanaPayToken =
+      isSolanaPay && order.cryptoCurrency
+        ? SOLANA_CURRENCY_TO_TOKEN[order.cryptoCurrency.toUpperCase()] ??
+          order.cryptoCurrency.toLowerCase()
+        : undefined;
+
     return NextResponse.json({
       orderId: order.id,
       depositAddress: order.solanaPayDepositAddress ?? undefined,
       totalCents: order.totalCents,
       email: order.email ?? undefined,
       expiresAt,
+      // Solana Pay: routing and balance check (paymentType when URL has no hash)
+      ...(isSolanaPay && { paymentType: "solana" as const }),
+      ...(solanaPayToken && { token: solanaPayToken }),
       // ETH-specific fields
       ...(isEthPayment && {
         paymentType: "eth",
