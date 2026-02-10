@@ -55,8 +55,9 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       siteName: SEO_CONFIG.fullName,
       locale: "en_US",
-      // Share thumbnail: lookbook-style image. Replace with public/og-image.jpg to use your own (e.g. the Culture lookbook shot).
-      images: ["/og-image.jpg", "/lookbook/culture-brand-lookbook-editorial.jpg"],
+      // Share thumbnail: use existing lookbook image so social crawlers get a valid image (no 404).
+      // To use a custom image, add public/og-image.jpg and set it as the first item.
+      images: ["/lookbook/culture-brand-lookbook-editorial.jpg"],
     },
     title: {
       default: SEO_CONFIG.fullName,
@@ -66,7 +67,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
       title: SEO_CONFIG.fullName,
-      images: ["/og-image.jpg", "/lookbook/culture-brand-lookbook-editorial.jpg"],
+      images: ["/lookbook/culture-brand-lookbook-editorial.jpg"],
     },
     alternates: {
       canonical: "/",

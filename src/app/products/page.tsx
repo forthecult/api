@@ -4,11 +4,13 @@ import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
+import { DEFAULT_OG_IMAGE_PATH } from "~/lib/categories";
 import { CollectionPageStructuredData } from "~/ui/components/structured-data";
 import { PageLoadingFallback } from "~/ui/primitives/spinner";
 import { ProductsClient } from "./products-client";
 
 const siteUrl = getPublicSiteUrl();
+const productsOgImage = `${siteUrl.replace(/\/$/, "")}${DEFAULT_OG_IMAGE_PATH}`;
 
 export const metadata: Metadata = {
   title: "Products",
@@ -16,7 +18,14 @@ export const metadata: Metadata = {
   openGraph: {
     title: `Products | ${SEO_CONFIG.name}`,
     description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
+    images: [{ url: productsOgImage, alt: "Products" }],
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Products | ${SEO_CONFIG.name}`,
+    description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
+    images: [productsOgImage],
   },
   alternates: {
     canonical: `${siteUrl}/products`,

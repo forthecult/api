@@ -33,6 +33,7 @@ import {
 import {
   getSolanaPayLabel,
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   PUMP_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
@@ -72,6 +73,7 @@ const PAYMENT_TITLE: Record<string, string> = {
   crust: "Pay with Crustafarian (CRUST)",
   pump: "Pay with Pump",
   troll: "Pay with Troll (TROLL)",
+  cult: "Pay with Culture (CULT)",
   sui: "Pay with Sui",
 };
 
@@ -103,7 +105,7 @@ export function CryptoPayClient() {
   const [mounted, setMounted] = useState(false);
   const pathId = (params?.invoiceId as string) ?? "";
   const [token, setToken] = useState<
-    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "troll" | "sui"
+    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "troll" | "cult" | "sui"
   >("usdc");
   const [suiFromHash, setSuiFromHash] = useState<{
     amountUsd: number;
@@ -160,6 +162,7 @@ export function CryptoPayClient() {
       hash === "crust" ||
       hash === "pump" ||
       hash === "troll" ||
+      hash === "cult" ||
       hash === "sui"
     ) {
       setToken(hash);
@@ -242,9 +245,11 @@ export function CryptoPayClient() {
             ? "Pump (PUMP)"
             : token === "troll"
               ? "Troll (TROLL)"
-            : token === "sui"
-              ? "Sui (SUI)"
-              : "Solana";
+              : token === "cult"
+                ? "Culture (CULT)"
+                : token === "sui"
+                  ? "Sui (SUI)"
+                  : "Solana";
 
   useEffect(() => {
     if (token === "sui") {
@@ -272,6 +277,11 @@ export function CryptoPayClient() {
     setSuiPaymentUri(null);
     const recipient = order?.depositAddress ?? null;
     if (!recipient || amountUsd <= 0) return;
+    if (token === "cult" && !CULT_MINT_MAINNET) {
+      setPaymentUrl(null);
+      setPaymentAddress("");
+      return;
+    }
     if (token === "crust") {
       const solPerToken = crustSolPerToken ?? 0;
       const r = solUsdRate ?? SOL_USD_FALLBACK;
@@ -300,6 +310,21 @@ export function CryptoPayClient() {
         recipient: new PublicKey(recipient),
         amount,
         splToken: new PublicKey(PUMP_MINT_MAINNET),
+        reference: keypair.publicKey,
+        label: getSolanaPayLabel(),
+        message: `Order total: $${amountUsd.toFixed(2)}`,
+      });
+      setPaymentUrl(url);
+      setPaymentAddress(recipient);
+      return;
+    }
+    if (token === "cult" && CULT_MINT_MAINNET) {
+      const amount = tokenAmountFromUsd(amountUsd);
+      const keypair = Keypair.generate();
+      const url = encodeURL({
+        recipient: new PublicKey(recipient),
+        amount,
+        splToken: new PublicKey(CULT_MINT_MAINNET),
         reference: keypair.publicKey,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
@@ -413,7 +438,7 @@ export function CryptoPayClient() {
               rate,
               6,
             ).toString()
-          : token === "whitewhale" || token === "troll"
+          : token === "whitewhale" || token === "troll" || token === "cult"
             ? tokenAmountFromUsd(amountUsd).toString()
             : usdcAmountFromUsd(amountUsd).toString();
     const params = new URLSearchParams({
@@ -493,7 +518,7 @@ export function CryptoPayClient() {
       ? amountCrustStr
       : token === "pump"
         ? amountPumpStr
-        : token === "usdc" || token === "whitewhale" || token === "troll"
+        : token === "usdc" || token === "whitewhale" || token === "troll" || token === "cult"
           ? amountUsdStr
           : amountSolStr;
   const amountUnit =
@@ -584,6 +609,9 @@ export function CryptoPayClient() {
         } else if (token === "troll") {
           amountBigNumber = tokenAmountFromUsd(amountUsd);
           splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
+        } else if (token === "cult" && CULT_MINT_MAINNET) {
+          amountBigNumber = tokenAmountFromUsd(amountUsd);
+          splTokenMint = new PublicKey(CULT_MINT_MAINNET);
         } else {
           // whitewhale
           amountBigNumber = tokenAmountFromUsd(amountUsd);
@@ -751,6 +779,9 @@ export function CryptoPayClient() {
       } else if (token === "troll") {
         amountBigNumber = tokenAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
+      } else if (token === "cult" && CULT_MINT_MAINNET) {
+        amountBigNumber = tokenAmountFromUsd(amountUsd);
+        splTokenMint = new PublicKey(CULT_MINT_MAINNET);
       } else {
         return false;
       }
@@ -881,6 +912,24 @@ export function CryptoPayClient() {
             {isSuiFlow
               ? (orderError ?? "Invalid Sui link")
               : (orderError ?? "Order not found")}
+          </p>
+          <Link
+            href="/checkout"
+            className="text-primary underline hover:underline"
+          >
+            Back to checkout
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (token === "cult" && !CULT_MINT_MAINNET) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6 text-center">
+          <p className="text-sm text-muted-foreground">
+            CULT (Culture) contract is not configured yet. Please use another payment method or check back later.
           </p>
           <Link
             href="/checkout"
@@ -1314,7 +1363,9 @@ export function CryptoPayClient() {
                               ? `${amountUsdStr} WhiteWhale`
                               : token === "troll"
                                 ? `${amountUsdStr} TROLL`
-                                : `${amountSolStr} SOL`}
+                                : token === "cult"
+                                  ? `${amountUsdStr} CULT`
+                                  : `${amountSolStr} SOL`}
                   </dd>
                 </div>
               </dl>
@@ -1335,7 +1386,9 @@ export function CryptoPayClient() {
                           ? `Pay in WhiteWhale. ${rateLabel}.`
                           : token === "troll"
                             ? `Pay in TROLL. ${rateLabel}.`
-                            : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
+                            : token === "cult"
+                              ? `Pay in CULT. ${rateLabel}.`
+                              : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
               </p>
             </div>
           </div>

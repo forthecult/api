@@ -21,6 +21,7 @@ export type CategoryBySlug = {
   description: string | null;
   parentId: string | null;
   tokenGated: boolean;
+  imageUrl: string | null;
 };
 
 /**
@@ -40,6 +41,7 @@ export async function getCategoryBySlug(
       description: categoriesTable.description,
       parentId: categoriesTable.parentId,
       tokenGated: categoriesTable.tokenGated,
+      imageUrl: categoriesTable.imageUrl,
     })
     .from(categoriesTable)
     .where(eq(categoriesTable.slug, slug.trim()))
@@ -54,7 +56,52 @@ export async function getCategoryBySlug(
     description: row.description ?? null,
     parentId: row.parentId ?? null,
     tokenGated: row.tokenGated ?? false,
+    imageUrl: row.imageUrl?.trim() || null,
   };
+}
+
+/** Default OG image path when category/product has no image (relative to site). */
+export const DEFAULT_OG_IMAGE_PATH = "/lookbook/culture-brand-lookbook-editorial.jpg";
+
+/**
+ * Resolve a category's display image URL for Open Graph / social sharing.
+ * Uses category.imageUrl if set; otherwise first published product image in that category.
+ * Returns absolute URL (prepends siteUrl if path is relative).
+ */
+export async function getCategoryOgImageUrl(
+  slug: string,
+  siteUrl: string,
+): Promise<string> {
+  const category = await getCategoryBySlug(slug);
+  if (!category) return `${siteUrl.replace(/\/$/, "")}${DEFAULT_OG_IMAGE_PATH}`;
+  if (category.imageUrl?.trim()) {
+    const url = category.imageUrl.trim();
+    return url.startsWith("http://") || url.startsWith("https://")
+      ? url
+      : `${siteUrl.replace(/\/$/, "")}${url.startsWith("/") ? url : `/${url}`}`;
+  }
+  const [productRow] = await db
+    .select({ imageUrl: productsTable.imageUrl })
+    .from(productCategoriesTable)
+    .innerJoin(
+      productsTable,
+      eq(productCategoriesTable.productId, productsTable.id),
+    )
+    .where(
+      and(
+        eq(productCategoriesTable.categoryId, category.id),
+        eq(productsTable.published, true),
+        eq(productsTable.hidden, false),
+      ),
+    )
+    .limit(1);
+  const img = productRow?.imageUrl?.trim();
+  if (img) {
+    return img.startsWith("http://") || img.startsWith("https://")
+      ? img
+      : `${siteUrl.replace(/\/$/, "")}${img.startsWith("/") ? img : `/${img}`}`;
+  }
+  return `${siteUrl.replace(/\/$/, "")}${DEFAULT_OG_IMAGE_PATH}`;
 }
 
 /**

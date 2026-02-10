@@ -16,11 +16,16 @@ export const PAYMENT_METHOD_DEFAULTS: Array<{
   { methodKey: "crypto_monero", label: "Monero (XMR)", displayOrder: 14 },
   { methodKey: "crypto_crust", label: "Crustafarian (CRUST)", displayOrder: 15 },
   { methodKey: "crypto_pump", label: "Pump (PUMP)", displayOrder: 16 },
-  { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 17 },
-  { methodKey: "crypto_ton", label: "TON", displayOrder: 18 },
+  { methodKey: "crypto_troll", label: "Troll (TROLL)", displayOrder: 17 },
+  { methodKey: "crypto_cult", label: "Culture (CULT)", displayOrder: 18 },
+  { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 19 },
+  { methodKey: "crypto_ton", label: "TON", displayOrder: 20 },
   { methodKey: "stablecoin_usdc", label: "USDC (Stablecoin)", displayOrder: 20 },
   { methodKey: "stablecoin_usdt", label: "USDT (Stablecoin)", displayOrder: 21 },
 ];
+
+/** Method keys that are disabled by default (no DB row = hidden). Enable in admin when contract/feature is ready. */
+export const DEFAULT_DISABLED_METHOD_KEYS = ["crypto_cult"] as const;
 
 /** Network options for payment methods that support multiple networks. Used by admin and checkout. */
 export const PAYMENT_METHOD_NETWORKS: Record<

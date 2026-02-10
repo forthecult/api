@@ -31,6 +31,7 @@ import {
   getSolanaRpcUrlServer,
   USDC_MINT_MAINNET,
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   PUMP_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
@@ -179,7 +180,9 @@ export async function POST(request: NextRequest) {
               ? PUMP_MINT_MAINNET
               : splToken === TROLL_MINT_MAINNET
                 ? TROLL_MINT_MAINNET
-                : USDC_MINT_MAINNET;
+                : CULT_MINT_MAINNET && splToken === CULT_MINT_MAINNET
+                  ? CULT_MINT_MAINNET
+                  : USDC_MINT_MAINNET;
 
     try {
       const connection = new Connection(getSolanaRpcUrlServer(), {

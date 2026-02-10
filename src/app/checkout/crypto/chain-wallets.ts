@@ -4,7 +4,7 @@
  */
 export type PaymentChain = "solana" | "ton" | "sui" | "evm";
 
-const SOLANA_TOKENS = ["solana", "usdc", "whitewhale", "crust", "pump", "troll"] as const;
+const SOLANA_TOKENS = ["solana", "usdc", "whitewhale", "crust", "pump", "troll", "cult"] as const;
 
 export function tokenToChain(token: string): PaymentChain | null {
   if (SOLANA_TOKENS.includes(token as (typeof SOLANA_TOKENS)[number]))
