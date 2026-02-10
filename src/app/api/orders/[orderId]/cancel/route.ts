@@ -3,20 +3,32 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { getAdminAuth } from "~/lib/admin-api-auth";
+import { auth } from "~/lib/auth";
 import { cancelPrintfulOrder } from "~/lib/printful-orders";
 import { cancelPrintifyOrder } from "~/lib/printify-orders";
+
+function normalizeEmail(email: string | null | undefined): string {
+  return (email ?? "").trim().toLowerCase();
+}
+function normalizePaymentAddress(addr: string | null | undefined): string {
+  return (addr ?? "").trim().toLowerCase();
+}
+function normalizePostal(postal: string | null | undefined): string {
+  return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
+}
 
 /**
  * POST /api/orders/{orderId}/cancel
  *
  * Cancels an order if it hasn't been shipped yet.
- * Also cancels the corresponding Printful order if one exists.
- *
+ * Requires: authenticated owner (session), admin, or proof of ownership (body.lookupValue:
+ * billing email, payment address, or shipping postal code).
  * Note: This endpoint doesn't handle refunds - that should be done separately
  * through the payment provider (Stripe, etc.)
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
   try {
@@ -28,7 +40,7 @@ export async function POST(
       );
     }
 
-    // Get the order
+    // Get the order (include fields needed for ownership verification)
     const [order] = await db
       .select({
         id: ordersTable.id,
@@ -37,6 +49,10 @@ export async function POST(
         printfulOrderId: ordersTable.printfulOrderId,
         printifyOrderId: ordersTable.printifyOrderId,
         paymentStatus: ordersTable.paymentStatus,
+        email: ordersTable.email,
+        userId: ordersTable.userId,
+        payerWalletAddress: ordersTable.payerWalletAddress,
+        shippingZip: ordersTable.shippingZip,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -47,6 +63,63 @@ export async function POST(
         { error: { code: "ORDER_NOT_FOUND", message: "Order not found" } },
         { status: 404 },
       );
+    }
+
+    // Authorization: admin, session owner, or proof via lookupValue
+    const adminAuth = await getAdminAuth(request);
+    if (adminAuth?.ok) {
+      // Admin: allow
+    } else {
+      const session = await auth.api.getSession({ headers: request.headers });
+      const emailVerified = (session?.user as { emailVerified?: boolean })?.emailVerified;
+      const isOwner =
+        session?.user &&
+        (order.userId === session.user.id ||
+          (emailVerified &&
+            normalizeEmail(order.email) === normalizeEmail(session.user.email)));
+      if (isOwner) {
+        // Session owner: allow
+      } else {
+        // Unauthenticated: require lookupValue (billing email, payment address, or postal code)
+        let body: { lookupValue?: string };
+        try {
+          body = (await request.json().catch(() => ({}))) as { lookupValue?: string };
+        } catch {
+          body = {};
+        }
+        const lookupValue =
+          typeof body.lookupValue === "string" ? body.lookupValue.trim() : "";
+        if (!lookupValue) {
+          return NextResponse.json(
+            {
+              error: {
+                code: "UNAUTHORIZED",
+                message:
+                  "Sign in, use admin access, or provide billing email, payment address, or postal code in body as lookupValue",
+              },
+            },
+            { status: 401 },
+          );
+        }
+        const emailMatch =
+          normalizeEmail(order.email) === normalizeEmail(lookupValue);
+        const addressMatch =
+          normalizePaymentAddress(order.payerWalletAddress) ===
+          normalizePaymentAddress(lookupValue);
+        const postalMatch =
+          normalizePostal(order.shippingZip) === normalizePostal(lookupValue);
+        if (!emailMatch && !addressMatch && !postalMatch) {
+          return NextResponse.json(
+            {
+              error: {
+                code: "ORDER_NOT_FOUND",
+                message: "Order not found or the details you entered don't match",
+              },
+            },
+            { status: 404 },
+          );
+        }
+      }
     }
 
     // Check if order can be cancelled
@@ -107,7 +180,7 @@ export async function POST(
           return NextResponse.json(
             {
               error: {
-                code: "PRINTFUL_ORDER_IN_PROCESS",
+                code: "ORDER_IN_PROCESS",
                 message:
                   "Order is already being processed by fulfillment and cannot be cancelled",
               },
@@ -140,7 +213,7 @@ export async function POST(
           return NextResponse.json(
             {
               error: {
-                code: "PRINTIFY_ORDER_IN_PRODUCTION",
+                code: "ORDER_IN_PRODUCTION",
                 message:
                   "Order is already being processed by fulfillment and cannot be cancelled",
               },
