@@ -26,7 +26,7 @@ export function ProductShare({ url, title, className }: ProductShareProps) {
   const encodedTitle = encodeURIComponent(title);
   const encodedBody = encodeURIComponent(`${title}\n${url}`);
 
-  const xUrl = `https://x.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
+  const xUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}`;
   const telegramUrl = `https://t.me/share/url?url=${encodedUrl}&text=${encodedTitle}`;
   const mailtoUrl = `mailto:?subject=${encodedTitle}&body=${encodedBody}`;
 

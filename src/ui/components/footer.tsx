@@ -120,7 +120,7 @@ export function Footer({ className }: { className?: string }) {
               <li>
                 <Link
                   className="text-muted-foreground hover:text-foreground"
-                  href="/home-living"
+                  href="/health-wellness"
                 >
                   Health &amp; Wellness
                 </Link>
@@ -128,7 +128,7 @@ export function Footer({ className }: { className?: string }) {
               <li>
                 <Link
                   className="text-muted-foreground hover:text-foreground"
-                  href="/travel-accessories"
+                  href="/travel-lifestyle"
                 >
                   Travel &amp; Lifestyle
                 </Link>
@@ -136,7 +136,7 @@ export function Footer({ className }: { className?: string }) {
               <li>
                 <Link
                   className="text-muted-foreground hover:text-foreground"
-                  href="/staff-picks"
+                  href="/best-sellers"
                 >
                   Best Sellers
                 </Link>

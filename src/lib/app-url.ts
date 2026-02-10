@@ -28,20 +28,6 @@ export function getPublicSiteUrl(): string {
 }
 
 /**
- * Turn a relative path or full URL into an absolute URL for OG/twitter images.
- * Use for social share thumbnails so crawlers get a valid absolute image URL.
- */
-export function toAbsoluteOgImageUrl(
-  imagePathOrUrl: string,
-  siteUrl: string,
-): string {
-  const s = imagePathOrUrl?.trim() || "";
-  if (s.startsWith("http://") || s.startsWith("https://")) return s;
-  const base = siteUrl.replace(/\/$/, "");
-  return s.startsWith("/") ? `${base}${s}` : `${base}/${s}`;
-}
-
-/**
  * Base URL for client-side code. Reads the public env var or falls back
  * to window.location.origin at runtime.
  */

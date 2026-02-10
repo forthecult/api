@@ -39,7 +39,6 @@ export type CryptoPricesResponse = {
   CRUST?: number;
   PUMP?: number;
   TROLL?: number;
-  CULT?: number;
   XMR?: number;
   /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
   XAU?: number;
@@ -127,11 +126,6 @@ export async function GET() {
     // TROLL: 1 USD placeholder (wire real price feed when available)
     if (prices.TROLL == null || prices.TROLL <= 0) {
       prices.TROLL = 1;
-    }
-
-    // CULT: disabled until contract is deployed; 0 placeholder
-    if (prices.CULT == null) {
-      prices.CULT = 0;
     }
 
     return NextResponse.json(prices);

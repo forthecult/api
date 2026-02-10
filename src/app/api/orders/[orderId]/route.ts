@@ -38,6 +38,7 @@ export async function GET(
         userId: ordersTable.userId,
         totalCents: ordersTable.totalCents,
         shippingFeeCents: ordersTable.shippingFeeCents,
+        paymentMethod: ordersTable.paymentMethod,
         shippingName: ordersTable.shippingName,
         shippingAddress1: ordersTable.shippingAddress1,
         shippingAddress2: ordersTable.shippingAddress2,
@@ -47,7 +48,6 @@ export async function GET(
         shippingCountryCode: ordersTable.shippingCountryCode,
         shippingPhone: ordersTable.shippingPhone,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
-        paymentMethod: ordersTable.paymentMethod,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -120,6 +120,7 @@ export async function GET(
       createdAt: order.createdAt.toISOString(),
       paidAt,
       email: order.email ?? undefined,
+      paymentMethod: order.paymentMethod ?? undefined,
       items: items.map((i) => ({
         productId: i.productId,
         name: i.name,
@@ -148,7 +149,6 @@ export async function GET(
         shippingUsd,
         totalUsd,
       },
-      paymentMethod: order.paymentMethod ?? undefined,
       payment: order.solanaPayDepositAddress
         ? {
             chain: "solana",

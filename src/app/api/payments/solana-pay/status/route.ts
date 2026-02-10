@@ -12,7 +12,6 @@ import BigNumber from "bignumber.js";
 import {
   getSolanaRpcUrlServer,
   CRUST_MINT_MAINNET,
-  CULT_MINT_MAINNET,
   PUMP_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
@@ -116,9 +115,7 @@ export async function GET(request: Request) {
             ? PUMP_MINT_MAINNET
             : splTokenParam === TROLL_MINT_MAINNET
               ? TROLL_MINT_MAINNET
-              : CULT_MINT_MAINNET && splTokenParam === CULT_MINT_MAINNET
-                ? CULT_MINT_MAINNET
-                : USDC_MINT_MAINNET;
+              : USDC_MINT_MAINNET;
 
   if (!amount) {
     return NextResponse.json(

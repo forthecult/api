@@ -6,14 +6,9 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
-import {
-  getPublicSiteUrl,
-  getServerBaseUrl,
-  toAbsoluteOgImageUrl,
-} from "~/lib/app-url";
+import { getServerBaseUrl } from "~/lib/app-url";
 import {
   getCategoryBySlug,
-  getCategoryOgImageUrl,
   getCategoryParent,
   getProductBreadcrumbTrail,
   getSubcategories,
@@ -257,7 +252,6 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const siteUrl = baseUrl();
-  const publicUrl = getPublicSiteUrl();
   const product = await fetchProductBySlug(slug);
   if (product) {
     const canonicalSlug = product.slug ?? product.id;
@@ -267,21 +261,20 @@ export async function generateMetadata({
     const pageTitle =
       product.pageTitle?.trim() || product.name;
     const ogTitle = pageTitle.includes(SEO_CONFIG.name) ? pageTitle : `${pageTitle} | ${SEO_CONFIG.name}`;
-    const ogImageUrl = toAbsoluteOgImageUrl(product.image, publicUrl);
     return {
       title: pageTitle,
       description: metaDesc,
       openGraph: {
         title: ogTitle,
         description: metaDesc,
-        images: [{ url: ogImageUrl, alt: product.mainImageAlt ?? product.name }],
+        images: [{ url: product.image, alt: product.mainImageAlt ?? product.name }],
         type: "website",
       },
       twitter: {
         card: "summary_large_image",
         title: ogTitle,
         description: metaDesc,
-        images: [ogImageUrl],
+        images: [product.image],
       },
       alternates: {
         canonical: `${siteUrl}/${canonicalSlug}`,
@@ -295,21 +288,13 @@ export async function generateMetadata({
   const description =
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
-  const categoryOgImage = await getCategoryOgImageUrl(slug, publicUrl);
   return {
     title,
     description,
     openGraph: {
       title,
       description,
-      images: [{ url: categoryOgImage, alt: categoryName }],
       type: "website",
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: [categoryOgImage],
     },
     alternates: {
       canonical: `${siteUrl}/${slug}`,

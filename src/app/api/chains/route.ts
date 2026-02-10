@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import {
-  CULT_MINT_MAINNET,
   PUMP_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
@@ -46,17 +45,6 @@ export async function GET() {
             mint: TROLL_MINT_MAINNET,
             decimals: 6,
           },
-          ...(CULT_MINT_MAINNET
-            ? [
-                {
-                  symbol: "CULT" as const,
-                  name: "Culture",
-                  type: "spl" as const,
-                  mint: CULT_MINT_MAINNET,
-                  decimals: 6,
-                },
-              ]
-            : []),
         ],
       },
     ],

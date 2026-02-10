@@ -5,11 +5,7 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 
 import { SEO_CONFIG } from "~/app";
-import {
-  getPublicSiteUrl,
-  getServerBaseUrl,
-  toAbsoluteOgImageUrl,
-} from "~/lib/app-url";
+import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { getProductBreadcrumbTrail } from "~/lib/categories";
 import {
   sanitizeProductDescription,
@@ -218,22 +214,20 @@ export async function generateMetadata({
   }
 
   const metaDesc = stripHtmlForMeta(product.description).slice(0, 160);
-  const siteUrl = getPublicSiteUrl();
-  const ogImageUrl = toAbsoluteOgImageUrl(product.image, siteUrl);
   return {
     title: product.name,
     description: metaDesc,
     openGraph: {
       title: `${product.name} | ${SEO_CONFIG.name}`,
       description: metaDesc,
-      images: [{ url: ogImageUrl, alt: product.name }],
+      images: [{ url: product.image, alt: product.name }],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title: product.name,
       description: metaDesc,
-      images: [ogImageUrl],
+      images: [product.image],
     },
   };
 }

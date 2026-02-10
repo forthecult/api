@@ -4,10 +4,7 @@
  * getPaymentVisibility(settings) and pass to getPaymentOptionsForDisplay / getPaymentIconPaths.
  */
 
-import {
-  type PaymentMethodSetting,
-  DEFAULT_DISABLED_METHOD_KEYS,
-} from "~/lib/payment-method-settings";
+import type { PaymentMethodSetting } from "~/lib/payment-method-settings";
 
 export const HIDDEN_PAYMENT_OPTIONS = {
   creditCard: true,
@@ -28,8 +25,6 @@ export type PaymentVisibility = {
   cryptoSolana: boolean;
   cryptoCrust: boolean;
   cryptoPump: boolean;
-  cryptoTroll: boolean;
-  cryptoCult: boolean;
   cryptoSui: boolean;
   cryptoTon: boolean;
   stablecoinUsdc: boolean;
@@ -50,8 +45,6 @@ const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
   crypto_monero: "cryptoMonero",
   crypto_crust: "cryptoCrust",
   crypto_pump: "cryptoPump",
-  crypto_troll: "cryptoTroll",
-  crypto_cult: "cryptoCult",
   crypto_sui: "cryptoSui",
   crypto_ton: "cryptoTon",
   stablecoin_usdc: "stablecoinUsdc",
@@ -68,8 +61,6 @@ const DEFAULT_VISIBILITY: PaymentVisibility = {
   cryptoSolana: true,
   cryptoCrust: true,
   cryptoPump: true,
-  cryptoTroll: true,
-  cryptoCult: true,
   cryptoSui: true,
   cryptoTon: true,
   stablecoinUsdc: true,
@@ -88,20 +79,6 @@ export function getPaymentVisibility(
     if (key && key !== "enabledUsdcNetworks" && key !== "enabledUsdtNetworks") {
       v[key] = s.enabled;
     }
-  }
-  // Methods in DEFAULT_DISABLED_METHOD_KEYS are off until a DB row exists (e.g. CULT before contract is deployed)
-  for (const methodKey of DEFAULT_DISABLED_METHOD_KEYS) {
-    const visKey = METHOD_KEY_MAP[methodKey];
-    if (
-      visKey &&
-      visKey !== "enabledUsdcNetworks" &&
-      visKey !== "enabledUsdtNetworks" &&
-      !settings.some((s) => s.methodKey === methodKey)
-    ) {
-      v[visKey] = false;
-    }
-  }
-  for (const s of settings) {
     if (s.methodKey === "stablecoin_usdc") {
       v.enabledUsdcNetworks =
         s.enabledNetworks !== undefined && s.enabledNetworks !== null
@@ -140,8 +117,6 @@ const CRYPTO_SUB_OPTIONS: {
   { value: "monero", label: "Monero (XMR)" },
   { value: "crust", label: "Crustafarian (CRUST)" },
   { value: "pump", label: "Pump (PUMP)" },
-  { value: "troll", label: "Troll (TROLL)" },
-  { value: "cult", label: "Culture (CULT)" },
   { value: "other", label: "Other" },
 ];
 
@@ -192,8 +167,6 @@ export function visibleCryptoSubFromVisibility(v: PaymentVisibility) {
     if (opt.value === "monero") return v.cryptoMonero;
     if (opt.value === "crust") return v.cryptoCrust;
     if (opt.value === "pump") return v.cryptoPump;
-    if (opt.value === "troll") return v.cryptoTroll;
-    if (opt.value === "cult") return v.cryptoCult;
     if (opt.value === "other") return v.cryptoSui || v.cryptoTon;
     return true;
   });
@@ -208,8 +181,6 @@ export function hasAnyCryptoEnabled(v: PaymentVisibility): boolean {
     v.cryptoMonero ||
     v.cryptoCrust ||
     v.cryptoPump ||
-    v.cryptoTroll ||
-    v.cryptoCult ||
     v.cryptoSui ||
     v.cryptoTon
   );
@@ -343,10 +314,6 @@ export function getPaymentIconPaths(
       icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST", type: "crypto" });
     if (visibility.cryptoPump)
       icons.push({ src: "/crypto/pump/pump-logomark.svg", alt: "Pump", type: "crypto" });
-    if (visibility.cryptoTroll)
-      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "Troll", type: "crypto" });
-    if (visibility.cryptoCult)
-      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "Culture", type: "crypto" });
     if (visibility.stablecoinUsdc)
       icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" });
     if (visibility.stablecoinUsdt)
@@ -358,8 +325,6 @@ export function getPaymentIconPaths(
     icons.push(
       { src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum", type: "crypto" },
       { src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana", type: "crypto" },
-      { src: "/crypto/pump/pump-logomark.svg", alt: "Pump", type: "crypto" },
-      { src: "/crypto/solana/solanaLogoMark.svg", alt: "Troll", type: "crypto" },
     );
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin) {
       icons.push({ src: "/payments/doge.svg", alt: "Dogecoin", type: "crypto" });
@@ -402,8 +367,6 @@ export function getFooterPaymentItems(
       items.push({ name: "Monero", src: "/payments/monero.svg" });
     items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
     items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
-    items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
-    items.push({ name: "Troll", src: "/crypto/solana/solanaLogoMark.svg" });
   } else {
     if (visibility.cryptoBitcoin) items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
     if (visibility.cryptoDogecoin)
@@ -412,12 +375,6 @@ export function getFooterPaymentItems(
     if (visibility.cryptoEthereum) items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
     if (visibility.cryptoSolana)
       items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
-    if (visibility.cryptoPump)
-      items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
-    if (visibility.cryptoTroll)
-      items.push({ name: "Troll", src: "/crypto/solana/solanaLogoMark.svg" });
-    if (visibility.cryptoCult)
-      items.push({ name: "Culture", src: "/crypto/solana/solanaLogoMark.svg" });
   }
 
   // Stablecoins (USDC, USDT)

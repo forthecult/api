@@ -34,9 +34,6 @@ export const PUMP_MINT_MAINNET =
 export const TROLL_MINT_MAINNET =
   "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2";
 
-/** CULT (Culture) SPL token on Solana. Set when contract is deployed; leave null until then. */
-export const CULT_MINT_MAINNET: string | null = null;
-
 export function getSolanaPayRecipient(): string | undefined {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined

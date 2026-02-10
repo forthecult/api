@@ -41,6 +41,29 @@ function paymentMethodLabel(method: string | undefined): string {
   return method ?? "—";
 }
 
+function formatShippingAddress(s: ShippingAddress): string[] {
+  const lines: string[] = [];
+  if (s.name?.trim()) lines.push(s.name.trim());
+  if (s.address1?.trim()) lines.push(s.address1.trim());
+  if (s.address2?.trim()) lines.push(s.address2.trim());
+  const cityLine = [s.city, s.stateCode, s.zip].filter(Boolean).join(", ");
+  if (cityLine) lines.push(cityLine);
+  if (s.countryCode?.trim()) lines.push(s.countryCode.trim());
+  if (s.phone?.trim()) lines.push(s.phone.trim());
+  return lines;
+}
+
+type ShippingAddress = {
+  name?: string;
+  address1?: string;
+  address2?: string;
+  city?: string;
+  stateCode?: string;
+  zip?: string;
+  countryCode?: string;
+  phone?: string;
+};
+
 type OrderDetails = {
   orderId: string;
   email?: string;
@@ -53,38 +76,24 @@ type OrderDetails = {
     priceUsd?: number;
     subtotalUsd?: number;
   }>;
-  shipping?: {
-    name?: string;
-    address1?: string;
-    address2?: string;
-    city?: string;
-    stateCode?: string;
-    zip?: string;
-    countryCode?: string;
-    phone?: string;
-  };
+  shipping?: ShippingAddress;
 };
-
-function formatShippingAddress(s: OrderDetails["shipping"]): string {
-  if (!s) return "";
-  const parts = [
-    s.name,
-    s.address1,
-    s.address2,
-    [s.city, s.stateCode, s.zip].filter(Boolean).join(", "),
-    s.countryCode,
-    s.phone,
-  ].filter(Boolean);
-  return parts.join("\n");
-}
 
 export function SuccessPageClient() {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
   const sessionIdParam = searchParams.get("session_id");
+  const { clearCart } = useCart();
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Clear cart when user lands on success page after completing checkout
+  useEffect(() => {
+    if (orderIdParam || sessionIdParam) {
+      clearCart();
+    }
+  }, [orderIdParam, sessionIdParam, clearCart]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,8 +115,8 @@ export function SuccessPageClient() {
           const data = (await res.json()) as {
             orderId: string;
             email?: string;
-            createdAt: string;
             paymentMethod?: string;
+            createdAt: string;
             items: Array<{
               name: string;
               quantity: number;
@@ -115,7 +124,7 @@ export function SuccessPageClient() {
               subtotalUsd?: number;
             }>;
             totals?: { totalUsd: number };
-            shipping?: OrderDetails["shipping"];
+            shipping?: ShippingAddress;
           };
           setOrder({
             orderId: data.orderId,
@@ -154,7 +163,7 @@ export function SuccessPageClient() {
 
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(shareText);
-  const xShareUrl = `https://x.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
+  const xShareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
   return (
@@ -167,7 +176,7 @@ export function SuccessPageClient() {
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Order completed</h1>
           <p className="mt-1 text-muted-foreground">
-            Thank you for your purchase.
+            Thank you!
           </p>
 
           <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:min-w-[200px]">
@@ -280,7 +289,7 @@ export function SuccessPageClient() {
                   </div>
                 )}
                 {order.items && order.items.length > 0 && (
-                  <div className="space-y-2 border-t pt-4">
+                  <div className="space-y-2 border-t border-border pt-4">
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Items
                     </p>
@@ -302,7 +311,7 @@ export function SuccessPageClient() {
                     ))}
                   </div>
                 )}
-                <div className="flex justify-between border-t pt-4 font-medium">
+                <div className="flex justify-between border-t border-border pt-4 font-medium">
                   <span>Total paid</span>
                   <span>
                     ${(order.totalCents / 100).toFixed(2)}
@@ -312,31 +321,45 @@ export function SuccessPageClient() {
                   (order.shipping.address1 ||
                     order.shipping.city ||
                     order.shipping.countryCode) && (
-                  <div className="border-t pt-4">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Shipping address
-                    </p>
-                    <p className="mt-1 whitespace-pre-line text-sm">
-                      {formatShippingAddress(order.shipping)}
-                    </p>
-                  </div>
-                )}
-                <p className="border-t pt-4 text-sm text-muted-foreground">
+                    <div className="space-y-1 border-t border-border pt-4">
+                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                        Shipping address
+                      </p>
+                      <div className="text-sm">
+                        {formatShippingAddress(order.shipping).map(
+                          (line, i) => (
+                            <p key={i}>{line}</p>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+                <p className="text-sm text-muted-foreground">
                   You&apos;ll receive an email when your order ships.
                 </p>
               </>
             )}
             {!loading && !order && displayOrderId && (
-              <p className="text-sm text-muted-foreground">
-                Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a
-                confirmation to your email.
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a
+                  confirmation to your email.
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You&apos;ll receive an email when your order ships.
+                </p>
+              </>
             )}
             {!loading && !order && !displayOrderId && (
-              <p className="text-sm text-muted-foreground">
-                Your payment was successful. We&apos;ll send a confirmation
-                email if we have your address.
-              </p>
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Your payment was successful. We&apos;ll send a confirmation
+                  email if we have your address.
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  You&apos;ll receive an email when your order ships.
+                </p>
+              </>
             )}
           </CardContent>
         </Card>

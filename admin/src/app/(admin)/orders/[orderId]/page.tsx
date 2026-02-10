@@ -91,12 +91,6 @@ type OrderDetail = {
   paymentMethod: string;
   /** When set, only these countries are shippable for this order (product restrictions). Empty or null = all countries. */
   allowedCountryCodes?: string[] | null;
-  /** On-chain: address that received the payment (Solana/ETH deposit address). */
-  paymentReceiptAddress?: string | null;
-  /** On-chain: transaction hash / signature. */
-  cryptoTxHash?: string | null;
-  /** BTCPay: invoice URL (for Bitcoin/Doge/Monero orders). */
-  btcpayInvoiceUrl?: string | null;
 };
 
 type ProductOption = {
@@ -1156,69 +1150,6 @@ export default function AdminOrderDetailsPage() {
           <div className="text-sm text-muted-foreground">
             Payment method: {order.paymentMethod}
           </div>
-          {(order.paymentReceiptAddress ||
-            order.cryptoTxHash ||
-            order.btcpayInvoiceUrl) && (
-            <div className="mt-4 space-y-2 border-t border-border pt-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                On-chain payment
-              </p>
-              {order.paymentReceiptAddress && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">
-                    Address that received funds:{" "}
-                  </span>
-                  <code
-                    className="break-all rounded bg-muted px-1 py-0.5 font-mono text-xs"
-                    title={order.paymentReceiptAddress}
-                  >
-                    {order.paymentReceiptAddress}
-                  </code>
-                </div>
-              )}
-              {order.cryptoTxHash && (
-                <div className="text-sm">
-                  <span className="text-muted-foreground">Transaction: </span>
-                  {order.paymentMethod?.includes("Solana") ? (
-                    <a
-                      href={`https://explorer.solana.com/tx/${order.cryptoTxHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="break-all font-mono text-xs text-primary underline hover:underline"
-                    >
-                      {order.cryptoTxHash}
-                    </a>
-                  ) : order.paymentMethod?.includes("EVM") ||
-                    order.paymentMethod?.includes("ETH") ? (
-                    <a
-                      href={`https://etherscan.io/tx/${order.cryptoTxHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="break-all font-mono text-xs text-primary underline hover:underline"
-                    >
-                      {order.cryptoTxHash}
-                    </a>
-                  ) : (
-                    <code className="break-all rounded bg-muted px-1 py-0.5 font-mono text-xs">
-                      {order.cryptoTxHash}
-                    </code>
-                  )}
-                </div>
-              )}
-              {order.btcpayInvoiceUrl && (
-                <div className="text-sm">
-                  <a
-                    href={order.btcpayInvoiceUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary underline hover:underline"
-                  >
-                    View invoice (BTCPay)
-                  </a>
-                </div>
-              )}
-            </div>
-          )}
         </CardContent>
       </Card>
 

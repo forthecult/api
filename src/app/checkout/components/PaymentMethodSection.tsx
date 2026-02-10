@@ -27,7 +27,6 @@ import {
   visibleUsdtNetworks,
 } from "~/lib/checkout-payment-options";
 import {
-  CULT_MINT_MAINNET,
   getSolanaPayLabel,
   getSolanaPayRecipient,
   USDC_MINT_MAINNET,
@@ -99,7 +98,6 @@ type CryptoSub =
   | "crust"
   | "pump"
   | "troll"
-  | "cult"
   | "other";
 type UsdcSub = "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
 type UsdtSub = "ethereum" | "arbitrum" | "bnb" | "polygon";
@@ -183,7 +181,6 @@ export function PaymentMethodSection({
     CRUST?: number;
     PUMP?: number;
     TROLL?: number;
-    CULT?: number;
   }>({});
 
   const { visibility } = usePaymentMethodSettings();
@@ -200,7 +197,7 @@ export function PaymentMethodSection({
     if (paymentMethod !== "crypto") return;
     fetch("/api/crypto/prices")
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number; CULT?: number }) => {
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number }) => {
         if (data && typeof data === "object") setCryptoPrices(data);
       })
       .catch(() => {});
@@ -304,12 +301,6 @@ export function PaymentMethodSection({
       const amount = total / rate;
       return `≈ ${formatCrypto(amount, 6)} TROLL`;
     }
-    if (paymentSubOption === "cult") {
-      const rate = cryptoPrices.CULT;
-      if (typeof rate !== "number" || rate <= 0) return null;
-      const amount = total / rate;
-      return `≈ ${formatCrypto(amount, 6)} CULT`;
-    }
     return null;
   }, [
     paymentMethod,
@@ -319,7 +310,6 @@ export function PaymentMethodSection({
     cryptoPrices.CRUST,
     cryptoPrices.PUMP,
     cryptoPrices.TROLL,
-    cryptoPrices.CULT,
   ]);
 
   useEffect(() => {
@@ -432,13 +422,11 @@ export function PaymentMethodSection({
             ? "pump"
             : paymentMethod === "crypto" && paymentSubOption === "troll"
               ? "troll"
-              : paymentMethod === "crypto" && paymentSubOption === "cult"
-                ? "cult"
-                : paymentMethod === "stablecoins" &&
-                  stablecoinToken === "usdc" &&
-                  paymentSubOption === "solana"
-                  ? "usdc"
-                  : "solana";
+              : paymentMethod === "stablecoins" &&
+                stablecoinToken === "usdc" &&
+                paymentSubOption === "solana"
+              ? "usdc"
+              : "solana";
       router.push(`/checkout/${data.orderId}#${token}`);
     } catch {
       setNavigatingToPay(false);
@@ -1200,14 +1188,11 @@ export function PaymentMethodSection({
                   ? "Pay with Pump"
                   : paymentMethod === "crypto" && paymentSubOption === "troll"
                     ? "Pay with TROLL"
-                    : paymentMethod === "crypto" &&
-                        (paymentSubOption as CryptoSub) === "cult"
-                      ? "Pay with Culture (CULT)"
-                      : paymentMethod === "stablecoins" &&
-                        stablecoinToken === "usdc" &&
-                        paymentSubOption === "solana"
-                        ? "Pay with USDC (Solana)"
-                        : "Pay with Solana"}
+                    : paymentMethod === "stablecoins" &&
+                      stablecoinToken === "usdc" &&
+                      paymentSubOption === "solana"
+                    ? "Pay with USDC (Solana)"
+                    : "Pay with Solana"}
           </Button>
         ) : isSuiPaySupported ? (
           <Button
