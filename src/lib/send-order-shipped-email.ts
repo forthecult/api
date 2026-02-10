@@ -1,9 +1,11 @@
 /**
  * Sends the "order shipped" transactional email.
  * Uses Resend when RESEND_API_KEY is set; otherwise logs in development.
+ * Uses shared email layout (header, footer, CTA) from ~/lib/email-layout.
  */
 
 import { getPublicSiteUrl } from "~/lib/app-url";
+import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderShippedEmailParams {
@@ -34,8 +36,13 @@ export async function sendOrderShippedEmail(
   if (trackingUrl) {
     body += `\nTrack your package: ${trackingUrl}`;
   }
-  body += `\n\nView order status: ${orderStatusUrl}`;
-  body += `\nOrder ID: ${shortId}`;
+  body += `\n\nOrder ID: ${shortId}`;
+
+  const contentHtml = plainTextToHtml(body);
+  const html = buildEmailHtml(contentHtml, {
+    ctaUrl: orderStatusUrl,
+    ctaLabel: "View order & track",
+  });
 
   if (process.env.RESEND_API_KEY) {
     try {
@@ -50,8 +57,8 @@ export async function sendOrderShippedEmail(
         from,
         to,
         subject,
-        text: body,
-        html: `<!DOCTYPE html><html><body><p>${body.replace(/\n/g, "<br/>")}</p></body></html>`,
+        text: body + `\n\nView order status: ${orderStatusUrl}`,
+        html,
       });
     } catch (err) {
       console.error("[sendOrderShippedEmail] Resend send failed:", err);

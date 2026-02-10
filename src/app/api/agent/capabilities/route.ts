@@ -107,6 +107,17 @@ export async function GET() {
         _note: "Contact support for higher limits",
       },
 
+      // Sign in with Moltbook (optional): agents can identify themselves and get a store identity
+      authentication: {
+        moltbook: {
+          description:
+            "Send header X-Moltbook-Identity with a temporary identity token from Moltbook to access agent-only endpoints and link orders to your agent identity.",
+          header: "X-Moltbook-Identity",
+          getToken: "POST https://moltbook.com/api/v1/agents/me/identity-token (Authorization: Bearer <your_moltbook_api_key>)",
+          authInstructionsUrl: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${baseUrl.replace(/\/$/, "")}/api/agent/me`,
+        },
+      },
+
       // Quick start guide for agents
       quickStart: {
         description: "Complete a purchase in 3 API calls",
@@ -147,10 +158,13 @@ export async function GET() {
       // All available endpoints
       _links: {
         self: "/api/agent/capabilities",
+        me: "/api/agent/me",
+        products: "/api/agent/products",
+        forAgentsPage: `${baseUrl.replace(/\/$/, "")}/for-agents`,
         health: "/api/health",
         openapi: "/api/openapi.json",
         categories: "/api/categories",
-        products: {
+        productsSearch: {
           search: "POST /api/products/search",
           semanticSearch: "POST /api/products/semantic-search",
           featured: "/api/products/featured",
