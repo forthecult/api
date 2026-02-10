@@ -157,3 +157,26 @@ export async function getMoltbookAgentFromRequest(
     ),
   };
 }
+
+/**
+ * Optionally get the verified Moltbook agent from the request.
+ * Does not return an error response: if no token or invalid token, returns { agent: null }.
+ * Use in public endpoints (e.g. checkout) to attach agent id when the header is present and valid.
+ */
+export async function getOptionalMoltbookAgentFromRequest(
+  request: NextRequest,
+  options?: { audience?: string },
+): Promise<{ agent: MoltbookAgent | null }> {
+  const token = request.headers.get(IDENTITY_HEADER)?.trim();
+  if (!token) return { agent: null };
+
+  const audience =
+    options?.audience ??
+    (typeof process.env.MOLTBOOK_AUDIENCE === "string" && process.env.MOLTBOOK_AUDIENCE.trim()
+      ? process.env.MOLTBOOK_AUDIENCE.trim()
+      : undefined);
+
+  const result = await verifyMoltbookToken(token, { audience });
+  if (result.valid) return { agent: result.agent };
+  return { agent: null };
+}

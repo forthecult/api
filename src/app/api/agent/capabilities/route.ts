@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { getAgentBaseUrl } from "~/lib/app-url";
+
 /**
  * AI-agent discovery: returns comprehensive API capabilities, limitations, and quick-start guide.
  * GET /api/agent/capabilities
@@ -8,7 +10,8 @@ import { NextResponse } from "next/server";
  * This is the most important endpoint for AI agent onboarding.
  */
 export async function GET() {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://your-domain.com";
+  const agentBase = getAgentBaseUrl();
+  const mainBase = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
   return NextResponse.json(
     {
@@ -23,9 +26,10 @@ export async function GET() {
         "Browse categories with smart filtering",
         "View product details including variants (size, color)",
         "Estimate cart totals before checkout",
-        "Create orders with crypto payment",
+        "Create orders with crypto payment (include X-Moltbook-Identity to link orders to your agent)",
         "Track order status in real-time",
         "Get shipping estimates by country",
+        "Sign in with Moltbook: list your orders (GET /api/agent/me/orders), get/update preferences (GET/PATCH /api/agent/me/preferences)",
       ],
 
       // What can't you do?
@@ -114,7 +118,7 @@ export async function GET() {
             "Send header X-Moltbook-Identity with a temporary identity token from Moltbook to access agent-only endpoints and link orders to your agent identity.",
           header: "X-Moltbook-Identity",
           getToken: "POST https://moltbook.com/api/v1/agents/me/identity-token (Authorization: Bearer <your_moltbook_api_key>)",
-          authInstructionsUrl: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${baseUrl.replace(/\/$/, "")}/api/agent/me`,
+          authInstructionsUrl: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${agentBase}/api/agent/me`,
         },
       },
 
@@ -155,12 +159,14 @@ export async function GET() {
         ],
       },
 
-      // All available endpoints
+      // All available endpoints (use agentBase for agent-facing URLs when using ai.forthecult.store)
       _links: {
         self: "/api/agent/capabilities",
         me: "/api/agent/me",
+        myOrders: "/api/agent/me/orders",
+        myPreferences: "/api/agent/me/preferences",
         products: "/api/agent/products",
-        forAgentsPage: `${baseUrl.replace(/\/$/, "")}/for-agents`,
+        forAgentsPage: `${agentBase}/for-agents`,
         health: "/api/health",
         openapi: "/api/openapi.json",
         categories: "/api/categories",
@@ -186,8 +192,8 @@ export async function GET() {
       // Support
       support: {
         email: "support@forthecut.store",
-        documentation: `${baseUrl}/api/docs`,
-        openApiSpec: `${baseUrl}/api/openapi.json`,
+        documentation: `${mainBase}/api/docs`,
+        openApiSpec: `${mainBase}/api/openapi.json`,
       },
 
       // Timestamp for caching

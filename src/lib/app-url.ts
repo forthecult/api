@@ -36,3 +36,14 @@ export function getClientBaseUrl(): string {
   if (typeof window !== "undefined") return window.location.origin;
   return DEFAULT_SERVER;
 }
+
+/**
+ * Base URL for the agent-facing experience (e.g. ai.forthecult.store).
+ * Use for capabilities, for-agents page, and auth instruction links.
+ * Set NEXT_PUBLIC_AGENT_APP_URL (e.g. https://ai.forthecult.store) to use a subdomain.
+ */
+export function getAgentBaseUrl(): string {
+  const raw = process.env.NEXT_PUBLIC_AGENT_APP_URL?.trim();
+  if (raw && /^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
+  return getPublicSiteUrl().replace(/\/$/, "");
+}

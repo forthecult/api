@@ -209,12 +209,17 @@ export const ordersTable = pgTable(
     affiliateCode: text("affiliate_code"),
     affiliateCommissionCents: integer("affiliate_commission_cents"),
     affiliateDiscountCents: integer("affiliate_discount_cents"),
+
+    // Moltbook agent identity (when order placed with X-Moltbook-Identity)
+    moltbookAgentId: text("moltbook_agent_id"),
   },
   (t) => [
     // Index for faster order lookups by user (sorted by most recent first)
     index("order_user_id_created_at_idx").on(t.userId, t.createdAt),
     // Index for email lookups (guest orders)
     index("order_email_idx").on(t.email),
+    // Index for Moltbook agent "my orders"
+    index("order_moltbook_agent_id_idx").on(t.moltbookAgentId),
     // Index for status filtering in admin
     index("order_status_idx").on(t.status),
     index("order_payment_status_idx").on(t.paymentStatus),

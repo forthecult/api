@@ -8,6 +8,7 @@ import {
 } from "~/lib/cors-public-api";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
+import { getOptionalMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
 import { deriveDepositAddress } from "~/lib/solana-deposit";
 import {
   checkRateLimit,
@@ -176,6 +177,8 @@ export async function POST(request: NextRequest) {
     const depositAddress = deriveDepositAddress(orderId);
     const expiresAt = new Date(now.getTime() + PAYMENT_WINDOW_MS).toISOString();
 
+    const { agent: moltbookAgent } = await getOptionalMoltbookAgentFromRequest(request);
+
     const shipping = body.shipping;
     if (shipping?.countryCode?.trim()) {
       const { isShippingExcluded } = await import(
@@ -207,6 +210,7 @@ export async function POST(request: NextRequest) {
       status: "pending",
       totalCents,
       updatedAt: now,
+      ...(moltbookAgent?.id && { moltbookAgentId: moltbookAgent.id }),
       ...(shipping?.name && { shippingName: shipping.name }),
       ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
       ...(shipping?.address2 && { shippingAddress2: shipping.address2 }),

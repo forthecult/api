@@ -2,6 +2,9 @@ export * from "./addresses/relations";
 export * from "./addresses/tables";
 export * from "./addresses/types";
 
+export * from "./agent-preferences/tables";
+export * from "./agent-preferences/types";
+
 export * from "./boxo/tables";
 export * from "./boxo/types";
 
