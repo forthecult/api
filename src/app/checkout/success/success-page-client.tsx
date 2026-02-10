@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { SEO_CONFIG } from "~/app";
+import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -52,7 +53,30 @@ type OrderDetails = {
     priceUsd?: number;
     subtotalUsd?: number;
   }>;
+  shipping?: {
+    name?: string;
+    address1?: string;
+    address2?: string;
+    city?: string;
+    stateCode?: string;
+    zip?: string;
+    countryCode?: string;
+    phone?: string;
+  };
 };
+
+function formatShippingAddress(s: OrderDetails["shipping"]): string {
+  if (!s) return "";
+  const parts = [
+    s.name,
+    s.address1,
+    s.address2,
+    [s.city, s.stateCode, s.zip].filter(Boolean).join(", "),
+    s.countryCode,
+    s.phone,
+  ].filter(Boolean);
+  return parts.join("\n");
+}
 
 export function SuccessPageClient() {
   const searchParams = useSearchParams();
@@ -83,6 +107,7 @@ export function SuccessPageClient() {
             orderId: string;
             email?: string;
             createdAt: string;
+            paymentMethod?: string;
             items: Array<{
               name: string;
               quantity: number;
@@ -90,14 +115,16 @@ export function SuccessPageClient() {
               subtotalUsd?: number;
             }>;
             totals?: { totalUsd: number };
+            shipping?: OrderDetails["shipping"];
           };
           setOrder({
             orderId: data.orderId,
             email: data.email,
-            paymentMethod: undefined,
+            paymentMethod: data.paymentMethod,
             totalCents: (data.totals?.totalUsd ?? 0) * 100,
             createdAt: data.createdAt,
             items: data.items ?? [],
+            shipping: data.shipping,
           });
         }
       }
@@ -127,7 +154,7 @@ export function SuccessPageClient() {
 
   const encodedUrl = encodeURIComponent(shareUrl);
   const encodedText = encodeURIComponent(shareText);
-  const xShareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
+  const xShareUrl = `https://x.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
   return (
@@ -254,6 +281,9 @@ export function SuccessPageClient() {
                 )}
                 {order.items && order.items.length > 0 && (
                   <div className="space-y-2 border-t pt-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Items
+                    </p>
                     {order.items.map((item, i) => (
                       <div
                         key={i}
@@ -273,11 +303,27 @@ export function SuccessPageClient() {
                   </div>
                 )}
                 <div className="flex justify-between border-t pt-4 font-medium">
-                  <span>Total</span>
+                  <span>Total paid</span>
                   <span>
                     ${(order.totalCents / 100).toFixed(2)}
                   </span>
                 </div>
+                {order.shipping &&
+                  (order.shipping.address1 ||
+                    order.shipping.city ||
+                    order.shipping.countryCode) && (
+                  <div className="border-t pt-4">
+                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      Shipping address
+                    </p>
+                    <p className="mt-1 whitespace-pre-line text-sm">
+                      {formatShippingAddress(order.shipping)}
+                    </p>
+                  </div>
+                )}
+                <p className="border-t pt-4 text-sm text-muted-foreground">
+                  You&apos;ll receive an email when your order ships.
+                </p>
               </>
             )}
             {!loading && !order && displayOrderId && (

@@ -57,6 +57,8 @@ export async function GET(
         paymentMethod: ordersTable.paymentMethod,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
         solanaPayReference: ordersTable.solanaPayReference,
+        cryptoTxHash: ordersTable.cryptoTxHash,
+        btcpayInvoiceUrl: ordersTable.btcpayInvoiceUrl,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, id))
@@ -230,6 +232,14 @@ export async function GET(
       totalComputedCents: Math.round(afterDiscount),
       paymentMethod,
       allowedCountryCodes,
+      // On-chain payment: address that received funds + tx id (when available)
+      ...((order.solanaPayDepositAddress ||
+        order.cryptoTxHash ||
+        order.btcpayInvoiceUrl) && {
+        paymentReceiptAddress: order.solanaPayDepositAddress ?? undefined,
+        cryptoTxHash: order.cryptoTxHash ?? undefined,
+        btcpayInvoiceUrl: order.btcpayInvoiceUrl ?? undefined,
+      }),
     });
   } catch (err) {
     console.error("Admin order get error:", err);

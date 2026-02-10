@@ -136,36 +136,26 @@ export function ConnectWalletModal({
 
   connectedRef.current = connected;
 
-  // Track the connected state when modal opens to detect new connections
-  const [wasConnectedOnOpen, setWasConnectedOnOpen] = useState(false);
-
   useEffect(() => {
     if (open) {
       setToken(getTokenFromUrl());
       setStep("wallet");
       setSelectedWallet(null);
       setConnectingToNetwork(null);
-      setWasConnectedOnOpen(connected);
     }
-  }, [open, connected]);
+  }, [open]);
 
-  // Close modal only when Solana connection is stable (connected + publicKey) to avoid closing
-  // on WalletNotSelectedError or other adapter flicker; short delay so we don't close on a transient state.
+  // Close modal when Solana wallet is connected (whether user just connected or was already/reconnected).
+  // Avoids leaving the modal open when: user clicked "Connect wallet" while already connected,
+  // or wallet reconnected (e.g. Phantom) and user is left staring at the modal.
   const closeAfterStableMs = 400;
   useEffect(() => {
-    if (
-      !open ||
-      !connected ||
-      wasConnectedOnOpen ||
-      step !== "requesting" ||
-      !publicKey
-    )
-      return;
+    if (!open || !connected || !publicKey) return;
     const t = setTimeout(() => {
       onOpenChange(false);
     }, closeAfterStableMs);
     return () => clearTimeout(t);
-  }, [open, connected, wasConnectedOnOpen, step, publicKey, onOpenChange]);
+  }, [open, connected, publicKey, onOpenChange]);
 
   useEffect(() => {
     if (!open) {

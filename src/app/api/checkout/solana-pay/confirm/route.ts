@@ -227,6 +227,7 @@ export async function POST(request: NextRequest) {
         paymentStatus: "paid",
         status: "paid",
         updatedAt: new Date(),
+        cryptoTxHash: sigTrim,
         ...(typeof payerWalletFromBody === "string" &&
         payerWalletFromBody.trim()
           ? { payerWalletAddress: payerWalletFromBody.trim() }

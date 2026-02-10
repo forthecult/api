@@ -673,7 +673,7 @@ export function AffiliatePageClient() {
                     asChild
                   >
                     <a
-                      href={`https://twitter.com/intent/tweet?${new URLSearchParams({
+                      href={`https://x.com/intent/tweet?${new URLSearchParams({
                         text: `Shop ${SEO_CONFIG.name} — quality apparel & essentials. Use my link:`,
                         url: affiliate.referralUrl,
                       }).toString()}`}

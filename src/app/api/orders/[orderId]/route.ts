@@ -47,6 +47,7 @@ export async function GET(
         shippingCountryCode: ordersTable.shippingCountryCode,
         shippingPhone: ordersTable.shippingPhone,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        paymentMethod: ordersTable.paymentMethod,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -147,6 +148,7 @@ export async function GET(
         shippingUsd,
         totalUsd,
       },
+      paymentMethod: order.paymentMethod ?? undefined,
       payment: order.solanaPayDepositAddress
         ? {
             chain: "solana",
