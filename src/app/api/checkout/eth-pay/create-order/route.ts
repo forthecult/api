@@ -88,7 +88,7 @@ interface CreateEthOrderBody {
 export async function POST(request: NextRequest) {
   // Rate limit checkout to prevent order spam
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `checkout:${ip}`,
     RATE_LIMITS.checkout,
   );

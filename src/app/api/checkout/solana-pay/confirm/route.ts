@@ -77,7 +77,7 @@ async function verifyNativeSolTransfer(
  */
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `solana-pay-confirm:${ip}`,
     RATE_LIMITS.checkout,
   );

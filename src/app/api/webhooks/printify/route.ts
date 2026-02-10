@@ -2,24 +2,11 @@
  * Printify Webhook Handler
  *
  * Receives webhook events from Printify for order and product updates.
+ * Printify does not use HMAC; the secret is passed in the URL (?secret=...).
  *
- * Order Events:
- * - order:created, order:updated, order:sent-to-production
- * - order:shipment:created, order:shipment:delivered
- *
- * Product Events:
- * - product:publish:started - Publish started (we return 200 immediately, then import in background)
- * - product:published - Publish completed (same: 200 first, import in background)
- * - product:deleted - Product deleted from Printify (200 first, unpublish in background)
- *
- * We return 200 immediately for product events so Printify can mark the product as "Published"
- * on their side. If we awaited the full import, Printify could timeout and leave products
- * stuck in "Publishing".
- *
- * Security: Printify doesn't sign webhooks with HMAC like Printful.
- * In production, set PRINTIFY_WEBHOOK_SECRET and configure your webhook URL
- * to include it (e.g. https://forthecult.store/api/webhooks/printify?secret=YOUR_SECRET).
- * When the secret is set, requests without the matching secret are rejected.
+ * In production, PRINTIFY_WEBHOOK_SECRET is required; requests without the matching
+ * secret are rejected. Register webhooks via our API (POST /api/admin/printify/webhooks)
+ * so the URL includes the secret; Printify has no webhook UI for API stores.
  */
 
 import { type NextRequest, NextResponse } from "next/server";
@@ -80,6 +67,17 @@ export async function POST(request: NextRequest) {
 
     const secretParam = request.nextUrl.searchParams.get("secret");
     const expectedSecret = process.env.PRINTIFY_WEBHOOK_SECRET?.trim();
+    const isProduction = process.env.NODE_ENV === "production";
+
+    // In production, require secret so we never accept unverified webhooks
+    if (isProduction && !expectedSecret) {
+      console.warn("Printify webhook: PRINTIFY_WEBHOOK_SECRET required in production");
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 503 },
+      );
+    }
+
     if (expectedSecret) {
       if (!secretParam || secretParam !== expectedSecret) {
         console.warn("Printify webhook: Missing or invalid secret");

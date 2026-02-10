@@ -15,7 +15,10 @@ import {
 } from "~/db/schema";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 import { slugify } from "~/lib/slugify";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -36,9 +39,7 @@ type SortBy = (typeof SORT_COLUMNS)[number];
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,
@@ -249,9 +250,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
       name: string;

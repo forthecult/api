@@ -48,7 +48,7 @@ function setCache(key: string, items: unknown[]): void {
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `loqate:${ip}`,
     RATE_LIMITS.loqate,
   );

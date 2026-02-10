@@ -11,7 +11,7 @@ const BODY_LIMIT = 10 * 1024; // 10 KB
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `contact:${ip}`,
     RATE_LIMITS.contact,
   );

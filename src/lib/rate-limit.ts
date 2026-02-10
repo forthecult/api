@@ -1,7 +1,11 @@
 /**
- * Simple in-memory rate limiter for API routes.
- * For production with multiple instances, use Redis (e.g., @upstash/ratelimit).
+ * Rate limiter for API routes.
+ * Uses in-memory store by default. When UPSTASH_REDIS_REST_URL and
+ * UPSTASH_REDIS_REST_TOKEN are set (e.g. in production), uses Upstash Redis
+ * for consistent limits across instances.
  */
+
+import type { NextRequest } from "next/server";
 
 type RateLimitEntry = {
   count: number;
@@ -38,11 +42,8 @@ export interface RateLimitResult {
   resetAt: number;
 }
 
-/**
- * Check rate limit for a given identifier (e.g., IP address, user ID).
- * Returns whether the request should be allowed.
- */
-export function checkRateLimit(
+/** In-memory check (sync). */
+function checkRateLimitMemory(
   identifier: string,
   config: RateLimitConfig,
 ): RateLimitResult {
@@ -52,7 +53,6 @@ export function checkRateLimit(
 
   let entry = store.get(key);
 
-  // If no entry or window expired, create new entry
   if (!entry || entry.resetAt < now) {
     entry = {
       count: 1,
@@ -66,10 +66,8 @@ export function checkRateLimit(
     };
   }
 
-  // Increment count
   entry.count++;
 
-  // Check if over limit
   if (entry.count > config.limit) {
     return {
       success: false,
@@ -85,6 +83,64 @@ export function checkRateLimit(
   };
 }
 
+/** Cache Upstash limiters by config key to avoid creating one per request. */
+const redisLimiterCache = new Map<
+  string,
+  Awaited<ReturnType<typeof createRedisLimiter>>
+>();
+
+async function createRedisLimiter(config: RateLimitConfig) {
+  const { Ratelimit } = await import("@upstash/ratelimit");
+  const { Redis } = await import("@upstash/redis");
+  const redis = Redis.fromEnv();
+  return new Ratelimit({
+    redis,
+    limiter: Ratelimit.fixedWindow(config.limit, `${config.windowSeconds} s`),
+    prefix: "rl",
+  });
+}
+
+/** Redis-backed check when Upstash env is set. */
+async function checkRateLimitRedis(
+  identifier: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  const cacheKey = `${config.limit}:${config.windowSeconds}`;
+  let limiter = redisLimiterCache.get(cacheKey);
+  if (!limiter) {
+    limiter = await createRedisLimiter(config);
+    redisLimiterCache.set(cacheKey, limiter);
+  }
+
+  const res = await limiter.limit(identifier);
+  return {
+    success: res.success,
+    remaining: res.remaining,
+    resetAt: res.reset,
+  };
+}
+
+function isRedisConfigured(): boolean {
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  return Boolean(url && token);
+}
+
+/**
+ * Check rate limit for a given identifier (e.g. IP address, user ID).
+ * Uses Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set;
+ * otherwise uses in-memory store (per-instance).
+ */
+export async function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig,
+): Promise<RateLimitResult> {
+  if (isRedisConfigured()) {
+    return checkRateLimitRedis(identifier, config);
+  }
+  return Promise.resolve(checkRateLimitMemory(identifier, config));
+}
+
 /**
  * Get client IP from request headers.
  * Works with Vercel, Cloudflare, and standard proxies.
@@ -98,19 +154,20 @@ export function getClientIp(headers: Headers): string {
   );
 }
 
-/** Preset rate limit configs */
+/** Preset rate limit configs. Kept generous to avoid blocking normal use. */
 export const RATE_LIMITS = {
   /** Auth endpoints: 180/min per IP so multiple admin tabs (session checks) don't hit 429 */
   auth: { limit: 180, windowSeconds: 60 } as RateLimitConfig,
   /**
    * When client IP is missing (e.g. proxy not forwarding x-forwarded-for), all traffic shares one bucket.
-   * Use a higher limit so we don't block every user. Prefer fixing proxy to send X-Forwarded-For in prod.
    */
   authUnknownIp: { limit: 300, windowSeconds: 60 } as RateLimitConfig,
   /** Checkout/order creation: 5 requests per minute */
   checkout: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
-  /** Admin endpoints: 60 requests per minute */
-  admin: { limit: 60, windowSeconds: 60 } as RateLimitConfig,
+  /** Admin API: 200/min per IP so dashboards and scripts are not blocked */
+  admin: { limit: 200, windowSeconds: 60 } as RateLimitConfig,
+  /** Order status polling: 120/min per IP (~2/s, enough for several orders polling every 5s) */
+  orderStatus: { limit: 120, windowSeconds: 60 } as RateLimitConfig,
   /** General API: 100 requests per minute */
   api: { limit: 100, windowSeconds: 60 } as RateLimitConfig,
   /** Contact form: 5 submissions per minute per IP (spam protection) */

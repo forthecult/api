@@ -31,7 +31,7 @@ const createCheckoutBodySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimit(
       `stripe-checkout:${ip}`,
       RATE_LIMITS.checkout,
     );

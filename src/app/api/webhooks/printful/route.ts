@@ -11,31 +11,27 @@ import {
 /**
  * POST /api/webhooks/printful
  *
- * Handles Printful webhook events for:
+ * Handles Printful webhook events (order and product sync).
+ * Webhook signature verification using HMAC-SHA256 (header x-pf-webhook-signature).
  *
- * Order events:
- * - shipment_sent: Order/shipment has shipped
- * - shipment_delivered: Order delivered
- * - order_updated: Order status changed
- * - order_failed: Order failed at Printful
- * - order_canceled: Order cancelled by Printful
- * - shipment_returned: Package returned
- * - shipment_out_of_stock: Item went out of stock
- *
- * Product sync events:
- * - product_synced: Product created/synced in Printful store
- * - product_updated: Product information updated
- * - product_deleted: Product deleted from Printful store
- * - stock_updated: Stock availability changed
- *
- * Webhook signature verification using HMAC-SHA256.
+ * In production, PRINTFUL_WEBHOOK_SECRET is required; unverified requests are rejected.
+ * Set the same hex secret in Printful's webhook settings and in this env var.
  */
 export async function POST(request: NextRequest) {
   try {
     const rawBody = await request.text();
+    const secretKey = process.env.PRINTFUL_WEBHOOK_SECRET?.trim();
+    const isProduction = process.env.NODE_ENV === "production";
 
-    // Verify webhook signature if configured
-    const secretKey = process.env.PRINTFUL_WEBHOOK_SECRET;
+    // In production, require secret to be set so we never accept unverified webhooks
+    if (isProduction && !secretKey) {
+      console.warn("Printful webhook: PRINTFUL_WEBHOOK_SECRET required in production");
+      return NextResponse.json(
+        { error: "Webhook not configured" },
+        { status: 503 },
+      );
+    }
+
     if (secretKey) {
       const signature = request.headers.get("x-pf-webhook-signature");
       if (!signature) {

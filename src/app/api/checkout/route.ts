@@ -52,7 +52,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   // Rate limit checkout to prevent order spam and abuse
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `checkout:${ip}`,
     RATE_LIMITS.checkout,
   );

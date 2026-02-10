@@ -12,6 +12,9 @@ import {
   getPrintifyIfConfigured,
   type PrintifyWebhookEventType,
 } from "~/lib/printify";
+
+/** When true, register_all deletes all existing webhooks first so only our URL receives events (fixes stuck "Publishing"). */
+const REPLACE_ALL_WEBHOOKS_ON_REGISTER = true;
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /** All webhook topics we want to subscribe to for full sync */
@@ -137,9 +140,23 @@ export async function POST(request: NextRequest) {
         `Registering all Printify webhooks for shop ${pf.shopId}; URL: ${webhookUrl}`,
       );
 
-      // First, get existing webhooks to avoid duplicates
-      const existing = await listPrintifyWebhooks(pf.shopId);
-      const existingTopics = new Set(existing.map((w) => w.topic));
+      // Replace-all: delete every existing webhook first so only our URL receives events.
+      // Otherwise Printify may have old/stale URLs (e.g. without secret); if any URL returns
+      // non-2xx, Printify can leave products stuck in "Publishing".
+      let deletedCount = 0;
+      if (REPLACE_ALL_WEBHOOKS_ON_REGISTER) {
+        const existing = await listPrintifyWebhooks(pf.shopId);
+        for (const webhook of existing) {
+          const res = await deletePrintifyWebhook(pf.shopId, webhook.id);
+          if (res.success) deletedCount++;
+        }
+        if (deletedCount > 0) {
+          console.log(`Replaced ${deletedCount} existing Printify webhook(s) for shop ${pf.shopId}`);
+        }
+      }
+
+      const existingAfterDelete = await listPrintifyWebhooks(pf.shopId);
+      const existingTopics = new Set(existingAfterDelete.map((w) => w.topic));
 
       const results: { topic: string; success: boolean; error?: string; id?: string }[] = [];
 
@@ -170,6 +187,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: failedCount === 0,
         summary: {
+          deleted: deletedCount,
           registered: successCount,
           alreadyRegistered,
           failed: failedCount,

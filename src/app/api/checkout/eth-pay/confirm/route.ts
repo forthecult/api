@@ -76,7 +76,7 @@ interface ConfirmPaymentBody {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimit(
       `eth-pay-confirm:${ip}`,
       RATE_LIMITS.checkout,
     );

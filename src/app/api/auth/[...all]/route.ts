@@ -121,7 +121,7 @@ function getAuthRateLimitConfig(ip: string) {
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const result = checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
+  const result = await checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
   if (!result.success) {
     return rateLimitResponse(result);
   }
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const result = checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
+  const result = await checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
   if (!result.success) {
     return rateLimitResponse(result);
   }

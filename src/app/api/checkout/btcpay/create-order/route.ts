@@ -35,7 +35,7 @@ const TOKEN_TO_CURRENCY: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(`checkout:${ip}`, RATE_LIMITS.checkout);
+  const rateLimitResult = await checkRateLimit(`checkout:${ip}`, RATE_LIMITS.checkout);
   if (!rateLimitResult.success) {
     return rateLimitResponse(rateLimitResult);
   }

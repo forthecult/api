@@ -1,7 +1,13 @@
 import crypto from "node:crypto";
-import type { NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { auth, isAdminUser } from "~/lib/auth";
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  RATE_LIMITS,
+} from "~/lib/rate-limit";
 
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY?.trim() ?? "";
 const ADMIN_AI_API_KEY = process.env.ADMIN_AI_API_KEY?.trim() ?? "";
@@ -23,15 +29,26 @@ function constantTimeEqual(a: string, b: string): boolean {
  * 1. API key: Authorization: Bearer <key> or X-API-Key: <key> (must match ADMIN_API_KEY or ADMIN_AI_API_KEY)
  * 2. Session: cookie-based session for a user whose email is in ADMIN_EMAILS
  *
+ * Rate limits admin requests by IP (200/min) when auth is attempted. On rate limit,
+ * returns { ok: false, response } so the route can return 429.
+ *
  * Use ADMIN_AI_API_KEY for temporary AI/agent access so you can rotate or revoke it
  * without affecting human admin or scripts using ADMIN_API_KEY. See
- * forthecult-api/guides/ai-admin-temporary-access.md.
+ * relivator/docs/ai-admin-temporary-access.md.
  */
 export async function getAdminAuth(request: NextRequest): Promise<
   | { ok: true; method: "api_key"; source?: "ai" }
   | { ok: true; method: "session"; user: { id: string; email?: string } }
   | { ok: false }
+  | { ok: false; response: Response }
 > {
+  // Rate limit admin API by IP (applies to all /api/admin/* requests)
+  const ip = getClientIp(request.headers);
+  const rlResult = await checkRateLimit(`admin:${ip}`, RATE_LIMITS.admin);
+  if (!rlResult.success) {
+    return { ok: false, response: rateLimitResponse(rlResult) };
+  }
+
   const authHeader = request.headers.get("authorization");
   const apiKeyHeader = request.headers.get("x-api-key");
 
@@ -57,9 +74,19 @@ export async function getAdminAuth(request: NextRequest): Promise<
 }
 
 /**
+ * When getAdminAuth returns !ok, return this so the route can send 401 or 429 (rate limit).
+ */
+export function adminAuthFailureResponse(
+  result: Awaited<ReturnType<typeof getAdminAuth>>,
+): NextResponse | Response {
+  if (result.ok) throw new Error("adminAuthFailureResponse only when !result.ok");
+  return "response" in result && result.response
+    ? result.response
+    : NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+}
+
+/**
  * Use in admin API route handlers:
  * const authResult = await getAdminAuth(request);
- * if (!authResult?.ok) {
- *   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
- * }
+ * if (!authResult?.ok) return adminAuthFailureResponse(authResult);
  */

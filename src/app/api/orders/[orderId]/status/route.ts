@@ -4,6 +4,12 @@ import type { NextRequest } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { apiError, apiSuccess } from "~/lib/api-error";
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  RATE_LIMITS,
+} from "~/lib/rate-limit";
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
@@ -12,12 +18,21 @@ const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
  * GET /api/orders/{orderId}/status
  *
  * Poll every 5 seconds until status changes from "awaiting_payment" to "paid".
- * Status values: awaiting_payment | paid | processing | shipped | delivered | cancelled | expired
+ * Rate limited per IP (120/min) to avoid abuse.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
+  const ip = getClientIp(request.headers);
+  const rateLimitResult = await checkRateLimit(
+    `order-status:${ip}`,
+    RATE_LIMITS.orderStatus,
+  );
+  if (!rateLimitResult.success) {
+    return rateLimitResponse(rateLimitResult);
+  }
+
   try {
     const { orderId } = await params;
     if (!orderId?.trim()) {

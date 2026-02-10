@@ -27,7 +27,7 @@ import {
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIp(request.headers);
-    const rateLimitResult = checkRateLimit(
+    const rateLimitResult = await checkRateLimit(
       `btcpay-confirm:${ip}`,
       RATE_LIMITS.checkout,
     );

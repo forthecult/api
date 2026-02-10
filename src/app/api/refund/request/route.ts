@@ -40,7 +40,7 @@ const CRYPTO_METHODS = ["solana_pay", "eth_pay", "btcpay", "ton_pay"];
  */
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `refund-request:${ip}`,
     RATE_LIMITS.contact,
   );

@@ -41,7 +41,7 @@ async function getTonUsdRate(): Promise<number> {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = checkRateLimit(
+  const rateLimitResult = await checkRateLimit(
     `checkout:${ip}`,
     RATE_LIMITS.checkout,
   );
