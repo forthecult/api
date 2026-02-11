@@ -78,7 +78,10 @@ export function useLoqateAutocomplete({
         .then((res) => (res.ok ? res.json() : { Items: [] }))
         .then((data: { Items?: LoqateFindItem[] }) => {
           setSuggestions(data.Items ?? []);
-          setOpen((data.Items?.length ?? 0) > 0);
+          // Only open dropdown if input is focused (prevents auto-open on page load with pre-filled data)
+          if (inputFocusedRef.current && (data.Items?.length ?? 0) > 0) {
+            setOpen(true);
+          }
         })
         .catch(() => setSuggestions([]))
         .finally(() => {

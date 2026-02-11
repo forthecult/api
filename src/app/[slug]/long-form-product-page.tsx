@@ -11,6 +11,7 @@ import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
 import { ProductShare } from "~/app/products/[id]/product-share";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
+import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
 import type { ProductOptionDefinition, ProductVariantOption } from "~/app/products/[id]/types";
 
@@ -144,6 +145,8 @@ export function LongFormProductPage({
                       hasVariants={product.hasVariants ?? false}
                       optionDefinitions={product.optionDefinitions ?? []}
                       variants={product.variants ?? []}
+                      handlingDaysMin={product.handlingDaysMin}
+                      handlingDaysMax={product.handlingDaysMax}
                     />
                   </ProductVariantImageProvider>
                 </div>
@@ -224,6 +227,8 @@ export function LongFormProductPage({
                   hasVariants={product.hasVariants ?? false}
                   optionDefinitions={product.optionDefinitions ?? []}
                   variants={product.variants ?? []}
+                  handlingDaysMin={product.handlingDaysMin}
+                  handlingDaysMax={product.handlingDaysMax}
                 />
               </ProductVariantImageProvider>
               <ProductShare
@@ -236,6 +241,7 @@ export function LongFormProductPage({
         </section>
 
         <RelatedProductsSection products={relatedProducts} />
+        <ProductReviewsCarousel />
       </main>
     </div>
   );

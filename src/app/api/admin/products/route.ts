@@ -348,6 +348,7 @@ export async function POST(request: NextRequest) {
       imageUrl?: string | null;
       metaDescription?: string | null;
       pageTitle?: string | null;
+      seoOptimized?: boolean;
       compareAtPriceCents?: number | null;
       costPerItemCents?: number | null;
       brand?: string | null;
@@ -439,6 +440,7 @@ export async function POST(request: NextRequest) {
       imageUrl: body.imageUrl?.trim() ?? null,
       metaDescription: body.metaDescription?.trim() ?? null,
       pageTitle: body.pageTitle?.trim() ?? null,
+      seoOptimized: body.seoOptimized ?? false,
       compareAtPriceCents: body.compareAtPriceCents ?? null,
       costPerItemCents: body.costPerItemCents ?? null,
       brand: body.brand?.trim() ?? null,

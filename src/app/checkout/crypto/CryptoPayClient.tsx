@@ -131,6 +131,7 @@ export function CryptoPayClient() {
   const [insufficientReason, setInsufficientReason] = useState<
     "sol_for_fees" | "token" | null
   >(null);
+  const [qrRendered, setQrRendered] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
@@ -367,8 +368,12 @@ export function CryptoPayClient() {
   const qrUrlString =
     token === "sui" ? suiPaymentUri : (paymentUrl?.toString() ?? null);
   useEffect(() => {
-    if (!qrUrlString || !showQrView) return;
+    if (!qrUrlString || !showQrView) {
+      setQrRendered(false);
+      return;
+    }
     let cancelled = false;
+    setQrRendered(false);
     const t = setTimeout(() => {
       if (cancelled || !qrContainerRef.current) return;
       // Clear previous QR code using DOM methods (safer than innerHTML)
@@ -377,10 +382,12 @@ export function CryptoPayClient() {
       }
       const qr = createQR(qrUrlString, 320, "white", "black");
       qr.append(qrContainerRef.current);
+      setQrRendered(true);
     }, 100);
     return () => {
       cancelled = true;
       clearTimeout(t);
+      setQrRendered(false);
       // Clear QR code on cleanup using DOM methods
       if (qrContainerRef.current) {
         while (qrContainerRef.current.firstChild) {
@@ -1044,11 +1051,22 @@ export function CryptoPayClient() {
                         </p>
                       </div>
                     ) : (
-                      <div
-                        ref={qrContainerRef}
-                        className="min-h-[320px] min-w-[320px] bg-muted"
-                        aria-hidden
-                      />
+                      <div className="relative">
+                        {/* Loading overlay - shown until QR is rendered */}
+                        {!qrRendered && (
+                          <div className="absolute inset-0 z-10 flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                              <span>Generating QR code…</span>
+                            </div>
+                          </div>
+                        )}
+                        <div
+                          ref={qrContainerRef}
+                          className="flex min-h-[320px] min-w-[320px] items-center justify-center bg-white"
+                          aria-hidden
+                        />
+                      </div>
                     )}
                   </div>
                   <div className="rounded-lg border border-border bg-muted/30 p-3">

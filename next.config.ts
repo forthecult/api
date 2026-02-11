@@ -189,6 +189,12 @@ const config = {
       ...categoryRedirects,
       // Product URLs at base: /products/trezor-one → /trezor-one
       { source: "/products/:path", destination: "/:path", permanent: true },
+      // Support ticket URLs: legacy /dashboard/support/:id → /dashboard/support-tickets/:id
+      {
+        source: "/dashboard/support/:id",
+        destination: "/dashboard/support-tickets/:id",
+        permanent: true,
+      },
     ];
   },
 

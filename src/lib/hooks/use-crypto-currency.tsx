@@ -166,7 +166,12 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   const formatCrypto = React.useCallback(
     (amount: number): string => {
       const decimals = DECIMAL_MAP[selectedCrypto as CryptoCode];
-      const formatted = amount.toFixed(decimals).replace(/\.?0+$/, "");
+      // Use Intl.NumberFormat for locale-aware thousand separators
+      // e.g., 2182.633676 → "2,182.633676" (US) or "2.182,633676" (DE)
+      const formatted = new Intl.NumberFormat(undefined, {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: decimals,
+      }).format(amount);
       return `${formatted} ${selectedCrypto}`;
     },
     [selectedCrypto],

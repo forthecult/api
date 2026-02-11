@@ -5,15 +5,45 @@ import Image from "next/image";
 import { getPaymentIconPaths } from "~/lib/checkout-payment-options";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 
-export function SecureCheckoutLine() {
+interface SecureCheckoutLineProps {
+  /** Handling (fulfillment) days min from product. Default: 1 */
+  handlingDaysMin?: number | null;
+  /** Handling (fulfillment) days max from product. Default: 2 */
+  handlingDaysMax?: number | null;
+}
+
+/**
+ * Format shipping days range for display.
+ * - Same min/max: "Ships in 1 Day" or "Ships in 2 Days"
+ * - Different: "Ships in 1-2 Days"
+ */
+function formatShippingDays(min: number, max: number): string {
+  if (min === max) {
+    return `Ships in ${min} ${min === 1 ? "Day" : "Days"}`;
+  }
+  return `Ships in ${min}-${max} Days`;
+}
+
+export function SecureCheckoutLine({
+  handlingDaysMin,
+  handlingDaysMax,
+}: SecureCheckoutLineProps) {
   const { visibility } = usePaymentMethodSettings();
   const icons = getPaymentIconPaths(visibility);
 
+  // Default to 1-2 days if not specified (most POD products)
+  const minDays = handlingDaysMin ?? handlingDaysMax ?? 1;
+  const maxDays = handlingDaysMax ?? handlingDaysMin ?? 2;
+  const shippingText = formatShippingDays(
+    Math.max(1, minDays),
+    Math.max(minDays, maxDays),
+  );
+
   return (
     <div className="mb-6 block w-full">
-      {/* Centered with Add to Cart: block + mx-auto + w-fit so content centers in full-width row */}
+      {/* Aligned with Add to Cart button: offset by quantity controls width (approx 7rem) on sm+ screens */}
       <div
-        className="mx-auto w-fit flex flex-wrap items-center justify-center gap-x-8 gap-y-1 text-sm text-muted-foreground sm:gap-x-12"
+        className="flex flex-wrap items-center justify-center gap-x-8 gap-y-1 text-sm text-muted-foreground sm:gap-x-12 sm:pl-28"
         role="list"
         aria-label="Purchase assurances"
       >
@@ -25,10 +55,10 @@ export function SecureCheckoutLine() {
         <span aria-hidden className="select-none text-muted-foreground/70">
           |
         </span>
-        <span role="listitem">🚚 Ships in 2-5 Days</span>
+        <span role="listitem">🚚 {shippingText}</span>
       </div>
       {icons.length > 0 && (
-        <div className="mx-auto mt-2 w-fit flex flex-wrap items-center justify-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:pl-28">
           {icons.map(({ src, alt, type }) => {
             const isCard = type === "card";
             return (

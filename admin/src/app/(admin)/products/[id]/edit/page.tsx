@@ -16,7 +16,10 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { COUNTRIES_BY_CONTINENT } from "~/lib/countries-by-continent";
+import {
+  COUNTRIES_BY_CONTINENT,
+  COUNTRY_ORIGIN_OPTIONS,
+} from "~/lib/countries-by-continent";
 import { cn } from "~/lib/cn";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { getMainAppUrl } from "~/lib/env";
@@ -32,26 +35,6 @@ const API_BASE = getMainAppUrl();
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
-
-const COUNTRY_OPTIONS = [
-  "",
-  "United States",
-  "Canada",
-  "United Kingdom",
-  "Germany",
-  "France",
-  "Italy",
-  "Spain",
-  "Australia",
-  "Japan",
-  "China",
-  "Mexico",
-  "India",
-  "Brazil",
-  "Netherlands",
-  "South Korea",
-  "Other",
-];
 
 // Common option names for the dropdown
 const OPTION_NAME_SUGGESTIONS = ["Size", "Color", "Material", "Style"];
@@ -96,6 +79,7 @@ type Product = {
   mainImageTitle?: string | null;
   metaDescription: string | null;
   pageTitle: string | null;
+  seoOptimized: boolean;
   priceCents: number;
   compareAtPriceCents: number | null;
   costPerItemCents: number | null;
@@ -246,6 +230,7 @@ export default function AdminProductEditPage() {
   const [mainImageTitle, setMainImageTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [pageTitle, setPageTitle] = useState("");
+  const [seoOptimized, setSeoOptimized] = useState(false);
   const [priceCents, setPriceCents] = useState("");
   const [compareAtPriceCents, setCompareAtPriceCents] = useState("");
   const [costPerItemCents, setCostPerItemCents] = useState("");
@@ -389,6 +374,7 @@ export default function AdminProductEditPage() {
       );
       setMetaDescription(data.metaDescription ?? "");
       setPageTitle(data.pageTitle ?? "");
+      setSeoOptimized((data as { seoOptimized?: boolean }).seoOptimized ?? false);
       setPriceCents(String(data.priceCents));
       setCompareAtPriceCents(
         data.compareAtPriceCents != null
@@ -821,6 +807,7 @@ export default function AdminProductEditPage() {
           mainImageTitle: mainImageTitle.trim() || null,
           metaDescription: metaDescription.trim() || null,
           pageTitle: pageTitle.trim() || null,
+          seoOptimized,
           priceCents: cents,
           compareAtPriceCents: compareAtPriceCents.trim()
             ? Number.parseInt(compareAtPriceCents, 10)
@@ -949,6 +936,7 @@ export default function AdminProductEditPage() {
       mainImageTitle,
       metaDescription,
       pageTitle,
+      seoOptimized,
       priceCents,
       compareAtPriceCents,
       costPerItemCents,
@@ -1689,7 +1677,7 @@ export default function AdminProductEditPage() {
                   onChange={(e) => setCountryOfOrigin(e.target.value)}
                   className={inputClass}
                 >
-                  {COUNTRY_OPTIONS.map((c) => (
+                  {COUNTRY_ORIGIN_OPTIONS.map((c) => (
                     <option key={c || "empty"} value={c}>
                       {c || "—"}
                     </option>
@@ -3016,6 +3004,18 @@ export default function AdminProductEditPage() {
                 className={cn(inputClass, "resize-y")}
               />
             </div>
+            <label className="flex items-center gap-2 pt-2">
+              <input
+                type="checkbox"
+                checked={seoOptimized}
+                onChange={(e) => setSeoOptimized(e.target.checked)}
+                className="size-4 rounded border-input"
+              />
+              <span className="text-sm">Optimized</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              Product has been optimized for SEO / content / copy.
+            </p>
           </CardContent>
         </Card>
 

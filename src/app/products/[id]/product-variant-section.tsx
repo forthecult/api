@@ -75,6 +75,10 @@ export interface ProductVariantSectionProps {
   hasVariants: boolean;
   optionDefinitions: ProductOptionDefinition[];
   variants: ProductVariantOption[];
+  /** Handling (fulfillment) days min from product for shipping estimate. */
+  handlingDaysMin?: number | null;
+  /** Handling (fulfillment) days max from product for shipping estimate. */
+  handlingDaysMax?: number | null;
 }
 
 /** Same country-availability logic as ProductActions: excluded globally or product restricted and current country not in list. */
@@ -131,6 +135,8 @@ export function ProductVariantSection({
   hasVariants,
   optionDefinitions: optionDefinitionsProp,
   variants,
+  handlingDaysMin,
+  handlingDaysMax,
 }: ProductVariantSectionProps) {
   const unavailableInCountry = useUnavailableInCountry(product);
 
@@ -219,7 +225,10 @@ export function ProductVariantSection({
             }}
           />
         </div>
-        <SecureCheckoutLine />
+        <SecureCheckoutLine
+          handlingDaysMin={handlingDaysMin}
+          handlingDaysMax={handlingDaysMax}
+        />
       </>
     );
   }
@@ -330,7 +339,10 @@ export function ProductVariantSection({
         />
       </div>
       <div className="w-full min-w-0">
-        <SecureCheckoutLine />
+        <SecureCheckoutLine
+          handlingDaysMin={handlingDaysMin}
+          handlingDaysMax={handlingDaysMax}
+        />
       </div>
     </>
   );

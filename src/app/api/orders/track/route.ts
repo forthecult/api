@@ -6,20 +6,17 @@ import { ordersTable } from "~/db/schema";
 import { createOrderTrackToken } from "~/lib/order-track-token";
 import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
-function normalizeEmail(email: string | null | undefined): string {
-  return (email ?? "").trim().toLowerCase();
-}
-
-function normalizePaymentAddress(addr: string | null | undefined): string {
-  return (addr ?? "").trim().toLowerCase();
+function normalize(value: string | null | undefined): string {
+  return (value ?? "").trim().toLowerCase();
 }
 
 /**
  * POST /api/orders/track
- * Body: { orderId: string, email?: string, paymentAddress?: string }
- * At least one of email or paymentAddress required.
- * If order exists and (order.email matches email or order.payerWalletAddress matches paymentAddress),
- * returns { token, orderId } for use in /track-order/[orderId]?t=token.
+ * Body: { orderId: string, lookupValue: string }
+ *   OR legacy: { orderId: string, email?: string, paymentAddress?: string }
+ * 
+ * lookupValue can be: billing email, payment (wallet) address, or shipping postal code.
+ * If order exists and lookupValue matches any of these, returns { token, orderId }.
  */
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -29,13 +26,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
       orderId?: string;
+      lookupValue?: string;
+      // Legacy fields for backward compatibility
       email?: string;
       paymentAddress?: string;
     };
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
-    const email = typeof body.email === "string" ? body.email : undefined;
-    const paymentAddress =
-      typeof body.paymentAddress === "string" ? body.paymentAddress : undefined;
+    
+    // Support both new lookupValue and legacy email/paymentAddress
+    let lookupValue = typeof body.lookupValue === "string" ? body.lookupValue.trim() : "";
+    if (!lookupValue) {
+      // Fallback to legacy fields
+      if (typeof body.email === "string" && body.email.trim()) {
+        lookupValue = body.email.trim();
+      } else if (typeof body.paymentAddress === "string" && body.paymentAddress.trim()) {
+        lookupValue = body.paymentAddress.trim();
+      }
+    }
 
     if (!orderId) {
       return NextResponse.json(
@@ -43,12 +50,12 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    if (!email?.trim() && !paymentAddress?.trim()) {
+    if (!lookupValue) {
       return NextResponse.json(
         {
           error: {
             code: "MISSING_PROOF",
-            message: "Please provide either billing email or payment address",
+            message: "Please provide your billing email, payment address, or postal code",
           },
         },
         { status: 400 },
@@ -60,6 +67,7 @@ export async function POST(request: NextRequest) {
         id: ordersTable.id,
         email: ordersTable.email,
         payerWalletAddress: ordersTable.payerWalletAddress,
+        shippingZip: ordersTable.shippingZip,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
@@ -72,17 +80,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const emailMatch =
-      email != null &&
-      email.trim() !== "" &&
-      normalizeEmail(order.email) === normalizeEmail(email);
-    const addressMatch =
-      paymentAddress != null &&
-      paymentAddress.trim() !== "" &&
-      normalizePaymentAddress(order.payerWalletAddress) ===
-        normalizePaymentAddress(paymentAddress);
+    const normalizedLookup = normalize(lookupValue);
+    const emailMatch = normalize(order.email) === normalizedLookup;
+    const addressMatch = normalize(order.payerWalletAddress) === normalizedLookup;
+    const postalMatch = normalize(order.shippingZip) === normalizedLookup;
 
-    if (!emailMatch && !addressMatch) {
+    if (!emailMatch && !addressMatch && !postalMatch) {
       return NextResponse.json(
         {
           error: {

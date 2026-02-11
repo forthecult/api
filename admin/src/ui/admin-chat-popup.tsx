@@ -90,6 +90,36 @@ export function AdminChatPopup() {
   const listPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [apiUnavailable, setApiUnavailable] = useState(false);
+  const [widgetVisibleOnStorefront, setWidgetVisibleOnStorefront] = useState<
+    boolean | null
+  >(null);
+
+  const fetchWidgetVisible = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/support-chat/widget-visible`,
+        { credentials: "include" },
+      );
+      if (res.ok) {
+        const json = (await res.json()) as { visible?: boolean };
+        setWidgetVisibleOnStorefront(json.visible !== false);
+      } else {
+        setWidgetVisibleOnStorefront(false);
+      }
+    } catch {
+      setWidgetVisibleOnStorefront(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchWidgetVisible();
+    const interval = setInterval(fetchWidgetVisible, POLL_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [fetchWidgetVisible]);
+
+  const openConversations = conversations.filter((c) => c.status === "open");
+  const showWidget =
+    widgetVisibleOnStorefront === true && openConversations.length > 0;
 
   const fetchList = useCallback(async () => {
     if (apiUnavailable) return;
@@ -151,13 +181,13 @@ export function AdminChatPopup() {
   }, [apiUnavailable]);
 
   useEffect(() => {
-    if (apiUnavailable) return;
+    if (apiUnavailable || widgetVisibleOnStorefront !== true) return;
     fetchList();
     listPollRef.current = setInterval(fetchList, POLL_INTERVAL_MS);
     return () => {
       if (listPollRef.current) clearInterval(listPollRef.current);
     };
-  }, [fetchList, apiUnavailable]);
+  }, [fetchList, apiUnavailable, widgetVisibleOnStorefront]);
 
   const fetchDetail = useCallback(async (id: string) => {
     setDetailLoading(true);
@@ -239,6 +269,8 @@ export function AdminChatPopup() {
   );
 
   const unreadCount = unreadIds.size;
+
+  if (!showWidget) return null;
 
   return (
     <>

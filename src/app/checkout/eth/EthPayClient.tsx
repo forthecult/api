@@ -16,6 +16,7 @@ import {
 } from "wagmi";
 import { ChevronDown } from "lucide-react";
 
+import { SEO_CONFIG } from "~/app";
 import { useCurrentUser } from "~/lib/auth-client";
 import { useEthPay, type EthPayOrder } from "~/lib/hooks/use-eth-pay";
 import { Button } from "~/ui/primitives/button";
@@ -485,7 +486,7 @@ export function EthPayClient() {
             </Link>
             <Link className="flex items-center gap-2" href="/">
               <span className="text-xl font-bold tracking-tight text-foreground">
-                Culture
+                {SEO_CONFIG.name}
               </span>
             </Link>
             {address ? (

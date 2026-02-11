@@ -178,3 +178,12 @@ export const COUNTRIES_BY_CONTINENT: ContinentEntry[] = [
 export const ALL_COUNTRY_CODES = new Set(
   COUNTRIES_BY_CONTINENT.flatMap((c) => c.countries.map((x) => x.code)),
 );
+
+/** All country names for "Country of origin" dropdown (empty first, then A–Z, then "Other"). */
+export const COUNTRY_ORIGIN_OPTIONS: string[] = [
+  "",
+  ...COUNTRIES_BY_CONTINENT.flatMap((c) => c.countries.map((x) => x.name)).sort(
+    (a, b) => a.localeCompare(b),
+  ),
+  "Other",
+];

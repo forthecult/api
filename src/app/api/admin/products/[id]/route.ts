@@ -129,6 +129,7 @@ export async function GET(
       mainImageTitle: product.mainImageTitle ?? null,
       metaDescription: product.metaDescription,
       pageTitle: product.pageTitle,
+      seoOptimized: product.seoOptimized,
       priceCents: product.priceCents,
       compareAtPriceCents: product.compareAtPriceCents,
       costPerItemCents: product.costPerItemCents,
@@ -236,6 +237,7 @@ export async function PATCH(
       mainImageTitle?: string | null;
       metaDescription?: string | null;
       pageTitle?: string | null;
+      seoOptimized?: boolean;
       priceCents?: number;
       compareAtPriceCents?: number | null;
       costPerItemCents?: number | null;
@@ -323,6 +325,8 @@ export async function PATCH(
       updates.metaDescription = body.metaDescription ?? null;
     if (body.pageTitle !== undefined)
       updates.pageTitle = body.pageTitle ?? null;
+    if (typeof body.seoOptimized === "boolean")
+      updates.seoOptimized = body.seoOptimized;
     if (typeof body.priceCents === "number") {
       if (body.priceCents < 0) {
         return NextResponse.json({ error: "Price cannot be negative" }, { status: 400 });

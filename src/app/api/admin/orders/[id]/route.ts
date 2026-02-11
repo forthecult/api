@@ -59,6 +59,13 @@ export async function GET(
         paymentMethod: ordersTable.paymentMethod,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
         solanaPayReference: ordersTable.solanaPayReference,
+        // Crypto payment details
+        cryptoCurrencyNetwork: ordersTable.cryptoCurrencyNetwork,
+        cryptoCurrency: ordersTable.cryptoCurrency,
+        cryptoAmount: ordersTable.cryptoAmount,
+        cryptoTxHash: ordersTable.cryptoTxHash,
+        payerWalletAddress: ordersTable.payerWalletAddress,
+        chainId: ordersTable.chainId,
         // Tracking
         trackingNumber: ordersTable.trackingNumber,
         trackingUrl: ordersTable.trackingUrl,
@@ -218,6 +225,21 @@ export async function GET(
       order.fulfillmentStatus ??
       (order.status === "fulfilled" ? "fulfilled" : "unfulfilled");
 
+    // Build crypto payment info if applicable
+    const cryptoPayment =
+      order.cryptoTxHash ||
+      order.cryptoCurrency ||
+      order.payerWalletAddress
+        ? {
+            txHash: order.cryptoTxHash ?? null,
+            network: order.cryptoCurrencyNetwork ?? null,
+            currency: order.cryptoCurrency ?? null,
+            amount: order.cryptoAmount ?? null,
+            payerWallet: order.payerWalletAddress ?? null,
+            chainId: order.chainId ?? null,
+          }
+        : null;
+
     return NextResponse.json({
       id: order.id,
       createdAt: order.createdAt.toISOString(),
@@ -248,6 +270,8 @@ export async function GET(
       totalComputedCents: Math.round(afterDiscount),
       paymentMethod,
       allowedCountryCodes,
+      // Crypto payment details (admin-only)
+      cryptoPayment,
       // Tracking
       tracking: {
         trackingNumber: order.trackingNumber ?? null,

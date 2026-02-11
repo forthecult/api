@@ -25,6 +25,7 @@ import { ProductImageGallery } from "./product-image-gallery";
 import { ProductShare } from "./product-share";
 import { ProductVariantImageProvider } from "./product-variant-image-context";
 import { ProductVariantSection } from "./product-variant-section";
+import { ProductReviewsCarousel } from "./product-reviews-carousel";
 import { RelatedProductsSection } from "./related-products-section";
 import { getTokenGateConfig } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
@@ -430,6 +431,8 @@ export default async function ProductDetailPage({ params }: PageProps) {
                   hasVariants={product.hasVariants ?? false}
                   optionDefinitions={product.optionDefinitions ?? []}
                   variants={product.variants ?? []}
+                  handlingDaysMin={product.handlingDaysMin}
+                  handlingDaysMax={product.handlingDaysMax}
                 />
                 <EstimatedDeliveryTimeline
                   handlingDaysMin={product.handlingDaysMin}
@@ -480,6 +483,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             )}
 
             <RelatedProductsSection products={relatedProducts} />
+            <ProductReviewsCarousel />
           </div>
         </main>
       </div>

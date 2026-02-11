@@ -78,6 +78,84 @@ type PrintfulCosts = {
   taxCents: number | null;
 };
 
+type CryptoPayment = {
+  txHash: string | null;
+  network: string | null;
+  currency: string | null;
+  amount: string | null;
+  payerWallet: string | null;
+  chainId: number | null;
+};
+
+/** Get block explorer URL for a transaction hash based on network/chainId */
+function getBlockExplorerUrl(
+  txHash: string,
+  network: string | null,
+  chainId: number | null,
+): string | null {
+  if (!txHash) return null;
+  
+  // Normalize network name
+  const net = (network ?? "").toLowerCase();
+  
+  // Solana
+  if (net === "solana" || net === "sol") {
+    return `https://solscan.io/tx/${txHash}`;
+  }
+  
+  // EVM chains by chainId
+  if (chainId) {
+    switch (chainId) {
+      case 1: // Ethereum mainnet
+        return `https://etherscan.io/tx/${txHash}`;
+      case 8453: // Base
+        return `https://basescan.org/tx/${txHash}`;
+      case 137: // Polygon
+        return `https://polygonscan.com/tx/${txHash}`;
+      case 42161: // Arbitrum
+        return `https://arbiscan.io/tx/${txHash}`;
+      case 56: // BNB Chain
+        return `https://bscscan.com/tx/${txHash}`;
+      case 43114: // Avalanche
+        return `https://snowtrace.io/tx/${txHash}`;
+      case 10: // Optimism
+        return `https://optimistic.etherscan.io/tx/${txHash}`;
+      default:
+        break;
+    }
+  }
+  
+  // Fallback by network name
+  if (net === "ethereum" || net === "eth") {
+    return `https://etherscan.io/tx/${txHash}`;
+  }
+  if (net === "base") {
+    return `https://basescan.org/tx/${txHash}`;
+  }
+  if (net === "polygon" || net === "matic") {
+    return `https://polygonscan.com/tx/${txHash}`;
+  }
+  if (net === "arbitrum" || net === "arb") {
+    return `https://arbiscan.io/tx/${txHash}`;
+  }
+  if (net === "bnb" || net === "bsc") {
+    return `https://bscscan.com/tx/${txHash}`;
+  }
+  if (net === "avalanche" || net === "avax") {
+    return `https://snowtrace.io/tx/${txHash}`;
+  }
+  if (net === "optimism" || net === "op") {
+    return `https://optimistic.etherscan.io/tx/${txHash}`;
+  }
+  
+  // Bitcoin (BTCPay)
+  if (net === "bitcoin" || net === "btc") {
+    return `https://mempool.space/tx/${txHash}`;
+  }
+  
+  return null;
+}
+
 type OrderDetail = {
   id: string;
   createdAt: string;
@@ -111,6 +189,7 @@ type OrderDetail = {
   allowedCountryCodes?: string[] | null;
   tracking?: TrackingInfo | null;
   printfulCosts?: PrintfulCosts | null;
+  cryptoPayment?: CryptoPayment | null;
 };
 
 type ProductOption = {
@@ -1178,6 +1257,72 @@ export default function AdminOrderDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Crypto payment details (if applicable) */}
+      {order.cryptoPayment && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Crypto Payment Details</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {order.cryptoPayment.txHash && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Transaction ID</span>
+                {(() => {
+                  const explorerUrl = getBlockExplorerUrl(
+                    order.cryptoPayment.txHash,
+                    order.cryptoPayment.network,
+                    order.cryptoPayment.chainId,
+                  );
+                  return explorerUrl ? (
+                    <a
+                      href={explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="max-w-[280px] truncate font-mono text-blue-600 underline hover:text-blue-800"
+                      title={order.cryptoPayment.txHash}
+                    >
+                      {order.cryptoPayment.txHash.slice(0, 10)}…{order.cryptoPayment.txHash.slice(-8)}
+                    </a>
+                  ) : (
+                    <span
+                      className="max-w-[280px] truncate font-mono"
+                      title={order.cryptoPayment.txHash}
+                    >
+                      {order.cryptoPayment.txHash.slice(0, 10)}…{order.cryptoPayment.txHash.slice(-8)}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
+            {order.cryptoPayment.network && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Network</span>
+                <span>{order.cryptoPayment.network}</span>
+              </div>
+            )}
+            {order.cryptoPayment.currency && order.cryptoPayment.amount && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Amount</span>
+                <span className="tabular-nums">
+                  {order.cryptoPayment.amount} {order.cryptoPayment.currency}
+                </span>
+              </div>
+            )}
+            {order.cryptoPayment.payerWallet && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Payer wallet</span>
+                <span
+                  className="max-w-[280px] truncate font-mono text-xs"
+                  title={order.cryptoPayment.payerWallet}
+                >
+                  {order.cryptoPayment.payerWallet.slice(0, 10)}…{order.cryptoPayment.payerWallet.slice(-8)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tracking info */}
       <Card>

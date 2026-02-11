@@ -10,21 +10,22 @@ const HOMEPAGE_LIMIT = 20;
 /**
  * GET /api/reviews
  * Public. Returns visible reviews for homepage testimonials.
- * Query: limit (default 20, max 50).
+ * Query: limit (default 20, max 50), includeProductName (boolean).
  */
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
     const limit = Math.min(
       50,
       Math.max(
         1,
         Number.parseInt(
-          new URL(request.url).searchParams.get("limit") ??
-            String(HOMEPAGE_LIMIT),
+          url.searchParams.get("limit") ?? String(HOMEPAGE_LIMIT),
           10,
         ) || HOMEPAGE_LIMIT,
       ),
     );
+    const includeProductName = url.searchParams.get("includeProductName") === "true";
 
     const rows = await db.query.productReviewsTable.findMany({
       columns: {
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
         customerName: true,
         author: true,
         showName: true,
+        ...(includeProductName && { productName: true }),
       },
       where: eq(productReviewsTable.visible, true),
       orderBy: [desc(productReviewsTable.createdAt)],
@@ -50,6 +52,7 @@ export async function GET(request: Request) {
         showName: r.showName,
         author: r.author ?? undefined,
       }),
+      ...(includeProductName && { productName: (r as { productName?: string | null }).productName ?? null }),
     }));
 
     return NextResponse.json({ items });

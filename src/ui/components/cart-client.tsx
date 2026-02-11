@@ -83,8 +83,9 @@ export function CartClient({ className }: CartClientProps) {
 
   const CartContent = (
     <>
-      <div className="flex flex-col">
-        <div className="border-b px-6 py-4">
+      <div className="flex h-full max-h-[100dvh] flex-col md:max-h-full">
+        {/* Fixed header */}
+        <div className="shrink-0 border-b px-6 py-4">
           <div>
             <div className="text-xl font-semibold">Your Cart</div>
             <div className="text-sm text-muted-foreground">
@@ -95,7 +96,8 @@ export function CartClient({ className }: CartClientProps) {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6">
+        {/* Scrollable items area */}
+        <div className="min-h-0 flex-1 overflow-y-auto px-6">
           {cartItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 animate-in fade-in duration-200">
                 <div
@@ -227,8 +229,9 @@ export function CartClient({ className }: CartClientProps) {
           )}
         </div>
 
+        {/* Fixed footer with checkout button */}
         {cartItems.length > 0 && (
-          <div className="border-t px-6 py-4">
+          <div className="shrink-0 border-t px-6 py-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Subtotal</span>
@@ -323,7 +326,7 @@ export function CartClient({ className }: CartClientProps) {
       ) : (
         <Drawer onOpenChange={setIsOpen} open={isOpen}>
           <DrawerTrigger asChild>{CartTrigger}</DrawerTrigger>
-          <DrawerContent>{CartContent}</DrawerContent>
+          <DrawerContent className="max-h-[85dvh]">{CartContent}</DrawerContent>
         </Drawer>
       )}
     </div>

@@ -34,6 +34,7 @@ import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
 import { ProductShare } from "~/app/products/[id]/product-share";
 import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
+import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
 // Types re-exported from product detail page (product page lives at base [slug] now)
 import type {
@@ -528,6 +529,8 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                     hasVariants={product.hasVariants ?? false}
                     optionDefinitions={product.optionDefinitions ?? []}
                     variants={product.variants ?? []}
+                    handlingDaysMin={product.handlingDaysMin}
+                    handlingDaysMax={product.handlingDaysMax}
                   />
                   <EstimatedDeliveryTimeline
                     handlingDaysMin={product.handlingDaysMin}
@@ -578,6 +581,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                 </div>
               )}
               <RelatedProductsSection products={relatedProducts} />
+              <ProductReviewsCarousel />
             </div>
           </main>
         </div>

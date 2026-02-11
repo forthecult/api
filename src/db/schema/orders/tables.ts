@@ -81,6 +81,8 @@ export const productsTable = pgTable("product", {
   productType: text("product_type"),
   /** True when the underlying catalog product is discontinued by the manufacturer. Product should be hidden from storefront. */
   isDiscontinued: boolean("is_discontinued").notNull().default(false),
+  /** Admin-only: product has been optimized for SEO / content / copy. */
+  seoOptimized: boolean("seo_optimized").notNull().default(false),
 
   // Printful Sync Product – stores the sync_product_id from Printful for bidirectional sync
   // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)

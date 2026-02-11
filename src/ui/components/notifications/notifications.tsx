@@ -108,7 +108,12 @@ export const Notifications: React.FC<NotificationsProps> = ({
               {typeof notification.metadata?.ticketPath === "string" && (
                 <Link
                   className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                  href={notification.metadata.ticketPath as string}
+                  href={
+                    (notification.metadata.ticketPath as string).replace(
+                      /^\/dashboard\/support\//,
+                      "/dashboard/support-tickets/",
+                    )
+                  }
                   onClick={(e) => e.stopPropagation()}
                 >
                   View ticket

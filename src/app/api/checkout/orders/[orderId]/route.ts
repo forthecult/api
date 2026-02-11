@@ -60,16 +60,20 @@ export async function GET(
       order.createdAt.getTime() + PAYMENT_WINDOW_MS,
     ).toISOString();
 
-    // Determine payment type from stored data
-    const isEthPayment =
-      order.paymentMethod === "eth_pay" ||
-      order.cryptoCurrencyNetwork?.toLowerCase() === "ethereum" ||
-      ["eth", "usdc", "usdt"].includes(
-        order.cryptoCurrency?.toLowerCase() ?? "",
-      );
-
     // Solana Pay: return token so payment page checks the correct balance (SOL vs USDC vs SPL)
+    // Check Solana Pay FIRST since USDC/USDT can be on either Solana or EVM
     const isSolanaPay = order.paymentMethod === "solana_pay" && hasDeposit;
+
+    // Determine payment type from stored data
+    // Only consider it an ETH payment if it's NOT a Solana Pay order
+    const isEthPayment =
+      !isSolanaPay &&
+      (order.paymentMethod === "eth_pay" ||
+        order.cryptoCurrencyNetwork?.toLowerCase() === "ethereum" ||
+        order.cryptoCurrencyNetwork?.toLowerCase() === "arbitrum" ||
+        order.cryptoCurrencyNetwork?.toLowerCase() === "base" ||
+        order.cryptoCurrencyNetwork?.toLowerCase() === "polygon" ||
+        ["eth"].includes(order.cryptoCurrency?.toLowerCase() ?? ""));
     const SOLANA_CURRENCY_TO_TOKEN: Record<string, string> = {
       SOL: "solana",
       USDC: "usdc",

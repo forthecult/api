@@ -15,8 +15,7 @@ const inputClass =
 export function TrackOrderForm() {
   const router = useRouter();
   const [orderId, setOrderId] = useState("");
-  const [email, setEmail] = useState("");
-  const [paymentAddress, setPaymentAddress] = useState("");
+  const [lookupValue, setLookupValue] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -24,15 +23,14 @@ export function TrackOrderForm() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       const oid = orderId.trim();
-      const em = email.trim();
-      const addr = paymentAddress.trim();
+      const value = lookupValue.trim();
       if (!oid) {
         setErrorMessage("Please enter your Order ID.");
         setStatus("error");
         return;
       }
-      if (!em && !addr) {
-        setErrorMessage("Please enter either your billing email or payment address.");
+      if (!value) {
+        setErrorMessage("Please enter your billing email, payment address, or postal code.");
         setStatus("error");
         return;
       }
@@ -44,8 +42,7 @@ export function TrackOrderForm() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: oid,
-            ...(em && { email: em }),
-            ...(addr && { paymentAddress: addr }),
+            lookupValue: value,
           }),
         });
         const data = (await res.json().catch(() => ({}))) as {
@@ -72,7 +69,7 @@ export function TrackOrderForm() {
         setErrorMessage("Something went wrong. Please try again.");
       }
     },
-    [orderId, email, paymentAddress, router],
+    [orderId, lookupValue, router],
   );
 
   return (
@@ -83,7 +80,8 @@ export function TrackOrderForm() {
           Look up your order
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Enter your Order ID and either the billing email or the payment (wallet) address used at checkout.
+          Enter your Order ID and one of: your billing email, the payment
+          (wallet) address used at checkout, or your shipping postal code.
         </p>
       </CardHeader>
       <CardContent>
@@ -102,32 +100,21 @@ export function TrackOrderForm() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="track-email">Billing email</Label>
+            <Label htmlFor="track-lookup">
+              Email, payment address, or postal code
+            </Label>
             <Input
-              id="track-email"
-              className={inputClass}
-              type="email"
-              placeholder="Email used at checkout"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              disabled={status === "loading"}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="track-payment-address">Payment address (optional)</Label>
-            <Input
-              id="track-payment-address"
+              id="track-lookup"
               className={inputClass}
               type="text"
-              placeholder="Wallet address if you paid with crypto"
-              value={paymentAddress}
-              onChange={(e) => setPaymentAddress(e.target.value)}
+              placeholder="Billing email, wallet address, or shipping postal code"
+              value={lookupValue}
+              onChange={(e) => setLookupValue(e.target.value)}
               autoComplete="off"
               disabled={status === "loading"}
             />
             <p className="text-xs text-muted-foreground">
-              If you paid with card, use billing email above. If you paid with crypto, you can use the wallet address instead.
+              Enter any one of these so we can verify your order.
             </p>
           </div>
           {errorMessage && (

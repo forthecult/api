@@ -69,13 +69,19 @@ function ensureProtocol(url: string): string {
 }
 
 function getBase(): string {
+  // Priority order for determining the app URL:
+  // 1. NEXT_SERVER_APP_URL - explicitly set server URL (recommended for production)
+  // 2. NEXT_PUBLIC_APP_URL - public app URL (works in production)
+  // 3. VERCEL_URL - auto-set by Vercel deployments
+  // 4. Fallback to localhost only in development
   const raw =
     process.env.NEXT_SERVER_APP_URL ||
+    process.env.NEXT_PUBLIC_APP_URL ||
     (typeof process.env.VERCEL_URL === "string"
       ? `https://${process.env.VERCEL_URL}`
       : process.env.NODE_ENV === "development"
         ? "http://localhost:3000"
-        : (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"));
+        : "http://localhost:3000");
   return ensureProtocol(raw);
 }
 
