@@ -137,6 +137,16 @@ export const ShippingAddressForm = forwardRef<
   const [showCompany, setShowCompany] = useState(() => Boolean(getPersistedShippingForm().company?.trim()));
   const [accountCreating, setAccountCreating] = useState(false);
   const [accountCreated, setAccountCreated] = useState(false);
+  /** Track which fields the user has touched (blurred) for inline validation. */
+  const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  const markTouched = useCallback((field: string) => {
+    setTouchedFields((prev) => {
+      if (prev.has(field)) return prev;
+      const next = new Set(prev);
+      next.add(field);
+      return next;
+    });
+  }, []);
   /** Local shipping state for rendering the Shipping Method card and
    *  for validating express-shipping phone requirements. All changes
    *  are also pushed to the parent via onShippingUpdate. */
@@ -367,6 +377,17 @@ export const ShippingAddressForm = forwardRef<
   } = localShipping;
   const isUS = form.country === "US";
 
+  /** Show field error if field was touched (blurred) OR submit validation ran. */
+  const showFieldError = useCallback(
+    (errorMsg: string, fieldName: string): boolean => {
+      return (
+        validationErrors.includes(errorMsg) ||
+        (touchedFields.has(fieldName) && validateShippingForm(form, localShipping.shippingSpeed).includes(errorMsg))
+      );
+    },
+    [validationErrors, touchedFields, form, localShipping.shippingSpeed],
+  );
+
   return (
     <>
       {/* Contact */}
@@ -392,12 +413,21 @@ export const ShippingAddressForm = forwardRef<
             <>
               <Input
                 aria-label="Email"
-                className={checkoutFieldHeight}
+                autoComplete="email"
+                inputMode="email"
+                className={cn(
+                  checkoutFieldHeight,
+                  touchedFields.has("email") && form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && "border-destructive",
+                )}
                 placeholder="Email"
                 type="email"
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
+                onBlur={() => markTouched("email")}
               />
+              {touchedFields.has("email") && form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && (
+                <p className="mt-1 text-xs text-destructive" role="alert">Please enter a valid email address</p>
+              )}
               {!authPending && !accountCreated && (
                 <div className="flex items-center gap-2">
                   <Button
@@ -458,6 +488,7 @@ export const ShippingAddressForm = forwardRef<
           <div className="sm:col-span-2">
             <select
               aria-label="Country"
+              autoComplete="shipping country"
               aria-invalid={
                 validationErrors.includes("Country is required") ||
                 !canShipToCountry
@@ -486,30 +517,40 @@ export const ShippingAddressForm = forwardRef<
           <div>
             <Input
               aria-label="First name"
-              aria-invalid={validationErrors.includes("First name is required")}
+              autoComplete="shipping given-name"
+              aria-invalid={showFieldError("First name is required", "firstName")}
               className={cn(
                 checkoutFieldHeight,
-                validationErrors.includes("First name is required") &&
+                showFieldError("First name is required", "firstName") &&
                   "border-destructive",
               )}
               placeholder="First name"
               value={form.firstName}
               onChange={(e) => update("firstName", e.target.value)}
+              onBlur={() => markTouched("firstName")}
             />
+            {showFieldError("First name is required", "firstName") && (
+              <p className="mt-1 text-xs text-destructive" role="alert">First name is required</p>
+            )}
           </div>
           <div>
             <Input
               aria-label="Last name"
-              aria-invalid={validationErrors.includes("Last name is required")}
+              autoComplete="shipping family-name"
+              aria-invalid={showFieldError("Last name is required", "lastName")}
               className={cn(
                 checkoutFieldHeight,
-                validationErrors.includes("Last name is required") &&
+                showFieldError("Last name is required", "lastName") &&
                   "border-destructive",
               )}
               placeholder="Last name"
               value={form.lastName}
               onChange={(e) => update("lastName", e.target.value)}
+              onBlur={() => markTouched("lastName")}
             />
+            {showFieldError("Last name is required", "lastName") && (
+              <p className="mt-1 text-xs text-destructive" role="alert">Last name is required</p>
+            )}
           </div>
           <div className="sm:col-span-2">
             {!showCompany ? (
@@ -523,6 +564,7 @@ export const ShippingAddressForm = forwardRef<
             ) : (
               <Input
                 aria-label="Company (optional)"
+                autoComplete="shipping organization"
                 className={checkoutFieldHeight}
                 placeholder="Company (optional)"
                 value={form.company}
@@ -537,12 +579,13 @@ export const ShippingAddressForm = forwardRef<
           >
             <Input
               aria-label="Address"
+              autoComplete="shipping address-line1"
               aria-autocomplete="list"
               aria-expanded={shippingLoqate.open}
-              aria-invalid={validationErrors.includes("Address is required")}
+              aria-invalid={showFieldError("Address is required", "street")}
               className={cn(
                 checkoutFieldHeight,
-                validationErrors.includes("Address is required") &&
+                showFieldError("Address is required", "street") &&
                   "border-destructive",
               )}
               placeholder="Address"
@@ -555,6 +598,7 @@ export const ShippingAddressForm = forwardRef<
               }}
               onBlur={() => {
                 shippingLoqate.inputFocusedRef.current = false;
+                markTouched("street");
                 setTimeout(() => {
                   if (
                     !shippingLoqate.containerRef.current?.contains(
@@ -566,6 +610,9 @@ export const ShippingAddressForm = forwardRef<
                 }, 200);
               }}
             />
+            {showFieldError("Address is required", "street") && (
+              <p className="mt-1 text-xs text-destructive" role="alert">Address is required</p>
+            )}
             {shippingLoqate.open &&
               (shippingLoqate.suggestions.length > 0 ||
                 shippingLoqate.loading) && (
@@ -611,6 +658,7 @@ export const ShippingAddressForm = forwardRef<
           <div className="sm:col-span-2">
             <Input
               aria-label="Apartment, suite, etc (optional)"
+              autoComplete="shipping address-line2"
               className={checkoutFieldHeight}
               placeholder="Apartment, suite, etc (optional)"
               value={form.apartment}
@@ -621,21 +669,27 @@ export const ShippingAddressForm = forwardRef<
             <div>
               <Input
                 aria-label="City"
-                aria-invalid={validationErrors.includes("City is required")}
+                autoComplete="shipping address-level2"
+                aria-invalid={showFieldError("City is required", "city")}
                 className={cn(
                   checkoutFieldHeight,
-                  validationErrors.includes("City is required") &&
+                  showFieldError("City is required", "city") &&
                     "border-destructive",
                 )}
                 placeholder="City"
                 value={form.city}
                 onChange={(e) => update("city", e.target.value)}
+                onBlur={() => markTouched("city")}
               />
+              {showFieldError("City is required", "city") && (
+                <p className="mt-1 text-xs text-destructive" role="alert">City is required</p>
+              )}
             </div>
             {isUS ? (
               <div>
                 <select
                   aria-label="State"
+                  autoComplete="shipping address-level1"
                   aria-invalid={validationErrors.includes("State is required")}
                   value={form.state}
                   onChange={(e) => update("state", e.target.value)}
@@ -656,6 +710,7 @@ export const ShippingAddressForm = forwardRef<
               <div>
                 <Input
                   aria-label="State / Province"
+                  autoComplete="shipping address-level1"
                   aria-invalid={validationErrors.includes(
                     "State / Province is required",
                   )}
@@ -674,6 +729,8 @@ export const ShippingAddressForm = forwardRef<
             <div>
               <Input
                 aria-label={isUS ? "ZIP code" : "Postal code"}
+                autoComplete="shipping postal-code"
+                inputMode="text"
                 aria-invalid={
                   validationErrors.includes("ZIP code is required") ||
                   validationErrors.includes("Postal code is required")
@@ -697,6 +754,8 @@ export const ShippingAddressForm = forwardRef<
                   ? "Phone (required)"
                   : "Phone"
               }
+              autoComplete="shipping tel"
+              inputMode="tel"
               aria-required={shippingSpeed === "express"}
               className={cn(checkoutFieldHeight, "min-w-0 flex-1")}
               placeholder={
@@ -734,18 +793,27 @@ export const ShippingAddressForm = forwardRef<
         <CardHeader>
           <CardTitle>Shipping method</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <div className="flex items-center justify-between rounded-md border border-border p-3">
-            <span className="text-sm font-medium">
-              {shippingLoading
-                ? "Calculating…"
-                : shippingLabel ?? "Shipping"}
-            </span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-sm font-medium">
+                {shippingLoading
+                  ? "Calculating…"
+                  : shippingLabel ?? "Standard"}
+              </span>
+              {!shippingLoading && form.country?.trim() && (
+                <span className="text-xs text-muted-foreground">
+                  {form.country === "US"
+                    ? "Estimated delivery: 2–4 business days"
+                    : "Estimated delivery: 5–14 business days"}
+                </span>
+              )}
+            </div>
             <span className="text-sm font-medium text-muted-foreground">
               {shippingLoading ? (
-                "…"
+                <Loader2 className="size-4 animate-spin" aria-label="Calculating shipping" />
               ) : shippingFree ? (
-                "Free"
+                <span className="font-medium text-green-600 dark:text-green-400">Free</span>
               ) : (
                 <FiatPrice usdAmount={shippingCents / 100} />
               )}

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { CircleHelp, Loader2 } from "lucide-react";
+import { CircleHelp, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -48,6 +48,9 @@ export interface OrderSummaryProps {
   onDiscountCodeInputChange: (value: string) => void;
   onApplyCoupon: () => void;
   onRemoveCoupon: () => void;
+  /** Cart editing callbacks */
+  onUpdateQuantity?: (id: string, quantity: number) => void;
+  onRemoveItem?: (id: string) => void;
 }
 
 export function OrderSummary({
@@ -70,6 +73,8 @@ export function OrderSummary({
   onDiscountCodeInputChange,
   onApplyCoupon,
   onRemoveCoupon,
+  onUpdateQuantity,
+  onRemoveItem,
 }: OrderSummaryProps) {
   return (
     <Card className="shadow-none">
@@ -82,7 +87,7 @@ export function OrderSummary({
       <CardContent className="space-y-4">
         {items.map((item) => (
           <div
-            className="flex gap-4 rounded-lg border border-border/60 bg-muted/30 p-3"
+            className="flex gap-3 rounded-lg border border-border/60 bg-muted/30 p-3"
             key={item.id}
           >
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
@@ -95,12 +100,45 @@ export function OrderSummary({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium">{item.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {item.quantity} × <FiatPrice usdAmount={item.price} />
+              <p className="text-sm font-medium leading-tight">{item.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                <FiatPrice usdAmount={item.price} /> each
               </p>
+              {/* Quantity controls */}
+              <div className="mt-1.5 flex items-center gap-1.5">
+                <div className="flex items-center rounded-md border border-border">
+                  <button
+                    type="button"
+                    className="flex size-6 items-center justify-center rounded-l-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
+                    aria-label={`Decrease quantity of ${item.name}`}
+                    disabled={item.quantity <= 1}
+                    onClick={() => onUpdateQuantity?.(item.id, item.quantity - 1)}
+                  >
+                    <Minus className="size-3" />
+                  </button>
+                  <span className="flex w-7 items-center justify-center text-xs font-medium tabular-nums">
+                    {item.quantity}
+                  </span>
+                  <button
+                    type="button"
+                    className="flex size-6 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    aria-label={`Increase quantity of ${item.name}`}
+                    onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
+                  >
+                    <Plus className="size-3" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  aria-label={`Remove ${item.name}`}
+                  onClick={() => onRemoveItem?.(item.id)}
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              </div>
             </div>
-            <p className="font-medium">
+            <p className="shrink-0 text-sm font-medium">
               <FiatPrice usdAmount={item.price * item.quantity} />
             </p>
           </div>

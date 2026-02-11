@@ -132,7 +132,7 @@ export function CryptoPayClient() {
   const [insufficientReason, setInsufficientReason] = useState<
     "sol_for_fees" | "token" | null
   >(null);
-  const qrContainerRef = useRef<HTMLDivElement | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
     orderId: pathId,
@@ -386,38 +386,24 @@ export function CryptoPayClient() {
   const qrUrlString =
     token === "sui" ? suiPaymentUri : (paymentUrl?.toString() ?? null);
   useEffect(() => {
-    if (!qrUrlString || !showQrView) return;
+    if (!qrUrlString) return;
     let cancelled = false;
-    const el = qrContainerRef.current;
-    if (!el) return;
-    // Clear previous content
-    while (el.firstChild) el.removeChild(el.firstChild);
-    // Generate QR code as canvas using the lightweight `qrcode` library
-    QRCode.toCanvas(
+    QRCode.toDataURL(
       qrUrlString,
       { width: 320, margin: 2, color: { dark: "#000000", light: "#ffffff" } },
-      (err, canvas) => {
-        if (cancelled || !qrContainerRef.current) return;
+      (err, url) => {
+        if (cancelled) return;
         if (err) {
           console.error("[QR] Failed to generate QR code:", err);
           return;
         }
-        // Clear spinner and append canvas
-        while (qrContainerRef.current.firstChild) {
-          qrContainerRef.current.removeChild(qrContainerRef.current.firstChild);
-        }
-        canvas.style.borderRadius = "8px";
-        qrContainerRef.current.appendChild(canvas);
+        setQrDataUrl(url);
       },
     );
     return () => {
       cancelled = true;
-      const container = qrContainerRef.current;
-      if (container) {
-        while (container.firstChild) container.removeChild(container.firstChild);
-      }
     };
-  }, [qrUrlString, showQrView]);
+  }, [qrUrlString]);
 
   useEffect(() => {
     if (!connected) setPayStatus("idle");
@@ -1072,13 +1058,19 @@ export function CryptoPayClient() {
                           connection and refresh.
                         </p>
                       </div>
+                    ) : qrDataUrl ? (
+                      <img
+                        src={qrDataUrl}
+                        alt="Payment QR code"
+                        width={320}
+                        height={320}
+                        className="rounded-lg"
+                      />
                     ) : (
                       <div
-                        ref={qrContainerRef}
                         className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg bg-white p-2"
                         aria-hidden
                       >
-                        {/* Spinner shown until createQR replaces children */}
                         <div className="flex flex-col items-center gap-3 text-muted-foreground">
                           <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
                           <span className="text-sm">Loading QR code…</span>

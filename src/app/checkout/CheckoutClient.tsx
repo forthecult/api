@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -82,7 +82,7 @@ const COUNTRY_OPTIONS: { value: string; label: string }[] = [
 ];
 
 export function CheckoutClient() {
-  const { isHydrated, items, subtotal, itemCount } = useCart();
+  const { isHydrated, items, subtotal, itemCount, updateQuantity, removeItem } = useCart();
   const { user, isPending: authPending } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
   const isLoggedIn = Boolean(user?.email);
@@ -249,6 +249,40 @@ export function CheckoutClient() {
   return (
     <div className="flex w-full justify-center px-4">
       <div className="w-full max-w-5xl">
+        {/* Secure checkout header + back link */}
+        <div className="flex items-center justify-between pb-2 pt-1">
+          <Link
+            href="/products"
+            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="size-4" aria-hidden />
+            <span className="hidden sm:inline">Continue shopping</span>
+            <span className="sm:hidden">Back</span>
+          </Link>
+          <div className="flex items-center gap-1.5 text-sm font-medium text-green-700 dark:text-green-400">
+            <Lock className="size-3.5" aria-hidden />
+            Secure Checkout
+          </div>
+        </div>
+
+        {/* Progress indicator */}
+        <div className="mb-6 flex items-center justify-center gap-2 text-xs sm:text-sm" role="navigation" aria-label="Checkout steps">
+          <div className="flex items-center gap-1.5">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">1</span>
+            <span className="font-medium text-foreground">Information</span>
+          </div>
+          <div className="h-px w-6 bg-border sm:w-10" aria-hidden />
+          <div className="flex items-center gap-1.5">
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">2</span>
+            <span className="font-medium text-foreground">Shipping</span>
+          </div>
+          <div className="h-px w-6 bg-border sm:w-10" aria-hidden />
+          <div className="flex items-center gap-1.5">
+            <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground sm:size-6 sm:text-xs">3</span>
+            <span className="text-muted-foreground">Payment</span>
+          </div>
+        </div>
+
         <div className="grid gap-8 pt-4 sm:grid-cols-[1fr,340px] md:grid-cols-[1fr,380px] lg:grid-cols-[1fr,400px]">
           {/* Left: contact, address, shipping method, payment, place order + policy links */}
           <div className="min-w-0 space-y-6 sm:col-start-1">
@@ -288,6 +322,8 @@ export function CheckoutClient() {
               items={items}
               itemCount={itemCount}
               subtotal={subtotal}
+              onUpdateQuantity={updateQuantity}
+              onRemoveItem={removeItem}
               shippingCents={shippingCents}
               shippingLoading={shippingLoading}
               shippingFree={shippingFree}

@@ -282,10 +282,21 @@ export function SuccessPageClient() {
           <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/15">
             <Check className="h-10 w-10 text-green-600 dark:text-green-400" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Order completed</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Order confirmed!</h1>
           <p className="mt-1 text-muted-foreground">
-            Thank you!
+            Thank you for your purchase. We&apos;re preparing your order.
           </p>
+          <div className="mt-3 w-full rounded-md border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
+            <div className="flex items-start gap-2 text-sm text-green-700 dark:text-green-400">
+              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <div>
+                <p className="font-medium">Confirmation email sent</p>
+                <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
+                  We&apos;ve sent order details and tracking info to your email. Most orders ship within 1 business day.
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:min-w-[200px]">
             <Button asChild className="w-full" size="lg">
@@ -451,9 +462,17 @@ export function SuccessPageClient() {
                       </div>
                     </div>
                   )}
-                <p className="text-sm text-muted-foreground">
-                  You&apos;ll receive an email when your order ships.
-                </p>
+                <div className="rounded-md bg-muted/50 px-3 py-2.5 text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground">Estimated delivery</p>
+                  <p className="mt-0.5">
+                    {order.shipping?.countryCode === "US"
+                      ? "2–4 business days after shipping"
+                      : "5–14 business days after shipping"}
+                  </p>
+                  <p className="mt-1 text-xs">
+                    You&apos;ll receive a tracking email when your order ships.
+                  </p>
+                </div>
               </>
             )}
             {!loading && !order && displayOrderId && (

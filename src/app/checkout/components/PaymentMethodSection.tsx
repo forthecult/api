@@ -52,11 +52,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
-import { Input } from "~/ui/primitives/input";
-import { cn } from "~/lib/cn";
 import type { OrderPayload } from "../checkout-shared";
 import {
-  checkoutFieldHeight,
   paymentButtonClass,
   paymentOptionRowClass,
   REFUND_POLICY_SUMMARY,
@@ -152,12 +149,6 @@ export function PaymentMethodSection({
   const [cryptoEthChain, setCryptoEthChain] = useState<
     "ethereum" | "arbitrum" | "base" | "polygon"
   >("ethereum");
-  const [cardForm, setCardForm] = useState({
-    cardNumber: "",
-    cardExpiry: "",
-    cardCvc: "",
-    cardName: "",
-  });
   const [cardLogosOpen, setCardLogosOpen] = useState(false);
   const cardLogosCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -359,20 +350,6 @@ export function PaymentMethodSection({
     return all.length === 0;
   }, [shippingFormRef, billingFormRef, setValidationErrors]);
 
-  const validateCreditCard = useCallback((): string[] => {
-    const err: string[] = [];
-    if (!cardForm.cardNumber?.trim()) err.push("Card number is required");
-    if (!cardForm.cardExpiry?.trim()) err.push("Expiry (MM/YY) is required");
-    if (!cardForm.cardCvc?.trim()) err.push("CVC is required");
-    if (!cardForm.cardName?.trim()) err.push("Name on card is required");
-    return err;
-  }, [
-    cardForm.cardNumber,
-    cardForm.cardExpiry,
-    cardForm.cardCvc,
-    cardForm.cardName,
-  ]);
-
   const setPaymentTop = useCallback((method: PaymentMethodTop) => {
     setPaymentMethod(method);
     setValidationErrors([]);
@@ -385,28 +362,67 @@ export function PaymentMethodSection({
     }
   }, [setValidationErrors]);
 
-  const handlePlaceOrder = useCallback(() => {
+  const handlePlaceOrder = useCallback(async () => {
     const shippingErr = shippingFormRef.current?.validate() ?? [];
     const useShippingAsBillingVal =
       billingFormRef.current?.getUseShippingAsBilling() ?? true;
     const billingErr = !useShippingAsBillingVal
       ? (billingFormRef.current?.validate() ?? [])
       : [];
-    const cardErr = paymentMethod === "credit-card" ? validateCreditCard() : [];
-    const all = [...shippingErr, ...billingErr, ...cardErr];
+    const all = [...shippingErr, ...billingErr];
     setValidationErrors(all);
-    if (all.length === 0) {
-      setNavigatingToPay(true);
-      requestAnimationFrame(() => router.push("/checkout/success"));
+    if (all.length > 0) return;
+
+    setNavigatingToPay(true);
+    shippingFormRef.current?.persistForm();
+
+    try {
+      const { orderItems, commonBody } = buildOrderPayload();
+      const res = await fetch("/api/payments/stripe/create-checkout-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lineItems: orderItems.map((item) => ({
+            productId: item.productId,
+            productVariantId: item.productVariantId,
+            quantity: item.quantity,
+          })),
+          userId: commonBody.userId ?? undefined,
+          affiliateCode:
+            typeof commonBody.affiliateCode === "string"
+              ? commonBody.affiliateCode
+              : undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        setNavigatingToPay(false);
+        setValidationErrors([
+          data?.error || "Could not create checkout session. Please try again.",
+        ]);
+        return;
+      }
+
+      const data = (await res.json()) as { url: string };
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setNavigatingToPay(false);
+        setValidationErrors(["Could not redirect to payment. Please try again."]);
+      }
+    } catch {
+      setNavigatingToPay(false);
+      setValidationErrors(["Payment failed. Please try again or use another payment method."]);
     }
   }, [
-    paymentMethod,
     shippingFormRef,
     billingFormRef,
-    validateCreditCard,
+    buildOrderPayload,
     setValidationErrors,
     setNavigatingToPay,
-    router,
   ]);
 
   const handlePayWithSolana = useCallback(() => {
@@ -772,102 +788,13 @@ export function PaymentMethodSection({
                 </div>
               </label>
               {paymentMethod === "credit-card" && (
-                <div className="space-y-4 border-t border-border px-3 pb-3 pt-4">
-                  <div className="relative">
-                    <Input
-                      aria-label="Card number"
-                      aria-invalid={validationErrors.includes(
-                        "Card number is required",
-                      )}
-                      className={cn(
-                        checkoutFieldHeight,
-                        "pr-10",
-                        validationErrors.includes(
-                          "Card number is required",
-                        ) && "border-destructive",
-                      )}
-                      placeholder="Card number"
-                      value={cardForm.cardNumber}
-                      onChange={(e) =>
-                        setCardForm((prev) => ({
-                          ...prev,
-                          cardNumber: e.target.value,
-                        }))
-                      }
-                    />
-                    <Lock
-                      className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                      aria-hidden
-                    />
+                <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
+                  <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5">
+                    <Lock className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
+                    <p className="text-sm text-muted-foreground">
+                      You&apos;ll be securely redirected to Stripe to enter your card details. Your card information never touches our servers.
+                    </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      aria-label="Expiry (MM/YY)"
-                      aria-invalid={validationErrors.includes(
-                        "Expiry (MM/YY) is required",
-                      )}
-                      className={cn(
-                        checkoutFieldHeight,
-                        validationErrors.includes(
-                          "Expiry (MM/YY) is required",
-                        ) && "border-destructive",
-                      )}
-                      placeholder="MM/YY"
-                      value={cardForm.cardExpiry}
-                      onChange={(e) => {
-                        const raw = e.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 4);
-                        const formatted =
-                          raw.length >= 2
-                            ? `${raw.slice(0, 2)}/${raw.slice(2)}`
-                            : raw;
-                        setCardForm((prev) => ({
-                          ...prev,
-                          cardExpiry: formatted,
-                        }));
-                      }}
-                    />
-                    <Input
-                      aria-label="CVC"
-                      aria-invalid={validationErrors.includes(
-                        "CVC is required",
-                      )}
-                      className={cn(
-                        checkoutFieldHeight,
-                        validationErrors.includes("CVC is required") &&
-                          "border-destructive",
-                      )}
-                      placeholder="CVC"
-                      value={cardForm.cardCvc}
-                      onChange={(e) =>
-                        setCardForm((prev) => ({
-                          ...prev,
-                          cardCvc: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <Input
-                    aria-label="Name on card"
-                    aria-invalid={validationErrors.includes(
-                      "Name on card is required",
-                    )}
-                    className={cn(
-                      checkoutFieldHeight,
-                      validationErrors.includes(
-                        "Name on card is required",
-                      ) && "border-destructive",
-                    )}
-                    placeholder="Name on card"
-                    value={cardForm.cardName}
-                    onChange={(e) =>
-                      setCardForm((prev) => ({
-                        ...prev,
-                        cardName: e.target.value,
-                      }))
-                    }
-                  />
                   <BillingAddressForm
                     ref={billingFormRef}
                     countryOptions={countryOptions}
@@ -1176,25 +1103,7 @@ export function PaymentMethodSection({
               )}
             </div>
           )}
-          {!hiddenOptions.paypal && (
-            <label className={paymentOptionRowClass}>
-              <div className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "paypal"}
-                  onChange={() => setPaymentTop("paypal")}
-                  className="size-4 border-input text-primary focus:ring-primary"
-                />
-                <span className="text-sm font-medium">PayPal</span>
-              </div>
-            </label>
-          )}
-          {paymentMethod === "paypal" && (
-            <div className="border-t border-border px-3 pb-3 pt-4">
-              <p className="text-sm text-muted-foreground">Coming soon.</p>
-            </div>
-          )}
+          {/* PayPal hidden until integration is complete — showing "Coming soon" hurts conversion */}
         </CardContent>
       </Card>
 
@@ -1220,7 +1129,17 @@ export function PaymentMethodSection({
             disabled={navigatingToPay}
             onClick={handlePlaceOrder}
           >
-            {navigatingToPay ? "Redirecting…" : "Place order"}
+            {navigatingToPay ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                Securing your payment…
+              </>
+            ) : (
+              <>
+                <Lock className="mr-2 size-4" aria-hidden />
+                Pay securely with card
+              </>
+            )}
           </Button>
         ) : isBtcPaySupported ? (
           <Button
@@ -1230,9 +1149,12 @@ export function PaymentMethodSection({
             disabled={navigatingToPay}
             onClick={handleGoToBtcPay}
           >
-            {navigatingToPay
-              ? "Redirecting…"
-              : paymentSubOption === "bitcoin"
+            {navigatingToPay ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                Creating order…
+              </>
+            ) : paymentSubOption === "bitcoin"
                 ? "Pay with Bitcoin"
                 : paymentSubOption === "dogecoin"
                   ? "Pay with Dogecoin"
@@ -1246,9 +1168,12 @@ export function PaymentMethodSection({
             disabled={navigatingToPay || !canShipToCountry}
             onClick={handleGoToEthPay}
           >
-            {navigatingToPay
-              ? "Redirecting…"
-              : paymentMethod === "crypto"
+            {navigatingToPay ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                Creating order…
+              </>
+            ) : paymentMethod === "crypto"
                 ? `Pay with ETH (${cryptoEthChain === "ethereum" ? "Ethereum" : cryptoEthChain === "arbitrum" ? "Arbitrum" : cryptoEthChain === "base" ? "Base" : "Polygon"})`
                 : paymentMethod === "stablecoins" &&
                     stablecoinToken === "usdc"
@@ -1316,6 +1241,21 @@ export function PaymentMethodSection({
             Crypto, Stablecoins (USDC/USDT), or PayPal.
           </p>
         )}
+        {/* Reassurance messaging */}
+        <div className="flex flex-col gap-2 rounded-md border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
+          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+            <span className="font-medium">30-day money-back guarantee</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
+            <span>Secure, encrypted transactions</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+            <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+            <span>Customer support available 7 days a week</span>
+          </div>
+        </div>
         <div className="border-t border-border pt-4">
           <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
             <PolicyPopup
