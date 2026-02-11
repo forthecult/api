@@ -204,6 +204,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground
                     hover:text-foreground
                   `}
+                  href="/changelog"
+                >
+                  Changelog
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground
+                    hover:text-foreground
+                  `}
                   href="/api/docs"
                 >
                   API

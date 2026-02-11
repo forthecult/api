@@ -490,6 +490,14 @@ export default function TokenPage() {
               <span>Economies of scale for token member perks and rewards</span>
             </li>
           </ul>
+          <div className="mt-4">
+            <Link href="/changelog">
+              <Button variant="outline" size="sm" className="gap-2">
+                View full changelog
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
         </section>
 
         {/* Culture */}
