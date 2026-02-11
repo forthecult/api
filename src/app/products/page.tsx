@@ -26,6 +26,7 @@ export const metadata: Metadata = {
 interface Product {
   category: string;
   createdAt?: string;
+  hasVariants?: boolean;
   id: string;
   image: string;
   images?: string[];

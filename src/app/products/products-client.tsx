@@ -17,6 +17,7 @@ import { Input } from "~/ui/primitives/input";
 interface Product {
   category: string;
   createdAt?: string;
+  hasVariants?: boolean;
   id: string;
   image: string;
   images?: string[];
@@ -280,22 +281,28 @@ export function ProductsClient({
   const handleAddToCart = React.useCallback(
     (productId: string) => {
       const product = products.find((p) => p.id === productId);
-      if (product) {
-        addItem(
-          {
-            category: product.category,
-            id: product.id,
-            image: product.image,
-            name: product.name,
-            price: product.price,
-            ...(product.slug && { slug: product.slug }),
-          },
-          1,
-        );
-        toast.success(`${product.name} added to cart`);
+      if (!product) return;
+
+      // Products with variants need variant selection — open Quick View instead
+      if (product.hasVariants) {
+        handleQuickView(product.slug ?? product.id);
+        return;
       }
+
+      addItem(
+        {
+          category: product.category,
+          id: product.id,
+          image: product.image,
+          name: product.name,
+          price: product.price,
+          ...(product.slug && { slug: product.slug }),
+        },
+        1,
+      );
+      toast.success(`${product.name} added to cart`);
     },
-    [addItem, products],
+    [addItem, products, handleQuickView],
   );
 
   const handleAddToWishlist = React.useCallback(

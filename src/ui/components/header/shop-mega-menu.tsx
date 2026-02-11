@@ -13,7 +13,7 @@ import Link from "next/link";
 import * as React from "react";
 import { useMemo } from "react";
 
-import { sortSubcategories } from "~/lib/categories";
+import { sortSubcategories } from "~/lib/category-sort";
 import { cn } from "~/lib/cn";
 import {
   Popover,

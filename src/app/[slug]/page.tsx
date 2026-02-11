@@ -106,6 +106,7 @@ interface ProductListResponse {
     id: string;
     slug?: string;
     name: string;
+    hasVariants?: boolean;
     image: string;
     category: string;
     price: number;

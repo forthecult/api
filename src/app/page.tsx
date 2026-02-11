@@ -100,6 +100,7 @@ async function fetchCategories(): Promise<
 async function fetchFeaturedProducts(cookieHeader?: string): Promise<
   Array<{
     category: string;
+    hasVariants?: boolean;
     id: string;
     image: string;
     inStock: boolean;
@@ -124,6 +125,7 @@ async function fetchFeaturedProducts(cookieHeader?: string): Promise<
       items?: Array<{
         id: string;
         name: string;
+        hasVariants?: boolean;
         image?: string;
         category?: string;
         price?: number;
@@ -137,6 +139,7 @@ async function fetchFeaturedProducts(cookieHeader?: string): Promise<
     };
     return (data.items ?? []).map((p) => ({
       category: p.category ?? "Uncategorized",
+      hasVariants: p.hasVariants ?? false,
       id: p.id,
       image: p.image ?? "/placeholder.svg",
       inStock: p.inStock ?? true,

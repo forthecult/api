@@ -254,6 +254,7 @@ export async function GET(request: NextRequest) {
           p.compareAtPriceCents != null
             ? p.compareAtPriceCents / 100
             : undefined,
+        hasVariants: p.hasVariants ?? false,
         inStock: true,
         rating: 0,
         tokenGated,

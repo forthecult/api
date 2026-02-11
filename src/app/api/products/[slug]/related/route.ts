@@ -62,6 +62,7 @@ export async function GET(
       compareAtPriceCents: number | null;
       categoryName: string;
       tokenGated: boolean;
+      hasVariants: boolean;
     }> = [];
     const seenIds = new Set<string>([id]);
 
@@ -76,6 +77,7 @@ export async function GET(
           priceCents: productsTable.priceCents,
           compareAtPriceCents: productsTable.compareAtPriceCents,
           tokenGated: productsTable.tokenGated,
+          hasVariants: productsTable.hasVariants,
         })
         .from(productsTable)
         .innerJoin(
@@ -128,6 +130,7 @@ export async function GET(
           compareAtPriceCents: p.compareAtPriceCents,
           categoryName: categoryByProductId.get(p.id) ?? "Uncategorized",
           tokenGated: p.tokenGated ?? false,
+          hasVariants: p.hasVariants ?? false,
         });
       }
     }
@@ -151,6 +154,7 @@ export async function GET(
             compareAtPriceCents: productsTable.compareAtPriceCents,
             categoryName: categoriesTable.name,
             tokenGated: productsTable.tokenGated,
+            hasVariants: productsTable.hasVariants,
           })
           .from(productsTable)
           .innerJoin(
@@ -184,6 +188,7 @@ export async function GET(
             compareAtPriceCents: p.compareAtPriceCents,
             categoryName: p.categoryName,
             tokenGated: p.tokenGated ?? false,
+            hasVariants: p.hasVariants ?? false,
           });
         }
       }
@@ -201,6 +206,7 @@ export async function GET(
           priceCents: productsTable.priceCents,
           compareAtPriceCents: productsTable.compareAtPriceCents,
           tokenGated: productsTable.tokenGated,
+          hasVariants: productsTable.hasVariants,
         })
         .from(productsTable)
         .where(
@@ -250,6 +256,7 @@ export async function GET(
           compareAtPriceCents: p.compareAtPriceCents,
           categoryName: categoryByProductId.get(p.id) ?? "Uncategorized",
           tokenGated: p.tokenGated ?? false,
+          hasVariants: p.hasVariants ?? false,
         });
       }
     }
@@ -273,6 +280,7 @@ export async function GET(
         slug: p.slug ?? p.id,
         name: p.name,
         category: p.categoryName,
+        hasVariants: p.hasVariants,
         image: p.imageUrl ?? "/placeholder.svg",
         price: p.priceCents / 100,
         originalPrice:

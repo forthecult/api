@@ -39,6 +39,8 @@ type ProductCardProps = Omit<
     category: string;
     /** ISO date string for when the product was created — used for "New" badge. */
     createdAt?: string;
+    /** When true, product requires variant selection before adding to cart. */
+    hasVariants?: boolean;
     id: string;
     image: string;
     /** Additional images shown on hover. */
@@ -450,6 +452,7 @@ function ProductCardInner({
                 )}
                 disabled={isAddingToCart}
                 onClick={handleAddToCart}
+                variant={product.hasVariants ? "outline" : "default"}
               >
                 {isAddingToCart ? (
                   <div
@@ -461,7 +464,7 @@ function ProductCardInner({
                 ) : (
                   <ShoppingCart className="h-4 w-4" />
                 )}
-                Add to Cart
+                {product.hasVariants ? "Select Options" : "Add to Cart"}
               </Button>
             </CardFooter>
           )}
