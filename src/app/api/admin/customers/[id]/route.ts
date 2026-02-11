@@ -196,8 +196,9 @@ export async function PATCH(
 
     const { id } = await params;
     // TODO: Standardize error response format across admin routes (L20)
-    const CUID_RE = /^[a-z0-9]{20,30}$/;
-    if (!CUID_RE.test(id)) {
+    // nanoid uses A-Za-z0-9_-
+    const NANOID_RE = /^[A-Za-z0-9_-]{10,40}$/;
+    if (!NANOID_RE.test(id)) {
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
     const body = (await request.json().catch(() => ({}))) as Record<
