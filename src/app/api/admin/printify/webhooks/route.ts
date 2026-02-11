@@ -17,10 +17,25 @@ import {
 const REPLACE_ALL_WEBHOOKS_ON_REGISTER = true;
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
-/** All webhook topics we want to subscribe to for full sync */
+/** Extract hostname from a URL for Printify's required `host` query parameter on DELETE. */
+function extractHostFromUrl(url: string): string {
+  try {
+    return new URL(url).host;
+  } catch {
+    // Fallback: strip protocol and path
+    return url.replace(/^https?:\/\//, "").replace(/[/?#].*$/, "");
+  }
+}
+
+/**
+ * All webhook topics we want to subscribe to for full sync.
+ * These must be valid Printify subscription topics per their OpenAPI spec.
+ * Note: "product:published" is NOT a valid topic — only "product:publish:started" exists.
+ * Printify fires product:publish:started when a product publish is initiated; our webhook
+ * handler also checks for "product:published" in the payload type just in case.
+ */
 const REQUIRED_WEBHOOK_TOPICS: PrintifyWebhookEventType[] = [
   "product:publish:started",
-  "product:published",
   "product:deleted",
   "order:created",
   "order:updated",
@@ -147,7 +162,9 @@ export async function POST(request: NextRequest) {
       if (REPLACE_ALL_WEBHOOKS_ON_REGISTER) {
         const existing = await listPrintifyWebhooks(pf.shopId);
         for (const webhook of existing) {
-          const res = await deletePrintifyWebhook(pf.shopId, webhook.id);
+          // Extract host from the webhook's registered URL for the required host query parameter
+          const webhookHost = extractHostFromUrl(webhook.url);
+          const res = await deletePrintifyWebhook(pf.shopId, webhook.id, webhookHost);
           if (res.success) deletedCount++;
         }
         if (deletedCount > 0) {
@@ -234,7 +251,9 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      const result = await deletePrintifyWebhook(pf.shopId, body.webhookId);
+      // For single delete, extract host from our app URL as a best guess
+      const deleteHost = extractHostFromUrl(baseUrl);
+      const result = await deletePrintifyWebhook(pf.shopId, body.webhookId, deleteHost);
       return NextResponse.json(result);
     }
 
@@ -245,7 +264,9 @@ export async function POST(request: NextRequest) {
       const results: { id: string; topic: string; url: string; success: boolean }[] = [];
 
       for (const webhook of existing) {
-        const result = await deletePrintifyWebhook(pf.shopId, webhook.id);
+        // Extract host from each webhook's registered URL for the required host parameter
+        const webhookHost = extractHostFromUrl(webhook.url);
+        const result = await deletePrintifyWebhook(pf.shopId, webhook.id, webhookHost);
         results.push({
           id: webhook.id,
           topic: webhook.topic,
@@ -278,7 +299,8 @@ export async function POST(request: NextRequest) {
       const results: { id: string; topic: string; url: string; success: boolean }[] = [];
 
       for (const webhook of toDelete) {
-        const result = await deletePrintifyWebhook(pf.shopId, webhook.id);
+        const webhookHost = extractHostFromUrl(webhook.url);
+        const result = await deletePrintifyWebhook(pf.shopId, webhook.id, webhookHost);
         results.push({
           id: webhook.id,
           topic: webhook.topic,

@@ -325,7 +325,7 @@ export async function onSupportTicketReply(
       description,
       metadata: {
         ticketId,
-        ticketPath: `/dashboard/support/${ticketId}`,
+        ticketPath: `/dashboard/support-tickets/${ticketId}`,
         subject: ticket.subject,
       },
     });

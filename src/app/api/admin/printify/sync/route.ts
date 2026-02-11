@@ -23,7 +23,7 @@ import { getAdminAuth } from "~/lib/admin-api-auth";
 /** Required product webhook topics so Printify can clear "Publishing" when we return 200. */
 const REQUIRED_PRODUCT_WEBHOOK_TOPICS = [
   "product:publish:started",
-  "product:published",
+  "product:deleted",
 ] as const;
 
 /** Build webhook URL. Prefer request origin (so staging/production use the URL Printify can reach). */

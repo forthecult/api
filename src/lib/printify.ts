@@ -1133,11 +1133,17 @@ export async function calculatePrintifyShipping(
 
 // --- Webhooks ---
 
+/**
+ * Valid Printify webhook subscription topics (per OpenAPI spec).
+ * Note: "product:published" does NOT exist as a subscribable topic.
+ * Only "product:publish:started" is valid. Printify may send different
+ * event type strings in the webhook payload, but subscriptions must
+ * use these exact topics.
+ */
 export type PrintifyWebhookEventType =
   | "shop:disconnected"
   | "product:deleted"
   | "product:publish:started"
-  | "product:published"
   | "order:created"
   | "order:updated"
   | "order:sent-to-production"
@@ -1193,17 +1199,42 @@ export function updatePrintifyWebhook(
   });
 }
 
-/** DELETE /v1/shops/{shop_id}/webhooks/{webhook_id}.json - Delete a webhook */
+/**
+ * DELETE /v1/shops/{shop_id}/webhooks/{webhook_id}.json - Delete a webhook
+ *
+ * Requires `host` query parameter as a safeguard: deletion only proceeds if
+ * the host matches the webhook's registered host (e.g. "forthecult.store").
+ * Pass "*" or the webhook's registered host domain.
+ */
 export async function deletePrintifyWebhook(
   shopId: string,
   webhookId: string,
+  host?: string,
 ): Promise<{ success: boolean }> {
   try {
-    await printifyFetch(`/shops/${shopId}/webhooks/${webhookId}.json`, {
+    // Printify requires the host query parameter on DELETE
+    const hostParam = host || extractWebhookHost();
+    const qs = hostParam ? `?host=${encodeURIComponent(hostParam)}` : "";
+    await printifyFetch(`/shops/${shopId}/webhooks/${webhookId}.json${qs}`, {
       method: "DELETE",
     });
     return { success: true };
   } catch {
     return { success: false };
+  }
+}
+
+/**
+ * Extract the host (domain) from NEXT_PUBLIC_APP_URL for Printify webhook operations.
+ * e.g. "https://forthecult.store" → "forthecult.store"
+ */
+function extractWebhookHost(): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (!appUrl) return "";
+  try {
+    return new URL(appUrl).host;
+  } catch {
+    // Fallback: strip protocol
+    return appUrl.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
   }
 }
