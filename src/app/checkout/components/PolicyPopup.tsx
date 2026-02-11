@@ -10,7 +10,10 @@ import {
 
 interface PolicyPopupProps {
   title: string;
+  /** Plain-text content (legacy). Prefer richContent for formatted policies. */
   content?: string;
+  /** Rich JSX content for formatted policy display. Takes precedence over content. */
+  richContent?: React.ReactNode;
   /** If set, shows a "Read full policy" link that opens in a new tab. */
   fullPolicyHref?: string;
   children: React.ReactNode;
@@ -19,6 +22,7 @@ interface PolicyPopupProps {
 export function PolicyPopup({
   title,
   content,
+  richContent,
   fullPolicyHref,
   children,
 }: PolicyPopupProps) {
@@ -34,7 +38,9 @@ export function PolicyPopup({
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          {content ? (
+          {richContent ? (
+            <div className="text-sm text-foreground">{richContent}</div>
+          ) : content ? (
             <p className="whitespace-pre-line text-sm text-foreground">
               {content}
             </p>

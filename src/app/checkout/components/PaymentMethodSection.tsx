@@ -56,10 +56,6 @@ import type { OrderPayload } from "../checkout-shared";
 import {
   paymentButtonClass,
   paymentOptionRowClass,
-  REFUND_POLICY_SUMMARY,
-  PRIVACY_POLICY_SUMMARY,
-  TERMS_POLICY_SUMMARY,
-  SHIPPING_POLICY_CONTENT,
 } from "../checkout-shared";
 import {
   BillingAddressForm,
@@ -1260,7 +1256,22 @@ export function PaymentMethodSection({
           <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
             <PolicyPopup
               title="Refund policy"
-              content={REFUND_POLICY_SUMMARY}
+              richContent={
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-md bg-green-50 px-3 py-2 dark:bg-green-950/30">
+                    <svg className="size-4 shrink-0 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                    <span className="text-sm font-medium text-green-700 dark:text-green-400">30-day money-back guarantee on all orders</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Return any item within <strong>30 days of delivery</strong> for a full refund</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Items must be unworn/unused, with tags and original packaging</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Contact us first and we&apos;ll provide a <strong>free return label</strong></li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Refunds processed within <strong>10 business days</strong> after inspection</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />EU/UK customers: 14-day right to cancel for any reason</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground">We want you to love your purchase. If something isn&apos;t right, we&apos;ll make it right.</p>
+                </div>
+              }
               fullPolicyHref="/policies/refund"
             >
               Refund policy
@@ -1268,7 +1279,21 @@ export function PaymentMethodSection({
             <span aria-hidden>·</span>
             <PolicyPopup
               title="Shipping policy"
-              content={SHIPPING_POLICY_CONTENT}
+              richContent={
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+                    <svg className="size-4 shrink-0 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11" /><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2" /><circle cx="7" cy="18" r="2" /><path d="M15 18H9" /><circle cx="17" cy="18" r="2" /></svg>
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Most orders ship within 1 business day</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>Domestic (US):</strong> 2–4 business days delivery</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>International:</strong> 5–14 business days delivery</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Tracking number sent via email once shipped</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Peak seasons may add up to 1 week</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground">We partner with multiple fulfillment centers to get your order to you as quickly as possible. P.O. Boxes are not supported.</p>
+                </div>
+              }
               fullPolicyHref="/policies/shipping"
             >
               Shipping policy
@@ -1276,7 +1301,21 @@ export function PaymentMethodSection({
             <span aria-hidden>·</span>
             <PolicyPopup
               title="Privacy policy"
-              content={PRIVACY_POLICY_SUMMARY}
+              richContent={
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2 dark:bg-purple-950/30">
+                    <svg className="size-4 shrink-0 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                    <span className="text-sm font-medium text-purple-700 dark:text-purple-400">We never sell your data</span>
+                  </div>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />We collect only what&apos;s needed to fulfill your order</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>No targeted advertising</strong> — your data stays between us</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Only essential cookies (sign-in, cart, security)</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />You can access, correct, delete, or export your data anytime</li>
+                  </ul>
+                  <p className="text-xs text-muted-foreground">Your privacy is a right, not a privilege. We protect it accordingly.</p>
+                </div>
+              }
               fullPolicyHref="/policies/privacy"
             >
               Privacy policy
@@ -1284,7 +1323,17 @@ export function PaymentMethodSection({
             <span aria-hidden>·</span>
             <PolicyPopup
               title="Terms of service"
-              content={TERMS_POLICY_SUMMARY}
+              richContent={
+                <div className="space-y-3">
+                  <p className="text-sm">By completing your purchase you agree to these terms and our Privacy, Refund, and Shipping policies.</p>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />You must be the age of majority in your jurisdiction</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />We may correct pricing errors or limit order quantities</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Questions? Contact us first — we&apos;re happy to help resolve any issue</li>
+                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Governing law: United States</li>
+                  </ul>
+                </div>
+              }
               fullPolicyHref="/policies/terms"
             >
               Terms of service

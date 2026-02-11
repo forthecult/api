@@ -21,7 +21,6 @@ import { Input } from "~/ui/primitives/input";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import {
   checkoutFieldHeight,
-  SHIPPING_POLICY_CONTENT,
   type AppliedCoupon,
 } from "../checkout-shared";
 import type { CartItem } from "~/ui/components/cart";
@@ -243,9 +242,17 @@ export function OrderSummary({
                   <DialogHeader>
                     <DialogTitle>Shipping</DialogTitle>
                   </DialogHeader>
-                  <p className="text-sm text-foreground">
-                    {SHIPPING_POLICY_CONTENT}
-                  </p>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+                      <span className="font-medium text-blue-700 dark:text-blue-400">Most orders ship within 1 business day</span>
+                    </div>
+                    <ul className="space-y-2">
+                      <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>Domestic (US):</strong> 2–4 business days</li>
+                      <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>International:</strong> 5–14 business days</li>
+                      <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Tracking number sent via email once shipped</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground">Peak seasons may add up to 1 week. P.O. Boxes are not supported.</p>
+                  </div>
                 </DialogContent>
               </Dialog>
             </span>

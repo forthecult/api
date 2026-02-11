@@ -67,13 +67,13 @@ const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
 };
 
 const PAYMENT_TITLE: Record<string, string> = {
-  solana: "Pay with Solana",
-  usdc: "Pay with USDC",
-  whitewhale: "Pay with WhiteWhale",
-  crust: "Pay with Crustafarian (CRUST)",
-  pump: "Pay with Pump",
-  troll: "Pay with Troll (TROLL)",
-  sui: "Pay with Sui",
+  solana: "Pay with SOL (Solana)",
+  usdc: "Pay with USDC (Solana)",
+  whitewhale: "Pay with WhiteWhale (Solana)",
+  crust: "Pay with CRUST (Solana)",
+  pump: "Pay with Pump (Solana)",
+  troll: "Pay with TROLL (Solana)",
+  sui: "Pay with SUI (Sui Network)",
 };
 
 /** Short label for the payment token (for error messages). */

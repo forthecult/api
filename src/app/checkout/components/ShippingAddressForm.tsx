@@ -1,7 +1,6 @@
 "use client";
 
-import { CircleHelp, Check, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { CircleHelp, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -11,10 +10,18 @@ import {
   useState,
   forwardRef,
 } from "react";
-import { signUp } from "~/lib/auth-client";
-import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
-import { Input } from "~/ui/primitives/input";
+import { signIn } from "~/lib/auth-client";
 import { Button } from "~/ui/primitives/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "~/ui/primitives/dialog";
+import { Input } from "~/ui/primitives/input";
+import { Label } from "~/ui/primitives/label";
 import {
   Popover,
   PopoverContent,
@@ -109,6 +116,122 @@ function validateShippingForm(
   return err;
 }
 
+/** Inline sign-in dialog that keeps the user on the checkout page. */
+function CheckoutSignInDialog() {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const result = await signIn.email({ email, password });
+      if (result?.error) {
+        setError(
+          typeof result.error.message === "string"
+            ? result.error.message
+            : "Invalid email or password",
+        );
+        setLoading(false);
+        return;
+      }
+      // Reload the page to pick up the new session — keeps user on checkout
+      window.location.reload();
+    } catch {
+      setError("Invalid email or password");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <button
+          type="button"
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          Sign in
+        </button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Sign in to your account</DialogTitle>
+        </DialogHeader>
+        <p className="text-sm text-muted-foreground">
+          Sign in to speed up checkout with your saved details.
+        </p>
+        <form
+          className="mt-2 space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleSubmit(e);
+          }}
+        >
+          <div className="grid gap-1.5">
+            <Label htmlFor="checkout-signin-email">Email</Label>
+            <Input
+              id="checkout-signin-email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              placeholder="your@email.com"
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
+              required
+              disabled={loading}
+            />
+          </div>
+          <div className="grid gap-1.5">
+            <Label htmlFor="checkout-signin-password">Password</Label>
+            <div className="relative">
+              <Input
+                id="checkout-signin-password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="Password"
+                className="pr-9"
+                value={password}
+                onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                required
+                disabled={loading}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((p) => !p)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              </button>
+            </div>
+          </div>
+          {error && (
+            <p className="text-sm text-destructive">{error}</p>
+          )}
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? (
+              <>
+                <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                Signing in…
+              </>
+            ) : (
+              "Sign in"
+            )}
+          </Button>
+        </form>
+        <p className="text-center text-xs text-muted-foreground">
+          No account? No problem — you can check out as a guest.
+        </p>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export const ShippingAddressForm = forwardRef<
   ShippingAddressFormRef,
   ShippingAddressFormProps
@@ -135,8 +258,6 @@ export const ShippingAddressForm = forwardRef<
   const [emailNews, setEmailNews] = useState(true);
   const [textNews, setTextNews] = useState(false);
   const [showCompany, setShowCompany] = useState(() => Boolean(getPersistedShippingForm().company?.trim()));
-  const [accountCreating, setAccountCreating] = useState(false);
-  const [accountCreated, setAccountCreated] = useState(false);
   /** Track which fields the user has touched (blurred) for inline validation. */
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
   const markTouched = useCallback((field: string) => {
@@ -395,12 +516,7 @@ export const ShippingAddressForm = forwardRef<
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle>Contact</CardTitle>
           {!isLoggedIn && (
-            <Link
-              className="text-sm font-medium text-primary hover:underline"
-              href="/login"
-            >
-              Sign in
-            </Link>
+            <CheckoutSignInDialog />
           )}
         </CardHeader>
         <CardContent className="space-y-4">
@@ -428,52 +544,8 @@ export const ShippingAddressForm = forwardRef<
               {touchedFields.has("email") && form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) && (
                 <p className="mt-1 text-xs text-destructive" role="alert">Please enter a valid email address</p>
               )}
-              {!authPending && !accountCreated && (
-                <div className="flex items-center gap-2">
-                  <Button
-                    className="text-sm"
-                    size="sm"
-                    type="button"
-                    variant="outline"
-                    disabled={accountCreating || !form.email?.trim()}
-                    onClick={async () => {
-                      const email = form.email?.trim();
-                      if (!email) return;
-                      setAccountCreating(true);
-                      try {
-                        await signUp.email({
-                          email,
-                          password: crypto.randomUUID(),
-                          name: [form.firstName, form.lastName].filter(Boolean).join(" ") || email.split("@")[0],
-                        });
-                        setAccountCreated(true);
-                      } catch {
-                        // Silently handle — user can still continue checkout
-                      } finally {
-                        setAccountCreating(false);
-                      }
-                    }}
-                  >
-                    {accountCreating ? (
-                      <>
-                        <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                        Creating…
-                      </>
-                    ) : (
-                      "Save and create account"
-                    )}
-                  </Button>
-                  <span className="text-xs text-muted-foreground">
-                    Optional — create an account to track orders.
-                  </span>
-                </div>
-              )}
-              {accountCreated && (
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                  <Check className="size-4" />
-                  <span>Account created! Check your email to set a password.</span>
-                </div>
-              )}
+              {/* Account creation is handled post-purchase on the success page,
+                  keeping checkout focused on completing the transaction. */}
             </>
           )}
         </CardContent>

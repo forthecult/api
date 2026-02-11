@@ -469,7 +469,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                     )}
                   </div>
                 )}
-                <Cart />
+                {!isCheckout && <Cart />}
               </>
             )}
           </div>

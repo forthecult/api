@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, Copy, Link2, Loader2, ShoppingBag } from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Link2, Loader2, ShoppingBag, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { SEO_CONFIG } from "~/app";
+import { signUp, useCurrentUser } from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
 import { Checkbox } from "~/ui/primitives/checkbox";
@@ -187,6 +188,118 @@ function MarketingConsent({
   );
 }
 
+/** Post-purchase account creation for guest checkout users. */
+function CreateAccount({ email }: { email?: string }) {
+  const { user } = useCurrentUser();
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState(false);
+  const [error, setError] = useState("");
+
+  // Don't show if already logged in
+  if (user?.email) return null;
+  // Don't show if no email from order
+  if (!email) return null;
+
+  if (created) {
+    return (
+      <div className="mt-8 w-full rounded-md border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
+        <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+          <Check className="size-4 shrink-0" aria-hidden />
+          <span className="font-medium">Account created! You can now track your orders.</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 w-full space-y-3">
+      <div className="flex items-center gap-2">
+        <UserPlus className="size-4 text-primary" aria-hidden />
+        <p className="text-sm font-medium">Save your info for next time</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Create an account to track this order and speed up future checkouts. Your email and shipping details are already saved.
+      </p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+        <div className="relative min-w-0 flex-1">
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Choose a password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError("");
+            }}
+            className="h-9 pr-9"
+            aria-label="Password"
+            disabled={creating}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPassword((p) => !p)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+          </button>
+        </div>
+        <Button
+          size="sm"
+          className="h-9 shrink-0"
+          disabled={creating || password.length < 8}
+          onClick={async () => {
+            if (password.length < 8) {
+              setError("Password must be at least 8 characters");
+              return;
+            }
+            setCreating(true);
+            setError("");
+            try {
+              const result = await signUp.email({
+                email,
+                password,
+                name: email.split("@")[0] ?? "",
+              });
+              if (result?.error) {
+                setError(
+                  typeof result.error.message === "string"
+                    ? result.error.message
+                    : "Could not create account. You may already have one.",
+                );
+              } else {
+                setCreated(true);
+                toast.success("Account created!");
+              }
+            } catch {
+              setError("Could not create account. Please try again.");
+            } finally {
+              setCreating(false);
+            }
+          }}
+        >
+          {creating ? (
+            <>
+              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+              Creating…
+            </>
+          ) : (
+            "Create account"
+          )}
+        </Button>
+      </div>
+      {error && (
+        <p className="text-xs text-destructive">{error}</p>
+      )}
+      <p className="text-[11px] text-muted-foreground/70">
+        By creating an account you agree to our Terms of Service and Privacy Policy.
+      </p>
+    </div>
+  );
+}
+
 export function SuccessPageClient() {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
@@ -357,6 +470,11 @@ export function SuccessPageClient() {
           <p className="mt-6 text-sm text-muted-foreground">
             Share with a friend for 10% off your next purchase.
           </p>
+
+          {/* Post-purchase account creation (guests only) */}
+          {!loading && order && (
+            <CreateAccount email={order.email} />
+          )}
 
           {/* Marketing consent */}
           {!loading && order && (
