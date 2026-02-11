@@ -79,7 +79,9 @@ export async function GET(request: NextRequest) {
 
     const categorySlugToFilter = subcategory || category;
 
-    // For manual sort we need the sortOrder from the junction table, keyed by productId
+    // For manual sort we need the sortOrder from the junction table, keyed by productId.
+    // Fetched separately and wrapped in try-catch so the feature degrades gracefully
+    // if the sort_order column hasn't been added yet (requires db:push).
     let manualSortMap: Map<string, number> | null = null;
 
     let productIdsFilter: string[] | null = null;
@@ -87,10 +89,7 @@ export async function GET(request: NextRequest) {
     // Special token: "__featured__" means "products in any category with featured = true"
     if (categorySlugToFilter === "__featured__") {
       const rows = await db
-        .select({
-          productId: productCategoriesTable.productId,
-          sortOrder: productCategoriesTable.sortOrder,
-        })
+        .select({ productId: productCategoriesTable.productId })
         .from(productCategoriesTable)
         .innerJoin(
           categoriesTable,
@@ -98,14 +97,6 @@ export async function GET(request: NextRequest) {
         )
         .where(eq(categoriesTable.featured, true));
       productIdsFilter = [...new Set(rows.map((r) => r.productId))];
-      if (sort === "manual") {
-        manualSortMap = new Map<string, number>();
-        for (const r of rows) {
-          if (!manualSortMap.has(r.productId)) {
-            manualSortMap.set(r.productId, r.sortOrder ?? 999999);
-          }
-        }
-      }
       if (productIdsFilter.length === 0) {
         // Fallback: return newest products when no featured categories exist
         productIdsFilter = null;
@@ -113,10 +104,7 @@ export async function GET(request: NextRequest) {
     } else if (categorySlugToFilter) {
       // Include all products in this category (main or not), so bulk-added / auto-assigned products show
       const rows = await db
-        .select({
-          productId: productCategoriesTable.productId,
-          sortOrder: productCategoriesTable.sortOrder,
-        })
+        .select({ productId: productCategoriesTable.productId })
         .from(productCategoriesTable)
         .innerJoin(
           categoriesTable,
@@ -124,12 +112,6 @@ export async function GET(request: NextRequest) {
         )
         .where(eq(categoriesTable.slug, categorySlugToFilter));
       productIdsFilter = rows.map((r) => r.productId);
-      if (sort === "manual") {
-        manualSortMap = new Map<string, number>();
-        for (const r of rows) {
-          manualSortMap.set(r.productId, r.sortOrder ?? 999999);
-        }
-      }
       if (productIdsFilter.length === 0) {
         return withPublicApiCors(
           NextResponse.json({
@@ -141,6 +123,37 @@ export async function GET(request: NextRequest) {
             categories: await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
           }),
         );
+      }
+    }
+
+    // If manual sort was requested and we have a category filter, try to load sort_order.
+    // Wrapped in try-catch: the sort_order column may not exist yet (needs db:push).
+    if (sort === "manual" && productIdsFilter && productIdsFilter.length > 0) {
+      try {
+        const sortRows = await db
+          .select({
+            productId: productCategoriesTable.productId,
+            sortOrder: productCategoriesTable.sortOrder,
+          })
+          .from(productCategoriesTable)
+          .innerJoin(
+            categoriesTable,
+            eq(productCategoriesTable.categoryId, categoriesTable.id),
+          )
+          .where(
+            categorySlugToFilter === "__featured__"
+              ? eq(categoriesTable.featured, true)
+              : eq(categoriesTable.slug, categorySlugToFilter!),
+          );
+        manualSortMap = new Map<string, number>();
+        for (const r of sortRows) {
+          if (!manualSortMap.has(r.productId)) {
+            manualSortMap.set(r.productId, r.sortOrder ?? 999999);
+          }
+        }
+      } catch {
+        // sort_order column doesn't exist yet — fall back to newest ordering
+        manualSortMap = null;
       }
     }
 

@@ -2,7 +2,9 @@
 
 # Alice (OpenClaw) — Setup & Deployment
 
-Alice is the Culture Store's unified AI support agent, powered by [OpenClaw](https://docs.openclaw.ai). She runs across the website chat widget, Telegram, and Discord with persistent memory.
+> *"It would be so nice if something made sense for a change."*
+
+Alice is the Culture Store's AI guide, powered by [OpenClaw](https://docs.openclaw.ai). Inspired by Lewis Carroll's *Alice in Wonderland*, she leads customers down the rabbit hole — across the website chat widget, Telegram, and Discord — with persistent memory and a curious, whimsical personality.
 
 ---
 
@@ -13,7 +15,7 @@ Alice is the Culture Store's unified AI support agent, powered by [OpenClaw](htt
 │            OpenClaw Gateway (Railway)                │
 │                                                     │
 │  Alice Agent (main)                                 │
-│  ├─ SOUL.md      — personality & rules              │
+│  ├─ SOUL.md      — Wonderland personality & rules   │
 │  ├─ AGENTS.md    — behavior config                  │
 │  ├─ TOOLS.md     — Culture Store API tool defs      │
 │  ├─ MEMORY.md    — long-term memory                 │
@@ -166,7 +168,7 @@ When `OPENCLAW_GATEWAY_URL` is set, the chat widget routes through Alice. When i
 3. Name it (e.g. "Alice - Culture Store")
 4. Copy the bot token
 5. Paste it in the OpenClaw `/setup` wizard or set `TELEGRAM_BOT_TOKEN`
-6. Set the bot's description: `/setdescription` → "I'm Alice, the Culture Store AI. Ask me about products, orders, or $CULT."
+6. Set the bot's description: `/setdescription` → "I'm Alice. I fell down a rabbit hole and ended up at the Culture Store. Ask me about products, orders, or $CULT."
 
 ## Discord setup
 
@@ -223,13 +225,28 @@ The system is designed to degrade gracefully:
 
 ---
 
+## Adding more agents later
+
+OpenClaw supports multi-agent setups on a single gateway. The config is additive — to add a new agent:
+
+1. Create a new workspace directory: `openclaw/workspace-{agentId}/`
+2. Add `SOUL.md`, `AGENTS.md`, `TOOLS.md` to the workspace
+3. Add the agent to `agents.list[]` in `openclaw.json`
+4. Add routing `bindings` if the agent handles channel messages
+5. Enable `tools.agentToAgent` if agents need to communicate
+6. Redeploy
+
+See [OpenClaw Multi-Agent Routing](https://docs.openclaw.ai/concepts/multi-agent) for full docs.
+
+---
+
 ## Files in this repo
 
 ```
 openclaw/
 ├── openclaw.json              # Gateway configuration
-└── workspace/
-    ├── SOUL.md                # Alice's personality and rules
+└── workspace/                 # Alice's workspace (→ /data/workspace)
+    ├── SOUL.md                # Alice's Wonderland personality and rules
     ├── AGENTS.md              # Agent behavior config
     └── TOOLS.md               # Culture Store API tool definitions
 ```

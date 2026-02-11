@@ -63,7 +63,7 @@
         "memoryFlush": {
           "enabled": true,
           "softThresholdTokens": 4000,
-          "systemPrompt": "Session nearing compaction. Store durable customer memories now.",
+          "systemPrompt": "Session nearing compaction. Store durable memories now.",
           "prompt": "Write any lasting customer preferences, order context, or important notes to memory/YYYY-MM-DD.md; reply with NO_REPLY if nothing to store."
         }
       }
@@ -94,7 +94,6 @@
     "discord": {
       "enabled": true,
       "botToken": "${DISCORD_BOT_TOKEN}",
-      "mentionPatterns": ["@Alice", "@alice"],
       "groups": {
         "*": {
           "requireMention": true
