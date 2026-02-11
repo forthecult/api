@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -10,7 +10,10 @@ import {
   productsTable,
 } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 import {
   onOrderCreated,
   onOrderStatusUpdate,
@@ -22,11 +25,10 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
+    // TODO: Standardize error response format across admin routes (L20)
 
     // Explicit select to avoid 500 when DB is missing newer columns (e.g. btcpay*, paymentMethod).
     const [order] = await db
@@ -57,6 +59,20 @@ export async function GET(
         paymentMethod: ordersTable.paymentMethod,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
         solanaPayReference: ordersTable.solanaPayReference,
+        // Tracking
+        trackingNumber: ordersTable.trackingNumber,
+        trackingUrl: ordersTable.trackingUrl,
+        trackingCarrier: ordersTable.trackingCarrier,
+        shippedAt: ordersTable.shippedAt,
+        deliveredAt: ordersTable.deliveredAt,
+        estimatedDeliveryFrom: ordersTable.estimatedDeliveryFrom,
+        estimatedDeliveryTo: ordersTable.estimatedDeliveryTo,
+        trackingEventsJson: ordersTable.trackingEventsJson,
+        // Printful costs (admin-only)
+        printfulOrderId: ordersTable.printfulOrderId,
+        printfulCostTotalCents: ordersTable.printfulCostTotalCents,
+        printfulCostShippingCents: ordersTable.printfulCostShippingCents,
+        printfulCostTaxCents: ordersTable.printfulCostTaxCents,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, id))
@@ -232,6 +248,25 @@ export async function GET(
       totalComputedCents: Math.round(afterDiscount),
       paymentMethod,
       allowedCountryCodes,
+      // Tracking
+      tracking: {
+        trackingNumber: order.trackingNumber ?? null,
+        trackingUrl: order.trackingUrl ?? null,
+        carrier: order.trackingCarrier ?? null,
+        shippedAt: order.shippedAt?.toISOString() ?? null,
+        deliveredAt: order.deliveredAt?.toISOString() ?? null,
+        estimatedDeliveryFrom: order.estimatedDeliveryFrom ?? null,
+        estimatedDeliveryTo: order.estimatedDeliveryTo ?? null,
+        events: order.trackingEventsJson ?? null,
+      },
+      // Printful costs (admin-only wholesale costs)
+      printfulCosts: order.printfulOrderId
+        ? {
+            totalCents: order.printfulCostTotalCents ?? null,
+            shippingCents: order.printfulCostShippingCents ?? null,
+            taxCents: order.printfulCostTaxCents ?? null,
+          }
+        : null,
     });
   } catch (err) {
     console.error("Admin order get error:", err);
@@ -260,11 +295,14 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
+    // TODO: Standardize error response format across admin routes (L20)
+    const CUID_RE = /^[a-z0-9]{20,30}$/;
+    if (!CUID_RE.test(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
     const body = (await request.json()) as {
       status?: string;
       paymentStatus?: string;
@@ -284,6 +322,10 @@ export async function PATCH(
       shippingPhone?: string | null;
       items?: Array<{ id: string; quantity: number }>;
       addItems?: Array<{ productId: string; quantity: number }>;
+      // Tracking (admin can manually set these)
+      trackingNumber?: string | null;
+      trackingUrl?: string | null;
+      trackingCarrier?: string | null;
     };
 
     const [existing] = await db
@@ -294,6 +336,10 @@ export async function PATCH(
 
     if (!existing) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+
+    if (typeof body.shippingFeeCents === "number" && body.shippingFeeCents < 0) {
+      return NextResponse.json({ error: "Shipping fee cannot be negative" }, { status: 400 });
     }
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -384,90 +430,103 @@ export async function PATCH(
       updates.shippingCountryCode = body.shippingCountryCode ?? null;
     if (body.shippingPhone !== undefined)
       updates.shippingPhone = body.shippingPhone ?? null;
+    // Tracking fields
+    if (body.trackingNumber !== undefined)
+      updates.trackingNumber = body.trackingNumber ?? null;
+    if (body.trackingUrl !== undefined)
+      updates.trackingUrl = body.trackingUrl ?? null;
+    if (body.trackingCarrier !== undefined)
+      updates.trackingCarrier = body.trackingCarrier ?? null;
 
-    if (Array.isArray(body.items) && body.items.length > 0) {
-      for (const row of body.items) {
-        if (typeof row.id === "string" && typeof row.quantity === "number") {
-          if (row.quantity <= 0) {
-            await db
-              .delete(orderItemsTable)
-              .where(eq(orderItemsTable.id, row.id));
-          } else {
-            await db
-              .update(orderItemsTable)
-              .set({ quantity: row.quantity })
-              .where(eq(orderItemsTable.id, row.id));
+    const [updated] = await db.transaction(async (tx) => {
+      if (Array.isArray(body.items) && body.items.length > 0) {
+        for (const row of body.items) {
+          if (typeof row.id === "string" && typeof row.quantity === "number") {
+            if (row.quantity <= 0) {
+              await tx
+                .delete(orderItemsTable)
+                .where(and(eq(orderItemsTable.id, row.id), eq(orderItemsTable.orderId, id)));
+            } else {
+              await tx
+                .update(orderItemsTable)
+                .set({ quantity: row.quantity })
+                .where(and(eq(orderItemsTable.id, row.id), eq(orderItemsTable.orderId, id)));
+            }
           }
         }
       }
-    }
 
-    if (Array.isArray(body.addItems) && body.addItems.length > 0) {
-      for (const add of body.addItems) {
-        if (
-          !add.productId ||
-          typeof add.quantity !== "number" ||
-          add.quantity < 1
-        )
-          continue;
-        const [product] = await db
-          .select({
-            id: productsTable.id,
-            name: productsTable.name,
-            priceCents: productsTable.priceCents,
-          })
-          .from(productsTable)
-          .where(eq(productsTable.id, add.productId))
-          .limit(1);
-        if (!product) continue;
-        await db.insert(orderItemsTable).values({
-          id: createId(),
-          name: product.name,
-          orderId: id,
-          priceCents: product.priceCents,
-          productId: product.id,
-          quantity: add.quantity,
-        });
+      if (Array.isArray(body.addItems) && body.addItems.length > 0) {
+        for (const add of body.addItems) {
+          if (
+            !add.productId ||
+            typeof add.quantity !== "number" ||
+            add.quantity < 1
+          )
+            continue;
+          const [product] = await tx
+            .select({
+              id: productsTable.id,
+              name: productsTable.name,
+              priceCents: productsTable.priceCents,
+            })
+            .from(productsTable)
+            .where(eq(productsTable.id, add.productId))
+            .limit(1);
+          if (!product) continue;
+          await tx.insert(orderItemsTable).values({
+            id: createId(),
+            name: product.name,
+            orderId: id,
+            priceCents: product.priceCents,
+            productId: product.id,
+            quantity: add.quantity,
+          });
+        }
       }
-    }
 
-    const needRecalc =
-      updates.shippingFeeCents !== undefined ||
-      updates.taxCents !== undefined ||
-      updates.discountPercent !== undefined ||
-      (Array.isArray(body.items) && body.items.length > 0) ||
-      (Array.isArray(body.addItems) && body.addItems.length > 0);
-    if (needRecalc) {
-      const items = await db.query.orderItemsTable.findMany({
-        where: (t, { eq: eqItem }) => eqItem(t.orderId, id),
-      });
-      const subtotalCents = items.reduce(
-        (s, i) => s + i.priceCents * i.quantity,
-        0,
-      );
-      const shippingFeeCents =
-        (updates.shippingFeeCents as number | undefined) ??
-        existing.shippingFeeCents ??
-        0;
-      const taxCents =
-        (updates.taxCents as number | undefined) ?? existing.taxCents ?? 0;
-      const discountPercent =
-        (updates.discountPercent as number | undefined) ??
-        existing.discountPercent ??
-        0;
-      updates.totalCents = Math.round(
-        subtotalCents +
-          shippingFeeCents +
-          taxCents -
-          (subtotalCents * discountPercent) / 100,
-      );
-    }
+      const needRecalc =
+        updates.shippingFeeCents !== undefined ||
+        updates.taxCents !== undefined ||
+        updates.discountPercent !== undefined ||
+        (Array.isArray(body.items) && body.items.length > 0) ||
+        (Array.isArray(body.addItems) && body.addItems.length > 0);
+      if (needRecalc) {
+        const items = await tx
+          .select({
+            priceCents: orderItemsTable.priceCents,
+            quantity: orderItemsTable.quantity,
+          })
+          .from(orderItemsTable)
+          .where(eq(orderItemsTable.orderId, id));
+        const subtotalCents = items.reduce(
+          (s, i) => s + i.priceCents * i.quantity,
+          0,
+        );
+        const shippingFeeCents =
+          (updates.shippingFeeCents as number | undefined) ??
+          existing.shippingFeeCents ??
+          0;
+        const taxCents =
+          (updates.taxCents as number | undefined) ?? existing.taxCents ?? 0;
+        const discountPercent =
+          (updates.discountPercent as number | undefined) ??
+          existing.discountPercent ??
+          0;
+        updates.totalCents = Math.round(
+          subtotalCents +
+            shippingFeeCents +
+            taxCents -
+            (subtotalCents * discountPercent) / 100,
+        );
+      }
 
-    const [updated] = await db
-      .update(ordersTable)
-      .set(updates as Record<string, unknown>)
-      .where(eq(ordersTable.id, id))
-      .returning();
+      return tx
+        .update(ordersTable)
+        .set(updates as Record<string, unknown>)
+        .where(eq(ordersTable.id, id))
+        .returning();
+    });
 
     if (!updated) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
@@ -486,6 +545,8 @@ export async function PATCH(
     if (updates.fulfillmentStatus === "fulfilled") {
       void onOrderStatusUpdate(updated.id, "order_shipped");
     }
+
+    console.info(`[admin-audit] Order ${id} updated by admin. Status: ${body.status ?? 'unchanged'}, Items modified: ${body.items?.length ?? 0}`);
 
     const paymentStatus =
       updated.paymentStatus ??

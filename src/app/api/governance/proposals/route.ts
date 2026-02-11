@@ -6,10 +6,12 @@
 import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { db } from "~/db";
 import { governanceProposalTable } from "~/db/schema";
+import { getAdminAuth, adminAuthFailureResponse } from "~/lib/admin-api-auth";
 
 const createProposalSchema = z.object({
   title: z.string().min(1).max(500),
@@ -19,9 +21,12 @@ const createProposalSchema = z.object({
   createdBy: z.string().optional(),
 });
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status"); // optional: "active" | "ended" | omit for both
+  const page = Math.max(1, Number(searchParams.get("page")) || 1);
+  const limit = Math.min(100, Math.max(1, Number(searchParams.get("limit")) || 20));
+  const offset = (page - 1) * limit;
 
   try {
     // Lazy-update: mark active proposals as ended when endAt has passed
@@ -47,9 +52,11 @@ export async function GET(request: Request) {
       .select()
       .from(governanceProposalTable)
       .where(where)
-      .orderBy(desc(governanceProposalTable.createdAt));
+      .orderBy(desc(governanceProposalTable.createdAt))
+      .limit(limit)
+      .offset(offset);
 
-    return NextResponse.json({ proposals });
+    return NextResponse.json({ proposals, page, limit });
   } catch (e) {
     console.error("[governance] list proposals error:", e);
     return NextResponse.json(
@@ -59,7 +66,10 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
   try {
     const body = await request.json();
     const parsed = createProposalSchema.safeParse(body);

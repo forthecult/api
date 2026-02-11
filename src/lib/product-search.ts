@@ -22,6 +22,11 @@ import {
   productsTable,
 } from "~/db/schema";
 
+/** Escape SQL LIKE/ILIKE special characters */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
+
 export const DEFAULT_SEARCH_LIMIT = 20;
 export const MAX_SEARCH_LIMIT = 100;
 
@@ -78,7 +83,7 @@ export async function runProductSearch(
   ];
 
   if (query.length > 0) {
-    const pattern = `%${query}%`;
+    const pattern = `%${escapeLike(query)}%`;
     conditions.push(
       or(
         ilike(productsTable.name, pattern),
@@ -90,44 +95,31 @@ export async function runProductSearch(
   if (categoryId || subcategoryId) {
     const targetCategoryId = subcategoryId ?? categoryId;
     if (targetCategoryId) {
-      const productIdsInCategory = await db
-        .selectDistinct({ productId: productCategoriesTable.productId })
-        .from(productCategoriesTable)
-        .where(eq(productCategoriesTable.categoryId, targetCategoryId));
-      const ids = productIdsInCategory.map((r) => r.productId);
-      if (ids.length === 0) {
-        return { products: [], total: 0, limit, offset };
-      }
-      conditions.push(inArray(productsTable.id, ids));
+      // Use a subquery instead of materializing IDs to avoid a separate round-trip
+      conditions.push(
+        inArray(
+          productsTable.id,
+          db
+            .select({ id: productCategoriesTable.productId })
+            .from(productCategoriesTable)
+            .where(eq(productCategoriesTable.categoryId, targetCategoryId)),
+        ),
+      );
     }
   }
 
   if (filters.brand?.length) {
-    const brandSlugs = filters.brand.map((b) => String(b).toLowerCase().trim());
-    const allBrands = await db
-      .selectDistinct({ brand: productsTable.brand })
-      .from(productsTable)
-      .where(
-        and(
-          eq(productsTable.published, true),
-          eq(productsTable.hidden, false),
-          sql`${productsTable.brand} is not null`,
-        ),
-      );
-    const matchingBrands = allBrands.filter(
-      (r: { brand: string | null }) =>
-        r.brand != null &&
-        brandSlugs.includes(
-          String(r.brand)
-            .toLowerCase()
-            .replace(/\s+/g, "-")
-            .replace(/[^a-z0-9-]/g, ""),
-        ),
+    // Match brands using SQL ILIKE instead of fetching all brands into JS
+    const brandConditions = filters.brand.map((b) => {
+      const slug = String(b).toLowerCase().trim();
+      return ilike(productsTable.brand, `%${escapeLike(slug)}%`);
+    });
+    conditions.push(
+      and(
+        sql`${productsTable.brand} is not null`,
+        or(...brandConditions)!,
+      )!,
     );
-    const brandNames = matchingBrands.map((r: { brand: string | null }) => r.brand!);
-    if (brandNames.length > 0) {
-      conditions.push(inArray(productsTable.brand, brandNames));
-    }
   }
 
   if (filters.priceRange) {

@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Boxo Integration Plan — eCommerce Store
 
 This document is an **implementation plan** and status log. It is based on a review of [Boxo’s documentation](https://docs.boxo.io/main/homepage) and the current relivator/Cult eCommerce store.

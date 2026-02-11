@@ -12,7 +12,10 @@ import {
   productTagsTable,
   productVariantsTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 import { syncProductCategoriesWithAutoRules } from "~/lib/category-auto-assign";
 import { exportProductToPrintful } from "~/lib/printful-sync";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
@@ -41,9 +44,7 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: param } = await params;
     const product = await getProductByParam(param);
@@ -211,11 +212,14 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id: param } = await params;
+    // TODO: Standardize error response format across admin routes (L20)
+    const CUID_RE = /^[a-z0-9]{20,30}$/;
+    if (!CUID_RE.test(param) && !/^[a-z0-9-]+$/.test(param)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
     const existing = await getProductByParam(param);
     if (!existing) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
@@ -318,8 +322,12 @@ export async function PATCH(
       updates.metaDescription = body.metaDescription ?? null;
     if (body.pageTitle !== undefined)
       updates.pageTitle = body.pageTitle ?? null;
-    if (typeof body.priceCents === "number")
+    if (typeof body.priceCents === "number") {
+      if (body.priceCents < 0) {
+        return NextResponse.json({ error: "Price cannot be negative" }, { status: 400 });
+      }
       updates.priceCents = body.priceCents;
+    }
     if (body.compareAtPriceCents !== undefined)
       updates.compareAtPriceCents = body.compareAtPriceCents ?? null;
     if (body.costPerItemCents !== undefined)
@@ -407,12 +415,14 @@ export async function PATCH(
       await db
         .delete(productCategoriesTable)
         .where(eq(productCategoriesTable.productId, id));
-      for (const categoryId of categoryIds) {
-        await db.insert(productCategoriesTable).values({
-          productId: id,
-          categoryId,
-          isMain: categoryId === mainCategoryId,
-        });
+      if (categoryIds.length > 0) {
+        await db.insert(productCategoriesTable).values(
+          categoryIds.map((categoryId) => ({
+            productId: id,
+            categoryId,
+            isMain: categoryId === mainCategoryId,
+          })),
+        );
       }
       savedCategoryIds = categoryIds;
     }
@@ -435,17 +445,21 @@ export async function PATCH(
         .delete(productImagesTable)
         .where(eq(productImagesTable.productId, id));
       const now = new Date();
-      for (let i = 0; i < body.images.length; i++) {
-        const img = body.images[i];
-        if (!img?.url?.trim()) continue;
-        await db.insert(productImagesTable).values({
-          id: img.id ?? crypto.randomUUID(),
-          productId: id,
-          url: img.url.trim(),
-          alt: img.alt?.trim() ?? null,
-          title: img.title?.trim() ?? null,
-          sortOrder: typeof img.sortOrder === "number" ? img.sortOrder : i,
-        });
+      const imageValues = body.images
+        .map((img, i) => {
+          if (!img?.url?.trim()) return null;
+          return {
+            id: img.id ?? crypto.randomUUID(),
+            productId: id,
+            url: img.url.trim(),
+            alt: img.alt?.trim() ?? null,
+            title: img.title?.trim() ?? null,
+            sortOrder: typeof img.sortOrder === "number" ? img.sortOrder : i,
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null);
+      if (imageValues.length > 0) {
+        await db.insert(productImagesTable).values(imageValues);
       }
     }
 
@@ -456,8 +470,10 @@ export async function PATCH(
       const uniqueTags = [
         ...new Set(body.tags.map((t) => t.trim()).filter(Boolean)),
       ];
-      for (const tag of uniqueTags) {
-        await db.insert(productTagsTable).values({ productId: id, tag });
+      if (uniqueTags.length > 0) {
+        await db.insert(productTagsTable).values(
+          uniqueTags.map((tag) => ({ productId: id, tag })),
+        );
       }
     }
 
@@ -555,23 +571,23 @@ export async function PATCH(
       await db
         .delete(productTokenGateTable)
         .where(eq(productTokenGateTable.productId, id));
-      const gatesToInsert = Array.isArray(body.tokenGates)
-        ? body.tokenGates
-        : [];
-      for (const gate of gatesToInsert) {
-        const symbol = String(gate.tokenSymbol ?? "")
-          .trim()
-          .toUpperCase();
-        const qty = Number(gate.quantity);
-        if (!symbol || !Number.isInteger(qty) || qty < 1) continue;
-        await db.insert(productTokenGateTable).values({
-          id: gate.id ?? crypto.randomUUID(),
-          productId: id,
-          tokenSymbol: symbol,
-          quantity: qty,
-          network: gate.network?.trim() || null,
-          contractAddress: gate.contractAddress?.trim() || null,
-        });
+      const gatesToInsert = (Array.isArray(body.tokenGates) ? body.tokenGates : [])
+        .map((gate) => {
+          const symbol = String(gate.tokenSymbol ?? "").trim().toUpperCase();
+          const qty = Number(gate.quantity);
+          if (!symbol || !Number.isInteger(qty) || qty < 1) return null;
+          return {
+            id: gate.id ?? crypto.randomUUID(),
+            productId: id,
+            tokenSymbol: symbol,
+            quantity: qty,
+            network: gate.network?.trim() || null,
+            contractAddress: gate.contractAddress?.trim() || null,
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null);
+      if (gatesToInsert.length > 0) {
+        await db.insert(productTokenGateTable).values(gatesToInsert);
       }
     }
 
@@ -667,9 +683,7 @@ export async function DELETE(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const product = await getProductByParam(id);

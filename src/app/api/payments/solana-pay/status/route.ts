@@ -17,6 +17,7 @@ import {
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,10 @@ async function findTransferToAddress(
 }
 
 export async function GET(request: Request) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`solana-status:${ip}`, RATE_LIMITS.orderStatus);
+  if (!rl.success) return rateLimitResponse(rl);
+
   const { searchParams } = new URL(request.url);
   const depositAddressParam = searchParams.get("depositAddress");
   const reference = searchParams.get("reference");

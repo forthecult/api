@@ -65,6 +65,11 @@ function getTelegramOrderPayload(): {
     telegramUserId: String(user.id),
     ...(user.username ? { telegramUsername: user.username } : {}),
     ...(user.first_name ? { telegramFirstName: user.first_name } : {}),
+    // [SECURITY] Include signed initData so the server can verify it via HMAC
+    // before trusting the Telegram user identity (initDataUnsafe is client-tamperable)
+    ...(window.Telegram?.WebApp?.initData
+      ? { telegramInitData: window.Telegram.WebApp.initData }
+      : {}),
   };
 }
 

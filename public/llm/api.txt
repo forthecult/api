@@ -1,39 +1,86 @@
-# API Reference (summary for LLMs)
+# For the Cult — API Reference (for LLMs and AI agents)
 
-Base: same origin as this site. Example: https://forthecult.store/api
-Format: JSON. Timestamps: ISO 8601. Optional auth: Authorization: Bearer API_KEY, X-Agent-Id, X-Agent-Name.
+Base URL: same origin as this site. Example: https://forthecult.store/api
+Format: JSON. Timestamps: ISO 8601.
 
 ## First call for agents
 
-GET /api/agent/capabilities — Returns features, payment options, shipping countries, rate limits, and full endpoint reference. Use this before other calls.
+GET /api/agent/capabilities — Returns features, payment options, shipping countries, rate limits, and a full endpoint reference. Call this before anything else.
 
 ## OpenAPI and docs
 
-- GET /api/openapi.json — Full OpenAPI 3 specification.
-- GET /api/docs — Interactive API docs (Swagger UI), if enabled.
+- GET /api/openapi.json — Full OpenAPI 3.0 specification (machine-readable).
+- GET /api/docs — Interactive API documentation (Swagger UI).
 
 ## Health and discovery
 
-- GET /api/health — API and dependency health.
-- GET /api/chains — Supported payment chains and tokens (Solana, EVM, etc.).
-- GET /api/categories — Store categories.
+- GET /api/health — API status and uptime check.
+- GET /api/categories — Store categories with subcategories and product counts.
+- GET /api/brands — All brands with product counts.
+- GET /api/products/featured — Featured, trending, and best-selling products.
 
 ## Products
 
-- POST /api/products/semantic-search — Natural-language search (e.g. "birthday gift for dad who likes golf"). Body: { "query": "..." }.
-- POST /api/v1/products/search — Structured search with query, category, limit, offset.
-- GET /api/products/{productId} — Single product by ID.
-- POST /api/cart/estimate — Preview cart totals and shipping before checkout. Body: items (productId, variantId?, quantity), shipping (countryCode, zip).
+- POST /api/products/semantic-search — Natural-language search. Body: { "query": "lightweight running shoes under $80" }. Best for AI agents.
+- POST /api/products/search — Structured search with filters. Body: { "query": "...", "category": "...", "limit": 20, "offset": 0 }.
+- GET /api/products/{slug} — Single product by slug. Returns full details including variants, images, and pricing.
+- GET /api/products/suggestions?q=run — Search autocomplete. Returns keyword and product suggestions.
+- GET /api/products/{slug}/related — Related products for cross-selling.
+
+## Cart preview
+
+- POST /api/cart/estimate — Preview totals and shipping before checkout. Body: { "items": [{ "productId": "...", "quantity": 1 }], "shipping": { "countryCode": "US", "zip": "10001" } }. Prices valid for 15 minutes.
 
 ## Checkout and orders
 
-- POST /api/checkout — Create order. Body: items, email, payment (chain, token for crypto; or card), shipping (name, address1, city, etc.). Returns orderId and payment (recipient, amount, token, solanaPayUrl for crypto; or payment link for card).
-- GET /api/orders/{orderId}/status — Poll until status === "paid". Lightweight; use every few seconds.
+- POST /api/checkout — Create an order. Body: items, email, payment method, and shipping address. Returns orderId and payment instructions. Payment window: 1 hour.
+- GET /api/orders/{orderId}/status — Lightweight polling endpoint. Check every 5 seconds until status is "paid" or "expired".
+- GET /api/orders/{orderId} — Full order details (requires session or admin).
+- POST /api/orders/{orderId}/cancel — Cancel a pending order (requires proof of ownership).
 
-Payment flow (crypto): checkout → get deposit address and amount → user/agent sends transfer → poll status. Solana Pay URL is returned for wallet deep links.
+## Payment methods
+
+- **Card:** Stripe checkout (payment.method: "stripe")
+- **Solana:** SOL, USDC, and SPL tokens (payment.chain: "solana", payment.token: "USDC")
+- **EVM chains:** ETH, USDC, USDT on Ethereum, Base, Arbitrum, Polygon, BNB (payment.chain: "ethereum", payment.token: "USDC")
+- **Bitcoin:** via BTCPay Server (payment.method: "btcpay")
+- **TON:** TON payments (payment.method: "ton_pay")
+
+Payment flow: create order → receive payment instructions (address + amount or payment link) → customer pays → poll status until confirmed.
+
+## Shipping
+
+- POST /api/shipping/calculate — Estimate shipping cost. Body: { "countryCode": "US", "items": [...] }.
+- Ships to: US, CA, GB, AU, DE, FR, ES, IT, NL, JP, NZ, KR, SG, HK, and more.
+- Free shipping on US orders over $50; international orders over $100.
 
 ## Errors
 
-Responses use structured errors: code, message, details, requestId, _suggestions (next steps). Responses may include _actions (suggested API calls).
+Responses use structured errors: { error: { code, message, details, requestId, _suggestions } }. The _suggestions array tells agents what to try next. Responses may include _actions with suggested follow-up API calls.
 
-For full request/response shapes and more endpoints, fetch GET /api/openapi.json or see the human docs in the repository (docs/Culture Store API.md).
+Common codes: PRODUCT_NOT_FOUND, VARIANT_REQUIRED, ORDER_EXPIRED, SHIPPING_UNAVAILABLE, RATE_LIMIT_EXCEEDED.
+
+## Complete endpoint list
+
+| Method | Endpoint | Purpose |
+|--------|----------|---------|
+| GET | /api/agent/capabilities | Start here — full API guide |
+| GET | /api/health | Health check |
+| GET | /api/openapi.json | OpenAPI 3.0 spec |
+| GET | /api/categories | All categories |
+| GET | /api/categories/{id} | Category details + filters |
+| GET | /api/brands | All brands |
+| GET | /api/products/featured | Featured, trending, deals |
+| GET | /api/products/suggestions?q= | Autocomplete |
+| POST | /api/products/search | Filtered search |
+| POST | /api/products/semantic-search | Natural language search |
+| GET | /api/products/{slug} | Product details |
+| GET | /api/products/{slug}/related | Related products |
+| POST | /api/cart/estimate | Preview cart totals |
+| POST | /api/shipping/calculate | Shipping estimate |
+| POST | /api/checkout | Create order |
+| GET | /api/orders/{orderId}/status | Poll order status |
+| GET | /api/orders/{orderId} | Full order details |
+| POST | /api/orders/{orderId}/cancel | Cancel order |
+
+For full request/response shapes, fetch GET /api/openapi.json.

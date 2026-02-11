@@ -23,8 +23,8 @@ export function useCryptoPrices({
 
   useEffect(() => {
     if (!enabled) return;
-
-    fetch("/api/crypto/prices")
+    const ac = new AbortController();
+    fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
       .then((data: { SOL?: number; CRUST?: number; PUMP?: number }) => {
         if (typeof data?.SOL === "number" && data.SOL > 0)
@@ -34,11 +34,13 @@ export function useCryptoPrices({
         if (typeof data?.PUMP === "number" && data.PUMP > 0)
           setPumpPriceUsd(data.PUMP);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setSolUsdRate(SOL_USD_FALLBACK);
         setCrustPriceUsd(null);
         setPumpPriceUsd(null);
       });
+    return () => ac.abort();
   }, [enabled]);
 
   // suiUsdRate: not currently provided by the prices API

@@ -28,6 +28,7 @@ import {
   fetchSyncProducts,
   fetchSyncProduct,
   fetchCatalogProduct,
+  fetchCatalogVariants,
   fetchCatalogProductShippingCountries,
   fetchCatalogProductShippingCustoms,
   fetchProductSizeGuideSafe,
@@ -36,6 +37,7 @@ import {
   getPrintfulIfConfigured,
   type PrintfulSyncProduct,
   type PrintfulSyncVariant,
+  type PrintfulCatalogVariant,
 } from "./printful";
 
 /**
@@ -322,20 +324,25 @@ export async function importSinglePrintfulProduct(
     }
   }
 
-  // Fetch catalog product for description/brand/model and shipping/customs. Brand/model required for size chart + product page.
+  // Fetch catalog product for description/brand/model/type and shipping/customs. Brand/model required for size chart + product page.
   let catalogProduct: {
     brand: string;
     model: string;
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
+    productType: string | null;
+    isDiscontinued: boolean;
   } | null = null;
+  /** Map of catalog_variant_id → catalog variant details (for colorCode, weight). */
+  let catalogVariantMap = new Map<number, PrintfulCatalogVariant>();
   const catalogProductId = syncVariants[0]?.product?.product_id;
   if (catalogProductId != null) {
     try {
-      const [catalog, customs] = await Promise.all([
+      const [catalog, customs, catalogVariantsRes] = await Promise.all([
         fetchCatalogProduct(catalogProductId),
         fetchCatalogProductShippingCustoms(catalogProductId),
+        fetchCatalogVariants(catalogProductId).catch(() => null),
       ]);
       if (catalog?.data) {
         // Fallback so we always have brand/model for size_chart and product (Printful may omit for some catalog items)
@@ -347,6 +354,8 @@ export async function importSinglePrintfulProduct(
           description: catalog.data.description ?? null,
           countryOfOrigin: customs.countryOfOrigin,
           hsCode: customs.hsCode,
+          productType: catalog.data.type ?? null,
+          isDiscontinued: catalog.data.is_discontinued ?? false,
         };
       } else {
         catalogProduct = {
@@ -355,7 +364,15 @@ export async function importSinglePrintfulProduct(
           description: null,
           countryOfOrigin: null,
           hsCode: null,
+          productType: null,
+          isDiscontinued: false,
         };
+      }
+      // Build variant lookup for colorCode/colorCode2
+      if (catalogVariantsRes?.data) {
+        for (const cv of catalogVariantsRes.data) {
+          catalogVariantMap.set(cv.id, cv);
+        }
       }
     } catch (err) {
       console.warn("Printful catalog fetch failed for product", catalogProductId, err);
@@ -365,6 +382,8 @@ export async function importSinglePrintfulProduct(
         description: null,
         countryOfOrigin: null,
         hsCode: null,
+        productType: null,
+        isDiscontinued: false,
       };
     }
   }
@@ -401,6 +420,7 @@ export async function importSinglePrintfulProduct(
       syncProduct,
       syncVariants,
       catalogProduct,
+      catalogVariantMap,
     );
     if (catalogProductId != null && catalogProduct) {
       await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
@@ -413,6 +433,7 @@ export async function importSinglePrintfulProduct(
     syncProduct,
     syncVariants,
     catalogProduct,
+    catalogVariantMap,
   );
   if (catalogProductId != null && catalogProduct) {
     await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
@@ -667,7 +688,10 @@ async function createLocalProductFromPrintful(
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
+    productType: string | null;
+    isDiscontinued: boolean;
   } | null,
+  catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
 ): Promise<string> {
   const productId = nanoid();
   const now = new Date();
@@ -782,6 +806,8 @@ async function createLocalProductFromPrintful(
     sku: productSku,
     countryOfOrigin: catalogProduct?.countryOfOrigin ?? null,
     hsCode: catalogProduct?.hsCode ?? null,
+    productType: catalogProduct?.productType ?? null,
+    isDiscontinued: catalogProduct?.isDiscontinued ?? false,
     createdAt: now,
     updatedAt: now,
     lastSyncedAt: now,
@@ -811,7 +837,7 @@ async function createLocalProductFromPrintful(
 
   // Create variants (with variant images and size/color)
   for (const syncVariant of syncVariants) {
-    await createLocalVariantFromPrintful(productId, syncVariant);
+    await createLocalVariantFromPrintful(productId, syncVariant, catalogVariantMap);
   }
 
   // Product media: prefer mockups first (variant preview/mockup), then thumbnail (raw product)
@@ -867,7 +893,10 @@ async function updateLocalProductFromPrintful(
     description: string | null;
     countryOfOrigin: string | null;
     hsCode: string | null;
+    productType: string | null;
+    isDiscontinued: boolean;
   } | null,
+  catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
 ): Promise<void> {
   const now = new Date();
   const hasVariantsFromApi = syncVariants.length > 0;
@@ -957,6 +986,8 @@ async function updateLocalProductFromPrintful(
       ...(catalogProduct != null && {
         countryOfOrigin: catalogProduct.countryOfOrigin,
         hsCode: catalogProduct.hsCode,
+        productType: catalogProduct.productType,
+        isDiscontinued: catalogProduct.isDiscontinued,
       }),
       ...(priceCents != null && { priceCents }),
       ...(costPerItemCents !== undefined && { costPerItemCents }),
@@ -1047,7 +1078,7 @@ async function updateLocalProductFromPrintful(
         const existing = bySyncId?.[0];
         if (existing) {
           matchedLocalIds.add(existing.id);
-          await updateLocalVariantFromPrintful(existing.id, syncVariant);
+          await updateLocalVariantFromPrintful(existing.id, syncVariant, catalogVariantMap);
           continue;
         }
         // Backfill: match by size/color/label when variants have no printfulSyncVariantId
@@ -1064,9 +1095,9 @@ async function updateLocalProductFromPrintful(
         const toUpdate = unmatched[0];
         if (toUpdate) {
           matchedLocalIds.add(toUpdate.id);
-          await updateLocalVariantFromPrintful(toUpdate.id, syncVariant);
+          await updateLocalVariantFromPrintful(toUpdate.id, syncVariant, catalogVariantMap);
         } else {
-          await createLocalVariantFromPrintful(productId, syncVariant);
+          await createLocalVariantFromPrintful(productId, syncVariant, catalogVariantMap);
         }
       }
 
@@ -1142,6 +1173,7 @@ async function deleteUnreferencedPrintfulVariants(productId: string): Promise<nu
 async function createLocalVariantFromPrintful(
   productId: string,
   syncVariant: PrintfulSyncVariant,
+  catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
 ): Promise<string> {
   const now = new Date();
   const priceCents = Math.round(
@@ -1156,11 +1188,16 @@ async function createLocalVariantFromPrintful(
   const externalId = String(syncVariant.variant_id);
   const printfulSyncVariantId = syncVariant.id;
 
+  // Get catalog variant details for colorCode, colorCode2
+  const catalogVariant = catalogVariantMap?.get(syncVariant.variant_id);
+
   const variantFields = {
     externalId,
     printfulSyncVariantId,
     size: size ?? null,
     color: color ?? null,
+    colorCode: catalogVariant?.color_code ?? null,
+    colorCode2: catalogVariant?.color_code2 ?? null,
     sku: syncVariant.sku ?? null,
     label,
     priceCents: safePriceCents,
@@ -1232,6 +1269,7 @@ async function createLocalVariantFromPrintful(
 async function updateLocalVariantFromPrintful(
   variantId: string,
   syncVariant: PrintfulSyncVariant,
+  catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
 ): Promise<void> {
   const now = new Date();
   const priceCents = Math.round(
@@ -1242,6 +1280,10 @@ async function updateLocalVariantFromPrintful(
 
   const size = getVariantSize(syncVariant);
   const color = getVariantColor(syncVariant);
+
+  // Get catalog variant details for colorCode, colorCode2
+  const catalogVariant = catalogVariantMap?.get(syncVariant.variant_id);
+
   await db
     .update(productVariantsTable)
     .set({
@@ -1249,6 +1291,8 @@ async function updateLocalVariantFromPrintful(
       printfulSyncVariantId: syncVariant.id,
       size,
       color,
+      colorCode: catalogVariant?.color_code ?? undefined,
+      colorCode2: catalogVariant?.color_code2 ?? undefined,
       sku: syncVariant.sku,
       label: syncVariant.name ?? undefined,
       priceCents,

@@ -17,7 +17,6 @@ export async function GET() {
   return withPublicApiCors(
     NextResponse.json({
       status: "healthy",
-      version: "1.0.0",
       timestamp: new Date().toISOString(),
     }),
   );

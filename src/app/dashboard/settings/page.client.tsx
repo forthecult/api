@@ -45,14 +45,21 @@ export function SettingsPageClient() {
   const [notificationPrefs, setNotificationPrefs] = React.useState<NotificationPrefs | null>(null);
   const [notificationLoading, setNotificationLoading] = React.useState(true);
   const [notificationSaving, setNotificationSaving] = React.useState(false);
+  const [notificationLoadError, setNotificationLoadError] = React.useState(false);
 
   React.useEffect(() => {
     if (!user) return;
-    fetch("/api/user/notifications")
+    const ac = new AbortController();
+    setNotificationLoadError(false);
+    fetch("/api/user/notifications", { signal: ac.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((data: NotificationPrefs | null) => data && setNotificationPrefs(data))
-      .catch(() => {})
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setNotificationLoadError(true);
+      })
       .finally(() => setNotificationLoading(false));
+    return () => ac.abort();
   }, [user]);
 
   const updateNotificationPref = React.useCallback(
@@ -130,6 +137,10 @@ export function SettingsPageClient() {
           {notificationLoading ? (
             <div className="flex items-center justify-center py-8">
               <p className="text-sm text-muted-foreground">Loading preferences...</p>
+            </div>
+          ) : notificationLoadError ? (
+            <div className="flex items-center justify-center py-8">
+              <p className="text-sm text-destructive">Failed to load notification preferences. Please refresh the page.</p>
             </div>
           ) : (
             <div className="space-y-6">

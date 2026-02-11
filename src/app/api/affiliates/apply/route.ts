@@ -130,24 +130,40 @@ export async function POST(request: NextRequest) {
 
   const id = crypto.randomUUID();
   const now = new Date();
-  await db.insert(affiliateTable).values({
-    id,
-    userId,
-    code,
-    status: "pending",
-    commissionType: "percent",
-    commissionValue: 10,
-    customerDiscountType: null,
-    customerDiscountValue: null,
-    applicationNote,
-    adminNote: null,
-    payoutMethod,
-    payoutAddress,
-    totalEarnedCents: 0,
-    totalPaidCents: 0,
-    createdAt: now,
-    updatedAt: now,
-  });
+  try {
+    await db.insert(affiliateTable).values({
+      id,
+      userId,
+      code,
+      status: "pending",
+      commissionType: "percent",
+      commissionValue: 10,
+      customerDiscountType: null,
+      customerDiscountValue: null,
+      applicationNote,
+      adminNote: null,
+      payoutMethod,
+      payoutAddress,
+      totalEarnedCents: 0,
+      totalPaidCents: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (insertErr: unknown) {
+    // Handle unique constraint violation (race condition on code)
+    const code23505 =
+      typeof insertErr === "object" &&
+      insertErr !== null &&
+      "code" in insertErr &&
+      (insertErr as { code: string }).code === "23505";
+    if (code23505) {
+      return NextResponse.json(
+        { error: "This code is already taken. Please choose another or retry." },
+        { status: 409 },
+      );
+    }
+    throw insertErr;
+  }
 
   return NextResponse.json({
     id,

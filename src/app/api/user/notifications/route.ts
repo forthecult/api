@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { accountTable, userTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 import type {
   ChannelPreferences,
   NotificationPreferences,
@@ -16,6 +18,9 @@ const TELEGRAM_PROVIDER_ID = "telegram";
  * Returns current user's notification preferences and whether they have Telegram linked.
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`user-notifications:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -100,6 +105,11 @@ type NotificationUpdateBody = {
  * Telegram preferences are only applied when user has Telegram linked.
  */
 export async function PATCH(request: NextRequest) {
+  // [SECURITY] Verify Origin header to prevent CSRF attacks (sameSite: "none" disables browser CSRF protection)
+  if (!verifyCsrfOrigin(request.headers)) return csrfFailureResponse();
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`user-notifications:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -4,33 +4,51 @@ import {
   getWebhookConfig,
   setWebhookConfig,
   disableWebhook,
+  setWebhookConfigV2,
+  getWebhookConfigV2,
+  disableWebhookV2,
   getPrintfulIfConfigured,
 } from "~/lib/printful";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
- * All webhook event types we want to subscribe to for full order/product sync.
- * See: https://developers.printful.com/docs/#tag/Webhook-API
+ * All webhook event types we want to subscribe to for full order/product/catalog sync.
+ * Includes both v1 legacy names and v2 event names.
  *
- * Note: stock_updated requires product IDs to be specified, so we exclude it
- * from the default registration. POD products are made-to-order anyway.
+ * v2 additions: shipment_sent/delivered/returned/out_of_stock/canceled/put_hold,
+ * catalog_stock_updated, catalog_price_changed, order_refunded, mockup_task_finished.
  */
 const REQUIRED_WEBHOOK_TYPES = [
   // Order events
-  "package_shipped",      // Shipment has shipped (legacy name: shipment_sent)
-  "package_returned",     // Package returned (legacy name: shipment_returned)
-  "order_created",        // Order created
-  "order_updated",        // Order status changed
-  "order_failed",         // Order failed at Printful
-  "order_canceled",       // Order cancelled
-  "order_put_hold",       // Order put on hold
-  "order_put_hold_approval", // Order waiting for approval
-  "order_remove_hold",    // Order removed from hold
+  "order_created",
+  "order_updated",
+  "order_failed",
+  "order_canceled",
+  "order_refunded",
+  "order_put_hold",
+  "order_put_hold_approval",
+  "order_remove_hold",
+  // Shipment events (v2 naming)
+  "shipment_sent",
+  "shipment_delivered",
+  "shipment_returned",
+  "shipment_out_of_stock",
+  "shipment_canceled",
+  "shipment_put_hold",
+  "shipment_put_hold_approval",
+  "shipment_remove_hold",
+  // Legacy shipment events (v1 compat – some accounts still send these)
+  "package_shipped",
+  "package_returned",
   // Product sync events
-  "product_synced",       // Product created/synced
-  "product_updated",      // Product updated
-  "product_deleted",      // Product deleted
-  // Note: "stock_updated" excluded - requires product IDs and POD is made-to-order
+  "product_synced",
+  "product_updated",
+  "product_deleted",
+  // Catalog events (v2 – real-time stock + price changes)
+  "catalog_stock_updated",
+  "catalog_price_changed",
+  // Mockup events
+  "mockup_task_finished",
 ];
 
 /**

@@ -14,7 +14,8 @@ import {
   governanceProposalTable,
   governanceVoteTable,
 } from "~/db/schema";
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
+import nacl from "tweetnacl";
 
 import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
@@ -23,6 +24,8 @@ import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
 const voteSchema = z.object({
   wallet: z.string().min(32).max(44),
   choice: z.enum(["for", "against", "abstain"]),
+  signature: z.string().min(1, "Signature required to prove wallet ownership"),
+  message: z.string().min(1, "Signed message required"),
 });
 
 export async function POST(
@@ -47,7 +50,38 @@ export async function POST(
       { status: 400 },
     );
   }
-  const { wallet, choice } = parsed.data;
+  const { wallet, choice, signature, message: signedMessage } = parsed.data;
+
+  // Verify wallet ownership via signature
+  try {
+    const publicKey = new PublicKey(wallet);
+    const messageBytes = new TextEncoder().encode(signedMessage);
+    const signatureBytes = Buffer.from(signature, "base64");
+    const valid = nacl.sign.detached.verify(
+      messageBytes,
+      signatureBytes,
+      publicKey.toBytes(),
+    );
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Invalid signature - wallet ownership not verified" },
+        { status: 401 },
+      );
+    }
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid wallet address or signature" },
+      { status: 400 },
+    );
+  }
+
+  // Verify the signed message contains the proposal ID to prevent replay
+  if (!signedMessage.includes(proposalId)) {
+    return NextResponse.json(
+      { error: "Signed message must contain the proposal ID" },
+      { status: 400 },
+    );
+  }
 
   try {
     const [proposal] = await db
@@ -107,7 +141,9 @@ export async function POST(
       proposalId,
       walletAddress: wallet,
       choice,
-      votingPower: Number(votingPower),
+      votingPower: votingPower > BigInt(Number.MAX_SAFE_INTEGER)
+        ? Number.MAX_SAFE_INTEGER
+        : Number(votingPower),
       createdAt: now,
     });
 

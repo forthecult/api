@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
       _actions: {
         next: `Poll GET /api/orders/${orderId}/status every 5s until status changes`,
         cancel: `POST /api/orders/${orderId}/cancel (only before payment)`,
-        help: "Contact support@forthecut.store",
+        help: "Contact support@forthecult.store",
       },
     });
   } catch (err) {

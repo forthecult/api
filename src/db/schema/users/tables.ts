@@ -26,6 +26,8 @@ export const userTable = pgTable("user", {
   lastName: text("last_name"),
   name: text("name").notNull(),
   phone: text("phone"),
+  /** User role: "user" (default) or "admin". Used for authorization checks. */
+  role: text("role").notNull().default("user"),
   twoFactorEnabled: boolean("two_factor_enabled"),
   updatedAt: timestamp("updated_at").notNull(),
   // Notification preferences - Transactional (per channel)

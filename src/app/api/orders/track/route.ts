@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { createOrderTrackToken } from "~/lib/order-track-token";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
@@ -21,6 +22,10 @@ function normalizePaymentAddress(addr: string | null | undefined): string {
  * returns { token, orderId } for use in /track-order/[orderId]?t=token.
  */
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`order-track:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
+
   try {
     const body = (await request.json().catch(() => ({}))) as {
       orderId?: string;

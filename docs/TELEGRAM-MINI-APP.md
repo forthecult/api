@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Telegram Mini App — Plan & Integration
 
 This document plans and confirms the flow for turning For the Cult into a **Telegram Mini App**, so users can browse, cart, and pay from inside Telegram. **Payments:** crypto only (Solana Pay, ETH, BTCPay, TON, etc.). **Telegram Stars** is for digital services, not physical goods, so we do not use it for this store.

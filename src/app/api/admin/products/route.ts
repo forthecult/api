@@ -21,6 +21,11 @@ import {
 } from "~/lib/admin-api-auth";
 import { slugify } from "~/lib/slugify";
 
+/** Escape SQL LIKE/ILIKE special characters */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
+
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
 
@@ -70,7 +75,7 @@ export async function GET(request: NextRequest) {
       ?.toLowerCase();
     const sortOrder = sortOrderParam === "asc" ? asc : desc;
 
-    const term = search.length > 0 ? `%${search}%` : "";
+    const term = search.length > 0 ? `%${escapeLike(search)}%` : "";
     const conditions: ReturnType<typeof or>[] = [];
     if (search.length > 0) {
       conditions.push(
@@ -389,20 +394,23 @@ export async function POST(request: NextRequest) {
     });
 
     if (Array.isArray(body.tokenGates) && body.tokenGates.length > 0) {
-      for (const gate of body.tokenGates) {
-        const symbol = String(gate.tokenSymbol ?? "")
-          .trim()
-          .toUpperCase();
-        const qty = Number(gate.quantity);
-        if (!symbol || !Number.isInteger(qty) || qty < 1) continue;
-        await db.insert(productTokenGateTable).values({
-          id: gate.id ?? crypto.randomUUID(),
-          productId: id,
-          tokenSymbol: symbol,
-          quantity: qty,
-          network: gate.network?.trim() || null,
-          contractAddress: gate.contractAddress?.trim() || null,
-        });
+      const gateValues = body.tokenGates
+        .map((gate) => {
+          const symbol = String(gate.tokenSymbol ?? "").trim().toUpperCase();
+          const qty = Number(gate.quantity);
+          if (!symbol || !Number.isInteger(qty) || qty < 1) return null;
+          return {
+            id: gate.id ?? crypto.randomUUID(),
+            productId: id,
+            tokenSymbol: symbol,
+            quantity: qty,
+            network: gate.network?.trim() || null,
+            contractAddress: gate.contractAddress?.trim() || null,
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null);
+      if (gateValues.length > 0) {
+        await db.insert(productTokenGateTable).values(gateValues);
       }
     }
 
@@ -433,17 +441,21 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.images?.length) {
-      for (let i = 0; i < body.images.length; i++) {
-        const img = body.images[i];
-        if (!img?.url?.trim()) continue;
-        await db.insert(productImagesTable).values({
-          id: img.id ?? crypto.randomUUID(),
-          productId: id,
-          url: img.url.trim(),
-          alt: img.alt?.trim() ?? null,
-          title: img.title?.trim() ?? null,
-          sortOrder: typeof img.sortOrder === "number" ? img.sortOrder : i,
-        });
+      const imageValues = body.images
+        .map((img, i) => {
+          if (!img?.url?.trim()) return null;
+          return {
+            id: img.id ?? crypto.randomUUID(),
+            productId: id,
+            url: img.url.trim(),
+            alt: img.alt?.trim() ?? null,
+            title: img.title?.trim() ?? null,
+            sortOrder: typeof img.sortOrder === "number" ? img.sortOrder : i,
+          };
+        })
+        .filter((v): v is NonNullable<typeof v> => v !== null);
+      if (imageValues.length > 0) {
+        await db.insert(productImagesTable).values(imageValues);
       }
     }
 
@@ -457,8 +469,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (body.variants?.length && body.hasVariants) {
-      for (const v of body.variants) {
-        await db.insert(productVariantsTable).values({
+      await db.insert(productVariantsTable).values(
+        body.variants.map((v) => ({
           id: v.id ?? crypto.randomUUID(),
           productId: id,
           size: v.size?.trim() ?? null,
@@ -469,8 +481,8 @@ export async function POST(request: NextRequest) {
           imageUrl: v.imageUrl?.trim() ?? null,
           createdAt: now,
           updatedAt: now,
-        });
-      }
+        })),
+      );
     }
 
     await applyCategoryAutoRules({

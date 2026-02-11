@@ -90,6 +90,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const [editing, setEditing] = useState<Address | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState("");
   const onLoqateSelect = useCallback(
     (mapped: MappedShippingAddress) => {
       setForm((prev) => ({
@@ -115,6 +116,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const openAdd = () => {
     setEditing(null);
     setForm(emptyForm);
+    setFormError("");
     loqate.reset();
     setAddOpen(true);
   };
@@ -135,11 +137,13 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
       stateCode: addr.stateCode ?? "",
       zip: addr.zip,
     });
+    setFormError("");
     setEditOpen(true);
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError("");
     setPending(true);
     const res = await createAddress({
       address1: form.address1,
@@ -152,7 +156,10 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
       zip: form.zip,
     });
     setPending(false);
-    if (res.error) return;
+    if (res.error) {
+      setFormError(typeof res.error === "string" ? res.error : "Failed to add address. Please try again.");
+      return;
+    }
     setAddOpen(false);
     setForm(emptyForm);
     router.refresh();
@@ -161,6 +168,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editing) return;
+    setFormError("");
     setPending(true);
     const res = await updateAddress(editing.id, {
       address1: form.address1,
@@ -173,7 +181,10 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
       zip: form.zip,
     });
     setPending(false);
-    if (res.error) return;
+    if (res.error) {
+      setFormError(typeof res.error === "string" ? res.error : "Failed to update address. Please try again.");
+      return;
+    }
     setEditOpen(false);
     setEditing(null);
     setForm(emptyForm);
@@ -212,6 +223,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
               <DialogTitle>Add address</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleAdd}>
+              {formError && (
+                <div className="mb-2 text-sm font-medium text-destructive">{formError}</div>
+              )}
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
                   <Label htmlFor="add-label">Label (optional)</Label>
@@ -465,6 +479,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
             <DialogTitle>Edit address</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleEdit}>
+            {formError && (
+              <div className="mb-2 text-sm font-medium text-destructive">{formError}</div>
+            )}
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
                 <Label htmlFor="edit-label">Label (optional)</Label>

@@ -88,7 +88,7 @@ export async function GET(
       orderId: order.id,
       depositAddress: order.solanaPayDepositAddress ?? undefined,
       totalCents: order.totalCents,
-      email: order.email ?? undefined,
+      email: order.email ? order.email.replace(/^(.{2})(.*)(@.*)$/, '$1***$3') : undefined,
       expiresAt,
       // Solana Pay: routing and balance check (paymentType when URL has no hash)
       ...(isSolanaPay && { paymentType: "solana" as const }),
@@ -120,7 +120,7 @@ export async function GET(
       _actions: {
         next: `Poll GET /api/orders/${order.id}/status every 5s until status changes`,
         cancel: `POST /api/orders/${order.id}/cancel (only before payment)`,
-        help: "Contact support@forthecut.store",
+        help: "Contact support@forthecult.store",
       },
     });
   } catch (err) {

@@ -8,5 +8,9 @@ import {
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
   if (!authResult?.ok) return adminAuthFailureResponse(authResult);
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ 
+    ok: true,
+    method: authResult.method,
+    ...(authResult.method === "session" && authResult.user ? { email: authResult.user.email } : {}),
+  });
 }

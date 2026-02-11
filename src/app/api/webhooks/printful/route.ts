@@ -1,5 +1,9 @@
-import { createHmac } from "crypto";
+import crypto, { createHmac } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
+
+import { eq, inArray } from "drizzle-orm";
+import { db } from "~/db";
+import { productsTable, productVariantsTable } from "~/db/schema";
 
 import { updateOrderFromPrintfulWebhook } from "~/lib/printful-orders";
 import {
@@ -11,11 +15,22 @@ import {
 /**
  * POST /api/webhooks/printful
  *
- * Handles Printful webhook events (order and product sync).
+ * Handles Printful webhook events (order, product sync, catalog, shipment).
  * Webhook signature verification using HMAC-SHA256 (header x-pf-webhook-signature).
  *
  * In production, PRINTFUL_WEBHOOK_SECRET is required; unverified requests are rejected.
  * Set the same hex secret in Printful's webhook settings and in this env var.
+ *
+ * Supported events:
+ * - Product sync: product_synced, product_updated, product_deleted
+ * - Order lifecycle: order_created, order_updated, order_failed, order_canceled, order_refunded,
+ *   order_put_hold, order_put_hold_approval, order_remove_hold
+ * - Shipment: shipment_sent, shipment_delivered, shipment_returned,
+ *   shipment_out_of_stock, shipment_canceled, shipment_put_hold,
+ *   shipment_put_hold_approval, shipment_remove_hold
+ * - Legacy (v1 compat): package_shipped, package_returned, stock_updated
+ * - Catalog (v2): catalog_stock_updated, catalog_price_changed
+ * - Mockup: mockup_task_finished
  */
 export async function POST(request: NextRequest) {
   try {
@@ -48,7 +63,9 @@ export async function POST(request: NextRequest) {
         .update(rawBody)
         .digest("hex");
 
-      if (signature !== expectedSignature) {
+      const sigBuf = Buffer.from(signature, "utf8");
+      const expBuf = Buffer.from(expectedSignature, "utf8");
+      if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
         console.warn("Printful webhook: invalid signature");
         return NextResponse.json(
           { error: "Invalid signature" },
@@ -72,12 +89,35 @@ export async function POST(request: NextRequest) {
           id?: number;
           external_id?: string | null;
           status?: string;
+          costs?: {
+            calculation_status?: string;
+            currency?: string | null;
+            subtotal?: string | null;
+            discount?: string | null;
+            shipping?: string | null;
+            digitization?: string | null;
+            additional_fee?: string | null;
+            fulfillment_fee?: string | null;
+            retail_delivery_fee?: string | null;
+            tax?: string | null;
+            vat?: string | null;
+            total?: string | null;
+          };
         };
         shipment?: {
           id?: number;
           status?: string;
           tracking_number?: string;
           tracking_url?: string;
+          carrier?: string;
+          shipped_at?: string;
+          delivered_at?: string;
+          delivery_status?: string;
+          tracking_events?: Array<{ triggered_at: string; description: string }>;
+          estimated_delivery?: {
+            from_date?: string;
+            to_date?: string;
+          };
         };
         sync_product?: {
           id: number;
@@ -89,6 +129,13 @@ export async function POST(request: NextRequest) {
           is_ignored?: boolean;
         };
         reason?: string;
+        // catalog_stock_updated / catalog_price_changed specific
+        catalog_variant_id?: number;
+        catalog_product_id?: number;
+        stock_status?: string;
+        // mockup_task_finished specific
+        task_id?: string;
+        status?: string;
       };
     };
 
@@ -102,7 +149,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`Printful webhook received: ${eventType}`);
 
-    // Handle product sync events
+    // ========================================================================
+    // Product sync events
+    // ========================================================================
+
     if (eventType === "product_synced" && payload.data.sync_product) {
       const result = await handleProductSynced({
         sync_product: payload.data.sync_product as Parameters<
@@ -137,17 +187,83 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Handle stock_updated event (optional - could trigger inventory sync)
-    if (eventType === "stock_updated") {
-      console.log(
-        "Printful stock_updated event received - stock info in Printful may have changed",
-      );
-      // For POD products, we typically don't track stock locally
-      // since items are made to order. Log and continue.
+    // ========================================================================
+    // Catalog events (v2): stock updates and price changes
+    // ========================================================================
+
+    if (eventType === "catalog_stock_updated") {
+      const variantId = payload.data.catalog_variant_id;
+      const stockStatus = payload.data.stock_status;
+      if (variantId != null && stockStatus) {
+        // Find local variants with this catalog_variant_id (externalId)
+        const externalIdStr = String(variantId);
+        try {
+          const variants = await db
+            .select({ id: productVariantsTable.id })
+            .from(productVariantsTable)
+            .where(eq(productVariantsTable.externalId, externalIdStr));
+
+          if (variants.length > 0) {
+            const ids = variants.map((v) => v.id);
+            // Map Printful stock status to our availability status
+            const availability = stockStatus === "in_stock" ? "in_stock" : "out_of_stock";
+            await db
+              .update(productVariantsTable)
+              .set({
+                availabilityStatus: availability,
+                updatedAt: new Date(),
+              })
+              .where(inArray(productVariantsTable.id, ids));
+            console.log(
+              `catalog_stock_updated: updated ${variants.length} variant(s) for catalog variant ${variantId} to ${availability}`,
+            );
+          }
+        } catch (err) {
+          console.warn("catalog_stock_updated handler error:", err);
+        }
+      }
       return NextResponse.json({ received: true });
     }
 
-    // Handle order-related events
+    if (eventType === "catalog_price_changed") {
+      // Log for admin awareness; automatic price adjustment is dangerous, so we just alert
+      const productId = payload.data.catalog_product_id;
+      const variantId = payload.data.catalog_variant_id;
+      console.warn(
+        `[Printful] catalog_price_changed: catalog_product_id=${productId}, catalog_variant_id=${variantId}. Review wholesale pricing and update retail prices if needed.`,
+      );
+      // TODO: Optionally send admin notification (email/Telegram) about price change
+      return NextResponse.json({ received: true });
+    }
+
+    // ========================================================================
+    // Legacy stock_updated (v1 - every 24h)
+    // ========================================================================
+
+    if (eventType === "stock_updated") {
+      console.log(
+        "Printful stock_updated event received (v1, 24h interval) - consider using catalog_stock_updated (v2) for real-time updates",
+      );
+      return NextResponse.json({ received: true });
+    }
+
+    // ========================================================================
+    // Mockup task events
+    // ========================================================================
+
+    if (eventType === "mockup_task_finished") {
+      const taskId = payload.data.task_id;
+      const status = payload.data.status;
+      console.log(`Printful mockup_task_finished: task=${taskId}, status=${status}`);
+      // Mockup task results can be retrieved via GET /v2/mockup-tasks/{id}
+      // Implementation depends on how mockups are used in the product flow
+      return NextResponse.json({ received: true });
+    }
+
+    // ========================================================================
+    // Order and shipment events → delegate to order handler
+    // ========================================================================
+
     const orderId = payload.data.order?.id;
     const externalId = payload.data.order?.external_id;
 
@@ -170,7 +286,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ received: true });
     }
 
-    // Process the webhook event
+    // Process the webhook event (handles all order/shipment events including
+    // order_refunded, shipment_out_of_stock, shipment_canceled,
+    // shipment_put_hold, shipment_put_hold_approval, etc.)
     const result = await updateOrderFromPrintfulWebhook(printfulOrderId, {
       type: eventType,
       data: {

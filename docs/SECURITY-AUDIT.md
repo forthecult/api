@@ -1,3 +1,6 @@
+<!-- INTERNAL — DO NOT PUBLISH. This document contains vulnerability details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+
 # Dependency Security Audit
 
 **Audit date:** 2026-02-07  

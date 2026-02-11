@@ -61,6 +61,23 @@ type OrderItem = {
   productId: string | null;
 };
 
+type TrackingInfo = {
+  trackingNumber: string | null;
+  trackingUrl: string | null;
+  carrier: string | null;
+  shippedAt: string | null;
+  deliveredAt: string | null;
+  estimatedDeliveryFrom: string | null;
+  estimatedDeliveryTo: string | null;
+  events: Array<{ triggered_at: string; description: string }> | null;
+};
+
+type PrintfulCosts = {
+  totalCents: number | null;
+  shippingCents: number | null;
+  taxCents: number | null;
+};
+
 type OrderDetail = {
   id: string;
   createdAt: string;
@@ -92,6 +109,8 @@ type OrderDetail = {
   paymentMethod: string;
   /** When set, only these countries are shippable for this order (product restrictions). Empty or null = all countries. */
   allowedCountryCodes?: string[] | null;
+  tracking?: TrackingInfo | null;
+  printfulCosts?: PrintfulCosts | null;
 };
 
 type ProductOption = {
@@ -1159,6 +1178,140 @@ export default function AdminOrderDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Tracking info */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Shipment Tracking</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {order.tracking?.trackingNumber ? (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Tracking #</span>
+                {order.tracking.trackingUrl ? (
+                  <a
+                    href={order.tracking.trackingUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-blue-600 underline hover:text-blue-800"
+                  >
+                    {order.tracking.trackingNumber}
+                  </a>
+                ) : (
+                  <span className="font-mono">{order.tracking.trackingNumber}</span>
+                )}
+              </div>
+              {order.tracking.carrier && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Carrier</span>
+                  <span>{order.tracking.carrier}</span>
+                </div>
+              )}
+              {order.tracking.shippedAt && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Shipped</span>
+                  <span>{new Date(order.tracking.shippedAt).toLocaleDateString()}</span>
+                </div>
+              )}
+              {order.tracking.deliveredAt && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Delivered</span>
+                  <span>{new Date(order.tracking.deliveredAt).toLocaleDateString()}</span>
+                </div>
+              )}
+              {(order.tracking.estimatedDeliveryFrom || order.tracking.estimatedDeliveryTo) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Est. delivery</span>
+                  <span>
+                    {order.tracking.estimatedDeliveryFrom ?? "?"} – {order.tracking.estimatedDeliveryTo ?? "?"}
+                  </span>
+                </div>
+              )}
+              {order.tracking.events && Array.isArray(order.tracking.events) && order.tracking.events.length > 0 && (
+                <div className="mt-2 border-t pt-2">
+                  <p className="mb-1 text-xs font-medium text-muted-foreground">Tracking events</p>
+                  <ul className="space-y-1">
+                    {(order.tracking.events as Array<{ triggered_at: string; description: string }>).map((ev, i) => (
+                      <li key={i} className="flex items-start gap-2 text-xs">
+                        <span className="whitespace-nowrap text-muted-foreground">
+                          {new Date(ev.triggered_at).toLocaleDateString()}
+                        </span>
+                        <span>{ev.description}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">No tracking information yet.</p>
+          )}
+          <div className="border-t pt-3">
+            <p className="mb-2 text-xs font-medium text-muted-foreground">Manual tracking entry</p>
+            <div className="grid grid-cols-3 gap-2">
+              <input
+                type="text"
+                placeholder="Tracking #"
+                defaultValue={order.tracking?.trackingNumber ?? ""}
+                id="tracking-number"
+                className={cn(inputClass, "text-xs")}
+              />
+              <input
+                type="text"
+                placeholder="Tracking URL"
+                defaultValue={order.tracking?.trackingUrl ?? ""}
+                id="tracking-url"
+                className={cn(inputClass, "text-xs")}
+              />
+              <input
+                type="text"
+                placeholder="Carrier"
+                defaultValue={order.tracking?.carrier ?? ""}
+                id="tracking-carrier"
+                className={cn(inputClass, "text-xs")}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Printful wholesale costs (admin-only) */}
+      {order.printfulCosts && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Printful Costs (Wholesale)</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {order.printfulCosts.totalCents != null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Printful Total</span>
+                <span className="tabular-nums">{formatCents(order.printfulCosts.totalCents)}</span>
+              </div>
+            )}
+            {order.printfulCosts.shippingCents != null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Printful Shipping</span>
+                <span className="tabular-nums">{formatCents(order.printfulCosts.shippingCents)}</span>
+              </div>
+            )}
+            {order.printfulCosts.taxCents != null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Printful Tax/VAT</span>
+                <span className="tabular-nums">{formatCents(order.printfulCosts.taxCents)}</span>
+              </div>
+            )}
+            {order.printfulCosts.totalCents != null && (
+              <div className="flex justify-between border-t border-border pt-2 text-sm font-medium">
+                <span>Your Margin</span>
+                <span className="tabular-nums">
+                  {formatCents(order.totalCents - order.printfulCosts.totalCents)}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Notes: customer note + internal notes */}
       <Card>

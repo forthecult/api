@@ -1,5 +1,7 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   index,
   integer,
   pgTable,
@@ -63,5 +65,7 @@ export const productReviewsTable = pgTable(
     index("product_review_product_slug_idx").on(t.productSlug),
     // Index for visible reviews sorted by date (homepage, testimonials)
     index("product_review_visible_created_idx").on(t.visible, t.createdAt),
+    // M43: Enforce rating is between 1 and 5
+    check("rating_range", sql`${t.rating} >= 1 AND ${t.rating} <= 5`),
   ],
 );

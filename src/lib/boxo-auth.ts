@@ -4,6 +4,8 @@
  * Prefix is configurable in dashboard (default "Token").
  */
 
+import crypto from "node:crypto";
+
 const BOXO_CLIENT_ID = process.env.BOXO_CLIENT_ID ?? process.env.NEXT_PUBLIC_BOXO_CLIENT_ID ?? "";
 const BOXO_SECRET_KEY = process.env.BOXO_SECRET_KEY ?? "";
 const BOXO_ACCESS_TOKEN_PREFIX = process.env.BOXO_ACCESS_TOKEN_PREFIX ?? "Token";
@@ -30,7 +32,11 @@ export function verifyBoxoAuthorization(authHeader: string | null): boolean {
   try {
     const decoded = Buffer.from(encoded, "base64").toString("utf8");
     const [clientId, secretKey] = decoded.split(":");
-    return clientId === BOXO_CLIENT_ID && secretKey === BOXO_SECRET_KEY;
+    const clientIdMatch = clientId.length === BOXO_CLIENT_ID.length &&
+      crypto.timingSafeEqual(Buffer.from(clientId, "utf8"), Buffer.from(BOXO_CLIENT_ID, "utf8"));
+    const secretMatch = secretKey.length === BOXO_SECRET_KEY.length &&
+      crypto.timingSafeEqual(Buffer.from(secretKey, "utf8"), Buffer.from(BOXO_SECRET_KEY, "utf8"));
+    return clientIdMatch && secretMatch;
   } catch {
     return false;
   }

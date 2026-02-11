@@ -110,6 +110,11 @@ function ProductCardInner({
   const [localWishlist, setLocalWishlist] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [tokenGateOpen, setTokenGateOpen] = React.useState(false);
+  const addToCartTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  React.useEffect(() => {
+    return () => clearTimeout(addToCartTimerRef.current);
+  }, []);
   const isInWishlist =
     typeof isInWishlistProp === "boolean" ? isInWishlistProp : localWishlist;
 
@@ -133,7 +138,7 @@ function ProductCardInner({
       e.preventDefault();
       if (onAddToCart) {
         setIsAddingToCart(true);
-        setTimeout(() => {
+        addToCartTimerRef.current = setTimeout(() => {
           onAddToCart(product.id);
           setIsAddingToCart(false);
         }, 600);

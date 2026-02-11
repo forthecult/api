@@ -619,6 +619,58 @@ const ACCESSORIES_SUB: CategoryRow[] = [
   },
 ];
 
+/** Smart Home subcategories. Lights, sensors, plugs, valves, etc. */
+const SMART_HOME_SUB: CategoryRow[] = [
+  {
+    id: "smart-home-lights",
+    name: "Lights",
+    slug: "smart-home-lights",
+    title: "Smart Home Lights — LED Strips & Lighting | Culture",
+    metaDescription:
+      "Smart home lighting: LED strips, smart bulbs, and light control. Zigbee and local options. Culture.",
+    description:
+      "Smart lighting for your space. LED strips, smart bulbs, and controllers. We favor Zigbee and local control where possible. Pay with crypto or card.",
+    level: 2,
+    parentId: "smart-home",
+  },
+  {
+    id: "smart-home-sensors",
+    name: "Sensors",
+    slug: "smart-home-sensors",
+    title: "Smart Home Sensors — Motion, Door, Temperature & Humidity | Culture",
+    metaDescription:
+      "Smart home sensors: motion, door/window, temperature, humidity. Zigbee and battery-efficient. Culture.",
+    description:
+      "Sensors for automation and peace of mind. Motion, door/window, temperature, and humidity. We curate for reliability and local integration. Pay with crypto or card.",
+    level: 2,
+    parentId: "smart-home",
+  },
+  {
+    id: "smart-home-plugs-switches",
+    name: "Plugs & Switches",
+    slug: "smart-home-plugs-switches",
+    title: "Smart Plugs & Switches — Zigbee, Wireless | Culture",
+    metaDescription:
+      "Smart plugs and wireless switches. Zigbee, battery-free where possible. Culture.",
+    description:
+      "Smart plugs and wireless switches for lighting and appliance control. Zigbee and local control. Pay with crypto or card.",
+    level: 2,
+    parentId: "smart-home",
+  },
+  {
+    id: "smart-home-valves",
+    name: "Valves & Water",
+    slug: "smart-home-valves",
+    title: "Smart Valves — Water, Irrigation | Culture",
+    metaDescription:
+      "Smart water valves and irrigation control. Zigbee and scheduled watering. Culture.",
+    description:
+      "Smart valves for water and irrigation. Schedule and automate watering. Pay with crypto or card.",
+    level: 2,
+    parentId: "smart-home",
+  },
+];
+
 /** Home & Living subcategories. Protect Health (coffee, toxin-free), quality, premium. */
 const HOME_LIVING_SUB: CategoryRow[] = [
   {
@@ -1209,6 +1261,7 @@ const ALL_CATEGORIES: CategoryRow[] = [
   ...WOMENS_SUB,
   ...CHILDRENS_SUB,
   ...ACCESSORIES_SUB,
+  ...SMART_HOME_SUB,
   ...HOME_LIVING_SUB,
   // ...OTHER_SUB — excluded: "Other" category must not be seeded
   ...SHOP_BY_CRYPTO,

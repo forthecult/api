@@ -43,9 +43,17 @@ export function SignupPageClient() {
     }));
   };
 
+  const MIN_PASSWORD_LENGTH = 8;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (formData.password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+
     setLoading(true);
 
     const firstName = formData.firstName.trim();
@@ -59,12 +67,21 @@ export function SignupPageClient() {
         ...(firstName && { firstName }),
         ...(lastName && { lastName }),
       })
-      .then(() => {
+      .then((result) => {
+        if (result && typeof result === "object" && "error" in result && result.error) {
+          const errObj = result.error as { message?: string };
+          setError(errObj.message ?? "Registration failed. Please try again.");
+          return;
+        }
         // Auto sign-in is enabled, redirect to dashboard
         router.push(SYSTEM_CONFIG.redirectAfterSignUp);
       })
       .catch((err: unknown) => {
-        setError("Registration failed. Please try again.");
+        const message =
+          err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
+            ? (err as { message: string }).message
+            : "Registration failed. Please try again.";
+        setError(message);
         console.error(err);
       })
       .finally(() => {
@@ -143,6 +160,7 @@ export function SignupPageClient() {
                   id="password"
                   name="password"
                   className="pr-10"
+                  minLength={MIN_PASSWORD_LENGTH}
                   onChange={handleChange}
                   required
                   type={showPassword ? "text" : "password"}

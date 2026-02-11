@@ -1,4 +1,4 @@
-import { boolean, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
@@ -22,4 +22,7 @@ export const addressesTable = pgTable("address", {
   isDefault: boolean("is_default").notNull().default(false),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
-});
+}, (t) => [
+  // M7: Index for looking up addresses by user
+  index("address_user_id_idx").on(t.userId),
+]);

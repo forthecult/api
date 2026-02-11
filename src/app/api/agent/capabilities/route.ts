@@ -18,8 +18,7 @@ export async function GET() {
     {
       name: "For the Cult",
       description:
-        "AI-friendly eCommerce API for purchasing goods with cryptocurrency. Designed for seamless agent integration.",
-      version: "1.0.0",
+        "AI-friendly eCommerce API for browsing and purchasing goods. Supports card and cryptocurrency payments. Designed for seamless agent integration.",
 
       // What can you do?
       capabilities: [
@@ -27,10 +26,10 @@ export async function GET() {
         "Browse categories with smart filtering",
         "View product details including variants (size, color)",
         "Estimate cart totals before checkout",
-        "Create orders with crypto payment (include X-Moltbook-Identity to link orders to your agent)",
+        "Create orders with card or crypto payment",
         "Track order status in real-time",
         "Get shipping estimates by country",
-        "Sign in with Moltbook: list your orders (GET /api/agent/me/orders), get/update preferences (GET/PATCH /api/agent/me/preferences)",
+        "Agent identity: include X-Moltbook-Identity header to link orders to your agent. See /api/agent/me for details.",
       ],
 
       // What can't you do?
@@ -146,13 +145,13 @@ export async function GET() {
         },
       }),
 
-      // Sign in with Moltbook (optional): agents can identify themselves and get a store identity
+      // Agent identity (optional): agents can identify themselves and get a store identity
       authentication: {
         moltbook: {
           description:
             "Send header X-Moltbook-Identity with a temporary identity token from Moltbook to access agent-only endpoints and link orders to your agent identity.",
           header: "X-Moltbook-Identity",
-          getToken: "POST https://moltbook.com/api/v1/agents/me/identity-token (Authorization: Bearer <your_moltbook_api_key>)",
+          learnMore: "https://moltbook.com/docs/agent-identity",
           authInstructionsUrl: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${agentBase}/api/agent/me`,
         },
       },
@@ -165,7 +164,7 @@ export async function GET() {
             step: 1,
             action: "Find products",
             endpoint: "POST /api/products/semantic-search",
-            example: { query: "wireless headphones under $100" },
+            example: { query: "lightweight running shoes under $80" },
           },
           {
             step: 2,
@@ -173,10 +172,10 @@ export async function GET() {
             endpoint: "POST /api/checkout",
             example: {
               items: [{ productId: "prod_xxx", quantity: 1 }],
-              email: "customer@example.com",
+              email: "hal@finney.com",
               payment: { chain: "solana", token: "USDC" },
               shipping: {
-                name: "John Doe",
+                name: "Satoshi Nakamoto",
                 address1: "123 Main St",
                 city: "NYC",
                 stateCode: "NY",
@@ -226,7 +225,7 @@ export async function GET() {
 
       // Support
       support: {
-        email: "support@forthecut.store",
+        email: "support@forthecult.store",
         documentation: `${mainBase}/api/docs`,
         openApiSpec: `${mainBase}/api/openapi.json`,
       },

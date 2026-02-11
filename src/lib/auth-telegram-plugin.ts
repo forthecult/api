@@ -8,13 +8,13 @@
  */
 import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
 import { APIError } from "better-call";
-import { createHmac, createHash } from "node:crypto";
+import { createHmac, createHash, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
 import { setSessionCookie } from "better-auth/cookies";
 
 const TELEGRAM_PROVIDER_ID = "telegram";
-const AUTH_DATE_MAX_AGE_SEC = 86400 * 7; // 7 days
+const AUTH_DATE_MAX_AGE_SEC = 300; // 5 minutes
 
 type AccountRecord = { userId: string };
 type UserRecord = {
@@ -74,7 +74,10 @@ function verifyTelegramHash(
   const computedHash = createHmac("sha256", secretKey)
     .update(dataCheckString)
     .digest("hex");
-  return computedHash === params.hash;
+  const computedBuf = Buffer.from(computedHash, "hex");
+  const hashBuf = Buffer.from(params.hash, "hex");
+  if (computedBuf.length !== hashBuf.length) return false;
+  return timingSafeEqual(computedBuf, hashBuf);
 }
 
 export function telegramAuthPlugin() {
@@ -155,42 +158,68 @@ export function telegramAuthPlugin() {
                 .join(" ")
                 .trim() || "Telegram User";
             const date = new Date();
-            await adapter.create({
-              model: "user",
-              data: {
-                id: userId,
-                email,
-                name,
-                emailVerified: true,
+            try {
+              await adapter.create({
+                model: "user",
+                data: {
+                  id: userId,
+                  email,
+                  name,
+                  emailVerified: true,
+                  createdAt: date,
+                  updatedAt: date,
+                  firstName: body.first_name,
+                  lastName: body.last_name ?? null,
+                  image: body.photo_url ?? null,
+                },
+              });
+            } catch (createErr) {
+              // Handle duplicate email race condition
+              const errMsg = createErr instanceof Error ? createErr.message : "";
+              if (/duplicate|unique|already exists/i.test(errMsg)) {
+                // Another request created this user concurrently, find them
+                const existing = await adapter.findOne({
+                  model: "account",
+                  where: [
+                    { field: "providerId", value: TELEGRAM_PROVIDER_ID },
+                    { field: "accountId", value: accountId },
+                  ],
+                }) as AccountRecord | null;
+                if (existing) {
+                  user = (await adapter.findOne({
+                    model: "user",
+                    where: [{ field: "id", value: existing.userId }],
+                  })) as UserRecord | null;
+                }
+                if (!user) throw createErr; // re-throw if we still can't find the user
+              } else {
+                throw createErr;
+              }
+            }
+            if (!user) {
+              const newAccountId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
+              await (ctx.context.internalAdapter as {
+                createAccount: (data: {
+                  id: string;
+                  userId: string;
+                  accountId: string;
+                  providerId: string;
+                  createdAt: Date;
+                  updatedAt: Date;
+                }) => Promise<unknown>;
+              }).createAccount({
+                id: newAccountId,
+                userId,
+                accountId,
+                providerId: TELEGRAM_PROVIDER_ID,
                 createdAt: date,
                 updatedAt: date,
-                firstName: body.first_name,
-                lastName: body.last_name ?? null,
-                image: body.photo_url ?? null,
-              },
-            });
-            const newAccountId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
-            await (ctx.context.internalAdapter as {
-              createAccount: (data: {
-                id: string;
-                userId: string;
-                accountId: string;
-                providerId: string;
-                createdAt: Date;
-                updatedAt: Date;
-              }) => Promise<unknown>;
-            }).createAccount({
-              id: newAccountId,
-              userId,
-              accountId,
-              providerId: TELEGRAM_PROVIDER_ID,
-              createdAt: date,
-              updatedAt: date,
-            });
-            user = (await adapter.findOne({
-              model: "user",
-              where: [{ field: "id", value: userId }],
-            })) as UserRecord | null;
+              });
+              user = (await adapter.findOne({
+                model: "user",
+                where: [{ field: "id", value: userId }],
+              })) as UserRecord | null;
+            }
           }
 
           if (!user) {

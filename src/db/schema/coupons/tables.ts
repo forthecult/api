@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   pgTable,
   primaryKey,
@@ -90,4 +91,9 @@ export const couponRedemptionTable = pgTable("coupon_redemption", {
   phone: text("phone"), // for "phone" limit
   shippingAddressHash: text("shipping_address_hash"), // for "shipping_address" limit
   createdAt: timestamp("created_at").notNull(),
-});
+}, (t) => [
+  // M7: Index for counting redemptions per coupon
+  index("coupon_redemption_coupon_id_idx").on(t.couponId),
+  // M7: Index for per-user redemption lookups
+  index("coupon_redemption_user_id_idx").on(t.userId),
+]);

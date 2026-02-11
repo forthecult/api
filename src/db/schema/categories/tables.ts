@@ -33,11 +33,12 @@ export const categoriesTable = pgTable(
     updatedAt: timestamp("updated_at").notNull(),
   },
   (t) => [
+    // L15: ON DELETE set null so child categories survive parent removal
     foreignKey({
       columns: [t.parentId],
       foreignColumns: [t.id],
       name: "category_parent_fk",
-    }),
+    }).onDelete("set null"),
   ],
 );
 

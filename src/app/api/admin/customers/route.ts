@@ -4,7 +4,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
+
+/** Escape SQL LIKE/ILIKE special characters */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
@@ -36,9 +44,7 @@ function parseSort(
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,
@@ -62,7 +68,7 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get("order"),
     );
 
-    const term = search.length > 0 ? `%${search}%` : "";
+    const term = search.length > 0 ? `%${escapeLike(search)}%` : "";
     const whereClause =
       search.length > 0
         ? or(
@@ -176,28 +182,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Latest order location per user (all orders for users, then take first per user by createdAt desc)
+    // Latest order location per user using DISTINCT ON to avoid fetching all orders
     const recentOrders =
       userIds.length > 0
-        ? await db
-            .select({
-              userId: ordersTable.userId,
-              shippingCity: ordersTable.shippingCity,
-              shippingCountryCode: ordersTable.shippingCountryCode,
-            })
-            .from(ordersTable)
-            .where(inArray(ordersTable.userId, userIds))
-            .orderBy(desc(ordersTable.createdAt))
+        ? await db.execute<{ user_id: string; shipping_city: string | null; shipping_country_code: string | null }>(sql`
+            SELECT DISTINCT ON (user_id) user_id, shipping_city, shipping_country_code
+            FROM "order"
+            WHERE user_id = ANY(${userIds})
+            ORDER BY user_id, created_at DESC
+          `)
         : [];
     const locationByUserId = new Map<
       string,
       { city: string | null; country: string | null }
     >();
     for (const row of recentOrders) {
-      if (row.userId && !locationByUserId.has(row.userId))
-        locationByUserId.set(row.userId, {
-          city: row.shippingCity ?? null,
-          country: row.shippingCountryCode ?? null,
+      if (row.user_id)
+        locationByUserId.set(row.user_id, {
+          city: row.shipping_city ?? null,
+          country: row.shipping_country_code ?? null,
         });
     }
 

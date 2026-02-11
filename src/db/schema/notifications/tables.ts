@@ -1,4 +1,4 @@
-import { boolean, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { boolean, index, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
@@ -16,4 +16,7 @@ export const userNotificationTable = pgTable("user_notification", {
   /** Optional: orderId, trackingUrl, etc. */
   metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").notNull(),
-});
+}, (t) => [
+  // M7: Index for looking up notifications by user
+  index("notification_user_id_idx").on(t.userId),
+]);

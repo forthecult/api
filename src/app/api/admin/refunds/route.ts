@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable, refundRequestsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
@@ -14,9 +17,7 @@ type StatusFilter = (typeof STATUS_VALUES)[number];
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error("Admin refunds GET:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "An internal error occurred" },
       { status: 500 },
     );
   }

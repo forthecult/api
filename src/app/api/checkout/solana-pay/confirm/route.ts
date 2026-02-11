@@ -8,7 +8,7 @@ import {
 } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
 import { type NextRequest, NextResponse } from "next/server";
-import { eq, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
@@ -134,6 +134,9 @@ export async function POST(request: NextRequest) {
         id: ordersTable.id,
         status: ordersTable.status,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        totalCents: ordersTable.totalCents,
+        cryptoAmount: ordersTable.cryptoAmount,
+        paymentMethod: ordersTable.paymentMethod,
       })
       .from(ordersTable)
       .where(or(...conditions))
@@ -141,6 +144,12 @@ export async function POST(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
+    if (order.paymentMethod !== "solana_pay") {
+      return NextResponse.json(
+        { error: "Not a Solana Pay order" },
+        { status: 400 },
+      );
     }
     if (order.status !== "pending") {
       return NextResponse.json({ orderId: order.id, alreadyPaid: true });
@@ -154,17 +163,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Require signature + amount so we verify on-chain (no trust of client)
+    // Require signature for on-chain verification
     const sigTrim = typeof signature === "string" ? signature.trim() : "";
-    const amountStr = typeof amount === "string" ? amount.trim() : "";
-    if (!sigTrim || !amountStr) {
+    if (!sigTrim) {
       return NextResponse.json(
         {
           error:
-            "signature and amount required (server verifies transfer on-chain)",
+            "signature required (server verifies transfer on-chain)",
         },
         { status: 400 },
       );
+    }
+
+    // Use server-stored amount, never trust client-provided amount
+    let serverAmount: string;
+    if (order.cryptoAmount) {
+      serverAmount = order.cryptoAmount;
+    } else {
+      // Default: USDC where 1 USD = 1 USDC, totalCents / 100
+      serverAmount = (order.totalCents / 100).toString();
     }
 
     const isNativeSol = splToken === NATIVE_SOL_SENTINEL;
@@ -186,7 +203,7 @@ export async function POST(request: NextRequest) {
         commitment: "confirmed",
       });
       const depositPk = new PublicKey(depositAddressStr);
-      const amountBn = new BigNumber(amountStr);
+      const amountBn = new BigNumber(serverAmount);
       if (isNativeSol) {
         const expectedLamports = amountBn.integerValue().toNumber();
         const valid = await verifyNativeSolTransfer(
@@ -220,19 +237,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await db
-      .update(ordersTable)
-      .set({
-        fulfillmentStatus: "unfulfilled",
-        paymentStatus: "paid",
-        status: "paid",
-        updatedAt: new Date(),
-        ...(typeof payerWalletFromBody === "string" &&
-        payerWalletFromBody.trim()
-          ? { payerWalletAddress: payerWalletFromBody.trim() }
-          : {}),
-      })
-      .where(eq(ordersTable.id, order.id));
+    // Idempotent update: only transition from 'pending' to prevent double-fulfillment
+    const updated = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select({ id: ordersTable.id, status: ordersTable.status })
+        .from(ordersTable)
+        .where(
+          and(eq(ordersTable.id, order.id), eq(ordersTable.status, "pending")),
+        )
+        .limit(1);
+      if (!current) return null; // already processed by a concurrent request
+      await tx
+        .update(ordersTable)
+        .set({
+          fulfillmentStatus: "unfulfilled",
+          paymentStatus: "paid",
+          status: "paid",
+          updatedAt: new Date(),
+          ...(typeof payerWalletFromBody === "string" &&
+          payerWalletFromBody.trim()
+            ? { payerWalletAddress: payerWalletFromBody.trim() }
+            : {}),
+        })
+        .where(eq(ordersTable.id, order.id));
+      return current;
+    });
+
+    if (!updated) {
+      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+    }
 
     void onOrderCreated(order.id);
 

@@ -12,20 +12,44 @@ const PRODUCT_ID = "minirig-4";
 const PRODUCT_SLUG = "minirig-4-bluetooth-speaker";
 const CATEGORY_ID = "accessories-speakers";
 
-const CDN = "https://files.minirigs.co.uk/mr4";
-const SITES = "https://minirigs.co.uk/sites/default/files";
+const SITES_LARGE = "https://minirigs.co.uk/sites/default/files/styles/large/public/2026-01";
 
-/** SEO-friendly image entries. Replace with product shots via Admin or brand-assets if needed. */
+/** Product photos from minirigs.co.uk (not logos). One per angle / accessory. */
 export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${CDN}/minirig-4-logo-white.png`,
-    alt: "Minirig 4 Bluetooth Speaker - portable wireless speaker, designed in Bristol UK",
-    title: "Minirig 4 Bluetooth Speaker - Main",
+    url: `${SITES_LARGE}/minirig-4-black.webp?itok=Sz1POk6h`,
+    alt: "Minirig 4 Bluetooth Speaker Black - portable wireless speaker, designed in Bristol UK",
+    title: "Minirig 4 Bluetooth Speaker - Black",
   },
   {
-    url: `${SITES}/MINIRIG-MINI-2-All-White.png`,
-    alt: "Minirig 4 - compact portable speaker with travel case",
-    title: "Minirig 4 - Portable design",
+    url: `${SITES_LARGE}/minirig-4-black-top-cap.webp?itok=2YpnK93c`,
+    alt: "Minirig 4 Black grille and top cap",
+    title: "Minirig 4 - Grille",
+  },
+  {
+    url: `${SITES_LARGE}/minirig-4-bottom-cap.webp?itok=w5op-ysf`,
+    alt: "Minirig 4 bottom cap and controls",
+    title: "Minirig 4 - Bottom",
+  },
+  {
+    url: `${SITES_LARGE}/minirig-4-case-open.webp?itok=Sh4PRn1k`,
+    alt: "Minirig 4 with protective travel case open",
+    title: "Minirig 4 - Case open",
+  },
+  {
+    url: `${SITES_LARGE}/minirig-4-case-closed.webp?itok=SedEPEDw`,
+    alt: "Minirig 4 travel case closed",
+    title: "Minirig 4 - Case closed",
+  },
+  {
+    url: `${SITES_LARGE}/minirig-4-charger-cable.webp?itok=hnH4dDPD`,
+    alt: "Minirig 4 USB-C charging cable",
+    title: "Minirig 4 - Charger cable",
+  },
+  {
+    url: `${SITES_LARGE}/minirig-4-packaging.webp?itok=Oa2kYqSz`,
+    alt: "Minirig 4 eco-friendly recycled packaging",
+    title: "Minirig 4 - Packaging",
   },
 ];
 
@@ -72,6 +96,15 @@ export const OPTION_DEFINITIONS = [
 
 const COLOURS = ["Black", "Blue", "Brushed Silver", "Green", "Red"] as const;
 
+/** Photo of each colour variant from minirigs.co.uk (one image per variant). */
+const VARIANT_IMAGE_URLS: Record<(typeof COLOURS)[number], string> = {
+  Black: `${SITES_LARGE}/minirig-4-black.webp?itok=Sz1POk6h`,
+  Blue: `${SITES_LARGE}/minirig-4-blue.webp?itok=s7BbIhfE`,
+  "Brushed Silver": `${SITES_LARGE}/minirig-4-brushed-silver.webp?itok=00TzdmUL`,
+  Green: `${SITES_LARGE}/minirig-4-green.webp?itok=gik6ylsA`,
+  Red: `${SITES_LARGE}/minirig-4-red.webp?itok=A4ATy2Gb`,
+};
+
 export const VARIANTS: Array<{
   id: string;
   color: string;
@@ -80,12 +113,12 @@ export const VARIANTS: Array<{
   imageUrl: string;
   imageAlt: string;
   imageTitle: string;
-}> = COLOURS.map((colour, i) => ({
+}> = COLOURS.map((colour) => ({
   id: `${PRODUCT_ID}-${colour.toLowerCase().replace(/\s+/g, "-")}`,
   color: colour,
   priceCents: MINIRIG_4_PRICE_CENTS,
   sku: `MINIRIG4-${colour.replace(/\s+/, "").slice(0, 6).toUpperCase()}`,
-  imageUrl: PRODUCT_IMAGES[0]!.url,
+  imageUrl: VARIANT_IMAGE_URLS[colour],
   imageAlt: `Minirig 4 Bluetooth Speaker, ${colour}`,
   imageTitle: `Minirig 4 - ${colour}`,
 }));
@@ -100,6 +133,8 @@ export const MINIRIG_4 = {
   priceCents: MINIRIG_4_PRICE_CENTS,
   categoryId: CATEGORY_ID,
   brand: "Minirig",
+  vendor: "Minirig",
+  countryOfOrigin: "United Kingdom",
   model: "Minirig 4",
   description: DESCRIPTION,
   features: FEATURES,

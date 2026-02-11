@@ -8,7 +8,10 @@ import {
   couponRedemptionTable,
   couponsTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 export async function GET(
   _request: NextRequest,
@@ -16,13 +19,41 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const [coupon] = await db
-      .select()
+      .select({
+        id: couponsTable.id,
+        method: couponsTable.method,
+        code: couponsTable.code,
+        dateStart: couponsTable.dateStart,
+        dateEnd: couponsTable.dateEnd,
+        discountKind: couponsTable.discountKind,
+        discountType: couponsTable.discountType,
+        discountValue: couponsTable.discountValue,
+        appliesTo: couponsTable.appliesTo,
+        buyQuantity: couponsTable.buyQuantity,
+        getQuantity: couponsTable.getQuantity,
+        getDiscountType: couponsTable.getDiscountType,
+        getDiscountValue: couponsTable.getDiscountValue,
+        maxUses: couponsTable.maxUses,
+        maxUsesPerCustomer: couponsTable.maxUsesPerCustomer,
+        maxUsesPerCustomerType: couponsTable.maxUsesPerCustomerType,
+        tokenHolderChain: couponsTable.tokenHolderChain,
+        tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
+        tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+        ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
+        ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
+        ruleShippingMinCents: couponsTable.ruleShippingMinCents,
+        ruleShippingMaxCents: couponsTable.ruleShippingMaxCents,
+        ruleProductCountMin: couponsTable.ruleProductCountMin,
+        ruleProductCountMax: couponsTable.ruleProductCountMax,
+        ruleOrderTotalMinCents: couponsTable.ruleOrderTotalMinCents,
+        ruleOrderTotalMaxCents: couponsTable.ruleOrderTotalMaxCents,
+        createdAt: couponsTable.createdAt,
+        updatedAt: couponsTable.updatedAt,
+      })
       .from(couponsTable)
       .where(eq(couponsTable.id, id))
       .limit(1);
@@ -100,9 +131,7 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const body = (await request.json()) as {
@@ -320,9 +349,7 @@ export async function DELETE(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
 

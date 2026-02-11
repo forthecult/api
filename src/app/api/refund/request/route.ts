@@ -169,6 +169,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // For crypto orders, refund address must match the original payer wallet
+    // to prevent fund diversion by someone who knows orderId + postal code
+    if (isCrypto && refundAddress && order.payerWalletAddress) {
+      if (
+        normalizePaymentAddress(refundAddress) !==
+        normalizePaymentAddress(order.payerWalletAddress)
+      ) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "REFUND_ADDRESS_MISMATCH",
+              message:
+                "Refund address must match the wallet used for payment. " +
+                "If you need a refund to a different address, please contact support.",
+            },
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const to =
       (typeof process.env.CONTACT_TO_EMAIL === "string" &&
         process.env.CONTACT_TO_EMAIL.trim()) ||

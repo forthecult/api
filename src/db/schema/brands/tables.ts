@@ -23,7 +23,8 @@ export const brandTable = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [index("brand_slug_idx").on(t.slug)],
+  // L13: Removed redundant brand_slug_idx — slug column already has a unique constraint which creates an implicit unique index
+  () => [],
 );
 
 export const brandAssetTable = pgTable(

@@ -1,17 +1,29 @@
 /**
- * Printify API Client
+ * Printify API Client — Full V1 + V2 Coverage
  *
- * This client provides functions to interact with the Printify API (v1).
+ * This client provides functions to interact with the Printify API (v1 & v2).
  * It handles authentication using PRINTIFY_API_TOKEN.
  *
  * Docs: https://developers.printify.com/#overview
  *
+ * Endpoint coverage (per OpenAPI spec):
+ * ✅ Shops:    list, disconnect
+ * ✅ Catalog:  blueprints (list, get), print providers (list by bp, list all, get by id),
+ *              variants (list, +out-of-stock), shipping (V1 profiles, V2 per-method)
+ * ✅ Products: CRUD, publish/unpublish, publishing_succeeded/_failed, GPSR
+ * ✅ Orders:   list, create, get, cancel, send_to_production, express, shipping calc
+ * ✅ Uploads:  list, get, upload (URL + base64 in pod/upload.ts), archive
+ * ✅ Webhooks: list, create, update, delete
+ * ✅ V2:       catalog shipping (combined + per-method standard/priority/express/economy)
+ *
  * Rate limits:
  * - 600 requests per minute (global)
  * - 100 requests per minute (catalog endpoints)
+ * - 200 requests per 30 minutes (product publishing)
  */
 
 const PRINTIFY_V1_BASE_URL = "https://api.printify.com/v1";
+const PRINTIFY_V2_BASE_URL = "https://api.printify.com/v2";
 
 export function getPrintifyToken(): string {
   const token = process.env.PRINTIFY_API_TOKEN?.trim();
@@ -145,6 +157,8 @@ export type PrintifyVariant = {
     height: number;
     width: number;
   }>;
+  /** Available decoration methods for this variant (e.g. ["dtg", "embroidery"]). */
+  decoration_methods?: string[];
 };
 
 export type PrintifyShippingProfile = {
@@ -184,9 +198,11 @@ export function fetchPrintifyPrintProviders(
 export function fetchPrintifyVariants(
   blueprintId: number,
   printProviderId: number,
+  options?: { showOutOfStock?: boolean },
 ): Promise<{ id: number; title: string; variants: PrintifyVariant[] }> {
+  const qs = options?.showOutOfStock ? "?show-out-of-stock=1" : "";
   return printifyFetch(
-    `/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/variants.json`,
+    `/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/variants.json${qs}`,
   );
 }
 
@@ -226,6 +242,7 @@ export type PrintifyProduct = {
     is_enabled: boolean;
     is_default: boolean;
     is_available: boolean;
+    is_printify_express_eligible?: boolean;
     options: number[];
   }>;
   images: Array<{
@@ -233,6 +250,8 @@ export type PrintifyProduct = {
     variant_ids: number[];
     position: string;
     is_default: boolean;
+    is_selected_for_publishing?: boolean;
+    order?: number;
   }>;
   created_at: string;
   updated_at: string;
@@ -260,6 +279,13 @@ export type PrintifyProduct = {
       }>;
     }>;
   }>;
+  // Shipping eligibility flags
+  is_printify_express_eligible?: boolean;
+  is_printify_express_enabled?: boolean;
+  is_economy_shipping_eligible?: boolean;
+  is_economy_shipping_enabled?: boolean;
+  // Sales channel properties (external store sync data)
+  sales_channel_properties?: Array<Record<string, unknown>>;
 };
 
 export type PrintifyProductsResponse = {
@@ -334,6 +360,13 @@ export function updatePrintifyProduct(
     title?: string;
     description?: string;
     tags?: string[];
+    images?: Array<{
+      src: string;
+      variant_ids: number[];
+      position: string;
+      is_default: boolean;
+      is_selected_for_publishing?: boolean;
+    }>;
     variants?: Array<{
       id: number;
       price: number;
@@ -391,6 +424,130 @@ export async function publishPrintifyProduct(
     const message = error instanceof Error ? error.message : "Unknown error";
     return { success: false, error: message };
   }
+}
+
+/**
+ * POST /v1/shops/{shop_id}/products/{product_id}/publishing_succeeded.json
+ *
+ * Tell Printify that the product was successfully published on our store.
+ * This is the critical step 3 of the publish handshake:
+ *   1. POST .../publish.json (initiate)
+ *   2. Printify fires product:publish:started webhook → we return 200
+ *   3. We call publishing_succeeded.json → Printify clears "Publishing" status
+ *
+ * Without this call, Printify keeps the product stuck in "Publishing" indefinitely.
+ */
+export async function confirmPrintifyPublishingSucceeded(
+  shopId: string,
+  productId: string,
+  external: { id: string; handle: string },
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await printifyFetch(
+      `/shops/${shopId}/products/${productId}/publishing_succeeded.json`,
+      {
+        method: "POST",
+        body: JSON.stringify({ external }),
+      },
+    );
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(
+      `Printify publishing_succeeded failed for ${productId}:`,
+      message,
+    );
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * POST /v1/shops/{shop_id}/products/{product_id}/publishing_failed.json
+ *
+ * Tell Printify that publishing the product on our store failed.
+ * Printify will clear the "Publishing" status and mark it as failed.
+ */
+export async function reportPrintifyPublishingFailed(
+  shopId: string,
+  productId: string,
+  reason: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await printifyFetch(
+      `/shops/${shopId}/products/${productId}/publishing_failed.json`,
+      {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      },
+    );
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.error(
+      `Printify publishing_failed failed for ${productId}:`,
+      message,
+    );
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * POST /v1/shops/{shop_id}/products/{product_id}/unpublish.json
+ *
+ * Notify Printify that the product has been removed from our store.
+ */
+export async function unpublishPrintifyProduct(
+  shopId: string,
+  productId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await printifyFetch(
+      `/shops/${shopId}/products/${productId}/unpublish.json`,
+      {
+        method: "POST",
+      },
+    );
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}
+
+// --- Orders: Shipping Calculation ---
+
+/**
+ * POST /v1/shops/{shop_id}/orders/shipping.json
+ *
+ * Calculate shipping cost for an order directly from Printify.
+ * More accurate than catalog-based calculation as it uses actual order data.
+ */
+export type PrintifyOrderShippingRequest = {
+  line_items: PrintifyOrderLineItem[];
+  address_to: {
+    country: string;
+    region?: string;
+    zip?: string;
+    city?: string;
+  };
+};
+
+export type PrintifyOrderShippingResult = {
+  standard: number;
+  express: number;
+  priority: number;
+  printify_express?: number;
+  economy?: number;
+};
+
+export function calculatePrintifyOrderShipping(
+  shopId: string,
+  body: PrintifyOrderShippingRequest,
+): Promise<PrintifyOrderShippingResult> {
+  return printifyFetch(`/shops/${shopId}/orders/shipping.json`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
 }
 
 // --- Orders ---
@@ -529,7 +686,328 @@ export function getPrintifyOrder(
   return printifyFetch(`/shops/${shopId}/orders/${orderId}.json`);
 }
 
-// --- Shipping Calculation ---
+/** GET /v1/shops/{shop_id}/orders.json - Retrieve a list of orders */
+export function listPrintifyOrders(
+  shopId: string,
+  params?: { limit?: number; page?: number; status?: string; sku?: string },
+): Promise<{
+  current_page: number;
+  data: PrintifyOrder[];
+  last_page: number;
+  total: number;
+}> {
+  const sp = new URLSearchParams();
+  if (params?.limit) sp.set("limit", String(params.limit));
+  if (params?.page) sp.set("page", String(params.page));
+  if (params?.status) sp.set("status", params.status);
+  if (params?.sku) sp.set("sku", params.sku);
+  const qs = sp.toString();
+  return printifyFetch(`/shops/${shopId}/orders.json${qs ? `?${qs}` : ""}`);
+}
+
+// --- Printify Express Orders ---
+
+/**
+ * POST /v1/shops/{shop_id}/orders/express.json - Create a Printify Express order
+ *
+ * Printify Express offers expedited fulfillment. Products must have
+ * is_printify_express_eligible = true and is_printify_express_enabled = true.
+ */
+export function createPrintifyExpressOrder(
+  shopId: string,
+  body: PrintifyCreateOrderRequest,
+): Promise<PrintifyOrderResponse> {
+  return printifyFetch(`/shops/${shopId}/orders/express.json`, {
+    method: "POST",
+    body: JSON.stringify({
+      ...body,
+      is_printify_express: true,
+      shipping_method: 3, // 3 = Printify Express
+    }),
+  });
+}
+
+// --- GPSR Compliance ---
+
+export type PrintifyGpsrData = {
+  manufacturer?: {
+    name?: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+  };
+  responsible_person?: {
+    name?: string;
+    address?: string;
+    email?: string;
+    phone?: string;
+  };
+  [key: string]: unknown;
+};
+
+/**
+ * GET /v1/shops/{shop_id}/products/{product_id}/gpsr.json
+ *
+ * Fetch EU General Product Safety Regulation compliance data for a product.
+ * Required for selling in the EU. Includes manufacturer and responsible person info.
+ */
+export async function fetchPrintifyGpsr(
+  shopId: string,
+  productId: string,
+): Promise<PrintifyGpsrData | null> {
+  try {
+    return await printifyFetch<PrintifyGpsrData>(
+      `/shops/${shopId}/products/${productId}/gpsr.json`,
+    );
+  } catch (error) {
+    // GPSR may not be available for all products; don't fail
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("404")) {
+      return null;
+    }
+    console.warn(`Printify GPSR fetch failed for ${productId}:`, message);
+    return null;
+  }
+}
+
+// --- V2 Catalog Shipping (Granular Methods) ---
+
+/**
+ * V2 shipping data uses JSON:API format with granular shipping methods.
+ */
+export type PrintifyV2ShippingMethod = {
+  id: string;
+  type: string;
+  attributes: {
+    method: string; // "standard" | "priority" | "express" | "economy"
+    handling_time: { value: number; unit: string };
+    profiles: Array<{
+      variant_ids: number[];
+      first_item: { currency: string; cost: number };
+      additional_items: { currency: string; cost: number };
+      countries: string[];
+    }>;
+  };
+};
+
+export type PrintifyV2ShippingResponse = {
+  data: PrintifyV2ShippingMethod[];
+};
+
+/**
+ * GET /v2/catalog/blueprints/{bp_id}/print_providers/{pp_id}/shipping.json
+ *
+ * Fetch V2 shipping data with per-method breakdowns (standard, priority, express, economy).
+ * Returns JSON:API format with each shipping method as a separate entry.
+ */
+export function fetchPrintifyV2Shipping(
+  blueprintId: number,
+  printProviderId: number,
+): Promise<PrintifyV2ShippingResponse> {
+  const token = getPrintifyToken();
+  const url = `${PRINTIFY_V2_BASE_URL}/catalog/blueprints/${blueprintId}/print_providers/${printProviderId}/shipping.json`;
+  return fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": "CultureStore/1.0",
+    },
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Printify V2 Shipping API Error: ${res.status} - ${body}`);
+    }
+    return res.json() as Promise<PrintifyV2ShippingResponse>;
+  });
+}
+
+/**
+ * Fetch all available shipping methods with costs for a blueprint/provider combo.
+ * Uses V2 API for granular per-method data; falls back to V1 if V2 fails.
+ */
+export async function fetchPrintifyAllShippingMethods(
+  blueprintId: number,
+  printProviderId: number,
+  countryCode: string,
+): Promise<
+  Array<{
+    method: string; // "standard" | "priority" | "express" | "economy"
+    firstItemCost: number;
+    additionalItemCost: number;
+    handlingDays: number;
+    currency: string;
+  }>
+> {
+  try {
+    const v2Data = await fetchPrintifyV2Shipping(blueprintId, printProviderId);
+    const methods: Array<{
+      method: string;
+      firstItemCost: number;
+      additionalItemCost: number;
+      handlingDays: number;
+      currency: string;
+    }> = [];
+
+    for (const entry of v2Data.data) {
+      const attrs = entry.attributes;
+      // Find profile that covers this country
+      const profile = attrs.profiles.find(
+        (p) =>
+          p.countries.includes(countryCode) ||
+          p.countries.includes("REST_OF_THE_WORLD"),
+      );
+      if (!profile) continue;
+
+      methods.push({
+        method: attrs.method,
+        firstItemCost: profile.first_item.cost,
+        additionalItemCost: profile.additional_items.cost,
+        handlingDays: attrs.handling_time?.value ?? 0,
+        currency: profile.first_item.currency,
+      });
+    }
+
+    return methods;
+  } catch (err) {
+    // V2 not available for this blueprint/provider; fall back to V1 (standard only)
+    console.warn(
+      `Printify V2 shipping unavailable for blueprint ${blueprintId}, falling back to V1:`,
+      err instanceof Error ? err.message : err,
+    );
+    try {
+      const v1Data = await fetchPrintifyShippingInfo(blueprintId, printProviderId);
+      const profile = v1Data.profiles.find(
+        (p) =>
+          p.countries.includes(countryCode) ||
+          p.countries.includes("REST_OF_THE_WORLD"),
+      );
+      if (!profile) return [];
+      return [
+        {
+          method: "standard",
+          firstItemCost: profile.first_item.cost,
+          additionalItemCost: profile.additional_items.cost,
+          handlingDays: v1Data.handling_time?.value ?? 0,
+          currency: profile.first_item.currency,
+        },
+      ];
+    } catch {
+      return [];
+    }
+  }
+}
+
+// --- Image Uploads ---
+
+export type PrintifyUploadResult = {
+  id: string;
+  file_name: string;
+  height: number;
+  width: number;
+  size: number;
+  mime_type: string;
+  preview_url?: string;
+};
+
+// --- V2 Per-Method Shipping (across all print providers) ---
+
+/**
+ * GET /v1/catalog/blueprints/{bp_id}/print_providers/shipping/{method}.json
+ *
+ * Retrieve shipping info for a specific method (standard, priority, express, economy)
+ * across ALL print providers for a blueprint. Useful for finding which providers
+ * support a given shipping method.
+ */
+export function fetchPrintifyShippingByMethod(
+  blueprintId: number,
+  method: "standard" | "priority" | "express" | "economy",
+): Promise<PrintifyV2ShippingResponse> {
+  return printifyFetch(
+    `/catalog/blueprints/${blueprintId}/print_providers/shipping/${method}.json`,
+  );
+}
+
+// --- Catalog: Print Providers (standalone) ---
+
+export type PrintifyPrintProviderFull = {
+  id: number;
+  title: string;
+  location?: {
+    address1: string;
+    address2: string | null;
+    city: string;
+    country: string;
+    region: string;
+    zip: string;
+  };
+  blueprints?: Array<{
+    id: number;
+    title: string;
+    brand: string;
+    model: string;
+    images: string[];
+  }>;
+};
+
+/** GET /v1/catalog/print_providers.json - List all print providers */
+export function fetchAllPrintifyPrintProviders(): Promise<PrintifyPrintProviderFull[]> {
+  return printifyFetch("/catalog/print_providers.json");
+}
+
+/** GET /v1/catalog/print_providers/{print_provider_id}.json - Get a specific print provider with blueprint offerings */
+export function fetchPrintifyPrintProviderById(
+  printProviderId: number,
+): Promise<PrintifyPrintProviderFull> {
+  return printifyFetch(`/catalog/print_providers/${printProviderId}.json`);
+}
+
+// --- Image Uploads ---
+
+/** GET /v1/uploads.json - List uploaded images */
+export function listPrintifyUploads(
+  params?: { limit?: number; page?: number },
+): Promise<{ current_page: number; data: PrintifyUploadResult[]; last_page: number }> {
+  const sp = new URLSearchParams();
+  if (params?.limit) sp.set("limit", String(params.limit));
+  if (params?.page) sp.set("page", String(params.page));
+  const qs = sp.toString();
+  return printifyFetch(`/uploads.json${qs ? `?${qs}` : ""}`);
+}
+
+/** POST /v1/uploads/images.json - Upload image via URL */
+export function uploadPrintifyImageByUrl(
+  imageUrl: string,
+  fileName: string,
+): Promise<PrintifyUploadResult> {
+  return printifyFetch("/uploads/images.json", {
+    method: "POST",
+    body: JSON.stringify({ file_name: fileName, url: imageUrl }),
+  });
+}
+
+/** GET /v1/uploads/{image_id}.json - Get an uploaded image by ID */
+export function getPrintifyUpload(
+  imageId: string,
+): Promise<PrintifyUploadResult> {
+  return printifyFetch(`/uploads/${imageId}.json`);
+}
+
+/** POST /v1/uploads/{image_id}/archive.json - Archive an uploaded image */
+export async function archivePrintifyUpload(
+  imageId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await printifyFetch(`/uploads/${imageId}/archive.json`, {
+      method: "POST",
+    });
+    return { success: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { success: false, error: message };
+  }
+}
+
+// --- Shipping Calculation (Legacy V1 catalog-based) ---
 
 /**
  * Printify doesn't have a direct shipping rate API like Printful.
@@ -701,6 +1179,18 @@ export function listPrintifyWebhooks(
   shopId: string,
 ): Promise<PrintifyWebhookSubscription[]> {
   return printifyFetch(`/shops/${shopId}/webhooks.json`);
+}
+
+/** PUT /v1/shops/{shop_id}/webhooks/{webhook_id}.json - Modify a webhook */
+export function updatePrintifyWebhook(
+  shopId: string,
+  webhookId: string,
+  body: { url?: string; topic?: PrintifyWebhookEventType },
+): Promise<PrintifyWebhookSubscription> {
+  return printifyFetch(`/shops/${shopId}/webhooks/${webhookId}.json`, {
+    method: "PUT",
+    body: JSON.stringify(body),
+  });
 }
 
 /** DELETE /v1/shops/{shop_id}/webhooks/{webhook_id}.json - Delete a webhook */

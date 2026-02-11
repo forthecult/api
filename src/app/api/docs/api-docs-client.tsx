@@ -1,8 +1,19 @@
 "use client";
 
-import SwaggerUI from "swagger-ui-react";
+import dynamic from "next/dynamic";
 
 import "swagger-ui-react/swagger-ui.css";
+
+// Dynamic import: swagger-ui-react is ~500KB+ and only used on this page.
+// Loading it lazily keeps it out of the main bundle entirely.
+const SwaggerUI = dynamic(() => import("swagger-ui-react"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-screen items-center justify-center bg-[#fafafa] dark:bg-[#1a1a1a]">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  ),
+});
 
 export default function ApiDocsClient() {
   return (

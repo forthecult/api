@@ -69,6 +69,9 @@ export async function resolveCouponForCheckout(
   if (coupon.dateStart && now < coupon.dateStart) return null;
   if (coupon.dateEnd && now > coupon.dateEnd) return null;
 
+  // NOTE: This check is advisory only — the actual atomic guard is enforced at
+  // insert time in postOrderBookkeeping using a conditional INSERT ... WHERE
+  // to prevent TOCTOU races under concurrent requests.
   if (coupon.maxUses != null && coupon.maxUses > 0) {
     const [redemptionCount] = await db
       .select({ count: sql<number>`count(*)::int` })

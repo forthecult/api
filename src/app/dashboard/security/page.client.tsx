@@ -35,33 +35,70 @@ export function SecurityPageClient() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showQrCode, setShowQrCode] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState("");
-  const [qrCodeImageUrl, setQrCodeImageUrl] = useState<string | null>(null);
-  const [qrCodeError, setQrCodeError] = useState<string | null>(null);
-  const [secret, setSecret] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [verifyLoading, setVerifyLoading] = useState(false);
+  // MFA / 2FA state grouped together
+  const [mfa, setMfa] = useState({
+    showQrCode: false,
+    qrCodeData: "",
+    qrCodeImageUrl: null as string | null,
+    qrCodeError: null as string | null,
+    secret: "",
+    otpCode: "",
+    verifyLoading: false,
+  });
+  // Shorthand setters for MFA fields
+  const setShowQrCode = (v: boolean) => setMfa((p) => ({ ...p, showQrCode: v }));
+  const setQrCodeData = (v: string) => setMfa((p) => ({ ...p, qrCodeData: v }));
+  const setQrCodeImageUrl = (v: string | null) => setMfa((p) => ({ ...p, qrCodeImageUrl: v }));
+  const setQrCodeError = (v: string | null) => setMfa((p) => ({ ...p, qrCodeError: v }));
+  const setSecret = (v: string) => setMfa((p) => ({ ...p, secret: v }));
+  const setOtpCode = (v: string) => setMfa((p) => ({ ...p, otpCode: v }));
+  const setVerifyLoading = (v: boolean) => setMfa((p) => ({ ...p, verifyLoading: v }));
+  // Aliases for reading MFA state
+  const { showQrCode, qrCodeData, qrCodeImageUrl, qrCodeError, secret, otpCode, verifyLoading } = mfa;
+
+  // Password reset state
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [resetError, setResetError] = useState("");
+
+  // Linked accounts
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
-  const [addEmailPassword, setAddEmailPassword] = useState({
-    email: "",
-    password: "",
-    confirm: "",
+
+  // Add email flow state grouped together
+  const [addEmail, setAddEmail] = useState({
+    password: { email: "", password: "", confirm: "" },
+    step: "email" as "email" | "code" | "choice" | "password",
+    code: "",
+    loading: false,
+    sendCodeLoading: false,
+    verifyLoading: false,
+    codeOnlyLoading: false,
+    error: "",
   });
-  const [addEmailStep, setAddEmailStep] = useState<
-    "email" | "code" | "choice" | "password"
-  >("email");
-  const [addEmailCode, setAddEmailCode] = useState("");
-  const [addEmailLoading, setAddEmailLoading] = useState(false);
-  const [addEmailSendCodeLoading, setAddEmailSendCodeLoading] = useState(false);
-  const [addEmailVerifyLoading, setAddEmailVerifyLoading] = useState(false);
-  const [addEmailCodeOnlyLoading, setAddEmailCodeOnlyLoading] = useState(false);
-  const [addEmailError, setAddEmailError] = useState("");
+  // Shorthand setters for add-email fields (preserves existing call sites)
+  const setAddEmailPassword = (v: React.SetStateAction<{ email: string; password: string; confirm: string }>) =>
+    setAddEmail((p) => ({ ...p, password: typeof v === "function" ? v(p.password) : v }));
+  const setAddEmailStep = (v: "email" | "code" | "choice" | "password") =>
+    setAddEmail((p) => ({ ...p, step: v }));
+  const setAddEmailCode = (v: string) => setAddEmail((p) => ({ ...p, code: v }));
+  const setAddEmailLoading = (v: boolean) => setAddEmail((p) => ({ ...p, loading: v }));
+  const setAddEmailSendCodeLoading = (v: boolean) => setAddEmail((p) => ({ ...p, sendCodeLoading: v }));
+  const setAddEmailVerifyLoading = (v: boolean) => setAddEmail((p) => ({ ...p, verifyLoading: v }));
+  const setAddEmailCodeOnlyLoading = (v: boolean) => setAddEmail((p) => ({ ...p, codeOnlyLoading: v }));
+  const setAddEmailError = (v: string) => setAddEmail((p) => ({ ...p, error: v }));
+  // Aliases for reading add-email state
+  const addEmailPassword = addEmail.password;
+  const addEmailStep = addEmail.step;
+  const addEmailCode = addEmail.code;
+  const addEmailLoading = addEmail.loading;
+  const addEmailSendCodeLoading = addEmail.sendCodeLoading;
+  const addEmailVerifyLoading = addEmail.verifyLoading;
+  const addEmailCodeOnlyLoading = addEmail.codeOnlyLoading;
+  const addEmailError = addEmail.error;
+
+  // Passkey state
   const [passkeys, setPasskeys] = useState<{ id: string; name?: string | null }[]>([]);
   const [passkeysLoading, setPasskeysLoading] = useState(true);
   const [passkeyAddLoading, setPasskeyAddLoading] = useState(false);

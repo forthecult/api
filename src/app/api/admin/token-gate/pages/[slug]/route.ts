@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { pageTokenGateTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 /**
  * GET /api/admin/token-gate/pages/[slug]
@@ -15,9 +18,7 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { slug } = await params;
     const pageSlug = slug?.trim();
@@ -68,9 +69,7 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { slug } = await params;
     const pageSlug = slug?.trim();

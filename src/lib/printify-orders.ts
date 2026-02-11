@@ -16,12 +16,15 @@ import {
 } from "~/db/schema";
 import {
   createPrintifyOrder,
+  createPrintifyExpressOrder,
   sendPrintifyOrderToProduction,
   cancelPrintifyOrder as cancelPrintifyOrderApi,
+  calculatePrintifyOrderShipping,
   getPrintifyIfConfigured,
   type PrintifyCreateOrderRequest,
   type PrintifyOrderLineItem,
   type PrintifyOrderRecipient,
+  type PrintifyShippingMethod,
 } from "~/lib/printify";
 import {
   onOrderStatusUpdate,
@@ -99,15 +102,17 @@ export async function getPrintifyOrderItems(orderId: string): Promise<
     .select({
       id: productsTable.id,
       source: productsTable.source,
-      externalId: productsTable.externalId,
+      printifyProductId: productsTable.printifyProductId,
     })
     .from(productsTable)
     .where(inArray(productsTable.id, productIds));
 
+  // Use printifyProductId (the actual Printify product ID) — NOT externalId (which is the blueprint_id).
+  // Printify's order API requires the product ID, not the blueprint ID.
   const printifyProducts = new Map(
     products
-      .filter((p) => p.source === "printify" && p.externalId)
-      .map((p) => [p.id, p.externalId!]),
+      .filter((p) => p.source === "printify" && p.printifyProductId)
+      .map((p) => [p.id, p.printifyProductId!]),
   );
 
   // Get variant external IDs for items with variants
@@ -260,11 +265,19 @@ export async function createAndConfirmPrintifyOrder(
   }));
 
   // Determine shipping method (1=Standard, 2=Priority, 3=Printify Express, 4=Economy)
-  let shippingMethod: 1 | 2 | 3 | 4 = 1; // Default to standard
-  if (order.shippingMethod?.toLowerCase().includes("express")) {
+  const shippingMethodStr = (order.shippingMethod ?? "").toLowerCase();
+  let shippingMethod: PrintifyShippingMethod = 1; // Default to standard
+  let isPrintifyExpress = false;
+  let isEconomyShipping = false;
+
+  if (shippingMethodStr.includes("printify_express") || shippingMethodStr === "printify-express") {
+    shippingMethod = 3;
+    isPrintifyExpress = true;
+  } else if (shippingMethodStr.includes("express") || shippingMethodStr.includes("priority")) {
     shippingMethod = 2;
-  } else if (order.shippingMethod?.toLowerCase().includes("economy")) {
+  } else if (shippingMethodStr.includes("economy")) {
     shippingMethod = 4;
+    isEconomyShipping = true;
   }
 
   // Build request
@@ -273,17 +286,18 @@ export async function createAndConfirmPrintifyOrder(
     label: `Order ${orderId}`,
     line_items: lineItems,
     shipping_method: shippingMethod,
+    is_printify_express: isPrintifyExpress || undefined,
+    is_economy_shipping: isEconomyShipping || undefined,
     send_shipping_notification: true, // Printify sends email to customer
     address_to: recipient,
   };
 
   try {
-    // Create the order
-    console.log(`Creating Printify order for order ${orderId}...`);
-    const createResponse = await createPrintifyOrder(
-      config.shopId,
-      createRequest,
-    );
+    // Create the order — use Express endpoint if Printify Express shipping was selected
+    console.log(`Creating Printify order for order ${orderId} (method: ${shippingMethod}, express: ${isPrintifyExpress})...`);
+    const createResponse = isPrintifyExpress
+      ? await createPrintifyExpressOrder(config.shopId, createRequest)
+      : await createPrintifyOrder(config.shopId, createRequest);
     const printifyOrderId = createResponse.id;
 
     console.log(`Printify order created: ${printifyOrderId}`);
@@ -294,11 +308,15 @@ export async function createAndConfirmPrintifyOrder(
 
     console.log(`Printify order ${printifyOrderId} sent to production`);
 
-    // Update our order with Printify order ID
+    // Update our order with Printify order ID and store fulfillment costs
     await db
       .update(ordersTable)
       .set({
         printifyOrderId,
+        // Store Printify costs (wholesale cost to us) — admin-only, not shown to customers
+        printifyCostTotalCents: createResponse.total_price ?? null,
+        printifyCostShippingCents: createResponse.total_shipping ?? null,
+        printifyCostTaxCents: createResponse.total_tax ?? null,
         updatedAt: new Date(),
       })
       .where(eq(ordersTable.id, orderId));
@@ -420,23 +438,45 @@ export async function updateOrderFromPrintifyWebhook(
       }
       break;
 
-    case "order:shipment:created":
-      // Shipment created - partially or fully shipped
+    case "order:shipment:created": {
+      // Shipment created - store tracking data and mark as shipped
       updates.fulfillmentStatus = "partially_fulfilled";
+      const shipment = event.data.shipment;
+      if (shipment) {
+        if (shipment.carrier) updates.trackingCarrier = shipment.carrier;
+        if (shipment.number) updates.trackingNumber = shipment.number;
+        if (shipment.url) updates.trackingUrl = shipment.url;
+        updates.shippedAt = new Date();
+      }
       break;
+    }
 
-    case "order:shipment:delivered":
-      // Delivered
+    case "order:shipment:delivered": {
+      // Delivered - store delivery timestamp and tracking data
       updates.fulfillmentStatus = "fulfilled";
       updates.status = "fulfilled";
+      updates.deliveredAt = new Date();
+      const deliveryShipment = event.data.shipment;
+      if (deliveryShipment) {
+        if (deliveryShipment.carrier) updates.trackingCarrier = deliveryShipment.carrier;
+        if (deliveryShipment.number) updates.trackingNumber = deliveryShipment.number;
+        if (deliveryShipment.url) updates.trackingUrl = deliveryShipment.url;
+        if (deliveryShipment.delivered_at) {
+          updates.deliveredAt = new Date(deliveryShipment.delivered_at);
+        }
+      }
       break;
+    }
 
-    case "order:updated":
+    case "order:updated": {
       // Check status field
       const status = event.data.status;
       if (status === "shipped" || status === "delivered") {
         updates.fulfillmentStatus = "fulfilled";
         updates.status = "fulfilled";
+        if (status === "delivered") {
+          updates.deliveredAt = new Date();
+        }
       } else if (status === "in-production" || status === "shipping") {
         if (order.fulfillmentStatus !== "fulfilled") {
           updates.fulfillmentStatus = "partially_fulfilled";
@@ -446,7 +486,15 @@ export async function updateOrderFromPrintifyWebhook(
       } else if (status === "on-hold") {
         updates.fulfillmentStatus = "on_hold";
       }
+      // Store tracking data if present in any order:updated event
+      const updatedShipment = event.data.shipment;
+      if (updatedShipment) {
+        if (updatedShipment.carrier) updates.trackingCarrier = updatedShipment.carrier;
+        if (updatedShipment.number) updates.trackingNumber = updatedShipment.number;
+        if (updatedShipment.url) updates.trackingUrl = updatedShipment.url;
+      }
       break;
+    }
 
     default:
       // Unknown event type - log but don't fail
@@ -496,4 +544,105 @@ export async function updateOrderFromPrintifyWebhook(
   }
 
   return { success: true };
+}
+
+// ============================================================================
+// Shipping Calculation via Printify Orders API
+// ============================================================================
+
+export type PrintifyShippingOption = {
+  method: string; // "standard" | "express" | "priority" | "printify_express" | "economy"
+  label: string;
+  costCents: number;
+  printifyMethodId: PrintifyShippingMethod;
+};
+
+/**
+ * Calculate shipping options for Printify items using POST /orders/shipping.json.
+ *
+ * This is more accurate than catalog-based calculation because it uses the actual
+ * order data (products, variants, quantities, destination) rather than generic
+ * blueprint/provider profiles.
+ *
+ * Returns multiple shipping options (standard, express, economy, etc.) when available.
+ */
+export async function calculatePrintifyShippingOptions(
+  items: Array<{
+    printifyProductId: string;
+    printifyVariantId: number;
+    quantity: number;
+  }>,
+  address: {
+    country: string;
+    region?: string;
+    zip?: string;
+    city?: string;
+  },
+): Promise<{ options: PrintifyShippingOption[]; error?: string }> {
+  const config = getPrintifyIfConfigured();
+  if (!config) {
+    return { options: [], error: "Printify not configured" };
+  }
+
+  const lineItems = items.map((item) => ({
+    product_id: item.printifyProductId,
+    variant_id: item.printifyVariantId,
+    quantity: item.quantity,
+  }));
+
+  try {
+    const result = await calculatePrintifyOrderShipping(config.shopId, {
+      line_items: lineItems,
+      address_to: address,
+    });
+
+    const options: PrintifyShippingOption[] = [];
+
+    if (typeof result.standard === "number" && result.standard >= 0) {
+      options.push({
+        method: "standard",
+        label: "Standard Shipping",
+        costCents: result.standard,
+        printifyMethodId: 1,
+      });
+    }
+    if (typeof result.express === "number" && result.express > 0) {
+      options.push({
+        method: "express",
+        label: "Express Shipping",
+        costCents: result.express,
+        printifyMethodId: 2,
+      });
+    }
+    if (typeof result.priority === "number" && result.priority > 0) {
+      options.push({
+        method: "priority",
+        label: "Priority Shipping",
+        costCents: result.priority,
+        printifyMethodId: 2,
+      });
+    }
+    if (typeof result.printify_express === "number" && result.printify_express > 0) {
+      options.push({
+        method: "printify_express",
+        label: "Printify Express (2-5 days)",
+        costCents: result.printify_express,
+        printifyMethodId: 3,
+      });
+    }
+    if (typeof result.economy === "number" && result.economy >= 0) {
+      options.push({
+        method: "economy",
+        label: "Economy Shipping",
+        costCents: result.economy,
+        printifyMethodId: 4,
+      });
+    }
+
+    return { options };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Printify order shipping calculation failed:", message);
+    return { options: [], error: message };
+  }
 }

@@ -212,6 +212,25 @@ export function solanaAuthPlugin() {
               });
             }
 
+            // Always delete the nonce after lookup, regardless of verification outcome
+            const deleteNonce = async () => {
+              try {
+                await adapter.delete({
+                  model: "verification",
+                  where: [{ field: "id", value: verification.id }],
+                });
+              } catch {
+                try {
+                  await adapter.deleteMany({
+                    model: "verification",
+                    where: [{ field: "id", value: verification.id }],
+                  });
+                } catch {
+                  console.warn("[solana-auth] Could not delete verification token");
+                }
+              }
+            };
+
             const valid = verifySolanaSignature({
               address: addressTrim,
               message,
@@ -219,29 +238,14 @@ export function solanaAuthPlugin() {
               signatureBase58: signatureBase58 ?? undefined,
             });
             if (!valid) {
+              await deleteNonce();
               throw new APIError("UNAUTHORIZED", {
                 message: "Invalid signature",
               });
             }
 
-            // Delete the used verification token (use internal adapter or raw delete)
-            try {
-              await adapter.delete({
-                model: "verification",
-                where: [{ field: "id", value: verification.id }],
-              });
-            } catch {
-              // Fallback: some adapters use deleteMany
-              try {
-                await adapter.deleteMany({
-                  model: "verification",
-                  where: [{ field: "id", value: verification.id }],
-                });
-              } catch {
-                // Ignore if delete fails - verification will expire anyway
-                console.warn("[solana-auth] Could not delete verification token");
-              }
-            }
+            // Delete the used verification token
+            await deleteNonce();
 
             const existingAccount = (await adapter.findOne({
               model: "account",
@@ -420,17 +424,12 @@ export function solanaAuthPlugin() {
               console.error("[solana-auth] Stack:", err.stack);
             }
             if (err instanceof APIError) throw err;
-            // Don't expose raw DB/query errors to the client
+            // Always use generic message — never expose raw error details to the client
             const raw =
               err instanceof Error ? err.message : "Verification failed";
-            const isDbError =
-              /insert into|update.*set|Failed query|relation .* does not exist/i.test(
-                raw,
-              );
+            console.error("[wallet-auth] Verification error:", raw);
             throw new APIError("INTERNAL_SERVER_ERROR", {
-              message: isDbError
-                ? "Something went wrong on our end. Please try again or contact support."
-                : raw,
+              message: "Something went wrong on our end. Please try again or contact support.",
             });
           }
         },

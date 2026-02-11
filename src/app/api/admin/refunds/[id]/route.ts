@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { refundRequestsTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 const ALLOWED_STATUSES = [
   "requested",
@@ -22,14 +25,14 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
-    if (!id) {
+    // TODO: Standardize error response format across admin routes (L20)
+    const CUID_RE = /^[a-z0-9]{20,30}$/;
+    if (!id || !CUID_RE.test(id)) {
       return NextResponse.json(
-        { error: "Missing refund request id" },
+        { error: "Invalid or missing refund request id" },
         { status: 400 },
       );
     }
@@ -76,11 +79,13 @@ export async function PATCH(
       .set({ status, updatedAt: now })
       .where(eq(refundRequestsTable.id, id));
 
+    console.info(`[admin-audit] Refund ${id} status changed to ${status} via admin API`);
+
     return NextResponse.json({ status, updatedAt: now.toISOString() });
   } catch (err) {
     console.error("Admin refunds [id] PATCH:", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Internal error" },
+      { error: "An internal error occurred" },
       { status: 500 },
     );
   }

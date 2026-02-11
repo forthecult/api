@@ -34,6 +34,11 @@ import {
   fetchPrintifyShippingInfo,
   updatePrintifyProduct,
   getPrintifyIfConfigured,
+  confirmPrintifyPublishingSucceeded,
+  reportPrintifyPublishingFailed,
+  unpublishPrintifyProduct,
+  fetchPrintifyGpsr,
+  uploadPrintifyImageByUrl,
   type PrintifyProduct,
 } from "./printify";
 
@@ -320,13 +325,17 @@ async function syncShippingDataOnly(
     printifyProduct.print_provider_id,
   );
 
-  // Update only shipping-related fields on the product
+  // Update only shipping-related fields on the product (including express/economy eligibility)
   await db
     .update(productsTable)
     .set({
       handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
       handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
       printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+      printifyExpressEligible: printifyProduct.is_printify_express_eligible ?? false,
+      printifyExpressEnabled: printifyProduct.is_printify_express_enabled ?? false,
+      printifyEconomyEligible: printifyProduct.is_economy_shipping_eligible ?? false,
+      printifyEconomyEnabled: printifyProduct.is_economy_shipping_enabled ?? false,
       lastSyncedAt: new Date(),
     })
     .where(eq(productsTable.id, productId));
@@ -405,13 +414,15 @@ async function createLocalProductFromPrintify(
   const defaultImage = printifyProduct.images.find((img) => img.is_default);
   const imageUrl = defaultImage?.src || printifyProduct.images[0]?.src || null;
 
-  // Shipping data (countries + handling days) from catalog API; blueprint for brand/model
-  const [shippingData, blueprint] = await Promise.all([
+  // Shipping data (countries + handling days) from catalog API; blueprint for brand/model; GPSR
+  const pf = getPrintifyIfConfigured();
+  const [shippingData, blueprint, gpsrData] = await Promise.all([
     getPrintifyShippingData(
       printifyProduct.blueprint_id,
       printifyProduct.print_provider_id,
     ),
     fetchPrintifyBlueprint(printifyProduct.blueprint_id).catch(() => null),
+    pf ? fetchPrintifyGpsr(pf.shopId, printifyProduct.id).catch(() => null) : null,
   ]);
 
   const brand = blueprint?.brand?.trim() ?? null;
@@ -431,6 +442,13 @@ async function createLocalProductFromPrintify(
     externalId: String(printifyProduct.blueprint_id), // Store blueprint ID
     printifyProductId: printifyProduct.id,
     printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+    // Printify shipping eligibility flags
+    printifyExpressEligible: printifyProduct.is_printify_express_eligible ?? false,
+    printifyExpressEnabled: printifyProduct.is_printify_express_enabled ?? false,
+    printifyEconomyEligible: printifyProduct.is_economy_shipping_eligible ?? false,
+    printifyEconomyEnabled: printifyProduct.is_economy_shipping_enabled ?? false,
+    // EU GPSR compliance data
+    gpsrJson: gpsrData ?? undefined,
     priceCents,
     hasVariants,
     optionDefinitionsJson,
@@ -526,12 +544,14 @@ async function updateLocalProductFromPrintify(
 ): Promise<void> {
   const now = new Date();
 
-  const [shippingData, blueprint] = await Promise.all([
+  const pfConfig = getPrintifyIfConfigured();
+  const [shippingData, blueprint, gpsrData] = await Promise.all([
     getPrintifyShippingData(
       printifyProduct.blueprint_id,
       printifyProduct.print_provider_id,
     ),
     fetchPrintifyBlueprint(printifyProduct.blueprint_id).catch(() => null),
+    pfConfig ? fetchPrintifyGpsr(pfConfig.shopId, printifyProduct.id).catch(() => null) : null,
   ]);
   const brand = blueprint?.brand?.trim() ?? null;
   const model = blueprint?.model?.trim() ?? null;
@@ -604,6 +624,13 @@ async function updateLocalProductFromPrintify(
       model,
       sku: productSku,
       printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+      // Printify shipping eligibility flags
+      printifyExpressEligible: printifyProduct.is_printify_express_eligible ?? false,
+      printifyExpressEnabled: printifyProduct.is_printify_express_enabled ?? false,
+      printifyEconomyEligible: printifyProduct.is_economy_shipping_eligible ?? false,
+      printifyEconomyEnabled: printifyProduct.is_economy_shipping_enabled ?? false,
+      // EU GPSR compliance data
+      gpsrJson: gpsrData ?? undefined,
       countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
       hsCode: printifyProduct.hs_code?.trim() || null,
       handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
@@ -888,6 +915,12 @@ export async function exportProductToPrintify(
     .where(eq(productTagsTable.productId, productId));
   const tagList = tags.map((t) => t.tag);
 
+  // Get product images from local DB for outbound sync
+  const localImages = await db
+    .select()
+    .from(productImagesTable)
+    .where(eq(productImagesTable.productId, productId));
+
   try {
     // Build variant updates with prices
     const variantUpdates = variants
@@ -898,12 +931,54 @@ export async function exportProductToPrintify(
         is_enabled: true,
       }));
 
-    // Update the Printify product with all editable fields
+    // Build image updates for Printify (sync local images → Printify)
+    // Upload any new images (non-Printify URLs) to Printify first, then include in update
+    const imageUpdates: Array<{
+      src: string;
+      variant_ids: number[];
+      position: string;
+      is_default: boolean;
+      is_selected_for_publishing?: boolean;
+    }> = [];
+
+    if (localImages.length > 0) {
+      for (let i = 0; i < localImages.length; i++) {
+        const img = localImages[i]!;
+        let imgSrc = img.url;
+
+        // If the image URL is not from Printify's CDN, upload it to Printify
+        if (imgSrc && !imgSrc.includes("printify") && !imgSrc.includes("images-api.printify.com")) {
+          try {
+            const uploadResult = await uploadPrintifyImageByUrl(imgSrc, img.alt || `image-${i}.png`);
+            imgSrc = uploadResult.preview_url || imgSrc;
+          } catch (uploadErr) {
+            console.warn(`Failed to upload image to Printify for export: ${uploadErr instanceof Error ? uploadErr.message : uploadErr}`);
+            // Use original URL as fallback
+          }
+        }
+
+        // Map variant images: find variants whose imageUrl matches this image
+        const matchingVariantIds = variants
+          .filter((v) => v.imageUrl === img.url && v.printifyVariantId)
+          .map((v) => Number.parseInt(v.printifyVariantId!, 10));
+
+        imageUpdates.push({
+          src: imgSrc,
+          variant_ids: matchingVariantIds,
+          position: "front",
+          is_default: i === 0,
+          is_selected_for_publishing: true,
+        });
+      }
+    }
+
+    // Update the Printify product with all editable fields (including images)
     await updatePrintifyProduct(pf.shopId, product.printifyProductId, {
       title: product.name,
       description: product.description || undefined,
       tags: tagList.length > 0 ? tagList : undefined,
       variants: variantUpdates,
+      ...(imageUpdates.length > 0 && { images: imageUpdates }),
     });
 
     // Update product last synced timestamp
@@ -985,16 +1060,79 @@ export async function exportAllPrintifyProducts(): Promise<PrintifySyncResult> {
 /**
  * Handle Printify product:publish:started webhook event.
  * Called when a product is created/published in Printify.
+ *
+ * After importing the product, calls publishing_succeeded.json to complete the
+ * 3-step publish handshake and clear the "Publishing" status in Printify:
+ *   1. Printify fires product:publish:started webhook → we return 200 immediately
+ *   2. We import/update the product in our store (this function)
+ *   3. We call publishing_succeeded.json with our local product ID and slug
+ *
+ * Without step 3, Printify keeps the product stuck in "Publishing" indefinitely.
  */
 export async function handlePrintifyProductPublished(data: {
   id: string;
 }): Promise<{ success: boolean; error?: string }> {
+  const pf = getPrintifyIfConfigured();
+  if (!pf) {
+    return { success: false, error: "Printify not configured" };
+  }
+
   try {
-    await importSinglePrintifyProduct(data.id, false);
+    const result = await importSinglePrintifyProduct(data.id, false);
+
+    // Complete the publish handshake: tell Printify we successfully listed the product.
+    // This clears the "Publishing" status in Printify.
+    if (result.productId) {
+      // Look up the product's slug for the handle
+      const [product] = await db
+        .select({ slug: productsTable.slug })
+        .from(productsTable)
+        .where(eq(productsTable.id, result.productId))
+        .limit(1);
+
+      const handle = product?.slug ? `/products/${product.slug}` : `/products/${result.productId}`;
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+
+      const confirmResult = await confirmPrintifyPublishingSucceeded(
+        pf.shopId,
+        data.id,
+        {
+          id: result.productId,
+          handle: appUrl ? `${appUrl}${handle}` : handle,
+        },
+      );
+
+      if (!confirmResult.success) {
+        console.warn(
+          `Printify publishing_succeeded failed for ${data.id}: ${confirmResult.error}`,
+        );
+        // Don't fail the import just because the confirmation failed
+      } else {
+        console.log(
+          `Printify product ${data.id} publishing confirmed (local: ${result.productId})`,
+        );
+      }
+    }
+
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("Failed to handle product:publish:started:", message);
+
+    // Tell Printify publishing failed so the product doesn't stay stuck in "Publishing"
+    try {
+      await reportPrintifyPublishingFailed(
+        pf.shopId,
+        data.id,
+        `Import failed: ${message}`,
+      );
+    } catch (reportErr) {
+      console.error(
+        "Failed to report publishing_failed to Printify:",
+        reportErr,
+      );
+    }
+
     return { success: false, error: message };
   }
 }
@@ -1017,6 +1155,16 @@ export async function handlePrintifyProductDeleted(data: {
     if (!product) {
       // Product doesn't exist locally - nothing to do
       return { success: true };
+    }
+
+    // Notify Printify the product is unpublished from our store
+    const pf = getPrintifyIfConfigured();
+    if (pf) {
+      try {
+        await unpublishPrintifyProduct(pf.shopId, data.id);
+      } catch {
+        // Best-effort: product may already be deleted in Printify
+      }
     }
 
     // Unpublish the product (safer than deleting - keeps historical data)

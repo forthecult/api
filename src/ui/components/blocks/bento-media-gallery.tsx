@@ -169,7 +169,7 @@ const GalleryMedia: React.FC<GalleryMediaProps> = React.memo(
             muted={isThumbnail}
             onClick={onClick}
             playsInline
-            preload="auto"
+            preload="metadata"
             ref={videoRef}
             style={{
               opacity: videoIsBuffering ? 0.8 : 1,

@@ -3,7 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { userNotificationTable } from "~/db/schema";
+import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
 import { auth } from "~/lib/auth";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 const DEFAULT_LIMIT = 50;
 
@@ -12,6 +14,9 @@ const DEFAULT_LIMIT = 50;
  * List in-app notifications for the current user (for the notification widget).
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`user-notifications-feed:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,6 +61,11 @@ export async function GET(request: NextRequest) {
  * Mark one notification as read by id, or all as read.
  */
 export async function PATCH(request: NextRequest) {
+  // [SECURITY] Verify Origin header to prevent CSRF attacks
+  if (!verifyCsrfOrigin(request.headers)) return csrfFailureResponse();
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`user-notifications-feed:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

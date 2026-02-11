@@ -126,6 +126,9 @@ function isRedisConfigured(): boolean {
   return Boolean(url && token);
 }
 
+// Warn once in production if Redis is not configured
+let _prodWarningEmitted = false;
+
 /**
  * Check rate limit for a given identifier (e.g. IP address, user ID).
  * Uses Redis when UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are set;
@@ -138,18 +141,27 @@ export async function checkRateLimit(
   if (isRedisConfigured()) {
     return checkRateLimitRedis(identifier, config);
   }
+  if (process.env.NODE_ENV === "production" && !_prodWarningEmitted) {
+    _prodWarningEmitted = true;
+    console.warn(
+      "⚠️  [SECURITY] Rate limiting is in-memory only — ineffective in serverless/multi-instance deployments. " +
+      "Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production. " +
+      "Without Redis, each instance has its own counter and rate limits are effectively bypassed."
+    );
+  }
   return Promise.resolve(checkRateLimitMemory(identifier, config));
 }
 
 /**
  * Get client IP from request headers.
- * Works with Vercel, Cloudflare, and standard proxies.
+ * Prefers provider-specific headers that can't be spoofed by clients,
+ * falling back to x-forwarded-for only when more trusted headers are absent.
  */
 export function getClientIp(headers: Headers): string {
   return (
+    headers.get("cf-connecting-ip") ||     // Cloudflare (set by edge, not spoofable)
+    headers.get("x-real-ip") ||             // Nginx / Vercel
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    headers.get("x-real-ip") ||
-    headers.get("cf-connecting-ip") ||
     "unknown"
   );
 }

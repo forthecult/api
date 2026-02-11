@@ -18,10 +18,12 @@ function getAllowedAdminOrigins(): string[] {
   return DEFAULT_ADMIN_ORIGINS;
 }
 
-function getCorsHeaders(request: NextRequest): Record<string, string> {
+function getCorsHeaders(request: NextRequest): Record<string, string> | null {
   const origin = request.headers.get("origin") ?? "";
   const allowed = getAllowedAdminOrigins();
-  const allowOrigin = origin && allowed.includes(origin) ? origin : allowed[0];
+  // Only set CORS headers for recognized origins — never fall back to the first allowed origin
+  const allowOrigin = origin && allowed.includes(origin) ? origin : null;
+  if (!allowOrigin) return null;
   return {
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Allow-Headers":
@@ -100,15 +102,17 @@ function proxyHandler(request: NextRequest) {
 
     if (request.method === "OPTIONS") {
       return new NextResponse(null, {
-        headers: corsHeaders,
+        headers: corsHeaders ?? {},
         status: 204,
       });
     }
 
     const res = NextResponse.next();
-    Object.entries(corsHeaders).forEach(([key, value]) => {
-      res.headers.set(key, value);
-    });
+    if (corsHeaders) {
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.headers.set(key, value);
+      });
+    }
     return res;
   }
 
@@ -147,6 +151,7 @@ function proxyHandler(request: NextRequest) {
       path: "/",
       maxAge: AFFILIATE_COOKIE_MAX_AGE_SECONDS,
       sameSite: "lax",
+      httpOnly: true,
     });
   }
 

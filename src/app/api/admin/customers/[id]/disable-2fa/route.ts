@@ -6,7 +6,10 @@ import {
   twoFactorTable,
   userTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 /**
  * POST /api/admin/customers/[id]/disable-2fa
@@ -18,9 +21,7 @@ export async function POST(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const [user] = await db
@@ -44,6 +45,8 @@ export async function POST(
       .update(userTable)
       .set({ twoFactorEnabled: false, updatedAt: new Date() })
       .where(eq(userTable.id, id));
+
+    console.info(`[admin-audit] 2FA disabled for user ${id} via admin API`);
 
     return NextResponse.json({ success: true });
   } catch (err) {

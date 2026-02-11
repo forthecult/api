@@ -34,6 +34,15 @@ type OrderDetail = {
     shippingUsd: number;
     totalUsd: number;
   };
+  tracking?: {
+    trackingNumber?: string;
+    trackingUrl?: string;
+    carrier?: string;
+    shippedAt?: string;
+    deliveredAt?: string;
+    estimatedDeliveryFrom?: string;
+    estimatedDeliveryTo?: string;
+  };
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -185,6 +194,58 @@ export function TrackOrderDetailClient({
           </ul>
         </CardContent>
       </Card>
+
+      {/* Tracking information */}
+      {order.tracking?.trackingNumber && (
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-medium">Tracking</h2>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tracking #</span>
+              {order.tracking.trackingUrl ? (
+                <a
+                  href={order.tracking.trackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-blue-600 underline hover:text-blue-800"
+                >
+                  {order.tracking.trackingNumber}
+                </a>
+              ) : (
+                <span className="font-mono">{order.tracking.trackingNumber}</span>
+              )}
+            </div>
+            {order.tracking.carrier && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Carrier</span>
+                <span>{order.tracking.carrier}</span>
+              </div>
+            )}
+            {order.tracking.shippedAt && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Shipped</span>
+                <span>{formatDateLong(order.tracking.shippedAt)}</span>
+              </div>
+            )}
+            {order.tracking.deliveredAt && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Delivered</span>
+                <span>{formatDateLong(order.tracking.deliveredAt)}</span>
+              </div>
+            )}
+            {(order.tracking.estimatedDeliveryFrom || order.tracking.estimatedDeliveryTo) && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Est. delivery</span>
+                <span>
+                  {order.tracking.estimatedDeliveryFrom ?? "?"} – {order.tracking.estimatedDeliveryTo ?? "?"}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {order.shipping &&
         (order.shipping.address1 ||

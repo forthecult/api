@@ -7,6 +7,11 @@ import { getAdminAuth } from "~/lib/admin-api-auth";
 import { auth } from "~/lib/auth";
 import { cancelPrintfulOrder } from "~/lib/printful-orders";
 import { cancelPrintifyOrder } from "~/lib/printify-orders";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
@@ -24,14 +29,21 @@ function normalizePostal(postal: string | null | undefined): string {
  * Cancels an order if it hasn't been shipped yet.
  * Requires: authenticated owner (session), admin, or proof of ownership (body.lookupValue:
  * billing email, payment address, or shipping postal code).
- * Note: This endpoint doesn't handle refunds - that should be done separately
- * through the payment provider (Stripe, etc.)
+ * Rate-limited to prevent brute-force of postal codes / lookup values.
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
   try {
+    // Rate limit: 5 attempts per minute per IP to prevent brute-force
+    const ip = getClientIp(request.headers);
+    const rl = await checkRateLimit(`order-cancel:${ip}`, {
+      limit: 5,
+      windowSeconds: 60,
+    });
+    if (!rl.success) return rateLimitResponse(rl);
+
     const { orderId } = await params;
     if (!orderId?.trim()) {
       return NextResponse.json(

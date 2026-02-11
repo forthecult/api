@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
@@ -26,6 +27,10 @@ const CRYPTO_METHODS = ["solana_pay", "eth_pay", "btcpay", "ton_pay"];
  * Returns { isCrypto: boolean } so the client can show the refund-address field for crypto orders.
  */
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`refund-lookup:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
+
   try {
     const body = (await request.json().catch(() => ({}))) as {
       orderId?: string;

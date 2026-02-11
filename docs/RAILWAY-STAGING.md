@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Railway staging: customer + admin frontends
 
 **First deploy checklist:** After the first successful build, the site may load but show no products/categories until the DB has tables. Copy the **DATABASE_URL** from your Railway service → Variables, then from your machine run: `DATABASE_URL='postgresql://...' bun run db:push` (from the repo root). Then reload the site; nav and data will work.

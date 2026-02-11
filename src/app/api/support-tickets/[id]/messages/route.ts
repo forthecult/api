@@ -41,7 +41,7 @@ export async function POST(
       );
     }
     const content =
-      typeof body.content === "string" ? body.content.trim() : "";
+      typeof body.content === "string" ? body.content.trim().slice(0, 10000) : "";
     if (!content) {
       return NextResponse.json(
         { error: "Message content is required" },

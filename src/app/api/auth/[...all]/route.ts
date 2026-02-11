@@ -87,7 +87,7 @@ async function handleAuth(
       JSON.stringify({
         error: "Authentication error",
         message,
-        ...(isDev && stack && { _devStack: stack }),
+        ...(process.env.EXPOSE_DEV_ERRORS === "true" && stack && { _devStack: stack }),
       }),
       {
         status: 500,

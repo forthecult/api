@@ -112,6 +112,58 @@ export default async function OrderDetailPage({
           </ul>
         </CardContent>
       </Card>
+
+      {/* Tracking information */}
+      {order.trackingNumber && (
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-medium">Tracking</h2>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Tracking #</span>
+              {order.trackingUrl ? (
+                <a
+                  href={order.trackingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-blue-600 underline hover:text-blue-800"
+                >
+                  {order.trackingNumber}
+                </a>
+              ) : (
+                <span className="font-mono">{order.trackingNumber}</span>
+              )}
+            </div>
+            {order.trackingCarrier && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Carrier</span>
+                <span>{order.trackingCarrier}</span>
+              </div>
+            )}
+            {order.shippedAt && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Shipped</span>
+                <span>{formatDateLong(order.shippedAt)}</span>
+              </div>
+            )}
+            {order.deliveredAt && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Delivered</span>
+                <span>{formatDateLong(order.deliveredAt)}</span>
+              </div>
+            )}
+            {(order.estimatedDeliveryFrom || order.estimatedDeliveryTo) && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Est. delivery</span>
+                <span>
+                  {order.estimatedDeliveryFrom ?? "?"} – {order.estimatedDeliveryTo ?? "?"}
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

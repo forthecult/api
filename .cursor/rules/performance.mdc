@@ -1,0 +1,65 @@
+---
+description: Performance optimization rules for the Next.js web application
+globs: src/**/*.tsx, src/**/*.ts, next.config.*
+alwaysApply: false
+---
+
+# Performance Guidelines
+
+## Bundle Size
+
+- **Dynamic import heavy libraries** with `next/dynamic` or `React.lazy`:
+  - `swagger-ui-react`, chart libraries, crypto wallet adapters, and any library >50KB
+  - Always add a `loading` fallback for dynamic imports
+- **Never import entire library barrels** (e.g. `import * as Icons from "lucide-react"`). Import only needed symbols.
+- Check `optimizePackageImports` in `next.config.ts` before adding new large dependencies.
+
+## Images
+
+- **Always use `next/image`**. Never use raw `<img>` tags.
+- Always include `sizes` prop for responsive images (e.g. `"(max-width: 768px) 100vw, 50vw"`).
+- Use `fill` + `sizes` for variable-size images, or explicit `width`/`height` for fixed.
+- Use `priority` prop only for above-the-fold hero/LCP images.
+- Image formats (AVIF/WebP) are configured in `next.config.ts` — no manual conversion needed.
+- Use `loading="eager"` only for LCP-critical images; everything else lazy-loads by default.
+
+## Data Fetching & Caching
+
+- **Prefer `next: { revalidate: N }` over `cache: "no-store"`**. Use ISR (60s default) unless data is truly real-time.
+- Use `cache: "no-store"` only for user-specific data (cart, session, orders).
+- Always add `signal: AbortSignal.timeout(N)` to server-side fetch calls (8s for primary, 5s for secondary).
+- Use `stale-while-revalidate` Cache-Control headers on API routes.
+- **Add `loading.tsx`** to every route segment that fetches data server-side.
+
+## CSS & Animations
+
+- **Never set `will-change` in static/idle state** — only apply on `:hover`, `:focus`, or during animation. Permanent `will-change` wastes GPU memory and hurts CLS.
+- Prefer Tailwind classes over inline styles. Inline styles are acceptable only for dynamic values (e.g. percentages, calculated positions).
+- Use `transition-*` utilities rather than full `transition: all`.
+
+## Core Web Vitals
+
+- **LCP**: Keep hero images as `priority` in `next/image`. Don't block LCP with client-side data fetching.
+- **CLS**: Always set explicit dimensions (width/height or aspect ratio) on images, embeds, and dynamic content. Use `loading.tsx` skeletons that match final layout.
+- **INP**: Use `React.memo` for list items (already done for `ProductCard`). Debounce expensive event handlers. Avoid synchronous work in event handlers.
+
+## Video
+
+- Use `preload="metadata"` for videos — not `preload="auto"` (which downloads the entire file).
+- Use Intersection Observer to play/pause videos outside viewport.
+
+## Third-Party Scripts
+
+- Use `next/script` with `strategy="lazyOnload"` for non-critical scripts.
+- Conditional loading: only load scripts where needed (e.g. Vercel SpeedInsights only on Vercel).
+
+## Fonts
+
+- Fonts are loaded via `next/font/google` with `subsets: ["latin"]`. Don't add external font CDN links.
+- Use CSS variables (`--font-geist-sans`, `--font-geist-mono`) — don't import fonts any other way.
+
+## Dependencies
+
+- Before adding a new dependency, check if it already exists in `package.json`.
+- Prefer smaller alternatives (e.g. `clsx` over `classnames`).
+- Run `knip` periodically to detect unused dependencies.

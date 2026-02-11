@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Token Gating
 
 Token gating restricts access to **products**, **categories**, and **pages** until the visitor proves they hold the required tokens (e.g. Solana SPL). It can also power **perks** like free shipping or order discounts for token holders.

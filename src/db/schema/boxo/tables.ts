@@ -2,7 +2,11 @@ import { decimal, jsonb, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
-/** One-time auth codes for Boxo Connect OAuth flow. Frontend gets a code for the current session; Boxo exchanges it for an access token. */
+/**
+ * One-time auth codes for Boxo Connect OAuth flow. Frontend gets a code for the current session; Boxo exchanges it for an access token.
+ * TODO (L14): Add a scheduled job or DB trigger to clean up expired rows (expiresAt < now()).
+ *             Consider a partial index on expiresAt for efficient cleanup queries.
+ */
 export const boxoAuthCodeTable = pgTable("boxo_auth_code", {
   id: text("id").primaryKey(),
   code: text("code").notNull().unique(),
@@ -33,6 +37,7 @@ export const boxoOrderPaymentTable = pgTable("boxo_order_payment", {
   miniappOrderId: text("miniapp_order_id"),
   amount: decimal("amount", { precision: 20, scale: 2 }).notNull(),
   currency: text("currency").notNull(),
+  // TODO (L17): migrate status to pgEnum for type safety
   status: text("status").notNull().default("in_process"), // in_process | paid | cancelled | failed
   paymentFailReason: text("payment_fail_reason"),
   orderPayload: jsonb("order_payload").$type<Record<string, unknown>>(), // full order from Boxo for reference

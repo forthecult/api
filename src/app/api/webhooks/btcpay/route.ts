@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
@@ -54,7 +54,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (BTCPAY_WEBHOOK_SECRET) {
+    if (!BTCPAY_WEBHOOK_SECRET) {
+      if (process.env.NODE_ENV === "production") {
+        console.error("[BTCPay webhook] BTCPAY_WEBHOOK_SECRET not configured in production");
+        return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
+      }
+      console.warn("[BTCPay webhook] ⚠️ Signature verification skipped (no BTCPAY_WEBHOOK_SECRET)");
+    } else {
       const signature =
         request.headers.get("x-bitpay-signature") ??
         request.headers.get("btcpay-signature");
@@ -113,37 +119,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         received: true,
         action: "order_not_found",
-        invoiceId,
-      });
-    }
-    if (order.status !== "pending") {
-      return NextResponse.json({
-        received: true,
-        alreadyPaid: true,
-        orderId: order.id,
       });
     }
 
-    await db
-      .update(ordersTable)
-      .set({
-        fulfillmentStatus: "unfulfilled",
-        paymentStatus: "paid",
-        status: "paid",
-        updatedAt: new Date(),
-      })
-      .where(eq(ordersTable.id, order.id));
+    // Idempotent update: only update if still pending
+    const updated = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select({ id: ordersTable.id, status: ordersTable.status })
+        .from(ordersTable)
+        .where(and(eq(ordersTable.id, order.id), eq(ordersTable.status, "pending")))
+        .limit(1);
+      if (!current) return null;
+      await tx
+        .update(ordersTable)
+        .set({
+          fulfillmentStatus: "unfulfilled",
+          paymentStatus: "paid",
+          status: "paid",
+          updatedAt: new Date(),
+        })
+        .where(eq(ordersTable.id, order.id));
+      return current;
+    });
+
+    if (!updated) {
+      return NextResponse.json({ received: true, action: "already_processed" });
+    }
 
     const { onOrderCreated } = await import("~/lib/create-user-notification");
     void onOrderCreated(order.id);
 
-    let printfulOrderId: number | undefined;
-    let printifyOrderId: string | undefined;
     try {
       const hasPrintful = await hasPrintfulItems(order.id);
       if (hasPrintful) {
-        const r = await createAndConfirmPrintfulOrder(order.id);
-        if (r.success) printfulOrderId = r.printfulOrderId;
+        await createAndConfirmPrintfulOrder(order.id);
       }
     } catch {
       // log but don't fail webhook
@@ -151,20 +160,13 @@ export async function POST(request: NextRequest) {
     try {
       const hasPrintify = await hasPrintifyItems(order.id);
       if (hasPrintify) {
-        const r = await createAndConfirmPrintifyOrder(order.id);
-        if (r.success) printifyOrderId = r.printifyOrderId;
+        await createAndConfirmPrintifyOrder(order.id);
       }
     } catch {
       // log but don't fail webhook
     }
 
-    return NextResponse.json({
-      received: true,
-      action: "confirmed",
-      orderId: order.id,
-      ...(printfulOrderId && { printfulOrderId }),
-      ...(printifyOrderId && { printifyOrderId }),
-    });
+    return NextResponse.json({ received: true });
   } catch (err) {
     console.error("BTCPay webhook error:", err);
     return NextResponse.json(

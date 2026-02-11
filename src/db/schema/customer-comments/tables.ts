@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { index, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
@@ -13,4 +13,7 @@ export const customerCommentsTable = pgTable("customer_comment", {
     .references(() => userTable.id, { onDelete: "cascade" }),
   body: text("body").notNull(),
   createdAt: timestamp("created_at").notNull(),
-});
+}, (t) => [
+  // M7: Index for looking up comments by customer
+  index("customer_comment_customer_id_idx").on(t.customerId),
+]);

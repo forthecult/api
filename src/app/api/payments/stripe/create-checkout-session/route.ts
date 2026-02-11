@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
         priceCents: productsTable.priceCents,
       })
       .from(productsTable)
-      .where(inArray(productsTable.id, productIds));
+      .where(and(inArray(productsTable.id, productIds), eq(productsTable.published, true)));
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     const orderItems: {

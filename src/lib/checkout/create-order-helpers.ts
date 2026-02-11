@@ -5,12 +5,13 @@
  */
 
 import { createId } from "@paralleldrive/cuid2";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "~/db";
 import {
   affiliateTable,
   couponRedemptionTable,
+  couponsTable,
   orderItemsTable,
   ordersTable,
   productVariantsTable,
@@ -116,6 +117,9 @@ export interface BookkeepingInput {
  * and compute the server-side subtotal.
  *
  * Returns `null` when no valid items remain (caller should return 400).
+ *
+ * TODO: [INVENTORY] Add stock validation when inventory tracking is implemented.
+ * Currently relies on POD providers (Printful/Printify) for stock management.
  */
 export async function validateAndFetchProducts(
   rawItems: RawOrderItem[],
@@ -240,12 +244,29 @@ export async function resolveDiscounts(params: {
     : null;
 
   const baseTotal = subtotalCents + shippingFeeCents;
-  const expectedTotal =
-    couponResult?.totalAfterDiscountCents ??
-    affiliateResult?.totalAfterDiscountCents ??
-    baseTotal;
 
-  return { affiliateResult, couponResult, expectedTotal };
+  // Pick the best discount: coupon vs affiliate. If coupon gives a better
+  // (lower) total, null out the affiliate so commission is not credited.
+  let effectiveAffiliate = affiliateResult;
+  let expectedTotal: number;
+
+  if (couponResult && affiliateResult) {
+    // Both present – pick the one that gives the lower total
+    if (couponResult.totalAfterDiscountCents <= affiliateResult.totalAfterDiscountCents) {
+      expectedTotal = couponResult.totalAfterDiscountCents;
+      effectiveAffiliate = null; // coupon won → no affiliate commission
+    } else {
+      expectedTotal = affiliateResult.totalAfterDiscountCents;
+    }
+  } else if (couponResult) {
+    expectedTotal = couponResult.totalAfterDiscountCents;
+  } else if (affiliateResult) {
+    expectedTotal = affiliateResult.totalAfterDiscountCents;
+  } else {
+    expectedTotal = baseTotal;
+  }
+
+  return { affiliateResult: effectiveAffiliate, couponResult, expectedTotal };
 }
 
 // ---------------------------------------------------------------------------
@@ -391,37 +412,154 @@ export async function postOrderBookkeeping(
       .where(eq(userTable.id, userId));
   }
 
-  // Affiliate earnings ------------------------------------------------------
+  // Affiliate earnings (atomic increment to avoid SELECT-then-UPDATE race) --
   if (affiliateResult) {
-    const [row] = await db
-      .select({ totalEarnedCents: affiliateTable.totalEarnedCents })
-      .from(affiliateTable)
-      .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId))
-      .limit(1);
-    const current = row?.totalEarnedCents ?? 0;
     await db
       .update(affiliateTable)
       .set({
         updatedAt: now,
-        totalEarnedCents: current + affiliateResult.affiliate.commissionCents,
+        totalEarnedCents: sql`${affiliateTable.totalEarnedCents} + ${affiliateResult.affiliate.commissionCents}`,
       })
       .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId));
   }
 
-  // Coupon redemption -------------------------------------------------------
+  // Coupon redemption (atomic guard against max-uses TOCTOU race) -----------
   if (couponResult) {
-    await db.insert(couponRedemptionTable).values({
-      id: createId(),
-      couponId: couponResult.couponId,
-      orderId,
-      userId,
-      createdAt: now,
-    });
+    const redemptionId = createId();
+    // Use conditional INSERT to atomically enforce maxUses:
+    // only insert if the current redemption count is below the coupon's maxUses.
+    await db.execute(sql`
+      INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
+      SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userId}, ${now}
+      WHERE (
+        SELECT COALESCE(${couponsTable.maxUses}, 0) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
+      ) = 0
+      OR (
+        SELECT COUNT(*) FROM ${couponRedemptionTable} WHERE ${couponRedemptionTable.couponId} = ${couponResult.couponId}
+      ) < (
+        SELECT COALESCE(${couponsTable.maxUses}, 2147483647) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
+      )
+    `);
   }
 }
 
 // ---------------------------------------------------------------------------
-// 7. handleCreateOrderError (consistent error response)
+// 7. createOrderTransaction (wraps insert + items + bookkeeping in a tx)
+// ---------------------------------------------------------------------------
+
+/**
+ * Execute {@link insertOrder}, {@link insertOrderItems}, and
+ * {@link postOrderBookkeeping} inside a single database transaction so that a
+ * failure in any step rolls back the entire order creation.
+ */
+export async function createOrderTransaction(params: {
+  base: BaseOrderFields;
+  extraFields?: Record<string, unknown>;
+  items: ValidatedOrderItem[];
+  bookkeeping: BookkeepingInput;
+}): Promise<string> {
+  return db.transaction(async (tx) => {
+    // Re-use the existing helpers but execute against the transaction
+    const now = new Date();
+
+    // Insert order
+    await tx.insert(ordersTable).values({
+      id: params.base.orderId,
+      createdAt: now,
+      email: params.base.email.trim(),
+      fulfillmentStatus: "unfulfilled",
+      paymentMethod: params.base.paymentMethod,
+      paymentStatus: "pending",
+      shippingFeeCents: params.base.shippingFeeCents,
+      taxCents: params.base.taxCents,
+      status: "pending",
+      totalCents: params.base.totalCents,
+      updatedAt: now,
+      userId: params.base.userId,
+      ...(params.base.telegramUserId
+        ? { telegramUserId: String(params.base.telegramUserId) }
+        : {}),
+      ...(params.base.telegramUsername
+        ? { telegramUsername: params.base.telegramUsername }
+        : {}),
+      ...(params.base.telegramFirstName
+        ? { telegramFirstName: params.base.telegramFirstName }
+        : {}),
+      ...(params.base.affiliateResult && {
+        affiliateId: params.base.affiliateResult.affiliate.affiliateId,
+        affiliateCode: params.base.affiliateResult.affiliate.affiliateCode,
+        affiliateCommissionCents:
+          params.base.affiliateResult.affiliate.commissionCents,
+        affiliateDiscountCents:
+          params.base.affiliateResult.affiliate.discountCents,
+      }),
+      ...(params.extraFields ?? {}),
+    });
+
+    // Insert order items
+    if (params.items.length > 0) {
+      await tx.insert(orderItemsTable).values(
+        params.items.map((item) => ({
+          id: createId(),
+          name: item.name,
+          orderId: params.base.orderId,
+          priceCents: item.priceCents,
+          productId: item.productId,
+          productVariantId: item.productVariantId ?? null,
+          quantity: item.quantity,
+        })),
+      );
+    }
+
+    // Post-order bookkeeping (within the same tx)
+    const { orderId, userId, affiliateResult, couponResult, emailMarketingConsent, smsMarketingConsent } = params.bookkeeping;
+
+    if (
+      userId &&
+      (emailMarketingConsent === true || smsMarketingConsent === true)
+    ) {
+      await tx
+        .update(userTable)
+        .set({
+          updatedAt: now,
+          ...(emailMarketingConsent === true && { receiveMarketing: true }),
+          ...(smsMarketingConsent === true && { receiveSmsMarketing: true }),
+        })
+        .where(eq(userTable.id, userId));
+    }
+
+    if (affiliateResult) {
+      await tx
+        .update(affiliateTable)
+        .set({
+          updatedAt: now,
+          totalEarnedCents: sql`${affiliateTable.totalEarnedCents} + ${affiliateResult.affiliate.commissionCents}`,
+        })
+        .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId));
+    }
+
+    if (couponResult) {
+      const redemptionId = createId();
+      await tx.execute(sql`
+        INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
+        SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userId}, ${now}
+        WHERE (
+          SELECT COALESCE(${couponsTable.maxUses}, 0) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
+        ) = 0
+        OR (
+          SELECT COUNT(*) FROM ${couponRedemptionTable} WHERE ${couponRedemptionTable.couponId} = ${couponResult.couponId}
+        ) < (
+          SELECT COALESCE(${couponsTable.maxUses}, 2147483647) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
+        )
+      `);
+    }
+
+    return params.base.orderId;
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 8. handleCreateOrderError (consistent error response)
 // ---------------------------------------------------------------------------
 
 /**

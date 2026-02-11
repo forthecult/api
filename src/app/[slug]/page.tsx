@@ -6,7 +6,7 @@ import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
-import { getServerBaseUrl } from "~/lib/app-url";
+import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import {
   getCategoryBySlug,
   getCategoryParent,
@@ -251,7 +251,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const siteUrl = baseUrl();
+  const siteUrl = getPublicSiteUrl();
   const product = await fetchProductBySlug(slug);
   if (product) {
     const canonicalSlug = product.slug ?? product.id;
@@ -261,23 +261,40 @@ export async function generateMetadata({
     const pageTitle =
       product.pageTitle?.trim() || product.name;
     const ogTitle = pageTitle.includes(SEO_CONFIG.name) ? pageTitle : `${pageTitle} | ${SEO_CONFIG.name}`;
+    const canonicalUrl = `${siteUrl}/${canonicalSlug}`;
+    const imageUrl =
+      product.image && product.image.startsWith("http")
+        ? product.image
+        : product.image
+          ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
+          : undefined;
     return {
       title: pageTitle,
       description: metaDesc,
       openGraph: {
         title: ogTitle,
         description: metaDesc,
-        images: [{ url: product.image, alt: product.mainImageAlt ?? product.name }],
+        url: canonicalUrl,
         type: "website",
+        ...(imageUrl && {
+          images: [
+            {
+              url: imageUrl,
+              alt: product.mainImageAlt ?? product.name,
+              width: 1200,
+              height: 630,
+            },
+          ],
+        }),
       },
       twitter: {
         card: "summary_large_image",
         title: ogTitle,
         description: metaDesc,
-        images: [product.image],
+        ...(imageUrl && { images: [imageUrl] }),
       },
       alternates: {
-        canonical: `${siteUrl}/${canonicalSlug}`,
+        canonical: canonicalUrl,
       },
     };
   }

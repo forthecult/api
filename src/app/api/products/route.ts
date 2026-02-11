@@ -113,7 +113,8 @@ export async function GET(request: NextRequest) {
             inArray(productsTable.id, productIdsFilter),
           );
     if (q.length > 0) {
-      whereClause = and(whereClause, ilike(productsTable.name, `%${q}%`));
+      const escapedQ = q.replace(/[%_\\]/g, "\\$&");
+      whereClause = and(whereClause, ilike(productsTable.name, `%${escapedQ}%`));
     }
 
     const orderBy =
@@ -277,24 +278,26 @@ export async function GET(request: NextRequest) {
       return { ...item, tokenGatePassed: tokenGatePassed ?? false };
     });
 
-    return NextResponse.json(
-      {
-        items,
-        total,
-        page,
-        limit,
-        totalPages,
-        categories: categoriesWithImage.map((c) => ({
-          slug: c.slug,
-          name: c.name,
-          ...(c.image ? { image: c.image } : {}),
-        })),
-      },
-      {
-        headers: {
-          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+    return withPublicApiCors(
+      NextResponse.json(
+        {
+          items,
+          total,
+          page,
+          limit,
+          totalPages,
+          categories: categoriesWithImage.map((c) => ({
+            slug: c.slug,
+            name: c.name,
+            ...(c.image ? { image: c.image } : {}),
+          })),
         },
-      },
+        {
+          headers: {
+            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+          },
+        },
+      ),
     );
   } catch (err) {
     console.error("Public products list error:", err);

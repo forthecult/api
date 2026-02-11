@@ -15,6 +15,8 @@ export default function TelegramLayout({
       <Script
         src="https://telegram.org/js/telegram-web-app.js"
         strategy="beforeInteractive"
+        integrity="sha384-wu6NaNFje/cy2WpzoCYjC6iPCpaj31EaX/jvOdLlueI1ZvziK83GJATi3JJ3gTL+"
+        crossOrigin="anonymous"
       />
       <TelegramChrome />
       <div className="min-h-screen bg-[var(--tg-theme-bg-color,#fff)] text-[var(--tg-theme-text-color,#000)]">

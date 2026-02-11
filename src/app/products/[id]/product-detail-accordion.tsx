@@ -303,7 +303,7 @@ export function ProductDetailAccordion({
           return (
             <div
               className="pb-4 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: description }}
+              dangerouslySetInnerHTML={{ __html: sanitizeProductDescription(description) }}
             />
           );
         }

@@ -3,7 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { categoriesTable, categoryTokenGateTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 export async function GET(
   _request: NextRequest,
@@ -11,13 +14,29 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const [category] = await db
-      .select()
+      .select({
+        id: categoriesTable.id,
+        name: categoriesTable.name,
+        slug: categoriesTable.slug,
+        title: categoriesTable.title,
+        metaDescription: categoriesTable.metaDescription,
+        description: categoriesTable.description,
+        imageUrl: categoriesTable.imageUrl,
+        level: categoriesTable.level,
+        featured: categoriesTable.featured,
+        parentId: categoriesTable.parentId,
+        tokenGated: categoriesTable.tokenGated,
+        tokenGateType: categoriesTable.tokenGateType,
+        tokenGateQuantity: categoriesTable.tokenGateQuantity,
+        tokenGateNetwork: categoriesTable.tokenGateNetwork,
+        tokenGateContractAddress: categoriesTable.tokenGateContractAddress,
+        createdAt: categoriesTable.createdAt,
+        updatedAt: categoriesTable.updatedAt,
+      })
       .from(categoriesTable)
       .where(eq(categoriesTable.id, id))
       .limit(1);
@@ -83,9 +102,7 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
     const body = (await request.json()) as {
@@ -234,9 +251,7 @@ export async function DELETE(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
 

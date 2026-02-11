@@ -6,7 +6,10 @@ import { accountTable } from "~/db/schema";
 import { affiliateTable } from "~/db/schema/affiliates/tables";
 import { addressesTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 const TELEGRAM_PROVIDER_ID = "telegram";
 
@@ -16,11 +19,10 @@ export async function GET(
 ) {
   try {
     const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
+    // TODO: Standardize error response format across admin routes (L20)
     const [user] = await db
       .select({
         id: userTable.id,
@@ -190,11 +192,14 @@ export async function PATCH(
 ) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const { id } = await params;
+    // TODO: Standardize error response format across admin routes (L20)
+    const CUID_RE = /^[a-z0-9]{20,30}$/;
+    if (!CUID_RE.test(id)) {
+      return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
+    }
     const body = (await request.json().catch(() => ({}))) as Record<
       string,
       unknown

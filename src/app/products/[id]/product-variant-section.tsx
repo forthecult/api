@@ -161,14 +161,18 @@ export function ProductVariantSection({
       ? findVariant(variants, optionDefinitions, selectedByIndex)
       : null;
 
+  // Depend on primitive fields to avoid infinite re-renders from new object references
+  const selectedVariantId = selectedVariant?.id ?? null;
+  const selectedVariantImageUrl = selectedVariant?.imageUrl ?? null;
+
   const { setSelectedVariant } = useProductVariantImage();
   React.useEffect(() => {
     setSelectedVariant(
-      selectedVariant
-        ? { id: selectedVariant.id, imageUrl: selectedVariant.imageUrl }
+      selectedVariantId
+        ? { id: selectedVariantId, imageUrl: selectedVariantImageUrl ?? undefined }
         : null,
     );
-  }, [selectedVariant, setSelectedVariant]);
+  }, [selectedVariantId, selectedVariantImageUrl, setSelectedVariant]);
 
   const displayPrice =
     selectedVariant != null ? selectedVariant.priceCents / 100 : product.price;

@@ -1,3 +1,6 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains deployment details and env var names. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+
 # Production auth troubleshooting
 
 If GitHub (or Google) sign-in works on staging but fails on production with **429** or **500**, use this checklist.

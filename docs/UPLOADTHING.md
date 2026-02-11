@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # UploadThing in this project
 
 **UploadThing** is the app’s **file storage** for images (and optionally video). Files are uploaded to UploadThing’s CDN; the app stores and uses the returned URLs.

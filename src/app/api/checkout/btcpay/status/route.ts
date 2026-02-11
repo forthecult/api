@@ -9,6 +9,7 @@ import {
   isInvoiceSettled,
   type InvoiceStatus,
 } from "~/lib/btcpay";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 /**
  * GET ?orderId= or ?invoiceId=
@@ -16,6 +17,9 @@ import {
  * When BTCPay is not configured, returns { status: "not_configured" } for known order.
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`btcpay-status:${ip}`, RATE_LIMITS.orderStatus);
+  if (!rl.success) return rateLimitResponse(rl);
   try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get("orderId")?.trim();

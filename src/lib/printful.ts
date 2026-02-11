@@ -299,6 +299,21 @@ export type PrintfulCreateOrderRequest = {
   };
 };
 
+export type PrintfulOrderCosts = {
+  calculation_status: string;
+  currency: string | null;
+  subtotal: string | null;
+  discount: string | null;
+  shipping: string | null;
+  digitization: string | null;
+  additional_fee: string | null;
+  fulfillment_fee: string | null;
+  retail_delivery_fee: string | null;
+  tax: string | null;
+  vat: string | null;
+  total: string | null;
+};
+
 export type PrintfulOrderResponse = {
   data: {
     id: number;
@@ -308,11 +323,7 @@ export type PrintfulOrderResponse = {
     created_at: string;
     updated_at: string;
     recipient: PrintfulRecipient;
-    costs?: {
-      calculation_status: string;
-      currency: string | null;
-      total: string | null;
-    };
+    costs?: PrintfulOrderCosts;
     retail_costs?: { calculation_status: string; total: string | null };
     order_items?: Array<{
       id: number;
@@ -322,6 +333,7 @@ export type PrintfulOrderResponse = {
       price: string | null;
       retail_price: string | null;
     }>;
+    shipments?: PrintfulShipment[];
     _links?: {
       order_confirmation?: { href: string };
       shipments?: { href: string };
@@ -337,12 +349,12 @@ export function createPrintfulOrder(
   return pfFetch("/orders", { method: "POST", body, storeId });
 }
 
-/** POST /v2/orders/{order_id}/confirmation – submit for fulfillment. */
+/** POST /v2/orders/{order_id}/confirm – submit for fulfillment. */
 export function confirmPrintfulOrder(
   printfulOrderId: number,
   storeId?: number,
 ): Promise<PrintfulOrderResponse> {
-  return pfFetch(`/orders/${printfulOrderId}/confirmation`, {
+  return pfFetch(`/orders/${printfulOrderId}/confirm`, {
     method: "POST",
     storeId,
   });
@@ -390,6 +402,335 @@ export async function deletePrintfulOrder(
   }
 
   return { success: true };
+}
+
+// --- Shipments ---
+
+export type PrintfulTrackingEvent = {
+  triggered_at: string;
+  description: string;
+};
+
+export type PrintfulShipment = {
+  id: number;
+  order_id: number;
+  shipment_status: string;
+  shipped_at: string | null;
+  delivery_status: string | null;
+  delivered_at: string | null;
+  departure_address?: {
+    country_name?: string;
+    country_code?: string;
+    state_code?: string;
+  };
+  tracking_number?: string | null;
+  tracking_url?: string | null;
+  carrier?: string | null;
+  tracking_events?: PrintfulTrackingEvent[];
+  estimated_delivery?: {
+    from_date?: string | null;
+    to_date?: string | null;
+    calculated_at?: string | null;
+  };
+  shipment_items?: Array<{
+    id: number;
+    order_item_id: number;
+    order_item_external_id?: string | null;
+    order_item_name?: string;
+    quantity: number;
+  }>;
+};
+
+export type PrintfulShipmentsResponse = {
+  data: PrintfulShipment[];
+};
+
+/** GET /v2/orders/{order_id}/shipments – list shipments for an order. */
+export function fetchOrderShipments(
+  printfulOrderId: number,
+  storeId?: number,
+): Promise<PrintfulShipmentsResponse> {
+  return pfFetch(`/orders/${printfulOrderId}/shipments`, { storeId });
+}
+
+// --- Order Updates (PATCH) ---
+
+export type PrintfulPatchOrderRequest = {
+  external_id?: string;
+  shipping?: string;
+  recipient?: Partial<PrintfulRecipient>;
+  retail_costs?: {
+    currency?: string;
+    discount?: string;
+    shipping?: string;
+    tax?: string;
+  };
+};
+
+/** PATCH /v2/orders/{order_id} – partial update of a draft order. */
+export function patchPrintfulOrder(
+  printfulOrderId: number,
+  body: PrintfulPatchOrderRequest,
+  storeId?: number,
+): Promise<PrintfulOrderResponse> {
+  return pfFetch(`/orders/${printfulOrderId}`, { method: "PATCH", body, storeId });
+}
+
+// --- Order Estimation Tasks ---
+
+export type PrintfulOrderEstimationRequest = {
+  shipping?: string;
+  recipient: PrintfulRecipient;
+  order_items: PrintfulOrderItem[];
+};
+
+export type PrintfulOrderEstimationTask = {
+  id: string;
+  status: "pending" | "completed" | "failed";
+  costs?: PrintfulOrderCosts;
+  retail_costs?: { calculation_status: string; total: string | null } | null;
+  failure_reasons?: string[];
+};
+
+/** POST /v2/order-estimation-tasks – create an async cost estimation task. */
+export function createOrderEstimationTask(
+  body: PrintfulOrderEstimationRequest,
+  storeId?: number,
+): Promise<{ data: PrintfulOrderEstimationTask }> {
+  return pfFetch("/order-estimation-tasks", { method: "POST", body, storeId });
+}
+
+/** GET /v2/order-estimation-tasks/{id} – retrieve estimation task result. */
+export function getOrderEstimationTask(
+  taskId: string,
+  storeId?: number,
+): Promise<{ data: PrintfulOrderEstimationTask }> {
+  return pfFetch(`/order-estimation-tasks/${taskId}`, { storeId });
+}
+
+// --- Catalog Stock ---
+
+export type PrintfulCatalogStockEntry = {
+  variant_id?: number;
+  region?: string;
+  status?: string;
+};
+
+export type PrintfulCatalogStockResponse = {
+  data: PrintfulCatalogStockEntry[];
+};
+
+/** GET /v2/catalog-products/{id}/stock – product stock availability by region. */
+export function fetchCatalogProductStock(
+  catalogProductId: number,
+): Promise<PrintfulCatalogStockResponse> {
+  return pfFetch(`/catalog-products/${catalogProductId}/stock`);
+}
+
+/** GET /v2/catalog-variants/{id}/stock – variant stock availability by region. */
+export function fetchCatalogVariantStock(
+  catalogVariantId: number,
+): Promise<PrintfulCatalogStockResponse> {
+  return pfFetch(`/catalog-variants/${catalogVariantId}/stock`);
+}
+
+// --- Mockup Generator v2 ---
+
+export type PrintfulMockupTaskRequest = {
+  product_id: number;
+  variant_ids?: number[];
+  format?: "jpg" | "png";
+  product_options?: Record<string, string>;
+  option_groups?: string[];
+  files: Array<{
+    placement: string;
+    image_url: string;
+    position?: {
+      area_width: number;
+      area_height: number;
+      width: number;
+      height: number;
+      top: number;
+      left: number;
+    };
+  }>;
+};
+
+export type PrintfulMockupResult = {
+  catalog_variant_ids: number[];
+  placement: string;
+  technique_key: string;
+  mockup_url: string;
+  extra_mockup_urls?: Record<string, string>;
+};
+
+export type PrintfulMockupTaskResponse = {
+  data: {
+    id: string;
+    status: "pending" | "completed" | "failed";
+    error?: string | null;
+    result?: {
+      mockups: PrintfulMockupResult[];
+    };
+  };
+};
+
+/** POST /v2/mockup-tasks – create mockup generation task(s). */
+export function createMockupTask(
+  body: PrintfulMockupTaskRequest,
+  storeId?: number,
+): Promise<PrintfulMockupTaskResponse> {
+  return pfFetch("/mockup-tasks", { method: "POST", body, storeId });
+}
+
+/** GET /v2/mockup-tasks/{id} – retrieve mockup task result. */
+export function getMockupTask(
+  taskId: string,
+  storeId?: number,
+): Promise<PrintfulMockupTaskResponse> {
+  return pfFetch(`/mockup-tasks/${taskId}`, { storeId });
+}
+
+// --- Mockup Styles ---
+
+export type PrintfulMockupStyle = {
+  style_id: number;
+  placement: string;
+  display_name: string;
+  image_url?: string;
+  category?: string;
+};
+
+export type PrintfulMockupStylesResponse = {
+  data: PrintfulMockupStyle[];
+};
+
+/** GET /v2/catalog-products/{id}/mockup-styles – mockup styles for a product. */
+export function fetchCatalogProductMockupStyles(
+  catalogProductId: number,
+): Promise<PrintfulMockupStylesResponse> {
+  return pfFetch(`/catalog-products/${catalogProductId}/mockup-styles`);
+}
+
+// --- Countries ---
+
+export type PrintfulCountry = {
+  code: string;
+  name: string;
+  states?: Array<{ code: string; name: string }>;
+};
+
+export type PrintfulCountriesResponse = {
+  data: PrintfulCountry[];
+};
+
+/** GET /v2/countries – list all countries Printful ships to. */
+export function fetchCountries(): Promise<PrintfulCountriesResponse> {
+  return pfFetch("/countries");
+}
+
+// --- Webhooks v2 ---
+
+export type PrintfulWebhookV2Config = {
+  url: string;
+  events: string[];
+  enabled: boolean;
+  signing_secret?: string;
+};
+
+export type PrintfulWebhookV2Response = {
+  data: PrintfulWebhookV2Config;
+};
+
+/** GET /v2/webhooks – get webhook configuration. */
+export async function getWebhookConfigV2(
+  storeId?: number,
+): Promise<PrintfulWebhookV2Config | null> {
+  try {
+    const res = await pfFetch<PrintfulWebhookV2Response>("/webhooks", { storeId });
+    return res.data;
+  } catch {
+    return null;
+  }
+}
+
+/** POST /v2/webhooks – set up webhook configuration. */
+export function setWebhookConfigV2(
+  config: { url: string; events: string[] },
+  storeId?: number,
+): Promise<PrintfulWebhookV2Response> {
+  return pfFetch("/webhooks", { method: "POST", body: config, storeId });
+}
+
+/** DELETE /v2/webhooks – disable webhook support. */
+export async function disableWebhookV2(
+  storeId?: number,
+): Promise<{ success: boolean }> {
+  await pfFetch("/webhooks", { method: "DELETE", storeId });
+  return { success: true };
+}
+
+/** GET /v2/webhooks/events/{type} – get event-specific configuration. */
+export async function getWebhookEventConfig(
+  eventType: string,
+  storeId?: number,
+): Promise<unknown> {
+  return pfFetch(`/webhooks/events/${encodeURIComponent(eventType)}`, { storeId });
+}
+
+/** POST /v2/webhooks/events/{type} – set up event-specific configuration. */
+export async function setWebhookEventConfig(
+  eventType: string,
+  config: { url?: string; params?: Record<string, unknown> },
+  storeId?: number,
+): Promise<unknown> {
+  return pfFetch(`/webhooks/events/${encodeURIComponent(eventType)}`, {
+    method: "POST",
+    body: config,
+    storeId,
+  });
+}
+
+/** DELETE /v2/webhooks/events/{type} – disable support for a specific event. */
+export async function disableWebhookEvent(
+  eventType: string,
+  storeId?: number,
+): Promise<{ success: boolean }> {
+  await pfFetch(`/webhooks/events/${encodeURIComponent(eventType)}`, {
+    method: "DELETE",
+    storeId,
+  });
+  return { success: true };
+}
+
+// --- Order Invoice ---
+
+/** GET /v2/orders/{order_id}/invoice – retrieve order invoice. */
+export function getPrintfulOrderInvoice(
+  printfulOrderId: number,
+  storeId?: number,
+): Promise<unknown> {
+  return pfFetch(`/orders/${printfulOrderId}/invoice`, { storeId });
+}
+
+// --- Stores ---
+
+export type PrintfulStoreV2 = {
+  id: number;
+  type: string;
+  name: string;
+};
+
+/** GET /v2/stores – list all stores. */
+export function fetchStoresV2(): Promise<{ data: PrintfulStoreV2[] }> {
+  return pfFetch("/stores");
+}
+
+/** GET /v2/stores/{id}/statistics – get store statistics. */
+export function fetchStoreStatistics(
+  storeIdParam: number,
+): Promise<{ data: unknown }> {
+  return pfFetch(`/stores/${storeIdParam}/statistics`);
 }
 
 // ============================================================================

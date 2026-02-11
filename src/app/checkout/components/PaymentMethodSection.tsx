@@ -195,12 +195,17 @@ export function PaymentMethodSection({
 
   useEffect(() => {
     if (paymentMethod !== "crypto") return;
-    fetch("/api/crypto/prices")
+    const ac = new AbortController();
+    fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
       .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number }) => {
         if (data && typeof data === "object") setCryptoPrices(data);
       })
-      .catch(() => {});
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        // Prices will use fallback values if fetch fails
+      });
+    return () => ac.abort();
   }, [paymentMethod]);
 
   const visibleCryptoSubOptions = useMemo(() => {

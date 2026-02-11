@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Printful API Integration
 
 Printful is treated as a **vendor**: they provide products (different brands and variants). Our products use the **same schema** whether manual or from Printful—no separate tables. Order of work: **products → shipping → orders**; same approach is used for Printify.

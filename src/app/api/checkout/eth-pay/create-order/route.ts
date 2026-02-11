@@ -119,8 +119,9 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields (custom validation, not createOrderSchema)
-    if (!email?.trim()) {
-      return NextResponse.json({ error: "email required" }, { status: 400 });
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
+      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
     }
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json(
@@ -200,7 +201,7 @@ export async function POST(request: NextRequest) {
     const totalCheck = validateTotal({
       clientTotalCents: totalCents,
       expectedTotal,
-      toleranceCents: 500,
+      toleranceCents: 100,
     });
     if (!totalCheck.valid) {
       if (process.env.NODE_ENV === "development") {

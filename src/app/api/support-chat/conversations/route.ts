@@ -4,36 +4,10 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { supportChatConversationTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
-const GUEST_RATE_LIMIT_PER_MIN = 3;
-const guestRateLimit = new Map<string, { count: number; resetAt: number }>();
-
-function getClientIp(request: NextRequest): string {
-  return (
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    request.headers.get("x-real-ip") ||
-    "unknown"
-  );
-}
-
-function checkGuestRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const windowMs = 60_000;
-  const entry = guestRateLimit.get(ip);
-  if (!entry) {
-    guestRateLimit.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (now > entry.resetAt) {
-    guestRateLimit.set(ip, { count: 1, resetAt: now + windowMs });
-    return true;
-  }
-  if (entry.count >= GUEST_RATE_LIMIT_PER_MIN) return false;
-  entry.count++;
-  return true;
-}
 
 const GUEST_ID_HEADER = "x-support-guest-id";
 const GUEST_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -160,13 +134,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const ip = getClientIp(request);
-  if (!checkGuestRateLimit(ip)) {
-    return NextResponse.json(
-      { error: "Too many requests. Try again in a minute." },
-      { status: 429 },
-    );
-  }
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`chat-create:${ip}`, { limit: 5, windowSeconds: 60 });
+  if (!rl.success) return rateLimitResponse(rl);
 
   const id = crypto.randomUUID();
   const now = new Date();

@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Print-on-Demand Webhook Setup Guide
 
 This document explains how to set up webhooks for Printify and Printful to enable automatic product syncing and order status updates.

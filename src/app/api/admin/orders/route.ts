@@ -5,7 +5,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
+
+/** Escape SQL LIKE/ILIKE special characters */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
@@ -54,9 +62,7 @@ function fulfillmentStatusFromLegacy(status: string): string {
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,
@@ -112,7 +118,7 @@ export async function GET(request: NextRequest) {
 
     let orderIdFilter: string[] | null = null;
     if (search.length > 0) {
-      const term = `%${search}%`;
+      const term = `%${escapeLike(search)}%`;
       const [byOrder, byUser, byItem] = await Promise.all([
         db
           .selectDistinct({ id: ordersTable.id })

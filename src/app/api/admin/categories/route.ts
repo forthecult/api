@@ -7,7 +7,15 @@ import {
   categoryTokenGateTable,
   productCategoriesTable,
 } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
+
+/** Escape SQL LIKE/ILIKE special characters */
+function escapeLike(s: string): string {
+  return s.replace(/[%_\\]/g, (c) => `\\${c}`);
+}
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 100;
@@ -33,9 +41,7 @@ function parseSort(
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const page = Math.max(
       1,
@@ -62,8 +68,8 @@ export async function GET(request: NextRequest) {
     const whereClause =
       search.length > 0
         ? or(
-            ilike(categoriesTable.name, `%${search}%`),
-            ilike(categoriesTable.slug, `%${search}%`),
+            ilike(categoriesTable.name, `%${escapeLike(search)}%`),
+            ilike(categoriesTable.slug, `%${escapeLike(search)}%`),
           )
         : undefined;
 
@@ -173,9 +179,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
       name: string;

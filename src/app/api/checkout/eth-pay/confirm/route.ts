@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import {
   createPublicClient,
@@ -260,9 +260,11 @@ export async function POST(request: NextRequest) {
       // Calculate from totalCents for stablecoins
       expectedAmount = BigInt(order.totalCents) * BigInt(10000);
     } else {
-      // For ETH without stored amount, we accept any non-zero amount
-      // (The frontend should have calculated and displayed the correct amount)
-      expectedAmount = 0n;
+      // ETH orders MUST have cryptoAmount stored at creation time
+      return NextResponse.json(
+        { error: "Order missing expected payment amount. Please create a new order." },
+        { status: 400 },
+      );
     }
 
     // Allow 0.5% tolerance for rounding
@@ -289,17 +291,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Payment verified! Update order status
-    await db
-      .update(ordersTable)
-      .set({
-        paymentStatus: "paid",
-        status: "processing",
-        cryptoTxHash: txHash,
-        payerWalletAddress: payerAddress || senderAddress,
-        updatedAt: new Date(),
-      })
-      .where(eq(ordersTable.id, orderId));
+    // Payment verified! Idempotent update: only transition from 'pending' to prevent double-fulfillment
+    const updated = await db.transaction(async (tx) => {
+      const [current] = await tx
+        .select({ id: ordersTable.id, status: ordersTable.status })
+        .from(ordersTable)
+        .where(
+          and(eq(ordersTable.id, orderId), eq(ordersTable.status, "pending")),
+        )
+        .limit(1);
+      if (!current) return null; // already processed by a concurrent request
+      await tx
+        .update(ordersTable)
+        .set({
+          paymentStatus: "paid",
+          status: "processing",
+          cryptoTxHash: txHash,
+          payerWalletAddress: payerAddress || senderAddress,
+          updatedAt: new Date(),
+        })
+        .where(eq(ordersTable.id, orderId));
+      return current;
+    });
+
+    if (!updated) {
+      return NextResponse.json({
+        orderId,
+        status: "confirmed",
+        message: "Payment already confirmed",
+        txHash: order.cryptoTxHash || txHash,
+      });
+    }
 
     void onOrderCreated(orderId);
 

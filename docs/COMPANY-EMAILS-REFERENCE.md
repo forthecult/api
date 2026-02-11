@@ -1,3 +1,6 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains internal email mapping and code locations. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+
 # Company email addresses – where they appear
 
 Use this as a checklist for an overhaul. Emails are split into: **visible on the site**, **used in APIs/responses**, and **env/config**.

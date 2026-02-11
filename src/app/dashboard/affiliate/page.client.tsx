@@ -67,6 +67,7 @@ export function AffiliatePageClient() {
   const { user } = useCurrentUser();
   const [data, setData] = React.useState<{ affiliate: AffiliateMe | null } | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState(false);
   const [applying, setApplying] = React.useState(false);
   const [applyCode, setApplyCode] = React.useState("");
   const [applyPayoutMethod, setApplyPayoutMethod] = React.useState("");
@@ -92,11 +93,18 @@ export function AffiliatePageClient() {
 
   React.useEffect(() => {
     if (!user) return;
-    fetch("/api/affiliates/me", { credentials: "include" })
+    const ac = new AbortController();
+    setLoadError(false);
+    fetch("/api/affiliates/me", { credentials: "include", signal: ac.signal })
       .then((res) => (res.ok ? res.json() : null))
       .then((d: { affiliate: AffiliateMe | null } | null) => d && setData(d))
-      .catch(() => setData({ affiliate: null }))
+      .catch((err: unknown) => {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setLoadError(true);
+        setData({ affiliate: null });
+      })
       .finally(() => setLoading(false));
+    return () => ac.abort();
   }, [user]);
 
   React.useEffect(() => {
@@ -248,6 +256,21 @@ export function AffiliatePageClient() {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 p-8">
+        <p className="text-sm text-destructive">Failed to load affiliate data. Please try again.</p>
+        <button
+          type="button"
+          className="text-sm text-primary underline"
+          onClick={() => window.location.reload()}
+        >
+          Refresh
+        </button>
       </div>
     );
   }

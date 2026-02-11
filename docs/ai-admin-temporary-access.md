@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Secure Temporary Access for AI to Admin APIs
 
 This guide describes secure ways to give an AI (e.g. Cursor, Claude, or another agent) **temporary** access to your production admin interface/APIs for actions like updating categories (copy + SEO) and adding products.

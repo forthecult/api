@@ -47,6 +47,7 @@ async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
   try {
     const res = await fetch(`${baseUrl}/api/reviews?limit=20`, {
       next: { revalidate: 300 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
@@ -74,6 +75,7 @@ async function fetchCategories(): Promise<
   try {
     const res = await fetch(`${baseUrl}/api/categories`, {
       next: { revalidate: 300 },
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
@@ -114,6 +116,7 @@ async function fetchFeaturedProducts(cookieHeader?: string): Promise<
   try {
     const res = await fetch(`${baseUrl}/api/products?page=1&limit=8`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
       ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return [];

@@ -203,6 +203,27 @@ export function ethereumAuthPlugin() {
               });
             }
 
+            // Always delete the nonce after lookup, regardless of verification outcome
+            const deleteNonce = async () => {
+              try {
+                await adapter.delete({
+                  model: "verification",
+                  where: [{ field: "id", value: verification.id }],
+                });
+              } catch {
+                try {
+                  await adapter.deleteMany({
+                    model: "verification",
+                    where: [{ field: "id", value: verification.id }],
+                  });
+                } catch {
+                  console.warn(
+                    "[ethereum-auth] Could not delete verification token",
+                  );
+                }
+              }
+            };
+
             const client = getPublicClient();
             let valid = false;
             try {
@@ -216,6 +237,7 @@ export function ethereumAuthPlugin() {
                 "[ethereum-auth] SIWE verification error:",
                 siweErr,
               );
+              await deleteNonce();
               throw new APIError("UNAUTHORIZED", {
                 message: "Signature verification failed",
               });
@@ -226,6 +248,7 @@ export function ethereumAuthPlugin() {
                 "[ethereum-auth] Invalid signature for address:",
                 addressTrim,
               );
+              await deleteNonce();
               throw new APIError("UNAUTHORIZED", {
                 message: "Invalid signature",
               });
@@ -234,25 +257,7 @@ export function ethereumAuthPlugin() {
             console.log("[ethereum-auth] Signature verified successfully");
 
             // Delete the used verification token
-            try {
-              await adapter.delete({
-                model: "verification",
-                where: [{ field: "id", value: verification.id }],
-              });
-            } catch {
-              // Fallback: some adapters use deleteMany
-              try {
-                await adapter.deleteMany({
-                  model: "verification",
-                  where: [{ field: "id", value: verification.id }],
-                });
-              } catch {
-                // Ignore if delete fails - verification will expire anyway
-                console.warn(
-                  "[ethereum-auth] Could not delete verification token",
-                );
-              }
-            }
+            await deleteNonce();
 
             const existingAccount = (await adapter.findOne({
               model: "account",
@@ -419,13 +424,11 @@ export function ethereumAuthPlugin() {
           } catch (err) {
             console.error("[ethereum-auth] Verify error:", err);
             if (err instanceof APIError) throw err;
-            // Don't expose raw DB/query errors to the client
+            // Always use generic message — never expose raw error details to the client
             const raw = err instanceof Error ? err.message : "Verification failed";
-            const isDbError = /insert into|update.*set|Failed query|relation .* does not exist/i.test(raw);
+            console.error("[wallet-auth] Verification error:", raw);
             throw new APIError("INTERNAL_SERVER_ERROR", {
-              message: isDbError
-                ? "Something went wrong on our end. Please try again or contact support."
-                : raw,
+              message: "Something went wrong on our end. Please try again or contact support.",
             });
           }
         },

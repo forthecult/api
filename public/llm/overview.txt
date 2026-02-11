@@ -1,20 +1,32 @@
-# Overview — For the Cult
+# For the Cult — Overview
 
-This site is an ecommerce store (For the Cult).
+An ecommerce store that sells apparel, accessories, and lifestyle products. Accepts both card and cryptocurrency payments.
 
-## For AI agents and LLMs
+## For AI agents
 
-- The site exposes a REST API designed for AI: semantic product search, structured errors with suggestions, action hints in responses, multi-chain crypto and card payments.
-- Best first call: GET /api/agent/capabilities — returns supported features, payment options, shipping countries, rate limits, and endpoint reference.
-- OpenAPI spec: GET /api/openapi.json. Human-readable API docs: /api/docs (if enabled).
+- This site exposes a REST API designed for AI agents: natural-language product search, structured errors with next-step suggestions, action hints in responses, and multiple payment methods.
+- **Start here:** `GET /api/agent/capabilities` — returns supported features, payment options, shipping countries, rate limits, and a complete endpoint reference.
+- **OpenAPI spec:** `GET /api/openapi.json`
+- **Interactive docs:** `/api/docs` (Swagger UI)
+- **LLM API summary:** `/llm/api.txt`
 
-## Main concepts
+## Key concepts
 
-- Products: Published products with variants (size, color), categories, brands. Search via POST /api/products/semantic-search or POST /api/v1/products/search.
-- Checkout: POST /api/checkout with items, email, payment (chain/token or card), shipping. Returns order ID and payment details (crypto address + amount or payment link).
-- Orders: Poll GET /api/orders/{orderId}/status until status is "paid". Webhooks from fulfillment partners update order status.
+- **Products** — Published products with variants (size, color), categories, and brands. Search via `POST /api/products/semantic-search` (natural language) or `POST /api/products/search` (structured filters).
+- **Checkout** — `POST /api/checkout` with items, email, payment method, and shipping address. Returns an order ID and payment instructions.
+- **Orders** — Poll `GET /api/orders/{orderId}/status` until the order is confirmed. Fulfillment partners handle shipping.
+- **Payments** — Accepts card (Stripe) and cryptocurrency (Solana, Ethereum, Base, Arbitrum, Polygon, Bitcoin via BTCPay).
+
+## Quick start (3 calls)
+
+1. **Find products:** `POST /api/products/semantic-search` with `{ "query": "lightweight running shoes" }`
+2. **Create order:** `POST /api/checkout` with items, email, payment method, and shipping address
+3. **Confirm payment:** Poll `GET /api/orders/{orderId}/status` every 5 seconds until status is `paid`
+
 ## Customer-facing
 
-- Storefront, product pages, cart, checkout. Auth via better-auth (email, OAuth). Subscriptions and billing at dashboard/billing.
+- Storefront with product pages, cart, checkout, and order tracking.
+- Account sign-in via email, Google, GitHub, or wallet.
+- Dashboard for order history, notifications, and support.
 
-Use /llm/api.txt for full API summary. For full endpoint reference, call GET /api/agent/capabilities.
+For the full API reference, see `/llm/api.txt` or call `GET /api/agent/capabilities`.

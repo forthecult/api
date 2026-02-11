@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Using the POD Product Creation System
 
 This doc explains how to use the admin POD (Print-on-Demand) APIs to create products from an image—with or without an LLM in the loop.

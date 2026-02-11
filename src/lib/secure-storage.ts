@@ -158,9 +158,9 @@ export const secureStorage = {
       const encrypted = await encrypt(value);
       localStorage.setItem(ENCRYPTED_PREFIX + key, encrypted);
     } catch (error) {
-      console.error("[SecureStorage] Failed to encrypt:", error);
-      // Fallback to unencrypted storage (better than losing data)
-      localStorage.setItem(key, value);
+      console.error("[SecureStorage] Failed to encrypt — data NOT stored to avoid plaintext leak:", error);
+      // [SECURITY] Do NOT fallback to unencrypted storage; sensitive data must not be stored in plaintext.
+      // Callers should handle the async rejection or missing data gracefully.
     }
   },
 

@@ -201,7 +201,7 @@ export const auth = betterAuth({
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 5 * 60, // 5 minutes; reduces DB lookups on getSession
+      maxAge: 2 * 60, // 2 minutes; reduces DB lookups on getSession
     },
   },
 
@@ -218,6 +218,9 @@ export const auth = betterAuth({
     defaultCookieAttributes: {
       // For cross-origin admin app, we need sameSite: "none" (requires secure: true / HTTPS)
       // Only enable this when admin app is on a different origin
+      // WARNING: [SECURITY] sameSite: "none" disables browser CSRF protection on cookies.
+      // This is required for cross-origin admin app sharing, but means CSRF tokens or a
+      // separate admin auth mechanism should be used to protect state-changing endpoints.
       ...(process.env.NEXT_PUBLIC_ADMIN_APP_URL &&
         !process.env.NEXT_PUBLIC_ADMIN_APP_URL.includes("localhost") && {
           sameSite: "none" as const,
@@ -235,15 +238,22 @@ export const auth = betterAuth({
     },
   },
 
-  // Local: no email verification. Staging/prod: add emailVerification (e.g. Resend) when you need it.
-  ...(process.env.NODE_ENV === "development" && {
-    emailVerification: {
-      sendOnSignUp: false,
-      sendVerificationEmail: async () => {
-        /* no-op for local; configure Resend/sendVerificationEmail for staging/prod */
-      },
-    },
-  }),
+  // Email verification: disabled in dev, enabled in production/staging
+  emailVerification:
+    process.env.NODE_ENV === "development"
+      ? {
+          sendOnSignUp: false,
+          sendVerificationEmail: async () => {
+            /* no-op for local dev */
+          },
+        }
+      : {
+          sendOnSignUp: true,
+          sendVerificationEmail: async ({ user, url }) => {
+            // Production/staging: send verification email via configured provider
+            void sendVerificationOTPEmail({ to: user.email, otp: url, type: "email-verification" });
+          },
+        },
 
   // Configure OAuth behavior
   oauth: {
@@ -280,15 +290,12 @@ export const auth = betterAuth({
 
   // AUTH_SECRET is required in production for security
   secret: (() => {
-    if (process.env.AUTH_SECRET) {
-      return process.env.AUTH_SECRET;
-    }
+    const secret = process.env.AUTH_SECRET;
+    if (secret) return secret;
     if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "AUTH_SECRET environment variable is required in production",
-      );
+      throw new Error("AUTH_SECRET environment variable is required in production");
     }
-    // Development fallback - never use in production
+    console.warn("⚠️  Using hardcoded dev secret — never use in production");
     return "dev-secret-min-32-chars-for-better-auth-local";
   })(),
 
@@ -318,6 +325,13 @@ export const auth = betterAuth({
         input: true,
         required: false,
         type: "string",
+      },
+      /** User role for authorization. "user" (default) or "admin". */
+      role: {
+        input: false,
+        required: false,
+        type: "string",
+        defaultValue: "user",
       },
       // Notification preferences - transactional (per channel)
       transactionalEmail: {
@@ -489,7 +503,8 @@ export const getCurrentUserOrRedirect = async (
   return user; // user is UserDbType here
 };
 
-// Server-only: use ADMIN_EMAILS env var (not NEXT_PUBLIC_* to avoid exposing admin emails to client)
+// Server-only: use ADMIN_EMAILS env var as fallback for backwards compatibility.
+// Primary admin detection uses the database-backed `role` column on the user table.
 const ADMIN_EMAILS = new Set(
   (process.env.ADMIN_EMAILS ?? "")
     .split(",")
@@ -497,8 +512,17 @@ const ADMIN_EMAILS = new Set(
     .filter(Boolean),
 );
 
-/** admin check only affects access to /admin routes after login; it does not block sign-in. */
-export function isAdminUser(user: { email?: string } | null): boolean {
-  if (!user?.email) return false;
-  return ADMIN_EMAILS.has(user.email.trim().toLowerCase());
+/**
+ * Check if a user has admin privileges.
+ * Checks the DB `role` column first (preferred), then falls back to the ADMIN_EMAILS
+ * env var for backwards compatibility during migration.
+ * Admin check only affects access to /admin routes after login; it does not block sign-in.
+ */
+export function isAdminUser(user: { email?: string; role?: string | null } | null): boolean {
+  if (!user) return false;
+  // Primary: database-backed role column
+  if (user.role === "admin") return true;
+  // Fallback: email-based detection (for backward compat until all admins have role set in DB)
+  if (user.email && ADMIN_EMAILS.has(user.email.trim().toLowerCase())) return true;
+  return false;
 }

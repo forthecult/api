@@ -1,3 +1,6 @@
+<!-- INTERNAL — DO NOT PUBLISH. This document contains sensitive security architecture details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+
 # Security Audit: API, Customer, AI, and Admin Authentication
 
 **Audit date:** 2026-02-11  

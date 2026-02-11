@@ -1,9 +1,12 @@
-import { and, desc, gte, inArray, lte } from "drizzle-orm";
+import { and, desc, gte, inArray, lte, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  adminAuthFailureResponse,
+  getAdminAuth,
+} from "~/lib/admin-api-auth";
 
 type Range = "daily" | "monthly" | "yearly";
 
@@ -25,9 +28,7 @@ function getRangeBounds(range: Range): { start: Date; end: Date } {
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const range = (request.nextUrl.searchParams.get("range") ??
       "monthly") as Range;
@@ -37,7 +38,40 @@ export async function GET(request: NextRequest) {
 
     const { start, end } = getRangeBounds(range);
 
-    const orders = await db
+    const rangeCondition = and(
+      gte(ordersTable.createdAt, start),
+      lte(ordersTable.createdAt, end),
+      inArray(ordersTable.status, ["paid", "fulfilled"]),
+    );
+
+    // Use aggregate queries instead of fetching all rows
+    const [statsResult, soldItemsResult] = await Promise.all([
+      db
+        .select({
+          totalSalesCents: sql<number>`COALESCE(SUM(${ordersTable.totalCents}), 0)::bigint`,
+          orderCount: sql<number>`COUNT(*)::int`,
+        })
+        .from(ordersTable)
+        .where(rangeCondition),
+      db
+        .select({
+          soldItems: sql<number>`COALESCE(SUM(${orderItemsTable.quantity}), 0)::bigint`,
+        })
+        .from(orderItemsTable)
+        .innerJoin(ordersTable, and(
+          sql`${orderItemsTable.orderId} = ${ordersTable.id}`,
+          rangeCondition,
+        )),
+    ]);
+
+    const totalSalesCents = Number(statsResult[0]?.totalSalesCents ?? 0);
+    const orderCount = Number(statsResult[0]?.orderCount ?? 0);
+    const averageOrderValueCents =
+      orderCount > 0 ? Math.round(totalSalesCents / orderCount) : 0;
+    const soldItems = Number(soldItemsResult[0]?.soldItems ?? 0);
+
+    // Fetch only the 10 most recent orders for the detail list
+    const recentOrderRows = await db
       .select({
         id: ordersTable.id,
         createdAt: ordersTable.createdAt,
@@ -46,18 +80,13 @@ export async function GET(request: NextRequest) {
         totalCents: ordersTable.totalCents,
       })
       .from(ordersTable)
-      .where(
-        and(
-          gte(ordersTable.createdAt, start),
-          lte(ordersTable.createdAt, end),
-          inArray(ordersTable.status, ["paid", "fulfilled"]),
-        ),
-      )
-      .orderBy(desc(ordersTable.createdAt));
+      .where(rangeCondition)
+      .orderBy(desc(ordersTable.createdAt))
+      .limit(10);
 
-    const orderIds = orders.map((o) => o.id);
-    const items =
-      orderIds.length > 0
+    const recentOrderIds = recentOrderRows.map((o) => o.id);
+    const recentItems =
+      recentOrderIds.length > 0
         ? await db
             .select({
               id: orderItemsTable.id,
@@ -67,23 +96,17 @@ export async function GET(request: NextRequest) {
               orderId: orderItemsTable.orderId,
             })
             .from(orderItemsTable)
-            .where(inArray(orderItemsTable.orderId, orderIds))
+            .where(inArray(orderItemsTable.orderId, recentOrderIds))
         : [];
 
-    const itemsByOrderId = new Map<string, typeof items>();
-    for (const i of items) {
+    const itemsByOrderId = new Map<string, typeof recentItems>();
+    for (const i of recentItems) {
       const list = itemsByOrderId.get(i.orderId) ?? [];
       list.push(i);
       itemsByOrderId.set(i.orderId, list);
     }
 
-    const totalSalesCents = orders.reduce((sum, o) => sum + o.totalCents, 0);
-    const orderCount = orders.length;
-    const averageOrderValueCents =
-      orderCount > 0 ? Math.round(totalSalesCents / orderCount) : 0;
-    const soldItems = items.reduce((sum, i) => sum + i.quantity, 0);
-
-    const recentOrders = orders.slice(0, 10).map((o) => ({
+    const recentOrders = recentOrderRows.map((o) => ({
       id: o.id,
       createdAt:
         o.createdAt instanceof Date

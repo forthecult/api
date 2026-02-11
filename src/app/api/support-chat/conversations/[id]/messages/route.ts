@@ -7,6 +7,7 @@ import {
   supportChatMessageTable,
 } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import { checkRateLimit } from "~/lib/rate-limit";
 import { generateSupportChatReply } from "~/lib/support-chat-ai";
 
 const GUEST_ID_HEADER = "x-support-guest-id";
@@ -149,8 +150,13 @@ export async function POST(
       .set({ updatedAt: now })
       .where(eq(supportChatConversationTable.id, conversationId));
 
-    // If not taken over, generate and store AI reply
+    // If not taken over, generate and store AI reply (rate-limited per conversation)
     if (!conv!.takenOverBy) {
+      const msgRl = await checkRateLimit(`chat-msg:${conversationId}`, { limit: 10, windowSeconds: 60 });
+      if (!msgRl.success) {
+        // Don't generate AI reply if rate limited, but still save the user message
+        return NextResponse.json({ id: messageId, rateLimited: true });
+      }
       const recentRows = await db
         .select({
           role: supportChatMessageTable.role,

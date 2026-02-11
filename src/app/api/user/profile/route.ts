@@ -4,12 +4,17 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
 import { auth } from "~/lib/auth";
+import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 /**
  * GET /api/user/profile
  * Returns current user's profile (firstName, lastName, image) for display/edit.
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`user-profile:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -50,6 +55,11 @@ export async function GET(request: NextRequest) {
  * Body: { firstName?: string, lastName?: string, image?: string | null }
  */
 export async function PATCH(request: NextRequest) {
+  // [SECURITY] Verify Origin header to prevent CSRF attacks (sameSite: "none" disables browser CSRF protection)
+  if (!verifyCsrfOrigin(request.headers)) return csrfFailureResponse();
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`user-profile:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

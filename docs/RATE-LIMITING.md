@@ -1,3 +1,6 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains rate limit implementation details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+
 # Rate limiting
 
 Rate limits are applied to checkout, contact, refund, auth, Loqate, **order status polling**, and **admin API** to reduce abuse and protect quotas.

@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Printify API Integration
 
 Printify is treated as a **vendor** alongside Printful. Products use the **same schema** whether manual, Printful, or Printify—no separate tables. The integration follows the same patterns as Printful.

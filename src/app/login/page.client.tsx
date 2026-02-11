@@ -23,8 +23,11 @@ function LoginPageClientInner() {
   const searchParams = useSearchParams();
 
   // Check for callbackUrl from query params (e.g., from admin app redirect)
-  const callbackUrl = searchParams.get("callbackUrl");
-  const redirectTarget = callbackUrl || SYSTEM_CONFIG.redirectAfterSignIn;
+  // [SECURITY] Only allow relative paths to prevent open redirect attacks
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const isRelativePath = rawCallbackUrl?.startsWith("/") && !rawCallbackUrl.startsWith("//");
+  const redirectTarget: string =
+    isRelativePath && rawCallbackUrl ? rawCallbackUrl : SYSTEM_CONFIG.redirectAfterSignIn;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

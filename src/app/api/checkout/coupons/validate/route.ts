@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
 import { resolveCouponForCheckout } from "~/lib/coupon";
+import { getClientIp, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 const validateSchema = {
   code: (v: unknown) =>
@@ -20,6 +21,11 @@ const validateSchema = {
  * Public API: validate a coupon code for checkout. Returns discount info if valid.
  */
 export async function POST(request: NextRequest) {
+  // Rate limit coupon validation to prevent brute-force code guessing
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`coupon-validate:${ip}`, { limit: 10, windowSeconds: 60 });
+  if (!rl.success) return rateLimitResponse(rl);
+
   try {
     const session = await auth.api.getSession({ headers: request.headers });
     const body = (await request.json()) as Record<string, unknown>;

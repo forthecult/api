@@ -8,9 +8,9 @@ export const openApiSpec = {
   info: {
     title: "For the Cult API",
     description:
-      "AI-agent-friendly eCommerce API for purchasing with cryptocurrency. Agents discover products, create orders, and pay with Solana (SOL, USDC, SPL).",
+      "AI-agent-friendly eCommerce API. Agents discover products, create orders, and pay with card or cryptocurrency (Solana, Ethereum, Base, and more).",
     version: "1.0.0",
-    contact: { name: "For the Cult" },
+    contact: { name: "For the Cult", url: "https://forthecult.store" },
   },
   servers: [{ url: "/api", description: "API base (relative)" }],
   tags: [
@@ -31,7 +31,7 @@ export const openApiSpec = {
         tags: ["Health"],
         summary: "Health check",
         description:
-          "Check if the API is operational. Call this first to verify connectivity before making other requests. Returns version info and timestamp.",
+          "Check if the API is operational. Call this first to verify connectivity before making other requests.",
         operationId: "getHealth",
         responses: {
           "200": {
@@ -42,7 +42,6 @@ export const openApiSpec = {
                   type: "object",
                   properties: {
                     status: { type: "string", example: "healthy" },
-                    version: { type: "string", example: "1.0.0" },
                     timestamp: { type: "string", format: "date-time" },
                   },
                 },
@@ -507,7 +506,7 @@ export const openApiSpec = {
         tags: ["Discovery", "Products"],
         summary: "Natural language product search",
         description:
-          "Search using natural language. E.g., 'blue hoodie under $50' or 'gift for dad who likes golf'.",
+          "Search using natural language. E.g., 'comfortable hoodie under $60' or 'birthday gift for a friend who likes hiking'.",
         operationId: "semanticProductSearch",
         requestBody: {
           content: {
@@ -556,7 +555,7 @@ export const openApiSpec = {
         tags: ["Products"],
         summary: "Get product by slug",
         description:
-          "Single product details by slug (e.g. mens-bitcoin-hodl-tee). 404 if not found or not published.",
+          "Single product details by slug (e.g. classic-comfort-hoodie). Returns 404 if not found or not published.",
         operationId: "getProductBySlug",
         parameters: [
           {
@@ -564,7 +563,7 @@ export const openApiSpec = {
             in: "path",
             required: true,
             schema: { type: "string" },
-            description: "Product slug, e.g. mens-bitcoin-hodl-tee",
+            description: "Product slug, e.g. classic-comfort-hoodie",
           },
         ],
         responses: {
@@ -690,9 +689,9 @@ export const openApiSpec = {
     "/checkout": {
       post: {
         tags: ["Checkout"],
-        summary: "Create checkout (Solana Pay)",
+        summary: "Create checkout order",
         description:
-          "Create an order and get Solana Pay payment instructions. Poll GET /orders/{orderId}/status until paid.",
+          "Create an order and get payment instructions. Supports card (Stripe), Solana, EVM chains, Bitcoin (BTCPay), and TON. Poll GET /orders/{orderId}/status until paid.",
         operationId: "postCheckout",
         requestBody: {
           required: true,
@@ -718,8 +717,31 @@ export const openApiSpec = {
                     type: "object",
                     required: ["chain", "token"],
                     properties: {
-                      chain: { type: "string", enum: ["solana"] },
-                      token: { type: "string", enum: ["SOL", "USDC", "SPL"] },
+                      chain: {
+                        type: "string",
+                        enum: [
+                          "solana",
+                          "ethereum",
+                          "base",
+                          "arbitrum",
+                          "polygon",
+                          "bnb",
+                        ],
+                        description:
+                          "Blockchain network for crypto payment. Use with token.",
+                      },
+                      token: {
+                        type: "string",
+                        enum: ["SOL", "ETH", "USDC", "USDT", "SPL"],
+                        description:
+                          "Token symbol. Available tokens vary by chain.",
+                      },
+                      method: {
+                        type: "string",
+                        enum: ["stripe", "btcpay", "ton_pay"],
+                        description:
+                          "Alternative payment method. Use instead of chain+token for card, Bitcoin, or TON.",
+                      },
                       tokenMint: { type: "string", nullable: true },
                     },
                   },
@@ -776,7 +798,8 @@ export const openApiSpec = {
       get: {
         tags: ["Orders"],
         summary: "Get order status (lightweight)",
-        description: "For polling. No auth; orderId is the secret.",
+        description:
+          "Lightweight status endpoint for polling. Returns only order status — no sensitive data. Call every 5 seconds until the order transitions from pending.",
         operationId: "getOrderStatus",
         parameters: [
           {
@@ -836,7 +859,7 @@ export const openApiSpec = {
         tags: ["Orders"],
         summary: "Get order details",
         description:
-          "Full order: items, shipping, payment summary. Requires session (owner) or admin. Use GET /orders/{orderId}/status for unauthenticated polling.",
+          "Full order details: items, shipping address, payment summary, and timeline. Requires authentication (session owner or admin). For unauthenticated status checks, use GET /orders/{orderId}/status instead.",
         operationId: "getOrderById",
         parameters: [
           {

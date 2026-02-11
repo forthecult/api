@@ -235,20 +235,12 @@ export async function GET(request: NextRequest) {
         : formatUnits(expectedAmount, decimals);
 
     if (balance > 0n && isPaymentSufficient(balance, expectedAmount, token)) {
-      // Payment detected! Update order status
-      await db
-        .update(ordersTable)
-        .set({
-          paymentStatus: "paid",
-          status: "processing",
-          updatedAt: new Date(),
-        })
-        .where(eq(ordersTable.id, orderId));
-
+      // Payment detected — but the status endpoint is READ-ONLY.
+      // The client must call POST /api/checkout/eth-pay/confirm to finalize.
       return NextResponse.json({
         orderId,
-        status: "confirmed",
-        paymentStatus: "paid",
+        status: "ready_to_confirm",
+        paymentStatus: "pending",
         depositAddress,
         chainId,
         token,
@@ -256,7 +248,8 @@ export async function GET(request: NextRequest) {
         balanceFormatted,
         expectedAmount: expectedAmount.toString(),
         expectedFormatted,
-        message: "Payment confirmed!",
+        message:
+          "Payment detected! Please call the confirm endpoint to finalize.",
       });
     }
 

@@ -56,6 +56,16 @@ export async function GET(
         shippingCountryCode: ordersTable.shippingCountryCode,
         shippingPhone: ordersTable.shippingPhone,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        // Tracking
+        trackingNumber: ordersTable.trackingNumber,
+        trackingUrl: ordersTable.trackingUrl,
+        trackingCarrier: ordersTable.trackingCarrier,
+        shippedAt: ordersTable.shippedAt,
+        deliveredAt: ordersTable.deliveredAt,
+        estimatedDeliveryFrom: ordersTable.estimatedDeliveryFrom,
+        estimatedDeliveryTo: ordersTable.estimatedDeliveryTo,
+        trackingEventsJson: ordersTable.trackingEventsJson,
+        fulfillmentStatus: ordersTable.fulfillmentStatus,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -100,6 +110,14 @@ export async function GET(
     const paidAt =
       order.status === "paid" ? order.updatedAt.toISOString() : null;
 
+    // Derive richer status from fulfillment status
+    if (order.fulfillmentStatus === "fulfilled" && status === "paid") {
+      status = "shipped";
+    }
+    if (order.deliveredAt) {
+      status = "delivered";
+    }
+
     return NextResponse.json({
       orderId: order.id,
       status,
@@ -134,6 +152,18 @@ export async function GET(
         shippingUsd,
         totalUsd,
       },
+      tracking: order.trackingNumber
+        ? {
+            trackingNumber: order.trackingNumber,
+            trackingUrl: order.trackingUrl ?? undefined,
+            carrier: order.trackingCarrier ?? undefined,
+            shippedAt: order.shippedAt?.toISOString() ?? undefined,
+            deliveredAt: order.deliveredAt?.toISOString() ?? undefined,
+            estimatedDeliveryFrom: order.estimatedDeliveryFrom ?? undefined,
+            estimatedDeliveryTo: order.estimatedDeliveryTo ?? undefined,
+            events: order.trackingEventsJson ?? undefined,
+          }
+        : undefined,
       payment: order.solanaPayDepositAddress
         ? {
             chain: "solana",

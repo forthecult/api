@@ -123,6 +123,16 @@ export async function POST(request: NextRequest) {
           }
         : {};
 
+    // Check for duplicate webhook event (idempotency)
+    const [existingOrder] = await db
+      .select({ id: ordersTable.id })
+      .from(ordersTable)
+      .where(eq(ordersTable.stripeCheckoutSessionId, session.id))
+      .limit(1);
+    if (existingOrder) {
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+
     await db.insert(ordersTable).values({
       id: orderId,
       createdAt: now,

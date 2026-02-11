@@ -83,7 +83,8 @@ async function fetchProductById(id: string): Promise<Product | null> {
   const baseUrl = getServerBaseUrl();
   try {
     const res = await fetch(`${baseUrl}/api/products/${id}`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as {
@@ -180,6 +181,7 @@ async function fetchRelatedProducts(
   try {
     const res = await fetch(`${baseUrl}/api/products/${productId}/related`, {
       next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
       ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
     });
     if (!res.ok) return [];
@@ -214,20 +216,31 @@ export async function generateMetadata({
   }
 
   const metaDesc = stripHtmlForMeta(product.description).slice(0, 160);
+  const siteUrl = getPublicSiteUrl();
+  const imageUrl =
+    product.image && product.image.startsWith("http")
+      ? product.image
+      : product.image
+        ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
+        : undefined;
   return {
     title: product.name,
     description: metaDesc,
     openGraph: {
       title: `${product.name} | ${SEO_CONFIG.name}`,
       description: metaDesc,
-      images: [{ url: product.image, alt: product.name }],
       type: "website",
+      ...(imageUrl && {
+        images: [
+          { url: imageUrl, alt: product.name, width: 1200, height: 630 },
+        ],
+      }),
     },
     twitter: {
       card: "summary_large_image",
       title: product.name,
       description: metaDesc,
-      images: [product.image],
+      ...(imageUrl && { images: [imageUrl] }),
     },
   };
 }

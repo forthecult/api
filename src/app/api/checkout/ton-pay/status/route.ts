@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 /**
  * GET ?orderId=
@@ -11,6 +12,9 @@ import { ordersTable } from "~/db/schema";
  * Otherwise returns pending (payment detection can be added via TON API or webhook later).
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`ton-status:${ip}`, RATE_LIMITS.orderStatus);
+  if (!rl.success) return rateLimitResponse(rl);
   try {
     const { searchParams } = new URL(request.url);
     const orderId = searchParams.get("orderId")?.trim();

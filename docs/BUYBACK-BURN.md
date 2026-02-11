@@ -1,3 +1,5 @@
+<!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # Buyback & Burn for Pump.fun Token
 
 The token sends a share of trading volume (e.g. 1% or 5%) to a designated wallet. This doc describes how to use that wallet to **buy back** the token and **burn** it.

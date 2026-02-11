@@ -3,6 +3,7 @@ import {
   boolean,
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -76,6 +77,10 @@ export const productsTable = pgTable("product", {
   vendor: text("vendor"),
   weightGrams: integer("weight_grams"),
   weightUnit: text("weight_unit"), // "kg" | "lb"
+  /** Product type from POD catalog (e.g. T-SHIRT, HOODIE, MUG). Useful for filtering and SEO. */
+  productType: text("product_type"),
+  /** True when the underlying catalog product is discontinued by the manufacturer. Product should be hidden from storefront. */
+  isDiscontinued: boolean("is_discontinued").notNull().default(false),
 
   // Printful Sync Product – stores the sync_product_id from Printful for bidirectional sync
   // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
@@ -84,13 +89,29 @@ export const productsTable = pgTable("product", {
   printifyProductId: text("printify_product_id").unique(),
   // Printify print provider ID – required for Printify shipping calculation (catalog shipping profiles)
   printifyPrintProviderId: integer("printify_print_provider_id"),
+  // Printify shipping eligibility flags — synced from Printify product data
+  /** Whether the product is eligible for Printify Express shipping. */
+  printifyExpressEligible: boolean("printify_express_eligible").notNull().default(false),
+  /** Whether Printify Express is enabled for this product. */
+  printifyExpressEnabled: boolean("printify_express_enabled").notNull().default(false),
+  /** Whether the product is eligible for economy shipping. */
+  printifyEconomyEligible: boolean("printify_economy_eligible").notNull().default(false),
+  /** Whether economy shipping is enabled for this product. */
+  printifyEconomyEnabled: boolean("printify_economy_enabled").notNull().default(false),
+  /** GPSR (EU General Product Safety Regulation) compliance data — JSON from Printify /gpsr.json. */
+  gpsrJson: jsonb("gpsr_json"),
   // Last sync timestamp – when the product was last synced with the vendor
   lastSyncedAt: timestamp("last_synced_at"),
   // POD AI/creator: product created via POD bulk or AI flow
   aiGenerated: boolean("ai_generated").default(false),
   // Original design image URL (for POD-created products)
   sourceImageUrl: text("source_image_url"),
-});
+}, (t) => [
+  // M3: Composite index for filtering published & non-hidden products
+  index("product_published_hidden_idx").on(t.published, t.hidden),
+  // M4: Index for product name search (btree helps prefix ILIKE; for full trigram support use a GIN index via raw migration)
+  index("product_name_idx").on(t.name),
+]);
 
 export const productVariantsTable = pgTable(
   "product_variant",
@@ -105,6 +126,8 @@ export const productVariantsTable = pgTable(
     /** Gender/style option (e.g. Men's / Women's for Earth Runners). Used when product has 3 option dimensions. */
     gender: text("gender"),
     colorCode: text("color_code"),
+    /** Secondary color code (e.g. for two-tone products). From Printful catalog variant color_code2. */
+    colorCode2: text("color_code2"),
     sku: text("sku"),
     /** Display label (e.g. Printful sync variant "name": "Product / Color / Size") */
     label: text("label"),
@@ -152,9 +175,12 @@ export const ordersTable = pgTable(
     customerNote: text("customer_note"),
     discountPercent: integer("discount_percent").notNull().default(0),
     email: text("email").notNull(),
+    // TODO (L17): migrate fulfillmentStatus to pgEnum for type safety
     fulfillmentStatus: text("fulfillment_status"), // "unfulfilled" | "on_hold" | "partially_fulfilled" | "fulfilled"
     internalNotes: text("internal_notes"),
+    // TODO (L17): migrate paymentStatus to pgEnum for type safety
     paymentStatus: text("payment_status"), // "pending" | "paid" | "refund_pending" | "refunded" | "cancelled"
+    // TODO (L17): migrate status to pgEnum for type safety
     status: text("status").notNull(), // legacy: "pending" | "paid" | "fulfilled" | "cancelled" | "refund_pending" | "refunded"
     taxCents: integer("tax_cents").notNull().default(0),
     totalCents: integer("total_cents").notNull(),
@@ -177,8 +203,10 @@ export const ordersTable = pgTable(
     shippingCountryCode: text("shipping_country_code"), // ISO 2-letter
     shippingZip: text("shipping_zip"),
     shippingPhone: text("shipping_phone"), // Printful requires phone
+    // L16: ON DELETE set null so orders survive shipping option removal
     shippingOptionId: text("shipping_option_id").references(
       () => shippingOptionsTable.id,
+      { onDelete: "set null" },
     ),
     shippingMethod: text("shipping_method"), // "standard" | "express" | Printful shipping ID
 
@@ -201,6 +229,35 @@ export const ordersTable = pgTable(
 
     printfulOrderId: text("printful_order_id").unique(),
     printifyOrderId: text("printify_order_id").unique(),
+
+    // --- Shipment tracking (all providers: Printful, Printify, manual) ---
+    trackingNumber: text("tracking_number"),
+    trackingUrl: text("tracking_url"),
+    trackingCarrier: text("tracking_carrier"),
+    shippedAt: timestamp("shipped_at"),
+    deliveredAt: timestamp("delivered_at"),
+    /** Estimated delivery window – earliest date (ISO date string, e.g. "2025-06-15"). */
+    estimatedDeliveryFrom: text("estimated_delivery_from"),
+    /** Estimated delivery window – latest date (ISO date string, e.g. "2025-06-20"). */
+    estimatedDeliveryTo: text("estimated_delivery_to"),
+    /** Shipment tracking events from fulfiller (JSON array of { triggered_at, description }). */
+    trackingEventsJson: jsonb("tracking_events_json"),
+
+    // --- Printful fulfillment costs (admin-only, wholesale cost to us) ---
+    /** Printful total cost in cents (USD). Admin-only; not shown to customers. */
+    printfulCostTotalCents: integer("printful_cost_total_cents"),
+    /** Printful shipping cost in cents (USD). */
+    printfulCostShippingCents: integer("printful_cost_shipping_cents"),
+    /** Printful tax/VAT cost in cents (USD). */
+    printfulCostTaxCents: integer("printful_cost_tax_cents"),
+
+    // --- Printify fulfillment costs (admin-only, wholesale cost to us) ---
+    /** Printify total price in cents (USD). Admin-only; not shown to customers. */
+    printifyCostTotalCents: integer("printify_cost_total_cents"),
+    /** Printify shipping cost in cents (USD). */
+    printifyCostShippingCents: integer("printify_cost_shipping_cents"),
+    /** Printify tax cost in cents (USD). */
+    printifyCostTaxCents: integer("printify_cost_tax_cents"),
 
     // Affiliate attribution
     affiliateId: text("affiliate_id").references(() => affiliateTable.id, {
@@ -253,7 +310,10 @@ export const productImagesTable = pgTable("product_image", {
   alt: text("alt"),
   title: text("title"),
   sortOrder: integer("sort_order").notNull().default(0),
-});
+}, (t) => [
+  // M7: Index for looking up images by product
+  index("product_image_product_id_idx").on(t.productId),
+]);
 
 /** Product tags (additional categorization). */
 export const productTagsTable = pgTable(
@@ -289,7 +349,10 @@ export const productTokenGateTable = pgTable("product_token_gate", {
   quantity: integer("quantity").notNull(),
   network: text("network"),
   contractAddress: text("contract_address"),
-});
+}, (t) => [
+  // M7: Index for looking up token gates by product
+  index("product_token_gate_product_id_idx").on(t.productId),
+]);
 
 /** One-off custom prints (not synced to store). Tracked for ordering only. */
 export const customPrintsTable = pgTable("custom_print", {
@@ -300,6 +363,7 @@ export const customPrintsTable = pgTable("custom_print", {
   blueprintTitle: text("blueprint_title"),
   imageUrl: text("image_url"),
   userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }),
+  // TODO (L17): migrate status to pgEnum for type safety
   status: text("status").notNull(), // "created" | "ordered" | "fulfilled"
   orderId: text("order_id").references(() => ordersTable.id, {
     onDelete: "set null",
@@ -316,6 +380,7 @@ export const refundRequestsTable = pgTable(
     orderId: text("order_id")
       .notNull()
       .references(() => ordersTable.id, { onDelete: "cascade" }),
+    // TODO (L17): migrate status to pgEnum for type safety
     status: text("status").notNull(), // "requested" | "approved" | "refunded" | "rejected"
     refundAddress: text("refund_address"), // for crypto orders (stablecoin)
     createdAt: timestamp("created_at").notNull(),

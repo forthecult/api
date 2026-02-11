@@ -1,4 +1,5 @@
 import {
+  index,
   integer,
   pgTable,
   text,
@@ -12,6 +13,7 @@ export const affiliateTable = pgTable("affiliate", {
   id: text("id").primaryKey(),
   userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }),
   code: text("code").notNull().unique(),
+  // TODO (L17): migrate status to pgEnum for type safety
   status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected" | "suspended"
   commissionType: text("commission_type").notNull().default("percent"), // "percent" | "fixed"
   commissionValue: integer("commission_value").notNull().default(10), // percent 0-100 or cents
@@ -40,4 +42,7 @@ export const affiliateAttributionTable = pgTable("affiliate_attribution", {
   createdAt: timestamp("created_at").notNull(),
   convertedAt: timestamp("converted_at"),
   orderId: text("order_id"),
-});
+}, (t) => [
+  // M7: Index for looking up attributions by affiliate
+  index("affiliate_attr_affiliate_id_idx").on(t.affiliateId),
+]);

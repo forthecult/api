@@ -46,6 +46,13 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+    return NextResponse.json(
+      { error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}` },
+      { status: 400 },
+    );
+  }
   const process = request.nextUrl.searchParams.get("process") === "true";
   const buffer = Buffer.from(await file.arrayBuffer());
   const filename = file.name || "design.png";

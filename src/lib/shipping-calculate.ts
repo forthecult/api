@@ -31,6 +31,7 @@ import {
 } from "~/lib/printful";
 import {
   calculatePrintifyShipping as fetchPrintifyShippingRates,
+  calculatePrintifyOrderShipping,
   getPrintifyIfConfigured,
   type PrintifyShippingRateResult,
 } from "~/lib/printify";
@@ -560,12 +561,18 @@ export async function runShippingCalculate(
     [];
 
   // Items for Printify shipping calculation (requires blueprint/provider info)
-  // For now, we'll use a simplified approach since we don't store blueprint_id in our schema
-  // Printify shipping will be calculated via their catalog shipping profiles
+  // Printify shipping will be calculated via their catalog shipping profiles (V1)
+  // or via POST /orders/shipping.json (direct, more accurate) when product IDs are available.
   const printifyItems: Array<{
     blueprintId: number;
     printProviderId: number;
     variantId: number;
+    quantity: number;
+  }> = [];
+  // Direct order shipping items (for POST /orders/shipping.json)
+  const printifyOrderShippingItems: Array<{
+    printifyProductId: string;
+    printifyVariantId: number;
     quantity: number;
   }> = [];
 
@@ -577,6 +584,7 @@ export async function runShippingCalculate(
     externalId: string | null;
     priceCents: number;
     printifyPrintProviderId: number | null;
+    printifyProductId: string | null;
   };
   let products: ProductInfo[] = [];
   let variants: Array<{
@@ -610,6 +618,7 @@ export async function runShippingCalculate(
               externalId: productsTable.externalId,
               priceCents: productsTable.priceCents,
               printifyPrintProviderId: productsTable.printifyPrintProviderId,
+              printifyProductId: productsTable.printifyProductId,
             })
             .from(productsTable)
             .where(inArray(productsTable.id, productIds))
@@ -837,6 +846,15 @@ export async function runShippingCalculate(
           variantId,
           quantity: qty,
         });
+        // Also collect for direct order shipping API (more accurate)
+        const printifyProductId = productById.get(item.productId)?.printifyProductId;
+        if (printifyProductId && variantId != null) {
+          printifyOrderShippingItems.push({
+            printifyProductId,
+            printifyVariantId: variantId,
+            quantity: qty,
+          });
+        }
       } else {
         manualQuantity += qty;
         manualWeightGrams += weight;
@@ -877,29 +895,63 @@ export async function runShippingCalculate(
   const printfulResult = await calculatePrintfulShipping(input, printfulItems);
 
   // Calculate Printify shipping (if configured and items have blueprint + print provider IDs)
-  // Products need externalId (blueprint_id) and printifyPrintProviderId; re-sync Printify products to backfill.
+  // Try POST /orders/shipping.json first (more accurate), fall back to catalog-based V1.
   let printifyShippingCents = 0;
   const printifyConfig = getPrintifyIfConfigured();
 
   if (printifyConfig && printifyItems.length > 0) {
-    try {
-      const printifyResult = await fetchPrintifyShippingRates(
-        printifyItems,
-        countryCode,
-      );
-      printifyShippingCents = printifyResult.shippingCents;
+    let usedDirectApi = false;
 
-      if (!printifyResult.canShipToCountry) {
-        // Printify can't ship to this country
-        return {
-          ...ZERO_SHIPPING,
-          canShipToCountry: false,
-          unavailableProducts: [], // Would need to map back to product IDs
-        };
+    // Try direct order shipping API first (POST /orders/shipping.json)
+    if (printifyOrderShippingItems.length > 0) {
+      try {
+        const directResult = await calculatePrintifyOrderShipping(
+          printifyConfig.shopId,
+          {
+            line_items: printifyOrderShippingItems.map((i) => ({
+              product_id: i.printifyProductId,
+              variant_id: i.printifyVariantId,
+              quantity: i.quantity,
+            })),
+            address_to: {
+              country: countryCode,
+              region: input.stateCode ?? undefined,
+              zip: input.zip ?? undefined,
+              city: input.city ?? undefined,
+            },
+          },
+        );
+        // Use standard rate by default
+        if (typeof directResult.standard === "number" && directResult.standard >= 0) {
+          printifyShippingCents = directResult.standard;
+          usedDirectApi = true;
+        }
+      } catch (err) {
+        console.warn("Printify direct shipping calc failed, falling back to catalog:", err instanceof Error ? err.message : err);
       }
-    } catch (error) {
-      console.error("Failed to calculate Printify shipping:", error);
-      // Fall back to admin shipping for these items
+    }
+
+    // Fall back to catalog-based calculation (V1 profiles)
+    if (!usedDirectApi) {
+      try {
+        const printifyResult = await fetchPrintifyShippingRates(
+          printifyItems,
+          countryCode,
+        );
+        printifyShippingCents = printifyResult.shippingCents;
+
+        if (!printifyResult.canShipToCountry) {
+          // Printify can't ship to this country
+          return {
+            ...ZERO_SHIPPING,
+            canShipToCountry: false,
+            unavailableProducts: [], // Would need to map back to product IDs
+          };
+        }
+      } catch (error) {
+        console.error("Failed to calculate Printify shipping:", error);
+        // Fall back to admin shipping for these items
+      }
     }
   }
 

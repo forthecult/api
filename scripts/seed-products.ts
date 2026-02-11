@@ -122,6 +122,8 @@ async function seed() {
         ? JSON.stringify(p.features)
         : null,
     brand: p.brand,
+    vendor: (p as { vendor?: string }).vendor ?? null,
+    countryOfOrigin: (p as { countryOfOrigin?: string }).countryOfOrigin ?? null,
     metaDescription: p.metaDescription ?? null,
     pageTitle: p.pageTitle ?? null,
     sku: p.sku ?? null,
@@ -170,6 +172,8 @@ async function seed() {
         description: sql`excluded.description`,
         featuresJson: sql`excluded.features_json`,
         brand: sql`excluded.brand`,
+        vendor: sql`excluded.vendor`,
+        countryOfOrigin: sql`excluded.country_of_origin`,
         metaDescription: sql`excluded.meta_description`,
         pageTitle: sql`excluded.page_title`,
         sku: sql`excluded.sku`,

@@ -293,9 +293,9 @@ export function SuccessPageClient() {
                     <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                       Items
                     </p>
-                    {order.items.map((item, i) => (
+                    {order.items.map((item) => (
                       <div
-                        key={i}
+                        key={`${item.name}-${item.quantity}`}
                         className="flex justify-between text-sm"
                       >
                         <span>

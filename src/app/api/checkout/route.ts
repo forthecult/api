@@ -63,10 +63,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CheckoutBody;
     const { items: rawItems, email, payment } = body;
-    if (!email || typeof email !== "string" || !email.trim()) {
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       return withPublicApiCors(
         NextResponse.json(
-          { error: { code: "INVALID_REQUEST", message: "email required" } },
+          { error: { code: "INVALID_REQUEST", message: "Valid email required" } },
           { status: 400 },
         ),
       );
@@ -139,9 +140,19 @@ export async function POST(request: NextRequest) {
       if (
         typeof item?.productId !== "string" ||
         typeof item?.quantity !== "number" ||
-        item.quantity < 1
-      )
+        item.quantity < 1 ||
+        item.quantity > 9999
+      ) {
+        if (typeof item?.productId === "string" && typeof item?.quantity === "number" && (item.quantity < 1 || item.quantity > 9999)) {
+          return withPublicApiCors(
+            NextResponse.json(
+              { error: { code: "INVALID_REQUEST", message: `Invalid quantity for product ${item.productId}` } },
+              { status: 400 },
+            ),
+          );
+        }
         continue;
+      }
       const product = productMap.get(item.productId);
       if (!product || !product.published) continue;
       orderItems.push({

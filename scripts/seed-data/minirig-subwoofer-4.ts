@@ -12,19 +12,30 @@ const PRODUCT_ID = "minirig-subwoofer-4";
 const PRODUCT_SLUG = "minirig-subwoofer-4";
 const CATEGORY_ID = "accessories-speakers";
 
-const SITES = "https://minirigs.co.uk/sites/default/files";
+const SITES_LARGE_2025_12 = "https://minirigs.co.uk/sites/default/files/styles/large/public/2025-12";
+const SITES_LARGE_2025_11 = "https://minirigs.co.uk/sites/default/files/styles/large/public/2025-11";
 
-/** SEO-friendly image entries. Replace with Sub 4 product shots via Admin if needed. */
+/** Product photos from minirigs.co.uk (not logos). */
 export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {
-    url: `${SITES}/png_MINIRIG%20SUB%203%20-%20white.png`,
-    alt: "Minirig Subwoofer 4 - portable wireless subwoofer, Bristol UK",
-    title: "Minirig Subwoofer 4 - Main",
+    url: `${SITES_LARGE_2025_12}/black-sub-4.webp?itok=6EtSzO36`,
+    alt: "Minirig Subwoofer 4 Black - portable wireless subwoofer, Bristol UK",
+    title: "Minirig Subwoofer 4 - Black",
   },
   {
-    url: "https://files.minirigs.co.uk/mr4/minirig-4-logo-white.png",
-    alt: "Minirig Subwoofer 4 - link with Minirig 4 speakers wirelessly",
-    title: "Minirig Subwoofer 4 - Modular system",
+    url: `${SITES_LARGE_2025_12}/topview-black-sub-4.webp?itok=UQ1Hvnfd`,
+    alt: "Minirig Subwoofer 4 grille top view",
+    title: "Minirig Subwoofer 4 - Grille",
+  },
+  {
+    url: `${SITES_LARGE_2025_12}/port-view-sub-4.webp?itok=wns2zoI6`,
+    alt: "Minirig Subwoofer 4 port view",
+    title: "Minirig Subwoofer 4 - Port",
+  },
+  {
+    url: `${SITES_LARGE_2025_12}/Subwoofer%204%20-%20product%20-%20Mailchimp%20%281%29.png.webp?itok=QxwBrvw4`,
+    alt: "Minirig Subwoofer 4 in the box",
+    title: "Minirig Subwoofer 4 - In the box",
   },
 ];
 
@@ -74,6 +85,16 @@ export const OPTION_DEFINITIONS = [
 
 const COLOURS = ["Black", "Blue", "Brushed Silver", "Green", "Purple", "Red"] as const;
 
+/** Photo of each colour variant from minirigs.co.uk (one image per variant). */
+const VARIANT_IMAGE_URLS: Record<(typeof COLOURS)[number], string> = {
+  Black: `${SITES_LARGE_2025_11}/black-sub-4.webp?itok=2LnqDOgl`,
+  Blue: `${SITES_LARGE_2025_11}/blue-sub-4.webp?itok=4-NXIT3T`,
+  "Brushed Silver": `${SITES_LARGE_2025_11}/brushed-sub-4.webp?itok=P5nxiI7f`,
+  Green: `${SITES_LARGE_2025_11}/green-sub-4.webp?itok=MVoTu7Mx`,
+  Purple: `${SITES_LARGE_2025_11}/purple-sub-4.webp?itok=1WQ879_q`,
+  Red: `${SITES_LARGE_2025_11}/red-sub-4.webp?itok=Ac7_xGHj`,
+};
+
 export const VARIANTS: Array<{
   id: string;
   color: string;
@@ -87,7 +108,7 @@ export const VARIANTS: Array<{
   color: colour,
   priceCents: MINIRIG_SUBWOOFER_4_PRICE_CENTS,
   sku: `MINIRIGSUB4-${colour.replace(/\s+/, "").slice(0, 6).toUpperCase()}`,
-  imageUrl: PRODUCT_IMAGES[0]!.url,
+  imageUrl: VARIANT_IMAGE_URLS[colour],
   imageAlt: `Minirig Subwoofer 4, ${colour}`,
   imageTitle: `Minirig Subwoofer 4 - ${colour}`,
 }));
@@ -102,6 +123,8 @@ export const MINIRIG_SUBWOOFER_4 = {
   priceCents: MINIRIG_SUBWOOFER_4_PRICE_CENTS,
   categoryId: CATEGORY_ID,
   brand: "Minirig",
+  vendor: "Minirig",
+  countryOfOrigin: "United Kingdom",
   model: "Subwoofer 4",
   description: DESCRIPTION,
   features: FEATURES,

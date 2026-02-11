@@ -27,7 +27,8 @@ export async function GET(request: NextRequest) {
       const ip = forwardedFor?.split(",")[0]?.trim() || realIp || null;
       
       if (ip && ip !== "127.0.0.1" && ip !== "::1" && !ip.startsWith("192.168.") && !ip.startsWith("10.")) {
-        // Use ip-api.com (free, no API key required, 45 requests/minute limit)
+        // NOTE: ip-api.com free tier only supports HTTP. Consider switching to
+        // an HTTPS provider (e.g. ipinfo.io, ipapi.co) for production use.
         const geoResponse = await fetch(`http://ip-api.com/json/${ip}?fields=countryCode`, {
           signal: AbortSignal.timeout(2000), // 2 second timeout
         });

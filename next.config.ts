@@ -56,6 +56,12 @@ const config = {
       "@radix-ui/react-tabs",
       "framer-motion",
       "date-fns",
+      "class-variance-authority",
+      "clsx",
+      "sonner",
+      "cmdk",
+      "vaul",
+      "zod",
     ],
   },
 
@@ -120,6 +126,48 @@ const config = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
+          // [SECURITY] Prevent clickjacking by disallowing framing (except Telegram WebApp)
+          {
+            key: "X-Frame-Options",
+            value: "SAMEORIGIN",
+          },
+          // [SECURITY] Enforce HTTPS with HSTS (2 years, include subdomains, allow preload)
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains; preload",
+          },
+          // [SECURITY] Restrict browser feature access
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          // [SECURITY] Content Security Policy — defence-in-depth against XSS
+          {
+            key: "Content-Security-Policy",
+            value: [
+              "default-src 'self'",
+              // 'unsafe-inline' required for Next.js style injection + Tailwind; 'unsafe-eval' for dev HMR (stripped by Next in prod)
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://js.stripe.com",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https: wss:",
+              "frame-src 'self' https://js.stripe.com https://telegram.org",
+              "frame-ancestors 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
+          },
+          // Preconnect to frequently-used image/asset CDNs to reduce DNS+TLS latency
+          {
+            key: "Link",
+            value: [
+              "<https://utfs.io>; rel=preconnect",
+              "<https://images-api.printify.com>; rel=dns-prefetch",
+              "<https://cdn.shopify.com>; rel=dns-prefetch",
+              "<https://assets.coingecko.com>; rel=dns-prefetch",
+            ].join(", "),
+          },
           // Block crawlers on staging only (VERCEL_ENV=preview or STAGING=1)
           ...(process.env.VERCEL_ENV === "preview" || process.env.STAGING === "1"
             ? [{ key: "X-Robots-Tag" as const, value: "noindex, nofollow" }]
@@ -171,11 +219,11 @@ const config = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
-      { hostname: "**.githubassets.com", protocol: "https" },
-      { hostname: "**.githubusercontent.com", protocol: "https" },
-      { hostname: "**.googleusercontent.com", protocol: "https" },
+      { hostname: "avatars.githubusercontent.com", protocol: "https" },
+      { hostname: "raw.githubusercontent.com", protocol: "https" },
+      { hostname: "lh3.googleusercontent.com", protocol: "https" },
       { hostname: "**.ufs.sh", protocol: "https" },
-      { hostname: "**.unsplash.com", protocol: "https" },
+      { hostname: "images.unsplash.com", protocol: "https" },
       { hostname: "api.github.com", protocol: "https" },
       { hostname: "utfs.io", protocol: "https" },
       { hostname: "cdn.simpleicons.org", protocol: "https" },
