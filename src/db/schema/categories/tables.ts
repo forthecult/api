@@ -23,6 +23,7 @@ export const categoriesTable = pgTable(
     imageUrl: text("image_url"),
     level: integer("level").notNull().default(1),
     featured: boolean("featured").notNull().default(false),
+    seoOptimized: boolean("seo_optimized").notNull().default(false),
     parentId: text("parent_id"),
     tokenGated: boolean("token_gated").notNull().default(false),
     tokenGateType: text("token_gate_type"), // legacy single-gate

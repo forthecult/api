@@ -32,6 +32,7 @@ export default function AdminCategoriesCreatePage() {
   const [slug, setSlug] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [description, setDescription] = useState("");
+  const [seoOptimized, setSeoOptimized] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [level, setLevel] = useState(1);
   const [featured, setFeatured] = useState(false);
@@ -77,6 +78,7 @@ export default function AdminCategoriesCreatePage() {
             title: title.trim() || null,
             metaDescription: metaDescription.trim() || null,
             description: description.trim() || null,
+            seoOptimized,
             imageUrl: imageUrl.trim() || null,
             level,
             featured,
@@ -106,6 +108,7 @@ export default function AdminCategoriesCreatePage() {
       title,
       metaDescription,
       description,
+      seoOptimized,
       imageUrl,
       level,
       featured,
@@ -288,6 +291,18 @@ export default function AdminCategoriesCreatePage() {
                     className={cn(inputClass, "resize-y")}
                   />
                 </div>
+                <label className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    checked={seoOptimized}
+                    onChange={(e) => setSeoOptimized(e.target.checked)}
+                    className="size-4 rounded border-input"
+                  />
+                  <span className="text-sm">Optimized</span>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Category has been optimized for SEO / content / copy.
+                </p>
               </div>
             </div>
 

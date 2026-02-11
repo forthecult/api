@@ -464,6 +464,34 @@ export default function TokenPage() {
           </div>
         </section>
 
+        {/* Hackathon Funding */}
+        <section className="space-y-6 py-6 md:py-6">
+          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            Hackathon Funding
+          </h2>
+          <p className="max-w-3xl text-muted-foreground">
+            Funds will be used for:
+          </p>
+          <ul className="space-y-3">
+            <li className="flex items-start gap-3 text-muted-foreground">
+              <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>Investment into phygital infrastructure</span>
+            </li>
+            <li className="flex items-start gap-3 text-muted-foreground">
+              <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>Supply chain transparency</span>
+            </li>
+            <li className="flex items-start gap-3 text-muted-foreground">
+              <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>Agentic commerce</span>
+            </li>
+            <li className="flex items-start gap-3 text-muted-foreground">
+              <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <span>Economies of scale for token member perks and rewards</span>
+            </li>
+          </ul>
+        </section>
+
         {/* Culture */}
         <section className="space-y-6 py-6 md:py-6">
           <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">

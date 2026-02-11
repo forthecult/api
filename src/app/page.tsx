@@ -348,7 +348,7 @@ export default async function HomePage() {
             <div className="mx-auto max-w-3xl space-y-6 text-center">
               <SectionHeading
                 title="A lifestyle for the independent"
-                subtitle="You're in the right place. We curate tech, apparel, wellness, and travel gear that fits how you live—and the future you're building. Join as a member for product discounts, free shipping on orders over $100, exclusive drops, and early access to new arrivals. Pay your way: Solana, $CULT, or card."
+                subtitle="You're in the right place. We curate tech, apparel, wellness, and travel gear that fits how you live—and the future you're building. Join as a member for product discounts, free shipping for CULT members, exclusive drops, and early access to new arrivals. Pay your way: Solana, $CULT, or card."
               />
               <Link href="/signup">
                 <Button variant="outline" size="lg">

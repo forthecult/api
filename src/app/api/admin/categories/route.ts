@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
       imageUrl?: string | null;
       level?: number;
       featured?: boolean;
+      seoOptimized?: boolean;
       parentId?: string | null;
       tokenGated?: boolean;
       tokenGateType?: string | null;
@@ -227,6 +228,7 @@ export async function POST(request: NextRequest) {
       imageUrl: body.imageUrl?.trim() ?? null,
       level: Math.max(1, Math.min(99, body.level ?? 1)),
       featured: body.featured ?? false,
+      seoOptimized: body.seoOptimized ?? false,
       parentId: body.parentId?.trim() || null,
       tokenGated: hasTokenGates || (body.tokenGated ?? false),
       tokenGateType: body.tokenGateType ?? null,

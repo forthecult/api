@@ -28,6 +28,7 @@ export async function GET(
         imageUrl: categoriesTable.imageUrl,
         level: categoriesTable.level,
         featured: categoriesTable.featured,
+        seoOptimized: categoriesTable.seoOptimized,
         parentId: categoriesTable.parentId,
         tokenGated: categoriesTable.tokenGated,
         tokenGateType: categoriesTable.tokenGateType,
@@ -77,6 +78,7 @@ export async function GET(
       imageUrl: category.imageUrl,
       level: category.level,
       featured: category.featured,
+      seoOptimized: category.seoOptimized,
       parentId: category.parentId,
       tokenGated: tokenGates.length > 0 || category.tokenGated,
       tokenGateType: category.tokenGateType,
@@ -114,6 +116,7 @@ export async function PATCH(
       imageUrl?: string | null;
       level?: number;
       featured?: boolean;
+      seoOptimized?: boolean;
       parentId?: string | null;
       tokenGated?: boolean;
       tokenGateType?: string | null;
@@ -140,6 +143,8 @@ export async function PATCH(
     if (body.imageUrl !== undefined) updates.imageUrl = body.imageUrl ?? null;
     if (typeof body.level === "number") updates.level = body.level;
     if (typeof body.featured === "boolean") updates.featured = body.featured;
+    if (typeof body.seoOptimized === "boolean")
+      updates.seoOptimized = body.seoOptimized;
     if (body.parentId !== undefined) updates.parentId = body.parentId ?? null;
     if (typeof body.tokenGated === "boolean")
       updates.tokenGated = body.tokenGated;
@@ -227,6 +232,7 @@ export async function PATCH(
       imageUrl: updated.imageUrl,
       level: updated.level,
       featured: updated.featured,
+      seoOptimized: updated.seoOptimized,
       parentId: updated.parentId,
       tokenGated: tokenGates.length > 0 || updated.tokenGated,
       tokenGateType: updated.tokenGateType,

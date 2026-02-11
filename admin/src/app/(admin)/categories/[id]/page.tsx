@@ -28,6 +28,7 @@ type Category = {
   imageUrl: string | null;
   level: number;
   featured: boolean;
+  seoOptimized?: boolean;
   parentId: string | null;
   tokenGated?: boolean;
   tokenGates?: TokenGateRow[];
@@ -52,6 +53,7 @@ export default function AdminCategoryEditPage() {
   const [title, setTitle] = useState("");
   const [metaDescription, setMetaDescription] = useState("");
   const [description, setDescription] = useState("");
+  const [seoOptimized, setSeoOptimized] = useState(false);
   const [imageUrl, setImageUrl] = useState("");
   const [level, setLevel] = useState(1);
   const [featured, setFeatured] = useState(false);
@@ -110,6 +112,7 @@ export default function AdminCategoryEditPage() {
       setTitle(data.title ?? "");
       setMetaDescription(data.metaDescription ?? "");
       setDescription(data.description ?? "");
+      setSeoOptimized((data as { seoOptimized?: boolean }).seoOptimized ?? false);
       setImageUrl(data.imageUrl ?? "");
       setLevel(data.level);
       setFeatured(data.featured);
@@ -226,6 +229,7 @@ export default function AdminCategoryEditPage() {
             title: title.trim() || null,
             metaDescription: metaDescription.trim() || null,
             description: description.trim() || null,
+            seoOptimized,
             imageUrl: imageUrl.trim() || null,
             level,
             featured,
@@ -256,6 +260,7 @@ export default function AdminCategoryEditPage() {
       title,
       metaDescription,
       description,
+      seoOptimized,
       imageUrl,
       level,
       featured,
@@ -996,6 +1001,18 @@ export default function AdminCategoryEditPage() {
                     className={cn(inputClass, "resize-y")}
                   />
                 </div>
+                <label className="flex items-center gap-2 pt-2">
+                  <input
+                    type="checkbox"
+                    checked={seoOptimized}
+                    onChange={(e) => setSeoOptimized(e.target.checked)}
+                    className="size-4 rounded border-input"
+                  />
+                  <span className="text-sm">Optimized</span>
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Category has been optimized for SEO / content / copy.
+                </p>
               </div>
             </div>
 

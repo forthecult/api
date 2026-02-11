@@ -17,6 +17,7 @@ import {
 } from "react";
 import type BigNumber from "bignumber.js";
 
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import {
   getHiddenFromVisibility,
@@ -183,6 +184,7 @@ export function PaymentMethodSection({
     TROLL?: number;
   }>({});
 
+  const { currency } = useCountryCurrency();
   const { visibility } = usePaymentMethodSettings();
   const hiddenOptions = useMemo(
     () =>
@@ -292,7 +294,18 @@ export function PaymentMethodSection({
         minimumFractionDigits: 0,
         useGrouping: true,
       }).format(value);
-    if (paymentMethod !== "crypto" || total <= 0) return null;
+    if (total <= 0) return null;
+    // When display currency is not USD and customer selects USDC/USDT, show the stablecoin amount
+    if (
+      paymentMethod === "stablecoins" &&
+      currency !== "USD" &&
+      (stablecoinToken === "usdc" || stablecoinToken === "usdt")
+    ) {
+      // USDC/USDT are 1:1 with USD
+      const label = stablecoinToken === "usdc" ? "USDC" : "USDT";
+      return `≈ ${formatCrypto(total, 2)} ${label}`;
+    }
+    if (paymentMethod !== "crypto") return null;
     if (paymentSubOption === "solana") {
       const rate = cryptoPrices.SOL;
       if (typeof rate !== "number" || rate <= 0) return null;
@@ -322,6 +335,8 @@ export function PaymentMethodSection({
     paymentMethod,
     paymentSubOption,
     total,
+    currency,
+    stablecoinToken,
     cryptoPrices.SOL,
     cryptoPrices.CRUST,
     cryptoPrices.PUMP,
