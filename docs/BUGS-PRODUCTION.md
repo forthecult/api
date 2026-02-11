@@ -49,7 +49,23 @@ These are mostly client-side or extension-related:
 
 CSP already includes WalletConnect domains. No code changes needed for these.
 
-## 5. Network selection modal
+## 5. Admin Customers "Failed to load customers"
+
+Similar to the Product List, the Customers API now has a fallback when the main query fails with schema/relation errors. If the `user` table is missing columns (e.g. `role`, `receive_marketing`), it will try a simpler query, and if that fails, a minimal query (id, name, email only). In development, the actual error message is returned for debugging.
+
+## 6. Admin Product List "Failed query"
+
+If the admin Product List shows "Failed query" with SQL involving `product_category` or `product_variant`, the API now falls back to a products-only query when it detects schema/relation errors. You’ll still see products, but category and inventory may be empty until the schema is fixed.
+
+To fix it properly, ensure `product_category` and `product_variant` tables exist and match the Drizzle schema. Run:
+
+```bash
+bun run db:push
+```
+
+(or your usual migration process).
+
+## 7. Network selection modal
 
 If the second connect attempt doesn’t show the network picker, it’s likely because:
 

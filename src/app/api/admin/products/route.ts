@@ -116,89 +116,172 @@ export async function GET(request: NextRequest) {
                   ? [sortOrder(productsTable.quantity)]
                   : [sortOrder(productsTable.createdAt)];
 
-    let products: Awaited<ReturnType<typeof db.query.productsTable.findMany>>;
-    let countResult: { count: number }[];
+    type ProductWithRelations = {
+      id: string;
+      name: string;
+      slug: string | null;
+      imageUrl: string | null;
+      priceCents: number;
+      published: boolean;
+      brand: string | null;
+      vendor: string | null;
+      trackQuantity: boolean;
+      hasVariants: boolean;
+      quantity: number | null;
+      productCategories?: Array<{ isMain?: boolean; categoryId?: string; category?: { name?: string; slug?: string } }>;
+      productVariants?: Array<{ stockQuantity?: number | null }>;
+    };
+    let products: ProductWithRelations[] = [];
+    let countResult: { count: number }[] = [{ count: 0 }];
 
-    if (sortBy === "category") {
-      let orderedIdsQuery = db
-        .select({ id: productsTable.id })
-        .from(productsTable)
-        .leftJoin(
-          productCategoriesTable,
-          and(
-            eq(productCategoriesTable.productId, productsTable.id),
-            eq(productCategoriesTable.isMain, true),
-          ),
-        )
-        .leftJoin(
-          categoriesTable,
-          eq(categoriesTable.id, productCategoriesTable.categoryId),
-        );
-      if (whereClause !== undefined) {
-        orderedIdsQuery = (orderedIdsQuery as unknown as { where: (c: typeof whereClause) => typeof orderedIdsQuery }).where(whereClause);
-      }
-      const orderedIds = await orderedIdsQuery
-        .orderBy(sortOrder(categoriesTable.name), asc(productsTable.id))
-        .limit(limit)
-        .offset(offset)
-        .then((rows) => rows.map((r) => r.id));
+    const runFullQuery = async (): Promise<void> => {
+      if (sortBy === "category") {
+        let orderedIdsQuery = db
+          .select({ id: productsTable.id })
+          .from(productsTable)
+          .leftJoin(
+            productCategoriesTable,
+            and(
+              eq(productCategoriesTable.productId, productsTable.id),
+              eq(productCategoriesTable.isMain, true),
+            ),
+          )
+          .leftJoin(
+            categoriesTable,
+            eq(categoriesTable.id, productCategoriesTable.categoryId),
+          );
+        if (whereClause !== undefined) {
+          orderedIdsQuery = (orderedIdsQuery as unknown as { where: (c: typeof whereClause) => typeof orderedIdsQuery }).where(whereClause);
+        }
+        const orderedIds = await orderedIdsQuery
+          .orderBy(sortOrder(categoriesTable.name), asc(productsTable.id))
+          .limit(limit)
+          .offset(offset)
+          .then((rows) => rows.map((r) => r.id));
 
-      countResult = await (whereClause !== undefined
-        ? db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(productsTable)
-            .where(whereClause)
-        : db.select({ count: sql<number>`count(*)::int` }).from(productsTable));
-
-      if (orderedIds.length === 0) {
-        products = [];
-      } else {
-        const byId = await db.query.productsTable.findMany({
-          where: inArray(productsTable.id, orderedIds),
-          with: {
-            productCategories: {
-              with: { category: true },
-            },
-            productVariants: { columns: { stockQuantity: true } },
-          },
-        });
-        const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
-        products = byId.sort(
-          (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0),
-        );
-      }
-    } else {
-      [products, countResult] = await Promise.all([
-        db.query.productsTable.findMany({
-          where: whereClause,
-          orderBy,
-          with: {
-            productCategories: {
-              with: { category: true },
-            },
-            productVariants: { columns: { stockQuantity: true } },
-          },
-          limit,
-          offset,
-        }),
-        whereClause !== undefined
+        countResult = await (whereClause !== undefined
           ? db
               .select({ count: sql<number>`count(*)::int` })
               .from(productsTable)
               .where(whereClause)
-          : db
-              .select({ count: sql<number>`count(*)::int` })
-              .from(productsTable),
-      ]);
+          : db.select({ count: sql<number>`count(*)::int` }).from(productsTable));
+
+        if (orderedIds.length === 0) {
+          products = [];
+        } else {
+          const byId = await db.query.productsTable.findMany({
+            where: inArray(productsTable.id, orderedIds),
+            with: {
+              productCategories: {
+                with: { category: true },
+              },
+              productVariants: { columns: { stockQuantity: true } },
+            },
+          });
+          const orderMap = new Map(orderedIds.map((id, i) => [id, i]));
+          products = byId.sort(
+            (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0),
+          ) as ProductWithRelations[];
+        }
+      } else {
+        const [prods, count] = await Promise.all([
+          db.query.productsTable.findMany({
+            where: whereClause,
+            orderBy,
+            with: {
+              productCategories: {
+                with: { category: true },
+              },
+              productVariants: { columns: { stockQuantity: true } },
+            },
+            limit,
+            offset,
+          }),
+          whereClause !== undefined
+            ? db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(productsTable)
+                .where(whereClause)
+            : db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(productsTable),
+        ]);
+        products = prods as ProductWithRelations[];
+        countResult = count;
+      }
+    };
+
+    const runFallbackQuery = async (): Promise<void> => {
+      // Products-only query when product_category or product_variant have schema issues
+      const fallbackWhere =
+        vendorParam
+          ? eq(productsTable.vendor, vendorParam)
+          : search.length > 0
+            ? or(
+                ilike(productsTable.name, term),
+                ilike(productsTable.id, term),
+                ilike(productsTable.brand, term),
+              )
+            : undefined;
+      const fallbackOrder =
+        sortBy === "name"
+          ? [sortOrder(productsTable.name)]
+          : sortBy === "createdAt"
+            ? [sortOrder(productsTable.createdAt)]
+            : [desc(productsTable.createdAt)];
+      const selectQuery = db
+        .select({
+          id: productsTable.id,
+          name: productsTable.name,
+          slug: productsTable.slug,
+          imageUrl: productsTable.imageUrl,
+          priceCents: productsTable.priceCents,
+          published: productsTable.published,
+          brand: productsTable.brand,
+          vendor: productsTable.vendor,
+          trackQuantity: productsTable.trackQuantity,
+          hasVariants: productsTable.hasVariants,
+          quantity: productsTable.quantity,
+        })
+        .from(productsTable)
+        .orderBy(...fallbackOrder)
+        .limit(limit)
+        .offset(offset);
+      const selectWithWhere = fallbackWhere ? selectQuery.where(fallbackWhere) : selectQuery;
+      const countQuery = fallbackWhere
+        ? db
+            .select({ count: sql<number>`count(*)::int` })
+            .from(productsTable)
+            .where(fallbackWhere)
+        : db.select({ count: sql<number>`count(*)::int` }).from(productsTable);
+      const [prods, count] = await Promise.all([selectWithWhere, countQuery]);
+      products = prods.map((p) => ({
+        ...p,
+        productCategories: undefined,
+        productVariants: undefined,
+      }));
+      countResult = count;
+    };
+
+    try {
+      await runFullQuery();
+    } catch (queryErr) {
+      const msg = queryErr instanceof Error ? queryErr.message : String(queryErr);
+      const mayBeSchemaError =
+        msg.includes("does not exist") ||
+        msg.includes("relation") ||
+        msg.includes("Failed query");
+      if (mayBeSchemaError) {
+        console.warn("Admin products: full query failed, using fallback:", msg);
+        await runFallbackQuery();
+      } else {
+        throw queryErr;
+      }
     }
 
     const totalCount = countResult[0]?.count ?? 0;
     const totalPages = Math.ceil(totalCount / limit) || 1;
 
-    type ProductWithRelations = (typeof products)[number] & {
-      productCategories?: Array<{ isMain?: boolean; categoryId?: string; category?: { name?: string; slug?: string } }>;
-      productVariants?: Array<{ stockQuantity?: number | null }>;
-    };
     const items = products.map((p: ProductWithRelations) => {
       const mainPc =
         p.productCategories?.find((pc: { isMain?: boolean }) => pc.isMain) ??

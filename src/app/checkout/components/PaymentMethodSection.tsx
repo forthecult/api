@@ -237,6 +237,17 @@ export function PaymentMethodSection({
     [visibility],
   );
 
+  const showUsdcOption =
+    visibility === null || visibility?.stablecoinUsdc === true;
+  const showUsdtOption =
+    visibility === null || visibility?.stablecoinUsdt === true;
+
+  useEffect(() => {
+    if (paymentMethod !== "stablecoins") return;
+    if (!showUsdcOption && showUsdtOption) setStablecoinToken("usdt");
+    else if (showUsdcOption && !showUsdtOption) setStablecoinToken("usdc");
+  }, [paymentMethod, showUsdcOption, showUsdtOption]);
+
   const isSolanaPaySupported =
     solanaPayConfigured &&
     ((paymentMethod === "stablecoins" &&
@@ -1028,65 +1039,73 @@ export function PaymentMethodSection({
                   <span className="text-sm font-medium">Stablecoins (USDC / USDT)</span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <Image
-                    alt="USDC"
-                    className="size-5 shrink-0 object-contain"
-                    height={20}
-                    src={STABLECOIN_TOKEN_LOGO.usdc}
-                    width={20}
-                  />
-                  <Image
-                    alt="USDT"
-                    className="size-5 shrink-0 object-contain"
-                    height={20}
-                    src={STABLECOIN_TOKEN_LOGO.usdt}
-                    width={20}
-                  />
+                  {showUsdcOption && (
+                    <Image
+                      alt="USDC"
+                      className="size-5 shrink-0 object-contain"
+                      height={20}
+                      src={STABLECOIN_TOKEN_LOGO.usdc}
+                      width={20}
+                    />
+                  )}
+                  {showUsdtOption && (
+                    <Image
+                      alt="USDT"
+                      className="size-5 shrink-0 object-contain"
+                      height={20}
+                      src={STABLECOIN_TOKEN_LOGO.usdt}
+                      width={20}
+                    />
+                  )}
                 </div>
               </label>
               {paymentMethod === "stablecoins" && (
                 <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
                   <div className="flex gap-2">
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="radio"
-                        name="stablecoin-token"
-                        checked={stablecoinToken === "usdc"}
-                        onChange={() => {
-                          setStablecoinToken("usdc");
-                          setPaymentSubOption("solana" as UsdcSub);
-                        }}
-                        className="size-4 border-input text-primary focus:ring-primary"
-                      />
-                      <Image
-                        alt="USDC"
-                        className="h-5 w-5 shrink-0 object-contain"
-                        height={20}
-                        src={STABLECOIN_TOKEN_LOGO.usdc}
-                        width={20}
-                      />
-                      <span className="text-sm">USDC</span>
-                    </label>
-                    <label className="flex cursor-pointer items-center gap-2">
-                      <input
-                        type="radio"
-                        name="stablecoin-token"
-                        checked={stablecoinToken === "usdt"}
-                        onChange={() => {
-                          setStablecoinToken("usdt");
-                          setPaymentSubOption("ethereum" as UsdtSub);
-                        }}
-                        className="size-4 border-input text-primary focus:ring-primary"
-                      />
-                      <Image
-                        alt="USDT"
-                        className="h-5 w-5 shrink-0 object-contain"
-                        height={20}
-                        src={STABLECOIN_TOKEN_LOGO.usdt}
-                        width={20}
-                      />
-                      <span className="text-sm">USDT</span>
-                    </label>
+                    {showUsdcOption && (
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          type="radio"
+                          name="stablecoin-token"
+                          checked={stablecoinToken === "usdc"}
+                          onChange={() => {
+                            setStablecoinToken("usdc");
+                            setPaymentSubOption("solana" as UsdcSub);
+                          }}
+                          className="size-4 border-input text-primary focus:ring-primary"
+                        />
+                        <Image
+                          alt="USDC"
+                          className="h-5 w-5 shrink-0 object-contain"
+                          height={20}
+                          src={STABLECOIN_TOKEN_LOGO.usdc}
+                          width={20}
+                        />
+                        <span className="text-sm">USDC</span>
+                      </label>
+                    )}
+                    {showUsdtOption && (
+                      <label className="flex cursor-pointer items-center gap-2">
+                        <input
+                          type="radio"
+                          name="stablecoin-token"
+                          checked={stablecoinToken === "usdt"}
+                          onChange={() => {
+                            setStablecoinToken("usdt");
+                            setPaymentSubOption("ethereum" as UsdtSub);
+                          }}
+                          className="size-4 border-input text-primary focus:ring-primary"
+                        />
+                        <Image
+                          alt="USDT"
+                          className="h-5 w-5 shrink-0 object-contain"
+                          height={20}
+                          src={STABLECOIN_TOKEN_LOGO.usdt}
+                          width={20}
+                        />
+                        <span className="text-sm">USDT</span>
+                      </label>
+                    )}
                   </div>
                   {stablecoinToken === "usdc" &&
                     visibleUsdcSubOptions.map((opt) => (

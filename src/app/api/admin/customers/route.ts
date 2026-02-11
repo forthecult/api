@@ -116,8 +116,20 @@ export async function GET(request: NextRequest) {
                     ),
                   ];
 
-    const [users, countResult] = await Promise.all([
-      db.query.userTable.findMany({
+    type UserRow = {
+      id: string;
+      name: string;
+      image: string | null;
+      email: string;
+      phone: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      receiveMarketing: boolean;
+      receiveSmsMarketing: boolean;
+    };
+
+    const runFullQuery = async (): Promise<UserRow[]> => {
+      const rows = await db.query.userTable.findMany({
         where: whereClause,
         orderBy,
         columns: {
@@ -133,14 +145,115 @@ export async function GET(request: NextRequest) {
         },
         limit,
         offset,
-      }),
-      whereClause !== undefined
-        ? db
-            .select({ count: sql<number>`count(*)::int` })
-            .from(userTable)
-            .where(whereClause)
-        : db.select({ count: sql<number>`count(*)::int` }).from(userTable),
-    ]);
+      });
+      return rows as UserRow[];
+    };
+
+    const runFallbackQuery = async (): Promise<UserRow[]> => {
+      const baseSelect = db
+        .select({
+          id: userTable.id,
+          name: userTable.name,
+          image: userTable.image,
+          email: userTable.email,
+          phone: userTable.phone,
+          firstName: userTable.firstName,
+          lastName: userTable.lastName,
+          receiveMarketing: userTable.receiveMarketing,
+          receiveSmsMarketing: userTable.receiveSmsMarketing,
+        })
+        .from(userTable)
+        .orderBy(
+          ...(sortBy === "name"
+            ? order === "asc"
+              ? [asc(userTable.name)]
+              : [desc(userTable.name)]
+            : sortBy === "email"
+              ? order === "asc"
+                ? [asc(userTable.email)]
+                : [desc(userTable.email)]
+              : [asc(userTable.id)]),
+        )
+        .limit(limit)
+        .offset(offset);
+      const rows = whereClause
+        ? await baseSelect.where(whereClause)
+        : await baseSelect;
+      return rows.map((r) => ({
+        ...r,
+        receiveMarketing: r.receiveMarketing ?? false,
+        receiveSmsMarketing: r.receiveSmsMarketing ?? false,
+      }));
+    };
+
+    const runMinimalFallbackQuery = async (): Promise<UserRow[]> => {
+      const baseSelect = db
+        .select({
+          id: userTable.id,
+          name: userTable.name,
+          email: userTable.email,
+        })
+        .from(userTable)
+        .orderBy(asc(userTable.name))
+        .limit(limit)
+        .offset(offset);
+      const rows = whereClause
+        ? await baseSelect.where(whereClause)
+        : await baseSelect;
+      return rows.map((r) => ({
+        id: r.id,
+        name: r.name,
+        image: null,
+        email: r.email,
+        phone: null,
+        firstName: null,
+        lastName: null,
+        receiveMarketing: false,
+        receiveSmsMarketing: false,
+      }));
+    };
+
+    let users: UserRow[];
+    let countResult: { count: number }[];
+
+    try {
+      [users, countResult] = await Promise.all([
+        runFullQuery(),
+        whereClause !== undefined
+          ? db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(userTable)
+              .where(whereClause)
+          : db.select({ count: sql<number>`count(*)::int` }).from(userTable),
+      ]);
+    } catch (queryErr) {
+      const msg = queryErr instanceof Error ? queryErr.message : String(queryErr);
+      const mayBeSchemaError =
+        msg.includes("does not exist") ||
+        msg.includes("relation") ||
+        msg.includes("Failed query") ||
+        msg.includes("column");
+      if (mayBeSchemaError) {
+        console.warn("Admin customers: full query failed, trying fallback:", msg);
+        try {
+          users = await runFallbackQuery();
+        } catch (fallbackErr) {
+          console.warn(
+            "Admin customers: fallback failed, trying minimal:",
+            fallbackErr instanceof Error ? fallbackErr.message : fallbackErr,
+          );
+          users = await runMinimalFallbackQuery();
+        }
+        countResult = whereClause
+          ? await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(userTable)
+              .where(whereClause)
+          : await db.select({ count: sql<number>`count(*)::int` }).from(userTable);
+      } else {
+        throw queryErr;
+      }
+    }
 
     const totalCount = countResult[0]?.count ?? 0;
     const totalPages = Math.ceil(totalCount / limit) || 1;
@@ -231,9 +344,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error("Admin customers list error:", err);
-    return NextResponse.json(
-      { error: "Failed to load customers" },
-      { status: 500 },
-    );
+    const message =
+      process.env.NODE_ENV === "development" && err instanceof Error
+        ? err.message
+        : "Failed to load customers";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
