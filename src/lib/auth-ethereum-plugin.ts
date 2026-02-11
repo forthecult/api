@@ -308,6 +308,7 @@ export function ethereumAuthPlugin() {
               const email = `ethereum_${addressTrim.slice(2, 10)}@wallet.local`;
               const now = new Date();
               const userId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "user" });
+              console.log("[ethereum-auth] No existing account for", addressTrim, "— creating new user", userId, "with email", email);
               try {
                 await adapter.create({
                   model: "user",
@@ -318,11 +319,28 @@ export function ethereumAuthPlugin() {
                     emailVerified: true,
                     createdAt: now,
                     updatedAt: now,
-                    // Notification preferences are set by databaseHooks.user.create.before in auth.ts
+                    // Notification preference defaults (explicit to avoid NOT NULL violations
+                    // when databaseHooks.user.create.before does not run for raw adapter calls)
+                    role: "user",
+                    transactionalEmail: true,
+                    transactionalWebsite: true,
+                    transactionalSms: false,
+                    transactionalTelegram: false,
+                    transactionalAiCompanion: false,
+                    marketingEmail: true,
+                    marketingWebsite: false,
+                    marketingSms: false,
+                    marketingTelegram: false,
+                    marketingAiCompanion: false,
+                    receiveMarketing: false,
+                    receiveSmsMarketing: false,
+                    receiveOrderNotificationsViaTelegram: false,
                   },
                 });
               } catch (createUserErr) {
+                console.error("[ethereum-auth] User creation failed:", createUserErr);
                 if (isDuplicateUserEmailError(createUserErr)) {
+                  console.log("[ethereum-auth] Duplicate email detected, looking up existing user for", email);
                   const existingUser = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "email", value: email }],
@@ -366,24 +384,30 @@ export function ethereumAuthPlugin() {
                 if (!user) throw createUserErr;
               }
               if (!user) {
+                console.log("[ethereum-auth] Linking new Ethereum account for user", userId);
                 const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
-                await (ctx.context.internalAdapter as {
-                  createAccount: (data: {
-                    id: string;
-                    userId: string;
-                    accountId: string;
-                    providerId: string;
-                    createdAt: Date;
-                    updatedAt: Date;
-                  }) => Promise<unknown>;
-                }).createAccount({
-                  id: accountRowId,
-                  userId,
-                  accountId: addressTrim.toLowerCase(),
-                  providerId: ETHEREUM_PROVIDER_ID,
-                  createdAt: now,
-                  updatedAt: now,
-                });
+                try {
+                  await (ctx.context.internalAdapter as {
+                    createAccount: (data: {
+                      id: string;
+                      userId: string;
+                      accountId: string;
+                      providerId: string;
+                      createdAt: Date;
+                      updatedAt: Date;
+                    }) => Promise<unknown>;
+                  }).createAccount({
+                    id: accountRowId,
+                    userId,
+                    accountId: addressTrim.toLowerCase(),
+                    providerId: ETHEREUM_PROVIDER_ID,
+                    createdAt: now,
+                    updatedAt: now,
+                  });
+                } catch (createAccountErr) {
+                  console.error("[ethereum-auth] createAccount failed:", createAccountErr);
+                  throw createAccountErr;
+                }
                 user = (await adapter.findOne({
                   model: "user",
                   where: [{ field: "id", value: userId }],
@@ -392,10 +416,12 @@ export function ethereumAuthPlugin() {
             }
 
             if (!user) {
+              console.error("[ethereum-auth] User record not found after creation for address:", addressTrim);
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to get user",
               });
             }
+            console.log("[ethereum-auth] User ready:", user.id, "— creating session");
 
             const session = await (ctx.context.internalAdapter as { createSession: (userId: string, request?: Request, cookie?: boolean) => Promise<{ id: string; userId: string } | null> }).createSession(
               user.id,

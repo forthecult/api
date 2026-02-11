@@ -102,7 +102,7 @@ const creatorFeeAllocations = [
   { value: 5, pct: "5%", label: "Buy back and burn", chartLabel: "5% Buy back & burn", wallet: "UvbzCHxWyJc5uFoQc44sFRDucLV3AuWLoB3nfPtBURN", subjectToChange: false },
   { value: 5, pct: "5%", label: "Staked token holders", chartLabel: "5% Staked holders", wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT", subjectToChange: false },
   { value: 5, pct: "5%", label: "Charity", chartLabel: "5% Charity", wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE", subjectToChange: false },
-  { value: 15, pct: "13.37%", label: "Marketing and advertising", chartLabel: "13.37% Marketing", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: true },
+  { value: 15, pct: "15%", label: "Marketing and advertising", chartLabel: "13.37% Marketing", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: true },
   { value: 20, pct: "20%", label: "Subsidize shipping and product prices", chartLabel: "20% Shipping & prices", chartLabelOutset: 14, wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ", subjectToChange: true },
   { value: 20, pct: "20%", label: "Product inventory and development", chartLabel: "20% Product & inventory", wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm", subjectToChange: true },
   { value: 30, pct: "30%", label: "Treasury and feature development", chartLabel: "30% Treasury", wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb", subjectToChange: true },

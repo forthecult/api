@@ -295,6 +295,7 @@ export function solanaAuthPlugin() {
               const email = `solana_${addressTrim.slice(0, 8)}@wallet.local`;
               const now = new Date();
               const userId = generateId({ model: "user" });
+              console.log("[solana-auth] No existing account for", addressTrim, "— creating new user", userId, "with email", email);
               try {
                 await adapter.create({
                   model: "user",
@@ -305,11 +306,28 @@ export function solanaAuthPlugin() {
                     emailVerified: true,
                     createdAt: now,
                     updatedAt: now,
-                    // Notification preferences are set by databaseHooks.user.create.before in auth.ts
+                    // Notification preference defaults (explicit to avoid NOT NULL violations
+                    // when databaseHooks.user.create.before does not run for raw adapter calls)
+                    role: "user",
+                    transactionalEmail: true,
+                    transactionalWebsite: true,
+                    transactionalSms: false,
+                    transactionalTelegram: false,
+                    transactionalAiCompanion: false,
+                    marketingEmail: true,
+                    marketingWebsite: false,
+                    marketingSms: false,
+                    marketingTelegram: false,
+                    marketingAiCompanion: false,
+                    receiveMarketing: false,
+                    receiveSmsMarketing: false,
+                    receiveOrderNotificationsViaTelegram: false,
                   },
                 });
               } catch (createUserErr) {
+                console.error("[solana-auth] User creation failed:", createUserErr);
                 if (isDuplicateUserEmailError(createUserErr)) {
+                  console.log("[solana-auth] Duplicate email detected, looking up existing user for", email);
                   const existingUser = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "email", value: email }],
@@ -356,24 +374,30 @@ export function solanaAuthPlugin() {
                 if (!user) throw createUserErr;
               }
               if (!user) {
+                console.log("[solana-auth] Linking new Solana account for user", userId);
                 const accountId = generateId({ model: "account" });
-                await (ctx.context.internalAdapter as {
-                  createAccount: (data: {
-                    id: string;
-                    userId: string;
-                    accountId: string;
-                    providerId: string;
-                    createdAt: Date;
-                    updatedAt: Date;
-                  }) => Promise<unknown>;
-                }).createAccount({
-                  id: accountId,
-                  userId,
-                  accountId: addressTrim,
-                  providerId: SOLANA_PROVIDER_ID,
-                  createdAt: now,
-                  updatedAt: now,
-                });
+                try {
+                  await (ctx.context.internalAdapter as {
+                    createAccount: (data: {
+                      id: string;
+                      userId: string;
+                      accountId: string;
+                      providerId: string;
+                      createdAt: Date;
+                      updatedAt: Date;
+                    }) => Promise<unknown>;
+                  }).createAccount({
+                    id: accountId,
+                    userId,
+                    accountId: addressTrim,
+                    providerId: SOLANA_PROVIDER_ID,
+                    createdAt: now,
+                    updatedAt: now,
+                  });
+                } catch (createAccountErr) {
+                  console.error("[solana-auth] createAccount failed:", createAccountErr);
+                  throw createAccountErr;
+                }
                 user = (await adapter.findOne({
                   model: "user",
                   where: [{ field: "id", value: userId }],
@@ -382,14 +406,17 @@ export function solanaAuthPlugin() {
             }
 
             if (!user) {
+              console.error("[solana-auth] User record not found after creation for address:", addressTrim);
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to get user",
               });
             }
+            console.log("[solana-auth] User ready:", user.id, "— creating session");
 
-            // createSession(userId, dontRememberMe) - false = remember me (longer expiry)
-            const session = await (ctx.context.internalAdapter as { createSession: (userId: string, dontRememberMe?: boolean) => Promise<{ id: string; userId: string } | null> }).createSession(
+            // createSession(userId, request, dontRememberMe) - false = remember me (longer expiry)
+            const session = await (ctx.context.internalAdapter as { createSession: (userId: string, request?: Request, dontRememberMe?: boolean) => Promise<{ id: string; userId: string } | null> }).createSession(
               user.id,
+              ctx.request as Request | undefined,
               false,
             );
             if (!session) {

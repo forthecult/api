@@ -53,12 +53,12 @@ type SectionDef = {
 const SECTION_DEFS: SectionDef[] = [
   {
     label: "Tech & Smart Home",
-    icon: <Cpu className="h-3.5 w-3.5" />,
+                    icon: <Cpu className="h-4 w-4" />,
     categorySlugs: ["smart-home", "ai", "hardware-wallets", "iot", "esim"],
   },
   {
     label: "Clothing & Shoes",
-    icon: <Shirt className="h-3.5 w-3.5" />,
+    icon: <Shirt className="h-4 w-4" />,
     categorySlugs: [
       "mens-clothing",
       "womens-clothing",
@@ -69,12 +69,12 @@ const SECTION_DEFS: SectionDef[] = [
   },
   {
     label: "Accessories",
-    icon: <ShoppingBag className="h-3.5 w-3.5" />,
+    icon: <ShoppingBag className="h-4 w-4" />,
     categorySlugs: ["accessories"],
   },
   {
     label: "Home & Culture",
-    icon: <Home className="h-3.5 w-3.5" />,
+    icon: <Home className="h-4 w-4" />,
     categorySlugs: ["meme-novelty", "home-living", "health-wellness"],
   },
 ];
@@ -139,7 +139,7 @@ export function ShopMegaMenu({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary",
+            "inline-flex items-center gap-1 text-base font-medium transition-colors hover:text-primary",
             isActive ? "font-semibold text-primary" : "text-muted-foreground",
             className,
           )}
@@ -172,7 +172,7 @@ export function ShopMegaMenu({
           {sections.map((section) => (
             <div key={section.label} className="px-5 pb-5 pt-4">
               {/* Section header */}
-              <div className="mb-3 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground/70">
+              <div className="mb-3 flex items-center gap-1.5 text-sm font-bold uppercase tracking-widest text-muted-foreground/70">
                 {section.icon}
                 {section.label}
               </div>
@@ -193,7 +193,7 @@ export function ShopMegaMenu({
                     <div key={cat.id}>
                       <Link
                         href={href}
-                        className="group inline-flex items-center gap-1 text-[13px] font-semibold leading-snug transition-colors hover:text-primary"
+                        className="group inline-flex items-center gap-1 text-base font-semibold leading-snug transition-colors hover:text-primary"
                         onClick={() => setOpen(false)}
                       >
                         {cat.name}
@@ -211,12 +211,12 @@ export function ShopMegaMenu({
                               <li key={sub.id}>
                                 <Link
                                   href={subHref}
-                                  className="block rounded-md px-2 py-1 text-[13px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                  className="block rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                                   onClick={() => setOpen(false)}
                                 >
                                   {sub.name}
                                   {(sub.productCount ?? 0) > 0 && (
-                                    <span className="ml-1 text-[11px] tabular-nums opacity-40">
+                                    <span className="ml-1 text-xs tabular-nums opacity-40">
                                       ({sub.productCount})
                                     </span>
                                   )}
@@ -228,7 +228,7 @@ export function ShopMegaMenu({
                             <li>
                               <Link
                                 href={href}
-                                className="inline-flex items-center gap-0.5 px-2 py-1 text-xs font-medium text-primary transition-colors hover:underline"
+                                className="inline-flex items-center gap-0.5 px-2 py-1 text-sm font-medium text-primary transition-colors hover:underline"
                                 onClick={() => setOpen(false)}
                               >
                                 View all
@@ -250,14 +250,14 @@ export function ShopMegaMenu({
         <div className="flex items-center justify-between border-t bg-muted/40 px-5 py-2.5">
           <Link
             href="/products"
-            className="group inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+            className="group inline-flex items-center gap-2 text-base font-semibold text-primary transition-colors hover:text-primary/80"
             onClick={() => setOpen(false)}
           >
             <Sparkles className="h-4 w-4" />
             Browse All Products
-            <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
-          <span className="hidden text-xs text-muted-foreground sm:inline">
+          <span className="hidden text-sm text-muted-foreground sm:inline">
             Free worldwide shipping · Hold 250k CULT
           </span>
         </div>

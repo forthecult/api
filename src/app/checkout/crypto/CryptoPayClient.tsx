@@ -290,7 +290,8 @@ export function CryptoPayClient() {
       const solPerToken = crustSolPerToken ?? 0;
       const r = solUsdRate ?? SOL_USD_FALLBACK;
       if (solPerToken <= 0 || r <= 0) return;
-      const amount = tokenAmountFromUsdWithPrice(amountUsd, solPerToken, r, 6);
+      // encodeURL expects amount in token units (human-readable), not base units
+      const amount = new BigNumber(amountUsd).div(new BigNumber(solPerToken).times(r));
       const keypair = Keypair.generate();
       const url = encodeURL({
         recipient: new PublicKey(recipient),
@@ -308,7 +309,8 @@ export function CryptoPayClient() {
       const solPerToken = pumpSolPerToken ?? 0;
       const r = solUsdRate ?? SOL_USD_FALLBACK;
       if (solPerToken <= 0 || r <= 0) return;
-      const amount = tokenAmountFromUsdWithPrice(amountUsd, solPerToken, r, 6);
+      // encodeURL expects amount in token units (human-readable), not base units
+      const amount = new BigNumber(amountUsd).div(new BigNumber(solPerToken).times(r));
       const keypair = Keypair.generate();
       const url = encodeURL({
         recipient: new PublicKey(recipient),
@@ -349,9 +351,8 @@ export function CryptoPayClient() {
       : isTroll
         ? TROLL_MINT_MAINNET
         : USDC_MINT_MAINNET;
-    const amount = isWhiteWhale || isTroll
-      ? tokenAmountFromUsd(amountUsd)
-      : usdcAmountFromUsd(amountUsd);
+    // encodeURL expects amount in token units (human-readable), not base units
+    const amount = new BigNumber(amountUsd);
     const url = encodeURL({
       recipient: new PublicKey(recipient),
       amount,
@@ -417,6 +418,9 @@ export function CryptoPayClient() {
             : token === "troll"
               ? TROLL_MINT_MAINNET
               : USDC_MINT_MAINNET;
+    // For native SOL, amount is in lamports (server uses raw lamport comparison).
+    // For SPL tokens, amount must be in human-readable token units (e.g. "1" for 1 USDC),
+    // because @solana/pay's validateTransfer multiplies by 10^decimals internally.
     const amountStr = isNativeSol
       ? String(
           Math.ceil(amountSol * LAMPORTS_PER_SOL) + TX_FEE_BUFFER_LAMPORTS,
@@ -430,7 +434,7 @@ export function CryptoPayClient() {
             crustSolPerToken,
             rate,
             6,
-          ).toString()
+          ).div(1e6).toString()
         : token === "pump" &&
             pumpSolPerToken != null &&
             pumpSolPerToken > 0 &&
@@ -440,10 +444,8 @@ export function CryptoPayClient() {
               pumpSolPerToken,
               rate,
               6,
-            ).toString()
-          : token === "whitewhale" || token === "troll"
-            ? tokenAmountFromUsd(amountUsd).toString()
-            : usdcAmountFromUsd(amountUsd).toString();
+            ).div(1e6).toString()
+          : String(amountUsd);
     const params = new URLSearchParams({
       depositAddress: order.depositAddress,
       amount: amountStr,
@@ -667,11 +669,8 @@ export function CryptoPayClient() {
           );
         }
 
-        // Convert BigNumber amount to token units
-        const tokenAmount = amountBigNumber
-          .times(new BigNumber(10).pow(mint.decimals))
-          .integerValue(BigNumber.ROUND_FLOOR);
-        const tokens = BigInt(tokenAmount.toString());
+        // amountBigNumber is already in base units (helpers multiply by 10^decimals)
+        const tokens = BigInt(amountBigNumber.integerValue(BigNumber.ROUND_FLOOR).toString());
 
         // Add transfer instruction using the detected program
         transaction.add(
