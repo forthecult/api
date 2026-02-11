@@ -38,6 +38,94 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: message }, { status: 400 });
     }
 
+    if (event.type === "payment_intent.succeeded") {
+      const paymentIntent = event.data.object as Stripe.PaymentIntent;
+      const orderId = paymentIntent.metadata?.orderId;
+      if (!orderId || typeof orderId !== "string") {
+        console.error("Webhook payment_intent.succeeded: missing metadata.orderId");
+        return NextResponse.json({ received: true });
+      }
+
+      const [order] = await db
+        .select({ id: ordersTable.id, status: ordersTable.status })
+        .from(ordersTable)
+        .where(eq(ordersTable.id, orderId))
+        .limit(1);
+
+      if (!order) {
+        console.error("Webhook payment_intent.succeeded: order not found", orderId);
+        return NextResponse.json({ received: true });
+      }
+      if (order.status === "paid") {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+
+      await db
+        .update(ordersTable)
+        .set({
+          status: "paid",
+          paymentStatus: "paid",
+          updatedAt: new Date(),
+        })
+        .where(eq(ordersTable.id, orderId));
+
+      const now = new Date();
+      const [updatedOrder] = await db
+        .select({
+          affiliateId: ordersTable.affiliateId,
+          affiliateCode: ordersTable.affiliateCode,
+          affiliateCommissionCents: ordersTable.affiliateCommissionCents,
+          affiliateDiscountCents: ordersTable.affiliateDiscountCents,
+        })
+        .from(ordersTable)
+        .where(eq(ordersTable.id, orderId))
+        .limit(1);
+
+      if (updatedOrder?.affiliateId && updatedOrder.affiliateCommissionCents != null) {
+        const [row] = await db
+          .select({ totalEarnedCents: affiliateTable.totalEarnedCents })
+          .from(affiliateTable)
+          .where(eq(affiliateTable.id, updatedOrder.affiliateId))
+          .limit(1);
+        const current = row?.totalEarnedCents ?? 0;
+        await db
+          .update(affiliateTable)
+          .set({
+            updatedAt: now,
+            totalEarnedCents: current + (updatedOrder.affiliateCommissionCents ?? 0),
+          })
+          .where(eq(affiliateTable.id, updatedOrder.affiliateId));
+      }
+
+      void onOrderCreated(orderId);
+
+      try {
+        const hasPrintful = await hasPrintfulItems(orderId);
+        if (hasPrintful) {
+          const printfulResult = await createAndConfirmPrintfulOrder(orderId);
+          if (!printfulResult.success) {
+            console.error("Printful order failed:", printfulResult.error);
+          }
+        }
+      } catch (pfError) {
+        console.error("Error processing Printful order:", pfError);
+      }
+
+      try {
+        const hasPrintify = await hasPrintifyItems(orderId);
+        if (hasPrintify) {
+          const printifyResult = await createAndConfirmPrintifyOrder(orderId);
+          if (!printifyResult.success) {
+            console.error("Printify order failed:", printifyResult.error);
+          }
+        }
+      } catch (pyError) {
+        console.error("Error processing Printify order:", pyError);
+      }
+
+      return NextResponse.json({ received: true, orderId });
+    }
+
     if (event.type !== "checkout.session.completed") {
       return NextResponse.json({ received: true });
     }

@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/ui/primitives/dialog";
+import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import {
@@ -45,6 +46,20 @@ import {
 } from "../checkout-shared";
 
 const SHIPPING_CALCULATE_TIMEOUT_MS = 15_000;
+
+/** Saved address from GET /api/user/addresses */
+type SavedAddress = {
+  id: string;
+  address1: string;
+  address2?: string;
+  city: string;
+  stateCode?: string;
+  countryCode: string;
+  zip: string;
+  phone?: string;
+  label?: string;
+  isDefault: boolean;
+};
 
 export interface ShippingUpdate {
   shippingCents: number;
@@ -260,6 +275,15 @@ export const ShippingAddressForm = forwardRef<
   const [showCompany, setShowCompany] = useState(() => Boolean(getPersistedShippingForm().company?.trim()));
   /** Track which fields the user has touched (blurred) for inline validation. */
   const [touchedFields, setTouchedFields] = useState<Set<string>>(new Set());
+  /** Saved addresses for logged-in users. */
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  /** Selected saved address id; empty string = manual entry. */
+  const [selectedSavedAddressId, setSelectedSavedAddressId] = useState("");
+  /** "Save this address for next time" — persisted to sessionStorage for success page. */
+  const [saveAddressForNextTime, setSaveAddressForNextTime] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("checkout_save_address") === "1";
+  });
   const markTouched = useCallback((field: string) => {
     setTouchedFields((prev) => {
       if (prev.has(field)) return prev;
@@ -303,6 +327,57 @@ export const ShippingAddressForm = forwardRef<
       zip: mapped.zip,
       country: mapped.country || prev.country,
     }));
+  }, []);
+
+  const applySavedAddress = useCallback((addr: SavedAddress) => {
+    setForm((prev) => ({
+      ...prev,
+      street: addr.address1,
+      apartment: addr.address2 ?? "",
+      city: addr.city,
+      state: addr.stateCode ?? "",
+      country: addr.countryCode,
+      zip: addr.zip,
+      phone: addr.phone ?? "",
+    }));
+  }, []);
+
+  /** True if current form address matches at least one saved address. */
+  const formMatchesSavedAddress = useCallback(() => {
+    const s = form.street?.trim();
+    const a2 = form.apartment?.trim() ?? "";
+    const c = form.city?.trim();
+    const st = form.state?.trim() ?? "";
+    const co = form.country?.trim();
+    const z = form.zip?.trim();
+    const p = form.phone?.trim() ?? "";
+    return savedAddresses.some(
+      (addr) =>
+        addr.address1 === s &&
+        (addr.address2 ?? "") === a2 &&
+        addr.city === c &&
+        (addr.stateCode ?? "") === st &&
+        addr.countryCode === co &&
+        addr.zip === z &&
+        (addr.phone ?? "") === p,
+    );
+  }, [form.street, form.apartment, form.city, form.state, form.country, form.zip, form.phone, savedAddresses]);
+
+  const showSaveAddressCheckbox =
+    isLoggedIn &&
+    savedAddresses.length > 0 &&
+    form.street?.trim() &&
+    form.city?.trim() &&
+    form.country?.trim() &&
+    form.zip?.trim() &&
+    !formMatchesSavedAddress();
+
+  const handleSaveAddressCheckboxChange = useCallback((checked: boolean) => {
+    setSaveAddressForNextTime(checked);
+    if (typeof window !== "undefined") {
+      if (checked) sessionStorage.setItem("checkout_save_address", "1");
+      else sessionStorage.removeItem("checkout_save_address");
+    }
   }, []);
 
   const shippingLoqate = useLoqateAutocomplete({
@@ -366,6 +441,23 @@ export const ShippingAddressForm = forwardRef<
       setForm((prev) => ({ ...prev, ...updates }));
     }
   }, [user, form.email, form.firstName, form.lastName]);
+
+  /** Fetch saved addresses for logged-in users. */
+  useEffect(() => {
+    if (!isLoggedIn) return;
+    let cancelled = false;
+    fetch("/api/user/addresses", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : { addresses: [] }))
+      .then((data: { addresses?: SavedAddress[] }) => {
+        if (!cancelled && Array.isArray(data.addresses)) {
+          setSavedAddresses(data.addresses);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [isLoggedIn]);
 
   useEffect(() => {
     persistShippingForm(form);
@@ -557,6 +649,34 @@ export const ShippingAddressForm = forwardRef<
           <CardTitle>Shipping address</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          {savedAddresses.length > 0 && (
+            <div className="sm:col-span-2">
+              <Label className="text-sm font-medium text-muted-foreground">
+                Use a saved address
+              </Label>
+              <select
+                aria-label="Use a saved address"
+                value={selectedSavedAddressId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setSelectedSavedAddressId(id);
+                  if (id) {
+                    const addr = savedAddresses.find((a) => a.id === id);
+                    if (addr) applySavedAddress(addr);
+                  }
+                }}
+                className={cn(selectInputClass, "mt-1.5")}
+              >
+                <option value="">Enter address manually</option>
+                {savedAddresses.map((addr) => (
+                  <option key={addr.id} value={addr.id}>
+                    {addr.label || "Address"} — {addr.address1}, {addr.city}
+                    {addr.isDefault ? " (Default)" : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="sm:col-span-2">
             <select
               aria-label="Country"
@@ -856,6 +976,17 @@ export const ShippingAddressForm = forwardRef<
               </PopoverContent>
             </Popover>
           </div>
+          {showSaveAddressCheckbox && (
+            <div className="sm:col-span-2">
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <Checkbox
+                  checked={saveAddressForNextTime}
+                  onCheckedChange={(v) => handleSaveAddressCheckboxChange(v === true)}
+                />
+                <span>Save this address for next time</span>
+              </label>
+            </div>
+          )}
           {/* Marketing consent moved to success page */}
         </CardContent>
       </Card>

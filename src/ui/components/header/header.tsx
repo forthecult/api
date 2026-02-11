@@ -89,7 +89,12 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       name: string;
       slug?: string;
       productCount?: number;
-      subcategories?: Array<{ id: string; name: string; productCount?: number }>;
+      subcategories?: Array<{
+        id: string;
+        name: string;
+        slug?: string;
+        productCount?: number;
+      }>;
     }>
   >([]);
 

@@ -307,6 +307,7 @@ export function CheckoutClient() {
               shippingFormRef={shippingFormRef}
               billingFormRef={billingFormRef}
               total={total}
+              totalCents={totalCents}
               canShipToCountry={canShipToCountry}
               countryOptions={COUNTRY_OPTIONS}
               validationErrors={validationErrors}

@@ -309,6 +309,7 @@ export function SuccessPageClient() {
   const orderIdParam = searchParams.get("orderId");
   const sessionIdParam = searchParams.get("session_id");
   const { clearCart } = useCart();
+  const { user } = useCurrentUser();
 
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
@@ -318,6 +319,34 @@ export function SuccessPageClient() {
       clearCart();
     }
   }, [orderIdParam, sessionIdParam, clearCart]);
+
+  /** If user opted to save address at checkout, save it now. */
+  useEffect(() => {
+    if (loading || !order?.shipping || !user?.id) return;
+    if (typeof window === "undefined" || sessionStorage.getItem("checkout_save_address") !== "1") return;
+    const s = order.shipping;
+    if (!s.address1?.trim() || !s.city?.trim() || !s.countryCode?.trim() || !s.zip?.trim()) return;
+
+    sessionStorage.removeItem("checkout_save_address");
+    fetch("/api/user/addresses", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        address1: s.address1.trim(),
+        address2: s.address2?.trim() || undefined,
+        city: s.city.trim(),
+        stateCode: s.stateCode?.trim() || undefined,
+        countryCode: s.countryCode.trim(),
+        zip: s.zip.trim(),
+        phone: s.phone?.trim() || undefined,
+      }),
+    })
+      .then((res) => {
+        if (res.ok) toast.success("Address saved for next time");
+      })
+      .catch(() => {});
+  }, [loading, order?.shipping, user?.id]);
 
   useEffect(() => {
     let cancelled = false;

@@ -52,6 +52,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
+import { PAYMENT_CONFIG } from "~/app";
 import type { OrderPayload } from "../checkout-shared";
 import {
   paymentButtonClass,
@@ -61,6 +62,7 @@ import {
   BillingAddressForm,
   type BillingAddressFormRef,
 } from "./BillingAddressForm";
+import { ExpressCheckout } from "./ExpressCheckout";
 import { PolicyPopup } from "./PolicyPopup";
 import { SolanaPayDialog } from "./solana-pay-dialog";
 import { useSolanaPayCheckout } from "../hooks/useSolanaPayCheckout";
@@ -110,6 +112,7 @@ export interface PaymentMethodSectionProps {
   shippingFormRef: React.RefObject<ShippingAddressFormRef | null>;
   billingFormRef: React.RefObject<BillingAddressFormRef | null>;
   total: number;
+  totalCents: number;
   canShipToCountry: boolean;
   countryOptions: { value: string; label: string }[];
   validationErrors: string[];
@@ -124,6 +127,7 @@ export function PaymentMethodSection({
   shippingFormRef,
   billingFormRef,
   total,
+  totalCents,
   canShipToCountry,
   countryOptions,
   validationErrors,
@@ -388,6 +392,8 @@ export function PaymentMethodSection({
             typeof commonBody.affiliateCode === "string"
               ? commonBody.affiliateCode
               : undefined,
+          paymentMethod:
+            paymentMethod === "paypal" ? ("paypal" as const) : undefined,
         }),
       });
 
@@ -414,6 +420,7 @@ export function PaymentMethodSection({
       setValidationErrors(["Payment failed. Please try again or use another payment method."]);
     }
   }, [
+    paymentMethod,
     shippingFormRef,
     billingFormRef,
     buildOrderPayload,
@@ -691,6 +698,21 @@ export function PaymentMethodSection({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <ExpressCheckout
+            stripeEnabled={PAYMENT_CONFIG.stripeEnabled}
+            totalCents={totalCents}
+            buildOrderPayload={buildOrderPayload}
+            setValidationErrors={setValidationErrors}
+            shippingFormRef={shippingFormRef}
+            setNavigatingToPay={setNavigatingToPay}
+          />
+          {PAYMENT_CONFIG.stripeEnabled && totalCents > 0 && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="flex-1 border-t border-border" aria-hidden />
+              <span>Or pay with</span>
+              <span className="flex-1 border-t border-border" aria-hidden />
+            </div>
+          )}
           {!hiddenOptions.creditCard && (
             <div className="space-y-0">
               <label className={paymentOptionRowClass}>
@@ -1099,7 +1121,68 @@ export function PaymentMethodSection({
               )}
             </div>
           )}
-          {/* PayPal hidden until integration is complete — showing "Coming soon" hurts conversion */}
+          {/* PayPal: shown when Stripe is enabled; selectable only when paypalEnabled */}
+          {PAYMENT_CONFIG.stripeEnabled && !hiddenOptions.paypal && (
+            <div className="space-y-0">
+              {PAYMENT_CONFIG.paypalEnabled ? (
+                <label className={paymentOptionRowClass}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={paymentMethod === "paypal"}
+                      onChange={() => setPaymentTop("paypal")}
+                      className="size-4 border-input text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm font-medium">Pay with PayPal</span>
+                  </div>
+                  <Image
+                    alt="PayPal"
+                    className="ml-auto h-6 w-16 shrink-0 object-contain"
+                    height={24}
+                    src="/payments/paypal.svg"
+                    width={64}
+                  />
+                </label>
+              ) : (
+                <div
+                  className={paymentOptionRowClass}
+                  aria-disabled="true"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      Pay with PayPal
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      Enable in store settings
+                    </span>
+                  </div>
+                  <Image
+                    alt="PayPal"
+                    className="ml-auto h-6 w-16 shrink-0 object-contain opacity-50"
+                    height={24}
+                    src="/payments/paypal.svg"
+                    width={64}
+                  />
+                </div>
+              )}
+              {paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled && (
+                <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
+                  <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5">
+                    <Lock className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
+                    <p className="text-sm text-muted-foreground">
+                      You&apos;ll be securely redirected to complete your purchase with PayPal.
+                    </p>
+                  </div>
+                  <BillingAddressForm
+                    ref={billingFormRef}
+                    countryOptions={countryOptions}
+                    validationErrors={validationErrors}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -1134,6 +1217,32 @@ export function PaymentMethodSection({
               <>
                 <Lock className="mr-2 size-4" aria-hidden />
                 Pay securely with card
+              </>
+            )}
+          </Button>
+        ) : paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled ? (
+          <Button
+            className={paymentButtonClass}
+            size="lg"
+            type="button"
+            disabled={navigatingToPay}
+            onClick={handlePlaceOrder}
+          >
+            {navigatingToPay ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                Redirecting to PayPal…
+              </>
+            ) : (
+              <>
+                <Image
+                  alt=""
+                  className="mr-2 h-5 w-6 object-contain"
+                  height={20}
+                  src="/payments/paypal.svg"
+                  width={24}
+                />
+                Pay with PayPal
               </>
             )}
           </Button>

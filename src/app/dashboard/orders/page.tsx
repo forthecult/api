@@ -11,6 +11,8 @@ import { ordersTable } from "~/db/schema";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 
+import { ReorderButton } from "./ReorderButton";
+
 export const dynamic = "force-dynamic";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -126,17 +128,15 @@ export default async function OrdersPage() {
                       <span className="font-medium">
                         {formatCents(order.totalCents)}
                       </span>
-                      <Button
-                        asChild
-                        className="ml-auto shrink-0"
-                        size="sm"
-                        variant="ghost"
-                      >
-                        <Link href={`/dashboard/orders/${order.id}`}>
-                          Details
-                          <span className="sr-only"> for order {order.id}</span>
-                        </Link>
-                      </Button>
+                      <div className="ml-auto flex shrink-0 items-center gap-2">
+                        <ReorderButton orderId={order.id} />
+                        <Button asChild size="sm" variant="ghost">
+                          <Link href={`/dashboard/orders/${order.id}`}>
+                            Details
+                            <span className="sr-only"> for order {order.id}</span>
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
                   </li>
                 );

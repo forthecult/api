@@ -7,6 +7,8 @@ import { ordersTable } from "~/db/schema";
 import { formatCents, formatDateLong } from "~/lib/format";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 
+import { ReorderButton } from "../ReorderButton";
+
 export const dynamic = "force-dynamic";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -63,10 +65,13 @@ export default async function OrderDetailPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">
-        Order{" "}
-        <span className="font-mono text-muted-foreground">#{order.id}</span>
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Order{" "}
+          <span className="font-mono text-muted-foreground">#{order.id}</span>
+        </h1>
+        <ReorderButton orderId={order.id} />
+      </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

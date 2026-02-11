@@ -26,6 +26,8 @@ const createCheckoutBodySchema = z.object({
     .max(50),
   userId: z.string().optional(),
   affiliateCode: z.string().max(64).optional(),
+  /** When "paypal", Stripe Checkout shows PayPal only. Omit for card. */
+  paymentMethod: z.enum(["card", "paypal"]).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -137,6 +139,9 @@ export async function POST(request: NextRequest) {
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/checkout/cancelled`,
       metadata,
+      ...(parsed.data.paymentMethod === "paypal"
+        ? { payment_method_types: ["paypal"] as const }
+        : {}),
     });
 
     return NextResponse.json({ url: checkoutSession.url });

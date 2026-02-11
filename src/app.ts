@@ -29,6 +29,8 @@ export const ADMIN_CONFIG = {
 export const PAYMENT_CONFIG = {
   activeMethod: "solana" as "solana" | "stripe",
   stripeEnabled: false,
+  /** PayPal via Stripe Checkout. Enable after signing up for PayPal in Stripe Dashboard. */
+  paypalEnabled: false,
 };
 
 export const DB_DEV_LOGGER = false;
