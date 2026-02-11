@@ -13,6 +13,7 @@ import { and, eq, or } from "drizzle-orm";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { onOrderCreated } from "~/lib/create-user-notification";
+import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
@@ -163,8 +164,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Require signature for on-chain verification
+    // Signature for on-chain verification.
+    // "balance-verified" is a sentinel from the status route indicating balance was
+    // verified without a specific transaction signature (e.g. Token-2022 fallback).
     const sigTrim = typeof signature === "string" ? signature.trim() : "";
+    const isBalanceVerified = sigTrim === "balance-verified";
     if (!sigTrim) {
       return NextResponse.json(
         {
@@ -218,12 +222,71 @@ export async function POST(request: NextRequest) {
             { status: 400 },
           );
         }
+      } else if (isBalanceVerified) {
+        // Status route already verified balance — just re-confirm here
+        const balance = await getTokenBalanceAnyProgram(
+          connection,
+          splTokenMint,
+          depositPk,
+        );
+        if (!balance) {
+          return NextResponse.json(
+            { error: "Transfer verification failed (no token balance)" },
+            { status: 400 },
+          );
+        }
+        const expectedBaseUnits = BigInt(
+          amountBn
+            .times(new BigNumber(10).pow(balance.decimals))
+            .integerValue(BigNumber.ROUND_FLOOR)
+            .toString(),
+        );
+        if (balance.amount < expectedBaseUnits) {
+          return NextResponse.json(
+            { error: "Transfer verification failed (insufficient balance)" },
+            { status: 400 },
+          );
+        }
       } else {
-        await validateTransfer(connection, sigTrim, {
-          recipient: depositPk,
-          amount: amountBn,
-          splToken: new PublicKey(splTokenMint),
-        });
+        // Try @solana/pay validateTransfer first (standard Token Program),
+        // then fall back to a balance check for Token-2022 tokens (pump.fun etc.)
+        let transferVerified = false;
+        try {
+          await validateTransfer(connection, sigTrim, {
+            recipient: depositPk,
+            amount: amountBn,
+            splToken: new PublicKey(splTokenMint),
+          });
+          transferVerified = true;
+        } catch {
+          // validateTransfer failed — try Token-2022 balance check fallback
+          try {
+            const balance = await getTokenBalanceAnyProgram(
+              connection,
+              splTokenMint,
+              depositPk,
+            );
+            if (balance) {
+              const expectedBaseUnits = BigInt(
+                amountBn
+                  .times(new BigNumber(10).pow(balance.decimals))
+                  .integerValue(BigNumber.ROUND_FLOOR)
+                  .toString(),
+              );
+              if (balance.amount >= expectedBaseUnits) {
+                transferVerified = true;
+              }
+            }
+          } catch {
+            // balance check also failed
+          }
+        }
+        if (!transferVerified) {
+          return NextResponse.json(
+            { error: "Transfer verification failed" },
+            { status: 400 },
+          );
+        }
       }
     } catch (verifyErr) {
       return NextResponse.json(
@@ -268,7 +331,8 @@ export async function POST(request: NextRequest) {
           status: "paid",
           updatedAt: new Date(),
           // Store crypto payment details for admin visibility
-          ...(sigTrim ? { cryptoTxHash: sigTrim } : {}),
+          // Don't store the "balance-verified" sentinel as a real txid
+          ...(sigTrim && !isBalanceVerified ? { cryptoTxHash: sigTrim } : {}),
           cryptoCurrencyNetwork: "Solana",
           cryptoCurrency: tokenDisplayName,
           cryptoAmount: serverAmount,

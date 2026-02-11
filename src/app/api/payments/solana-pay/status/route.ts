@@ -17,6 +17,7 @@ import {
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
+import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
 import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +67,11 @@ async function findNativeSolTransferToAddress(
   return null;
 }
 
-/** check for a confirmed transfer to depositAddress (works for manual paste — no reference needed) */
+/**
+ * Check for a confirmed SPL token transfer to depositAddress.
+ * Tries @solana/pay's validateTransfer first (standard Token Program),
+ * then falls back to a balance check for Token-2022 tokens.
+ */
 async function findTransferToAddress(
   connection: Connection,
   depositAddress: PublicKey,
@@ -78,6 +83,8 @@ async function findTransferToAddress(
     { limit: 30 },
     "confirmed",
   );
+
+  // 1. Try validateTransfer from @solana/pay (works for standard Token Program)
   const splTokenPk = new PublicKey(splTokenMint);
   for (const { signature } of sigs) {
     try {
@@ -91,6 +98,32 @@ async function findTransferToAddress(
       continue;
     }
   }
+
+  // 2. Fallback: check deposit address's token balance directly.
+  //    This handles Token-2022 tokens (e.g. pump.fun tokens) that validateTransfer doesn't support.
+  //    Also catches edge cases where getSignaturesForAddress misses the transaction
+  //    (e.g. deposit wallet not in the instruction accounts).
+  try {
+    const balance = await getTokenBalanceAnyProgram(
+      connection,
+      splTokenMint,
+      depositAddress,
+    );
+    if (balance) {
+      // Convert expected amount from token units to base units for comparison
+      const expectedBaseUnits = BigInt(
+        amountBn.times(new BigNumber(10).pow(balance.decimals)).integerValue(BigNumber.ROUND_FLOOR).toString(),
+      );
+      if (balance.amount >= expectedBaseUnits) {
+        // Balance is sufficient — return the most recent signature if available,
+        // or a sentinel indicating balance-verified
+        return sigs.length > 0 ? sigs[0]!.signature : "balance-verified";
+      }
+    }
+  } catch {
+    // Balance check failed — fall through to return null
+  }
+
   return null;
 }
 
@@ -184,12 +217,32 @@ export async function GET(request: Request) {
     const { signature } = await findReference(connection, referencePk, {
       finality: "confirmed",
     });
-    await validateTransfer(connection, signature, {
-      recipient: recipientPk,
-      amount: amountBn,
-      splToken: new PublicKey(splTokenMint),
-    });
-    return NextResponse.json({ status: "confirmed", signature });
+    // Try standard validateTransfer first
+    try {
+      await validateTransfer(connection, signature, {
+        recipient: recipientPk,
+        amount: amountBn,
+        splToken: new PublicKey(splTokenMint),
+      });
+      return NextResponse.json({ status: "confirmed", signature });
+    } catch {
+      // Fallback: balance check for Token-2022 tokens
+      const balance = await getTokenBalanceAnyProgram(
+        connection,
+        splTokenMint,
+        recipientPk,
+      );
+      if (balance) {
+        const expectedBaseUnits = BigInt(
+          amountBn.times(new BigNumber(10).pow(balance.decimals)).integerValue(BigNumber.ROUND_FLOOR).toString(),
+        );
+        if (balance.amount >= expectedBaseUnits) {
+          return NextResponse.json({ status: "confirmed", signature });
+        }
+      }
+      // Neither validateTransfer nor balance check succeeded
+      return NextResponse.json({ status: "pending" });
+    }
   } catch (err) {
     const name = err instanceof Error ? err.name : "";
     if (name === "FindReferenceError") {

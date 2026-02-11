@@ -669,8 +669,19 @@ export function CryptoPayClient() {
           );
         }
 
-        // amountBigNumber is already in base units (helpers multiply by 10^decimals)
-        const tokens = BigInt(amountBigNumber.integerValue(BigNumber.ROUND_FLOOR).toString());
+        // amountBigNumber is already in base units (helpers use hardcoded 6 decimals).
+        // If the actual mint decimals differ, recalculate to use the correct decimals.
+        let tokens: bigint;
+        const assumedDecimals = 6;
+        if (mint.decimals !== assumedDecimals) {
+          // Convert back to token units then re-scale with actual decimals
+          const tokenUnits = amountBigNumber.div(new BigNumber(10).pow(assumedDecimals));
+          tokens = BigInt(
+            tokenUnits.times(new BigNumber(10).pow(mint.decimals)).integerValue(BigNumber.ROUND_FLOOR).toString(),
+          );
+        } else {
+          tokens = BigInt(amountBigNumber.integerValue(BigNumber.ROUND_FLOOR).toString());
+        }
 
         // Add transfer instruction using the detected program
         transaction.add(
