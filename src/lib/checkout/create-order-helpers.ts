@@ -567,12 +567,17 @@ export async function createOrderTransaction(params: {
  * existing pattern in every create-order route.
  */
 export function buildOrderErrorMessage(err: unknown): string {
-  if (
-    err instanceof Error &&
-    (err.message?.includes("relation") ||
-      err.message?.includes("does not exist"))
-  ) {
-    return "Database tables missing. Run: bun run db:push";
+  if (!(err instanceof Error)) return "Failed to create order";
+  const msg = err.message ?? "";
+  if (msg.includes("relation") || msg.includes("does not exist")) {
+    return "Database schema out of date. Run: bun run db:push. If you recently added the user role column, run scripts/migrate-add-user-role.sql first.";
+  }
+  if (msg.includes("column") && msg.includes("does not exist")) {
+    return "Database migration required. Run scripts/migrate-add-user-role.sql against your database.";
+  }
+  // In development, surface the actual error for debugging
+  if (process.env.NODE_ENV === "development") {
+    return `Failed to create order: ${msg}`;
   }
   return "Failed to create order";
 }

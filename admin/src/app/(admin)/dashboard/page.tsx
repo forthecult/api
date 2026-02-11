@@ -7,6 +7,7 @@ import {
   ShoppingCart,
   TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { useSession } from "~/lib/auth-client";
@@ -298,9 +299,14 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {stats.recentOrders.map((order) => (
-                        <tr key={order.id} className="border-b">
+                        <tr key={order.id} className="border-b hover:bg-muted/50">
                           <td className="p-2 font-mono text-xs">
-                            #{order.id.slice(-8)}
+                            <Link
+                              href={`/orders/${order.id}`}
+                              className="text-primary hover:underline"
+                            >
+                              #{order.id.slice(-8)}
+                            </Link>
                           </td>
                           <td className="p-2">
                             {order.items.map((i) => i.name).join(", ") || "—"}

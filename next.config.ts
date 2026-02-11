@@ -151,7 +151,7 @@ const config = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
-              "connect-src 'self' https: wss:",
+              "connect-src 'self' https: wss: https://*.walletconnect.org https://*.walletconnect.com wss://*.walletconnect.org wss://*.walletconnect.com",
               "frame-src 'self' https://js.stripe.com https://telegram.org",
               "frame-ancestors 'self'",
               "base-uri 'self'",

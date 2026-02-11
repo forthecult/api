@@ -28,6 +28,8 @@
     "db:seed-reviews": "bun run scripts/seed-reviews.ts",
     "db:link-orphan-reviews": "bun run scripts/link-orphan-reviews.ts",
     "db:migrate-reviews": "psql $DATABASE_URL -f scripts/migrate-reviews-standalone.sql",
+    "db:migrate-user-role": "psql $DATABASE_URL -f scripts/migrate-add-user-role.sql",
+    "db:verify-role": "bun run scripts/verify-role-migration.ts",
     "db:seed-admin": "bun run scripts/seed-admin-user.ts",
     "db:seed:all": "bun run scripts/seed-categories.ts && bun run scripts/seed-products.ts",
     "db:seed:staging": "bun run scripts/seed-categories.ts && bun run scripts/seed-brands.ts && bun run scripts/seed-shipping-by-brand.ts && bun run scripts/seed-products.ts && bun run scripts/seed-reviews.ts",
