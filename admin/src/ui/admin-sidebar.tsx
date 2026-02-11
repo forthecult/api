@@ -84,7 +84,10 @@ const ADMIN_SECTIONS: NavSection[] = [
   {
     label: "Payments",
     icon: CreditCard,
-    href: "/payment-methods",
+    children: [
+      { href: "/payment-methods", label: "Payment methods" },
+      { href: "/payments/solana-pay", label: "Solana Pay" },
+    ],
   },
   {
     label: "Customers",
