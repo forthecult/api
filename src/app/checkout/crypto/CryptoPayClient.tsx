@@ -131,7 +131,6 @@ export function CryptoPayClient() {
   const [insufficientReason, setInsufficientReason] = useState<
     "sol_for_fees" | "token" | null
   >(null);
-  const [qrRendered, setQrRendered] = useState(false);
   const qrContainerRef = useRef<HTMLDivElement | null>(null);
 
   const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
@@ -386,30 +385,32 @@ export function CryptoPayClient() {
   const qrUrlString =
     token === "sui" ? suiPaymentUri : (paymentUrl?.toString() ?? null);
   useEffect(() => {
-    if (!qrUrlString || !showQrView) {
-      setQrRendered(false);
-      return;
-    }
+    if (!qrUrlString || !showQrView) return;
     let cancelled = false;
-    setQrRendered(false);
-    const t = setTimeout(() => {
-      if (cancelled || !qrContainerRef.current) return;
-      // Clear previous QR code using DOM methods (safer than innerHTML)
-      while (qrContainerRef.current.firstChild) {
-        qrContainerRef.current.removeChild(qrContainerRef.current.firstChild);
+    const container = qrContainerRef.current;
+    // Small delay to ensure the container ref is attached after render
+    const t = setTimeout(async () => {
+      const el = qrContainerRef.current;
+      if (cancelled || !el) return;
+      // Clear previous content
+      while (el.firstChild) {
+        el.removeChild(el.firstChild);
       }
-      const qr = createQR(qrUrlString, 320, "white", "black");
-      qr.append(qrContainerRef.current);
-      setQrRendered(true);
-    }, 100);
+      try {
+        const qr = createQR(qrUrlString, 320, "white", "black");
+        await qr.append(el);
+      } catch (err) {
+        console.error("[QR] Failed to generate QR code:", err);
+      }
+    }, 150);
     return () => {
       cancelled = true;
       clearTimeout(t);
-      setQrRendered(false);
       // Clear QR code on cleanup using DOM methods
-      if (qrContainerRef.current) {
-        while (qrContainerRef.current.firstChild) {
-          qrContainerRef.current.removeChild(qrContainerRef.current.firstChild);
+      const el = container ?? qrContainerRef.current;
+      if (el) {
+        while (el.firstChild) {
+          el.removeChild(el.firstChild);
         }
       }
     };
@@ -1069,21 +1070,16 @@ export function CryptoPayClient() {
                         </p>
                       </div>
                     ) : (
-                      <div className="relative">
-                        {/* Loading overlay - shown until QR is rendered */}
-                        {!qrRendered && (
-                          <div className="absolute inset-0 z-10 flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
-                            <div className="flex flex-col items-center gap-3">
-                              <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-                              <span>Generating QR code…</span>
-                            </div>
-                          </div>
-                        )}
-                        <div
-                          ref={qrContainerRef}
-                          className="flex min-h-[320px] min-w-[320px] items-center justify-center bg-white"
-                          aria-hidden
-                        />
+                      <div
+                        ref={qrContainerRef}
+                        className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg bg-white p-2"
+                        aria-hidden
+                      >
+                        {/* Spinner shown until createQR replaces children */}
+                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                          <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                          <span className="text-sm">Loading QR code…</span>
+                        </div>
                       </div>
                     )}
                   </div>
