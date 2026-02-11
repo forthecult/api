@@ -92,7 +92,7 @@ export function ShopByCryptoMenu({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 text-sm font-medium transition-colors hover:text-primary",
+            "inline-flex items-center gap-1 text-lg font-medium transition-colors hover:text-primary",
             "text-muted-foreground",
             className,
           )}

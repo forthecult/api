@@ -13,9 +13,12 @@
  *   SOLANA_SWEEP_FEE_PAYER_SECRET (base58-encoded 64-byte secret key of a keypair with SOL for tx fees)
  *
  * Optional: NEXT_PUBLIC_SOLANA_RPC_URL or SOLANA_RPC_URL (defaults to Ankr).
+ * Optional: SWEEP_SCOPE=paid|pending|all (default paid). Use "pending" only when
+ *           no customer is on checkout to avoid racing their payment.
  *
  * Run: bun run scripts/sweep-solana-deposits.ts
  * Dry run (list only): DRY_RUN=1 bun run scripts/sweep-solana-deposits.ts
+ * Sweep pending orders: SWEEP_SCOPE=pending bun run scripts/sweep-solana-deposits.ts
  */
 
 import "dotenv/config";
@@ -128,8 +131,22 @@ async function main() {
   const connection = new Connection(getRpcUrl(), { commitment: "confirmed" });
   const recipient = new PublicKey(recipientStr);
 
-  // Include both paid and pending so we sweep Token-2022 (e.g. PUMP) from
-  // orders that were paid but not yet confirmed.
+  const scope =
+    process.env.SWEEP_SCOPE?.trim().toLowerCase() === "pending"
+      ? "pending"
+      : process.env.SWEEP_SCOPE?.trim().toLowerCase() === "all"
+        ? "all"
+        : "paid";
+  const scopeCondition =
+    scope === "paid"
+      ? eq(ordersTable.paymentStatus, "paid")
+      : scope === "pending"
+        ? eq(ordersTable.status, "pending")
+        : or(
+            eq(ordersTable.paymentStatus, "paid"),
+            eq(ordersTable.status, "pending"),
+          );
+
   const rows = await db
     .select({
       id: ordersTable.id,
@@ -140,10 +157,7 @@ async function main() {
       and(
         eq(ordersTable.paymentMethod, "solana_pay"),
         isNotNull(ordersTable.solanaPayDepositAddress),
-        or(
-          eq(ordersTable.paymentStatus, "paid"),
-          eq(ordersTable.status, "pending"),
-        ),
+        scopeCondition,
       ),
     );
 
@@ -154,12 +168,12 @@ async function main() {
   }
 
   if (depositAddresses.size === 0) {
-    console.log("No paid Solana Pay orders with deposit addresses found.");
+    console.log(`No Solana Pay orders (scope=${scope}) with deposit addresses found.`);
     return;
   }
 
   console.log(
-    `Found ${depositAddresses.size} paid order(s) with deposit addresses.`,
+    `Found ${depositAddresses.size} order(s) (scope=${scope}) with deposit addresses.`,
   );
 
   for (const [orderId, depositAddr] of depositAddresses) {

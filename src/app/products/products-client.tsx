@@ -10,6 +10,7 @@ import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
 import { ProductGridSkeleton } from "~/ui/components/product-card-skeleton";
+import { ProductQuickView } from "~/ui/components/product-quick-view";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 
@@ -112,6 +113,17 @@ export function ProductsClient({
   const [searchQuery, setSearchQuery] = React.useState(initialSearch);
   const [searchInput, setSearchInput] = React.useState(initialSearch);
   const [loading, setLoading] = React.useState(false);
+  /** True when loading the next page via "Load More" (append mode). */
+  const [loadingMore, setLoadingMore] = React.useState(false);
+
+  // Quick View state
+  const [quickViewOpen, setQuickViewOpen] = React.useState(false);
+  const [quickViewSlug, setQuickViewSlug] = React.useState<string | null>(null);
+
+  const handleQuickView = React.useCallback((slugOrId: string) => {
+    setQuickViewSlug(slugOrId);
+    setQuickViewOpen(true);
+  }, []);
 
   const limit = 12;
 
@@ -153,8 +165,14 @@ export function ProductsClient({
       sortOption: SortOption,
       subcategorySlug: string,
       search: string = "",
+      /** When true, appends results to the existing list instead of replacing. */
+      append: boolean = false,
     ) => {
-      setLoading(true);
+      if (append) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       try {
         const params = new URLSearchParams({
           page: String(newPage),
@@ -176,14 +194,23 @@ export function ProductsClient({
           totalPages?: number;
         };
 
-        setProducts(
-          (data.items ?? []).map((p) => ({
-            ...p,
-            inStock: p.inStock ?? true,
-            rating: p.rating ?? 0,
-            tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
-          })),
-        );
+        const newItems = (data.items ?? []).map((p) => ({
+          ...p,
+          inStock: p.inStock ?? true,
+          rating: p.rating ?? 0,
+          tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
+        }));
+
+        if (append) {
+          setProducts((prev) => {
+            // De-duplicate by id just in case
+            const existingIds = new Set(prev.map((p) => p.id));
+            const unique = newItems.filter((p) => !existingIds.has(p.id));
+            return [...prev, ...unique];
+          });
+        } else {
+          setProducts(newItems);
+        }
         setTotal(data.total ?? 0);
         setTotalPages(data.totalPages ?? 1);
       } catch (err) {
@@ -192,6 +219,7 @@ export function ProductsClient({
         );
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
     },
     [],
@@ -241,16 +269,13 @@ export function ProductsClient({
     [router, selectedCategory, sort, fetchProducts, buildPath],
   );
 
-  const handlePageChange = React.useCallback(
-    (newPage: number) => {
-      setPage(newPage);
-      router.push(buildPath({ page: newPage }), { scroll: false });
-      fetchProducts(newPage, selectedCategory, sort, selectedSubcategory, searchQuery);
-      // Scroll to top of product grid for better UX on page change
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    [router, selectedCategory, sort, selectedSubcategory, fetchProducts, buildPath],
-  );
+  const handleLoadMore = React.useCallback(() => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    // Update URL to reflect page (crawlers can follow)
+    router.push(buildPath({ page: nextPage }), { scroll: false });
+    fetchProducts(nextPage, selectedCategory, sort, selectedSubcategory, searchQuery, true);
+  }, [page, router, selectedCategory, sort, selectedSubcategory, searchQuery, fetchProducts, buildPath]);
 
   const handleAddToCart = React.useCallback(
     (productId: string) => {
@@ -353,11 +378,11 @@ export function ProductsClient({
           {/* Header */}
           <header className="mb-6">
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
-            <p className="mt-0.5 line-clamp-2 max-w-xl text-sm text-muted-foreground">
-              {categoryDescriptionFull?.trim()
-                ? categoryDescriptionFull.slice(0, 160).trim() + (categoryDescriptionFull.length > 160 ? "…" : "")
-                : description}
-            </p>
+            {(categoryDescriptionFull?.trim() || description) && (
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                {categoryDescriptionFull?.trim() || description}
+              </p>
+            )}
           </header>
 
           {/* Sticky controls bar: sort + search + active filter count */}
@@ -500,6 +525,7 @@ export function ProductsClient({
                     onAddToCart={handleAddToCart}
                     onAddToWishlist={handleAddToWishlist}
                     onRemoveFromWishlist={handleRemoveFromWishlist}
+                    onQuickView={handleQuickView}
                     product={product}
                     priority={index < 4}
                   />
@@ -539,71 +565,45 @@ export function ProductsClient({
                 </div>
               )}
 
-              {totalPages > 1 && (
-                <nav
-                  aria-label="Pagination"
-                  className="mt-10 flex flex-wrap items-center justify-center gap-2"
-                >
+              {/* Load More */}
+              {page < totalPages && (
+                <div className="mt-10 flex flex-col items-center gap-3">
                   <Button
-                    disabled={page <= 1}
-                    onClick={() => handlePageChange(Math.max(1, page - 1))}
+                    className="min-w-[200px] gap-2"
+                    disabled={loadingMore}
+                    onClick={handleLoadMore}
                     variant="outline"
-                    size="sm"
+                    size="lg"
                   >
-                    Previous
+                    {loadingMore ? (
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    ) : null}
+                    {loadingMore ? "Loading…" : "Load More Products"}
                   </Button>
-                  {/* Page number buttons */}
-                  {(() => {
-                    const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
-                    if (totalPages <= 7) {
-                      for (let i = 1; i <= totalPages; i++) pages.push(i);
-                    } else {
-                      pages.push(1);
-                      if (page > 3) pages.push("ellipsis-start");
-                      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
-                        pages.push(i);
-                      }
-                      if (page < totalPages - 2) pages.push("ellipsis-end");
-                      pages.push(totalPages);
-                    }
-                    return pages.map((p) =>
-                      typeof p === "string" ? (
-                        <span key={p} className="px-1 text-muted-foreground">
-                          &hellip;
-                        </span>
-                      ) : (
-                        <Button
-                          key={p}
-                          onClick={() => handlePageChange(p)}
-                          variant={p === page ? "default" : "outline"}
-                          size="sm"
-                          className="min-w-[2.25rem]"
-                        >
-                          {p}
-                        </Button>
-                      ),
-                    );
-                  })()}
-                  <Button
-                    disabled={page >= totalPages}
-                    onClick={() =>
-                      handlePageChange(Math.min(totalPages, page + 1))
-                    }
-                    variant="outline"
-                    size="sm"
-                  >
-                    Next
-                  </Button>
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    {total} {total === 1 ? "product" : "products"}
+                  <span className="text-xs text-muted-foreground">
+                    Showing {products.length} of {total} products
                   </span>
-                </nav>
+                </div>
+              )}
+
+              {/* All loaded indicator */}
+              {page >= totalPages && products.length > 0 && total > limit && (
+                <p className="mt-8 text-center text-sm text-muted-foreground">
+                  Showing all {total} products
+                </p>
               )}
             </>
           )}
           </section>
         </div>
       </main>
+
+      {/* Quick View drawer */}
+      <ProductQuickView
+        open={quickViewOpen}
+        onOpenChange={setQuickViewOpen}
+        productSlugOrId={quickViewSlug}
+      />
     </div>
   );
 }

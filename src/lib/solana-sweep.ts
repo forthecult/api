@@ -1,6 +1,11 @@
 /**
  * Shared logic for sweeping SOL and SPL tokens from Solana Pay deposit addresses.
  * Used by the CLI script and by the admin API.
+ *
+ * Security: SOLANA_SWEEP_FEE_PAYER_SECRET and SOLANA_DEPOSIT_SECRET are read
+ * only from process.env on the server. They are never returned in API responses,
+ * logged, or sent to the client. Sweep runs entirely server-side; the client
+ * only receives non-sensitive result data (order ids, amounts, tx signatures).
  */
 
 import {
@@ -105,6 +110,7 @@ function getRecipient(): string | null {
   return r.trim() || null;
 }
 
+/** Server-only: builds fee-payer keypair from env. Never expose the key or keypair to the client. */
 function getFeePayerKeypair(): Keypair | null {
   const secret = process.env.SOLANA_SWEEP_FEE_PAYER_SECRET?.trim();
   if (!secret) return null;

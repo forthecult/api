@@ -13,6 +13,7 @@ import Link from "next/link";
 import * as React from "react";
 import { useMemo } from "react";
 
+import { sortSubcategories } from "~/lib/categories";
 import { cn } from "~/lib/cn";
 import {
   Popover,
@@ -181,11 +182,11 @@ export function ShopMegaMenu({
               <div className="space-y-3">
                 {section.categories.map((cat) => {
                   const href = cat.slug ? `/${cat.slug}` : "/products";
-                  const subs = (cat.subcategories ?? [])
-                    .filter((s) => (s.productCount ?? 0) > 0)
-                    .sort(
-                      (a, b) => (b.productCount ?? 0) - (a.productCount ?? 0),
-                    );
+                  const subs = sortSubcategories(
+                    (cat.subcategories ?? [])
+                      .filter((s) => (s.productCount ?? 0) > 0)
+                      .map((s) => ({ ...s, slug: s.slug ?? "" })),
+                  );
                   const visibleSubs = subs.slice(0, MAX_SUBS);
                   const hasMore = subs.length > MAX_SUBS;
 

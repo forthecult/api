@@ -14,7 +14,10 @@ type SweepScope = (typeof VALID_SCOPES)[number];
  * Body: { dryRun: boolean, scope?: "paid" | "pending" | "all" }
  * Runs a dry run (list only) or actual sweep of Solana Pay deposit addresses.
  * scope: "paid" = only confirmed paid (default, safe); "pending" = only pending; "all" = both.
- * Admin only (session or API key).
+ *
+ * Security: Admin-only (session or API key). All sweep logic runs server-side.
+ * SOLANA_SWEEP_FEE_PAYER_SECRET and SOLANA_DEPOSIT_SECRET are never returned
+ * or logged; response contains only order ids, amounts, tx signatures, and errors.
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -40,12 +43,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("Solana sweep error:", err);
+    // Do not send raw error details to client (could contain env or internal state)
     return NextResponse.json(
       {
         ok: false,
         dryRun: false,
         scope: "paid",
-        configError: err instanceof Error ? err.message : String(err),
+        configError: "Sweep failed. Check server logs.",
         ordersCount: 0,
         results: [],
       },

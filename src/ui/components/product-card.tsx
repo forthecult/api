@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Lock, ShoppingCart, Star, Wallet } from "lucide-react";
+import { Eye, Heart, Lock, ShoppingCart, Star, Wallet } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +30,8 @@ type ProductCardProps = Omit<
   onAddToCart?: (productId: string) => void;
   onAddToWishlist?: (productId: string) => void;
   onRemoveFromWishlist?: (productId: string) => void;
+  /** Callback to open Quick View. Receives the product slug or id. */
+  onQuickView?: (slugOrId: string) => void;
   isInWishlist?: boolean;
   /** Hint Next/Image to preload this image (use for above-fold cards). */
   priority?: boolean;
@@ -102,6 +104,7 @@ function ProductCardInner({
   onAddToCart,
   onAddToWishlist,
   onRemoveFromWishlist,
+  onQuickView,
   isInWishlist: isInWishlistProp,
   priority = false,
   product,
@@ -347,34 +350,51 @@ function ProductCardInner({
               </Badge>
             )}
 
-            {/* Wishlist button (hidden for token-gated) */}
+            {/* Action buttons on image (hidden for token-gated) */}
             {!isGated && (
-              <Button
+              <div
                 className={cn(
-                  `
-                    absolute right-2 bottom-2 z-10 rounded-full bg-background/80
-                    backdrop-blur-sm transition-opacity duration-300
-                  `,
+                  "absolute right-2 bottom-2 z-10 flex flex-col gap-1.5 transition-opacity duration-300",
                   !isHovered && !isInWishlist && "opacity-0",
                 )}
-                onClick={handleWishlistClick}
-                size="icon"
-                type="button"
-                variant="outline"
-                aria-pressed={isInWishlist}
               >
-                <Heart
-                  className={cn(
-                    "h-4 w-4",
-                    isInWishlist
-                      ? "fill-destructive text-destructive"
-                      : "text-muted-foreground",
-                  )}
-                />
-                <span className="sr-only">
-                  {isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-                </span>
-              </Button>
+                {onQuickView && (
+                  <Button
+                    className="rounded-full bg-background/80 backdrop-blur-sm"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onQuickView(product.slug ?? product.id);
+                    }}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                    aria-label="Quick view"
+                  >
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                )}
+                <Button
+                  className="rounded-full bg-background/80 backdrop-blur-sm"
+                  onClick={handleWishlistClick}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                  aria-pressed={isInWishlist}
+                >
+                  <Heart
+                    className={cn(
+                      "h-4 w-4",
+                      isInWishlist
+                        ? "fill-destructive text-destructive"
+                        : "text-muted-foreground",
+                    )}
+                  />
+                  <span className="sr-only">
+                    {isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                  </span>
+                </Button>
+              </div>
             )}
           </div>
 

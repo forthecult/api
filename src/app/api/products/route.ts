@@ -164,10 +164,6 @@ export async function GET(request: NextRequest) {
             productCategories: {
               with: { category: true },
             },
-            productImages: {
-              orderBy: (img, { asc: a }) => [a(img.sortOrder)],
-              limit: 3,
-            },
           },
         });
         const orderMap = new Map(ids.map((id, i) => [id, i]));
@@ -184,10 +180,6 @@ export async function GET(request: NextRequest) {
         with: {
           productCategories: {
             with: { category: true },
-          },
-          productImages: {
-            orderBy: (img, { asc: a }) => [a(img.sortOrder)],
-            limit: 3,
           },
         },
       } as Parameters<typeof db.query.productsTable.findMany>[0]);
@@ -243,24 +235,17 @@ export async function GET(request: NextRequest) {
 
     type ProductWithRelations = (typeof rows)[number] & {
       productCategories?: Array<{ isMain?: boolean; category?: { name?: string; slug?: string } }>;
-      productImages?: Array<{ url: string; sortOrder: number }>;
     };
     const rawItems = rows.map((p: ProductWithRelations) => {
       const mainPc =
         p.productCategories?.find((pc: { isMain?: boolean }) => pc.isMain) ??
         p.productCategories?.[0];
       const tokenGated = (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id);
-      // Gather additional images (product_image table, sorted by sortOrder)
-      const extraImages = (p.productImages ?? []).map((img) => img.url);
-      // Combine primary + extras, de-duplicated
-      const primaryImage = p.imageUrl ?? "/placeholder.svg";
-      const allImages = [primaryImage, ...extraImages.filter((u) => u !== primaryImage)];
       return {
         id: p.id,
         slug: p.slug ?? undefined,
         name: p.name,
-        image: primaryImage,
-        images: allImages.length > 1 ? allImages : undefined,
+        image: p.imageUrl ?? "/placeholder.svg",
         createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : undefined,
         category: mainPc?.category?.name ?? "Uncategorized",
         categorySlug: mainPc?.category?.slug ?? undefined,

@@ -423,7 +423,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "text-sm font-medium transition-colors hover:text-primary",
+                            "text-lg font-medium transition-colors hover:text-primary",
                             pathname === "/about"
                               ? "font-semibold text-primary"
                               : "text-muted-foreground",
