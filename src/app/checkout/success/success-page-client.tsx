@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Link2, ShoppingBag } from "lucide-react";
+import { Check, Copy, Link2, Loader2, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { SEO_CONFIG } from "~/app";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
+import { Checkbox } from "~/ui/primitives/checkbox";
+import { Input } from "~/ui/primitives/input";
 import {
   Card,
   CardContent,
@@ -78,6 +80,112 @@ type OrderDetails = {
   }>;
   shipping?: ShippingAddress;
 };
+
+function MarketingConsent({
+  orderId,
+  email,
+  hasPhone,
+}: {
+  orderId: string;
+  email?: string;
+  hasPhone: boolean;
+}) {
+  const [emailConsent, setEmailConsent] = useState(Boolean(email));
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const showPhoneInput = smsConsent && !hasPhone;
+
+  const handleSave = useCallback(async () => {
+    if (!email) return;
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/orders/${encodeURIComponent(orderId)}/marketing-consent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            emailConsent,
+            smsConsent,
+            ...(showPhoneInput && phone.trim() ? { phone: phone.trim() } : {}),
+          }),
+        },
+      );
+      if (res.ok) {
+        setSaved(true);
+        toast.success("Preferences saved");
+      } else {
+        toast.error("Could not save preferences");
+      }
+    } catch {
+      toast.error("Could not save preferences");
+    } finally {
+      setSaving(false);
+    }
+  }, [orderId, email, emailConsent, smsConsent, showPhoneInput, phone]);
+
+  if (saved) {
+    return (
+      <div className="mt-8 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+        <Check className="size-4" />
+        <span>Preferences saved</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8 w-full space-y-3">
+      <p className="text-sm font-medium text-muted-foreground">
+        Stay in the loop
+      </p>
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox
+          checked={emailConsent}
+          onCheckedChange={(v) => setEmailConsent(v === true)}
+        />
+        <span>Email me with news and offers</span>
+      </label>
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={smsConsent}
+            onCheckedChange={(v) => setSmsConsent(v === true)}
+          />
+          <span>Text me with news and offers</span>
+        </label>
+        {showPhoneInput && (
+          <Input
+            type="tel"
+            placeholder="Phone number"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="h-9 max-w-xs"
+            aria-label="Phone number for SMS updates"
+          />
+        )}
+      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={saving || (!emailConsent && !smsConsent)}
+        onClick={handleSave}
+      >
+        {saving ? (
+          <>
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            Saving…
+          </>
+        ) : (
+          "Save preferences"
+        )}
+      </Button>
+    </div>
+  );
+}
 
 export function SuccessPageClient() {
   const searchParams = useSearchParams();
@@ -238,6 +346,15 @@ export function SuccessPageClient() {
           <p className="mt-6 text-sm text-muted-foreground">
             Share with a friend for 10% off your next purchase.
           </p>
+
+          {/* Marketing consent */}
+          {!loading && order && (
+            <MarketingConsent
+              orderId={order.orderId}
+              email={order.email}
+              hasPhone={Boolean(order.shipping?.phone)}
+            />
+          )}
         </div>
 
         {/* Right: Order details */}

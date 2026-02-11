@@ -1,7 +1,8 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { createQR, encodeURL } from "@solana/pay";
+import { encodeURL } from "@solana/pay";
+import QRCode from "qrcode";
 import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
@@ -387,31 +388,33 @@ export function CryptoPayClient() {
   useEffect(() => {
     if (!qrUrlString || !showQrView) return;
     let cancelled = false;
-    const container = qrContainerRef.current;
-    // Small delay to ensure the container ref is attached after render
-    const t = setTimeout(async () => {
-      const el = qrContainerRef.current;
-      if (cancelled || !el) return;
-      // Clear previous content
-      while (el.firstChild) {
-        el.removeChild(el.firstChild);
-      }
-      try {
-        const qr = createQR(qrUrlString, 320, "white", "black");
-        await qr.append(el);
-      } catch (err) {
-        console.error("[QR] Failed to generate QR code:", err);
-      }
-    }, 150);
+    const el = qrContainerRef.current;
+    if (!el) return;
+    // Clear previous content
+    while (el.firstChild) el.removeChild(el.firstChild);
+    // Generate QR code as canvas using the lightweight `qrcode` library
+    QRCode.toCanvas(
+      qrUrlString,
+      { width: 320, margin: 2, color: { dark: "#000000", light: "#ffffff" } },
+      (err, canvas) => {
+        if (cancelled || !qrContainerRef.current) return;
+        if (err) {
+          console.error("[QR] Failed to generate QR code:", err);
+          return;
+        }
+        // Clear spinner and append canvas
+        while (qrContainerRef.current.firstChild) {
+          qrContainerRef.current.removeChild(qrContainerRef.current.firstChild);
+        }
+        canvas.style.borderRadius = "8px";
+        qrContainerRef.current.appendChild(canvas);
+      },
+    );
     return () => {
       cancelled = true;
-      clearTimeout(t);
-      // Clear QR code on cleanup using DOM methods
-      const el = container ?? qrContainerRef.current;
-      if (el) {
-        while (el.firstChild) {
-          el.removeChild(el.firstChild);
-        }
+      const container = qrContainerRef.current;
+      if (container) {
+        while (container.firstChild) container.removeChild(container.firstChild);
       }
     };
   }, [qrUrlString, showQrView]);

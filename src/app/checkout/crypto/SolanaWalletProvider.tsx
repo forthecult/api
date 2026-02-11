@@ -5,6 +5,7 @@ import {
   ConnectionProvider,
   WalletProvider,
   useConnection,
+  useWallet,
 } from "@solana/wallet-adapter-react";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { toast } from "sonner";
@@ -16,34 +17,27 @@ const EXPECTED_GENESIS_HASH = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
 
 /**
  * Network validator component - checks we're connected to mainnet.
- * Skips the RPC call when using the public Solana RPC (avoids 403 console noise).
+ * Only validates when a wallet is actually connected (avoids blocking
+ * the QR code flow with RPC calls that may fail or slow down page load).
  */
 function NetworkValidator({
   children,
   rpcEndpoint,
 }: { children: React.ReactNode; rpcEndpoint: string }) {
   const { connection } = useConnection();
+  const { connected } = useWallet();
   const [isValidNetwork, setIsValidNetwork] = useState(true);
-  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
-    if (isPublicSolanaRpc(rpcEndpoint)) {
-      setIsChecking(false);
-      return;
-    }
+    // Only validate when a wallet is connected — QR code flow doesn't need RPC
+    if (!connected || isPublicSolanaRpc(rpcEndpoint)) return;
     let cancelled = false;
 
-    const validateNetwork = async () => {
+    (async () => {
       try {
-        setIsChecking(true);
         const genesisHash = await connection.getGenesisHash();
-
         if (cancelled) return;
-
         if (genesisHash !== EXPECTED_GENESIS_HASH) {
-          console.error(
-            `[Solana] Wrong network. Expected mainnet (${EXPECTED_GENESIS_HASH}), got ${genesisHash}`,
-          );
           setIsValidNetwork(false);
           toast.error(
             "Wrong Solana network detected. Please switch to Mainnet.",
@@ -51,31 +45,14 @@ function NetworkValidator({
         } else {
           setIsValidNetwork(true);
         }
-      } catch (error) {
-        if (cancelled) return;
-        const msg = error instanceof Error ? error.message : String(error);
-        const isForbidden =
-          msg.includes("403") ||
-          msg.includes("Access forbidden") ||
-          msg.includes("Forbidden");
-        if (!isForbidden) {
-          console.error("[Solana] Failed to validate network:", error);
-        }
-        setIsValidNetwork(true);
-      } finally {
-        if (!cancelled) setIsChecking(false);
+      } catch {
+        // RPC errors are non-fatal — assume correct network
+        if (!cancelled) setIsValidNetwork(true);
       }
-    };
+    })();
 
-    validateNetwork();
-    return () => {
-      cancelled = true;
-    };
-  }, [connection, rpcEndpoint]);
-
-  if (isChecking) {
-    return <>{children}</>;
-  }
+    return () => { cancelled = true; };
+  }, [connection, connected, rpcEndpoint]);
 
   if (!isValidNetwork) {
     return (

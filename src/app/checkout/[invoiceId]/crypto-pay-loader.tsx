@@ -1,7 +1,6 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Skeleton } from "~/ui/primitives/skeleton";
@@ -67,11 +66,11 @@ const TonPayClient = dynamic(
 );
 
 // Detect payment type from hash when present: #eth, #btcpay, #ton, #solana, #sui-...
-// When no hash, payment type is loaded from the order API (clean URL).
-function getPaymentTypeFromHash(): "eth" | "btcpay" | "ton" | "solana" | null {
-  if (typeof window === "undefined") return null;
+// When no hash, defaults to "solana" (most common) — the payment client
+// determines the correct token from the order API anyway.
+function getPaymentType(): "eth" | "btcpay" | "ton" | "solana" {
+  if (typeof window === "undefined") return "solana";
   const hash = window.location.hash.slice(1).toLowerCase();
-  if (!hash) return null;
   if (hash === "eth") return "eth";
   if (
     hash === "bitcoin" ||
@@ -81,71 +80,21 @@ function getPaymentTypeFromHash(): "eth" | "btcpay" | "ton" | "solana" | null {
   )
     return "btcpay";
   if (hash === "ton") return "ton";
-  if (hash.startsWith("sui-")) return "solana";
+  // Default: Solana Pay (SOL, USDC, CRUST, PUMP, TROLL, SUI, WhiteWhale)
   return "solana";
 }
 
 export function CryptoPayLoader() {
-  const params = useParams();
-  const orderId = (params?.invoiceId as string) ?? "";
+  // Synchronous initial state — avoids skeleton flash + extra API call
   const [paymentType, setPaymentType] = useState<
-    "eth" | "btcpay" | "ton" | "solana" | null
-  >(null);
-  const [fetchedFromApi, setFetchedFromApi] = useState(false);
+    "eth" | "btcpay" | "ton" | "solana"
+  >(() => getPaymentType());
 
   useEffect(() => {
-    const fromHash = getPaymentTypeFromHash();
-    if (fromHash) {
-      setPaymentType(fromHash);
-      setFetchedFromApi(false);
-      return;
-    }
-    // No hash: fetch order and use paymentType from API (clean URL)
-    if (!orderId?.trim()) {
-      setPaymentType(null);
-      return;
-    }
-    let cancelled = false;
-    setPaymentType(null);
-    setFetchedFromApi(true);
-    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
-      .then((res) => {
-        if (!res.ok || cancelled) return null;
-        return res.json();
-      })
-      .then((data: { paymentType?: "eth" | "btcpay" | "ton" | "solana" }) => {
-        if (cancelled) return;
-        if (data?.paymentType) setPaymentType(data.paymentType);
-        else setPaymentType("solana");
-      })
-      .catch(() => {
-        if (!cancelled) setPaymentType("solana");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [orderId]);
-
-  useEffect(() => {
-    if (fetchedFromApi) return;
-    const handleHashChange = () => {
-      const fromHash = getPaymentTypeFromHash();
-      if (fromHash) setPaymentType(fromHash);
-    };
+    const handleHashChange = () => setPaymentType(getPaymentType());
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
-  }, [fetchedFromApi]);
-
-  if (paymentType === null) {
-    return (
-      <div className="container mx-auto py-8">
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   if (paymentType === "eth") return <EthPayClient />;
   if (paymentType === "btcpay") return <BtcPayClient />;

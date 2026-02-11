@@ -155,8 +155,9 @@ export function CheckoutClient() {
   /** Build the common order payload used by all payment handlers. */
   const buildOrderPayload = useCallback(() => {
     const form = shippingFormRef.current?.getForm();
-    const emailNewsVal = shippingFormRef.current?.getEmailNews() ?? true;
-    const textNewsVal = shippingFormRef.current?.getTextNews() ?? false;
+    // Marketing consent is now collected on the success page, not at checkout
+    const emailNewsVal = false;
+    const textNewsVal = false;
     const orderItems = items.map((item) => ({
       productId: item.productId ?? item.id,
       ...(item.productVariantId && { productVariantId: item.productVariantId }),

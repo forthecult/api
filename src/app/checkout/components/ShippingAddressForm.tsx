@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, Loader2 } from "lucide-react";
+import { CircleHelp, Check, Loader2 } from "lucide-react";
 import Link from "next/link";
 import {
   useCallback,
@@ -11,8 +11,8 @@ import {
   useState,
   forwardRef,
 } from "react";
+import { signUp } from "~/lib/auth-client";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
-import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -134,6 +134,9 @@ export const ShippingAddressForm = forwardRef<
   );
   const [emailNews, setEmailNews] = useState(true);
   const [textNews, setTextNews] = useState(false);
+  const [showCompany, setShowCompany] = useState(() => Boolean(getPersistedShippingForm().company?.trim()));
+  const [accountCreating, setAccountCreating] = useState(false);
+  const [accountCreated, setAccountCreated] = useState(false);
   /** Local shipping state for rendering the Shipping Method card and
    *  for validating express-shipping phone requirements. All changes
    *  are also pushed to the parent via onShippingUpdate. */
@@ -395,33 +398,50 @@ export const ShippingAddressForm = forwardRef<
                 value={form.email}
                 onChange={(e) => update("email", e.target.value)}
               />
-              {!(isLoggedIn && userReceiveMarketing) && (
-                <label className="flex items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={emailNews}
-                    onCheckedChange={(v) => setEmailNews(v === true)}
-                  />
-                  <span>Email me with news and offers</span>
-                </label>
-              )}
-              {!authPending && (
+              {!authPending && !accountCreated && (
                 <div className="flex items-center gap-2">
                   <Button
                     className="text-sm"
                     size="sm"
                     type="button"
                     variant="outline"
-                    asChild
+                    disabled={accountCreating || !form.email?.trim()}
+                    onClick={async () => {
+                      const email = form.email?.trim();
+                      if (!email) return;
+                      setAccountCreating(true);
+                      try {
+                        await signUp.email({
+                          email,
+                          password: crypto.randomUUID(),
+                          name: [form.firstName, form.lastName].filter(Boolean).join(" ") || email.split("@")[0],
+                        });
+                        setAccountCreated(true);
+                      } catch {
+                        // Silently handle — user can still continue checkout
+                      } finally {
+                        setAccountCreating(false);
+                      }
+                    }}
                   >
-                    <Link
-                      href={`/signup?email=${encodeURIComponent(form.email || "")}`}
-                    >
-                      Save and create account
-                    </Link>
+                    {accountCreating ? (
+                      <>
+                        <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+                        Creating…
+                      </>
+                    ) : (
+                      "Save and create account"
+                    )}
                   </Button>
                   <span className="text-xs text-muted-foreground">
                     Optional — create an account to track orders.
                   </span>
+                </div>
+              )}
+              {accountCreated && (
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <Check className="size-4" />
+                  <span>Account created! Check your email to set a password.</span>
                 </div>
               )}
             </>
@@ -492,13 +512,24 @@ export const ShippingAddressForm = forwardRef<
             />
           </div>
           <div className="sm:col-span-2">
-            <Input
-              aria-label="Company (optional)"
-              className={checkoutFieldHeight}
-              placeholder="Company (optional)"
-              value={form.company}
-              onChange={(e) => update("company", e.target.value)}
-            />
+            {!showCompany ? (
+              <button
+                type="button"
+                onClick={() => setShowCompany(true)}
+                className="text-sm text-primary underline-offset-4 hover:underline"
+              >
+                Add company
+              </button>
+            ) : (
+              <Input
+                aria-label="Company (optional)"
+                className={checkoutFieldHeight}
+                placeholder="Company (optional)"
+                value={form.company}
+                onChange={(e) => update("company", e.target.value)}
+                autoFocus
+              />
+            )}
           </div>
           <div
             className="relative sm:col-span-2"
@@ -694,17 +725,7 @@ export const ShippingAddressForm = forwardRef<
               </PopoverContent>
             </Popover>
           </div>
-          {!(isLoggedIn && userReceiveSmsMarketing) && (
-            <div className="sm:col-span-2">
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox
-                  checked={textNews}
-                  onCheckedChange={(v) => setTextNews(v === true)}
-                />
-                <span>Text me with news and offers</span>
-              </label>
-            </div>
-          )}
+          {/* Marketing consent moved to success page */}
         </CardContent>
       </Card>
 
