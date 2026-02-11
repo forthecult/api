@@ -166,9 +166,14 @@ export async function POST(
         .where(eq(supportChatMessageTable.conversationId, conversationId))
         .orderBy(asc(supportChatMessageTable.createdAt));
 
+      const session = await auth.api.getSession({ headers: request.headers });
+      const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
+
       const aiReply = await generateSupportChatReply({
         recentMessages: recentRows.map((r) => ({ role: r.role, content: r.content })),
         storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Culture",
+        conversationId,
+        userId: session?.user?.id ?? guestId ?? undefined,
       });
 
       const aiMessageId = crypto.randomUUID();

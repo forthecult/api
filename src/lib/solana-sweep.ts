@@ -39,7 +39,8 @@ import {
 } from "~/lib/solana-pay";
 
 const LAMPORTS_PER_SOL = 1e9;
-const MIN_SOL_TO_SWEEP = 5000;
+/** Minimum lamports to leave so the account stays rent-exempt (Solana requires ~890880 for 0-byte account). */
+const RENT_EXEMPT_MIN_LAMPORTS = 890_880;
 
 /** Known mint addresses -> display symbol for sweep UI */
 const KNOWN_MINT_LABELS: Record<string, string> = {
@@ -187,6 +188,15 @@ export async function runSolanaSweep(
   const connection = new Connection(getRpcUrl(), { commitment: "confirmed" });
   const recipient = new PublicKey(recipientStr);
 
+  // Leave at least rent-exempt minimum so the sweep tx doesn't fail with "insufficient funds for rent"
+  let minSolToLeave = RENT_EXEMPT_MIN_LAMPORTS;
+  try {
+    const exempt = await connection.getMinimumBalanceForRentExemption(0);
+    minSolToLeave = Math.max(minSolToLeave, exempt);
+  } catch {
+    // use RENT_EXEMPT_MIN_LAMPORTS if RPC fails
+  }
+
   const scopeCondition =
     scope === "paid"
       ? eq(ordersTable.paymentStatus, "paid")
@@ -232,7 +242,7 @@ export async function runSolanaSweep(
 
     const solBalance = await connection.getBalance(keypair.publicKey);
     const solToSweep =
-      solBalance > MIN_SOL_TO_SWEEP ? solBalance - MIN_SOL_TO_SWEEP : 0;
+      solBalance > minSolToLeave ? solBalance - minSolToLeave : 0;
 
     const tokenAccounts: TokenAccountInfo[] = [
       ...(await getTokenAccountsWithBalance(

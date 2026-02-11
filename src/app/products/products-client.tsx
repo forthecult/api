@@ -43,7 +43,8 @@ export type SortOption =
   | "price_asc"
   | "price_desc"
   | "best_selling"
-  | "rating";
+  | "rating"
+  | "manual";
 
 interface BreadcrumbItem {
   name: string;
@@ -73,6 +74,7 @@ interface ProductsClientProps {
 }
 
 const SORT_LABELS: Record<SortOption, string> = {
+  manual: "Recommended",
   newest: "Newest",
   price_asc: "Price (low to high)",
   price_desc: "Price (high to low)",

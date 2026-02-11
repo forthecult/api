@@ -649,13 +649,13 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     1,
     Number.parseInt(resolvedSearchParams.page ?? "1", 10),
   );
-  const sortParam = resolvedSearchParams.sort?.trim() || "newest";
+  const sortParam = resolvedSearchParams.sort?.trim() || "manual";
   const sort =
-    ["newest", "price_asc", "price_desc", "best_selling", "rating"].includes(
+    ["newest", "price_asc", "price_desc", "best_selling", "rating", "manual"].includes(
       sortParam,
     )
       ? sortParam
-      : "newest";
+      : "manual";
   const subcategoryParam = resolvedSearchParams.subcategory?.trim() || "";
   const searchQuery = resolvedSearchParams.q?.trim() ?? "";
   const limit = 12;
@@ -720,7 +720,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         description={categoryDescription}
         categoryDescriptionFull={category.description ?? undefined}
         subcategories={subcategories}
-        initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating"}
+        initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating" | "manual"}
         initialSubcategory={subcategoryParam || undefined}
         initialSearch={searchQuery}
         breadcrumbs={[

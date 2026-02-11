@@ -54,6 +54,8 @@ export const productCategoriesTable = pgTable(
       .notNull()
       .references(() => categoriesTable.id, { onDelete: "cascade" }),
     isMain: boolean("is_main").notNull().default(false),
+    /** Admin-controlled display order within a category. Lower = first. NULL = unordered (sorted after explicit entries). */
+    sortOrder: integer("sort_order"),
   },
   (t) => [
     primaryKey({ columns: [t.productId, t.categoryId] }),

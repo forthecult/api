@@ -110,7 +110,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const limit = 12;
   const sortParam = params.sort?.trim() || "newest";
   const sort =
-    ["newest", "price_asc", "price_desc", "best_selling", "rating"].includes(
+    ["newest", "price_asc", "price_desc", "best_selling", "rating", "manual"].includes(
       sortParam,
     )
       ? sortParam
@@ -145,7 +145,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           initialTotalPages={data.totalPages ?? 1}
           initialTotal={data.total ?? 0}
           initialCategory="all"
-          initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating"}
+          initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating" | "manual"}
         />
       </Suspense>
     </>

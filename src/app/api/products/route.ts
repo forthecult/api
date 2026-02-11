@@ -33,7 +33,8 @@ export type ProductsSort =
   | "price_asc"
   | "price_desc"
   | "best_selling"
-  | "rating";
+  | "rating"
+  | "manual";
 
 /**
  * Public API: returns only published products for the storefront.
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
     const q = (searchParams.get("q") ?? searchParams.get("search") ?? "").trim().slice(0, 100);
     const sortParam = (searchParams.get("sort")?.trim() || "newest") as ProductsSort;
     const sort: ProductsSort =
-      ["newest", "price_asc", "price_desc", "best_selling", "rating"].includes(
+      ["newest", "price_asc", "price_desc", "best_selling", "rating", "manual"].includes(
         sortParam,
       )
         ? sortParam
@@ -78,11 +79,44 @@ export async function GET(request: NextRequest) {
 
     const categorySlugToFilter = subcategory || category;
 
+    // For manual sort we need the sortOrder from the junction table, keyed by productId
+    let manualSortMap: Map<string, number> | null = null;
+
     let productIdsFilter: string[] | null = null;
-    if (categorySlugToFilter) {
+
+    // Special token: "__featured__" means "products in any category with featured = true"
+    if (categorySlugToFilter === "__featured__") {
+      const rows = await db
+        .select({
+          productId: productCategoriesTable.productId,
+          sortOrder: productCategoriesTable.sortOrder,
+        })
+        .from(productCategoriesTable)
+        .innerJoin(
+          categoriesTable,
+          eq(productCategoriesTable.categoryId, categoriesTable.id),
+        )
+        .where(eq(categoriesTable.featured, true));
+      productIdsFilter = [...new Set(rows.map((r) => r.productId))];
+      if (sort === "manual") {
+        manualSortMap = new Map<string, number>();
+        for (const r of rows) {
+          if (!manualSortMap.has(r.productId)) {
+            manualSortMap.set(r.productId, r.sortOrder ?? 999999);
+          }
+        }
+      }
+      if (productIdsFilter.length === 0) {
+        // Fallback: return newest products when no featured categories exist
+        productIdsFilter = null;
+      }
+    } else if (categorySlugToFilter) {
       // Include all products in this category (main or not), so bulk-added / auto-assigned products show
       const rows = await db
-        .select({ productId: productCategoriesTable.productId })
+        .select({
+          productId: productCategoriesTable.productId,
+          sortOrder: productCategoriesTable.sortOrder,
+        })
         .from(productCategoriesTable)
         .innerJoin(
           categoriesTable,
@@ -90,6 +124,12 @@ export async function GET(request: NextRequest) {
         )
         .where(eq(categoriesTable.slug, categorySlugToFilter));
       productIdsFilter = rows.map((r) => r.productId);
+      if (sort === "manual") {
+        manualSortMap = new Map<string, number>();
+        for (const r of rows) {
+          manualSortMap.set(r.productId, r.sortOrder ?? 999999);
+        }
+      }
       if (productIdsFilter.length === 0) {
         return withPublicApiCors(
           NextResponse.json({
@@ -132,7 +172,36 @@ export async function GET(request: NextRequest) {
     let rows: Awaited<
       ReturnType<typeof db.query.productsTable.findMany>
     >;
-    if (sort === "best_selling") {
+    if (sort === "manual" && manualSortMap) {
+      // Manual sort: use the sortOrder from the product_category junction table.
+      // Fetch all matching IDs, sort in JS, then paginate.
+      const allIds = await db
+        .select({ id: productsTable.id })
+        .from(productsTable)
+        .where(whereClause);
+      const sortedIds = allIds
+        .map((r) => r.id)
+        .sort((a, b) => {
+          const aO = manualSortMap!.get(a) ?? 999999;
+          const bO = manualSortMap!.get(b) ?? 999999;
+          return aO - bO;
+        })
+        .slice(offset, offset + limit);
+      if (sortedIds.length === 0) {
+        rows = [];
+      } else {
+        const found = await db.query.productsTable.findMany({
+          where: inArray(productsTable.id, sortedIds),
+          with: {
+            productCategories: { with: { category: true } },
+          },
+        });
+        const orderMap = new Map(sortedIds.map((id, i) => [id, i]));
+        rows = found.sort(
+          (a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0),
+        );
+      }
+    } else if (sort === "best_selling") {
       const soldSubq = db
         .select({
           productId: orderItemsTable.productId,

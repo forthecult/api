@@ -47,7 +47,8 @@ import { ordersTable } from "../src/db/schema";
 import { deriveDepositKeypair } from "../src/lib/solana-deposit";
 
 const LAMPORTS_PER_SOL = 1e9;
-const MIN_SOL_TO_SWEEP = 5000; // leave dust for rent if needed
+/** Minimum lamports to leave so the account stays rent-exempt (~890880 on mainnet). */
+const RENT_EXEMPT_MIN_LAMPORTS = 890_880;
 
 type TokenAccountInfo = {
   mint: string;
@@ -185,9 +186,12 @@ async function main() {
       continue;
     }
 
-    // 1) Native SOL
+    // 1) Native SOL — leave rent-exempt minimum so tx doesn't fail
     const solBalance = await connection.getBalance(keypair.publicKey);
-    const solToSweep = solBalance > MIN_SOL_TO_SWEEP ? solBalance - MIN_SOL_TO_SWEEP : 0;
+    const solToSweep =
+      solBalance > RENT_EXEMPT_MIN_LAMPORTS
+        ? solBalance - RENT_EXEMPT_MIN_LAMPORTS
+        : 0;
 
     // 2) All SPL tokens (Token Program + Token-2022)
     const tokenAccounts: TokenAccountInfo[] = [

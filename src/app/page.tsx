@@ -115,7 +115,7 @@ async function fetchFeaturedProducts(cookieHeader?: string): Promise<
 > {
   const baseUrl = getServerBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/products?page=1&limit=8`, {
+    const res = await fetch(`${baseUrl}/api/products?page=1&limit=8&category=__featured__&sort=manual`, {
       next: { revalidate: 60 },
       signal: AbortSignal.timeout(8000),
       ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
