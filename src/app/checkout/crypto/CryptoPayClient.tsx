@@ -331,6 +331,24 @@ export function CryptoPayClient() {
       setPaymentAddress(recipient);
       return;
     }
+    // Native SOL payment (no SPL token)
+    if (token === "solana") {
+      const r = solUsdRate ?? SOL_USD_FALLBACK;
+      if (r <= 0) return;
+      const amountSol = new BigNumber(amountUsd).dividedBy(r);
+      const keypair = Keypair.generate();
+      const url = encodeURL({
+        recipient: new PublicKey(recipient),
+        amount: amountSol,
+        reference: keypair.publicKey,
+        label: getSolanaPayLabel(),
+        message: `Order total: $${amountUsd.toFixed(2)}`,
+      });
+      setPaymentUrl(url);
+      setPaymentAddress(recipient);
+      return;
+    }
+    // SPL token payments (USDC, WhiteWhale, Troll)
     const keypair = Keypair.generate();
     const reference = keypair.publicKey;
     const isWhiteWhale = token === "whitewhale";

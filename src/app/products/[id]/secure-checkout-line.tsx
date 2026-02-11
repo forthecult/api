@@ -43,16 +43,16 @@ export function SecureCheckoutLine({
     <div className="mb-6 block w-full">
       {/* Aligned with Add to Cart button: offset by quantity controls width (approx 7rem) on sm+ screens */}
       <div
-        className="flex flex-wrap items-center justify-center gap-x-8 gap-y-1 text-sm text-muted-foreground sm:gap-x-12 sm:pl-28"
+        className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground sm:gap-x-3 sm:pl-28"
         role="list"
         aria-label="Purchase assurances"
       >
         <span role="listitem">🔒 Secure Checkout</span>
-        <span aria-hidden className="select-none text-muted-foreground/70">
+        <span aria-hidden className="select-none text-muted-foreground/50">
           |
         </span>
         <span role="listitem">↩️ 30-Day Returns</span>
-        <span aria-hidden className="select-none text-muted-foreground/70">
+        <span aria-hidden className="select-none text-muted-foreground/50">
           |
         </span>
         <span role="listitem">🚚 {shippingText}</span>
