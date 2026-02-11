@@ -60,9 +60,18 @@ export async function GET(
       );
     }
 
+    // Allow unauthenticated access to recent orders (within 1 hour of creation).
+    // The orderId is an unguessable token — same security model as Stripe session_id.
+    // This enables guest checkout users to see order details on the thank-you page.
+    const orderAgeMs = Date.now() - order.createdAt.getTime();
+    const GUEST_ACCESS_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+    const isRecentOrder = orderAgeMs < GUEST_ACCESS_WINDOW_MS;
+
     const adminAuth = await getAdminAuth(request);
     if (adminAuth?.ok) {
       // Admin: allow full access
+    } else if (isRecentOrder) {
+      // Allow unauthenticated access to very recent orders (thank-you page)
     } else {
       const session = await auth.api.getSession({ headers: request.headers });
       const emailVerified = (session?.user as { emailVerified?: boolean })

@@ -252,7 +252,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   }, []);
 
   const isDashboard = useAuthState && user && pathname.startsWith("/dashboard");
-  const isCheckout = pathname?.startsWith("/checkout");
+  const isCheckout = pathname?.startsWith("/checkout") && !pathname?.startsWith("/checkout/success");
 
   // On checkout: hide header when scrolling down, show when scrolling up or near top.
   // Use a large delta (hysteresis) and throttle to avoid flicker and reduce CPU usage.

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy, Eye, EyeOff, Link2, Loader2, ShoppingBag, UserPlus } from "lucide-react";
+import { Check, Eye, EyeOff, Link2, Loader2, Package, ShoppingBag, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -12,13 +12,6 @@ import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
 import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "~/ui/primitives/card";
 
 const X_ICON = (
   <svg
@@ -82,6 +75,7 @@ type OrderDetails = {
   shipping?: ShippingAddress;
 };
 
+/* ---------- Marketing consent ---------- */
 function MarketingConsent({
   orderId,
   email,
@@ -131,7 +125,7 @@ function MarketingConsent({
 
   if (saved) {
     return (
-      <div className="mt-8 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
         <Check className="size-4" />
         <span>Preferences saved</span>
       </div>
@@ -139,10 +133,8 @@ function MarketingConsent({
   }
 
   return (
-    <div className="mt-8 w-full space-y-3">
-      <p className="text-sm font-medium text-muted-foreground">
-        Stay in the loop
-      </p>
+    <div className="space-y-3">
+      <p className="text-sm font-medium">Stay in the loop</p>
       <label className="flex items-center gap-2 text-sm">
         <Checkbox
           checked={emailConsent}
@@ -188,7 +180,7 @@ function MarketingConsent({
   );
 }
 
-/** Post-purchase account creation for guest checkout users. */
+/* ---------- Post-purchase account creation ---------- */
 function CreateAccount({ email }: { email?: string }) {
   const { user } = useCurrentUser();
   const [password, setPassword] = useState("");
@@ -197,14 +189,12 @@ function CreateAccount({ email }: { email?: string }) {
   const [created, setCreated] = useState(false);
   const [error, setError] = useState("");
 
-  // Don't show if already logged in
   if (user?.email) return null;
-  // Don't show if no email from order
   if (!email) return null;
 
   if (created) {
     return (
-      <div className="mt-8 w-full rounded-md border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
+      <div className="rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
         <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
           <Check className="size-4 shrink-0" aria-hidden />
           <span className="font-medium">Account created! You can now track your orders.</span>
@@ -214,7 +204,7 @@ function CreateAccount({ email }: { email?: string }) {
   }
 
   return (
-    <div className="mt-8 w-full space-y-3">
+    <div className="space-y-3">
       <div className="flex items-center gap-2">
         <UserPlus className="size-4 text-primary" aria-hidden />
         <p className="text-sm font-medium">Save your info for next time</p>
@@ -300,6 +290,20 @@ function CreateAccount({ email }: { email?: string }) {
   );
 }
 
+/* ---------- CreateAccount card wrapper (hides card when CreateAccount returns null) ---------- */
+function CreateAccountCard({ email }: { email?: string }) {
+  const { user } = useCurrentUser();
+  // Same conditions as CreateAccount — hide the card entirely
+  if (user?.email) return null;
+  if (!email) return null;
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+      <CreateAccount email={email} />
+    </div>
+  );
+}
+
+/* ---------- Main success page ---------- */
 export function SuccessPageClient() {
   const searchParams = useSearchParams();
   const orderIdParam = searchParams.get("orderId");
@@ -309,7 +313,6 @@ export function SuccessPageClient() {
   const [order, setOrder] = useState<OrderDetails | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Clear cart when user lands on success page after completing checkout
   useEffect(() => {
     if (orderIdParam || sessionIdParam) {
       clearCart();
@@ -387,236 +390,235 @@ export function SuccessPageClient() {
   const xShareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
+  if (loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Loading your order…</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container flex min-h-[60vh] flex-col items-center py-16">
-      <div className="flex w-full max-w-2xl flex-col gap-8 md:flex-row md:gap-10">
-        {/* Left: Success message + actions */}
-        <div className="flex flex-1 flex-col items-center text-center md:items-start md:text-left">
-          <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-500/15">
-            <Check className="h-10 w-10 text-green-600 dark:text-green-400" />
+    <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
+      {/* ───── Hero: Success confirmation ───── */}
+      <div className="flex flex-col items-center text-center">
+        <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-green-500/15 sm:size-20">
+          <Check className="size-8 text-green-600 dark:text-green-400 sm:size-10" />
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Order confirmed!</h1>
+        <p className="mt-2 max-w-md text-muted-foreground">
+          Thank you for your purchase. We&apos;re preparing your order.
+        </p>
+
+        {/* Confirmation email banner */}
+        <div className="mt-5 w-full max-w-md rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 text-left dark:border-green-900/50 dark:bg-green-950/20">
+          <div className="flex items-start gap-2.5 text-sm text-green-700 dark:text-green-400">
+            <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+            <div>
+              <p className="font-medium">Confirmation email sent</p>
+              <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
+                We&apos;ve sent order details and tracking info to{" "}
+                {order?.email ? (
+                  <span className="font-medium">{order.email}</span>
+                ) : (
+                  "your email"
+                )}
+                . Most orders ship within 1 business day.
+              </p>
+            </div>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">Order confirmed!</h1>
-          <p className="mt-1 text-muted-foreground">
-            Thank you for your purchase. We&apos;re preparing your order.
-          </p>
-          <div className="mt-3 w-full rounded-md border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
-            <div className="flex items-start gap-2 text-sm text-green-700 dark:text-green-400">
-              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-              <div>
-                <p className="font-medium">Confirmation email sent</p>
-                <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
-                  We&apos;ve sent order details and tracking info to your email. Most orders ship within 1 business day.
+        </div>
+      </div>
+
+      {/* ───── Order details ───── */}
+      {order && order.items.length > 0 && (
+        <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Order details</h2>
+            {displayOrderId && (
+              <span className="text-sm text-muted-foreground">
+                #{displayOrderId.slice(0, 8)}
+              </span>
+            )}
+          </div>
+
+          {/* Items */}
+          <div className="mt-5 divide-y divide-border">
+            {order.items.map((item) => (
+              <div
+                key={`${item.name}-${item.quantity}`}
+                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex size-10 items-center justify-center rounded-md bg-muted">
+                    <Package className="size-4 text-muted-foreground" aria-hidden />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{item.name}</p>
+                    {item.quantity > 1 && (
+                      <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                    )}
+                  </div>
+                </div>
+                {item.subtotalUsd != null && (
+                  <span className="text-sm font-medium">${item.subtotalUsd.toFixed(2)}</span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Totals */}
+          <div className="mt-4 border-t border-border pt-4">
+            <div className="flex justify-between text-base font-semibold">
+              <span>Total paid</span>
+              <span>${(order.totalCents / 100).toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Meta: payment, date, shipping */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {order.paymentMethod && (
+              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Payment</p>
+                <p className="mt-0.5 text-sm">{paymentMethodLabel(order.paymentMethod)}</p>
+              </div>
+            )}
+            {order.createdAt && (
+              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</p>
+                <p className="mt-0.5 text-sm">
+                  {new Date(order.createdAt).toLocaleString(undefined, {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
                 </p>
               </div>
+            )}
+            <div className="rounded-lg bg-muted/50 px-3 py-2.5">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Estimated delivery</p>
+              <p className="mt-0.5 text-sm">
+                {order.shipping?.countryCode === "US"
+                  ? "2–4 business days"
+                  : "5–14 business days"}
+              </p>
             </div>
           </div>
 
-          <div className="mt-6 flex w-full flex-col gap-3 sm:w-auto sm:min-w-[200px]">
-            <Button asChild className="w-full" size="lg">
-              <Link href="/products">
-                <ShoppingBag className="mr-2 h-4 w-4" />
-                Shop more
-              </Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full" size="lg">
-              <Link href="/">Back to home</Link>
-            </Button>
-          </div>
-
-          {/* Share */}
-          <div className="mt-8 w-full">
-            <p className="text-sm font-medium text-muted-foreground">Share</p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <a
-                href={xShareUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Share on X (Twitter)"
-              >
-                {X_ICON}
-              </a>
-              <a
-                href={facebookShareUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                aria-label="Share on Facebook"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="currentColor"
-                  aria-hidden
-                >
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-              </a>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9"
-                onClick={copyLink}
-                aria-label="Copy link"
-              >
-                <Link2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Referral */}
-          <p className="mt-6 text-sm text-muted-foreground">
-            Share with a friend for 10% off your next purchase.
-          </p>
-
-          {/* Post-purchase account creation (guests only) */}
-          {!loading && order && (
-            <CreateAccount email={order.email} />
-          )}
-
-          {/* Marketing consent */}
-          {!loading && order && (
-            <MarketingConsent
-              orderId={order.orderId}
-              email={order.email}
-              hasPhone={Boolean(order.shipping?.phone)}
-            />
-          )}
+          {/* Shipping address */}
+          {order.shipping &&
+            (order.shipping.address1 || order.shipping.city || order.shipping.countryCode) && (
+              <div className="mt-5 border-t border-border pt-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shipping to</p>
+                <div className="mt-1 text-sm">
+                  {formatShippingAddress(order.shipping).map((line, i) => (
+                    <p key={i}>{line}</p>
+                  ))}
+                </div>
+              </div>
+            )}
         </div>
+      )}
 
-        {/* Right: Order details */}
-        <Card className="w-full flex-shrink-0 md:max-w-sm">
-          <CardHeader>
-            <CardTitle>Order details</CardTitle>
-            {loading ? (
-              <CardDescription>Loading…</CardDescription>
-            ) : (
-              <CardDescription>
-                {displayOrderId
-                  ? `Order #${displayOrderId.slice(0, 8)}`
-                  : "Your order has been received."}
-              </CardDescription>
-            )}
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {order && (
-              <>
-                {order.email && (
-                  <div className="text-sm">
-                    <span className="font-medium text-muted-foreground">
-                      Email:{" "}
-                    </span>
-                    <span>{order.email}</span>
-                  </div>
-                )}
-                {order.paymentMethod && (
-                  <div className="text-sm">
-                    <span className="font-medium text-muted-foreground">
-                      Payment method:{" "}
-                    </span>
-                    <span>
-                      {paymentMethodLabel(order.paymentMethod)}
-                    </span>
-                  </div>
-                )}
-                {order.createdAt && (
-                  <div className="text-sm">
-                    <span className="font-medium text-muted-foreground">
-                      Date:{" "}
-                    </span>
-                    <span>
-                      {new Date(order.createdAt).toLocaleString(undefined, {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      })}
-                    </span>
-                  </div>
-                )}
-                {order.items && order.items.length > 0 && (
-                  <div className="space-y-2 border-t border-border pt-4">
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                      Items
-                    </p>
-                    {order.items.map((item) => (
-                      <div
-                        key={`${item.name}-${item.quantity}`}
-                        className="flex justify-between text-sm"
-                      >
-                        <span>
-                          {item.name}
-                          {item.quantity > 1 ? ` × ${item.quantity}` : ""}
-                        </span>
-                        {item.subtotalUsd != null && (
-                          <span>
-                            ${item.subtotalUsd.toFixed(2)}
-                          </span>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-border pt-4 font-medium">
-                  <span>Total paid</span>
-                  <span>
-                    ${(order.totalCents / 100).toFixed(2)}
-                  </span>
-                </div>
-                {order.shipping &&
-                  (order.shipping.address1 ||
-                    order.shipping.city ||
-                    order.shipping.countryCode) && (
-                    <div className="space-y-1 border-t border-border pt-4">
-                      <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        Shipping address
-                      </p>
-                      <div className="text-sm">
-                        {formatShippingAddress(order.shipping).map(
-                          (line, i) => (
-                            <p key={i}>{line}</p>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-                <div className="rounded-md bg-muted/50 px-3 py-2.5 text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground">Estimated delivery</p>
-                  <p className="mt-0.5">
-                    {order.shipping?.countryCode === "US"
-                      ? "2–4 business days after shipping"
-                      : "5–14 business days after shipping"}
-                  </p>
-                  <p className="mt-1 text-xs">
-                    You&apos;ll receive a tracking email when your order ships.
-                  </p>
-                </div>
-              </>
-            )}
-            {!loading && !order && displayOrderId && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a
-                  confirmation to your email.
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  You&apos;ll receive an email when your order ships.
-                </p>
-              </>
-            )}
-            {!loading && !order && !displayOrderId && (
-              <>
-                <p className="text-sm text-muted-foreground">
-                  Your payment was successful. We&apos;ll send a confirmation
-                  email if we have your address.
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  You&apos;ll receive an email when your order ships.
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* Fallback if no order data loaded */}
+      {!order && displayOrderId && (
+        <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-lg font-semibold">Order details</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a confirmation to your email
+            with full order details and tracking information.
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You&apos;ll receive another email when your order ships.
+          </p>
+        </div>
+      )}
+
+      {!order && !displayOrderId && (
+        <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
+          <h2 className="text-lg font-semibold">Order details</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your payment was successful. We&apos;ll send a confirmation email with your order details.
+          </p>
+        </div>
+      )}
+
+      {/* ───── Post-purchase sections ───── */}
+      <div className="mt-10 space-y-8">
+        {/* Account creation for guests */}
+        <CreateAccountCard email={order?.email} />
+
+        {/* Marketing consent */}
+        {(order?.orderId ?? orderIdParam) && (
+          <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+            <MarketingConsent
+              orderId={order?.orderId ?? orderIdParam ?? ""}
+              email={order?.email}
+              hasPhone={Boolean(order?.shipping?.phone)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ───── Actions ───── */}
+      <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+        <Button asChild size="lg" className="w-full sm:w-auto">
+          <Link href="/products">
+            <ShoppingBag className="mr-2 size-4" />
+            Continue shopping
+          </Link>
+        </Button>
+        <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+          <Link href="/">Back to home</Link>
+        </Button>
+      </div>
+
+      {/* ───── Share & referral ───── */}
+      <div className="mt-10 flex flex-col items-center border-t border-border pt-8">
+        <p className="text-sm font-medium text-muted-foreground">Share your purchase</p>
+        <div className="mt-3 flex items-center gap-2">
+          <a
+            href={xShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Share on X (Twitter)"
+          >
+            {X_ICON}
+          </a>
+          <a
+            href={facebookShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Share on Facebook"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+            </svg>
+          </a>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-10 rounded-full"
+            onClick={copyLink}
+            aria-label="Copy link"
+          >
+            <Link2 className="size-4" />
+          </Button>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          Share with a friend for 10% off your next purchase.
+        </p>
       </div>
     </div>
   );

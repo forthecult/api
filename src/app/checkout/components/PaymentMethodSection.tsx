@@ -1269,7 +1269,7 @@ export function PaymentMethodSection({
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Refunds processed within <strong>10 business days</strong> after inspection</li>
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />EU/UK customers: 14-day right to cancel for any reason</li>
                   </ul>
-                  <p className="text-xs text-muted-foreground">We want you to love your purchase. If something isn&apos;t right, we&apos;ll make it right.</p>
+                  <p className="text-sm text-muted-foreground">We want you to love your purchase. If something isn&apos;t right, we&apos;ll make it right.</p>
                 </div>
               }
               fullPolicyHref="/policies/refund"
@@ -1291,7 +1291,7 @@ export function PaymentMethodSection({
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Tracking number sent via email once shipped</li>
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Peak seasons may add up to 1 week</li>
                   </ul>
-                  <p className="text-xs text-muted-foreground">We partner with multiple fulfillment centers to get your order to you as quickly as possible. P.O. Boxes are not supported.</p>
+                  <p className="text-sm text-muted-foreground">We partner with multiple fulfillment centers to get your order to you as quickly as possible. P.O. Boxes are not supported.</p>
                 </div>
               }
               fullPolicyHref="/policies/shipping"
@@ -1313,7 +1313,7 @@ export function PaymentMethodSection({
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Only essential cookies (sign-in, cart, security)</li>
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />You can access, correct, delete, or export your data anytime</li>
                   </ul>
-                  <p className="text-xs text-muted-foreground">Your privacy is a right, not a privilege. We protect it accordingly.</p>
+                  <p className="text-sm text-muted-foreground">Your privacy is a right, not a privilege. We protect it accordingly.</p>
                 </div>
               }
               fullPolicyHref="/policies/privacy"

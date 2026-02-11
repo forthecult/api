@@ -105,22 +105,43 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}.....${address.slice(-4)}`;
 }
 
+// Parse URL hash synchronously (component is ssr:false, window is always available)
+function parseSuiHash(): {
+  token: "sui";
+  suiFromHash: { amountUsd: number; expiresAt: string } | null;
+} | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.location.hash.slice(1);
+  if (!raw.toLowerCase().startsWith("sui-")) return null;
+  const parts = raw.split("-");
+  const amount = Number.parseFloat(parts[1] ?? "0");
+  const expiresTs = Number(parts[2] ?? "0");
+  if (Number.isFinite(amount) && amount >= 0 && Number.isFinite(expiresTs)) {
+    return {
+      token: "sui",
+      suiFromHash: {
+        amountUsd: amount,
+        expiresAt: new Date(expiresTs).toISOString(),
+      },
+    };
+  }
+  return { token: "sui", suiFromHash: null };
+}
+
 export function CryptoPayClient() {
   const { connection } = useConnection();
   const { connected, publicKey, wallet, disconnect, sendTransaction } =
     useWallet();
   const params = useParams();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const pathId = (params?.invoiceId as string) ?? "";
+
+  // Parse hash synchronously on first render — no useEffect cascade
+  const [suiParsed] = useState(() => parseSuiHash());
   const [token, setToken] = useState<
     "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "troll" | "sui"
-  >("usdc");
-  const [suiFromHash, setSuiFromHash] = useState<{
-    amountUsd: number;
-    expiresAt: string;
-  } | null>(null);
-  const [hashParsed, setHashParsed] = useState(false);
+  >(() => (suiParsed ? "sui" : "usdc"));
+  const [suiFromHash] = useState(() => suiParsed?.suiFromHash ?? null);
 
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
   const [paymentUrl, setPaymentUrl] = useState<URL | null>(null);
@@ -137,41 +158,11 @@ export function CryptoPayClient() {
   const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
     orderId: pathId,
     token,
-    enabled: mounted && hashParsed,
+    enabled: true,
     suiFromHash,
   });
   const { solUsdRate, suiUsdRate, crustPriceUsd, pumpPriceUsd } =
     useCryptoPrices();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Parse URL hash only for Sui (sui-amount-expiry); Solana token comes from order API
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-    const raw = window.location.hash.slice(1);
-    const hash = raw.toLowerCase();
-    if (hash.startsWith("sui-")) {
-      const parts = raw.split("-");
-      const amount = Number.parseFloat(parts[1] ?? "0");
-      const expiresTs = Number(parts[2] ?? "0");
-      setToken("sui");
-      if (
-        Number.isFinite(amount) &&
-        amount >= 0 &&
-        Number.isFinite(expiresTs)
-      ) {
-        setSuiFromHash({
-          amountUsd: amount,
-          expiresAt: new Date(expiresTs).toISOString(),
-        });
-      } else {
-        setSuiFromHash(null);
-      }
-    }
-    setHashParsed(true);
-  }, [mounted]);
 
   // Sync token from order when available so balance check matches selected payment method
   // (e.g. if URL hash is missing or wrong, we still check SOL vs USDC vs SPL correctly)
@@ -184,12 +175,12 @@ export function CryptoPayClient() {
     "troll",
   ] as const;
   useEffect(() => {
-    if (!hashParsed || !order?.token) return;
+    if (!order?.token) return;
     const orderToken = order.token.toLowerCase();
     if (SOLANA_TOKENS.includes(orderToken as (typeof SOLANA_TOKENS)[number])) {
       setToken(orderToken as (typeof SOLANA_TOKENS)[number]);
     }
-  }, [hashParsed, order?.token]);
+  }, [order?.token]);
 
   const amountUsd =
     token === "sui" && suiFromHash
@@ -765,11 +756,14 @@ export function CryptoPayClient() {
         if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS)
           return { sufficient: false, reason: "sol_for_fees" };
       let splTokenMint: PublicKeyType;
-      let amountBigNumber: BigNumber;
+      // amountBaseUnits: the amount already in smallest token units (e.g. 1 USDC = 1_000_000)
+      // These helper functions (usdcAmountFromUsd, tokenAmountFromUsd, tokenAmountFromUsdWithPrice)
+      // already multiply by 10^decimals, so we must NOT scale again.
+      let amountBaseUnits: BigNumber;
       if (token === "crust") {
         if (crustSolPerToken == null || crustSolPerToken <= 0 || rate <= 0)
           return { sufficient: false, reason: "token" };
-        amountBigNumber = tokenAmountFromUsdWithPrice(
+        amountBaseUnits = tokenAmountFromUsdWithPrice(
           amountUsd,
           crustSolPerToken,
           rate,
@@ -779,7 +773,7 @@ export function CryptoPayClient() {
       } else if (token === "pump") {
         if (pumpSolPerToken == null || pumpSolPerToken <= 0 || rate <= 0)
           return { sufficient: false, reason: "token" };
-        amountBigNumber = tokenAmountFromUsdWithPrice(
+        amountBaseUnits = tokenAmountFromUsdWithPrice(
           amountUsd,
           pumpSolPerToken,
           rate,
@@ -787,34 +781,23 @@ export function CryptoPayClient() {
         );
         splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
       } else if (token === "usdc") {
-        amountBigNumber = usdcAmountFromUsd(amountUsd);
+        amountBaseUnits = usdcAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(USDC_MINT_MAINNET);
       } else if (token === "whitewhale") {
-        amountBigNumber = tokenAmountFromUsd(amountUsd);
+        amountBaseUnits = tokenAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(WHITEWHALE_MINT_MAINNET);
       } else if (token === "troll") {
-        amountBigNumber = tokenAmountFromUsd(amountUsd);
+        amountBaseUnits = tokenAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
       } else {
         return { sufficient: false, reason: "token" };
       }
-      let mint;
       let tokenProgramId = TOKEN_PROGRAM_ID;
       try {
-        mint = await getMint(
-          connection,
-          splTokenMint,
-          undefined,
-          TOKEN_PROGRAM_ID,
-        );
+        await getMint(connection, splTokenMint, undefined, TOKEN_PROGRAM_ID);
       } catch {
         try {
-          mint = await getMint(
-            connection,
-            splTokenMint,
-            undefined,
-            TOKEN_2022_PROGRAM_ID,
-          );
+          await getMint(connection, splTokenMint, undefined, TOKEN_2022_PROGRAM_ID);
           tokenProgramId = TOKEN_2022_PROGRAM_ID;
         } catch {
           return { sufficient: false, reason: "token" };
@@ -839,9 +822,8 @@ export function CryptoPayClient() {
         // No ATA or RPC error: treat as 0 balance
         balance = 0n;
       }
-      const requiredTokens = amountBigNumber
-        .times(new BigNumber(10).pow(mint.decimals))
-        .integerValue(BigNumber.ROUND_CEIL);
+      // amountBaseUnits is already in smallest token units — do NOT multiply by 10^decimals again
+      const requiredTokens = amountBaseUnits.integerValue(BigNumber.ROUND_CEIL);
       const tokenSufficient =
         BigInt(requiredTokens.toString()) <= balance;
       return {
@@ -896,14 +878,6 @@ export function CryptoPayClient() {
 
   const logo = PAYMENT_LOGO[token] ?? PAYMENT_LOGO.solana;
   const title = PAYMENT_TITLE[token] ?? PAYMENT_TITLE.solana;
-
-  if (!mounted) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      </div>
-    );
-  }
 
   if (!pathId?.trim()) {
     return (
@@ -1059,13 +1033,27 @@ export function CryptoPayClient() {
                         </p>
                       </div>
                     ) : qrDataUrl ? (
-                      <img
-                        src={qrDataUrl}
-                        alt="Payment QR code"
-                        width={320}
-                        height={320}
-                        className="rounded-lg"
-                      />
+                      <div className="relative inline-block">
+                        <img
+                          src={qrDataUrl}
+                          alt="Payment QR code"
+                          width={320}
+                          height={320}
+                          className="rounded-lg"
+                        />
+                        {/* Logo overlay in the center of the QR code */}
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="rounded-full bg-white p-1.5 shadow-sm">
+                            <img
+                              src={logo.src}
+                              alt=""
+                              width={36}
+                              height={36}
+                              className="size-9 object-contain"
+                            />
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       <div
                         className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg bg-white p-2"

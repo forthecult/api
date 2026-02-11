@@ -36,28 +36,10 @@ export default function CheckoutInvoiceLayout({
   const searchParams = useSearchParams();
   const openModal = useCallback(() => setOpen(true), []);
 
+  // Determine EVM vs Solana/Sui purely from URL hash — no API call needed.
+  // The checkout flow always sets the correct hash (#eth, #ton, #sui-*, etc).
   useEffect(() => {
-    if (isEvmPaymentFromHash()) {
-      setIsEvm(true);
-      return;
-    }
-    if (!orderId?.trim()) {
-      setIsEvm(false);
-      return;
-    }
-    let cancelled = false;
-    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { paymentType?: string } | null) => {
-        if (cancelled) return;
-        setIsEvm(data?.paymentType === "eth");
-      })
-      .catch(() => {
-        if (!cancelled) setIsEvm(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    setIsEvm(isEvmPaymentFromHash());
   }, [orderId]);
 
   useEffect(() => {

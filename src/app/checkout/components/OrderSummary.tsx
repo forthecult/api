@@ -251,7 +251,7 @@ export function OrderSummary({
                       <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>International:</strong> 5–14 business days</li>
                       <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Tracking number sent via email once shipped</li>
                     </ul>
-                    <p className="text-xs text-muted-foreground">Peak seasons may add up to 1 week. P.O. Boxes are not supported.</p>
+                    <p className="text-sm text-muted-foreground">Peak seasons may add up to 1 week. P.O. Boxes are not supported.</p>
                   </div>
                 </DialogContent>
               </Dialog>
