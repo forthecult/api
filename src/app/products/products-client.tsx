@@ -303,7 +303,9 @@ export function ProductsClient({
             </p>
           </header>
 
-          <div className="mb-6 flex flex-wrap items-center gap-2">
+          {/* Controls row: sort + search */}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
               <label htmlFor="sort-products" className="sr-only">
                 Sort by
               </label>
@@ -323,6 +325,27 @@ export function ProductsClient({
                   ),
                 )}
               </select>
+              {total > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {total} {total === 1 ? "product" : "products"}
+                </span>
+              )}
+            </div>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+              <Input
+                type="search"
+                placeholder="Search products…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-9"
+                aria-label="Search products in this category"
+              />
+            </div>
+          </div>
+
+          {/* Category pills */}
+          <div className="mb-6 flex flex-wrap items-center gap-2">
               {categories.map((cat) => (
                 <Button
                   aria-pressed={cat.slug === selectedCategory}
@@ -380,22 +403,8 @@ export function ProductsClient({
             </div>
           )}
 
-          {/* Products section: search + grid + pagination */}
+          {/* Products grid + pagination */}
           <section className="space-y-6" aria-label="Products in this category">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <h2 className="text-lg font-semibold">Products</h2>
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-                <Input
-                  type="search"
-                  placeholder="Search products…"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-9"
-                  aria-label="Search products in this category"
-                />
-              </div>
-            </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-12">

@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
             page: 1,
             limit,
             totalPages: 0,
-            categories: await getCategoriesWithProductsAndDisplayImage(),
+            categories: await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
           }),
         );
       }
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
       } as Parameters<typeof db.query.productsTable.findMany>[0]);
     }
 
-    const categoriesWithImage = await getCategoriesWithProductsAndDisplayImage();
+    const categoriesWithImage = await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true });
     const total = countResult[0]?.count ?? 0;
     const totalPages = Math.ceil(total / limit) || 1;
 

@@ -2,7 +2,7 @@
  * Category helpers for storefront: lookup by slug, list slugs, breadcrumbs.
  */
 
-import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 
 import { db } from "~/db";
 import {
@@ -107,10 +107,13 @@ export type CategoryWithDisplayImage = {
  * Categories that have at least one published product, with a display image.
  * Image is category.imageUrl if set; otherwise from top-selling product in that category,
  * or most recently created product. Fallback is for display only (not saved to category).
+ *
+ * @param opts.topLevelOnly - When true, only return top-level categories (parentId IS NULL).
+ *   Useful for the main /products page to avoid overwhelming users with subcategories.
  */
-export async function getCategoriesWithProductsAndDisplayImage(): Promise<
-  CategoryWithDisplayImage[]
-> {
+export async function getCategoriesWithProductsAndDisplayImage(
+  opts?: { topLevelOnly?: boolean },
+): Promise<CategoryWithDisplayImage[]> {
   const catIdsWithProducts = await db
     .selectDistinct({ categoryId: productCategoriesTable.categoryId })
     .from(productCategoriesTable)
@@ -128,6 +131,10 @@ export async function getCategoriesWithProductsAndDisplayImage(): Promise<
     .filter((id): id is string => !!id);
   if (ids.length === 0) return [];
 
+  const whereConditions = opts?.topLevelOnly
+    ? and(inArray(categoriesTable.id, ids), isNull(categoriesTable.parentId))
+    : inArray(categoriesTable.id, ids);
+
   const categories = await db
     .select({
       id: categoriesTable.id,
@@ -136,7 +143,7 @@ export async function getCategoriesWithProductsAndDisplayImage(): Promise<
       imageUrl: categoriesTable.imageUrl,
     })
     .from(categoriesTable)
-    .where(inArray(categoriesTable.id, ids))
+    .where(whereConditions)
     .orderBy(asc(categoriesTable.name));
 
   const needFallback = categories.filter(
