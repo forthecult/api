@@ -38,7 +38,6 @@ import {
   reportPrintifyPublishingFailed,
   unpublishPrintifyProduct,
   fetchPrintifyGpsr,
-  uploadPrintifyImageByUrl,
   type PrintifyProduct,
 } from "./printify";
 
@@ -915,12 +914,6 @@ export async function exportProductToPrintify(
     .where(eq(productTagsTable.productId, productId));
   const tagList = tags.map((t) => t.tag);
 
-  // Get product images from local DB for outbound sync
-  const localImages = await db
-    .select()
-    .from(productImagesTable)
-    .where(eq(productImagesTable.productId, productId));
-
   try {
     // Build variant updates with prices
     const variantUpdates = variants
@@ -931,54 +924,13 @@ export async function exportProductToPrintify(
         is_enabled: true,
       }));
 
-    // Build image updates for Printify (sync local images → Printify)
-    // Upload any new images (non-Printify URLs) to Printify first, then include in update
-    const imageUpdates: Array<{
-      src: string;
-      variant_ids: number[];
-      position: string;
-      is_default: boolean;
-      is_selected_for_publishing?: boolean;
-    }> = [];
-
-    if (localImages.length > 0) {
-      for (let i = 0; i < localImages.length; i++) {
-        const img = localImages[i]!;
-        let imgSrc = img.url;
-
-        // If the image URL is not from Printify's CDN, upload it to Printify
-        if (imgSrc && !imgSrc.includes("printify") && !imgSrc.includes("images-api.printify.com")) {
-          try {
-            const uploadResult = await uploadPrintifyImageByUrl(imgSrc, img.alt || `image-${i}.png`);
-            imgSrc = uploadResult.preview_url || imgSrc;
-          } catch (uploadErr) {
-            console.warn(`Failed to upload image to Printify for export: ${uploadErr instanceof Error ? uploadErr.message : uploadErr}`);
-            // Use original URL as fallback
-          }
-        }
-
-        // Map variant images: find variants whose imageUrl matches this image
-        const matchingVariantIds = variants
-          .filter((v) => v.imageUrl === img.url && v.printifyVariantId)
-          .map((v) => Number.parseInt(v.printifyVariantId!, 10));
-
-        imageUpdates.push({
-          src: imgSrc,
-          variant_ids: matchingVariantIds,
-          position: "front",
-          is_default: i === 0,
-          is_selected_for_publishing: true,
-        });
-      }
-    }
-
-    // Update the Printify product with all editable fields (including images)
+    // Images only flow inbound (Printify → store), never outbound.
+    // Only sync content fields: title, description, tags, and variant prices.
     await updatePrintifyProduct(pf.shopId, product.printifyProductId, {
       title: product.name,
       description: product.description || undefined,
       tags: tagList.length > 0 ? tagList : undefined,
       variants: variantUpdates,
-      ...(imageUpdates.length > 0 && { images: imageUpdates }),
     });
 
     // Update product last synced timestamp
