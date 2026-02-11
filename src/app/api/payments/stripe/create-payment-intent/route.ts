@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   getClientIp,
   RATE_LIMITS,
@@ -203,7 +204,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ clientSecret, orderId });
+    return NextResponse.json({
+      clientSecret,
+      orderId,
+      confirmationToken: generateOrderConfirmationToken(orderId),
+    });
   } catch (err) {
     if (err instanceof Error && err.message.includes("STRIPE_SECRET_KEY")) {
       return NextResponse.json(

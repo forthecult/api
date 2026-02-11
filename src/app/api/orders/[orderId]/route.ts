@@ -5,6 +5,7 @@ import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import { auth } from "~/lib/auth";
+import { verifyOrderConfirmationToken } from "~/lib/order-confirmation-token";
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
@@ -13,10 +14,27 @@ function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }
 
+/** Redact email: "user@example.com" → "u***@e***.com" */
+function redactEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***@***.***";
+  const domainParts = domain.split(".");
+  const domainName = domainParts[0] ?? "";
+  const tld = domainParts.slice(1).join(".");
+  return `${local[0]}***@${domainName[0]}***.${tld}`;
+}
+
+type AccessLevel = "admin" | "owner" | "first_visit" | "public";
+
 /**
  * Full order details: items, shipping, totals, payment summary.
- * GET /api/orders/{orderId}
- * Requires: authenticated owner (session user whose userId or email matches order) or admin.
+ * GET /api/orders/{orderId}?ct=<confirmationToken>
+ *
+ * Access levels:
+ * - admin: full data
+ * - owner (authenticated, email or userId match): full data
+ * - first_visit (valid confirmation token + order < 1 hour old): full data
+ * - public: redacted PII (email, shipping address hidden)
  */
 export async function GET(
   request: NextRequest,
@@ -49,6 +67,7 @@ export async function GET(
         shippingCountryCode: ordersTable.shippingCountryCode,
         shippingPhone: ordersTable.shippingPhone,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        payerWalletAddress: ordersTable.payerWalletAddress,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -61,35 +80,57 @@ export async function GET(
       );
     }
 
-    // Allow unauthenticated access to recent orders (within 1 hour of creation).
-    // The orderId is an unguessable token — same security model as Stripe session_id.
-    // This enables guest checkout users to see order details on the thank-you page.
+    // ── Determine access level ──────────────────────────────────────────
+    let accessLevel: AccessLevel = "public";
     const orderAgeMs = Date.now() - order.createdAt.getTime();
-    const GUEST_ACCESS_WINDOW_MS = 60 * 60 * 1000; // 1 hour
-    const isRecentOrder = orderAgeMs < GUEST_ACCESS_WINDOW_MS;
+    const isRecentOrder = orderAgeMs < PAYMENT_WINDOW_MS;
 
+    // Admin check
     const adminAuth = await getAdminAuth(request);
     if (adminAuth?.ok) {
-      // Admin: allow full access
-    } else if (isRecentOrder) {
-      // Allow unauthenticated access to very recent orders (thank-you page)
-    } else {
+      accessLevel = "admin";
+    }
+
+    // Owner check (authenticated user with matching email, userId, or wallet)
+    if (accessLevel === "public") {
       const session = await auth.api.getSession({ headers: request.headers });
-      const emailVerified = (session?.user as { emailVerified?: boolean })
-        ?.emailVerified;
-      const isOwner =
-        session?.user &&
-        (order.userId === session.user.id ||
-          (emailVerified &&
-            normalizeEmail(order.email) ===
-              normalizeEmail(session.user.email)));
-      if (!isOwner) {
-        return NextResponse.json(
-          { error: { code: "UNAUTHORIZED", message: "Not authorized to view this order" } },
-          { status: 401 },
-        );
+      if (session?.user) {
+        const emailVerified = (session.user as { emailVerified?: boolean })?.emailVerified;
+        const isOwnerByUserId = order.userId === session.user.id;
+        const isOwnerByEmail =
+          emailVerified &&
+          normalizeEmail(order.email) === normalizeEmail(session.user.email);
+        // Check wallet address match (user may have linked wallet)
+        const userWalletAddress = (session.user as { walletAddress?: string })?.walletAddress;
+        const isOwnerByWallet =
+          userWalletAddress &&
+          order.payerWalletAddress &&
+          userWalletAddress.toLowerCase() === order.payerWalletAddress.toLowerCase();
+
+        if (isOwnerByUserId || isOwnerByEmail || isOwnerByWallet) {
+          accessLevel = "owner";
+        }
       }
     }
+
+    // First visit check (valid confirmation token + recent order)
+    if (accessLevel === "public" && isRecentOrder) {
+      const ct = request.nextUrl.searchParams.get("ct");
+      if (verifyOrderConfirmationToken(order.id, ct)) {
+        accessLevel = "first_visit";
+      }
+    }
+
+    // For public access to non-recent orders, deny entirely
+    if (accessLevel === "public" && !isRecentOrder) {
+      return NextResponse.json(
+        { error: { code: "UNAUTHORIZED", message: "Not authorized to view this order" } },
+        { status: 401 },
+      );
+    }
+
+    // ── Build response ──────────────────────────────────────────────────
+    const canSeePII = accessLevel !== "public";
 
     const statusMap: Record<string, string> = {
       pending: "awaiting_payment",
@@ -124,14 +165,40 @@ export async function GET(
     const paidAt =
       order.status === "paid" ? order.updatedAt.toISOString() : null;
 
+    // Build shipping object — full or redacted
+    const hasShipping =
+      order.shippingName || order.shippingAddress1 || order.shippingCity || order.shippingCountryCode;
+    const shipping = hasShipping
+      ? canSeePII
+        ? {
+            name: order.shippingName ?? undefined,
+            address1: order.shippingAddress1 ?? undefined,
+            address2: order.shippingAddress2 ?? undefined,
+            city: order.shippingCity ?? undefined,
+            stateCode: order.shippingStateCode ?? undefined,
+            zip: order.shippingZip ?? undefined,
+            countryCode: order.shippingCountryCode ?? undefined,
+            phone: order.shippingPhone ?? undefined,
+          }
+        : {
+            // Redacted: only expose country for delivery estimate, nothing else
+            countryCode: order.shippingCountryCode ?? undefined,
+          }
+      : undefined;
+
     return NextResponse.json({
       orderId: order.id,
       status,
       createdAt: order.createdAt.toISOString(),
       paidAt,
-      email: order.email ?? undefined,
+      email: canSeePII
+        ? (order.email ?? undefined)
+        : order.email
+          ? redactEmail(order.email)
+          : undefined,
       paymentMethod: order.paymentMethod ?? undefined,
       cryptoCurrency: order.cryptoCurrency ?? undefined,
+      accessLevel,
       items: items.map((i) => ({
         productId: i.productId,
         name: i.name,
@@ -139,22 +206,7 @@ export async function GET(
         priceUsd: i.priceCents / 100,
         subtotalUsd: (i.priceCents * i.quantity) / 100,
       })),
-      shipping:
-        order.shippingName ||
-        order.shippingAddress1 ||
-        order.shippingCity ||
-        order.shippingCountryCode
-          ? {
-              name: order.shippingName ?? undefined,
-              address1: order.shippingAddress1 ?? undefined,
-              address2: order.shippingAddress2 ?? undefined,
-              city: order.shippingCity ?? undefined,
-              stateCode: order.shippingStateCode ?? undefined,
-              zip: order.shippingZip ?? undefined,
-              countryCode: order.shippingCountryCode ?? undefined,
-              phone: order.shippingPhone ?? undefined,
-            }
-          : undefined,
+      shipping,
       totals: {
         subtotalUsd,
         shippingUsd,

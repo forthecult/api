@@ -11,6 +11,7 @@ import {
   checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import { getStripe } from "~/lib/stripe";
 
 const createCheckoutBodySchema = z.object({
@@ -144,7 +145,10 @@ export async function POST(request: NextRequest) {
         : {}),
     });
 
-    return NextResponse.json({ url: checkoutSession.url });
+    return NextResponse.json({
+      url: checkoutSession.url,
+      confirmationToken: generateOrderConfirmationToken(checkoutSession.id),
+    });
   } catch (err) {
     if (err instanceof Error && err.message.includes("STRIPE_SECRET_KEY")) {
       return NextResponse.json(

@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   buildOrderErrorMessage,
   insertOrder,
@@ -339,6 +340,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       orderId,
+      confirmationToken: generateOrderConfirmationToken(orderId),
       depositAddress,
       chain: chain.toLowerCase(),
       token: tokenUpper,

@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { deriveDepositAddress } from "~/lib/solana-deposit";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import { auth } from "~/lib/auth";
 import {
   buildOrderErrorMessage,
@@ -177,6 +178,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       orderId,
       depositAddress,
+      confirmationToken: generateOrderConfirmationToken(orderId),
       status: "awaiting_payment",
       _actions: {
         next: `Poll GET /api/orders/${orderId}/status every 5s until status changes`,

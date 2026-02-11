@@ -95,12 +95,16 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const data = (await res.json()) as { clientSecret: string; orderId: string };
-        const { clientSecret, orderId } = data;
+        const data = (await res.json()) as { clientSecret: string; orderId: string; confirmationToken?: string };
+        const { clientSecret, orderId, confirmationToken } = data;
         if (!clientSecret) {
           setValidationErrors(["Could not start payment."]);
           setNavigatingToPay(false);
           return;
+        }
+
+        if (confirmationToken) {
+          try { sessionStorage.setItem(`checkout_ct_${orderId}`, confirmationToken); } catch {}
         }
 
         const baseUrl = typeof window !== "undefined" ? window.location.origin : "";

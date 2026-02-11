@@ -408,8 +408,13 @@ export function PaymentMethodSection({
         return;
       }
 
-      const data = (await res.json()) as { url: string };
+      const data = (await res.json()) as { url: string; confirmationToken?: string };
       if (data.url) {
+        // Store confirmation token before navigating to Stripe
+        // (sessionStorage persists across same-tab navigation to external sites and back)
+        if (data.confirmationToken) {
+          try { sessionStorage.setItem("checkout_stripe_ct", data.confirmationToken); } catch {}
+        }
         window.location.href = data.url;
       } else {
         setNavigatingToPay(false);
@@ -491,7 +496,10 @@ export function PaymentMethodSection({
         ]);
         return;
       }
-      const data = (await createRes.json()) as { orderId: string };
+      const data = (await createRes.json()) as { orderId: string; confirmationToken?: string };
+      if (data.confirmationToken) {
+        try { sessionStorage.setItem(`checkout_ct_${data.orderId}`, data.confirmationToken); } catch {}
+      }
       router.push(`/checkout/${data.orderId}`);
     } catch {
       setNavigatingToPay(false);
@@ -553,7 +561,10 @@ export function PaymentMethodSection({
         ]);
         return;
       }
-      const data = (await createRes.json()) as { orderId: string };
+      const data = (await createRes.json()) as { orderId: string; confirmationToken?: string };
+      if (data.confirmationToken) {
+        try { sessionStorage.setItem(`checkout_ct_${data.orderId}`, data.confirmationToken); } catch {}
+      }
       router.push(`/checkout/${data.orderId}`);
     } catch {
       setNavigatingToPay(false);
@@ -614,7 +625,10 @@ export function PaymentMethodSection({
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error ?? "Failed to create order");
       }
-      const { orderId } = await res.json();
+      const { orderId, confirmationToken } = await res.json() as { orderId: string; confirmationToken?: string };
+      if (confirmationToken) {
+        try { sessionStorage.setItem(`checkout_ct_${orderId}`, confirmationToken); } catch {}
+      }
       router.push(`/checkout/${orderId}`);
     } catch (err) {
       console.error("ETH order creation error:", err);
@@ -673,7 +687,10 @@ export function PaymentMethodSection({
         ]);
         return;
       }
-      const data = (await createRes.json()) as { orderId: string };
+      const data = (await createRes.json()) as { orderId: string; confirmationToken?: string };
+      if (data.confirmationToken) {
+        try { sessionStorage.setItem(`checkout_ct_${data.orderId}`, data.confirmationToken); } catch {}
+      }
       router.push(`/checkout/${data.orderId}`);
     } catch {
       setNavigatingToPay(false);

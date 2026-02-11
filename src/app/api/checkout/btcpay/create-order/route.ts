@@ -2,6 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   buildSuccessRedirectUrl,
   buildWebhookUrl,
@@ -195,6 +196,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       orderId,
+      confirmationToken: generateOrderConfirmationToken(orderId),
       configured,
       ...(btcpayInvoiceId && { invoiceId: btcpayInvoiceId }),
       ...(btcpayInvoiceUrl && { invoiceUrl: btcpayInvoiceUrl }),

@@ -237,6 +237,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Derive display-friendly token name from SPL token mint
+    const tokenDisplayName = isNativeSol
+      ? "SOL"
+      : splTokenMint === CRUST_MINT_MAINNET
+        ? "CRUST"
+        : splTokenMint === PUMP_MINT_MAINNET
+          ? "PUMP"
+          : splTokenMint === TROLL_MINT_MAINNET
+            ? "TROLL"
+            : splTokenMint === WHITEWHALE_MINT_MAINNET
+              ? "WHITEWHALE"
+              : "USDC";
+
     // Idempotent update: only transition from 'pending' to prevent double-fulfillment
     const updated = await db.transaction(async (tx) => {
       const [current] = await tx
@@ -254,6 +267,11 @@ export async function POST(request: NextRequest) {
           paymentStatus: "paid",
           status: "paid",
           updatedAt: new Date(),
+          // Store crypto payment details for admin visibility
+          ...(sigTrim ? { cryptoTxHash: sigTrim } : {}),
+          cryptoCurrencyNetwork: "Solana",
+          cryptoCurrency: tokenDisplayName,
+          cryptoAmount: serverAmount,
           ...(typeof payerWalletFromBody === "string" &&
           payerWalletFromBody.trim()
             ? { payerWalletAddress: payerWalletFromBody.trim() }

@@ -1,13 +1,13 @@
 "use client";
 
-import { Check, Eye, EyeOff, Link2, Loader2, Package, ShoppingBag, UserPlus } from "lucide-react";
+import { Check, Link2, Loader2, Mail, Package, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { SEO_CONFIG } from "~/app";
-import { signUp, useCurrentUser } from "~/lib/auth-client";
+import { requestPasswordReset, signUp, useCurrentUser } from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
 import { Checkbox } from "~/ui/primitives/checkbox";
@@ -70,6 +70,8 @@ type ShippingAddress = {
   phone?: string;
 };
 
+type AccessLevel = "admin" | "owner" | "first_visit" | "public";
+
 type OrderDetails = {
   orderId: string;
   email?: string;
@@ -77,6 +79,7 @@ type OrderDetails = {
   cryptoCurrency?: string;
   totalCents: number;
   createdAt: string;
+  accessLevel?: AccessLevel;
   items: Array<{
     name: string;
     quantity: number;
@@ -86,7 +89,18 @@ type OrderDetails = {
   shipping?: ShippingAddress;
 };
 
-/* ---------- Marketing consent ---------- */
+/** Read and consume (delete) the confirmation token from sessionStorage. */
+function consumeConfirmationToken(key: string): string | null {
+  try {
+    const token = sessionStorage.getItem(key);
+    if (token) sessionStorage.removeItem(key);
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+/* ---------- Marketing consent (first visit only) ---------- */
 function MarketingConsent({
   orderId,
   email,
@@ -191,24 +205,24 @@ function MarketingConsent({
   );
 }
 
-/* ---------- Post-purchase account creation ---------- */
-function CreateAccount({ email }: { email?: string }) {
+/* ---------- Post-purchase account creation via email verification ---------- */
+function CreateAccountViaEmail({ email }: { email?: string }) {
   const { user } = useCurrentUser();
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [creating, setCreating] = useState(false);
-  const [created, setCreated] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
   if (user?.email) return null;
   if (!email) return null;
 
-  if (created) {
+  if (sent) {
     return (
       <div className="rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
         <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
           <Check className="size-4 shrink-0" aria-hidden />
-          <span className="font-medium">Account created! You can now track your orders.</span>
+          <span className="font-medium">
+            Check your email! We&apos;ve sent a link to <strong>{email}</strong> to set up your account.
+          </span>
         </div>
       </div>
     );
@@ -217,80 +231,59 @@ function CreateAccount({ email }: { email?: string }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <UserPlus className="size-4 text-primary" aria-hidden />
+        <Mail className="size-4 text-primary" aria-hidden />
         <p className="text-sm font-medium">Save your info for next time</p>
       </div>
       <p className="text-xs text-muted-foreground">
-        Create an account to track this order and speed up future checkouts. Your email and shipping details are already saved.
+        We&apos;ll send a link to <strong>{email}</strong> so you can set a password and track your orders.
+        Your shipping details are already saved with this order.
       </p>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
-        <div className="relative min-w-0 flex-1">
-          <Input
-            type={showPassword ? "text" : "password"}
-            placeholder="Choose a password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError("");
-            }}
-            className="h-9 pr-9"
-            aria-label="Password"
-            disabled={creating}
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((p) => !p)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
-            aria-label={showPassword ? "Hide password" : "Show password"}
-          >
-            {showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-          </button>
-        </div>
-        <Button
-          size="sm"
-          className="h-9 shrink-0"
-          disabled={creating || password.length < 8}
-          onClick={async () => {
-            if (password.length < 8) {
-              setError("Password must be at least 8 characters");
+      <Button
+        size="sm"
+        disabled={sending}
+        onClick={async () => {
+          setSending(true);
+          setError("");
+          try {
+            // Create account with a random password; user will set their own via the reset link
+            const tempPassword = crypto.randomUUID() + "Aa1!";
+            const result = await signUp.email({
+              email,
+              password: tempPassword,
+              name: email.split("@")[0] ?? "",
+            });
+            if (result?.error) {
+              // Account may already exist
+              setError(
+                typeof result.error.message === "string"
+                  ? result.error.message
+                  : "Could not create account. You may already have one.",
+              );
+              setSending(false);
               return;
             }
-            setCreating(true);
-            setError("");
-            try {
-              const result = await signUp.email({
-                email,
-                password,
-                name: email.split("@")[0] ?? "",
-              });
-              if (result?.error) {
-                setError(
-                  typeof result.error.message === "string"
-                    ? result.error.message
-                    : "Could not create account. You may already have one.",
-                );
-              } else {
-                setCreated(true);
-                toast.success("Account created!");
-              }
-            } catch {
-              setError("Could not create account. Please try again.");
-            } finally {
-              setCreating(false);
-            }
-          }}
-        >
-          {creating ? (
-            <>
-              <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-              Creating…
-            </>
-          ) : (
-            "Create account"
-          )}
-        </Button>
-      </div>
+            // Send password reset email so user can set their own password
+            await requestPasswordReset({ email });
+            setSent(true);
+          } catch {
+            setError("Could not send setup email. Please try again.");
+          } finally {
+            setSending(false);
+          }
+        }}
+      >
+        {sending ? (
+          <>
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            Sending…
+          </>
+        ) : (
+          <>
+            <Mail className="mr-1.5 size-3.5" />
+            Send me a setup link
+          </>
+        )}
+      </Button>
       {error && (
         <p className="text-xs text-destructive">{error}</p>
       )}
@@ -301,15 +294,14 @@ function CreateAccount({ email }: { email?: string }) {
   );
 }
 
-/* ---------- CreateAccount card wrapper (hides card when CreateAccount returns null) ---------- */
+/* ---------- CreateAccount card wrapper ---------- */
 function CreateAccountCard({ email }: { email?: string }) {
   const { user } = useCurrentUser();
-  // Same conditions as CreateAccount — hide the card entirely
   if (user?.email) return null;
   if (!email) return null;
   return (
     <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-      <CreateAccount email={email} />
+      <CreateAccountViaEmail email={email} />
     </div>
   );
 }
@@ -364,15 +356,21 @@ export function SuccessPageClient() {
 
     async function fetchOrder() {
       if (sessionIdParam) {
+        // Stripe flow: use session_id, pass confirmation token if available
+        const ct = consumeConfirmationToken("checkout_stripe_ct");
+        const ctParam = ct ? `&ct=${encodeURIComponent(ct)}` : "";
         const res = await fetch(
-          `/api/orders/by-session?session_id=${encodeURIComponent(sessionIdParam)}`,
+          `/api/orders/by-session?session_id=${encodeURIComponent(sessionIdParam)}${ctParam}`,
         );
         if (!cancelled && res.ok) {
           const data = (await res.json()) as OrderDetails;
           setOrder(data);
         }
       } else if (orderIdParam) {
-        const res = await fetch(`/api/orders/${encodeURIComponent(orderIdParam)}`, {
+        // Crypto/direct flow: use orderId, pass confirmation token if available
+        const ct = consumeConfirmationToken(`checkout_ct_${orderIdParam}`);
+        const ctParam = ct ? `?ct=${encodeURIComponent(ct)}` : "";
+        const res = await fetch(`/api/orders/${encodeURIComponent(orderIdParam)}${ctParam}`, {
           credentials: "include",
         });
         if (!cancelled && res.ok) {
@@ -381,6 +379,7 @@ export function SuccessPageClient() {
             email?: string;
             paymentMethod?: string;
             cryptoCurrency?: string;
+            accessLevel?: AccessLevel;
             createdAt: string;
             items: Array<{
               name: string;
@@ -396,6 +395,7 @@ export function SuccessPageClient() {
             email: data.email,
             paymentMethod: data.paymentMethod,
             cryptoCurrency: data.cryptoCurrency,
+            accessLevel: data.accessLevel,
             totalCents: (data.totals?.totalUsd ?? 0) * 100,
             createdAt: data.createdAt,
             items: data.items ?? [],
@@ -432,6 +432,13 @@ export function SuccessPageClient() {
   const xShareUrl = `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedText}`;
   const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`;
 
+  // Only show post-purchase forms (marketing consent, account creation) on first visit by the buyer
+  const isFirstVisit = order?.accessLevel === "first_visit";
+  // PII is available for owner, admin, or first-visit
+  const canSeePII = order?.accessLevel !== "public";
+  // Has full shipping info (not just countryCode)
+  const hasFullShipping = order?.shipping?.address1 || order?.shipping?.name;
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -455,24 +462,32 @@ export function SuccessPageClient() {
           Thank you for your purchase. We&apos;re preparing your order.
         </p>
 
-        {/* Confirmation email banner */}
-        <div className="mt-5 w-full max-w-md rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 text-left dark:border-green-900/50 dark:bg-green-950/20">
-          <div className="flex items-start gap-2.5 text-sm text-green-700 dark:text-green-400">
-            <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
-            <div>
-              <p className="font-medium">Confirmation email sent</p>
-              <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
-                We&apos;ve sent order details and tracking info to{" "}
-                {order?.email ? (
+        {/* Confirmation email banner — only show when we have the actual email */}
+        {canSeePII && order?.email && (
+          <div className="mt-5 w-full max-w-md rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 text-left dark:border-green-900/50 dark:bg-green-950/20">
+            <div className="flex items-start gap-2.5 text-sm text-green-700 dark:text-green-400">
+              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <div>
+                <p className="font-medium">Confirmation email sent</p>
+                <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
+                  We&apos;ve sent order details and tracking info to{" "}
                   <span className="font-medium">{order.email}</span>
-                ) : (
-                  "your email"
-                )}
-                . Most orders ship within 1 business day.
-              </p>
+                  . Most orders ship within 1 business day.
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* Redacted banner for public viewers */}
+        {!canSeePII && (
+          <div className="mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50 px-4 py-3 text-left">
+            <p className="text-sm text-muted-foreground">
+              Order details have been sent to the buyer&apos;s email.
+              Sign in to view full order information.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ───── Order details ───── */}
@@ -487,7 +502,7 @@ export function SuccessPageClient() {
             )}
           </div>
 
-          {/* Items */}
+          {/* Items (always visible — these are product info, not PII) */}
           <div className="mt-5 divide-y divide-border">
             {order.items.map((item) => (
               <div
@@ -549,18 +564,25 @@ export function SuccessPageClient() {
             </div>
           </div>
 
-          {/* Shipping address */}
-          {order.shipping &&
-            (order.shipping.address1 || order.shipping.city || order.shipping.countryCode) && (
-              <div className="mt-5 border-t border-border pt-4">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shipping to</p>
-                <div className="mt-1 text-sm">
-                  {formatShippingAddress(order.shipping).map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
-                </div>
+          {/* Shipping address — full when authorized, hidden for public */}
+          {hasFullShipping && order.shipping && (
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shipping to</p>
+              <div className="mt-1 text-sm">
+                {formatShippingAddress(order.shipping).map((line, i) => (
+                  <p key={i}>{line}</p>
+                ))}
               </div>
-            )}
+            </div>
+          )}
+          {!hasFullShipping && order.shipping?.countryCode && !canSeePII && (
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shipping to</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Shipping address on file
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -587,22 +609,24 @@ export function SuccessPageClient() {
         </div>
       )}
 
-      {/* ───── Post-purchase sections ───── */}
-      <div className="mt-10 space-y-8">
-        {/* Account creation for guests */}
-        <CreateAccountCard email={order?.email} />
+      {/* ───── Post-purchase sections (first visit only) ───── */}
+      {isFirstVisit && (
+        <div className="mt-10 space-y-8">
+          {/* Account creation for guests — via email verification link */}
+          <CreateAccountCard email={order?.email} />
 
-        {/* Marketing consent */}
-        {(order?.orderId ?? orderIdParam) && (
-          <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-            <MarketingConsent
-              orderId={order?.orderId ?? orderIdParam ?? ""}
-              email={order?.email}
-              hasPhone={Boolean(order?.shipping?.phone)}
-            />
-          </div>
-        )}
-      </div>
+          {/* Marketing consent */}
+          {(order?.orderId ?? orderIdParam) && (
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+              <MarketingConsent
+                orderId={order?.orderId ?? orderIdParam ?? ""}
+                email={order?.email}
+                hasPhone={Boolean(order?.shipping?.phone)}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ───── Actions ───── */}
       <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">

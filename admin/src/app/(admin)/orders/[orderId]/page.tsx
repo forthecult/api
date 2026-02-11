@@ -1254,6 +1254,9 @@ export default function AdminOrderDetailsPage() {
           </div>
           <div className="text-sm text-muted-foreground">
             Payment method: {order.paymentMethod}
+            {order.cryptoPayment?.currency && (
+              <span> &middot; {order.cryptoPayment.currency}{order.cryptoPayment.network ? ` (${order.cryptoPayment.network})` : ""}</span>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1301,22 +1304,35 @@ export default function AdminOrderDetailsPage() {
                 <span>{order.cryptoPayment.network}</span>
               </div>
             )}
-            {order.cryptoPayment.currency && order.cryptoPayment.amount && (
+            {order.cryptoPayment.currency && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Token</span>
+                <span>
+                  {order.cryptoPayment.currency}
+                  {order.cryptoPayment.network && (
+                    <span className="ml-1 text-muted-foreground">
+                      ({order.cryptoPayment.network})
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+            {order.cryptoPayment.amount && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount</span>
                 <span className="tabular-nums">
-                  {order.cryptoPayment.amount} {order.cryptoPayment.currency}
+                  {order.cryptoPayment.amount} {order.cryptoPayment.currency ?? ""}
                 </span>
               </div>
             )}
             {order.cryptoPayment.payerWallet && (
-              <div className="flex justify-between text-sm">
+              <div className="flex flex-col gap-1 text-sm">
                 <span className="text-muted-foreground">Payer wallet</span>
                 <span
-                  className="max-w-[280px] truncate font-mono text-xs"
+                  className="break-all font-mono text-xs select-all"
                   title={order.cryptoPayment.payerWallet}
                 >
-                  {order.cryptoPayment.payerWallet.slice(0, 10)}…{order.cryptoPayment.payerWallet.slice(-8)}
+                  {order.cryptoPayment.payerWallet}
                 </span>
               </div>
             )}

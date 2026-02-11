@@ -81,13 +81,30 @@ export function useSolanaPayCheckout({
   });
 
   const openDialog = useCallback(async () => {
-    const { orderTotalCents, commonBody } = buildOrderPayload();
+    const { orderTotalCents, commonBody, form } = buildOrderPayload();
     setOpen(true);
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(commonBody),
+        body: JSON.stringify({
+          ...commonBody,
+          // Include shipping address (was previously missing from QR dialog flow)
+          ...(form?.street?.trim()
+            ? {
+                shipping: {
+                  name: `${form.firstName ?? ""} ${form.lastName ?? ""}`.trim(),
+                  address1: form.street,
+                  address2: form.apartment,
+                  city: form.city,
+                  stateCode: form.state,
+                  countryCode: form.country,
+                  zip: form.zip,
+                  phone: form.phone,
+                },
+              }
+            : {}),
+        }),
       });
       if (!createRes.ok) {
         setOpen(false);
@@ -96,8 +113,12 @@ export function useSolanaPayCheckout({
       const data = (await createRes.json()) as {
         orderId: string;
         depositAddress: string;
+        confirmationToken?: string;
       };
-      const { orderId: id, depositAddress } = data;
+      const { orderId: id, depositAddress, confirmationToken } = data;
+      if (confirmationToken) {
+        try { sessionStorage.setItem(`checkout_ct_${id}`, confirmationToken); } catch {}
+      }
       const amount = usdcAmountFromUsd(orderTotalCents / 100);
       const url = encodeURL({
         recipient: new PublicKey(depositAddress),
