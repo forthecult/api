@@ -39,6 +39,7 @@ export async function GET(
         totalCents: ordersTable.totalCents,
         shippingFeeCents: ordersTable.shippingFeeCents,
         paymentMethod: ordersTable.paymentMethod,
+        cryptoCurrency: ordersTable.cryptoCurrency,
         shippingName: ordersTable.shippingName,
         shippingAddress1: ordersTable.shippingAddress1,
         shippingAddress2: ordersTable.shippingAddress2,
@@ -130,6 +131,7 @@ export async function GET(
       paidAt,
       email: order.email ?? undefined,
       paymentMethod: order.paymentMethod ?? undefined,
+      cryptoCurrency: order.cryptoCurrency ?? undefined,
       items: items.map((i) => ({
         productId: i.productId,
         name: i.name,

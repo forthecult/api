@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
       id: ordersTable.id,
       email: ordersTable.email,
       paymentMethod: ordersTable.paymentMethod,
+      cryptoCurrency: ordersTable.cryptoCurrency,
       totalCents: ordersTable.totalCents,
       createdAt: ordersTable.createdAt,
       shippingName: ordersTable.shippingName,
@@ -58,6 +59,7 @@ export async function GET(request: NextRequest) {
     orderId: order.id,
     email: order.email ?? undefined,
     paymentMethod: order.paymentMethod ?? "stripe",
+    cryptoCurrency: order.cryptoCurrency ?? undefined,
     totalCents: order.totalCents,
     createdAt: order.createdAt.toISOString(),
     items: items.map((i) => ({

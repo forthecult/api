@@ -26,11 +26,21 @@ const X_ICON = (
   </svg>
 );
 
-function paymentMethodLabel(method: string | undefined): string {
+function paymentMethodLabel(method: string | undefined, cryptoCurrency?: string): string {
   const m = (method ?? "").toLowerCase();
   if (m === "stripe") return "Credit / Debit card";
-  if (m === "solana_pay") return "Solana";
-  if (m === "eth_pay") return "Ethereum";
+  if (m === "solana_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "SOL") return "SOL (Solana)";
+    if (token) return `${token} (Solana)`;
+    return "Solana";
+  }
+  if (m === "eth_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "ETH") return "ETH (Ethereum)";
+    if (token) return `${token} (Ethereum)`;
+    return "Ethereum";
+  }
   if (m === "btcpay") return "Bitcoin";
   if (m === "ton_pay") return "TON";
   if (m === "crypto") return "Crypto";
@@ -64,6 +74,7 @@ type OrderDetails = {
   orderId: string;
   email?: string;
   paymentMethod?: string;
+  cryptoCurrency?: string;
   totalCents: number;
   createdAt: string;
   items: Array<{
@@ -369,6 +380,7 @@ export function SuccessPageClient() {
             orderId: string;
             email?: string;
             paymentMethod?: string;
+            cryptoCurrency?: string;
             createdAt: string;
             items: Array<{
               name: string;
@@ -383,6 +395,7 @@ export function SuccessPageClient() {
             orderId: data.orderId,
             email: data.email,
             paymentMethod: data.paymentMethod,
+            cryptoCurrency: data.cryptoCurrency,
             totalCents: (data.totals?.totalUsd ?? 0) * 100,
             createdAt: data.createdAt,
             items: data.items ?? [],
@@ -512,7 +525,7 @@ export function SuccessPageClient() {
             {order.paymentMethod && (
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Payment</p>
-                <p className="mt-0.5 text-sm">{paymentMethodLabel(order.paymentMethod)}</p>
+                <p className="mt-0.5 text-sm">{paymentMethodLabel(order.paymentMethod, order.cryptoCurrency)}</p>
               </div>
             )}
             {order.createdAt && (
