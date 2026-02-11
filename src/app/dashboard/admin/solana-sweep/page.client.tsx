@@ -56,6 +56,14 @@ export function SolanaSweepPageClient() {
             into your main wallet (NEXT_PUBLIC_SOLANA_PAY_RECIPIENT). Dry run
             only lists what would be swept; Sweep performs the transfers.
           </CardDescription>
+          <p className="text-sm text-muted-foreground">
+            <strong>Fees (gas):</strong> The fee payer wallet (
+            <code className="rounded bg-muted px-1">SOLANA_SWEEP_FEE_PAYER_SECRET</code>
+            ) pays in SOL. Solana charges ~5,000 lamports per signature (2 signers
+            ≈ 10,000 lamports base). With token transfers and possible ATA
+            creation, budget ~0.00005–0.0001 SOL per order. For 10 orders, keep
+            ~0.001 SOL in the fee payer.
+          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
