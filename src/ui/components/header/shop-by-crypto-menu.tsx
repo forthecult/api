@@ -143,10 +143,7 @@ export function ShopByCryptoMenu({
                 {cat.subcategories && cat.subcategories.length > 0 && (
                   <ul className="mt-1 space-y-0.5 pl-0">
                     {cat.subcategories.map((sub) => {
-                      const subHref =
-                        cat.slug && sub.slug
-                          ? `/${cat.slug}?subcategory=${encodeURIComponent(sub.slug)}`
-                          : href;
+                      const subHref = sub.slug ? `/${sub.slug}` : href;
                       return (
                         <li key={sub.id}>
                           <Link

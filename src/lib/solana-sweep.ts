@@ -20,20 +20,42 @@ import {
 } from "@solana/spl-token";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import bs58 from "bs58";
-import { and, eq, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull, or } from "drizzle-orm";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { deriveDepositKeypair } from "~/lib/solana-deposit";
+import {
+  USDC_MINT_MAINNET,
+  CRUST_MINT_MAINNET,
+  PUMP_MINT_MAINNET,
+  TROLL_MINT_MAINNET,
+  WHITEWHALE_MINT_MAINNET,
+} from "~/lib/solana-pay";
 
 const LAMPORTS_PER_SOL = 1e9;
 const MIN_SOL_TO_SWEEP = 5000;
+
+/** Known mint addresses -> display symbol for sweep UI */
+const KNOWN_MINT_LABELS: Record<string, string> = {
+  [USDC_MINT_MAINNET]: "USDC",
+  [CRUST_MINT_MAINNET]: "CRUST",
+  [PUMP_MINT_MAINNET]: "PUMP",
+  [TROLL_MINT_MAINNET]: "TROLL",
+  [WHITEWHALE_MINT_MAINNET]: "WHITEWHALE",
+};
+
+export function getTokenLabel(mint: string): string {
+  return KNOWN_MINT_LABELS[mint] ?? mint.slice(0, 8) + "…";
+}
 
 export type TokenSweepItem = {
   mint: string;
   amount: string;
   decimals: number;
   amountFormatted: number;
+  /** Display symbol when mint is known (e.g. USDC, PUMP) */
+  symbol?: string;
 };
 
 export type SweepOrderResult = {
@@ -47,9 +69,12 @@ export type SweepOrderResult = {
   error?: string;
 };
 
+export type SweepScope = "paid" | "pending" | "all";
+
 export type SolanaSweepResult = {
   ok: boolean;
   dryRun: boolean;
+  scope: SweepScope;
   configError?: string;
   recipient?: string;
   ordersCount: number;
@@ -119,9 +144,13 @@ async function getTokenAccountsWithBalance(
 
 /**
  * Run Solana Pay deposit sweep (dry run or actual). Call from API or script.
+ * @param scope "paid" = only confirmed paid orders (safe, no race with customer paying);
+ *              "pending" = only pending orders (run when no customer is on checkout);
+ *              "all" = both (legacy; prefer separate paid/pending sweeps).
  */
 export async function runSolanaSweep(
   dryRun: boolean,
+  scope: SweepScope = "paid",
 ): Promise<SolanaSweepResult> {
   const recipientStr = getRecipient();
   const feePayer = getFeePayerKeypair();
@@ -130,6 +159,7 @@ export async function runSolanaSweep(
     return {
       ok: false,
       dryRun,
+      scope,
       configError:
         "Missing NEXT_PUBLIC_SOLANA_PAY_RECIPIENT or SOLANA_PAY_RECIPIENT",
       ordersCount: 0,
@@ -140,6 +170,7 @@ export async function runSolanaSweep(
     return {
       ok: false,
       dryRun,
+      scope,
       configError:
         "Missing SOLANA_SWEEP_FEE_PAYER_SECRET (base58 secret key of keypair with SOL for fees)",
       ordersCount: 0,
@@ -150,6 +181,16 @@ export async function runSolanaSweep(
   const connection = new Connection(getRpcUrl(), { commitment: "confirmed" });
   const recipient = new PublicKey(recipientStr);
 
+  const scopeCondition =
+    scope === "paid"
+      ? eq(ordersTable.paymentStatus, "paid")
+      : scope === "pending"
+        ? eq(ordersTable.status, "pending")
+        : or(
+            eq(ordersTable.paymentStatus, "paid"),
+            eq(ordersTable.status, "pending"),
+          );
+
   const rows = await db
     .select({
       id: ordersTable.id,
@@ -159,8 +200,8 @@ export async function runSolanaSweep(
     .where(
       and(
         eq(ordersTable.paymentMethod, "solana_pay"),
-        eq(ordersTable.paymentStatus, "paid"),
         isNotNull(ordersTable.solanaPayDepositAddress),
+        scopeCondition,
       ),
     );
 
@@ -210,12 +251,16 @@ export async function runSolanaSweep(
       continue;
     }
 
-    const tokensForResult: TokenSweepItem[] = tokenAccounts.map((t) => ({
-      mint: t.mint,
-      amount: t.amount,
-      decimals: t.decimals,
-      amountFormatted: Number(t.amount) / 10 ** t.decimals,
-    }));
+    const tokensForResult: TokenSweepItem[] = tokenAccounts.map((t) => {
+      const amountFormatted = Number(t.amount) / 10 ** t.decimals;
+      return {
+        mint: t.mint,
+        amount: t.amount,
+        decimals: t.decimals,
+        amountFormatted,
+        symbol: KNOWN_MINT_LABELS[t.mint],
+      };
+    });
 
     if (dryRun) {
       results.push({
@@ -318,6 +363,7 @@ export async function runSolanaSweep(
   return {
     ok: true,
     dryRun,
+    scope,
     recipient: recipientStr,
     ordersCount: depositAddresses.size,
     results,

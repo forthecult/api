@@ -3,25 +3,29 @@
 import { Coins, Loader2 } from "lucide-react";
 import { useCallback, useState } from "react";
 
-import type { SolanaSweepResult, SweepOrderResult } from "~/lib/solana-sweep";
+import type { SolanaSweepResult, SweepOrderResult, SweepScope } from "~/lib/solana-sweep";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/ui/primitives/card";
 import { Alert, AlertDescription } from "~/ui/primitives/alert";
 
 export function SolanaSweepPageClient() {
-  const [loading, setLoading] = useState<"dry" | "sweep" | null>(null);
-  const [result, setResult] = useState<SolanaSweepResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<`${SweepScope}-dry` | `${SweepScope}-sweep` | null>(null);
+  const [paidResult, setPaidResult] = useState<SolanaSweepResult | null>(null);
+  const [pendingResult, setPendingResult] = useState<SolanaSweepResult | null>(null);
+  const [paidError, setPaidError] = useState<string | null>(null);
+  const [pendingError, setPendingError] = useState<string | null>(null);
 
-  const runSweep = useCallback(async (dryRun: boolean) => {
+  const runSweep = useCallback(async (scope: SweepScope, dryRun: boolean) => {
+    const setResult = scope === "paid" ? setPaidResult : setPendingResult;
+    const setError = scope === "paid" ? setPaidError : setPendingError;
     setError(null);
     setResult(null);
-    setLoading(dryRun ? "dry" : "sweep");
+    setLoading(`${scope}-${dryRun ? "dry" : "sweep"}`);
     try {
       const res = await fetch("/api/admin/solana-sweep", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dryRun }),
+        body: JSON.stringify({ dryRun, scope }),
         credentials: "include",
       });
       const data: SolanaSweepResult = await res.json();
@@ -39,6 +43,9 @@ export function SolanaSweepPageClient() {
     }
   }, []);
 
+  const loadingPaid = loading?.startsWith("paid");
+  const loadingPending = loading?.startsWith("pending");
+
   return (
     <>
       <div className="flex items-center gap-2">
@@ -48,31 +55,32 @@ export function SolanaSweepPageClient() {
         </h1>
       </div>
 
+      <p className="text-sm text-muted-foreground">
+        Sweep SOL and SPL tokens from order deposit addresses into your main
+        wallet (NEXT_PUBLIC_SOLANA_PAY_RECIPIENT). Use <strong>Paid</strong>{" "}
+        for confirmed orders (safe anytime). Use <strong>Pending</strong> only
+        when no customer is on checkout to avoid racing their payment. Fee
+        payer: <code className="rounded bg-muted px-1">SOLANA_SWEEP_FEE_PAYER_SECRET</code>; budget
+        ~0.00005–0.0001 SOL per order.
+      </p>
+
+      {/* Paid orders — safe to run anytime */}
       <Card>
         <CardHeader>
-          <CardTitle>Sweep to main wallet</CardTitle>
+          <CardTitle>Paid orders</CardTitle>
           <CardDescription>
-            Move SOL and SPL tokens from paid Solana Pay order deposit addresses
-            into your main wallet (NEXT_PUBLIC_SOLANA_PAY_RECIPIENT). Dry run
-            only lists what would be swept; Sweep performs the transfers.
+            Confirmed paid orders only. Safe to run anytime; no race with
+            customers paying.
           </CardDescription>
-          <p className="text-sm text-muted-foreground">
-            <strong>Fees (gas):</strong> The fee payer wallet (
-            <code className="rounded bg-muted px-1">SOLANA_SWEEP_FEE_PAYER_SECRET</code>
-            ) pays in SOL. Solana charges ~5,000 lamports per signature (2 signers
-            ≈ 10,000 lamports base). With token transfers and possible ATA
-            creation, budget ~0.00005–0.0001 SOL per order. For 10 orders, keep
-            ~0.001 SOL in the fee payer.
-          </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
               disabled={loading !== null}
-              onClick={() => void runSweep(true)}
+              onClick={() => void runSweep("paid", true)}
             >
-              {loading === "dry" ? (
+              {loadingPaid && loading?.endsWith("dry") ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Dry run
@@ -80,57 +88,103 @@ export function SolanaSweepPageClient() {
             <Button
               variant="default"
               disabled={loading !== null}
-              onClick={() => void runSweep(false)}
+              onClick={() => void runSweep("paid", false)}
             >
-              {loading === "sweep" ? (
+              {loadingPaid && loading?.endsWith("sweep") ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
-              Sweep funds
+              Sweep
             </Button>
           </div>
-
-          {error && (
+          {paidError && (
             <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{paidError}</AlertDescription>
             </Alert>
           )}
+          {paidResult && (
+            <SweepResultBlock result={paidResult} />
+          )}
+        </CardContent>
+      </Card>
 
-          {result && (
-            <div className="space-y-3">
-              {result.configError && (
-                <Alert variant="destructive">
-                  <AlertDescription>{result.configError}</AlertDescription>
-                </Alert>
-              )}
-              {result.ok && result.recipient && (
-                <p className="text-sm text-muted-foreground">
-                  Recipient: <code className="rounded bg-muted px-1">{result.recipient}</code>
-                  {result.ordersCount > 0 && (
-                    <> · {result.ordersCount} paid order(s) with deposit addresses</>
-                  )}
-                </p>
-              )}
-              {result.results.length > 0 && (
-                <ul className="space-y-2 rounded-md border p-3 text-sm">
-                  {result.results.map((r) => (
-                    <SweepResultRow
-                      key={r.orderId}
-                      row={r}
-                      dryRun={result.dryRun}
-                    />
-                  ))}
-                </ul>
-              )}
-              {result.ok && result.results.length === 0 && result.ordersCount === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  No paid Solana Pay orders with deposit addresses found.
-                </p>
-              )}
-            </div>
+      {/* Pending orders — run only when no one is on checkout */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Pending orders</CardTitle>
+          <CardDescription>
+            Unconfirmed orders (e.g. Token-2022 like PUMP that wasn’t
+            auto-confirmed). Only run when no customer is on the checkout page
+            to avoid sweeping while they are paying.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              disabled={loading !== null}
+              onClick={() => void runSweep("pending", true)}
+            >
+              {loadingPending && loading?.endsWith("dry") ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Dry run
+            </Button>
+            <Button
+              variant="default"
+              disabled={loading !== null}
+              onClick={() => void runSweep("pending", false)}
+            >
+              {loadingPending && loading?.endsWith("sweep") ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : null}
+              Sweep
+            </Button>
+          </div>
+          {pendingError && (
+            <Alert variant="destructive">
+              <AlertDescription>{pendingError}</AlertDescription>
+            </Alert>
+          )}
+          {pendingResult && (
+            <SweepResultBlock result={pendingResult} />
           )}
         </CardContent>
       </Card>
     </>
+  );
+}
+
+function SweepResultBlock({ result }: { result: SolanaSweepResult }) {
+  return (
+    <div className="space-y-3">
+      {result.configError && (
+        <Alert variant="destructive">
+          <AlertDescription>{result.configError}</AlertDescription>
+        </Alert>
+      )}
+      {result.ok && result.recipient && (
+        <p className="text-sm text-muted-foreground">
+          Recipient: <code className="rounded bg-muted px-1">{result.recipient}</code>
+          {result.ordersCount > 0 && (
+            <> · {result.ordersCount} order(s)</>
+          )}
+        </p>
+      )}
+      {result.results.length > 0 && (
+        <ul className="space-y-2 rounded-md border p-3 text-sm">
+          {result.results.map((r) => (
+            <SweepResultRow
+              key={r.orderId}
+              row={r}
+              dryRun={result.dryRun}
+            />
+          ))}
+        </ul>
+      )}
+      {result.ok && result.results.length === 0 && result.ordersCount === 0 && (
+        <p className="text-sm text-muted-foreground">No orders with deposit addresses found.</p>
+      )}
+    </div>
   );
 }
 
@@ -164,7 +218,8 @@ function SweepResultRow({
           {row.tokens?.map((t) => (
             <div key={t.mint}>
               {dryRun ? "Would sweep " : "Swept "}
-              <strong>{t.amountFormatted}</strong> (mint {t.mint.slice(0, 8)}…)
+              <strong>{t.amountFormatted}</strong>{" "}
+              {t.symbol ?? `(mint ${t.mint.slice(0, 8)}…)`}
             </div>
           ))}
           {row.txSignature && (

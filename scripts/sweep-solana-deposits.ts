@@ -37,7 +37,7 @@ import {
 } from "@solana/spl-token";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import bs58 from "bs58";
-import { eq, and, isNotNull } from "drizzle-orm";
+import { eq, and, isNotNull, or } from "drizzle-orm";
 
 import { db } from "../src/db";
 import { ordersTable } from "../src/db/schema";
@@ -128,6 +128,8 @@ async function main() {
   const connection = new Connection(getRpcUrl(), { commitment: "confirmed" });
   const recipient = new PublicKey(recipientStr);
 
+  // Include both paid and pending so we sweep Token-2022 (e.g. PUMP) from
+  // orders that were paid but not yet confirmed.
   const rows = await db
     .select({
       id: ordersTable.id,
@@ -137,8 +139,11 @@ async function main() {
     .where(
       and(
         eq(ordersTable.paymentMethod, "solana_pay"),
-        eq(ordersTable.paymentStatus, "paid"),
         isNotNull(ordersTable.solanaPayDepositAddress),
+        or(
+          eq(ordersTable.paymentStatus, "paid"),
+          eq(ordersTable.status, "pending"),
+        ),
       ),
     );
 

@@ -722,6 +722,12 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating"}
         initialSubcategory={subcategoryParam || undefined}
         initialSearch={searchQuery}
+        breadcrumbs={[
+          { name: "Home", href: "/" },
+          { name: "Products", href: "/products" },
+          ...(parent ? [{ name: parent.name, href: `/${parent.slug}` }] : []),
+          { name: category.name, href: `/${slug}` },
+        ]}
       />
     </Suspense>
     </>

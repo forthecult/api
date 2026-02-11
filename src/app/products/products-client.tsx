@@ -4,19 +4,21 @@ import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Search } from "lucide-react";
+import { ChevronRight, Home, Search, SlidersHorizontal, X } from "lucide-react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
+import { ProductGridSkeleton } from "~/ui/components/product-card-skeleton";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
-import { Spinner } from "~/ui/primitives/spinner";
 
 interface Product {
   category: string;
+  createdAt?: string;
   id: string;
   image: string;
+  images?: string[];
   inStock: boolean;
   name: string;
   originalPrice?: number;
@@ -41,6 +43,11 @@ export type SortOption =
   | "best_selling"
   | "rating";
 
+interface BreadcrumbItem {
+  name: string;
+  href: string;
+}
+
 interface ProductsClientProps {
   initialProducts: Product[];
   initialCategories: CategoryOption[];
@@ -59,6 +66,8 @@ interface ProductsClientProps {
   initialSubcategory?: string;
   /** Initial search query (for category pages) */
   initialSearch?: string;
+  /** Breadcrumbs for navigation context (optional, auto-generated if not provided). */
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 const SORT_LABELS: Record<SortOption, string> = {
@@ -83,6 +92,7 @@ export function ProductsClient({
   initialSort = "newest",
   initialSubcategory,
   initialSearch = "",
+  breadcrumbs,
 }: ProductsClientProps) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -236,6 +246,8 @@ export function ProductsClient({
       setPage(newPage);
       router.push(buildPath({ page: newPage }), { scroll: false });
       fetchProducts(newPage, selectedCategory, sort, selectedSubcategory, searchQuery);
+      // Scroll to top of product grid for better UX on page change
+      window.scrollTo({ top: 0, behavior: "smooth" });
     },
     [router, selectedCategory, sort, selectedSubcategory, fetchProducts, buildPath],
   );
@@ -289,11 +301,56 @@ export function ProductsClient({
     [removeFromWishlist],
   );
 
+  // Count active filters for indicator badge
+  const activeFilterCount = React.useMemo(() => {
+    let count = 0;
+    if (selectedCategory !== "all") count++;
+    if (selectedSubcategory) count++;
+    if (searchQuery) count++;
+    if (sort !== "newest") count++;
+    return count;
+  }, [selectedCategory, selectedSubcategory, searchQuery, sort]);
+
+  // Default breadcrumbs if none provided
+  const breadcrumbItems = React.useMemo<BreadcrumbItem[]>(() => {
+    if (breadcrumbs) return breadcrumbs;
+    const items: BreadcrumbItem[] = [
+      { name: "Home", href: "/" },
+      { name: "Products", href: "/products" },
+    ];
+    if (selectedCategory !== "all") {
+      const cat = categories.find((c) => c.slug === selectedCategory);
+      if (cat) items.push({ name: cat.name, href: `/${cat.slug}` });
+    }
+    return items;
+  }, [breadcrumbs, selectedCategory, categories]);
+
   return (
     <div className="flex min-h-screen flex-col">
-      <main className="flex-1 py-10">
+      <main className="flex-1 py-6 sm:py-10">
         <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          {/* Compact header: title + one short line of description (SEO/category intro) */}
+          {/* Breadcrumbs */}
+          <nav aria-label="Breadcrumb" className="mb-4">
+            <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+              {breadcrumbItems.map((item, i) => {
+                const isLast = i === breadcrumbItems.length - 1;
+                return (
+                  <li key={`${item.href}-${i}`} className="flex items-center gap-1">
+                    {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+                    {isLast ? (
+                      <span className="font-medium text-foreground">{item.name}</span>
+                    ) : (
+                      <a href={item.href} className="hover:text-foreground transition-colors">
+                        {i === 0 ? <Home className="h-3.5 w-3.5" /> : item.name}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+
+          {/* Header */}
           <header className="mb-6">
             <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
             <p className="mt-0.5 line-clamp-2 max-w-xl text-sm text-muted-foreground">
@@ -303,44 +360,69 @@ export function ProductsClient({
             </p>
           </header>
 
-          {/* Controls row: sort + search */}
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2">
-              <label htmlFor="sort-products" className="sr-only">
-                Sort by
-              </label>
-              <select
-                id="sort-products"
-                value={sort}
-                onChange={(e) =>
-                  handleSortChange(e.target.value as SortOption)
-                }
-                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(
-                  ([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ),
+          {/* Sticky controls bar: sort + search + active filter count */}
+          <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent bg-background/95 px-4 py-2 backdrop-blur-md transition-shadow sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&:not(:first-child)]:border-border/50 [&:not(:first-child)]:shadow-sm">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden />
+                <label htmlFor="sort-products" className="sr-only">
+                  Sort by
+                </label>
+                <select
+                  id="sort-products"
+                  value={sort}
+                  onChange={(e) =>
+                    handleSortChange(e.target.value as SortOption)
+                  }
+                  className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(
+                    ([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ),
+                  )}
+                </select>
+                {total > 0 && (
+                  <span className="text-sm text-muted-foreground">
+                    {total} {total === 1 ? "product" : "products"}
+                  </span>
                 )}
-              </select>
-              {total > 0 && (
-                <span className="text-sm text-muted-foreground">
-                  {total} {total === 1 ? "product" : "products"}
-                </span>
-              )}
-            </div>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <Input
-                type="search"
-                placeholder="Search products…"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className="pl-9"
-                aria-label="Search products in this category"
-              />
+                {activeFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      setSearchInput("");
+                      setSelectedSubcategory("");
+                      setSort("newest");
+                      if (selectedCategory !== "all") {
+                        handleCategoryChange("all");
+                      } else {
+                        setPage(1);
+                        fetchProducts(1, "all", "newest", "", "");
+                        router.push("/products", { scroll: false });
+                      }
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                    Clear filters ({activeFilterCount})
+                  </Button>
+                )}
+              </div>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                <Input
+                  type="search"
+                  placeholder="Search products…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  className="pl-9"
+                  aria-label="Search products in this category"
+                />
+              </div>
             </div>
           </div>
 
@@ -407,13 +489,11 @@ export function ProductsClient({
           <section className="space-y-6" aria-label="Products in this category">
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Spinner variant="page" />
-            </div>
+            <ProductGridSkeleton count={limit} />
           ) : (
             <>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     isInWishlist={isInWishlist(product.id)}
@@ -421,24 +501,48 @@ export function ProductsClient({
                     onAddToWishlist={handleAddToWishlist}
                     onRemoveFromWishlist={handleRemoveFromWishlist}
                     product={product}
+                    priority={index < 4}
                   />
                 ))}
               </div>
 
               {products.length === 0 && (
-                <div className="py-12 text-center">
-                  <p className="text-muted-foreground">
+                <div className="py-16 text-center">
+                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <Search className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-medium">No products found</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     {searchQuery
-                      ? "No products match your search. Try a different term."
+                      ? `No products match "${searchQuery}". Try a different search term.`
                       : "No products found in this category."}
                   </p>
+                  {(searchQuery || selectedSubcategory || selectedCategory !== "all") && (
+                    <Button
+                      className="mt-4"
+                      variant="outline"
+                      onClick={() => {
+                        setSearchInput("");
+                        setSelectedSubcategory("");
+                        if (selectedCategory !== "all") {
+                          handleCategoryChange("all");
+                        } else {
+                          setPage(1);
+                          fetchProducts(1, selectedCategory, sort, "", "");
+                          router.push(buildPath({ page: 1, subcategory: "", q: "" }), { scroll: false });
+                        }
+                      }}
+                    >
+                      Clear all filters
+                    </Button>
+                  )}
                 </div>
               )}
 
               {totalPages > 1 && (
                 <nav
                   aria-label="Pagination"
-                  className="mt-10 flex flex-wrap items-center justify-center gap-3"
+                  className="mt-10 flex flex-wrap items-center justify-center gap-2"
                 >
                   <Button
                     disabled={page <= 1}
@@ -448,10 +552,38 @@ export function ProductsClient({
                   >
                     Previous
                   </Button>
-                  <span className="px-2 text-sm text-muted-foreground">
-                    Page {page} of {totalPages}
-                    {total > 0 && ` (${total} products)`}
-                  </span>
+                  {/* Page number buttons */}
+                  {(() => {
+                    const pages: (number | "ellipsis-start" | "ellipsis-end")[] = [];
+                    if (totalPages <= 7) {
+                      for (let i = 1; i <= totalPages; i++) pages.push(i);
+                    } else {
+                      pages.push(1);
+                      if (page > 3) pages.push("ellipsis-start");
+                      for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) {
+                        pages.push(i);
+                      }
+                      if (page < totalPages - 2) pages.push("ellipsis-end");
+                      pages.push(totalPages);
+                    }
+                    return pages.map((p) =>
+                      typeof p === "string" ? (
+                        <span key={p} className="px-1 text-muted-foreground">
+                          &hellip;
+                        </span>
+                      ) : (
+                        <Button
+                          key={p}
+                          onClick={() => handlePageChange(p)}
+                          variant={p === page ? "default" : "outline"}
+                          size="sm"
+                          className="min-w-[2.25rem]"
+                        >
+                          {p}
+                        </Button>
+                      ),
+                    );
+                  })()}
                   <Button
                     disabled={page >= totalPages}
                     onClick={() =>
@@ -462,6 +594,9 @@ export function ProductsClient({
                   >
                     Next
                   </Button>
+                  <span className="ml-2 text-sm text-muted-foreground">
+                    {total} {total === 1 ? "product" : "products"}
+                  </span>
                 </nav>
               )}
             </>

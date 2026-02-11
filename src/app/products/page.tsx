@@ -25,8 +25,10 @@ export const metadata: Metadata = {
 
 interface Product {
   category: string;
+  createdAt?: string;
   id: string;
   image: string;
+  images?: string[];
   inStock: boolean;
   name: string;
   originalPrice?: number;

@@ -203,10 +203,8 @@ export function ShopMegaMenu({
                       {visibleSubs.length > 0 && (
                         <ul className="mt-1 space-y-px">
                           {visibleSubs.map((sub) => {
-                            const subHref =
-                              cat.slug && sub.slug
-                                ? `/${cat.slug}?subcategory=${encodeURIComponent(sub.slug)}`
-                                : href;
+                            // Clean path /sub-slug (e.g. /troll) for SEO; fallback to parent category when no sub slug
+                            const subHref = sub.slug ? `/${sub.slug}` : href;
                             return (
                               <li key={sub.id}>
                                 <Link

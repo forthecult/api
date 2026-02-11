@@ -31,10 +31,16 @@ type ProductCardProps = Omit<
   onAddToWishlist?: (productId: string) => void;
   onRemoveFromWishlist?: (productId: string) => void;
   isInWishlist?: boolean;
+  /** Hint Next/Image to preload this image (use for above-fold cards). */
+  priority?: boolean;
   product: {
     category: string;
+    /** ISO date string for when the product was created — used for "New" badge. */
+    createdAt?: string;
     id: string;
     image: string;
+    /** Additional images shown on hover. */
+    images?: string[];
     inStock?: boolean;
     name: string;
     originalPrice?: number;
@@ -87,6 +93,9 @@ const StarRating = React.memo(function StarRating({
   );
 });
 
+/** Number of days a product is considered "New". */
+const NEW_PRODUCT_DAYS = 14;
+
 function ProductCardInner({
   className,
   imageAspect = "square",
@@ -94,6 +103,7 @@ function ProductCardInner({
   onAddToWishlist,
   onRemoveFromWishlist,
   isInWishlist: isInWishlistProp,
+  priority = false,
   product,
   variant = "default",
   ...props
@@ -109,20 +119,33 @@ function ProductCardInner({
   const [isAddingToCart, setIsAddingToCart] = React.useState(false);
   const [localWishlist, setLocalWishlist] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+  const [hoverImageError, setHoverImageError] = React.useState(false);
   const [tokenGateOpen, setTokenGateOpen] = React.useState(false);
-  const addToCartTimerRef = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  React.useEffect(() => {
-    return () => clearTimeout(addToCartTimerRef.current);
-  }, []);
   const isInWishlist =
     typeof isInWishlistProp === "boolean" ? isInWishlistProp : localWishlist;
+
+  /** Is this product considered "New"? */
+  const isNew = React.useMemo(() => {
+    if (!product.createdAt) return false;
+    const created = new Date(product.createdAt);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - NEW_PRODUCT_DAYS);
+    return created >= cutoff;
+  }, [product.createdAt]);
+
+  /** Secondary image for hover (first image from images array that differs from primary). */
+  const hoverImage = React.useMemo(() => {
+    if (!product.images?.length) return null;
+    return product.images.find((img) => img !== product.image) ?? null;
+  }, [product.images, product.image]);
 
   /** Show lock overlay only when token-gated and user has not passed the gate. */
   const isGated = Boolean(product.tokenGated && !product.tokenGatePassed);
 
   React.useEffect(() => {
     setImageError(false);
+    setHoverImageError(false);
   }, [product.id, product.image]);
 
   /** External URLs: load in browser directly (like admin) to avoid Next Image proxy/CDN issues. */
@@ -138,10 +161,11 @@ function ProductCardInner({
       e.preventDefault();
       if (onAddToCart) {
         setIsAddingToCart(true);
-        addToCartTimerRef.current = setTimeout(() => {
-          onAddToCart(product.id);
-          setIsAddingToCart(false);
-        }, 600);
+        onAddToCart(product.id);
+        // Brief visual feedback then reset
+        requestAnimationFrame(() => {
+          setTimeout(() => setIsAddingToCart(false), 300);
+        });
       }
     },
     [onAddToCart, product.id],
@@ -207,14 +231,32 @@ function ProductCardInner({
               <Image
                 alt={product.name}
                 className={cn(
-                  "object-cover transition-transform duration-300 ease-in-out",
+                  "object-cover transition-all duration-300 ease-in-out",
                   isHovered && !isGated && "scale-105",
+                  isHovered && hoverImage && !hoverImageError && "opacity-0",
                 )}
                 fill
-                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                priority={priority}
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 src={imageSrc}
                 unoptimized={isExternalImage}
                 onError={() => setImageError(true)}
+              />
+            )}
+
+            {/* Second image revealed on hover */}
+            {hoverImage && !hoverImageError && (
+              <Image
+                alt={`${product.name} - alternate view`}
+                className={cn(
+                  "absolute inset-0 object-cover transition-all duration-300 ease-in-out",
+                  isHovered ? "scale-105 opacity-100" : "opacity-0",
+                )}
+                fill
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                src={hoverImage}
+                unoptimized={/^https?:\/\//i.test(hoverImage)}
+                onError={() => setHoverImageError(true)}
               />
             )}
 
@@ -279,25 +321,27 @@ function ProductCardInner({
               </div>
             )}
 
-            {/* Category badge (hidden for token-gated) */}
+            {/* Top-left badges: category + New */}
             {!isGated && (
-              <Badge
-                className={`
-                  absolute top-2 left-2 bg-background/80 backdrop-blur-sm
-                `}
-                variant="outline"
-              >
-                {product.category}
-              </Badge>
+              <div className="absolute top-2 left-2 z-[5] flex flex-col gap-1">
+                <Badge
+                  className="bg-background/80 backdrop-blur-sm"
+                  variant="outline"
+                >
+                  {product.category}
+                </Badge>
+                {isNew && (
+                  <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                    New
+                  </Badge>
+                )}
+              </div>
             )}
 
-            {/* Discount badge */}
+            {/* Top-right badges: discount */}
             {!isGated && discount > 0 && (
               <Badge
-                className={`
-                absolute top-2 right-2 bg-destructive
-                text-destructive-foreground
-              `}
+                className="absolute top-2 right-2 z-[5] bg-destructive text-destructive-foreground"
               >
                 {discount}% OFF
               </Badge>
@@ -348,12 +392,14 @@ function ProductCardInner({
 
             {variant === "default" && (
               <>
-                <div className="mt-1.5">
-                  <StarRating
-                    rating={product.rating ?? 0}
-                    productId={product.id}
-                  />
-                </div>
+                {(product.rating ?? 0) > 0 && (
+                  <div className="mt-1.5">
+                    <StarRating
+                      rating={product.rating ?? 0}
+                      productId={product.id}
+                    />
+                  </div>
+                )}
                 <div className="mt-2 flex items-center gap-1.5">
                   <FiatPrice
                     usdAmount={product.price}

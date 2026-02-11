@@ -160,6 +160,7 @@ export function AuthWalletModal({
   const router = useRouter();
   const {
     wallets,
+    wallet: currentWallet,
     select,
     connect,
     disconnect,
@@ -178,6 +179,8 @@ export function AuthWalletModal({
   const [selectedChain, setSelectedChain] = useState<
     "solana" | "ethereum" | null
   >(null);
+  /** True after select() is called; cleared when the connect effect fires or on modal close. */
+  const [pendingSolanaConnect, setPendingSolanaConnect] = useState(false);
   /** When user picks an Ethereum option: "walletconnect" or "injected" (MetaMask/Brave/etc.). */
   const [selectedEthereumOption, setSelectedEthereumOption] = useState<
     "walletconnect" | "injected" | null
@@ -218,7 +221,7 @@ export function AuthWalletModal({
   );
 
   const handleSelectWallet = useCallback(
-    async (wallet: Wallet) => {
+    (wallet: Wallet) => {
       setError("");
       setSelectedWallet(wallet);
       const name = wallet.adapter.name;
@@ -227,28 +230,17 @@ export function AuthWalletModal({
         return;
       }
       setSelectedChain("solana");
-      try {
-        console.log("[auth] Selecting Solana wallet:", name);
-        select(wallet.adapter.name);
-        await new Promise((r) => setTimeout(r, 200));
-        console.log("[auth] Connecting to Solana wallet...");
-        await connect();
-        console.log("[auth] Solana wallet connected, moving to signing step");
-        await new Promise((r) => setTimeout(r, 100));
-        setStep("signing");
-      } catch (err) {
-        console.error("[auth] Solana wallet connection failed:", err);
-        setError("Connection failed. Try again or use another wallet.");
-        setStep("wallet");
-        setSelectedWallet(null);
-        setSelectedChain(null);
-      }
+      console.log("[auth] Selecting Solana wallet:", name);
+      select(wallet.adapter.name);
+      // Don't call connect() here — select() is a React state update.
+      // The pendingSolanaConnect effect will call connect() once the wallet adapter is ready.
+      setPendingSolanaConnect(true);
     },
-    [select, connect],
+    [select],
   );
 
   const handleSelectNetwork = useCallback(
-    async (chain: "solana" | "ethereum") => {
+    (chain: "solana" | "ethereum") => {
       setError("");
       setSelectedChain(chain);
       const wallet = selectedWallet;
@@ -258,24 +250,62 @@ export function AuthWalletModal({
         setStep("signing");
         return;
       }
-      try {
-        console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
-        select(wallet.adapter.name);
-        await new Promise((r) => setTimeout(r, 200));
-        console.log("[auth] Connecting to Solana wallet...");
-        await connect();
-        console.log("[auth] Solana wallet connected, moving to signing step");
-        await new Promise((r) => setTimeout(r, 100));
-        setStep("signing");
-      } catch (err) {
-        console.error("[auth] Solana wallet connection failed:", err);
-        setError("Connection failed. Try again or use another wallet.");
-        setStep("network");
-        setSelectedChain(null);
-      }
+      console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
+      select(wallet.adapter.name);
+      // Don't call connect() here — select() is a React state update.
+      // The pendingSolanaConnect effect will call connect() once the wallet adapter is ready.
+      setPendingSolanaConnect(true);
     },
-    [selectedWallet, select, connect],
+    [selectedWallet, select],
   );
+
+  // Solana: once the wallet adapter registers the selection (currentWallet becomes available),
+  // call connect(). This replaces the old "select → setTimeout(200) → connect" race condition.
+  useEffect(() => {
+    if (!pendingSolanaConnect || !open) return;
+    // Wait for select() to propagate — currentWallet updates on next React render
+    if (!currentWallet) return;
+    // If already connecting, wait for it to finish
+    if (connecting) return;
+    // If already connected (e.g. auto-connect from previous session), skip to signing
+    if (connected && publicKey) {
+      console.log("[auth] Solana wallet already connected:", currentWallet.adapter.name);
+      setPendingSolanaConnect(false);
+      setStep("signing");
+      return;
+    }
+    // Wallet adapter is ready — now it's safe to connect
+    setPendingSolanaConnect(false);
+    let cancelled = false;
+    console.log("[auth] Wallet adapter ready, connecting to:", currentWallet.adapter.name);
+    connect()
+      .then(async () => {
+        if (cancelled) return;
+        console.log("[auth] Solana wallet connected, moving to signing step");
+        // Small delay to let connected/publicKey state propagate
+        await new Promise((r) => setTimeout(r, 100));
+        if (cancelled) return;
+        setStep("signing");
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        console.error("[auth] Solana wallet connection failed:", err);
+        const msg = err instanceof Error ? err.message : "";
+        const isUserRejection =
+          /reject|denied|declined|closed|disconnect|not authorized/i.test(msg);
+        setError(
+          isUserRejection
+            ? "Connection was rejected. Please try again and approve the connection in your wallet."
+            : "Connection failed. Try again or use another wallet.",
+        );
+        setStep("wallet");
+        setSelectedWallet(null);
+        setSelectedChain(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingSolanaConnect, open, currentWallet, connected, connecting, publicKey, connect]);
 
   // If Solana wallet disconnects while we're on "Sign the message", show error so user isn't stuck
   useEffect(() => {
@@ -743,6 +773,7 @@ export function AuthWalletModal({
       setSelectedEthereumOption(null);
       setSolanaChallengePending(null);
       setSolanaSigning(false);
+      setPendingSolanaConnect(false);
       signFlowStarted.current = false;
       wcSignDoneRef.current = false;
     }
