@@ -268,8 +268,7 @@ export default async function HomePage() {
                     `}
                   >
                     Curated tech, premium apparel, wellness gear, and travel
-                    essentials—for people who invest in themselves. Pay with
-                    Solana, CULT, or card.
+                    essentials—for people who invest in themselves.
                   </p>
                 </div>
                 <div
@@ -313,7 +312,7 @@ export default async function HomePage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <ShoppingBag className="h-5 w-5 text-primary/70" />
-                    <span>Pay with crypto or card</span>
+                    <span>Pay with card or crypto</span>
                   </div>
                 </div>
               </div>
@@ -351,7 +350,7 @@ export default async function HomePage() {
             <div className="mx-auto max-w-3xl space-y-6 text-center">
               <SectionHeading
                 title="A lifestyle for the independent"
-                subtitle="You're in the right place. We curate tech, apparel, wellness, and travel gear that fits how you live—and the future you're building. Join as a member for product discounts, free shipping for CULT members, exclusive drops, and early access to new arrivals. Pay your way: Solana, CULT, or card."
+                subtitle="You're in the right place. We curate tech, apparel, wellness, and travel gear that fits how you live—and the future you're building. Join as a member for product discounts, free shipping for CULT members, exclusive drops, and early access to new arrivals."
               />
               <Link href="/signup">
                 <Button variant="outline" size="lg">
