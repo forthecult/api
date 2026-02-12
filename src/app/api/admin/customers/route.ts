@@ -301,7 +301,7 @@ export async function GET(request: NextRequest) {
         ? await db.execute<{ user_id: string; shipping_city: string | null; shipping_country_code: string | null }>(sql`
             SELECT DISTINCT ON (user_id) user_id, shipping_city, shipping_country_code
             FROM "order"
-            WHERE user_id = ANY(${userIds})
+            WHERE user_id IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})
             ORDER BY user_id, created_at DESC
           `)
         : [];
