@@ -4,6 +4,6 @@
     "buildCommand": "bun run build"
   },
   "deploy": {
-    "startCommand": "node .next/standalone/server.js"
+    "startCommand": "bun run start"
   }
 }
