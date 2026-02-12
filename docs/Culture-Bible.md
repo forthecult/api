@@ -204,7 +204,7 @@ Alice can:
 Answer product questions
 Provide personalized recommendations
 Process orders through conversation
-Create custom products (CULT holders only)
+Create custom products (CULT members only)
 
 API-First Architecture
 Our entire catalog is API-accessible:

@@ -873,7 +873,7 @@ export default function AdminDiscountDetailPage() {
             <p className="text-sm text-muted-foreground">
               Optional: only apply this discount when the customer has a linked
               wallet with at least the given token balance (e.g. free shipping or
-              discount for CULT holders). Leave empty for no restriction.
+              discount for CULT Members). Leave empty for no restriction.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">

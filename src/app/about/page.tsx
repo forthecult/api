@@ -98,12 +98,12 @@ export default function AboutPage() {
             Where culture and technology merge
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
-            The age of decentralization isn't a trend — it's the paradigm. We
-            ship worldwide, accept SOL, ETH, BTC, and 50+ coins, and we're
+            The age of decentralization isn't a trend — it's the paradigm. {/* 
+            We ship worldwide, accept SOL, ETH, BTC, and 50+ coins, and we're
             building phygital drops and token-gated merch so your drip is
-            verifiable on-chain. Pay with your wallet. Hold CULT for free
+            verifiable on-chain. Pay with your wallet. Become a CULT member for free
             shipping, early access, and exclusive drops. Your keys, your style,
-            your culture.
+            your culture. */}
           </p>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             No mandatory sign-up. No selling your data. We're not Shopify; we
@@ -178,7 +178,7 @@ export default function AboutPage() {
           <p className="mt-3 leading-relaxed text-muted-foreground">
             We're building AI-native commerce: order through Alice on Discord,
             Telegram, or X. Our APIs are built for agents and bots. CULT
-            holders can vote on new products and get early access to drops. We
+            members can vote on new products and get early access to drops. We
             partner with the projects and creators that define the culture —
             from pump.fun to the next wave. If you're plugged in, you're in the
             right place.
