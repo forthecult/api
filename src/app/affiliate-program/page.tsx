@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `Affiliate Program | ${SEO_CONFIG.name}`,
     description:
-      "Earn by sharing Culture. Premium products, 90-day cookie, payouts in crypto (CULT, BTC, stablecoins) or PayPal. Join our affiliate program.",
+      "Earn by sharing Culture. Premium products, 90-day cookie, payouts in PayPal or crypto (BTC, stablecoins, CULT). Join our affiliate program.",
     type: "website",
   },
 };

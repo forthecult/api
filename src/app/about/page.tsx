@@ -83,8 +83,7 @@ export default function AboutPage() {
             Today we're a full lifestyle brand: toxin-free apparel, premium
             gear, wellness-focused products, and an AI-native store built for
             how you actually live. The products evolved. The mission didn't.
-            We're not a pop-up. We're not a side project. We're building the
-            commercial infrastructure for the life you actually want — and we're
+             We're building the   commercial infrastructure for the life you actually want — and we're
             not going anywhere.
           </p>
         </section>
@@ -98,12 +97,12 @@ export default function AboutPage() {
             Where culture and technology merge
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
-            The age of decentralization isn't a trend — it's the paradigm. {/* 
+            The age of decentralization isn't a trend — it's the paradigm.  
             We ship worldwide, accept SOL, ETH, BTC, and 50+ coins, and we're
             building phygital drops and token-gated merch so your drip is
             verifiable on-chain. Pay with your wallet. Become a CULT member for free
             shipping, early access, and exclusive drops. Your keys, your style,
-            your culture. */}
+            your culture.
           </p>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             No mandatory sign-up. No selling your data. We're not Shopify; we
