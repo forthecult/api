@@ -658,7 +658,7 @@ export default async function HomePage() {
                   `}
                 >
                   Join for member discounts, early access to new arrivals, and
-                  free shipping over $200. Pay with Solana, CULT, or card. Sign
+                  free shipping over $200. Sign
                   up today.
                 </p>
                 <div
