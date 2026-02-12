@@ -32,6 +32,10 @@ const CATEGORY_REDIRECTS: [string, string][] = [
 ];
 
 const config = {
+  // Standalone output for containerized deployments (Railway, Docker)
+  // Produces a self-contained build without needing full node_modules
+  output: "standalone",
+
   // Enable gzip/brotli compression
   compress: true,
 
