@@ -20,10 +20,13 @@ import {
   selectInputClass,
   US_STATE_OPTIONS,
 } from "../checkout-shared";
+import type { ShippingAddressFormRef } from "./ShippingAddressForm";
 
 export interface BillingAddressFormProps {
   countryOptions: { value: string; label: string }[];
   validationErrors: string[];
+  /** Used to default billing country to shipping country when unchecking "use shipping as billing". */
+  shippingFormRef?: React.RefObject<ShippingAddressFormRef | null>;
 }
 
 export interface BillingAddressFormRef {
@@ -44,7 +47,7 @@ function validateBillingForm(form: BillingFormState): string[] {
 export const BillingAddressForm = forwardRef<
   BillingAddressFormRef,
   BillingAddressFormProps
->(function BillingAddressForm({ countryOptions, validationErrors }, ref) {
+>(function BillingAddressForm({ countryOptions, validationErrors, shippingFormRef }, ref) {
   const [useShippingAsBilling, setUseShippingAsBilling] = useState(true);
   const [billingForm, setBillingForm] =
     useState<BillingFormState>(defaultBillingForm);
@@ -95,7 +98,21 @@ export const BillingAddressForm = forwardRef<
       <label className="flex items-center gap-2 text-sm">
         <Checkbox
           checked={useShippingAsBilling}
-          onCheckedChange={(v) => setUseShippingAsBilling(v === true)}
+          onCheckedChange={(v) => {
+            const checked = v === true;
+            setUseShippingAsBilling(checked);
+            // Default billing country to shipping country for convenience
+            if (!checked) {
+              const shippingCountry =
+                shippingFormRef?.current?.getForm()?.country;
+              if (shippingCountry) {
+                setBillingForm((prev) => ({
+                  ...prev,
+                  country: shippingCountry,
+                }));
+              }
+            }
+          }}
         />
         <span>Use shipping address as billing address</span>
       </label>

@@ -64,6 +64,10 @@ import {
 } from "./BillingAddressForm";
 import { ExpressCheckout } from "./ExpressCheckout";
 import { PolicyPopup } from "./PolicyPopup";
+import {
+  StripeCardPayment,
+  type StripeCardPaymentRef,
+} from "./StripeCardPayment";
 import { SolanaPayDialog } from "./solana-pay-dialog";
 import { useSolanaPayCheckout } from "../hooks/useSolanaPayCheckout";
 import {
@@ -149,6 +153,7 @@ export function PaymentMethodSection({
   const [cryptoEthChain, setCryptoEthChain] = useState<
     "ethereum" | "arbitrum" | "base" | "polygon"
   >("ethereum");
+  const stripeCardRef = useRef<StripeCardPaymentRef>(null);
   const [cardLogosOpen, setCardLogosOpen] = useState(false);
   const cardLogosCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
@@ -519,6 +524,10 @@ export function PaymentMethodSection({
     setValidationErrors,
   ]);
 
+  const handleCardPayment = useCallback(async () => {
+    await stripeCardRef.current?.submit();
+  }, []);
+
   const handleGoToBtcPay = useCallback(async () => {
     if (!validateForPayment()) return;
     setNavigatingToPay(true);
@@ -824,16 +833,20 @@ export function PaymentMethodSection({
               </label>
               {paymentMethod === "credit-card" && (
                 <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
-                  <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5">
-                    <Lock className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
-                    <p className="text-sm text-muted-foreground">
-                      You&apos;ll be securely redirected to Stripe to enter your card details. Your card information never touches our servers.
-                    </p>
-                  </div>
+                  <StripeCardPayment
+                    ref={stripeCardRef}
+                    totalCents={totalCents}
+                    buildOrderPayload={buildOrderPayload}
+                    shippingFormRef={shippingFormRef}
+                    billingFormRef={billingFormRef}
+                    setValidationErrors={setValidationErrors}
+                    setNavigatingToPay={setNavigatingToPay}
+                  />
                   <BillingAddressForm
                     ref={billingFormRef}
                     countryOptions={countryOptions}
                     validationErrors={validationErrors}
+                    shippingFormRef={shippingFormRef}
                   />
                 </div>
               )}
@@ -1195,6 +1208,7 @@ export function PaymentMethodSection({
                     ref={billingFormRef}
                     countryOptions={countryOptions}
                     validationErrors={validationErrors}
+                    shippingFormRef={shippingFormRef}
                   />
                 </div>
               )}
@@ -1223,7 +1237,7 @@ export function PaymentMethodSection({
             size="lg"
             type="button"
             disabled={navigatingToPay}
-            onClick={handlePlaceOrder}
+            onClick={handleCardPayment}
           >
             {navigatingToPay ? (
               <>
