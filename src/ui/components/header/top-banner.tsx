@@ -10,7 +10,7 @@ import { cn } from "~/lib/cn";
  * On mobile, collapsible via chevron.
  */
 const BANNER_MESSAGES = [
-  "Hold 250k CULT → Free worldwide shipping",
+  "CULT Members → Free worldwide shipping",
   "No trackers. No data sales. Your privacy, protected.",
   "Shipping to 100+ countries",
 ];

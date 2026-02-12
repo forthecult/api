@@ -257,7 +257,7 @@ export function ShopMegaMenu({
             <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
           </Link>
           <span className="hidden text-base text-muted-foreground sm:inline">
-            Free worldwide shipping · Hold 250k CULT
+            Free worldwide shipping for CULT Members
           </span>
         </div>
       </PopoverContent>

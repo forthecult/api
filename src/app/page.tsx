@@ -180,7 +180,7 @@ const featuresWhyChooseUs = [
   },
   {
     description:
-      "Pay with Solana, CULT, or card. Secure encryption and you control your data. Checkout is guest-friendly—sign up optional.",
+      "Secure encryption and you control your data. Checkout is guest-friendly—sign up optional.",
     icon: <ShoppingBag className="h-6 w-6 text-primary" />,
     title: "Pay your way",
   },
