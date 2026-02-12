@@ -38,7 +38,7 @@ Alice is the AI guide for **For the Cult** (FTC), powered by [OpenClaw](https://
 │  /api/governance/staked-balance                     │
 │  ... (full API)                                     │
 └─────────────────────────────────────────────────────┘
-```
+```user
 
 ---
 
@@ -84,6 +84,44 @@ OPENCLAW_AGENT_ID=main
 ```
 
 That's it. The website chat widget will now route through Alice on OpenClaw.
+
+---
+
+## Finish setup: connect the web app to OpenClaw
+
+Once OpenClaw is running and you can open the dashboard (e.g. `/openclaw?token=...`), do the following.
+
+### 1. OpenClaw (Railway) — config and env
+
+- **Config:** In the dashboard go to **Config** (or Config editor on `/setup`). Ensure `gateway.auth` is set so the store can call the API:
+  ```json
+  "gateway": {
+    "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_TOKEN}" }
+  }
+  ```
+  If you used the backup import, add this block at the top of the config and Save.
+
+- **Env vars on the OpenClaw service:**  
+  `ANTHROPIC_API_KEY`, `OPENCLAW_GATEWAY_TOKEN`, `NODE_OPTIONS=--max-old-space-size=1024`, and for Alice’s tools (product search, orders, etc.):
+  - `CULTURE_STORE_URL` = your store’s public URL (e.g. `https://forthecult.store` or your Railway store URL).
+
+### 2. Store (FTC Next.js app) — env vars
+
+On the **service that runs the store** (same Railway project or wherever it’s deployed), set:
+
+| Variable | Value |
+|----------|--------|
+| `OPENCLAW_GATEWAY_URL` | `https://<your-openclaw>.up.railway.app` (no trailing slash) |
+| `OPENCLAW_GATEWAY_TOKEN` | Same value as on the OpenClaw service |
+| `OPENCLAW_AGENT_ID` | `main` (optional; this is the default) |
+
+Redeploy the store after changing env vars.
+
+### 3. Test the widget
+
+1. Open your store front-end (e.g. forthecult.store).
+2. Open the support chat widget and send a message.
+3. The reply should come from Alice (OpenClaw). If you see the generic fallback (“A team member will assist you shortly”), the store isn’t reaching OpenClaw — check `OPENCLAW_GATEWAY_URL` and `OPENCLAW_GATEWAY_TOKEN` on the store and that the OpenClaw config has `gateway.auth` as above.
 
 ### Option 2: Hetzner VPS (~$4-8/mo)
 
@@ -238,7 +276,7 @@ OpenClaw supports multi-agent setups on a single gateway. The config is additive
 
 See [OpenClaw Multi-Agent Routing](https://docs.openclaw.ai/concepts/multi-agent) for full docs.
 
----
+---d
 
 ## Files in this repo
 

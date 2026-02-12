@@ -1,0 +1,44 @@
+{
+  "gateway": {
+    "auth": {
+      "mode": "token",
+      "token": "${OPENCLAW_GATEWAY_TOKEN}"
+    }
+  },
+  "agents": {
+    "defaults": {
+      "workspace": "/data/workspace",
+      "model": {
+        "primary": "anthropic/claude-sonnet-4-5"
+      },
+      "compaction": {
+        "memoryFlush": {
+          "enabled": true,
+          "softThresholdTokens": 4000,
+          "systemPrompt": "Session nearing compaction. Store durable memories now.",
+          "prompt": "Write any lasting customer preferences, order context, or important notes to memory/YYYY-MM-DD.md; reply with NO_REPLY if nothing to store."
+        }
+      }
+    },
+    "list": [
+      {
+        "id": "main",
+        "identity": {
+          "name": "Alice",
+          "theme": "FTC lifestyle guide"
+        },
+        "groupChat": {
+          "mentionPatterns": ["@alice", "@Alice"]
+        }
+      }
+    ]
+  },
+  "session": {
+    "dmScope": "per-channel-peer",
+    "reset": {
+      "mode": "idle",
+      "idleMinutes": 120
+    }
+  },
+  "channels": {}
+}

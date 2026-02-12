@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { openConnectWalletModal } from "~/app/checkout/crypto/open-wallet-modal";
 import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import { signIn } from "~/lib/auth-client";
+import { DiscordIcon } from "~/ui/components/icons/discord";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { GoogleIcon } from "~/ui/components/icons/google";
 import {
@@ -61,6 +62,15 @@ export function SocialLoginButtons({
     }
   };
 
+  const handleDiscordLogin = () => {
+    try {
+      void signIn.social({ provider: "discord" });
+    } catch (err) {
+      onError?.("Failed to sign in with Discord");
+      console.error(err);
+    }
+  };
+
   const telegramBotUsername = getTelegramBotUsername();
   const showTelegram = Boolean(telegramBotUsername);
 
@@ -78,11 +88,7 @@ export function SocialLoginButtons({
         </Button>
       )}
 
-      <div
-        className={
-          showTelegram ? "grid grid-cols-3 gap-4" : "grid grid-cols-2 gap-4"
-        }
-      >
+      <div className="grid grid-cols-2 gap-4">
         <Button
           className="flex items-center gap-2"
           disabled={disabled}
@@ -100,6 +106,15 @@ export function SocialLoginButtons({
         >
           <GitHubIcon className="h-5 w-5" />
           GitHub
+        </Button>
+        <Button
+          className="flex items-center gap-2"
+          disabled={disabled}
+          onClick={handleDiscordLogin}
+          variant="outline"
+        >
+          <DiscordIcon className="h-5 w-5" />
+          Discord
         </Button>
         {showTelegram && (
           <div className="flex min-h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 [&_iframe]:!max-h-9">

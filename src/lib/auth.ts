@@ -54,12 +54,19 @@ interface GoogleProfile {
   given_name?: string;
 }
 
+interface DiscordProfile {
+  [key: string]: unknown;
+  username?: string;
+  global_name?: string;
+  email?: string;
+}
+
 interface SocialProviderConfig {
   [key: string]: unknown;
   clientId: string;
   clientSecret: string;
   mapProfileToUser: (
-    profile: GitHubProfile | GoogleProfile,
+    profile: GitHubProfile | GoogleProfile | DiscordProfile,
   ) => Record<string, unknown>;
   redirectURI?: string;
   scope: string[];
@@ -76,6 +83,12 @@ const hasGoogleCredentials =
   process.env.AUTH_GOOGLE_SECRET &&
   process.env.AUTH_GOOGLE_ID.length > 0 &&
   process.env.AUTH_GOOGLE_SECRET.length > 0;
+
+const hasDiscordCredentials =
+  process.env.AUTH_DISCORD_ID &&
+  process.env.AUTH_DISCORD_SECRET &&
+  process.env.AUTH_DISCORD_ID.length > 0 &&
+  process.env.AUTH_DISCORD_SECRET.length > 0;
 
 // Build social providers configuration
 const socialProviders: Record<string, SocialProviderConfig> = {};
@@ -114,6 +127,19 @@ if (hasGoogleCredentials) {
       };
     },
     scope: ["openid", "email", "profile"],
+  };
+}
+
+if (hasDiscordCredentials) {
+  socialProviders.discord = {
+    clientId: process.env.AUTH_DISCORD_ID ?? "",
+    clientSecret: process.env.AUTH_DISCORD_SECRET ?? "",
+    mapProfileToUser: (profile: DiscordProfile) => ({
+      age: null,
+      firstName: profile.global_name ?? profile.username ?? "",
+      lastName: "",
+    }),
+    scope: ["identify", "email"],
   };
 }
 
