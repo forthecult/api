@@ -20,6 +20,7 @@ export type CategoryBySlug = {
   title: string | null;
   metaDescription: string | null;
   description: string | null;
+  imageUrl: string | null;
   parentId: string | null;
   tokenGated: boolean;
 };
@@ -39,6 +40,7 @@ export async function getCategoryBySlug(
       title: categoriesTable.title,
       metaDescription: categoriesTable.metaDescription,
       description: categoriesTable.description,
+      imageUrl: categoriesTable.imageUrl,
       parentId: categoriesTable.parentId,
       tokenGated: categoriesTable.tokenGated,
     })
@@ -53,9 +55,72 @@ export async function getCategoryBySlug(
     title: row.title ?? null,
     metaDescription: row.metaDescription ?? null,
     description: row.description ?? null,
+    imageUrl: row.imageUrl ?? null,
     parentId: row.parentId ?? null,
     tokenGated: row.tokenGated ?? false,
   };
+}
+
+/**
+ * Get the best product image for a category (for OG/social thumbnails).
+ * Priority: most sold product image → newest product image.
+ * Returns an absolute image URL or null.
+ */
+export async function getCategoryProductImage(
+  categoryId: string,
+): Promise<string | null> {
+  if (!categoryId?.trim()) return null;
+  try {
+    // 1) Most popular (most sold) product in this category
+    const [bestSeller] = await db
+      .select({ imageUrl: productsTable.imageUrl })
+      .from(productsTable)
+      .innerJoin(
+        productCategoriesTable,
+        eq(productsTable.id, productCategoriesTable.productId),
+      )
+      .leftJoin(
+        orderItemsTable,
+        eq(productsTable.id, orderItemsTable.productId),
+      )
+      .where(
+        and(
+          eq(productCategoriesTable.categoryId, categoryId),
+          eq(productsTable.published, true),
+          eq(productsTable.hidden, false),
+          isNotNull(productsTable.imageUrl),
+        ),
+      )
+      .groupBy(productsTable.id, productsTable.imageUrl)
+      .orderBy(
+        desc(sql`coalesce(sum(${orderItemsTable.quantity}), 0)`),
+        desc(productsTable.createdAt),
+      )
+      .limit(1);
+    if (bestSeller?.imageUrl) return bestSeller.imageUrl;
+
+    // 2) Newest product in category (fallback if no sales data)
+    const [newest] = await db
+      .select({ imageUrl: productsTable.imageUrl })
+      .from(productsTable)
+      .innerJoin(
+        productCategoriesTable,
+        eq(productsTable.id, productCategoriesTable.productId),
+      )
+      .where(
+        and(
+          eq(productCategoriesTable.categoryId, categoryId),
+          eq(productsTable.published, true),
+          eq(productsTable.hidden, false),
+          isNotNull(productsTable.imageUrl),
+        ),
+      )
+      .orderBy(desc(productsTable.createdAt))
+      .limit(1);
+    return newest?.imageUrl ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -132,20 +197,37 @@ export async function getCategoriesWithProductsAndDisplayImage(
     .filter((id): id is string => !!id);
   if (ids.length === 0) return [];
 
-  const whereConditions = opts?.topLevelOnly
-    ? and(inArray(categoriesTable.id, ids), isNull(categoriesTable.parentId))
-    : inArray(categoriesTable.id, ids);
-
-  const categories = await db
-    .select({
-      id: categoriesTable.id,
-      slug: categoriesTable.slug,
-      name: categoriesTable.name,
-      imageUrl: categoriesTable.imageUrl,
-    })
-    .from(categoriesTable)
-    .where(whereConditions)
-    .orderBy(asc(categoriesTable.name));
+  // Try to include the `visible` filter; fall back if the column doesn't exist yet.
+  let categories: Array<{ id: string; slug: string | null; name: string; imageUrl: string | null }>;
+  try {
+    const whereConditions = opts?.topLevelOnly
+      ? and(inArray(categoriesTable.id, ids), isNull(categoriesTable.parentId), eq(categoriesTable.visible, true))
+      : and(inArray(categoriesTable.id, ids), eq(categoriesTable.visible, true));
+    categories = await db
+      .select({
+        id: categoriesTable.id,
+        slug: categoriesTable.slug,
+        name: categoriesTable.name,
+        imageUrl: categoriesTable.imageUrl,
+      })
+      .from(categoriesTable)
+      .where(whereConditions)
+      .orderBy(asc(categoriesTable.name));
+  } catch {
+    const whereConditions = opts?.topLevelOnly
+      ? and(inArray(categoriesTable.id, ids), isNull(categoriesTable.parentId))
+      : inArray(categoriesTable.id, ids);
+    categories = await db
+      .select({
+        id: categoriesTable.id,
+        slug: categoriesTable.slug,
+        name: categoriesTable.name,
+        imageUrl: categoriesTable.imageUrl,
+      })
+      .from(categoriesTable)
+      .where(whereConditions)
+      .orderBy(asc(categoriesTable.name));
+  }
 
   const needFallback = categories.filter(
     (c) => c.imageUrl == null || c.imageUrl.trim() === "",

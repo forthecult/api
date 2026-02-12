@@ -57,21 +57,33 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // Static pages (public storefront only; no auth, checkout, or dashboard)
   const staticPages: MetadataRoute.Sitemap = [
+    // Core storefront
     { url: siteUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${siteUrl}/products`, lastModified: now, changeFrequency: "daily", priority: 0.9 },
+    // Brand & content
     { url: `${siteUrl}/about`, lastModified: now, changeFrequency: "monthly", priority: 0.7 },
     { url: `${siteUrl}/lookbook`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteUrl}/changelog`, lastModified: now, changeFrequency: "weekly", priority: 0.5 },
+    // Token & ecosystem
+    { url: `${siteUrl}/token`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteUrl}/token/stake`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    // Programs
+    { url: `${siteUrl}/affiliate-program`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${siteUrl}/for-agents`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
+    // Customer service
     { url: `${siteUrl}/contact`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${siteUrl}/track-order`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
     { url: `${siteUrl}/refund`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${siteUrl}/affiliate-program`, lastModified: now, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${siteUrl}/token`, lastModified: now, changeFrequency: "monthly", priority: 0.5 },
-    { url: `${siteUrl}/sitemap`, lastModified: now, changeFrequency: "weekly", priority: 0.4 },
+    // Auth (public landing pages)
+    { url: `${siteUrl}/login`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${siteUrl}/signup`, lastModified: now, changeFrequency: "monthly", priority: 0.4 },
+    // Legal & info
     { url: `${siteUrl}/policies/privacy`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${siteUrl}/policies/terms`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${siteUrl}/policies/refund`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${siteUrl}/policies/shipping`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
     { url: `${siteUrl}/cookies`, lastModified: now, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${siteUrl}/sitemap`, lastModified: now, changeFrequency: "weekly", priority: 0.3 },
   ];
 
   // Category pages (store.com/[category-slug])

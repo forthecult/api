@@ -330,7 +330,7 @@ export function AffiliatePageClient() {
                     <option value="paypal">PayPal</option>
                     <option value="bitcoin">Bitcoin (BTC)</option>
                     <option value="usdt">USDT</option>
-                    <option value="cult">$CULT</option>
+                    <option value="cult">CULT</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -589,7 +589,7 @@ export function AffiliatePageClient() {
                   <p className="mt-4 text-sm text-muted-foreground">
                     Payout method:{" "}
                     {affiliate.payoutMethod === "cult"
-                      ? "$CULT"
+                      ? "CULT"
                       : affiliate.payoutMethod.charAt(0).toUpperCase() +
                         affiliate.payoutMethod.slice(1)}
                     {affiliate.payoutAddress && (
@@ -630,7 +630,7 @@ export function AffiliatePageClient() {
                         <option value="paypal">PayPal</option>
                         <option value="bitcoin">Bitcoin (BTC)</option>
                         <option value="usdt">USDT</option>
-                        <option value="cult">$CULT</option>
+                        <option value="cult">CULT</option>
                       </select>
                     </div>
                     <div className="space-y-2">

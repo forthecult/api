@@ -28,6 +28,7 @@ type Category = {
   imageUrl: string | null;
   level: number;
   featured: boolean;
+  visible?: boolean;
   seoOptimized?: boolean;
   parentId: string | null;
   tokenGated?: boolean;
@@ -57,6 +58,7 @@ export default function AdminCategoryEditPage() {
   const [imageUrl, setImageUrl] = useState("");
   const [level, setLevel] = useState(1);
   const [featured, setFeatured] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [parentId, setParentId] = useState("");
   const [tokenGated, setTokenGated] = useState(false);
   const [tokenGates, setTokenGates] = useState<TokenGateRow[]>([]);
@@ -116,6 +118,7 @@ export default function AdminCategoryEditPage() {
       setImageUrl(data.imageUrl ?? "");
       setLevel(data.level);
       setFeatured(data.featured);
+      setVisible(data.visible ?? true);
       setParentId(data.parentId ?? "");
       setTokenGated(data.tokenGated ?? false);
       setTokenGates(
@@ -233,6 +236,7 @@ export default function AdminCategoryEditPage() {
             imageUrl: imageUrl.trim() || null,
             level,
             featured,
+            visible,
             parentId: parentId || null,
             tokenGated,
             tokenGates,
@@ -264,6 +268,7 @@ export default function AdminCategoryEditPage() {
       imageUrl,
       level,
       featured,
+      visible,
       parentId,
       tokenGated,
       tokenGates,
@@ -905,19 +910,35 @@ export default function AdminCategoryEditPage() {
                   className={inputClass}
                 />
               </div>
-              <div className="flex items-center gap-2 pt-8">
-                <input
-                  id="featured"
-                  type="checkbox"
-                  checked={featured}
-                  onChange={(e) => setFeatured(e.target.checked)}
-                  className={cn(
-                    "size-4 rounded border-input text-primary focus:ring-ring",
-                  )}
-                />
-                <label htmlFor="featured" className="text-sm font-medium">
-                  Featured category
-                </label>
+              <div className="flex items-center gap-4 pt-8">
+                <div className="flex items-center gap-2">
+                  <input
+                    id="visible"
+                    type="checkbox"
+                    checked={visible}
+                    onChange={(e) => setVisible(e.target.checked)}
+                    className={cn(
+                      "size-4 rounded border-input text-primary focus:ring-ring",
+                    )}
+                  />
+                  <label htmlFor="visible" className="text-sm font-medium">
+                    Visible in store
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    id="featured"
+                    type="checkbox"
+                    checked={featured}
+                    onChange={(e) => setFeatured(e.target.checked)}
+                    className={cn(
+                      "size-4 rounded border-input text-primary focus:ring-ring",
+                    )}
+                  />
+                  <label htmlFor="featured" className="text-sm font-medium">
+                    Featured category
+                  </label>
+                </div>
               </div>
             </div>
 

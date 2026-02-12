@@ -22,7 +22,7 @@ export const USDC_MINT_MAINNET = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 export const WHITEWHALE_MINT_MAINNET =
   "a3W4qutoEJA4232T2gwZUfgYJTetr96pU4SJMwppump";
 
-/** $crust SPL (pump.fun), test token for payment flow; swap to $CULT mint when launched. */
+/** $crust SPL (pump.fun), test token for payment flow; swap to CULT mint when launched. */
 export const CRUST_MINT_MAINNET =
   "HkBWJJiaUW5Kod4HpHWZiGD9PQVipmMiPDgiRPcNpump";
 

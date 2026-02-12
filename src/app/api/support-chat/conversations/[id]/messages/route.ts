@@ -171,7 +171,7 @@ export async function POST(
 
       const aiReply = await generateSupportChatReply({
         recentMessages: recentRows.map((r) => ({ role: r.role, content: r.content })),
-        storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Culture",
+        storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Cult",
         conversationId,
         userId: session?.user?.id ?? guestId ?? undefined,
       });

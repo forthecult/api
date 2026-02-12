@@ -126,14 +126,14 @@ Privacy Advocates: VPN users, GrapheneOS enthusiasts, data minimalists.
 Digital Nomads: Need portable, durable, location-independent products.
 
 
-7. The $CULT Token
-$CULT is our Solana-based token launched on Pump.Fun, a memecoin platform. Holders are stakeholders.
+7. The CULT
+CULT is our Solana-based token launched on Pump.Fun, a memecoin platform. Holders are stakeholders.
 Holder Benefits
 Hold $250 worth of CULT (at market price) for free worldwide shipping
-$CULT holding Exclusive products
+CULT holding Exclusive products
 Token-gatedGovernance votes
-Staked $CULT Revenue share
-Staked $CULT Private Discord/TelegramToken-gated
+Staked CULT Revenue share
+Staked CULT Private Discord/TelegramToken-gated
 
 
 Token Economics
@@ -154,7 +154,7 @@ Remainder to operations and AI development
 
 1. Payment Methods
 Crypto
-Solana Pay: SOL, USDC, USDT, SPL tokens, $CULT
+Solana Pay: SOL, USDC, USDT, SPL tokens, CULT
 BTCPay: BTC, LTC, XMR, DOGE
 EVM Chains: ETH, Base, Polygon (USDC, USDT, native tokens)
 Fiat
@@ -204,7 +204,7 @@ Alice can:
 Answer product questions
 Provide personalized recommendations
 Process orders through conversation
-Create custom products ($CULT holders only)
+Create custom products (CULT holders only)
 
 API-First Architecture
 Our entire catalog is API-accessible:
@@ -391,7 +391,7 @@ Business
 
 Gross margin: Target 40%+
 Crypto payment percentage: Track adoption
-$CULT holder customer percentage
+CULT holder customer percentage
 Monthly active community members
 
 Impact
@@ -406,7 +406,7 @@ By 2030:
 
 Trusted destination for health-conscious, privacy-respecting commerce
 Default vendor for AI agents purchasing aligned products
-Community of 100,000+ $CULT holders and intentional consumers
+Community of 100,000+ CULT holders and intentional consumers
 Proof that principled commerce outperforms exploitative commerce
 
 

@@ -10,6 +10,7 @@ import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import {
   getCategoryBySlug,
   getCategoryParent,
+  getCategoryProductImage,
   getProductBreadcrumbTrail,
   getSubcategories,
 } from "~/lib/categories";
@@ -307,6 +308,20 @@ export async function generateMetadata({
   const description =
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
+
+  // Resolve OG image: category image → best-selling product → newest product
+  let categoryImageUrl: string | undefined;
+  if (category?.imageUrl) {
+    categoryImageUrl = category.imageUrl;
+  } else if (category) {
+    const fallback = await getCategoryProductImage(category.id);
+    if (fallback) categoryImageUrl = fallback;
+  }
+  // Ensure absolute URL for OG tags
+  if (categoryImageUrl && !categoryImageUrl.startsWith("http")) {
+    categoryImageUrl = `${siteUrl}${categoryImageUrl.startsWith("/") ? "" : "/"}${categoryImageUrl}`;
+  }
+
   return {
     title,
     description,
@@ -314,6 +329,22 @@ export async function generateMetadata({
       title,
       description,
       type: "website",
+      ...(categoryImageUrl && {
+        images: [
+          {
+            url: categoryImageUrl,
+            alt: categoryName,
+            width: 1200,
+            height: 630,
+          },
+        ],
+      }),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      ...(categoryImageUrl && { images: [categoryImageUrl] }),
     },
     alternates: {
       canonical: `${siteUrl}/${slug}`,

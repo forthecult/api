@@ -36,6 +36,7 @@ export default function AdminCategoriesCreatePage() {
   const [imageUrl, setImageUrl] = useState("");
   const [level, setLevel] = useState(1);
   const [featured, setFeatured] = useState(false);
+  const [visible, setVisible] = useState(true);
   const [tokenGated, setTokenGated] = useState(false);
   const [tokenGates, setTokenGates] = useState<TokenGateRow[]>([]);
 
@@ -82,6 +83,7 @@ export default function AdminCategoriesCreatePage() {
             imageUrl: imageUrl.trim() || null,
             level,
             featured,
+            visible,
             parentId: parentId || null,
             tokenGated,
             tokenGates,
@@ -112,6 +114,7 @@ export default function AdminCategoriesCreatePage() {
       imageUrl,
       level,
       featured,
+      visible,
       parentId,
       tokenGated,
       tokenGates,
@@ -308,17 +311,31 @@ export default function AdminCategoriesCreatePage() {
 
             <hr className="border-border" />
 
-            <div className="flex items-center gap-2">
-              <input
-                id="featured"
-                type="checkbox"
-                checked={featured}
-                onChange={(e) => setFeatured(e.target.checked)}
-                className="size-4 rounded border-input text-primary focus:ring-ring"
-              />
-              <label htmlFor="featured" className="text-sm font-medium">
-                Featured Category
-              </label>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <input
+                  id="visible"
+                  type="checkbox"
+                  checked={visible}
+                  onChange={(e) => setVisible(e.target.checked)}
+                  className="size-4 rounded border-input text-primary focus:ring-ring"
+                />
+                <label htmlFor="visible" className="text-sm font-medium">
+                  Visible in store
+                </label>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="featured"
+                  type="checkbox"
+                  checked={featured}
+                  onChange={(e) => setFeatured(e.target.checked)}
+                  className="size-4 rounded border-input text-primary focus:ring-ring"
+                />
+                <label htmlFor="featured" className="text-sm font-medium">
+                  Featured Category
+                </label>
+              </div>
             </div>
 
             <div className="flex gap-2 pt-2">

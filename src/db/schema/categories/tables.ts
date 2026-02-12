@@ -23,6 +23,8 @@ export const categoriesTable = pgTable(
     imageUrl: text("image_url"),
     level: integer("level").notNull().default(1),
     featured: boolean("featured").notNull().default(false),
+    /** When false, category is hidden from the mega menu and public browsing. */
+    visible: boolean("visible").notNull().default(true),
     seoOptimized: boolean("seo_optimized").notNull().default(false),
     parentId: text("parent_id"),
     tokenGated: boolean("token_gated").notNull().default(false),

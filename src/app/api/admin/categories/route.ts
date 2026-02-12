@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
           imageUrl: true,
           level: true,
           featured: true,
+          visible: true,
           parentId: true,
         },
         limit,
@@ -155,6 +156,7 @@ export async function GET(request: NextRequest) {
         imageUrl: c.imageUrl,
         level: c.level,
         featured: c.featured,
+        visible: c.visible ?? true,
         productCount: countByCategory.get(c.id) ?? 0,
         parentName: parentName ?? undefined,
       };
@@ -190,6 +192,7 @@ export async function POST(request: NextRequest) {
       imageUrl?: string | null;
       level?: number;
       featured?: boolean;
+      visible?: boolean;
       seoOptimized?: boolean;
       parentId?: string | null;
       tokenGated?: boolean;
@@ -228,6 +231,7 @@ export async function POST(request: NextRequest) {
       imageUrl: body.imageUrl?.trim() ?? null,
       level: Math.max(1, Math.min(99, body.level ?? 1)),
       featured: body.featured ?? false,
+      visible: body.visible ?? true,
       seoOptimized: body.seoOptimized ?? false,
       parentId: body.parentId?.trim() || null,
       tokenGated: hasTokenGates || (body.tokenGated ?? false),

@@ -4,7 +4,7 @@
 
 > *"It would be so nice if something made sense for a change."*
 
-Alice is the Culture Store's AI guide, powered by [OpenClaw](https://docs.openclaw.ai). Inspired by Lewis Carroll's *Alice in Wonderland*, she leads customers down the rabbit hole — across the website chat widget, Telegram, and Discord — with persistent memory and a curious, whimsical personality.
+Alice is the AI guide for **For the Cult** (FTC), powered by [OpenClaw](https://docs.openclaw.ai). Inspired by Lewis Carroll's *Alice in Wonderland* — the grown-up version — she leads customers down the rabbit hole across the website chat widget, Telegram, and Discord, with persistent memory and a curious, confident personality.
 
 ---
 
@@ -17,7 +17,7 @@ Alice is the Culture Store's AI guide, powered by [OpenClaw](https://docs.opencl
 │  Alice Agent (main)                                 │
 │  ├─ SOUL.md      — Wonderland personality & rules   │
 │  ├─ AGENTS.md    — behavior config                  │
-│  ├─ TOOLS.md     — Culture Store API tool defs      │
+│  ├─ TOOLS.md     — FTC API tool definitions          │
 │  ├─ MEMORY.md    — long-term memory                 │
 │  └─ memory/      — daily memory logs                │
 │                                                     │
@@ -31,7 +31,7 @@ Alice is the Culture Store's AI guide, powered by [OpenClaw](https://docs.opencl
                    │ HTTPS
                    ▼
 ┌─────────────────────────────────────────────────────┐
-│        Culture Store (Next.js on Railway)            │
+│        For the Cult (Next.js on Railway)              │
 │  /api/products/semantic-search                      │
 │  /api/orders/{id}/status                            │
 │  /api/refund/lookup                                 │
@@ -75,7 +75,7 @@ OpenClaw has a one-click Railway deploy template. This is the simplest path sinc
 5. Copy the OpenClaw config from `openclaw/openclaw.json` in this repo to customize Alice
 6. Upload the workspace files (`SOUL.md`, `AGENTS.md`, `TOOLS.md`) to `/data/workspace/`
 
-**Connect to the store — add these env vars to the main Culture Store service:**
+**Connect to the store — add these env vars to the main FTC service on Railway:**
 
 ```
 OPENCLAW_GATEWAY_URL=https://<your-openclaw>.up.railway.app
@@ -149,7 +149,7 @@ See: [Docker guide](https://docs.openclaw.ai/install/docker).
 | `DISCORD_BOT_TOKEN` | Optional | Discord channel |
 | `CULTURE_STORE_URL` | Yes | `https://forthecult.store` (Alice's tool target) |
 
-### On the Culture Store (main Railway service)
+### On For the Cult (main Railway service)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -165,10 +165,10 @@ When `OPENCLAW_GATEWAY_URL` is set, the chat widget routes through Alice. When i
 
 1. Message **@BotFather** on Telegram
 2. Send `/newbot`
-3. Name it (e.g. "Alice - Culture Store")
+3. Name it (e.g. "Alice - For the Cult")
 4. Copy the bot token
 5. Paste it in the OpenClaw `/setup` wizard or set `TELEGRAM_BOT_TOKEN`
-6. Set the bot's description: `/setdescription` → "I'm Alice. I fell down a rabbit hole and ended up at the Culture Store. Ask me about products, orders, or $CULT."
+6. Set the bot's description: `/setdescription` → "I'm Alice. I fell down a rabbit hole a long time ago and ended up at For the Cult. Ask me about products, orders, or CULT."
 
 ## Discord setup
 
@@ -248,7 +248,7 @@ openclaw/
 └── workspace/                 # Alice's workspace (→ /data/workspace)
     ├── SOUL.md                # Alice's Wonderland personality and rules
     ├── AGENTS.md              # Agent behavior config
-    └── TOOLS.md               # Culture Store API tool definitions
+    └── TOOLS.md               # FTC API tool definitions
 ```
 
 These files are the source of truth. After deploying OpenClaw, upload the workspace files to the gateway's `/data/workspace/` directory (or use the Control UI to edit them).

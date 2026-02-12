@@ -295,7 +295,7 @@ export default function ChangelogPage() {
         </p>
         <div className="mt-4 flex flex-wrap gap-2">
           <Button asChild variant="secondary" size="sm">
-            <Link href="/token">$CULT Token</Link>
+            <Link href="/token">CULT</Link>
           </Button>
           <Button asChild variant="outline" size="sm">
             <Link href="/products">Browse Products</Link>

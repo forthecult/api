@@ -1,6 +1,6 @@
 # Alice — Tool Definitions
 
-Alice has access to the Culture Store API. The base URL is provided via the
+Alice has access to the For the Cult API. The base URL is provided via the
 `CULTURE_STORE_URL` environment variable (e.g. `https://forthecult.store`).
 
 All requests should include:
@@ -71,7 +71,7 @@ GET {CULTURE_STORE_URL}/api/brands
 ## Cart & Checkout Tools
 
 ### estimate_cart
-Preview cart totals, shipping, and crypto equivalent amounts.
+Preview cart totals, shipping, and payment equivalent amounts.
 
 ```
 POST {CULTURE_STORE_URL}/api/cart/estimate
@@ -83,7 +83,7 @@ Body: {
 }
 ```
 
-Returns: subtotal, shipping cost, tax, total, and crypto amounts. Prices valid 15 minutes.
+Returns: subtotal, shipping cost, tax, total, and payment amounts. Prices valid 15 minutes.
 
 ### calculate_shipping
 Estimate shipping cost for a destination.
@@ -134,7 +134,7 @@ Body: { "reason": "Customer requested cancellation" }
 ## Refund Tools
 
 ### check_refund_eligibility
-Check if an order is eligible for a refund and what type (crypto instant, card, etc.).
+Check if an order is eligible for a refund and what type.
 
 ```
 POST {CULTURE_STORE_URL}/api/refund/lookup
@@ -142,11 +142,11 @@ Body: { "orderId": "...", "lookupValue": "<email or wallet>" }
 ```
 
 ### request_refund
-Submit a refund request. For crypto orders, include the refund wallet address.
+Submit a refund request. For orders paid with a wallet, include the refund wallet address.
 
 ```
 POST {CULTURE_STORE_URL}/api/refund/request
-Body: { "orderId": "...", "reason": "...", "refundAddress": "<wallet address for crypto refunds>" }
+Body: { "orderId": "...", "reason": "...", "refundAddress": "<wallet address if applicable>" }
 ```
 
 ---
@@ -154,14 +154,14 @@ Body: { "orderId": "...", "reason": "...", "refundAddress": "<wallet address for
 ## Token & Governance Tools
 
 ### get_staked_balance
-Check $CULT staked balance for a wallet.
+Check CULT staked balance for a wallet.
 
 ```
 GET {CULTURE_STORE_URL}/api/governance/staked-balance?wallet={walletAddress}
 ```
 
 ### get_voting_power
-Check $CULT voting power (wallet balance + staked).
+Check CULT voting power (wallet balance + staked).
 
 ```
 GET {CULTURE_STORE_URL}/api/governance/voting-power?wallet={walletAddress}

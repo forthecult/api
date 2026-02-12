@@ -14,7 +14,7 @@ CHANNELS
 - Discord, Telegram
 
 REVENUE MODEL
-1) Receive 65% TX fees from $CULT trading volume
+1) Receive 65% TX fees from CULT trading volume
 2) Margin on goods - 5% - 200%
 3) Crypto<->crypto tx fees (SideShift.ai)
 4) Referral fees
@@ -67,13 +67,13 @@ Alice
 	- AI Agent and chatbot
 	- Order products directly through Alice
 	- Develop MCP and API for seamless integration into any AI agent
-	- $CULT token holders can ask Alice to create a new product
+	- CULT token holders can ask Alice to create a new product
 	- Integrated into telegram, Discord, and X
 	
 PAYMENT
 
 *Solana Pay*
-	- SOL, stablecoins, SPLs, & $CULT
+	- SOL, stablecoins, SPLs, & CULT
 *BTCPay*
 	- BTC, DOGE, XMR, 
 
@@ -134,7 +134,7 @@ MARKETING
 Initially:
 - X
 	- Advertising
-	- $CULT Community
+	- CULT Community
 	- KOLs
 	
 - Partnerships
@@ -144,7 +144,7 @@ Initially:
 		- Pump Fun
 		- Psyop Anime
 		- Troll
-- Discord - Gated with $CULT
+- Discord - Gated with CULT
 - Telegram - Also has gated channel
 - Newsletter
 - TikTok
@@ -168,12 +168,12 @@ TOKEN MECHANICS
 - Product input
 
 *Gating*
-- Products only available when have X number of $CULT in wallet
-- Limited number of product, becomes unavailable unless have $CULT in wallet
+- Products only available when have X number of CULT in wallet
+- Limited number of product, becomes unavailable unless have CULT in wallet
 
 Creator Fees
-- Burn $CULT tokens (5%)
-- Staked $CULT token holders (5%)
+- Burn CULT tokens (5%)
+- Staked CULT token holders (5%)
 - Purchase inventory and artwork (10%)
 - Charity - research (10%)
 - Lottery giveaway? (5%)
@@ -252,7 +252,7 @@ EMAIL
 
 
 For the Cult
-$CULT
+CULT
 
 Features:
 - Spend it on cool shit
@@ -266,7 +266,7 @@ Features:
 - Vote on new products
 
 
-The Culture token ticker is $CULT
+The Culture token ticker is CULT
 
 Privacy first:
 - No Shopify

@@ -17,7 +17,7 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/track-order", label: "Track order" },
   { href: "/refund", label: "Refund requests" },
   { href: "/affiliate-program", label: "Affiliate program" },
-  { href: "/token", label: "$CULT Token" },
+  { href: "/token", label: "CULT" },
   { href: "/sitemap", label: "Sitemap" },
 ];
 

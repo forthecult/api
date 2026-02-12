@@ -173,7 +173,7 @@ export function Footer({ className }: { className?: string }) {
                   `}
                   href="/token"
                 >
-                  $CULT Token
+                  CULT
                 </Link>
               </li>
               <li>

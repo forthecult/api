@@ -8,7 +8,7 @@ export const SEO_CONFIG = {
   brandLogoUrl: undefined as string | undefined,
   /** used in meta description and open graph; keep under ~160 chars for SEO */
   metaDescription:
-    "Curated tech, apparel & wellness gear. Pay with Solana, $CULT or card. Hold CULT for free shipping, member discounts, and early access.",
+    "Curated tech, apparel & wellness gear. Pay with Solana, CULT or card. Hold CULT for free shipping, member discounts, and early access.",
   keywords:
     "For the Cult, lifestyle store, crypto store, Solana pay, pay with crypto, premium apparel, tech gear, wellness, travel essentials, curated essentials, member discounts, free shipping",
 };

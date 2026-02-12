@@ -26,16 +26,45 @@ function isMissingTableError(err: unknown): boolean {
  */
 export async function GET() {
   try {
-    const allCategories = await db
-      .select({
-        id: categoriesTable.id,
-        name: categoriesTable.name,
-        description: categoriesTable.description,
-        slug: categoriesTable.slug,
-        parentId: categoriesTable.parentId,
-      })
-      .from(categoriesTable)
-      .orderBy(asc(categoriesTable.name));
+    // Fetch all categories; try to include the `visible` column. If it doesn't
+    // exist yet (needs db:push), fall back to treating all as visible.
+    let allCategories: Array<{
+      id: string;
+      name: string;
+      description: string | null;
+      slug: string | null;
+      parentId: string | null;
+      visible: boolean;
+    }>;
+    try {
+      allCategories = await db
+        .select({
+          id: categoriesTable.id,
+          name: categoriesTable.name,
+          description: categoriesTable.description,
+          slug: categoriesTable.slug,
+          parentId: categoriesTable.parentId,
+          visible: categoriesTable.visible,
+        })
+        .from(categoriesTable)
+        .orderBy(asc(categoriesTable.name));
+    } catch {
+      // visible column may not exist yet — fetch without it
+      const rows = await db
+        .select({
+          id: categoriesTable.id,
+          name: categoriesTable.name,
+          description: categoriesTable.description,
+          slug: categoriesTable.slug,
+          parentId: categoriesTable.parentId,
+        })
+        .from(categoriesTable)
+        .orderBy(asc(categoriesTable.name));
+      allCategories = rows.map((r) => ({ ...r, visible: true }));
+    }
+
+    // Filter out categories marked as not visible
+    allCategories = allCategories.filter((c) => c.visible !== false);
 
     const counts = await db
       .select({

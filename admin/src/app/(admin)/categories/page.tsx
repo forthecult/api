@@ -29,6 +29,7 @@ type CategoryRow = {
   imageUrl: string | null;
   level: number;
   featured: boolean;
+  visible: boolean;
   productCount: number;
 };
 
@@ -46,6 +47,7 @@ const COLUMNS = [
   { key: "products", label: "Products", sortable: true as const },
   { key: "image", label: "Image" },
   { key: "level", label: "Level" },
+  { key: "visible", label: "Visible" },
   { key: "featured", label: "Featured" },
   { key: "action", label: "Action" },
 ] as const;
@@ -109,15 +111,15 @@ export default function AdminCategoriesPage() {
     void fetchCategories();
   }, [fetchCategories]);
 
-  const handleToggleFeatured = useCallback(
-    async (id: string, current: boolean) => {
+  const handleToggleField = useCallback(
+    async (id: string, field: "featured" | "visible", current: boolean) => {
       setTogglingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/categories/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ featured: !current }),
+          body: JSON.stringify({ [field]: !current }),
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -130,7 +132,7 @@ export default function AdminCategoriesPage() {
             ? {
                 ...prev,
                 items: prev.items.map((c) =>
-                  c.id === id ? { ...c, featured: !current } : c,
+                  c.id === id ? { ...c, [field]: !current } : c,
                 ),
               }
             : null,
@@ -378,10 +380,34 @@ export default function AdminCategoriesPage() {
                             <button
                               type="button"
                               role="switch"
+                              aria-checked={row.visible ?? true}
+                              disabled={togglingId === row.id}
+                              onClick={() =>
+                                handleToggleField(row.id, "visible", row.visible ?? true)
+                              }
+                              className={cn(
+                                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50",
+                                (row.visible ?? true) ? "bg-primary" : "bg-muted",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "pointer-events-none inline-block size-5 translate-y-0.5 rounded-full bg-white shadow ring-0 transition-transform",
+                                  (row.visible ?? true)
+                                    ? "translate-x-6"
+                                    : "translate-x-0.5",
+                                )}
+                              />
+                            </button>
+                          </td>
+                          <td className="p-4">
+                            <button
+                              type="button"
+                              role="switch"
                               aria-checked={row.featured}
                               disabled={togglingId === row.id}
                               onClick={() =>
-                                handleToggleFeatured(row.id, row.featured)
+                                handleToggleField(row.id, "featured", row.featured)
                               }
                               className={cn(
                                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50",

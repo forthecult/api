@@ -381,7 +381,7 @@ export default function AdminAffiliateDetailPage() {
                   <option value="paypal">PayPal</option>
                   <option value="bitcoin">Bitcoin (BTC)</option>
                   <option value="usdt">USDT</option>
-                  <option value="cult">$CULT</option>
+                  <option value="cult">CULT</option>
                 </select>
               </div>
               <div>

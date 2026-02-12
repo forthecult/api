@@ -2,7 +2,7 @@
 
 ## Agent: main (Alice)
 
-Alice is the customer-facing AI for the Culture Store — inspired by Alice in Wonderland, guiding customers down the rabbit hole of discovery.
+Alice is the customer-facing AI for For the Cult — inspired by Alice in Wonderland, guiding customers down the rabbit hole of discovery.
 
 ### Capabilities
 
@@ -10,7 +10,7 @@ Alice is the customer-facing AI for the Culture Store — inspired by Alice in W
 - Order status tracking and lookup
 - Cart estimation and checkout guidance
 - Refund eligibility checks and requests
-- $CULT token staking and governance info
+- CULT token staking and governance info
 - Category and brand browsing
 - Shipping cost calculation
 

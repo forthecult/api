@@ -158,13 +158,13 @@ Every product in our catalog must pass our curation criteria:
 
 ---
 
-## The $CULT Token
+## The CULT
 
-Culture is powered by the $CULT token on Solana. Token holders are more than customers—they're stakeholders in our mission.
+Culture is powered by the CULT token on Solana. Token holders are more than customers—they're stakeholders in our mission.
 
 ### Token Benefits
 
-- **Free Shipping**: Hold 25M $CULT for free worldwide shipping
+- **Free Shipping**: Hold 25M CULT for free worldwide shipping
 - **Early Access**: First access to limited-edition drops
 - **Exclusive Products**: Some items only available to token holders
 - **Governance**: Vote on new product additions
@@ -173,7 +173,7 @@ Culture is powered by the $CULT token on Solana. Token holders are more than cus
 
 ### Token Economics
 
-- **Transaction Fee Revenue**: 65% of $CULT trading fees flow to operations
+- **Transaction Fee Revenue**: 65% of CULT trading fees flow to operations
 - **Regular Burns**: Deflationary mechanism to reward holders
 - **Creator Fees Distribution**:
   - 5% burned
@@ -194,7 +194,7 @@ Alice is Culture's AI assistant, capable of:
 - Answering product questions
 - Processing orders through natural conversation
 - Providing personalized recommendations
-- Creating custom products (for $CULT holders)
+- Creating custom products (for CULT holders)
 - Operating across Discord, Telegram, and X
 
 ### API-First Architecture
@@ -299,7 +299,7 @@ We believe AI agents will increasingly handle commerce for humans. When your AI 
 ### Business Metrics
 - Gross margin (target: 40%+)
 - Crypto payment percentage (track adoption)
-- $CULT holder customer percentage
+- CULT holder customer percentage
 - Monthly active community members
 
 ### Impact Metrics
@@ -315,7 +315,7 @@ By 2030, Culture will be:
 
 1. **The trusted destination** for health-conscious, privacy-respecting commerce
 2. **The preferred vendor** for AI agents purchasing on behalf of humans
-3. **A community of 100,000+** intentional consumers and $CULT holders
+3. **A community of 100,000+** intentional consumers and CULT holders
 4. **Proof** that principled commerce is not just viable, but superior
 
 We're not building a store. We're building the commercial infrastructure for human flourishing.

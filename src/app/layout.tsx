@@ -44,6 +44,9 @@ const siteUrl = getPublicSiteUrl();
 const isStaging =
   process.env.VERCEL_ENV === "preview" || process.env.STAGING === "1";
 
+/** Default OG image for social sharing — used by every page unless overridden. */
+const DEFAULT_OG_IMAGE = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: new URL(siteUrl),
@@ -55,6 +58,14 @@ export async function generateMetadata(): Promise<Metadata> {
       type: "website",
       siteName: SEO_CONFIG.fullName,
       locale: "en_US",
+      images: [
+        {
+          url: DEFAULT_OG_IMAGE,
+          width: 1200,
+          height: 630,
+          alt: `${SEO_CONFIG.fullName} — curated tech, apparel & wellness gear`,
+        },
+      ],
     },
     title: {
       default: SEO_CONFIG.fullName,
@@ -64,6 +75,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: "summary_large_image",
       description: SEO_CONFIG.metaDescription ?? SEO_CONFIG.description,
       title: SEO_CONFIG.fullName,
+      images: [DEFAULT_OG_IMAGE],
     },
     alternates: {
       canonical: "/",

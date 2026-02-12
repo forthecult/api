@@ -123,6 +123,21 @@ export const metadata: Metadata = {
     description:
       "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography. Photos by George J. Patterson.",
     type: "website",
+    images: [
+      {
+        url: "/lookbook/culture-lookbook-product-and-lifestyle.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Culture lookbook — product and lifestyle photography",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Lookbook | ${SEO_CONFIG.name}`,
+    description:
+      "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography.",
+    images: ["/lookbook/culture-lookbook-product-and-lifestyle.jpg"],
   },
 };
 

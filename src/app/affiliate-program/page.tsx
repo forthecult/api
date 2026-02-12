@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `Affiliate Program | ${SEO_CONFIG.name}`,
     description:
-      "Earn by sharing Culture. Premium products, 90-day cookie, payouts in crypto ($CULT, BTC, stablecoins) or PayPal. Join our affiliate program.",
+      "Earn by sharing Culture. Premium products, 90-day cookie, payouts in crypto (CULT, BTC, stablecoins) or PayPal. Join our affiliate program.",
     type: "website",
   },
 };
@@ -94,7 +94,7 @@ export default function AffiliateProgramPage() {
               <h3 className="mt-4 font-semibold text-foreground">Earn</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 When they buy, you earn a commission. Configurable per
-                partner. Payouts in Bitcoin, stablecoins, $CULT, or PayPal when you
+                partner. Payouts in Bitcoin, stablecoins, CULT, or PayPal when you
                 &apos;re ready.
               </p>
             </div>
@@ -206,7 +206,7 @@ export default function AffiliateProgramPage() {
                 Payout options
               </dt>
               <dd className="mt-1 font-semibold text-foreground">
-                BTC, stablecoins, $CULT, PayPal
+                BTC, stablecoins, CULT, PayPal
               </dd>
             </div>
             <div className="rounded-xl border border-border bg-background px-4 py-3 text-center shadow-sm">
@@ -252,7 +252,7 @@ export default function AffiliateProgramPage() {
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 We support Bitcoin, stablecoins (e.g. USDT on ERC-20 or
-                TRC-20), $CULT, and PayPal. You choose your preferred method when you
+                TRC-20), CULT, and PayPal. You choose your preferred method when you
                 apply or in your affiliate dashboard. Payouts are processed
                 manually; minimum thresholds may apply.
               </p>
