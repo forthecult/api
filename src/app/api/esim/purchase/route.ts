@@ -3,22 +3,22 @@ import { NextResponse } from "next/server";
 
 import { getCurrentUser } from "~/lib/auth";
 import { db } from "~/db";
-import { esimOrdersTable } from "~/db/schema";
-import {
-  getEsimPackageDetail,
-  purchaseEsimDataVoiceSms,
-  purchaseEsimPackage,
-} from "~/lib/esim-api";
+import { esimOrdersTable, ordersTable, orderItemsTable } from "~/db/schema";
+import { getEsimPackageDetail } from "~/lib/esim-api";
 
 type PurchaseBody = {
   packageId: string;
   packageType?: "DATA-ONLY" | "DATA-VOICE-SMS";
-  imei?: string;
+  paymentMethod: string; // "stripe" | "solana_pay" | "eth_pay" | "btcpay" | "ton_pay"
 };
 
 /**
  * POST /api/esim/purchase
- * Purchase an eSIM package for the authenticated user.
+ *
+ * Creates a pending order + eSIM order record for the authenticated user.
+ * Returns the orderId so the frontend can route to the appropriate payment
+ * flow (Stripe checkout, Solana Pay, etc.). The eSIM is NOT provisioned
+ * until payment is confirmed via webhook / confirm endpoint.
  */
 export async function POST(request: Request) {
   try {
@@ -31,7 +31,7 @@ export async function POST(request: Request) {
     }
 
     const body = (await request.json()) as PurchaseBody;
-    const { packageId, packageType = "DATA-ONLY", imei } = body;
+    const { packageId, packageType = "DATA-ONLY", paymentMethod = "stripe" } = body;
 
     if (!packageId) {
       return NextResponse.json(
@@ -54,34 +54,6 @@ export async function POST(request: Request) {
     const costCents = Math.round(Number(pkg.price) * 100);
     const priceCents = Math.round(costCents * (1 + markup / 100));
 
-    // Purchase from eSIM Card API
-    let purchaseResult;
-    if (packageType === "DATA-VOICE-SMS") {
-      purchaseResult = await purchaseEsimDataVoiceSms(packageId, imei);
-    } else {
-      purchaseResult = await purchaseEsimPackage(packageId, imei);
-    }
-
-    if (!purchaseResult.status) {
-      return NextResponse.json(
-        { status: false, message: "Purchase failed with eSIM provider" },
-        { status: 502 },
-      );
-    }
-
-    // Extract eSIM details from purchase result
-    const purchaseData = purchaseResult.data as Record<string, unknown>;
-    const sim = purchaseData.sim as
-      | { id: string; iccid: string; status: string }
-      | undefined;
-    const esimId = sim?.id ?? (purchaseData.id as string) ?? null;
-    const iccid = sim?.iccid ?? null;
-    const esimStatus = sim
-      ? "active"
-      : (purchaseData.sim_applied as boolean)
-        ? "active"
-        : "processing";
-
     // Determine country name from package details
     const countryName =
       pkg.countries?.[0]?.name ??
@@ -90,13 +62,39 @@ export async function POST(request: Request) {
 
     const now = new Date();
     const orderId = createId();
+    const esimOrderId = createId();
+    const orderItemId = createId();
 
-    // Save to our database
-    await db.insert(esimOrdersTable).values({
+    // Create a main order (same pattern as physical product orders)
+    await db.insert(ordersTable).values({
       id: orderId,
+      createdAt: now,
+      email: user.email ?? "guest@checkout.local",
+      fulfillmentStatus: "unfulfilled",
+      paymentMethod,
+      paymentStatus: "pending",
+      status: "pending",
+      totalCents: priceCents,
+      shippingFeeCents: 0,
+      updatedAt: now,
       userId: user.id,
-      esimId,
-      iccid,
+    });
+
+    // Create an order item (so it shows in order details like physical products)
+    await db.insert(orderItemsTable).values({
+      id: orderItemId,
+      name: `eSIM: ${pkg.name}`,
+      orderId,
+      priceCents,
+      productId: null, // Virtual product — no productsTable entry
+      quantity: 1,
+    });
+
+    // Create the eSIM-specific order record (pending until payment confirmed)
+    await db.insert(esimOrdersTable).values({
+      id: esimOrderId,
+      userId: user.id,
+      orderId,
       packageId,
       packageName: pkg.name,
       packageType,
@@ -107,9 +105,9 @@ export async function POST(request: Request) {
       costCents,
       priceCents,
       currency: "USD",
-      paymentMethod: "balance", // Deducted from reseller balance
-      paymentStatus: "paid",
-      status: esimStatus,
+      paymentMethod,
+      paymentStatus: "pending",
+      status: "pending",
       createdAt: now,
       updatedAt: now,
     });
@@ -118,20 +116,17 @@ export async function POST(request: Request) {
       status: true,
       data: {
         orderId,
-        esimId,
-        iccid,
-        status: esimStatus,
+        esimOrderId,
+        priceCents,
+        priceUsd: (priceCents / 100).toFixed(2),
         packageName: pkg.name,
-        message:
-          esimStatus === "processing"
-            ? "Your eSIM has been purchased and is being prepared. Please check back in a few minutes."
-            : "Your eSIM is ready! Check your dashboard for installation instructions.",
+        paymentMethod,
       },
     });
   } catch (error) {
     console.error("eSIM purchase error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to purchase eSIM" },
+      { status: false, message: "Failed to create eSIM order" },
       { status: 500 },
     );
   }

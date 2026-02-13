@@ -11,6 +11,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Badge } from "~/ui/primitives/badge";
@@ -228,8 +229,12 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
 // ---------- Main Component ----------
 
 export function MyEsimsClient() {
+  const searchParams = useSearchParams();
+  const justPurchased = searchParams.get("purchased");
+
   const [orders, setOrders] = useState<EsimOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showBanner, setShowBanner] = useState(!!justPurchased);
 
   useEffect(() => {
     fetch("/api/esim/my-esims", { credentials: "include" })
@@ -243,8 +248,34 @@ export function MyEsimsClient() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Auto-dismiss banner after 10 seconds
+  useEffect(() => {
+    if (showBanner) {
+      const timer = setTimeout(() => setShowBanner(false), 10000);
+      return () => clearTimeout(timer);
+    }
+  }, [showBanner]);
+
   return (
     <>
+      {/* Post-purchase success banner */}
+      {showBanner && (
+        <div className="mb-4 rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950/30">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+            <div>
+              <p className="font-medium text-green-800 dark:text-green-300">
+                Payment successful!
+              </p>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Your eSIM is being provisioned. It may take a few moments to
+                become active. Refresh this page to check the latest status.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           <Smartphone className="h-7 w-7" />

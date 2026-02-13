@@ -13,6 +13,10 @@ import {
   hasPrintifyItems,
 } from "~/lib/printify-orders";
 import {
+  fulfillEsimOrder,
+  hasEsimItems,
+} from "~/lib/esim-fulfillment";
+import {
   getClientIp,
   RATE_LIMITS,
   checkRateLimit,
@@ -149,7 +153,18 @@ export async function POST(request: NextRequest) {
         pyError instanceof Error ? pyError.message : "Unknown error";
     }
 
-    const fulfillmentError = [printfulError, printifyError]
+    let esimError: string | undefined;
+    try {
+      const hasEsim = await hasEsimItems(order.id);
+      if (hasEsim) {
+        const esimResult = await fulfillEsimOrder(order.id);
+        if (!esimResult.success) esimError = esimResult.error;
+      }
+    } catch (eError) {
+      esimError = eError instanceof Error ? eError.message : "Unknown error";
+    }
+
+    const fulfillmentError = [printfulError, printifyError, esimError]
       .filter(Boolean)
       .join("; ");
     return NextResponse.json({

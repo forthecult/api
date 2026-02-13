@@ -44,6 +44,10 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
+import {
+  fulfillEsimOrder,
+  hasEsimItems,
+} from "~/lib/esim-fulfillment";
 
 // Chain configurations for viem (typed as Chain to allow different block explorer names)
 const CHAINS: Record<number, Chain> = {
@@ -375,6 +379,17 @@ export async function POST(request: NextRequest) {
         pyError instanceof Error ? pyError.message : "Unknown error";
     }
 
+    let esimError: string | undefined;
+    try {
+      const hasEsim = await hasEsimItems(orderId);
+      if (hasEsim) {
+        const esimResult = await fulfillEsimOrder(orderId);
+        if (!esimResult.success) esimError = esimResult.error;
+      }
+    } catch (eError) {
+      esimError = eError instanceof Error ? eError.message : "Unknown error";
+    }
+
     const decimals = TOKEN_DECIMALS[token];
     const amountFormatted =
       token === "ETH"
@@ -392,8 +407,8 @@ export async function POST(request: NextRequest) {
       chainId,
       payer: senderAddress,
       message: "Payment confirmed successfully!",
-      ...((printfulError || printifyError) && {
-        fulfillmentError: [printfulError, printifyError]
+      ...((printfulError || printifyError || esimError) && {
+        fulfillmentError: [printfulError, printifyError, esimError]
           .filter(Boolean)
           .join("; "),
       }),

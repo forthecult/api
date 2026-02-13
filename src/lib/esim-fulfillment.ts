@@ -1,0 +1,154 @@
+/**
+ * eSIM fulfillment — provisions eSIM after payment confirmation.
+ *
+ * Called from every payment confirmation path (Stripe webhook, Solana Pay,
+ * ETH Pay, BTCPay, TON Pay) following the same pattern as Printful/Printify.
+ */
+
+import { eq } from "drizzle-orm";
+
+import { db } from "~/db";
+import { esimOrdersTable, ordersTable } from "~/db/schema";
+import {
+  purchaseEsimDataVoiceSms,
+  purchaseEsimPackage,
+  getMyEsims,
+} from "~/lib/esim-api";
+
+export type EsimFulfillmentResult = {
+  success: boolean;
+  esimOrderId?: string;
+  error?: string;
+};
+
+/**
+ * Check if an order contains eSIM items by looking for a linked
+ * esim_order record in "pending" payment status.
+ */
+export async function hasEsimItems(orderId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: esimOrdersTable.id })
+    .from(esimOrdersTable)
+    .where(eq(esimOrdersTable.orderId, orderId))
+    .limit(1);
+  return rows.length > 0;
+}
+
+/**
+ * Provision eSIMs from the reseller API for all pending eSIM items
+ * attached to the given order. Called after payment is confirmed.
+ */
+export async function fulfillEsimOrder(
+  orderId: string,
+): Promise<EsimFulfillmentResult> {
+  try {
+    // Find all pending eSIM orders linked to this order
+    const esimOrders = await db
+      .select()
+      .from(esimOrdersTable)
+      .where(eq(esimOrdersTable.orderId, orderId));
+
+    if (esimOrders.length === 0) {
+      return { success: true }; // Nothing to fulfill
+    }
+
+    for (const esimOrder of esimOrders) {
+      // Skip if already fulfilled
+      if (esimOrder.status === "active" || esimOrder.status === "processing") {
+        continue;
+      }
+
+      try {
+        // Purchase from eSIM Card API
+        let purchaseResult;
+        if (esimOrder.packageType === "DATA-VOICE-SMS") {
+          purchaseResult = await purchaseEsimDataVoiceSms(esimOrder.packageId);
+        } else {
+          purchaseResult = await purchaseEsimPackage(esimOrder.packageId);
+        }
+
+        if (!purchaseResult.status) {
+          await db
+            .update(esimOrdersTable)
+            .set({
+              status: "failed",
+              updatedAt: new Date(),
+            })
+            .where(eq(esimOrdersTable.id, esimOrder.id));
+          console.error(
+            `eSIM purchase failed for esim_order ${esimOrder.id}`,
+          );
+          continue;
+        }
+
+        // Extract eSIM details
+        const purchaseData = purchaseResult.data as Record<string, unknown>;
+        const sim = purchaseData.sim as
+          | { id: string; iccid: string; status: string }
+          | undefined;
+        const esimId = sim?.id ?? (purchaseData.id as string) ?? null;
+        const iccid = sim?.iccid ?? null;
+        const simApplied =
+          sim !== undefined || (purchaseData.sim_applied as boolean) === true;
+
+        // Try to get activation link
+        let activationLink: string | null = null;
+        if (esimId) {
+          try {
+            const myEsims = await getMyEsims();
+            const match = myEsims.data?.find((e) => e.id === esimId);
+            if (match?.universal_link) {
+              activationLink = match.universal_link;
+            }
+          } catch {
+            // Non-critical — user can check dashboard later
+          }
+        }
+
+        // Update our record
+        await db
+          .update(esimOrdersTable)
+          .set({
+            esimId,
+            iccid,
+            status: simApplied ? "active" : "processing",
+            paymentStatus: "paid",
+            activationLink,
+            activatedAt: simApplied ? new Date() : null,
+            updatedAt: new Date(),
+          })
+          .where(eq(esimOrdersTable.id, esimOrder.id));
+
+        console.log(
+          `eSIM provisioned for esim_order ${esimOrder.id}: esimId=${esimId}, status=${simApplied ? "active" : "processing"}`,
+        );
+      } catch (itemError) {
+        console.error(
+          `Error provisioning eSIM for esim_order ${esimOrder.id}:`,
+          itemError,
+        );
+        await db
+          .update(esimOrdersTable)
+          .set({ status: "failed", updatedAt: new Date() })
+          .where(eq(esimOrdersTable.id, esimOrder.id));
+      }
+    }
+
+    // Update the main order's fulfillment status
+    await db
+      .update(ordersTable)
+      .set({
+        fulfillmentStatus: "fulfilled",
+        updatedAt: new Date(),
+      })
+      .where(eq(ordersTable.id, orderId));
+
+    return { success: true, esimOrderId: esimOrders[0]?.id };
+  } catch (error) {
+    console.error("eSIM fulfillment error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}

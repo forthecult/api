@@ -12,6 +12,10 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
+import {
+  fulfillEsimOrder,
+  hasEsimItems,
+} from "~/lib/esim-fulfillment";
 
 /** BTCPay/Bitpay webhook: invoice status change. Confirm order when invoice is paid/settled. */
 const SETTLED_STATUSES = new Set(["paid", "confirmed", "complete", "settled"]);
@@ -161,6 +165,14 @@ export async function POST(request: NextRequest) {
       const hasPrintify = await hasPrintifyItems(order.id);
       if (hasPrintify) {
         await createAndConfirmPrintifyOrder(order.id);
+      }
+    } catch {
+      // log but don't fail webhook
+    }
+    try {
+      const hasEsim = await hasEsimItems(order.id);
+      if (hasEsim) {
+        await fulfillEsimOrder(order.id);
       }
     } catch {
       // log but don't fail webhook

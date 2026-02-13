@@ -1,5 +1,6 @@
 import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
+import { ordersTable } from "../orders/tables";
 import { userTable } from "../users/tables";
 
 /**
@@ -13,6 +14,11 @@ export const esimOrdersTable = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
+
+    // Link to the main order (for payment tracking)
+    orderId: text("order_id").references(() => ordersTable.id, {
+      onDelete: "set null",
+    }),
 
     // eSIM Card API identifiers
     esimId: text("esim_id"), // UUID from eSIM Card API (sim.id)
@@ -50,6 +56,7 @@ export const esimOrdersTable = pgTable(
   },
   (t) => [
     index("esim_order_user_id_idx").on(t.userId),
+    index("esim_order_order_id_idx").on(t.orderId),
     index("esim_order_status_idx").on(t.status),
     index("esim_order_esim_id_idx").on(t.esimId),
   ],

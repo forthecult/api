@@ -16,6 +16,10 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
+import {
+  fulfillEsimOrder,
+  hasEsimItems,
+} from "~/lib/esim-fulfillment";
 
 export async function POST(request: NextRequest) {
   try {
@@ -123,6 +127,18 @@ export async function POST(request: NextRequest) {
         console.error("Error processing Printify order:", pyError);
       }
 
+      try {
+        const hasEsim = await hasEsimItems(orderId);
+        if (hasEsim) {
+          const esimResult = await fulfillEsimOrder(orderId);
+          if (!esimResult.success) {
+            console.error("eSIM fulfillment failed:", esimResult.error);
+          }
+        }
+      } catch (esimError) {
+        console.error("Error processing eSIM order:", esimError);
+      }
+
       return NextResponse.json({ received: true, orderId });
     }
 
@@ -211,14 +227,54 @@ export async function POST(request: NextRequest) {
           }
         : {};
 
-    // Check for duplicate webhook event (idempotency)
+    // Check for existing order (eSIM orders are pre-created; regular orders are not)
     const [existingOrder] = await db
-      .select({ id: ordersTable.id })
+      .select({
+        id: ordersTable.id,
+        status: ordersTable.status,
+        paymentStatus: ordersTable.paymentStatus,
+      })
       .from(ordersTable)
       .where(eq(ordersTable.stripeCheckoutSessionId, session.id))
       .limit(1);
+
     if (existingOrder) {
-      return NextResponse.json({ received: true, duplicate: true });
+      // If already paid, this is a duplicate webhook — skip
+      if (existingOrder.paymentStatus === "paid") {
+        return NextResponse.json({ received: true, duplicate: true });
+      }
+
+      // Pre-created order (e.g. eSIM) — update status to paid and run fulfillment
+      await db
+        .update(ordersTable)
+        .set({
+          status: "paid",
+          paymentStatus: "paid",
+          updatedAt: new Date(),
+        })
+        .where(eq(ordersTable.id, existingOrder.id));
+
+      void onOrderCreated(existingOrder.id);
+
+      // Run eSIM fulfillment for pre-created orders
+      try {
+        const hasEsim = await hasEsimItems(existingOrder.id);
+        if (hasEsim) {
+          console.log(
+            `Stripe checkout for pre-created order ${existingOrder.id} has eSIM items, provisioning...`,
+          );
+          const esimResult = await fulfillEsimOrder(existingOrder.id);
+          if (esimResult.success) {
+            console.log(`eSIM provisioned for order ${existingOrder.id}`);
+          } else {
+            console.error(`Failed to provision eSIM: ${esimResult.error}`);
+          }
+        }
+      } catch (esimError) {
+        console.error("Error processing eSIM order:", esimError);
+      }
+
+      return NextResponse.json({ received: true, orderId: existingOrder.id });
     }
 
     await db.insert(ordersTable).values({
@@ -318,6 +374,25 @@ export async function POST(request: NextRequest) {
     } catch (pyError) {
       console.error("Error processing Printify order:", pyError);
       // Don't fail the webhook - order is created, Printify can be retried
+    }
+
+    // Provision eSIM if order contains eSIM items
+    try {
+      const hasEsim = await hasEsimItems(orderId);
+      if (hasEsim) {
+        console.log(
+          `Stripe order ${orderId} has eSIM items, provisioning eSIM...`,
+        );
+        const esimResult = await fulfillEsimOrder(orderId);
+        if (esimResult.success) {
+          console.log(`eSIM provisioned for order ${orderId}`);
+        } else {
+          console.error(`Failed to provision eSIM: ${esimResult.error}`);
+        }
+      }
+    } catch (esimError) {
+      console.error("Error processing eSIM order:", esimError);
+      // Don't fail the webhook - order is created, eSIM can be retried
     }
 
     return NextResponse.json({ received: true, orderId });

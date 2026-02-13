@@ -2,7 +2,7 @@
 
 import {
   ArrowLeft,
-  CheckCircle,
+  CreditCard,
   Globe,
   Loader2,
   Signal,
@@ -20,6 +20,27 @@ import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 import { Separator } from "~/ui/primitives/separator";
+
+// ---------- Payment Methods ----------
+
+type PaymentMethodId =
+  | "stripe"
+  | "solana_pay"
+  | "eth_pay"
+  | "btcpay"
+  | "ton_pay";
+
+const PAYMENT_METHODS: {
+  id: PaymentMethodId;
+  label: string;
+  description: string;
+}[] = [
+  { id: "stripe", label: "Card / PayPal", description: "Credit card, debit card, or PayPal" },
+  { id: "solana_pay", label: "Solana Pay", description: "SOL, USDC, and SPL tokens" },
+  { id: "eth_pay", label: "ETH / EVM", description: "ETH, USDC on Ethereum, Base, Polygon, etc." },
+  { id: "btcpay", label: "Bitcoin", description: "BTC via BTCPay" },
+  { id: "ton_pay", label: "TON", description: "TON network" },
+];
 
 // ---------- Types ----------
 
@@ -69,7 +90,8 @@ export function EsimPackageDetailClient({
   const [pkg, setPkg] = useState<PackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
-  const [purchaseSuccess, setPurchaseSuccess] = useState(false);
+  const [selectedPayment, setSelectedPayment] =
+    useState<PaymentMethodId>("stripe");
 
   useEffect(() => {
     setLoading(true);
@@ -92,27 +114,53 @@ export function EsimPackageDetailClient({
 
     setPurchasing(true);
     try {
-      const res = await fetch("/api/esim/purchase", {
+      // Step 1: Create the pending order + eSIM order record
+      const orderRes = await fetch("/api/esim/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           packageId,
           packageType: pkg?.package_type ?? "DATA-ONLY",
+          paymentMethod: selectedPayment,
         }),
       });
-      const data = await res.json();
-      if (data.status) {
-        setPurchaseSuccess(true);
-        toast.success("eSIM purchased successfully!");
+      const orderData = await orderRes.json();
+      if (!orderData.status) {
+        toast.error(orderData.message ?? "Failed to create order.");
+        return;
+      }
+
+      const orderId = orderData.data.orderId as string;
+
+      // Step 2: Route to the correct payment flow
+      if (selectedPayment === "stripe") {
+        // Create a Stripe Checkout session and redirect
+        const checkoutRes = await fetch("/api/esim/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+        const checkoutData = await checkoutRes.json();
+        if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
+          toast.error(
+            checkoutData.message ?? "Failed to create checkout session.",
+          );
+          return;
+        }
+        window.location.href = checkoutData.data.checkoutUrl;
       } else {
-        toast.error(data.message ?? "Purchase failed. Please try again.");
+        // For crypto payment methods, redirect to the checkout page
+        // which handles all crypto payments with the existing UI
+        router.push(
+          `/checkout?orderId=${orderId}&paymentMethod=${selectedPayment}&esim=true`,
+        );
       }
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setPurchasing(false);
     }
-  }, [user, router, packageId, pkg?.package_type]);
+  }, [user, router, packageId, pkg?.package_type, selectedPayment]);
 
   const coverageCountries = pkg?.countries ?? pkg?.romaing_countries ?? [];
 
@@ -141,31 +189,6 @@ export function EsimPackageDetailClient({
             <Link href="/esim">Browse all packages</Link>
           </Button>
         </div>
-      </div>
-    );
-  }
-
-  if (purchaseSuccess) {
-    return (
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <Card className="mx-auto max-w-lg">
-          <CardContent className="flex flex-col items-center gap-4 py-12">
-            <CheckCircle className="h-16 w-16 text-green-500" />
-            <h2 className="text-2xl font-bold">eSIM Purchased!</h2>
-            <p className="text-center text-muted-foreground">
-              Your eSIM for <strong>{pkg.name}</strong> is being prepared.
-              Check your dashboard for installation instructions.
-            </p>
-            <div className="flex gap-3 mt-4">
-              <Button asChild>
-                <Link href="/dashboard/esim">My eSIMs</Link>
-              </Button>
-              <Button asChild variant="outline">
-                <Link href="/esim">Buy Another</Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
@@ -384,6 +407,44 @@ export function EsimPackageDetailClient({
                   </div>
                 </div>
 
+                {/* Payment method selector */}
+                <div className="space-y-2">
+                  <p className="text-sm font-medium flex items-center gap-1.5">
+                    <CreditCard className="h-4 w-4" />
+                    Payment Method
+                  </p>
+                  <div className="space-y-1.5">
+                    {PAYMENT_METHODS.map((pm) => (
+                      <button
+                        key={pm.id}
+                        type="button"
+                        onClick={() => setSelectedPayment(pm.id)}
+                        className={`w-full flex items-center gap-3 rounded-lg border p-2.5 text-left text-sm transition-colors ${
+                          selectedPayment === pm.id
+                            ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                            : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        <div
+                          className={`h-3 w-3 shrink-0 rounded-full border-2 ${
+                            selectedPayment === pm.id
+                              ? "border-primary bg-primary"
+                              : "border-muted-foreground/30"
+                          }`}
+                        />
+                        <div className="min-w-0">
+                          <p className="font-medium leading-tight">
+                            {pm.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {pm.description}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <Button
                   className="w-full"
                   size="lg"
@@ -393,7 +454,7 @@ export function EsimPackageDetailClient({
                   {purchasing ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Processing...
+                      Preparing checkout...
                     </>
                   ) : (
                     `Buy eSIM — $${pkg.price}`
@@ -408,11 +469,11 @@ export function EsimPackageDetailClient({
 
                 <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
                   <p className="font-medium text-foreground">
-                    Instant Delivery
+                    Instant Digital Delivery
                   </p>
                   <p>
-                    Your eSIM will be available in your dashboard immediately
-                    after purchase. Scan the QR code on your device to activate.
+                    After payment, your eSIM will be provisioned and available in
+                    your dashboard. Scan the QR code on your device to activate.
                   </p>
                 </div>
               </CardContent>
