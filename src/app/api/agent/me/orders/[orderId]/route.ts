@@ -4,6 +4,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
 import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
+import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 const STATUS_MAP: Record<string, string> = {
   pending: "awaiting_payment",
@@ -24,6 +31,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ orderId: string }> },
 ) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`agent:me/orders/detail:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
+
   const result = await getMoltbookAgentFromRequest(request);
   if ("error" in result) return result.error;
 
@@ -82,9 +93,10 @@ export async function GET(
   const shippingUsd = (order.shippingFeeCents ?? 0) / 100;
   const totalUsd = order.totalCents / 100;
 
-  return NextResponse.json({
-    orderId: order.id,
-    status,
+  return NextResponse.json(
+    {
+      orderId: order.id,
+      status,
     createdAt: order.createdAt.toISOString(),
     paidAt:
       order.status === "paid" || order.paymentStatus === "paid"
@@ -124,5 +136,7 @@ export async function GET(
       /\/$/,
       "",
     ) + `/api/orders/${order.id}/status`,
-  });
+  },
+    { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
+  );
 }

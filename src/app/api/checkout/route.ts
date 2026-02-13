@@ -13,6 +13,7 @@ import { deriveDepositAddress } from "~/lib/solana-deposit";
 import {
   checkRateLimit,
   getClientIp,
+  getRateLimitHeaders,
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
@@ -57,7 +58,9 @@ export async function POST(request: NextRequest) {
     RATE_LIMITS.checkout,
   );
   if (!rateLimitResult.success) {
-    return withPublicApiCors(rateLimitResponse(rateLimitResult));
+    return withPublicApiCors(
+      rateLimitResponse(rateLimitResult, RATE_LIMITS.checkout.limit),
+    );
   }
 
   try {
@@ -286,7 +289,13 @@ export async function POST(request: NextRequest) {
             totalUsd,
           },
         },
-        { status: 201 },
+        {
+          status: 201,
+          headers: getRateLimitHeaders(
+            rateLimitResult,
+            RATE_LIMITS.checkout.limit,
+          ),
+        },
       ),
     );
   } catch (err) {

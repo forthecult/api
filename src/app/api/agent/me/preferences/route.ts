@@ -4,6 +4,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { agentPreferencesTable } from "~/db/schema";
 import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
+import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 /**
  * GET /api/agent/me/preferences
@@ -11,6 +18,10 @@ import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
  * Returns key-value preferences for the authenticated Moltbook agent.
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`agent:me/preferences:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
+
   const result = await getMoltbookAgentFromRequest(request);
   if ("error" in result) return result.error;
 
@@ -24,10 +35,13 @@ export async function GET(request: NextRequest) {
     preferences[row.key] = row.value;
   }
 
-  return NextResponse.json({
-    agent: { id: result.agent.id, name: result.agent.name },
-    preferences,
-  });
+  return NextResponse.json(
+    {
+      agent: { id: result.agent.id, name: result.agent.name },
+      preferences,
+    },
+    { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
+  );
 }
 
 /**
@@ -38,6 +52,10 @@ export async function GET(request: NextRequest) {
  * To remove a key, set it to empty string or omit and delete via separate convention if needed.
  */
 export async function PATCH(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`agent:me/preferences:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
+
   const result = await getMoltbookAgentFromRequest(request);
   if ("error" in result) return result.error;
 
@@ -92,9 +110,12 @@ export async function PATCH(request: NextRequest) {
     preferences[row.key] = row.value;
   }
 
-  return NextResponse.json({
-    ok: true,
-    agent: { id: result.agent.id, name: result.agent.name },
-    preferences,
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      agent: { id: result.agent.id, name: result.agent.name },
+      preferences,
+    },
+    { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
+  );
 }

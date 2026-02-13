@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Skeleton } from "~/ui/primitives/skeleton";
@@ -66,10 +67,9 @@ const TonPayClient = dynamic(
 );
 
 // Detect payment type from hash when present: #eth, #btcpay, #ton, #solana, #sui-...
-// When no hash, defaults to "solana" (most common) — the payment client
-// determines the correct token from the order API anyway.
-function getPaymentType(): "eth" | "btcpay" | "ton" | "solana" {
-  if (typeof window === "undefined") return "solana";
+// When no hash, fetch order and use paymentType from API (no crypto in URL).
+function getPaymentTypeFromHash(): "eth" | "btcpay" | "ton" | "solana" | null {
+  if (typeof window === "undefined") return null;
   const hash = window.location.hash.slice(1).toLowerCase();
   if (hash === "eth") return "eth";
   if (
@@ -80,18 +80,50 @@ function getPaymentType(): "eth" | "btcpay" | "ton" | "solana" {
   )
     return "btcpay";
   if (hash === "ton") return "ton";
-  // Default: Solana Pay (SOL, USDC, CRUST, PUMP, TROLL, SUI, WhiteWhale)
-  return "solana";
+  if (hash === "solana" || hash.startsWith("sui-")) return "solana";
+  return null;
 }
 
 export function CryptoPayLoader() {
-  // Synchronous initial state — avoids skeleton flash + extra API call
+  const params = useParams();
+  const orderId = (params?.invoiceId as string) ?? "";
   const [paymentType, setPaymentType] = useState<
-    "eth" | "btcpay" | "ton" | "solana"
-  >(() => getPaymentType());
+    "eth" | "btcpay" | "ton" | "solana" | null
+  >(() => getPaymentTypeFromHash());
+
+  // When no hash, get payment type from order API
+  useEffect(() => {
+    if (paymentType !== null) return;
+    if (!orderId?.trim()) {
+      setPaymentType("solana");
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { paymentType?: string } | null) => {
+        if (cancelled || !data?.paymentType) {
+          if (!cancelled) setPaymentType("solana");
+          return;
+        }
+        const pt = data.paymentType.toLowerCase();
+        if (pt === "eth" || pt === "btcpay" || pt === "ton" || pt === "solana")
+          setPaymentType(pt);
+        else setPaymentType("solana");
+      })
+      .catch(() => {
+        if (!cancelled) setPaymentType("solana");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId, paymentType]);
 
   useEffect(() => {
-    const handleHashChange = () => setPaymentType(getPaymentType());
+    const handleHashChange = () => {
+      const fromHash = getPaymentTypeFromHash();
+      if (fromHash) setPaymentType(fromHash);
+    };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
@@ -99,6 +131,12 @@ export function CryptoPayLoader() {
   if (paymentType === "eth") return <EthPayClient />;
   if (paymentType === "btcpay") return <BtcPayClient />;
   if (paymentType === "ton") return <TonPayClient />;
+  if (paymentType === "solana") return <CryptoPayClient />;
 
-  return <CryptoPayClient />;
+  return (
+    <div className="container mx-auto py-8">
+      <Skeleton className="h-10 w-48 mb-4" />
+      <Skeleton className="h-64 w-full" />
+    </div>
+  );
 }

@@ -4,6 +4,13 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
+import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 const STATUS_MAP: Record<string, string> = {
   pending: "awaiting_payment",
@@ -22,6 +29,10 @@ const STATUS_MAP: Record<string, string> = {
  * Requires valid identity token. Orders are those created with the same token at checkout.
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`agent:me/orders:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
+
   const result = await getMoltbookAgentFromRequest(request);
   if ("error" in result) return result.error;
 
@@ -46,16 +57,19 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_APP_URL ||
     "https://forthecult.store";
 
-  return NextResponse.json({
-    agent: { id: agent.id, name: agent.name },
-    orders: orders.map((o) => ({
-      orderId: o.id,
-      status: STATUS_MAP[o.status] ?? o.status,
-      totalUsd: o.totalCents / 100,
-      createdAt: o.createdAt.toISOString(),
-      statusUrl: `${baseUrl.replace(/\/$/, "")}/api/orders/${o.id}/status`,
-      detailUrl: `${baseUrl.replace(/\/$/, "")}/api/agent/me/orders/${o.id}`,
-    })),
-    total: orders.length,
-  });
+  return NextResponse.json(
+    {
+      agent: { id: agent.id, name: agent.name },
+      orders: orders.map((o) => ({
+        orderId: o.id,
+        status: STATUS_MAP[o.status] ?? o.status,
+        totalUsd: o.totalCents / 100,
+        createdAt: o.createdAt.toISOString(),
+        statusUrl: `${baseUrl.replace(/\/$/, "")}/api/orders/${o.id}/status`,
+        detailUrl: `${baseUrl.replace(/\/$/, "")}/api/agent/me/orders/${o.id}`,
+      })),
+      total: orders.length,
+    },
+    { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
+  );
 }

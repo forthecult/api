@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
+import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 /**
  * GET /api/agent/me
@@ -12,13 +19,18 @@ import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
  * Env: MOLTBOOK_APP_KEY (from https://moltbook.com/developers/dashboard)
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`agent:me:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
+
   const result = await getMoltbookAgentFromRequest(request);
   if ("error" in result) return result.error;
 
   const { agent } = result;
-  return NextResponse.json({
-    success: true,
-    agent: {
+  return NextResponse.json(
+    {
+      success: true,
+      agent: {
       id: agent.id,
       name: agent.name,
       karma: agent.karma,
@@ -31,5 +43,7 @@ export async function GET(request: NextRequest) {
           }
         : undefined,
     },
-  });
+  },
+    { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
+  );
 }

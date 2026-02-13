@@ -1,6 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
+import {
   DEFAULT_SEARCH_LIMIT,
   MAX_SEARCH_LIMIT,
   runProductSearch,
@@ -43,6 +50,12 @@ function parseSemanticQuery(q: string): {
  * Example: "cozy winter jacket under $100" -> query "cozy winter jacket", priceRange max 100.
  */
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`semantic-search:${ip}`, RATE_LIMITS.search);
+  if (!rl.success) {
+    return rateLimitResponse(rl, RATE_LIMITS.search.limit);
+  }
+
   try {
     const body = (await request.json().catch(() => ({}))) as {
       query?: string;
@@ -84,10 +97,15 @@ export async function POST(request: NextRequest) {
       offset: 0,
     });
 
-    return NextResponse.json({
-      ...result,
-      _parsed: { query: query || rawQuery, priceMin, priceMax },
-    });
+    return NextResponse.json(
+      {
+        ...result,
+        _parsed: { query: query || rawQuery, priceMin, priceMax },
+      },
+      {
+        headers: getRateLimitHeaders(rl, RATE_LIMITS.search.limit),
+      },
+    );
   } catch (err) {
     console.error("Semantic search error:", err);
     return NextResponse.json(

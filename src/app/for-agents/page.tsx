@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { getAgentApiSummary, getAgentApiLinks } from "~/lib/agent-api-summary";
 import { getAgentBaseUrl, isAgentSubdomain } from "~/lib/app-url";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -30,55 +31,23 @@ export const metadata: Metadata = {
   },
 };
 
-const API_LINKS = [
-  {
-    title: "Capabilities",
-    href: `${agentBase}/api/agent/capabilities`,
-    method: "GET",
-    description: "Start here. Returns what the API can do, payment options, and quick-start steps.",
-  },
-  {
-    title: "Products (agent-optimized)",
-    href: `${agentBase}/api/agent/products`,
-    method: "GET",
-    description: "Minimal product list for bots. Optional ?q=... and ?limit=...",
-  },
-  {
-    title: "Me (Moltbook identity)",
-    href: `${agentBase}/api/agent/me`,
-    method: "GET",
-    description: "Requires X-Moltbook-Identity header. Returns the verified agent profile.",
-  },
-  {
-    title: "My orders",
-    href: `${agentBase}/api/agent/me/orders`,
-    method: "GET",
-    description: "Requires Moltbook auth. Lists orders placed with your agent identity.",
-  },
-  {
-    title: "My preferences",
-    href: `${agentBase}/api/agent/me/preferences`,
-    method: "GET / PATCH",
-    description: "Requires Moltbook auth. Get or update key-value preferences (e.g. default_shipping_country).",
-  },
-  {
-    title: "Auth instructions",
-    href: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${encodeURIComponent(`${agentBase}/api/agent/me`)}`,
-    method: null,
-    description: "Moltbook-hosted instructions for bots: how to get and send an identity token.",
-  },
-  {
-    title: "OpenAPI spec",
-    href: `${agentBase}/api/openapi.json`,
-    method: null,
-    description: "Machine-readable API specification.",
-  },
-];
+/** Machine-readable summary for agents that parse the HTML. */
+function AgentApiSummaryScript() {
+  const summary = getAgentApiSummary();
+  return (
+    <script type="application/json" id="agent-api-summary">
+      {JSON.stringify(summary)}
+    </script>
+  );
+}
 
 /** AI-oriented view: document structure, pre/code blocks, minimal decoration. */
 function ForAgentsPageAgentView() {
+  const apiLinks = getAgentApiLinks();
+  const summary = getAgentApiSummary();
   return (
     <article className="mx-auto max-w-3xl px-4 py-8 font-mono text-sm">
+      <AgentApiSummaryScript />
       <h1 className="mb-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
         For the Cult — API for AI agents
       </h1>
@@ -98,11 +67,22 @@ function ForAgentsPageAgentView() {
       </section>
 
       <section className="mb-8">
+        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+          Checkout flow
+        </h2>
+        <ol className="list-inside list-decimal space-y-1 text-neutral-700 dark:text-neutral-300">
+          <li>Discover products: GET /api/agent/products or POST /api/products/semantic-search (JSON body: &#123;&quot;query&quot;: &quot;...&quot;&#125;).</li>
+          <li>Create order: POST /api/checkout with items, email, payment (chain, token), shipping address.</li>
+          <li>Poll until paid: GET /api/orders/{`{orderId}`}/status every few seconds until status is &quot;paid&quot; (payment window 1 hour).</li>
+        </ol>
+      </section>
+
+      <section className="mb-8">
         <h2 className="mb-3 text-base font-semibold text-neutral-800 dark:text-neutral-200">
           Endpoints (one per line)
         </h2>
         <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900" data-endpoints>
-          {API_LINKS.map((l) => `${l.method ?? "LINK"} ${l.href}`).join("\n")}
+          {apiLinks.map((l) => `${l.method ?? "LINK"} ${l.href}`).join("\n")}
         </pre>
       </section>
 
@@ -111,7 +91,7 @@ function ForAgentsPageAgentView() {
           Endpoint reference
         </h2>
         <dl className="space-y-3 text-neutral-700 dark:text-neutral-300">
-          {API_LINKS.map((l) => (
+          {apiLinks.map((l) => (
             <div key={l.href} className="border-b border-neutral-100 pb-2 dark:border-neutral-800">
               <dt className="font-semibold">
                 {l.title}
@@ -130,17 +110,34 @@ function ForAgentsPageAgentView() {
         </dl>
       </section>
 
+      <section className="mb-8">
+        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+          Error handling
+        </h2>
+        <p className="text-neutral-700 dark:text-neutral-300">
+          API error responses (4xx/5xx) may include a <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">_suggestions</code> array with recommended next steps for agents.
+        </p>
+      </section>
+
       <section>
         <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
           Links
         </h2>
         <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-900">
-          <a href={`${agentBase}/api/docs`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
-            {agentBase}/api/docs
+          <a href={summary.summaryUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {summary.summaryUrl}
           </a>
           {"\n"}
-          <a href="https://moltbook.com/developers.md" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
-            https://moltbook.com/developers.md
+          <a href={`${agentBase}/api/agent/capabilities`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {agentBase}/api/agent/capabilities
+          </a>
+          {"\n"}
+          <a href={`${agentBase}/api/openapi.json`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {agentBase}/api/openapi.json
+          </a>
+          {"\n"}
+          <a href={`${agentBase}/api/docs`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {agentBase}/api/docs
           </a>
         </pre>
       </section>
@@ -150,6 +147,7 @@ function ForAgentsPageAgentView() {
 
 /** Human-oriented view: cards, buttons, store styling. */
 function ForAgentsPageHumanView() {
+  const apiLinks = getAgentApiLinks();
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
       <header className="mb-10 border-b border-border pb-8">
@@ -188,7 +186,7 @@ function ForAgentsPageHumanView() {
       <section className="mt-12">
         <h2 className="font-heading mb-4 text-xl font-semibold">Key endpoints</h2>
         <div className="space-y-3">
-          {API_LINKS.map((link) => (
+          {apiLinks.map((link) => (
             <Card key={link.href}>
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
@@ -219,15 +217,6 @@ function ForAgentsPageHumanView() {
       <footer className="mt-12 flex flex-wrap gap-4 border-t border-border pt-8">
         <Button variant="outline" asChild>
           <Link href="/api/docs">API docs (Swagger)</Link>
-        </Button>
-        <Button variant="outline" asChild>
-          <a
-            href="https://moltbook.com/developers.md"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Moltbook integration guide
-          </a>
         </Button>
         <Button variant="ghost" asChild>
           <Link href="/">Back to store</Link>

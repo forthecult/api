@@ -12,6 +12,7 @@ import {
   formatEsimPackageName,
   formatValidityOption,
   getUnlimitedPlanBaseName,
+  getUnlimitedPlanGroupKey,
 } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Badge } from "~/ui/primitives/badge";
@@ -90,7 +91,7 @@ function matchesData(pkg: Package, filter: DataFilter): boolean {
   return true;
 }
 
-/** One card (single package) or a group of unlimited packages with same base name. */
+/** One card (single package) or a group of unlimited packages (same product line). */
 type PlanItem =
   | { type: "single"; pkg: Package }
   | { type: "unlimited"; baseName: string; packages: Package[] };
@@ -101,21 +102,25 @@ function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
 
   for (const pkg of packages) {
     const isUnlimited = Boolean(pkg.unlimited || pkg.data_quantity === 0);
-    const baseName = isUnlimited ? getUnlimitedPlanBaseName(pkg.name) : null;
+    const groupKey = isUnlimited ? getUnlimitedPlanGroupKey(pkg.name) : null;
 
-    if (isUnlimited && baseName) {
-      const existing = unlimitedGroups.get(baseName) ?? [];
+    if (isUnlimited && groupKey) {
+      const existing = unlimitedGroups.get(groupKey) ?? [];
       existing.push(pkg);
-      unlimitedGroups.set(baseName, existing);
+      unlimitedGroups.set(groupKey, existing);
     } else {
       singles.push(pkg);
     }
   }
 
   const result: PlanItem[] = [];
-  for (const [baseName, pkgs] of unlimitedGroups) {
+  for (const [groupKey, pkgs] of unlimitedGroups) {
     if (pkgs.length > 1) {
       pkgs.sort((a, b) => (a.package_validity ?? 0) - (b.package_validity ?? 0));
+      const base = getUnlimitedPlanBaseName(pkgs[0]!.name) ?? groupKey.split("|")[0] ?? "Unlimited";
+      const suffix = groupKey.includes("|") ? groupKey.split("|").slice(1).join("|").trim() : "";
+      const modifier = suffix.match(/(?:^|,)\s*(Throttled|Unthrottled|V2)(?:\s|$|,)/i)?.[1];
+      const baseName = modifier ? `${base} (${modifier})` : base;
       result.push({ type: "unlimited", baseName, packages: pkgs });
     } else {
       singles.push(pkgs[0]!);
@@ -178,10 +183,17 @@ function PackageCard({
               {pkg.package_validity} {pkg.package_validity_unit}s
             </span>
           </div>
-          {(pkg.voice_quantity ?? 0) > 0 && (
+          {(pkg.package_type === "DATA-VOICE-SMS" || (pkg.voice_quantity ?? 0) > 0 || (pkg.sms_quantity ?? 0) > 0) && (
             <div className="text-xs text-muted-foreground">
-              {pkg.voice_quantity} {pkg.voice_unit} &middot;{" "}
-              {pkg.sms_quantity} SMS
+              {(pkg.voice_quantity ?? 0) > 0 || (pkg.sms_quantity ?? 0) > 0 ? (
+                <>
+                  {(pkg.voice_quantity ?? 0) > 0 && <span>{pkg.voice_quantity} {pkg.voice_unit ?? "min"}</span>}
+                  {(pkg.voice_quantity ?? 0) > 0 && (pkg.sms_quantity ?? 0) > 0 && <span> &middot; </span>}
+                  {(pkg.sms_quantity ?? 0) > 0 && <span>{pkg.sms_quantity} SMS</span>}
+                </>
+              ) : (
+                <span>Voice &amp; SMS included</span>
+              )}
             </div>
           )}
           <div className="mt-auto pt-2 flex items-baseline justify-between border-t">
@@ -255,6 +267,26 @@ function UnlimitedPlanCard({
           </span>
           <span className="text-xs text-muted-foreground">USD</span>
         </div>
+        {(groupPackages[0]?.package_type === "DATA-VOICE-SMS" ||
+          (groupPackages.some((p) => (p.voice_quantity ?? 0) > 0 || (p.sms_quantity ?? 0) > 0))) && (
+          <div className="text-xs text-muted-foreground">
+            {(() => {
+              const p = groupPackages[0];
+              if (!p) return null;
+              const v = p.voice_quantity ?? 0;
+              const s = p.sms_quantity ?? 0;
+              if (v > 0 || s > 0)
+                return (
+                  <>
+                    {v > 0 && <span>{v} {p.voice_unit ?? "min"}</span>}
+                    {v > 0 && s > 0 && " · "}
+                    {s > 0 && <span>{s} SMS</span>}
+                  </>
+                );
+              return <span>Voice &amp; SMS included</span>;
+            })()}
+          </div>
+        )}
         <div className="space-y-1">
           <label className="text-xs font-medium text-muted-foreground">
             Days

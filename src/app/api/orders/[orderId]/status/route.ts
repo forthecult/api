@@ -1,14 +1,15 @@
 import { eq } from "drizzle-orm";
-import type { NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
-import { apiError, apiSuccess } from "~/lib/api-error";
+import { apiError } from "~/lib/api-error";
 import {
   checkRateLimit,
   getClientIp,
-  rateLimitResponse,
+  getRateLimitHeaders,
   RATE_LIMITS,
+  rateLimitResponse,
 } from "~/lib/rate-limit";
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
@@ -30,7 +31,7 @@ export async function GET(
     RATE_LIMITS.orderStatus,
   );
   if (!rateLimitResult.success) {
-    return rateLimitResponse(rateLimitResult);
+    return rateLimitResponse(rateLimitResult, RATE_LIMITS.orderStatus.limit);
   }
 
   try {
@@ -106,14 +107,23 @@ export async function GET(
 
     actions.help = "Email support@forthecult.store for assistance";
 
-    return apiSuccess({
-      orderId: order.id,
-      status,
-      paidAt: paidAt ?? null,
-      ...(order.cryptoTxHash && { txHash: order.cryptoTxHash }),
-      ...(expiresAt && status === "awaiting_payment" && { expiresAt }),
-      _actions: actions,
-    });
+    return NextResponse.json(
+      {
+        orderId: order.id,
+        status,
+        paidAt: paidAt ?? null,
+        ...(order.cryptoTxHash && { txHash: order.cryptoTxHash }),
+        ...(expiresAt && status === "awaiting_payment" && { expiresAt }),
+        _actions: actions,
+      },
+      {
+        status: 200,
+        headers: getRateLimitHeaders(
+          rateLimitResult,
+          RATE_LIMITS.orderStatus.limit,
+        ),
+      },
+    );
   } catch (err) {
     console.error("Order status error:", err);
     return apiError("INTERNAL_ERROR");

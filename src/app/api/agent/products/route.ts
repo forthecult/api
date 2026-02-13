@@ -1,6 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
+import {
   DEFAULT_SEARCH_LIMIT,
   MAX_SEARCH_LIMIT,
   runProductSearch,
@@ -17,6 +24,12 @@ const DESCRIPTION_MAX_LENGTH = 200;
  * No auth required; use for discovery. For authenticated agent context use X-Moltbook-Identity and GET /api/agent/me.
  */
 export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const rl = await checkRateLimit(`agent:products:${ip}`, RATE_LIMITS.search);
+  if (!rl.success) {
+    return rateLimitResponse(rl, RATE_LIMITS.search.limit);
+  }
+
   try {
     const { searchParams } = request.nextUrl;
     const q = searchParams.get("q")?.trim() ?? undefined;
@@ -55,6 +68,7 @@ export async function GET(request: NextRequest) {
       {
         headers: {
           "Cache-Control": "public, max-age=60",
+          ...getRateLimitHeaders(rl, RATE_LIMITS.search.limit),
         },
       },
     );

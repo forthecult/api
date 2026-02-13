@@ -242,17 +242,9 @@ export function EsimPackageDetailClient({
         toast.error(cryptoData.message ?? "Failed to set up crypto payment.");
         return;
       }
-      const hash =
-        cryptoOption === "solana_pay"
-          ? "solana"
-          : cryptoOption === "eth_pay" || cryptoOption === "eth_pay_stable"
-            ? "eth"
-            : cryptoOption === "btcpay"
-              ? "bitcoin"
-              : "ton";
       const baseUrl =
         typeof window !== "undefined" ? window.location.origin : "";
-      window.location.href = `${baseUrl}/checkout/${orderId}#${hash}`;
+      window.location.href = `${baseUrl}/checkout/${orderId}`;
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -657,31 +649,31 @@ export function EsimPackageDetailClient({
           <h2 className="text-lg font-semibold text-foreground mb-2">
             eSIM refund eligibility
           </h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="text-sm text-muted-foreground mb-4 max-w-3xl">
             eSIM plans have different refund rules. Please review before purchasing.
           </p>
-          <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside max-w-3xl">
-            <li>
+          <ul className="text-sm text-muted-foreground space-y-3 list-disc list-outside pl-5 max-w-3xl break-words">
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Instant refund:</span>{" "}
               Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.
             </li>
-            <li>
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Activated or used:</span>{" "}
               Any eSIM that has been activated, partially used, or has data consumption is <strong>non-refundable</strong>. Once an eSIM connects to a network, it is considered delivered and consumed.
             </li>
-            <li>
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
               If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
             </li>
-            <li>
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Carrier &amp; network:</span>{" "}
               No refund for country-wide shutdowns, temporary carrier outages, or local regulations affecting connectivity; service resumes when the network is available again.
             </li>
-            <li>
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Vodafone &amp; O2:</span>{" "}
               Validity is only in officially supported countries. Using the eSIM outside those regions will disable the eSIM and no refund will be issued.
             </li>
-            <li>
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Voice &amp; SMS plans:</span>{" "}
               All eSIM plans that include Voice and/or SMS are <strong>non-refundable</strong>, regardless of activation or usage.
             </li>

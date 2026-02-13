@@ -17,11 +17,9 @@ import {
 import { SolanaWalletProvider } from "../crypto/SolanaWalletProvider";
 import { SuiWalletProvider } from "../crypto/SuiWalletProvider";
 
-// Detect if this is an ETH/EVM payment (from hash or from order API when URL has no hash)
-function isEvmPaymentFromHash(): boolean {
+function isEvmFromHash(): boolean {
   if (typeof window === "undefined") return false;
-  const hash = window.location.hash.slice(1).toLowerCase();
-  return hash === "eth";
+  return window.location.hash.slice(1).toLowerCase() === "eth";
 }
 
 export default function CheckoutInvoiceLayout({
@@ -36,15 +34,28 @@ export default function CheckoutInvoiceLayout({
   const searchParams = useSearchParams();
   const openModal = useCallback(() => setOpen(true), []);
 
-  // Determine EVM vs Solana/Sui purely from URL hash — no API call needed.
-  // The checkout flow always sets the correct hash (#eth, #ton, #sui-*, etc).
   useEffect(() => {
-    setIsEvm(isEvmPaymentFromHash());
+    if (isEvmFromHash()) {
+      setIsEvm(true);
+      return;
+    }
+    if (!orderId?.trim()) return;
+    let cancelled = false;
+    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { paymentType?: string } | null) => {
+        if (!cancelled && data?.paymentType?.toLowerCase() === "eth")
+          setIsEvm(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, [orderId]);
 
   useEffect(() => {
     const handleHashChange = () => {
-      if (isEvmPaymentFromHash()) setIsEvm(true);
+      if (isEvmFromHash()) setIsEvm(true);
     };
     window.addEventListener("hashchange", handleHashChange);
     return () => window.removeEventListener("hashchange", handleHashChange);

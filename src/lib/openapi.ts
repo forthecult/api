@@ -125,6 +125,45 @@ export const openApiSpec = {
         },
       },
     },
+    "/agent/summary": {
+      get: {
+        tags: ["Health"],
+        summary: "Machine-readable API summary for agents",
+        description:
+          "JSON summary of key endpoints and start URL. Use when you prefer a single JSON response instead of parsing the for-agents HTML page.",
+        operationId: "getAgentSummary",
+        responses: {
+          "200": {
+            description: "API summary with startUrl, openApiSpec, and endpoints list",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    name: { type: "string" },
+                    description: { type: "string" },
+                    startUrl: { type: "string" },
+                    openApiSpec: { type: "string" },
+                    summaryUrl: { type: "string" },
+                    endpoints: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          title: { type: "string" },
+                          method: { type: "string" },
+                          href: { type: "string" },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     "/chains": {
       get: {
         tags: ["Chains"],

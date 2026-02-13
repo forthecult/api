@@ -180,8 +180,10 @@ export const RATE_LIMITS = {
   admin: { limit: 200, windowSeconds: 60 } as RateLimitConfig,
   /** Order status polling: 120/min per IP (~2/s, enough for several orders polling every 5s) */
   orderStatus: { limit: 120, windowSeconds: 60 } as RateLimitConfig,
-  /** General API: 100 requests per minute */
+  /** General API: 100 requests per minute (agent capabilities, me, orders, preferences) */
   api: { limit: 100, windowSeconds: 60 } as RateLimitConfig,
+  /** Search / product listing: 30 requests per minute (agent/products, semantic-search) */
+  search: { limit: 30, windowSeconds: 60 } as RateLimitConfig,
   /** Contact form: 5 submissions per minute per IP (spam protection) */
   contact: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
   /** Loqate address lookup: 30 requests per minute per IP (quota protection) */
@@ -189,22 +191,38 @@ export const RATE_LIMITS = {
 } as const;
 
 /**
- * Create a rate-limited response with proper headers.
+ * Headers for rate limiting so agents can throttle without reading docs.
+ * Include on both success and 429 responses when you have a RateLimitResult and the limit value.
  */
-export function rateLimitResponse(result: RateLimitResult): Response {
+export function getRateLimitHeaders(
+  result: RateLimitResult,
+  limit: number,
+): Record<string, string> {
+  return {
+    "X-RateLimit-Limit": String(limit),
+    "X-RateLimit-Remaining": String(result.remaining),
+    "X-RateLimit-Reset": String(result.resetAt),
+  };
+}
+
+/**
+ * Create a rate-limited response with proper headers.
+ * Pass limit when you have it so 429 responses include X-RateLimit-Limit for agents.
+ */
+export function rateLimitResponse(
+  result: RateLimitResult,
+  limit?: number,
+): Response {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...getRateLimitHeaders(result, limit ?? 0),
+    "Retry-After": String(Math.ceil((result.resetAt - Date.now()) / 1000)),
+  };
   return new Response(
     JSON.stringify({
       error: "Too many requests",
       retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000),
     }),
-    {
-      status: 429,
-      headers: {
-        "Content-Type": "application/json",
-        "X-RateLimit-Remaining": String(result.remaining),
-        "X-RateLimit-Reset": String(result.resetAt),
-        "Retry-After": String(Math.ceil((result.resetAt - Date.now()) / 1000)),
-      },
-    },
+    { status: 429, headers },
   );
 }

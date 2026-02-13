@@ -1,6 +1,14 @@
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { getAgentBaseUrl } from "~/lib/app-url";
+import {
+  checkRateLimit,
+  getClientIp,
+  getRateLimitHeaders,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 import { x402Enabled, x402Network } from "~/lib/x402-config";
 
 /**
@@ -11,6 +19,13 @@ import { x402Enabled, x402Network } from "~/lib/x402-config";
  * This is the most important endpoint for AI agent onboarding.
  */
 export async function GET() {
+  const headersList = await headers();
+  const ip = getClientIp(headersList);
+  const rl = await checkRateLimit(`agent:capabilities:${ip}`, RATE_LIMITS.api);
+  if (!rl.success) {
+    return rateLimitResponse(rl, RATE_LIMITS.api.limit);
+  }
+
   const agentBase = getAgentBaseUrl();
   const mainBase = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
@@ -196,6 +211,7 @@ export async function GET() {
       // All available endpoints (use agentBase for agent-facing URLs when using ai.forthecult.store)
       _links: {
         self: "/api/agent/capabilities",
+        summary: `${agentBase}/api/agent/summary`,
         me: "/api/agent/me",
         myOrders: "/api/agent/me/orders",
         myPreferences: "/api/agent/me/preferences",
@@ -235,7 +251,8 @@ export async function GET() {
     },
     {
       headers: {
-        "Cache-Control": "public, max-age=300", // Cache for 5 minutes
+        "Cache-Control": "public, max-age=300",
+        ...getRateLimitHeaders(rl, RATE_LIMITS.api.limit),
       },
     },
   );

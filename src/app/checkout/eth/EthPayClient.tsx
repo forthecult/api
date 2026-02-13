@@ -387,9 +387,8 @@ export function EthPayClient() {
       setMultiChainConnectorForNetwork(phantom);
       setConnectStep("network");
     } else {
-      // Navigate to Solana payment page with hash format
       setConnectModalOpen(false);
-      router.push(`/checkout/${orderId}#solana`);
+      router.push(`/checkout/${orderId}`);
     }
   }, [connectors, orderId, router]);
 
@@ -405,15 +404,13 @@ export function EthPayClient() {
     setConnectModalOpen(false);
     setMultiChainConnectorForNetwork(null);
     setConnectStep("wallets");
-    // Navigate to Solana payment page with hash format
-    router.push(`/checkout/${orderId}#solana`);
+    router.push(`/checkout/${orderId}`);
   }, [orderId, router]);
 
   const handleNetworkSui = useCallback(() => {
     setConnectModalOpen(false);
     setMultiChainConnectorForNetwork(null);
     setConnectStep("wallets");
-    // Navigate to Sui payment page with hash format
     const amount = amountUsd.toFixed(2);
     const expires = Date.now() + 60 * 60 * 1000;
     router.push(`/checkout/${orderId}#sui-${amount}-${expires}`);
