@@ -37,7 +37,7 @@ function isOpenClawConfigured(): boolean {
   );
 }
 
-const OPENCLAW_FETCH_TIMEOUT_MS = 60_000; // 60s — OpenClaw can be slow on cold start
+const OPENCLAW_FETCH_TIMEOUT_MS = 120_000; // 120s — OpenClaw can be slow after restarts/cold start
 const OPENCLAW_RETRY_DELAY_MS = 2_000;
 
 /**
@@ -132,7 +132,16 @@ async function generateViaOpenClaw(
     }
     return content || null;
   } catch (err) {
-    console.error("[SupportChat] OpenClaw network/parse error:", err);
+    const isAbort =
+      (err instanceof Error && err.name === "AbortError") ||
+      (err instanceof Error && /aborted/i.test(String(err.message)));
+    if (isAbort) {
+      console.warn(
+        `[SupportChat] OpenClaw request timed out after ${OPENCLAW_FETCH_TIMEOUT_MS / 1000}s (gateway may be cold or slow).`,
+      );
+    } else {
+      console.error("[SupportChat] OpenClaw network/parse error:", err);
+    }
     return null;
   }
 }

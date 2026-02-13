@@ -95,15 +95,18 @@ Once OpenClaw is running and you can open the dashboard (e.g. `/openclaw?token=.
 
 - **Config:** In the dashboard go to **Config** (or Config editor on `/setup`).
   - Ensure `gateway.auth` is set so the store can call the API.
-  - **Enable the chat completions endpoint** (it is off by default; otherwise the store gets **405 Method Not Allowed**):
+  - **Enable the chat completions endpoint** (it is off by default; otherwise the store gets **405 Method Not Allowed**).
+  - **Trust Railway’s proxy** so the gateway stops logging *"Proxy headers detected from untrusted address"* and treats connections correctly behind the reverse proxy:
   ```json
   "gateway": {
     "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_TOKEN}" },
     "http": {
       "endpoints": { "chatCompletions": { "enabled": true } }
-    }
+    },
+    "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "127.0.0.1", "::1"]
   }
   ```
+  `trustedProxies` lists IPs/CIDRs that are allowed to send proxy headers (e.g. Railway’s internal proxy). The values above cover common private ranges and loopback; adjust if your host uses different proxy IPs.
   If you used the backup import, add this block at the top of the config and Save.
 
 - **Env vars on the OpenClaw service:**  
