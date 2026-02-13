@@ -193,10 +193,13 @@ const SSR_FALLBACK: CartContextType = {
 export function useCart(): CartContextType {
   const ctx = React.useContext(CartContext);
   if (!ctx) {
-    // During SSR the provider tree may not be mounted yet — return a safe
-    // no-op fallback instead of throwing so the page can still render.
-    if (typeof window === "undefined") return SSR_FALLBACK;
-    throw new Error("useCart must be used within a CartProvider");
+    // Return a safe no-op fallback instead of crashing. This handles:
+    // 1. SSR when the provider tree hasn't mounted yet
+    // 2. Client when a provider above CartProvider throws (e.g. wallet extension crash)
+    if (typeof window !== "undefined") {
+      console.warn("useCart: CartProvider not found, using fallback");
+    }
+    return SSR_FALLBACK;
   }
   return ctx;
 }

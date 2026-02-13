@@ -201,12 +201,22 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   );
 }
 
+/** SSR-safe fallback when CryptoCurrencyProvider is not in the tree. */
+const CRYPTO_FALLBACK: CryptoCurrencyContextType = {
+  convertUsdToCrypto: () => null,
+  formatCrypto: (amount: number) => amount.toFixed(8),
+  rates: {},
+  selectedCrypto: "BTC",
+  setSelectedCrypto: () => {},
+};
+
 export function useCryptoCurrency(): CryptoCurrencyContextType {
-  const ctx = React.use(CryptoCurrencyContext);
-  if (!ctx)
-    throw new Error(
-      "useCryptoCurrency must be used within CryptoCurrencyProvider",
-    );
+  const ctx = React.useContext(CryptoCurrencyContext);
+  if (!ctx) {
+    if (typeof window === "undefined") return CRYPTO_FALLBACK;
+    console.warn("useCryptoCurrency: CryptoCurrencyProvider not found, using fallback");
+    return CRYPTO_FALLBACK;
+  }
   return ctx;
 }
 

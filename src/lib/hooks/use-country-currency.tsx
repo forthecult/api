@@ -859,11 +859,26 @@ export function CountryCurrencyProvider({
   );
 }
 
+/** SSR-safe fallback when CountryCurrencyProvider is not in the tree. */
+const COUNTRY_CURRENCY_FALLBACK: CountryCurrencyContextType = {
+  convertUsdToFiat: () => null,
+  formatFiat: (amount: number) => `$${amount.toFixed(2)}`,
+  rates: {},
+  selectedCountry: "US",
+  setSelectedCountry: () => {},
+  currency: "USD",
+  setCurrency: () => {},
+  setPreferences: () => {},
+};
+
 export function useCountryCurrency(): CountryCurrencyContextType {
-  const ctx = React.use(CountryCurrencyContext);
-  if (!ctx)
-    throw new Error(
-      "useCountryCurrency must be used within CountryCurrencyProvider",
-    );
+  const ctx = React.useContext(CountryCurrencyContext);
+  if (!ctx) {
+    if (typeof window === "undefined") return COUNTRY_CURRENCY_FALLBACK;
+    // On the client, return fallback instead of throwing to survive provider
+    // tree failures (e.g. wallet extension crashes above this provider).
+    console.warn("useCountryCurrency: CountryCurrencyProvider not found, using fallback");
+    return COUNTRY_CURRENCY_FALLBACK;
+  }
   return ctx;
 }

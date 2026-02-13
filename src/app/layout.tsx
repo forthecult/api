@@ -16,6 +16,7 @@ import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
 import { CryptoCurrencyProvider } from "~/lib/hooks/use-crypto-currency";
 import "~/css/globals.css";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
+import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
 import { ConditionalHeader } from "~/ui/components/header/conditional-header";
 import { SupportChatWidgetWrapper } from "~/ui/components/support-chat/support-chat-widget-wrapper";
@@ -185,25 +186,27 @@ export default async function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
-          <WagmiProvider>
-            <AuthWalletModalProvider>
-            <CriticalRoutePrefetcher />
-            <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
-            <CartProvider>
-              <CryptoCurrencyProvider>
-                <Suspense
-                  fallback={
-                    <CountryCurrencyProvider initialCountry={null}>
-                      <LayoutShell>{children}</LayoutShell>
-                    </CountryCurrencyProvider>
-                  }
-                >
-                  <CookieLayoutContent>{children}</CookieLayoutContent>
-                </Suspense>
-              </CryptoCurrencyProvider>
-            </CartProvider>
-            </AuthWalletModalProvider>
-          </WagmiProvider>
+          <CriticalRoutePrefetcher />
+          <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
+          <CartProvider>
+            <CryptoCurrencyProvider>
+              <WalletErrorBoundary>
+                <WagmiProvider>
+                  <AuthWalletModalProvider>
+                    <Suspense
+                      fallback={
+                        <CountryCurrencyProvider initialCountry={null}>
+                          <LayoutShell>{children}</LayoutShell>
+                        </CountryCurrencyProvider>
+                      }
+                    >
+                      <CookieLayoutContent>{children}</CookieLayoutContent>
+                    </Suspense>
+                  </AuthWalletModalProvider>
+                </WagmiProvider>
+              </WalletErrorBoundary>
+            </CryptoCurrencyProvider>
+          </CartProvider>
         </ThemeProvider>
         {/* SpeedInsights only on Vercel; script 404s on other hosts (e.g. Railway) and can cause console noise */}
         {process.env.NEXT_PUBLIC_VERCEL === "1" ? <SpeedInsights /> : null}
