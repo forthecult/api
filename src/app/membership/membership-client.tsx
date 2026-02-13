@@ -50,12 +50,10 @@ import {
 // Tier definitions
 // ---------------------------------------------------------------------------
 
-type Tier = {
+interface Tier {
   id: number;
   name: string;
   tagline: string;
-  /** Approximate base stake (before dynamic adjustment). Display only. */
-  baseStakeDisplay: string;
   accent: string;
   accentBg: string;
   accentBorder: string;
@@ -68,14 +66,13 @@ type Tier = {
     extras: string[];
   };
   popular?: boolean;
-};
+}
 
 const TIERS: Tier[] = [
   {
     id: 4,
     name: "Tier 4",
     tagline: "Start your journey",
-    baseStakeDisplay: "~25,000 CULT",
     accent: "text-muted-foreground",
     accentBg: "bg-muted/60",
     accentBorder: "border-border",
@@ -92,7 +89,6 @@ const TIERS: Tier[] = [
     id: 3,
     name: "Tier 3",
     tagline: "Level up your membership",
-    baseStakeDisplay: "~75,000 CULT",
     accent: "text-chart-2",
     accentBg: "bg-chart-2/10",
     accentBorder: "border-chart-2/30",
@@ -113,7 +109,6 @@ const TIERS: Tier[] = [
     id: 2,
     name: "Tier 2",
     tagline: "Unlock serious value",
-    baseStakeDisplay: "~200,000 CULT",
     accent: "text-chart-4",
     accentBg: "bg-chart-4/10",
     accentBorder: "border-chart-4/30",
@@ -136,7 +131,6 @@ const TIERS: Tier[] = [
     id: 1,
     name: "Tier 1",
     tagline: "The ultimate membership",
-    baseStakeDisplay: "~500,000 CULT",
     accent: "text-chart-1",
     accentBg: "bg-chart-1/10",
     accentBorder: "border-chart-1/30",
@@ -222,30 +216,41 @@ const BENEFIT_ROWS: BenefitRow[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Simulated dynamic pricing (in production, this comes from the API)
+// Live pricing types + helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Simulates a dynamic staking requirement based on a bonding curve.
- * In production this would call an API that factors in:
- *  - Current CULT token price / market cap
- *  - Number of existing stakers at each tier
- */
-function getStakeRequirement(tierId: number): number {
-  const base: Record<number, number> = {
-    4: 25_000,
-    3: 75_000,
-    2: 200_000,
-    1: 500_000,
+/** Shape of the /api/governance/token-price response */
+interface TokenPriceResponse {
+  status: boolean;
+  data?: {
+    token: { symbol: string; mint: string; decimals: number; priceUsd: number };
+    market: { marketCapUsd: number; volume24hUsd: number; liquidityUsd: number };
+    staking: { stakerCount: number; programConfigured: boolean };
+    pricing: {
+      bracket: string;
+      tiers: { tierId: number; costUsd: number; tokensNeeded: number; tokensRaw: string }[];
+    };
+    fetchedAt: number;
   };
-  // Simulate slight dynamic adjustment (+/- 0-5%)
-  return base[tierId] ?? 0;
 }
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
-  return n.toString();
+  if (n >= 1_000) return `${Math.round(n).toLocaleString()}`;
+  if (n >= 1) return n.toFixed(1);
+  if (n > 0) return n.toFixed(4);
+  return "0";
+}
+
+function formatUsd(n: number): string {
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  return `$${n.toFixed(2)}`;
+}
+
+function formatMarketCap(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -255,11 +260,11 @@ function formatTokens(n: number): string {
 const FAQ_ITEMS = [
   {
     q: "How does staking work?",
-    a: "When you stake CULT tokens, they are locked in a smart contract on Solana for your chosen duration (30 days or 12 months). Your membership tier is active for the entire staking period. When the period ends, you can unstake to retrieve your tokens or re-stake to maintain your membership.",
+    a: "When you stake tokens, they are locked in a smart contract on Solana for your chosen duration (30 days or 12 months). Your membership tier is active for the entire staking period. When the period ends, you can unstake to retrieve your tokens or re-stake to maintain your membership.",
   },
   {
     q: "Why are staking requirements dynamic?",
-    a: "The required stake amount adjusts based on the CULT token's market cap and the number of existing stakers—similar to a bonding curve. This ensures membership remains accessible as the token price fluctuates and rewards early adopters.",
+    a: "The required stake amount adjusts based on the token's market cap and the number of existing stakers—similar to a bonding curve. This ensures membership remains accessible as the price fluctuates and rewards early adopters.",
   },
   {
     q: "What happens when my staking period ends?",
@@ -302,9 +307,37 @@ export function MembershipClient() {
   const [claimPending, setClaimPending] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
 
+  // Live pricing state
+  const [pricingData, setPricingData] = useState<TokenPriceResponse["data"] | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(true);
+
   const { connection } = useConnection();
   const { publicKey, sendTransaction } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
+
+  // Fetch live pricing from the API (polls every 30s)
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchPricing() {
+      try {
+        const res = await fetch("/api/governance/token-price");
+        const json = (await res.json()) as TokenPriceResponse;
+        if (!cancelled && json.status && json.data) {
+          setPricingData(json.data);
+        }
+      } catch {
+        // silently retry on next interval
+      } finally {
+        if (!cancelled) setPricingLoading(false);
+      }
+    }
+    fetchPricing();
+    const interval = setInterval(fetchPricing, 30_000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   // Fetch claim status when wallet is connected
   useEffect(() => {
@@ -327,10 +360,25 @@ export function MembershipClient() {
       });
   }, [wallet]);
 
-  const stakeAmount = useMemo(
-    () => getStakeRequirement(selectedTier),
-    [selectedTier],
-  );
+  // Derive pricing for the selected tier
+  const tokenSymbol = pricingData?.token.symbol ?? "TOKEN";
+  const tokenPrice = pricingData?.token.priceUsd ?? 0;
+  const marketCap = pricingData?.market.marketCapUsd ?? 0;
+  const stakerCount = pricingData?.staking.stakerCount ?? 0;
+  const pricingBracket = pricingData?.pricing.bracket ?? "";
+
+  const tierPriceMap = useMemo(() => {
+    const map: Record<number, { costUsd: number; tokensNeeded: number }> = {};
+    if (pricingData?.pricing.tiers) {
+      for (const t of pricingData.pricing.tiers) {
+        map[t.tierId] = { costUsd: t.costUsd, tokensNeeded: t.tokensNeeded };
+      }
+    }
+    return map;
+  }, [pricingData]);
+
+  const selectedTierPrice = tierPriceMap[selectedTier];
+  const stakeAmount = selectedTierPrice?.tokensNeeded ?? 0;
 
   const selectedTierData = useMemo(
     () => TIERS.find((t) => t.id === selectedTier)!,
@@ -383,14 +431,14 @@ export function MembershipClient() {
         preflightCommitment: "confirmed",
       });
       toast.success(
-        `Staked ${formatTokens(stakeAmount)} CULT for ${stakeDuration === "12m" ? "12 months" : "30 days"}! Tx: ${sig.slice(0, 8)}…`,
+        `Staked ${formatTokens(stakeAmount)} ${tokenSymbol} for ${stakeDuration === "12m" ? "12 months" : "30 days"}! Tx: ${sig.slice(0, 8)}…`,
       );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Stake failed");
     } finally {
       setStakePending(false);
     }
-  }, [wallet, sendTransaction, connection, stakeAmount, lockDuration, stakeDuration, openConnectModal]);
+  }, [wallet, sendTransaction, connection, stakeAmount, lockDuration, stakeDuration, openConnectModal, tokenSymbol]);
 
   // ------ eSIM Claim handler ------
   const handleClaimEsim = useCallback(async () => {
@@ -455,10 +503,32 @@ export function MembershipClient() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Stake CULT to unlock exclusive membership benefits. Free eSIM cards,
+            Stake {tokenSymbol} to unlock exclusive membership benefits. Free eSIM cards,
             free shipping, member-only discounts, and more. The longer you
             stake, the more you save.
           </p>
+
+          {/* Live market data bar */}
+          {pricingData && (
+            <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <span>
+                <span className="font-medium text-foreground">{tokenSymbol}</span>{" "}
+                {formatUsd(tokenPrice)}
+              </span>
+              <span className="hidden sm:inline text-border">|</span>
+              <span>
+                MC {formatMarketCap(marketCap)}
+              </span>
+              <span className="hidden sm:inline text-border">|</span>
+              <span>
+                {stakerCount} staker{stakerCount !== 1 ? "s" : ""}
+              </span>
+              <span className="hidden sm:inline text-border">|</span>
+              <span className="text-xs">
+                {pricingBracket}
+              </span>
+            </div>
+          )}
 
           <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
             <Button size="lg" className="gap-2" onClick={scrollToTiers}>
@@ -496,13 +566,13 @@ export function MembershipClient() {
                 step: "01",
                 icon: Wallet,
                 title: "Connect Wallet",
-                desc: "Connect your Solana wallet that holds CULT tokens.",
+                desc: `Connect your Solana wallet that holds ${tokenSymbol} tokens.`,
               },
               {
                 step: "02",
                 icon: TrendingUp,
                 title: "Choose & Stake",
-                desc: "Pick a tier and stake the required CULT tokens for 30 days or 12 months.",
+                desc: `Pick a tier and stake the required ${tokenSymbol} tokens for 30 days or 12 months.`,
               },
               {
                 step: "03",
@@ -544,7 +614,7 @@ export function MembershipClient() {
             {TIERS_DISPLAY.map((tier) => {
               const Icon = tier.icon;
               const isSelected = selectedTier === tier.id;
-              const stakeReq = getStakeRequirement(tier.id);
+              const tierPrice = tierPriceMap[tier.id];
 
               return (
                 <Card
@@ -593,12 +663,22 @@ export function MembershipClient() {
                   <CardContent className="space-y-4">
                     {/* Staking requirement */}
                     <div>
-                      <p className="text-2xl font-bold tabular-nums text-foreground">
-                        {formatTokens(stakeReq)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        CULT tokens to stake
-                      </p>
+                      {pricingLoading ? (
+                        <div className="h-8 w-24 animate-pulse rounded bg-muted" />
+                      ) : tierPrice ? (
+                        <>
+                          <p className="text-2xl font-bold tabular-nums text-foreground">
+                            {formatUsd(tierPrice.costUsd)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            ≈ {formatTokens(tierPrice.tokensNeeded)} {tokenSymbol} to stake
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Price unavailable
+                        </p>
+                      )}
                     </div>
 
                     {/* Key benefits */}
@@ -609,7 +689,11 @@ export function MembershipClient() {
                         />
                         <span className="text-sm text-foreground">
                           {tier.benefits.esim}
-                          <span className="text-muted-foreground"> eSIM cards</span>
+                          <span className="text-muted-foreground">
+                            {tier.benefits.esim.toLowerCase().includes("esim")
+                              ? " cards"
+                              : " eSIM cards"}
+                          </span>
                         </span>
                       </div>
                       <div className="flex items-start gap-2">
@@ -709,17 +793,29 @@ export function MembershipClient() {
                       Stake Required
                     </div>
                   </TableCell>
-                  {TIERS_DISPLAY.map((tier) => (
-                    <TableCell
-                      key={tier.id}
-                      className={cn(
-                        "text-center font-medium tabular-nums",
-                        selectedTier === tier.id && "bg-primary/5",
-                      )}
-                    >
-                      {formatTokens(getStakeRequirement(tier.id))}
-                    </TableCell>
-                  ))}
+                  {TIERS_DISPLAY.map((tier) => {
+                    const tp = tierPriceMap[tier.id];
+                    return (
+                      <TableCell
+                        key={tier.id}
+                        className={cn(
+                          "text-center font-medium tabular-nums",
+                          selectedTier === tier.id && "bg-primary/5",
+                        )}
+                      >
+                        {tp ? (
+                          <div>
+                            <div>{formatUsd(tp.costUsd)}</div>
+                            <div className="text-xs font-normal text-muted-foreground">
+                              ≈ {formatTokens(tp.tokensNeeded)} {tokenSymbol}
+                            </div>
+                          </div>
+                        ) : (
+                          "—"
+                        )}
+                      </TableCell>
+                    );
+                  })}
                 </TableRow>
 
                 {BENEFIT_ROWS.map((row) => {
@@ -941,7 +1037,7 @@ export function MembershipClient() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-muted-foreground">
-                  As the CULT token price (market cap) increases, the number
+                  As the {tokenSymbol} token price (market cap) increases, the number
                   of tokens required to stake decreases proportionally—so the
                   dollar value of membership stays reasonable.
                 </CardDescription>
@@ -976,7 +1072,7 @@ export function MembershipClient() {
             {/* Header */}
             <div className="border-b bg-muted/30 px-8 py-6">
               <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
-                Stake CULT &amp; Join
+                Stake {tokenSymbol} &amp; Join
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
                 Select your tier and duration, then connect your wallet to
@@ -1060,9 +1156,15 @@ export function MembershipClient() {
               {/* Summary */}
               <div className="space-y-3 rounded-xl bg-muted/30 p-4">
                 <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Cost</span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {selectedTierPrice ? formatUsd(selectedTierPrice.costUsd) : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Tokens to Stake</span>
                   <span className="font-semibold tabular-nums text-foreground">
-                    {formatTokens(stakeAmount)} CULT
+                    {formatTokens(stakeAmount)} {tokenSymbol}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -1098,33 +1200,38 @@ export function MembershipClient() {
               </div>
 
               {/* Upgrade nudge for lower tiers */}
-              {selectedTier > 1 && (
-                <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                  <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      Stake{" "}
-                      {formatTokens(
-                        getStakeRequirement(selectedTier - 1) - stakeAmount,
-                      )}{" "}
-                      more for{" "}
-                      {TIERS.find((t) => t.id === selectedTier - 1)?.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Unlock{" "}
-                      {
-                        TIERS.find((t) => t.id === selectedTier - 1)?.benefits
-                          .esimDetail
-                      }{" "}
-                      and{" "}
-                      {TIERS
-                        .find((t) => t.id === selectedTier - 1)
-                        ?.benefits.shippingDetail.toLowerCase()}
-                      .
-                    </p>
+              {selectedTier > 1 && (() => {
+                const nextTierPrice = tierPriceMap[selectedTier - 1];
+                const extraUsd = nextTierPrice
+                  ? nextTierPrice.costUsd - (selectedTierPrice?.costUsd ?? 0)
+                  : 0;
+                const extraTokens = nextTierPrice
+                  ? nextTierPrice.tokensNeeded - stakeAmount
+                  : 0;
+                return (
+                  <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                    <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {extraUsd > 0 ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for ` : "Upgrade to "}
+                        {TIERS.find((t) => t.id === selectedTier - 1)?.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Unlock{" "}
+                        {
+                          TIERS.find((t) => t.id === selectedTier - 1)?.benefits
+                            .esimDetail
+                        }{" "}
+                        and{" "}
+                        {TIERS
+                          .find((t) => t.id === selectedTier - 1)
+                          ?.benefits.shippingDetail.toLowerCase()}
+                        .
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Action */}
               <Button
@@ -1137,7 +1244,7 @@ export function MembershipClient() {
                 {stakePending
                   ? "Preparing transaction…"
                   : wallet
-                    ? `Stake ${formatTokens(stakeAmount)} CULT`
+                    ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
                     : "Connect Wallet & Stake"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
@@ -1240,7 +1347,7 @@ export function MembershipClient() {
             Ready to Join?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Stake CULT today and start enjoying exclusive membership
+            Stake {tokenSymbol} today and start enjoying exclusive membership
             benefits. The earlier you join, the lower the staking threshold.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -1268,7 +1375,7 @@ export function MembershipClient() {
             differ from the estimates shown above.
           </p>
           <p className="text-xs text-muted-foreground">
-            The CULT token is a utility token. There is no guarantee of
+            The {tokenSymbol} token is a utility token. There is no guarantee of
             financial return. The value of staked tokens may fluctuate. Token
             holders participate at their own risk. This is not financial, legal,
             or investment advice.

@@ -8,18 +8,19 @@ import { Connection } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
 import { fetchPoolStats, getStakingProgramId } from "~/lib/cult-staking";
+import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 
-const CULT_DECIMALS = 6;
-
 export async function GET() {
+  const token = getActiveToken();
   const programId = getStakingProgramId();
   if (!programId) {
     return NextResponse.json({
       totalStakers: 0,
       totalStaked: "0",
       totalStakedRaw: "0",
-      decimals: CULT_DECIMALS,
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
     });
   }
   try {
@@ -31,16 +32,18 @@ export async function GET() {
         totalStakers: 0,
         totalStaked: "0",
         totalStakedRaw: "0",
-        decimals: CULT_DECIMALS,
+        decimals: token.decimals,
+        tokenSymbol: token.symbol,
       });
     }
 
-    const human = Number(pool.totalStaked) / Math.pow(10, CULT_DECIMALS);
+    const human = Number(pool.totalStaked) / Math.pow(10, token.decimals);
     return NextResponse.json({
       totalStakers: pool.totalStakers,
-      totalStaked: human.toFixed(CULT_DECIMALS),
+      totalStaked: human.toFixed(token.decimals),
       totalStakedRaw: pool.totalStaked.toString(),
-      decimals: CULT_DECIMALS,
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
     });
   } catch (e) {
     console.error("[governance] pool-stats error:", e);
@@ -48,7 +51,8 @@ export async function GET() {
       totalStakers: 0,
       totalStaked: "0",
       totalStakedRaw: "0",
-      decimals: CULT_DECIMALS,
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
     });
   }
 }

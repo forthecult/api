@@ -43,31 +43,44 @@ function formatBalance(cents: number | null | undefined): string {
   }).format(cents / 100);
 }
 
-// Membership tier thresholds (must match membership page)
-const TIER_THRESHOLDS = [
-  { id: 1, name: "Tier 1", minStake: 500_000, icon: Crown, accent: "text-chart-1" },
-  { id: 2, name: "Tier 2", minStake: 200_000, icon: Star, accent: "text-chart-4" },
-  { id: 3, name: "Tier 3", minStake: 75_000, icon: Shield, accent: "text-chart-2" },
-  { id: 4, name: "Tier 4", minStake: 25_000, icon: Signal, accent: "text-muted-foreground" },
-] as const;
+// Tier visual config (icons / accent colors)
+const TIER_VISUALS: Record<number, { name: string; icon: typeof Crown; accent: string }> = {
+  1: { name: "Tier 1", icon: Crown, accent: "text-chart-1" },
+  2: { name: "Tier 2", icon: Star, accent: "text-chart-4" },
+  3: { name: "Tier 3", icon: Shield, accent: "text-chart-2" },
+  4: { name: "Tier 4", icon: Signal, accent: "text-muted-foreground" },
+};
 
-type MembershipInfo = {
+interface MembershipInfo {
   tierId: number;
   tierName: string;
   icon: typeof Crown;
   accent: string;
   isLocked: boolean;
   unlocksAt: string | null;
-} | null;
+}
 
-function detectTier(stakedAmount: number): MembershipInfo {
-  for (const tier of TIER_THRESHOLDS) {
-    if (stakedAmount >= tier.minStake) {
+/**
+ * Determine user's tier by comparing the USD value of their staked tokens
+ * against the tier costs returned by the pricing API.
+ */
+function detectTierFromPricing(
+  stakedTokens: number,
+  tokenPriceUsd: number,
+  tierCosts: { tierId: number; costUsd: number; tokensNeeded: number }[],
+): MembershipInfo | null {
+  if (!stakedTokens || stakedTokens <= 0 || !tokenPriceUsd) return null;
+  // Check from best tier (1) to worst (4)
+  const sorted = [...tierCosts].sort((a, b) => a.tierId - b.tierId);
+  for (const t of sorted) {
+    if (stakedTokens >= t.tokensNeeded) {
+      const visual = TIER_VISUALS[t.tierId];
+      if (!visual) continue;
       return {
-        tierId: tier.id,
-        tierName: tier.name,
-        icon: tier.icon,
-        accent: tier.accent,
+        tierId: t.tierId,
+        tierName: visual.name,
+        icon: visual.icon,
+        accent: visual.accent,
         isLocked: false,
         unlocksAt: null,
       };
@@ -90,25 +103,32 @@ export function ProfileViewClient() {
   } | null>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
   const [cultBalanceCents, setCultBalanceCents] = useState<number | null>(null);
-  const [membership, setMembership] = useState<MembershipInfo>(null);
+  const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Fetch membership tier from staking balance
+  // Fetch membership tier from staking balance + live pricing
   useEffect(() => {
     if (!wallet) {
       setMembership(null);
       return;
     }
     setMembershipLoading(true);
-    fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`)
-      .then((r) => r.json())
-      .then((data: { stakedBalance?: string; lock?: { isLocked?: boolean; unlocksAt?: string } | null }) => {
-        const staked = Number.parseFloat(data.stakedBalance ?? "0");
-        const tier = detectTier(staked);
-        if (tier && data.lock) {
-          tier.isLocked = data.lock.isLocked ?? false;
-          tier.unlocksAt = data.lock.unlocksAt ?? null;
+    Promise.all([
+      fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
+      fetch("/api/governance/token-price").then((r) => r.json()),
+    ])
+      .then(([balanceData, priceData]: [
+        { stakedBalance?: string; lock?: { isLocked?: boolean; unlocksAt?: string } | null },
+        { status?: boolean; data?: { token: { priceUsd: number }; pricing: { tiers: { tierId: number; costUsd: number; tokensNeeded: number }[] } } },
+      ]) => {
+        const staked = Number.parseFloat(balanceData.stakedBalance ?? "0");
+        const priceTiers = priceData.data?.pricing.tiers ?? [];
+        const tokenPrice = priceData.data?.token.priceUsd ?? 0;
+        const tier = detectTierFromPricing(staked, tokenPrice, priceTiers);
+        if (tier && balanceData.lock) {
+          tier.isLocked = balanceData.lock.isLocked ?? false;
+          tier.unlocksAt = balanceData.lock.unlocksAt ?? null;
         }
         setMembership(tier);
       })

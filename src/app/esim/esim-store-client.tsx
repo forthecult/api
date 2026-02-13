@@ -453,7 +453,9 @@ export function EsimStorePage() {
     () => (searchParams.get("tab") as "countries" | "continents" | "global") || "countries",
   );
   const [countries, setCountries] = useState<Country[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
   const [continents, setContinents] = useState<Continent[]>([]);
+  const [continentsLoading, setContinentsLoading] = useState(true);
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -473,6 +475,7 @@ export function EsimStorePage() {
 
   // Fetch countries
   useEffect(() => {
+    setCountriesLoading(true);
     fetch("/api/esim/countries")
       .then((res) => res.json())
       .then((data: { status: boolean; data?: Country[] }) => {
@@ -480,11 +483,13 @@ export function EsimStorePage() {
           setCountries(data.data);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setCountriesLoading(false));
   }, []);
 
   // Fetch continents
   useEffect(() => {
+    setContinentsLoading(true);
     fetch("/api/esim/continents")
       .then((res) => res.json())
       .then((data: { status: boolean; data?: Continent[] }) => {
@@ -492,7 +497,8 @@ export function EsimStorePage() {
           setContinents(data.data);
         }
       })
-      .catch(console.error);
+      .catch(console.error)
+      .finally(() => setContinentsLoading(false));
   }, []);
 
   // Fetch global packages when tab is "global"
@@ -764,19 +770,30 @@ export function EsimStorePage() {
                   className="pl-9"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                {filteredCountries.map((country) => (
-                  <CountryCard
-                    key={country.id}
-                    country={country}
-                    onClick={() => handleCountrySelect(country)}
-                  />
-                ))}
-              </div>
-              {filteredCountries.length === 0 && (
-                <p className="py-16 text-center text-muted-foreground">
-                  No countries found matching &ldquo;{searchQuery}&rdquo;
-                </p>
+              {countriesLoading ? (
+                <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Loading countries…</span>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {filteredCountries.map((country) => (
+                      <CountryCard
+                        key={country.id}
+                        country={country}
+                        onClick={() => handleCountrySelect(country)}
+                      />
+                    ))}
+                  </div>
+                  {filteredCountries.length === 0 && (
+                    <p className="py-16 text-center text-muted-foreground">
+                      {searchQuery.trim()
+                        ? `No countries found matching "${searchQuery}"`
+                        : "No countries available."}
+                    </p>
+                  )}
+                </>
               )}
             </>
           ) : (

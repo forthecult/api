@@ -2,7 +2,7 @@
  * GET /api/esim/membership-claim/status?wallet=<base58>
  *
  * Returns the user's membership eSIM claim status for a given wallet.
- * Used by the membership page to determine if the user can claim or has already claimed.
+ * Uses live pricing to determine tier eligibility.
  */
 
 import { Connection } from "@solana/web3.js";
@@ -13,20 +13,18 @@ import { getCurrentUser } from "~/lib/auth";
 import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { db } from "~/db";
 import { membershipEsimClaimsTable } from "~/db/schema";
+import { fetchTokenMarketData } from "~/lib/market-cap";
+import { computeTierPricing } from "~/lib/membership-pricing";
+import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 
-const CULT_DECIMALS = 6;
-
-const TIER_THRESHOLDS = [
-  { id: 1, minStake: 500_000 },
-  { id: 2, minStake: 200_000 },
-  { id: 3, minStake: 75_000 },
-  { id: 4, minStake: 25_000 },
-] as const;
-
-function detectTier(stakedHuman: number): number | null {
-  for (const tier of TIER_THRESHOLDS) {
-    if (stakedHuman >= tier.minStake) return tier.id;
+function detectTierFromPricing(
+  stakedTokens: number,
+  tiers: { tierId: number; tokensNeeded: number }[],
+): number | null {
+  const sorted = [...tiers].sort((a, b) => a.tierId - b.tierId);
+  for (const t of sorted) {
+    if (stakedTokens >= t.tokensNeeded) return t.tierId;
   }
   return null;
 }
@@ -43,22 +41,36 @@ export async function GET(request: Request) {
     return NextResponse.json({ eligible: false, claimed: false, tier: null });
   }
 
-  // Check on-chain staking
   const programId = getStakingProgramId();
   if (!programId) {
     return NextResponse.json({ eligible: false, claimed: false, tier: null });
   }
 
   try {
+    const token = getActiveToken();
     const connection = new Connection(getSolanaRpcUrlServer());
-    const stakeData = await fetchUserStake(connection, programId, wallet);
+
+    const [stakeData, market] = await Promise.all([
+      fetchUserStake(connection, programId, wallet),
+      fetchTokenMarketData(token.mint),
+    ]);
+
     if (!stakeData || stakeData.amount === 0n) {
+      return NextResponse.json({ eligible: false, claimed: false, tier: null });
+    }
+    if (!market || market.priceUsd <= 0) {
       return NextResponse.json({ eligible: false, claimed: false, tier: null });
     }
 
     const stakedHuman =
-      Number(stakeData.amount) / Math.pow(10, CULT_DECIMALS);
-    const tier = detectTier(stakedHuman);
+      Number(stakeData.amount) / Math.pow(10, token.decimals);
+    const pricing = computeTierPricing(
+      token,
+      market.priceUsd,
+      market.marketCapUsd,
+      0,
+    );
+    const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
     const eligible = tier !== null && tier <= 2;
 
     // Check if already claimed for this staking period

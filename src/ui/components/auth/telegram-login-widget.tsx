@@ -123,7 +123,7 @@ export function TelegramLoginWidget({
       ref={containerRef}
       className={
         showFallbackLabel
-          ? "absolute inset-0 flex items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
+          ? "flex items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
           : "inline-block [&_iframe]:!max-h-10 [&_iframe]:!min-h-[40px]"
       }
       aria-hidden={disabled}
@@ -132,20 +132,30 @@ export function TelegramLoginWidget({
 
   if (showFallbackLabel) {
     return (
-      <div className="relative flex h-9 min-w-0 items-center justify-center rounded-md border border-input bg-background px-4 py-2 shadow-sm">
-        {/* Fallback: visible until the Telegram widget iframe loads */}
+      <div
+        className={
+          widgetReady
+            ? "flex h-9 min-w-0 items-center justify-center"
+            : "relative flex h-9 min-w-0 items-center justify-center rounded-md border border-input bg-background px-4 py-2 shadow-sm"
+        }
+      >
+        {/* Fallback: visible only until the Telegram iframe loads; then wrapper loses border/bg */}
+        {!widgetReady && (
+          <div className="flex items-center gap-2" aria-hidden={widgetReady}>
+            <TelegramIcon className="h-5 w-5 shrink-0" />
+            <span className="text-sm font-medium">Telegram</span>
+          </div>
+        )}
+        {/* Keep widget container in DOM so iframe is not unmounted when widgetReady toggles */}
         <div
           className={
             widgetReady
-              ? "pointer-events-none invisible flex items-center gap-2"
-              : "flex items-center gap-2"
+              ? "flex flex-1 items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
+              : "absolute inset-0 flex items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
           }
-          aria-hidden={widgetReady}
         >
-          <TelegramIcon className="h-5 w-5 shrink-0" />
-          <span className="text-sm font-medium">Telegram</span>
+          {widgetEl}
         </div>
-        {widgetEl}
       </div>
     );
   }

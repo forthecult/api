@@ -1,7 +1,7 @@
 /**
  * POST /api/governance/stake/prepare
  * Body: { wallet: string, amount: string, lockDuration: number }
- *   - amount: human CULT (e.g. "1000")
+ *   - amount: human token amount (e.g. "1000")
  *   - lockDuration: 2592000 (30 days) or 31536000 (12 months)
  * Returns { transaction: string } (base64 serialized transaction for client to sign and send).
  */
@@ -18,10 +18,8 @@ import {
   isValidLockDuration,
   type LockDuration,
 } from "~/lib/cult-staking";
-import { getCultMintSolana } from "~/lib/token-gate";
+import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-
-const CULT_DECIMALS = 6;
 
 const bodySchema = z.object({
   wallet: z.string().min(32).max(44),
@@ -53,6 +51,7 @@ export async function POST(request: Request) {
     );
   }
   const { wallet, amount, lockDuration } = parsed.data;
+  const token = getActiveToken();
   const amountNum = Number.parseFloat(amount);
   if (!Number.isFinite(amountNum) || amountNum <= 0) {
     return NextResponse.json(
@@ -60,7 +59,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const amountRaw = BigInt(Math.floor(amountNum * 10 ** CULT_DECIMALS));
+  const amountRaw = BigInt(Math.floor(amountNum * 10 ** token.decimals));
   if (amountRaw <= 0n) {
     return NextResponse.json(
       { error: "Amount too small" },
@@ -72,7 +71,7 @@ export async function POST(request: Request) {
     const connection = new Connection(getSolanaRpcUrlServer());
     const { blockhash, lastValidBlockHeight } =
       await connection.getLatestBlockhash("confirmed");
-    const mint = new PublicKey(getCultMintSolana());
+    const mint = new PublicKey(token.mint);
     const owner = new PublicKey(wallet);
 
     const tx = buildStakeTransaction({

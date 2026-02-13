@@ -300,12 +300,13 @@ export function EsimPackageDetailClient({
     return (
       <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="text-center py-24">
-          <h2 className="text-xl font-semibold">Package not found</h2>
+          <h2 className="text-xl font-semibold">Currently unavailable</h2>
           <p className="mt-2 text-muted-foreground">
-            This eSIM package may no longer be available.
+            This eSIM plan is sold out or no longer available. Check out other
+            plans below.
           </p>
           <Button asChild className="mt-6" variant="outline">
-            <Link href="/esim">Browse all packages</Link>
+            <Link href={backToStoreHref}>Browse other plans</Link>
           </Button>
         </div>
       </div>
@@ -645,14 +646,14 @@ export function EsimPackageDetailClient({
         </div>
 
         {/* Refund eligibility — full-width section below both columns */}
-        <section className="mt-10 rounded-lg border border-muted bg-muted/30 p-6">
+        <section className="col-span-full mt-10 rounded-lg border border-muted bg-muted/30 p-6">
           <h2 className="text-lg font-semibold text-foreground mb-2">
             eSIM refund eligibility
           </h2>
-          <p className="text-sm text-muted-foreground mb-4 max-w-3xl">
+          <p className="text-sm text-muted-foreground mb-4">
             eSIM plans have different refund rules. Please review before purchasing.
           </p>
-          <ul className="text-sm text-muted-foreground space-y-3 list-disc list-outside pl-5 max-w-3xl break-words">
+          <ul className="text-sm text-muted-foreground space-y-3 list-disc list-outside pl-5 break-words">
             <li className="leading-relaxed">
               <span className="font-medium text-foreground">Instant refund:</span>{" "}
               Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.

@@ -1,6 +1,6 @@
 /**
  * GET /api/governance/staked-balance?wallet=<base58>
- * Returns staked CULT amount + lock status (on-chain staking program).
+ * Returns staked token amount + lock status (on-chain staking program).
  * Returns 0 / unlocked if program not deployed or no stake.
  */
 
@@ -13,9 +13,8 @@ import {
   getStakingProgramId,
   lockDurationLabel,
 } from "~/lib/cult-staking";
+import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-
-const CULT_DECIMALS = 6;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -26,12 +25,14 @@ export async function GET(request: Request) {
       { status: 400 },
     );
   }
+  const token = getActiveToken();
   const programId = getStakingProgramId();
   if (!programId) {
     return NextResponse.json({
       stakedBalance: "0",
       stakedBalanceRaw: "0",
-      decimals: CULT_DECIMALS,
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
       lock: null,
     });
   }
@@ -43,18 +44,20 @@ export async function GET(request: Request) {
       return NextResponse.json({
         stakedBalance: "0",
         stakedBalanceRaw: "0",
-        decimals: CULT_DECIMALS,
+        decimals: token.decimals,
+        tokenSymbol: token.symbol,
         lock: null,
       });
     }
 
-    const human = Number(stake.amount) / Math.pow(10, CULT_DECIMALS);
+    const human = Number(stake.amount) / Math.pow(10, token.decimals);
     const lockStatus = getLockStatus(stake);
 
     return NextResponse.json({
-      stakedBalance: human.toFixed(CULT_DECIMALS),
+      stakedBalance: human.toFixed(token.decimals),
       stakedBalanceRaw: stake.amount.toString(),
-      decimals: CULT_DECIMALS,
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
       lock: {
         isLocked: lockStatus.isLocked,
         secondsRemaining: lockStatus.secondsRemaining,
@@ -69,7 +72,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       stakedBalance: "0",
       stakedBalanceRaw: "0",
-      decimals: CULT_DECIMALS,
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
       lock: null,
     });
   }

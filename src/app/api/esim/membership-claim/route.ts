@@ -35,29 +35,32 @@ import {
   orderItemsTable,
   ordersTable,
 } from "~/db/schema";
+import { fetchTokenMarketData } from "~/lib/market-cap";
+import { computeTierPricing } from "~/lib/membership-pricing";
+import { getActiveToken } from "~/lib/token-config";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 import { fulfillEsimOrder } from "~/lib/esim-fulfillment";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 
 // ---------------------------------------------------------------------------
-// Tier thresholds (must match membership page)
+// Tier detection using live pricing
 // ---------------------------------------------------------------------------
-
-const CULT_DECIMALS = 6;
-
-const TIER_THRESHOLDS = [
-  { id: 1, minStake: 500_000 },
-  { id: 2, minStake: 200_000 },
-  { id: 3, minStake: 75_000 },
-  { id: 4, minStake: 25_000 },
-] as const;
 
 /** Minimum tier required to claim a free eSIM. */
 const MIN_CLAIM_TIER = 2;
 
-function detectTier(stakedHuman: number): number | null {
-  for (const tier of TIER_THRESHOLDS) {
-    if (stakedHuman >= tier.minStake) return tier.id;
+/**
+ * Detect tier by comparing staked token count against the live tier thresholds
+ * derived from market cap / staker count.
+ */
+function detectTierFromPricing(
+  stakedTokens: number,
+  tiers: { tierId: number; tokensNeeded: number }[],
+): number | null {
+  // tiers are ordered 4→1 (entry→best); check from best first
+  const sorted = [...tiers].sort((a, b) => a.tierId - b.tierId);
+  for (const t of sorted) {
+    if (stakedTokens >= t.tokensNeeded) return t.tierId;
   }
   return null;
 }
@@ -107,6 +110,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const token = getActiveToken();
   const connection = new Connection(getSolanaRpcUrlServer());
   const stakeData = await fetchUserStake(connection, programId, wallet);
   if (!stakeData || stakeData.amount === 0n) {
@@ -116,8 +120,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const stakedHuman = Number(stakeData.amount) / Math.pow(10, CULT_DECIMALS);
-  const tier = detectTier(stakedHuman);
+  // Fetch live market data to compute tier thresholds
+  const market = await fetchTokenMarketData(token.mint);
+  if (!market || market.priceUsd <= 0) {
+    return NextResponse.json(
+      { status: false, message: "Unable to fetch token price data. Please try again." },
+      { status: 503 },
+    );
+  }
+
+  const stakedHuman = Number(stakeData.amount) / Math.pow(10, token.decimals);
+  // stakerCount=0 here since we just need the MC-based thresholds
+  const pricing = computeTierPricing(token, market.priceUsd, market.marketCapUsd, 0);
+  const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
   if (tier === null || tier > MIN_CLAIM_TIER) {
     return NextResponse.json(
       {

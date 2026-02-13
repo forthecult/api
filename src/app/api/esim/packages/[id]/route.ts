@@ -19,10 +19,11 @@ export async function GET(
     const result = await getEsimPackageDetail(id.trim());
 
     if (!result?.status || !result?.data) {
-      return NextResponse.json(
-        { status: false, message: "Package not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({
+        status: false,
+        available: false,
+        message: "This eSIM is currently unavailable.",
+      });
     }
 
     const pkg = result.data;
@@ -36,12 +37,17 @@ export async function GET(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("eSIM package detail error:", message, error);
-    // Provider returned 404 or package doesn't exist
-    if (message.includes("404") || message.includes("not found")) {
-      return NextResponse.json(
-        { status: false, message: "Package not found" },
-        { status: 404 },
-      );
+    // Provider 404/500 or "not found" → product unavailable; return 200 so no HTTP error, client shows "Sold out" / "Unavailable"
+    if (
+      message.includes("404") ||
+      message.includes("500") ||
+      message.includes("not found")
+    ) {
+      return NextResponse.json({
+        status: false,
+        available: false,
+        message: "This eSIM is currently unavailable.",
+      });
     }
     return NextResponse.json(
       {

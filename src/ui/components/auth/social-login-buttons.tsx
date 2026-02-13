@@ -92,24 +92,6 @@ export function SocialLoginButtons({
         <Button
           className="flex items-center gap-2"
           disabled={disabled}
-          onClick={handleGoogleLogin}
-          variant="outline"
-        >
-          <GoogleIcon className="h-5 w-5" />
-          Google
-        </Button>
-        <Button
-          className="flex items-center gap-2"
-          disabled={disabled}
-          onClick={handleGitHubLogin}
-          variant="outline"
-        >
-          <GitHubIcon className="h-5 w-5" />
-          GitHub
-        </Button>
-        <Button
-          className="flex items-center gap-2"
-          disabled={disabled}
           onClick={handleDiscordLogin}
           variant="outline"
         >
@@ -125,6 +107,24 @@ export function SocialLoginButtons({
             showFallbackLabel
           />
         )}
+        <Button
+          className="flex items-center gap-2"
+          disabled={disabled}
+          onClick={handleGoogleLogin}
+          variant="outline"
+        >
+          <GoogleIcon className="h-5 w-5" />
+          Google
+        </Button>
+        <Button
+          className="flex items-center gap-2"
+          disabled={disabled}
+          onClick={handleGitHubLogin}
+          variant="outline"
+        >
+          <GitHubIcon className="h-5 w-5" />
+          GitHub
+        </Button>
       </div>
     </div>
   );
