@@ -27,9 +27,9 @@ export function AuthFormLayout({
   const [imageError, setImageError] = useState(false);
 
   return (
-    <div className="grid h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-2">
+    <div className="grid h-screen w-full max-w-[100vw] overflow-hidden md:grid-cols-2">
       {/* Left side - Image or gradient fallback */}
-      <div className="relative hidden min-w-0 md:block">
+      <div className="relative hidden min-h-0 min-w-0 md:block">
         {!imageError ? (
           <Image
             alt="Auth background image"
@@ -56,7 +56,7 @@ export function AuthFormLayout({
       </div>
 
       {/* Right side - Form content: aligned to top so no scroll on laptop; compact spacing */}
-      <div className="flex min-w-0 items-start justify-center overflow-y-auto px-4 py-6 md:px-8 md:pt-10 md:pb-8">
+      <div className="flex min-h-0 min-w-0 items-start justify-center overflow-y-auto px-4 py-6 md:px-8 md:pt-10 md:pb-8">
         <div className="w-full min-w-0 max-w-md space-y-3">{children}</div>
       </div>
     </div>
@@ -65,14 +65,15 @@ export function AuthFormLayout({
 
 interface AuthFormHeaderProps {
   title: string;
-  subtitle: string;
+  /** Optional. When omitted, space is still reserved below the title. */
+  subtitle?: string;
 }
 
 export function AuthFormHeader({ title, subtitle }: AuthFormHeaderProps) {
   return (
     <div className="space-y-1 text-center md:text-left">
       <h2 className="text-2xl font-bold sm:text-3xl">{title}</h2>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
+      <p className="min-h-[1.25rem] text-sm text-muted-foreground">{subtitle}</p>
     </div>
   );
 }

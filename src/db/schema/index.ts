@@ -69,6 +69,7 @@ export * from "./support-tickets/types";
 
 export * from "./token-gate/tables";
 
+export * from "./governance/creator-fee-distributions";
 export * from "./governance/tables";
 
 export * from "./wishlist/relations";

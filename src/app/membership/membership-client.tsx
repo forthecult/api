@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
+  Coins,
   Crown,
   Globe,
   Minus,
@@ -148,6 +149,7 @@ const TIERS: Tier[] = [
         "Member-only drops",
         "Priority support",
         "Exclusive product access",
+        "Daily SOL creator fee distribution",
       ],
     },
   },
@@ -211,6 +213,11 @@ const BENEFIT_ROWS: BenefitRow[] = [
   {
     label: "Exclusive Products",
     icon: Crown,
+    values: { 4: false, 3: false, 2: false, 1: true },
+  },
+  {
+    label: "Creator Fee Distribution",
+    icon: Coins,
     values: { 4: false, 3: false, 2: false, 1: true },
   },
 ];

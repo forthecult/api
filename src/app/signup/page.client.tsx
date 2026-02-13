@@ -99,10 +99,7 @@ export function SignupPageClient() {
 
   return (
     <AuthFormLayout>
-      <AuthFormHeader
-        title="Create Account"
-        subtitle="Enter your details to create your account"
-      />
+      <AuthFormHeader title="Create Account" />
 
       <Card className="border-none shadow-sm">
         <CardContent className="px-4 py-3 sm:px-6 sm:py-4">

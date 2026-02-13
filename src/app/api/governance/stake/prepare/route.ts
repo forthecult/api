@@ -13,11 +13,11 @@ import { z } from "zod";
 import {
   LOCK_12_MONTHS,
   LOCK_30_DAYS,
-  buildStakeTransaction,
   getStakingProgramId,
   isValidLockDuration,
   type LockDuration,
 } from "~/lib/cult-staking";
+import { buildStakeTransaction } from "~/lib/cult-staking-instructions";
 import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 

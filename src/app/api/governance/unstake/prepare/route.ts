@@ -8,10 +8,8 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import {
-  buildUnstakeTransaction,
-  getStakingProgramId,
-} from "~/lib/cult-staking";
+import { getStakingProgramId } from "~/lib/cult-staking";
+import { buildUnstakeTransaction } from "~/lib/cult-staking-instructions";
 import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 
