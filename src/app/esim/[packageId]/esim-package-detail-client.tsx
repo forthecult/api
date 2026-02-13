@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -99,9 +100,12 @@ export function EsimPackageDetailClient({
 }: {
   packageId: string;
 }) {
+  const searchParams = useSearchParams();
   const { user } = useCurrentUser();
   const { addItem, openCart } = useCart();
   const { visibility: paymentVisibility } = usePaymentMethodSettings();
+  const backToStoreQuery = searchParams.toString();
+  const backToStoreHref = backToStoreQuery ? `/esim?${backToStoreQuery}` : "/esim";
 
   const [pkg, setPkg] = useState<PackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -320,7 +324,7 @@ export function EsimPackageDetailClient({
     <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Breadcrumb */}
       <Button asChild variant="ghost" size="sm" className="mb-6">
-        <Link href="/esim">
+        <Link href={backToStoreHref}>
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to eSIM Store
         </Link>
@@ -643,45 +647,46 @@ export function EsimPackageDetailClient({
                     your dashboard. Scan the QR code on your device to activate.
                   </p>
                 </div>
-
-                <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
-                  <p className="font-semibold text-foreground">
-                    eSIM refund eligibility
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    eSIM plans have different refund rules. Please review before purchasing.
-                  </p>
-                  <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
-                    <li>
-                      <span className="font-medium text-foreground">Instant refund:</span>{" "}
-                      Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Activated or used:</span>{" "}
-                      Any eSIM that has been activated, partially used, or has data consumption is <strong>non-refundable</strong>. Once an eSIM connects to a network, it is considered delivered and consumed.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
-                      If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Carrier &amp; network:</span>{" "}
-                      No refund for country-wide shutdowns, temporary carrier outages, or local regulations affecting connectivity; service resumes when the network is available again.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Vodafone &amp; O2:</span>{" "}
-                      Validity is only in officially supported countries. Using the eSIM outside those regions will disable the eSIM and no refund will be issued.
-                    </li>
-                    <li>
-                      <span className="font-medium text-foreground">Voice &amp; SMS plans:</span>{" "}
-                      All eSIM plans that include Voice and/or SMS are <strong>non-refundable</strong>, regardless of activation or usage.
-                    </li>
-                  </ul>
-                </div>
               </CardContent>
             </Card>
           </div>
         </div>
+
+        {/* Refund eligibility — full-width section below both columns */}
+        <section className="mt-10 rounded-lg border border-muted bg-muted/30 p-6">
+          <h2 className="text-lg font-semibold text-foreground mb-2">
+            eSIM refund eligibility
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            eSIM plans have different refund rules. Please review before purchasing.
+          </p>
+          <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside max-w-3xl">
+            <li>
+              <span className="font-medium text-foreground">Instant refund:</span>{" "}
+              Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Activated or used:</span>{" "}
+              Any eSIM that has been activated, partially used, or has data consumption is <strong>non-refundable</strong>. Once an eSIM connects to a network, it is considered delivered and consumed.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
+              If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Carrier &amp; network:</span>{" "}
+              No refund for country-wide shutdowns, temporary carrier outages, or local regulations affecting connectivity; service resumes when the network is available again.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Vodafone &amp; O2:</span>{" "}
+              Validity is only in officially supported countries. Using the eSIM outside those regions will disable the eSIM and no refund will be issued.
+            </li>
+            <li>
+              <span className="font-medium text-foreground">Voice &amp; SMS plans:</span>{" "}
+              All eSIM plans that include Voice and/or SMS are <strong>non-refundable</strong>, regardless of activation or usage.
+            </li>
+          </ul>
+        </section>
       </div>
     </div>
   );

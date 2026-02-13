@@ -43,7 +43,6 @@ import type {
   ProductVariantOption,
 } from "~/app/products/[id]/page";
 import { ProductsClient } from "~/app/products/products-client";
-import { ESimMiniappClient } from "~/app/[slug]/esim-miniapp-client";
 import { LongFormProductPage } from "~/app/[slug]/long-form-product-page";
 import { getTokenGateConfig } from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
@@ -640,34 +639,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     }
   }
 
-  // eSIM category: embed Boxo eSIM miniapp (travel data plans)
+  // eSIM category: redirect to dedicated eSIM store
   if (category.slug === "esim") {
-    const categoryDescription =
-      category.description?.slice(0, 160) ??
-      `Browse ${category.name} at ${SEO_CONFIG.name}.`;
-    return (
-      <>
-        <CollectionPageStructuredData
-          name={category.name}
-          description={categoryDescription}
-          url={`${baseUrl()}/${slug}`}
-          numberOfItems={0}
-        />
-        <div className="container mx-auto px-4 py-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold tracking-tight">
-              {category.name}
-            </h1>
-            {category.description ? (
-              <p className="mt-4 max-w-3xl text-muted-foreground">
-                {category.description}
-              </p>
-            ) : null}
-          </div>
-          <ESimMiniappClient />
-        </div>
-      </>
-    );
+    redirect("/esim");
   }
 
   const resolvedSearchParams = (await searchParams) as {

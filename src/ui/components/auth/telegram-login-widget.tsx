@@ -132,7 +132,7 @@ export function TelegramLoginWidget({
 
   if (showFallbackLabel) {
     return (
-      <div className="relative flex min-h-10 min-w-0 items-center justify-center rounded-md border border-input bg-background px-4 py-2 shadow-sm">
+      <div className="relative flex h-9 min-w-0 items-center justify-center rounded-md border border-input bg-background px-4 py-2 shadow-sm">
         {/* Fallback: visible until the Telegram widget iframe loads */}
         <div
           className={

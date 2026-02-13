@@ -174,6 +174,7 @@ For the “easiest” path, the plan keeps **crypto-only** first; Telegram Stars
 - **Validate initData on the server** if you ever use it for auth or sensitive actions: Telegram signs `initData`; verify the hash using the bot token so clients can’t forge user id. For “identity only” and order association, many apps only validate when needed (e.g. before sending a notification to that user).
 - **Rate limiting:** Keep existing checkout/cart rate limits; optionally add a stricter limit for requests that include `telegram_user_id` to avoid abuse.
 - **CORS / iframe:** Telegram opens the Mini App in an iframe; your domain must be allowed in BotFather’s Web App URL. No extra CORS config needed for same-origin API calls from your Next.js app.
+- **CSP (Login Widget):** The Telegram Login Widget on the website loads an iframe from `https://oauth.telegram.org`. Your Content-Security-Policy `frame-src` must include `https://oauth.telegram.org` (in addition to `https://telegram.org` if needed); otherwise the widget will be blocked and disappear after a brief flash.
 
 ---
 

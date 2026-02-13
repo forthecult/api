@@ -5,9 +5,6 @@ export * from "./addresses/types";
 export * from "./agent-preferences/tables";
 export * from "./agent-preferences/types";
 
-export * from "./boxo/tables";
-export * from "./boxo/types";
-
 export * from "./affiliates/relations";
 export * from "./affiliates/tables";
 export * from "./affiliates/types";

@@ -4,11 +4,15 @@ import { Globe, Loader2, MapPin, Search, Signal, Wifi } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
-import { formatEsimPackageName } from "~/lib/esim-format";
+import {
+  formatEsimPackageName,
+  formatValidityOption,
+  getUnlimitedPlanBaseName,
+} from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
@@ -86,39 +90,83 @@ function matchesData(pkg: Package, filter: DataFilter): boolean {
   return true;
 }
 
+/** One card (single package) or a group of unlimited packages with same base name. */
+type PlanItem =
+  | { type: "single"; pkg: Package }
+  | { type: "unlimited"; baseName: string; packages: Package[] };
+
+function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
+  const unlimitedGroups = new Map<string, Package[]>();
+  const singles: Package[] = [];
+
+  for (const pkg of packages) {
+    const isUnlimited = Boolean(pkg.unlimited || pkg.data_quantity === 0);
+    const baseName = isUnlimited ? getUnlimitedPlanBaseName(pkg.name) : null;
+
+    if (isUnlimited && baseName) {
+      const existing = unlimitedGroups.get(baseName) ?? [];
+      existing.push(pkg);
+      unlimitedGroups.set(baseName, existing);
+    } else {
+      singles.push(pkg);
+    }
+  }
+
+  const result: PlanItem[] = [];
+  for (const [baseName, pkgs] of unlimitedGroups) {
+    if (pkgs.length > 1) {
+      pkgs.sort((a, b) => (a.package_validity ?? 0) - (b.package_validity ?? 0));
+      result.push({ type: "unlimited", baseName, packages: pkgs });
+    } else {
+      singles.push(pkgs[0]!);
+    }
+  }
+  for (const pkg of singles) {
+    result.push({ type: "single", pkg });
+  }
+  return result;
+}
+
 // ---------- Sub-components ----------
 
 function PackageCard({
   pkg,
   onAddToCart,
+  returnQuery,
 }: {
   pkg: Package;
   onAddToCart?: (pkg: Package) => void;
+  /** Query string to append so Back from detail returns to same filters (e.g. tab=countries&country=5). */
+  returnQuery?: string;
 }) {
+  const detailHref = returnQuery ? `/esim/${pkg.id}?${returnQuery}` : `/esim/${pkg.id}`;
   return (
-    <Card className="group h-full transition-all hover:shadow-md hover:border-primary/30 flex flex-col">
-      <Link href={`/esim/${pkg.id}`} className="flex flex-col flex-1 min-h-0">
+    <Card className="group relative h-full transition-all hover:shadow-md hover:border-primary/30 flex flex-col">
+      {pkg.has5g && (
+        <span
+          className="absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary shadow-sm"
+          title="5G available"
+        >
+          <Signal className="h-3 w-3" />
+          5G
+        </span>
+      )}
+      <Link href={detailHref} className="flex flex-col flex-1 min-h-0">
         <CardContent className="flex flex-col gap-3 p-5 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+            <h3
+              className={cn(
+                "text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors",
+                pkg.has5g && "pr-12",
+              )}
+            >
               {formatEsimPackageName(pkg.name)}
             </h3>
-            <div className="flex shrink-0 items-center gap-1">
-              {pkg.has5g && (
-                <span
-                  className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
-                  title="5G available"
-                >
-                  <Signal className="h-3 w-3" />
-                  5G
-                </span>
-              )}
-              {pkg.package_type === "DATA-VOICE-SMS" && (
-                <Badge variant="secondary" className="text-[10px]">
-                  Voice+SMS
-                </Badge>
-              )}
-            </div>
+            {pkg.package_type === "DATA-VOICE-SMS" && (
+              <Badge variant="secondary" className="shrink-0 text-[10px]">
+                Voice+SMS
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
@@ -153,6 +201,111 @@ function PackageCard({
             onClick={(e) => {
               e.preventDefault();
               onAddToCart(pkg);
+            }}
+          >
+            Add to Cart
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function UnlimitedPlanCard({
+  baseName,
+  packages: groupPackages,
+  onAddToCart,
+  returnQuery,
+}: {
+  baseName: string;
+  packages: Package[];
+  onAddToCart?: (pkg: Package) => void;
+  returnQuery?: string;
+}) {
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const selected = groupPackages[selectedIndex] ?? groupPackages[0]!;
+  const has5g = groupPackages.some((p) => p.has5g);
+  const detailHref = selected
+    ? (returnQuery ? `/esim/${selected.id}?${returnQuery}` : `/esim/${selected.id}`)
+    : "#";
+
+  return (
+    <Card className="group relative flex h-full flex-col transition-all hover:shadow-md hover:border-primary/30">
+      {has5g && (
+        <span
+          className="absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary shadow-sm"
+          title="5G available"
+        >
+          <Signal className="h-3 w-3" />
+          5G
+        </span>
+      )}
+      <CardContent className="flex flex-col gap-3 p-5 flex-1">
+        <h3
+          className={cn(
+            "text-sm font-semibold leading-tight text-primary",
+            has5g && "pr-12",
+          )}
+        >
+          ∞ {baseName}
+        </h3>
+        <div className="flex items-baseline gap-2">
+          <span className="text-xl font-bold text-primary">
+            ${selected.price}
+          </span>
+          <span className="text-xs text-muted-foreground">USD</span>
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium text-muted-foreground">
+            Days
+          </label>
+          <select
+            value={selectedIndex}
+            onChange={(e) => setSelectedIndex(Number(e.target.value))}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
+            aria-label="Select duration"
+          >
+            {groupPackages.map((pkg, i) => (
+              <option key={pkg.id} value={i}>
+                {formatValidityOption(pkg.package_validity ?? 1)}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="mt-auto flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+          <Globe className="h-3.5 w-3.5 shrink-0" />
+          <span className="truncate">
+            {(() => {
+              const name = groupPackages[0]?.name ?? "";
+              const inMatch = name.match(/\s+in\s+(.+)$/i);
+              const region = inMatch
+                ? inMatch[1]
+                  .replace(/,?\s*(Throttled|Unthrottled|V2).*$/i, "")
+                  .replace(/\s*,\s*$/, "")
+                  .trim()
+                : "";
+              return region || "—";
+            })()}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 border-t pt-3">
+          <Link
+            href={detailHref}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            View Details →
+          </Link>
+        </div>
+      </CardContent>
+      {onAddToCart && (
+        <div className="px-5 pb-5 pt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={(e) => {
+              e.preventDefault();
+              onAddToCart(selected);
             }}
           >
             Add to Cart
@@ -264,7 +417,9 @@ function parseData(s: string | null): DataFilter {
 export function EsimStorePage() {
   const searchParams = useSearchParams();
   const { addItem, openCart } = useCart();
-  const [activeTab, setActiveTab] = useState("countries");
+  const [activeTab, setActiveTab] = useState<"countries" | "continents" | "global">(
+    () => (searchParams.get("tab") as "countries" | "continents" | "global") || "countries",
+  );
   const [countries, setCountries] = useState<Country[]>([]);
   const [continents, setContinents] = useState<Continent[]>([]);
   const [packages, setPackages] = useState<Package[]>([]);
@@ -275,13 +430,14 @@ export function EsimStorePage() {
     useState<Continent | null>(null);
   const [packageType, setPackageType] = useState<
     "DATA-ONLY" | "DATA-VOICE-SMS"
-  >("DATA-ONLY");
+  >(() => (searchParams.get("packageType") as "DATA-ONLY" | "DATA-VOICE-SMS") || "DATA-ONLY");
   const [filterValidity, setFilterValidity] = useState<ValidityFilter>(
     () => parseValidity(searchParams.get("validity")),
   );
   const [filterData, setFilterData] = useState<DataFilter>(() =>
     parseData(searchParams.get("data")),
   );
+  const restoredFromUrlRef = useRef(false);
 
   // Fetch countries
   useEffect(() => {
@@ -374,13 +530,79 @@ export function EsimStorePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageType]);
 
-  // Sync filter to URL
+  // Restore country/continent selection from URL when returning from detail page
+  useEffect(() => {
+    if (restoredFromUrlRef.current) return;
+    if (activeTab === "countries" && countries.length > 0) {
+      const countryId = searchParams.get("country");
+      if (countryId) {
+        const c = countries.find((x) => x.id === Number(countryId));
+        if (c) {
+          restoredFromUrlRef.current = true;
+          setSelectedCountry(c);
+          setLoading(true);
+          fetch(
+            `/api/esim/packages/country/${c.id}?package_type=${packageType}`,
+          )
+            .then((res) => res.json())
+            .then((data: { status: boolean; data?: Package[] }) => {
+              if (data.status && data.data) setPackages(data.data);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+        }
+      }
+    }
+    if (activeTab === "continents" && continents.length > 0) {
+      const continentId = searchParams.get("continent");
+      if (continentId) {
+        const c = continents.find((x) => x.id === Number(continentId));
+        if (c) {
+          restoredFromUrlRef.current = true;
+          setSelectedContinent(c);
+          setLoading(true);
+          fetch(
+            `/api/esim/packages/continent/${c.id}?package_type=${packageType}`,
+          )
+            .then((res) => res.json())
+            .then((data: { status: boolean; data?: Package[] }) => {
+              if (data.status && data.data) setPackages(data.data);
+            })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+        }
+      }
+    }
+    if (activeTab === "global" || (!searchParams.get("country") && !searchParams.get("continent"))) {
+      restoredFromUrlRef.current = true;
+    }
+  }, [activeTab, countries, continents, packageType, searchParams]);
+
+  // Build query string so detail page Back link returns to same tab/filters
+  const returnQuery = useMemo(() => {
+    const p = new URLSearchParams();
+    p.set("tab", activeTab);
+    p.set("validity", filterValidity);
+    p.set("data", filterData);
+    p.set("packageType", packageType);
+    if (selectedCountry) p.set("country", String(selectedCountry.id));
+    if (selectedContinent) p.set("continent", String(selectedContinent.id));
+    return p.toString();
+  }, [activeTab, filterValidity, filterData, packageType, selectedCountry, selectedContinent]);
+
+  // Sync tab, filters, and selection to URL so Back from detail returns to same state
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", activeTab);
+    params.set("packageType", packageType);
     if (filterValidity === "all") params.delete("validity");
     else params.set("validity", filterValidity);
     if (filterData === "all") params.delete("data");
     else params.set("data", filterData);
+    if (selectedCountry) params.set("country", String(selectedCountry.id));
+    else params.delete("country");
+    if (selectedContinent) params.set("continent", String(selectedContinent.id));
+    else params.delete("continent");
     const next = params.toString();
     const current = searchParams.toString();
     if (next !== current) {
@@ -399,6 +621,12 @@ export function EsimStorePage() {
         (pkg) => matchesValidity(pkg, filterValidity) && matchesData(pkg, filterData),
       ),
     [packages, filterValidity, filterData],
+  );
+
+  // Group unlimited plans (same base name, multiple durations) into one card with days dropdown
+  const displayItems = useMemo(
+    () => groupPackagesForDisplay(filteredPackages),
+    [filteredPackages],
   );
 
   // Filter countries by search
@@ -475,7 +703,7 @@ export function EsimStorePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v: string) => { setActiveTab(v); clearSelection(); }}>
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as "countries" | "continents" | "global"); clearSelection(); }}>
         <TabsList className="mx-auto mb-6">
           <TabsTrigger value="countries">
             <MapPin className="mr-1 h-4 w-4" />
@@ -579,15 +807,26 @@ export function EsimStorePage() {
                     </select>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {filteredPackages.map((pkg) => (
-                      <PackageCard
-                        key={pkg.id}
-                        pkg={pkg}
-                        onAddToCart={handleAddToCart}
-                      />
-                    ))}
+                    {displayItems.map((item) =>
+                      item.type === "single" ? (
+                        <PackageCard
+                          key={item.pkg.id}
+                          pkg={item.pkg}
+                          onAddToCart={handleAddToCart}
+                          returnQuery={returnQuery}
+                        />
+                      ) : (
+                        <UnlimitedPlanCard
+                          key={`unlimited-${item.baseName}`}
+                          baseName={item.baseName}
+                          packages={item.packages}
+                          onAddToCart={handleAddToCart}
+                          returnQuery={returnQuery}
+                        />
+                      ),
+                    )}
                   </div>
-                  {filteredPackages.length === 0 && (
+                  {displayItems.length === 0 && (
                     <p className="py-8 text-center text-muted-foreground">
                       No packages match the selected filters.
                     </p>
@@ -665,15 +904,26 @@ export function EsimStorePage() {
                     </select>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {filteredPackages.map((pkg) => (
-                      <PackageCard
-                        key={pkg.id}
-                        pkg={pkg}
-                        onAddToCart={handleAddToCart}
-                      />
-                    ))}
+                    {displayItems.map((item) =>
+                      item.type === "single" ? (
+                        <PackageCard
+                          key={item.pkg.id}
+                          pkg={item.pkg}
+                          onAddToCart={handleAddToCart}
+                          returnQuery={returnQuery}
+                        />
+                      ) : (
+                        <UnlimitedPlanCard
+                          key={`unlimited-${item.baseName}`}
+                          baseName={item.baseName}
+                          packages={item.packages}
+                          onAddToCart={handleAddToCart}
+                          returnQuery={returnQuery}
+                        />
+                      ),
+                    )}
                   </div>
-                  {filteredPackages.length === 0 && (
+                  {displayItems.length === 0 && (
                     <p className="py-8 text-center text-muted-foreground">
                       No packages match the selected filters.
                     </p>
@@ -730,15 +980,26 @@ export function EsimStorePage() {
                 </select>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {filteredPackages.map((pkg) => (
-                  <PackageCard
-                    key={pkg.id}
-                    pkg={pkg}
-                    onAddToCart={handleAddToCart}
-                  />
-                ))}
+                {displayItems.map((item) =>
+                  item.type === "single" ? (
+                    <PackageCard
+                      key={item.pkg.id}
+                      pkg={item.pkg}
+                      onAddToCart={handleAddToCart}
+                      returnQuery={returnQuery}
+                    />
+                  ) : (
+                    <UnlimitedPlanCard
+                      key={`unlimited-${item.baseName}`}
+                      baseName={item.baseName}
+                      packages={item.packages}
+                      onAddToCart={handleAddToCart}
+                      returnQuery={returnQuery}
+                    />
+                  ),
+                )}
               </div>
-              {filteredPackages.length === 0 && (
+              {displayItems.length === 0 && (
                 <p className="py-8 text-center text-muted-foreground">
                   No packages match the selected filters.
                 </p>

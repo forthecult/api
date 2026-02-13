@@ -258,6 +258,21 @@ export async function getEsimPackageDetail(
   return esimFetch(`/package/detail/${packageId}`);
 }
 
+/** Returns true if the package has any 5G network coverage (for list enrichment). */
+export async function getPackageHas5g(packageId: string): Promise<boolean> {
+  try {
+    const result = await getEsimPackageDetail(packageId);
+    if (!result.status || !result.data) return false;
+    const countries =
+      result.data.countries ?? result.data.romaing_countries ?? [];
+    return countries.some((c) =>
+      (c.network_coverage ?? []).some((n) => n.five_G),
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Get list of countries with eSIM coverage */
 export async function getEsimCountries(): Promise<{
   status: boolean;

@@ -29,6 +29,7 @@
     "db:link-orphan-reviews": "bun run scripts/link-orphan-reviews.ts",
     "db:migrate-reviews": "psql $DATABASE_URL -f scripts/migrate-reviews-standalone.sql",
     "db:migrate-user-role": "psql $DATABASE_URL -f scripts/migrate-add-user-role.sql",
+    "db:migrate-esim-order-guest": "psql $DATABASE_URL -f scripts/migrate-esim-order-user-id-nullable.sql",
     "db:verify-role": "bun run scripts/verify-role-migration.ts",
     "db:seed-admin": "bun run scripts/seed-admin-user.ts",
     "db:seed:all": "bun run scripts/seed-categories.ts && bun run scripts/seed-products.ts",
@@ -56,7 +57,6 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@appboxo/web-sdk": "^1.4.3",
     "@better-auth/passkey": "^1.4.18",
     "@metamask/sdk": "^0.34.0",
     "@metamask/sdk-react": "^0.33.1",

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 
 import { NextResponse } from "next/server";
 
-import { getEsimContinentPackages } from "~/lib/esim-api";
+import { getEsimContinentPackages, getPackageHas5g } from "~/lib/esim-api";
 
 export async function GET(
   request: NextRequest,
@@ -25,11 +25,17 @@ export async function GET(
       page,
     );
 
-    const data = result.data.map((pkg) => ({
-      ...pkg,
-      reseller_price: pkg.price,
-      price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
-    }));
+    const data = await Promise.all(
+      result.data.map(async (pkg) => {
+        const has5g = await getPackageHas5g(pkg.id);
+        return {
+          ...pkg,
+          reseller_price: pkg.price,
+          price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
+          has5g,
+        };
+      }),
+    );
 
     return NextResponse.json({ ...result, data });
   } catch (error) {
