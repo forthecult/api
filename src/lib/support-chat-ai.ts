@@ -44,10 +44,11 @@ function isOpenClawConfigured(): boolean {
 async function generateViaOpenClaw(
   context: SupportChatContext,
 ): Promise<string | null> {
-  const gatewayUrl = process.env.OPENCLAW_GATEWAY_URL!.trim().replace(
-    /\/$/,
-    "",
-  );
+  let gatewayUrl = process.env.OPENCLAW_GATEWAY_URL!.trim().replace(/\/$/, "");
+  // Auto-prepend https:// if the protocol is missing
+  if (!/^https?:\/\//i.test(gatewayUrl)) {
+    gatewayUrl = `https://${gatewayUrl}`;
+  }
   const gatewayToken = process.env.OPENCLAW_GATEWAY_TOKEN!.trim();
   const agentId = process.env.OPENCLAW_AGENT_ID?.trim() || "main";
 
@@ -83,8 +84,11 @@ async function generateViaOpenClaw(
     });
 
     if (!res.ok) {
+      const errorBody = await res.text().catch(() => "(unreadable)");
       console.error(
-        `OpenClaw reply failed: ${res.status} ${res.statusText}`,
+        `[SupportChat] OpenClaw reply failed: ${res.status} ${res.statusText}`,
+        `| URL: ${gatewayUrl}/v1/chat/completions`,
+        `| Body: ${errorBody.slice(0, 500)}`,
       );
       return null;
     }
@@ -95,9 +99,15 @@ async function generateViaOpenClaw(
     const content =
       data.choices?.[0]?.message?.content?.trim().slice(0, MAX_REPLY_CHARS) ??
       "";
+    if (!content) {
+      console.warn(
+        "[SupportChat] OpenClaw returned OK but empty content. Response:",
+        JSON.stringify(data).slice(0, 500),
+      );
+    }
     return content || null;
   } catch (err) {
-    console.error("OpenClaw reply error:", err);
+    console.error("[SupportChat] OpenClaw network/parse error:", err);
     return null;
   }
 }
@@ -167,9 +177,18 @@ export async function generateSupportChatReply(
 ): Promise<string> {
   // 1. Try OpenClaw Gateway (Alice with memory, tools, multi-channel)
   if (isOpenClawConfigured()) {
+    console.log("[SupportChat] OpenClaw is configured, attempting AI reply…");
     const reply = await generateViaOpenClaw(context);
     if (reply) return reply;
+    console.warn("[SupportChat] OpenClaw returned no reply, falling through…");
     // Fall through to direct API if OpenClaw fails
+  } else {
+    console.warn(
+      "[SupportChat] OpenClaw NOT configured. OPENCLAW_GATEWAY_URL:",
+      process.env.OPENCLAW_GATEWAY_URL ? "set" : "MISSING",
+      "| OPENCLAW_GATEWAY_TOKEN:",
+      process.env.OPENCLAW_GATEWAY_TOKEN ? "set" : "MISSING",
+    );
   }
 
   // 2. Try direct OpenAI-compatible API (legacy)
@@ -177,5 +196,6 @@ export async function generateSupportChatReply(
   if (directReply) return directReply;
 
   // 3. Safe fallback
+  console.warn("[SupportChat] All AI providers failed — returning fallback reply.");
   return FALLBACK_REPLY;
 }
