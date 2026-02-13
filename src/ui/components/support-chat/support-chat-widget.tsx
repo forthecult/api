@@ -422,20 +422,42 @@ export function SupportChatWidget() {
               <p className="text-destructive text-sm">{error}</p>
             )}
             <ul className="space-y-2">
-              {messages.map((m) => (
-                <li
-                  key={m.id}
-                  className={cn(
-                    "rounded-lg px-3 py-2 text-sm",
-                    m.role === "customer"
-                      ? "ml-8 bg-primary text-primary-foreground"
-                      : "mr-8 bg-muted",
-                  )}
-                >
-                  <span className="font-medium capitalize">{m.role === "customer" ? "You" : "Alice"}: </span>
-                  {m.content}
-                </li>
-              ))}
+              {messages.map((m) => {
+                const date = m.createdAt ? new Date(m.createdAt) : null;
+                const timeStr = date
+                  ? date.toLocaleTimeString(undefined, {
+                      hour: "numeric",
+                      minute: "2-digit",
+                      hour12: true,
+                    })
+                  : "";
+                return (
+                  <li
+                    key={m.id}
+                    className={cn(
+                      "rounded-lg px-3 py-2 text-sm",
+                      m.role === "customer"
+                        ? "ml-8 bg-primary text-primary-foreground"
+                        : "mr-8 bg-muted",
+                    )}
+                  >
+                    <span className="font-medium capitalize">{m.role === "customer" ? "You" : "Alice"}: </span>
+                    {m.content}
+                    {timeStr && (
+                      <div
+                        className={cn(
+                          "mt-1 text-xs opacity-80",
+                          m.role === "customer"
+                            ? "text-primary-foreground/80"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {timeStr}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
 

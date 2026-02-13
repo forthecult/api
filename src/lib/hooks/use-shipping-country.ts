@@ -39,12 +39,11 @@ function setCached(country: string | null) {
  * (callers should not block add-to-cart on null unless they want to require geo).
  */
 export function useShippingCountry(): ShippingCountryState {
-  const [state, setState] = React.useState<ShippingCountryState>(() => {
-    const cached = getCached();
-    return {
-      shippingCountry: cached,
-      isLoading: cached === null,
-    };
+  // Always start with null to match the server render and avoid hydration mismatch.
+  // sessionStorage is read in the useEffect below (client-only).
+  const [state, setState] = React.useState<ShippingCountryState>({
+    shippingCountry: null,
+    isLoading: true,
   });
 
   React.useEffect(() => {
@@ -54,7 +53,6 @@ export function useShippingCountry(): ShippingCountryState {
       return;
     }
     let cancelled = false;
-    setState((s) => (s.shippingCountry ? s : { ...s, isLoading: true }));
     fetch("/api/geo", { credentials: "include" })
       .then((res) => (res.ok ? res.json() : { country: null }))
       .then((data: { country?: string | null }) => {
