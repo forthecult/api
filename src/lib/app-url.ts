@@ -45,10 +45,10 @@ export function getClientBaseUrl(): string {
  */
 export function getAgentBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_AGENT_APP_URL?.trim();
-  if (raw && /^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
-  // Do NOT fall back to the main site URL — that would cause isAgentSubdomain()
-  // to match every request, rendering the agent layout for the main site.
-  return "";
+  if (!raw) return "";
+  // Accept both "https://ai.example.com" and bare "ai.example.com"
+  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
+  return `https://${raw.replace(/^\/+/, "")}`.replace(/\/$/, "");
 }
 
 /** Hostname of the agent app URL (e.g. ai.forthecult.store). Empty if not set. */
