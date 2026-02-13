@@ -1,0 +1,1120 @@
+"use client";
+
+import {
+  ArrowRight,
+  Check,
+  ChevronDown,
+  Crown,
+  Globe,
+  Minus,
+  Shield,
+  Signal,
+  Smartphone,
+  Sparkles,
+  Star,
+  Timer,
+  TrendingUp,
+  Truck,
+  Users,
+  Wallet,
+  Zap,
+} from "lucide-react";
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
+
+import { SEO_CONFIG } from "~/app";
+import { cn } from "~/lib/cn";
+import { Badge } from "~/ui/primitives/badge";
+import { Button } from "~/ui/primitives/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/primitives/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "~/ui/primitives/table";
+
+// ---------------------------------------------------------------------------
+// Tier definitions
+// ---------------------------------------------------------------------------
+
+type Tier = {
+  id: number;
+  name: string;
+  tagline: string;
+  /** Approximate base stake (before dynamic adjustment). Display only. */
+  baseStakeDisplay: string;
+  accent: string;
+  accentBg: string;
+  accentBorder: string;
+  icon: React.ElementType;
+  benefits: {
+    esim: string;
+    esimDetail: string;
+    shipping: string;
+    shippingDetail: string;
+    extras: string[];
+  };
+  popular?: boolean;
+};
+
+const TIERS: Tier[] = [
+  {
+    id: 4,
+    name: "Tier 4",
+    tagline: "Start your journey",
+    baseStakeDisplay: "~25,000 CULT",
+    accent: "text-muted-foreground",
+    accentBg: "bg-muted/60",
+    accentBorder: "border-border",
+    icon: Signal,
+    benefits: {
+      esim: "10% off",
+      esimDetail: "10% discount on all eSIM data plans",
+      shipping: "Standard rates",
+      shippingDetail: "Standard shipping rates apply",
+      extras: ["Community access", "Governance voting"],
+    },
+  },
+  {
+    id: 3,
+    name: "Tier 3",
+    tagline: "Level up your membership",
+    baseStakeDisplay: "~75,000 CULT",
+    accent: "text-chart-2",
+    accentBg: "bg-chart-2/10",
+    accentBorder: "border-chart-2/30",
+    icon: Shield,
+    benefits: {
+      esim: "15% off",
+      esimDetail: "15% discount on all eSIM data plans",
+      shipping: "20% off",
+      shippingDetail: "20% off all shipping costs",
+      extras: [
+        "Community access",
+        "Governance voting",
+        "Early product access",
+      ],
+    },
+  },
+  {
+    id: 2,
+    name: "Tier 2",
+    tagline: "Unlock serious value",
+    baseStakeDisplay: "~200,000 CULT",
+    accent: "text-chart-4",
+    accentBg: "bg-chart-4/10",
+    accentBorder: "border-chart-4/30",
+    icon: Star,
+    popular: true,
+    benefits: {
+      esim: "Free eSIM",
+      esimDetail: "One free eSIM card included with your membership",
+      shipping: "50% off",
+      shippingDetail: "50% off all shipping costs",
+      extras: [
+        "Community access",
+        "Governance voting",
+        "Early product access",
+        "Member-only drops",
+      ],
+    },
+  },
+  {
+    id: 1,
+    name: "Tier 1",
+    tagline: "The ultimate membership",
+    baseStakeDisplay: "~500,000 CULT",
+    accent: "text-chart-1",
+    accentBg: "bg-chart-1/10",
+    accentBorder: "border-chart-1/30",
+    icon: Crown,
+    benefits: {
+      esim: "Premium eSIM",
+      esimDetail:
+        "Premium free eSIM card with higher data allowance included",
+      shipping: "Free",
+      shippingDetail: "Free shipping on every order, worldwide",
+      extras: [
+        "Community access",
+        "Governance voting",
+        "Early product access",
+        "Member-only drops",
+        "Priority support",
+        "Exclusive product access",
+      ],
+    },
+  },
+];
+
+// Reverse for display: show Tier 4 (entry) on left, Tier 1 (premium) on right
+const TIERS_DISPLAY = [...TIERS].reverse();
+
+// ---------------------------------------------------------------------------
+// Benefits comparison rows for table
+// ---------------------------------------------------------------------------
+
+type BenefitRow = {
+  label: string;
+  icon: React.ElementType;
+  /** Values per tier id (1-4) */
+  values: Record<number, string | boolean>;
+};
+
+const BENEFIT_ROWS: BenefitRow[] = [
+  {
+    label: "eSIM Discount",
+    icon: Smartphone,
+    values: { 4: "10% off", 3: "15% off", 2: "Free eSIM", 1: "Premium eSIM" },
+  },
+  {
+    label: "Shipping",
+    icon: Truck,
+    values: {
+      4: "Standard",
+      3: "20% off",
+      2: "50% off",
+      1: "Free",
+    },
+  },
+  {
+    label: "Community Access",
+    icon: Users,
+    values: { 4: true, 3: true, 2: true, 1: true },
+  },
+  {
+    label: "Governance Voting",
+    icon: Shield,
+    values: { 4: true, 3: true, 2: true, 1: true },
+  },
+  {
+    label: "Early Product Access",
+    icon: Zap,
+    values: { 4: false, 3: true, 2: true, 1: true },
+  },
+  {
+    label: "Member-Only Drops",
+    icon: Sparkles,
+    values: { 4: false, 3: false, 2: true, 1: true },
+  },
+  {
+    label: "Priority Support",
+    icon: Star,
+    values: { 4: false, 3: false, 2: false, 1: true },
+  },
+  {
+    label: "Exclusive Products",
+    icon: Crown,
+    values: { 4: false, 3: false, 2: false, 1: true },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Simulated dynamic pricing (in production, this comes from the API)
+// ---------------------------------------------------------------------------
+
+/**
+ * Simulates a dynamic staking requirement based on a bonding curve.
+ * In production this would call an API that factors in:
+ *  - Current CULT token price / market cap
+ *  - Number of existing stakers at each tier
+ */
+function getStakeRequirement(tierId: number): number {
+  const base: Record<number, number> = {
+    4: 25_000,
+    3: 75_000,
+    2: 200_000,
+    1: 500_000,
+  };
+  // Simulate slight dynamic adjustment (+/- 0-5%)
+  return base[tierId] ?? 0;
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`;
+  return n.toString();
+}
+
+// ---------------------------------------------------------------------------
+// FAQ
+// ---------------------------------------------------------------------------
+
+const FAQ_ITEMS = [
+  {
+    q: "How does staking work?",
+    a: "When you stake CULT tokens, they are locked in a smart contract on Solana for your chosen duration (30 days or 12 months). Your membership tier is active for the entire staking period. When the period ends, you can unstake to retrieve your tokens or re-stake to maintain your membership.",
+  },
+  {
+    q: "Why are staking requirements dynamic?",
+    a: "The required stake amount adjusts based on the CULT token's market cap and the number of existing stakers—similar to a bonding curve. This ensures membership remains accessible as the token price fluctuates and rewards early adopters.",
+  },
+  {
+    q: "What happens when my staking period ends?",
+    a: "Your membership benefits remain active until the end of the staking period. You'll receive a notification before it expires so you can choose to re-stake. Your tokens are returned to your wallet when you unstake.",
+  },
+  {
+    q: "Can I upgrade my tier?",
+    a: "Yes. You can stake additional tokens to move up to a higher tier at any time. The additional tokens will be locked for the same duration as your original stake.",
+  },
+  {
+    q: "What eSIM card do I get?",
+    a: "Tier 2 members receive a standard eSIM card. Tier 1 members receive a premium eSIM card with higher data allowances. Both are activated instantly and work in 200+ countries.",
+  },
+  {
+    q: "Why stake for 12 months?",
+    a: "Staking for 12 months gives you 14 months of eSIM coverage—that's 2 extra months free. It also demonstrates long-term commitment to the community, which strengthens the ecosystem for everyone.",
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function MembershipClient() {
+  const [selectedTier, setSelectedTier] = useState<number>(2);
+  const [stakeDuration, setStakeDuration] = useState<"30d" | "12m">("30d");
+
+  const stakeAmount = useMemo(
+    () => getStakeRequirement(selectedTier),
+    [selectedTier],
+  );
+
+  const selectedTierData = useMemo(
+    () => TIERS.find((t) => t.id === selectedTier)!,
+    [selectedTier],
+  );
+
+  const scrollToTiers = useCallback(() => {
+    document.getElementById("tiers")?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  const scrollToCTA = useCallback(() => {
+    document.getElementById("stake-cta")?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  return (
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background to-background">
+      {/* ----------------------------------------------------------------- */}
+      {/* Hero */}
+      {/* ----------------------------------------------------------------- */}
+      <section className="relative overflow-hidden">
+        {/* Subtle radial glow */}
+        <div
+          className="pointer-events-none absolute inset-0 -top-32 opacity-30"
+          style={{
+            background:
+              "radial-gradient(ellipse 80% 50% at 50% 0%, var(--primary) 0%, transparent 70%)",
+          }}
+          aria-hidden
+        />
+
+        <div className="container relative z-10 mx-auto max-w-5xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8 lg:py-36">
+          <Badge variant="secondary" className="mb-6 gap-1.5 px-3 py-1">
+            <Sparkles className="h-3.5 w-3.5" />
+            Membership
+          </Badge>
+
+          <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+            Join the{" "}
+            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Cult
+            </span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
+            Stake CULT tokens to unlock exclusive membership tiers. Free eSIM cards,
+            free shipping, member-only discounts, and more. The longer you
+            stake, the more you save.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+            <Button size="lg" className="gap-2" onClick={scrollToTiers}>
+              View Tiers
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Link href="/esim">
+              <Button size="lg" variant="outline" className="gap-2">
+                <Globe className="h-4 w-4" />
+                Browse eSIM Plans
+              </Button>
+            </Link>
+          </div>
+
+          {/* Quick value props */}
+          <div className="mx-auto mt-16 grid max-w-3xl gap-6 sm:grid-cols-3">
+            {[
+              {
+                icon: Smartphone,
+                label: "Free eSIM Cards",
+                sub: "From Tier 2 and above",
+              },
+              {
+                icon: Truck,
+                label: "Free Shipping",
+                sub: "Tier 1 members ship free",
+              },
+              {
+                icon: Timer,
+                label: "12 mo = 14 mo eSIM",
+                sub: "2 bonus months when you commit",
+              },
+            ].map(({ icon: Icon, label, sub }) => (
+              <div
+                key={label}
+                className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-card/50 p-5 backdrop-blur-sm"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                  <Icon className="h-5 w-5 text-primary" />
+                </div>
+                <p className="font-medium text-foreground">{label}</p>
+                <p className="text-sm text-muted-foreground">{sub}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* --------------------------------------------------------------- */}
+        {/* How It Works */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+              How It Works
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Three simple steps to unlock your membership benefits.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-3">
+            {[
+              {
+                step: "01",
+                icon: Wallet,
+                title: "Connect Wallet",
+                desc: "Connect your Solana wallet that holds CULT tokens.",
+              },
+              {
+                step: "02",
+                icon: TrendingUp,
+                title: "Choose & Stake",
+                desc: "Pick a tier and stake the required CULT tokens for 30 days or 12 months.",
+              },
+              {
+                step: "03",
+                icon: Sparkles,
+                title: "Unlock Benefits",
+                desc: "Instantly access your membership perks—eSIM discounts, shipping benefits, and more.",
+              },
+            ].map(({ step, icon: Icon, title, desc }) => (
+              <div key={step} className="relative flex flex-col items-center text-center">
+                <span className="mb-3 text-5xl font-black text-primary/10">
+                  {step}
+                </span>
+                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                  <Icon className="h-7 w-7 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Tier Cards */}
+        {/* --------------------------------------------------------------- */}
+        <section id="tiers" className="scroll-mt-20 py-16 md:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+              Choose Your Tier
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Staking requirements are dynamic—based on CULT&apos;s market cap
+              and the number of existing stakers. Early members get in at lower
+              thresholds.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {TIERS_DISPLAY.map((tier) => {
+              const Icon = tier.icon;
+              const isSelected = selectedTier === tier.id;
+              const stakeReq = getStakeRequirement(tier.id);
+
+              return (
+                <Card
+                  key={tier.id}
+                  className={cn(
+                    "relative cursor-pointer transition-all duration-200 hover:shadow-lg",
+                    isSelected
+                      ? `ring-2 ring-primary shadow-lg ${tier.accentBorder}`
+                      : "border-border hover:-translate-y-1",
+                    tier.popular && "lg:scale-[1.02]",
+                  )}
+                  onClick={() => setSelectedTier(tier.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedTier(tier.id);
+                    }
+                  }}
+                  aria-pressed={isSelected}
+                  aria-label={`Select ${tier.name}`}
+                >
+                  {tier.popular && (
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <Badge className="gap-1 bg-primary px-3 py-0.5 text-primary-foreground">
+                        <Sparkles className="h-3 w-3" />
+                        Most Popular
+                      </Badge>
+                    </div>
+                  )}
+
+                  <CardHeader className="pb-3">
+                    <div
+                      className={cn(
+                        "mb-2 flex h-12 w-12 items-center justify-center rounded-xl",
+                        tier.accentBg,
+                      )}
+                    >
+                      <Icon className={cn("h-6 w-6", tier.accent)} />
+                    </div>
+                    <CardTitle className="text-xl">{tier.name}</CardTitle>
+                    <CardDescription>{tier.tagline}</CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="space-y-4">
+                    {/* Staking requirement */}
+                    <div>
+                      <p className="text-2xl font-bold tabular-nums text-foreground">
+                        {formatTokens(stakeReq)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        CULT tokens to stake
+                      </p>
+                    </div>
+
+                    {/* Key benefits */}
+                    <div className="space-y-2.5 border-t pt-4">
+                      <div className="flex items-start gap-2">
+                        <Smartphone
+                          className={cn("mt-0.5 h-4 w-4 shrink-0", tier.accent)}
+                        />
+                        <span className="text-sm text-foreground">
+                          {tier.benefits.esim}
+                          <span className="text-muted-foreground"> eSIM cards</span>
+                        </span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <Truck
+                          className={cn("mt-0.5 h-4 w-4 shrink-0", tier.accent)}
+                        />
+                        <span className="text-sm text-foreground">
+                          {tier.benefits.shipping}
+                          <span className="text-muted-foreground"> shipping</span>
+                        </span>
+                      </div>
+                      {tier.benefits.extras
+                        .filter(
+                          (e) =>
+                            e !== "Community access" &&
+                            e !== "Governance voting",
+                        )
+                        .map((extra) => (
+                          <div key={extra} className="flex items-start gap-2">
+                            <Check
+                              className={cn(
+                                "mt-0.5 h-4 w-4 shrink-0",
+                                tier.accent,
+                              )}
+                            />
+                            <span className="text-sm text-muted-foreground">
+                              {extra}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+
+                    {/* Select CTA */}
+                    <Button
+                      variant={isSelected ? "default" : "outline"}
+                      className="w-full"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTier(tier.id);
+                        scrollToCTA();
+                      }}
+                    >
+                      {isSelected ? "Selected" : "Select"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Benefits Comparison Table */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+              Compare Benefits
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              A detailed look at what each tier unlocks.
+            </p>
+          </div>
+
+          <div className="mt-10 overflow-x-auto rounded-xl border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px] bg-muted/30">
+                    Benefit
+                  </TableHead>
+                  {TIERS_DISPLAY.map((tier) => {
+                    const Icon = tier.icon;
+                    return (
+                      <TableHead
+                        key={tier.id}
+                        className={cn(
+                          "min-w-[120px] text-center",
+                          selectedTier === tier.id && "bg-primary/5",
+                        )}
+                      >
+                        <div className="flex flex-col items-center gap-1">
+                          <Icon className={cn("h-4 w-4", tier.accent)} />
+                          <span>{tier.name}</span>
+                        </div>
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Staking requirement row */}
+                <TableRow className="bg-muted/20">
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <Wallet className="h-4 w-4 text-muted-foreground" />
+                      Stake Required
+                    </div>
+                  </TableCell>
+                  {TIERS_DISPLAY.map((tier) => (
+                    <TableCell
+                      key={tier.id}
+                      className={cn(
+                        "text-center font-medium tabular-nums",
+                        selectedTier === tier.id && "bg-primary/5",
+                      )}
+                    >
+                      {formatTokens(getStakeRequirement(tier.id))}
+                    </TableCell>
+                  ))}
+                </TableRow>
+
+                {BENEFIT_ROWS.map((row) => {
+                  const Icon = row.icon;
+                  return (
+                    <TableRow key={row.label}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4 text-muted-foreground" />
+                          {row.label}
+                        </div>
+                      </TableCell>
+                      {TIERS_DISPLAY.map((tier) => {
+                        const val = row.values[tier.id];
+                        return (
+                          <TableCell
+                            key={tier.id}
+                            className={cn(
+                              "text-center",
+                              selectedTier === tier.id && "bg-primary/5",
+                            )}
+                          >
+                            {val === true ? (
+                              <Check className="mx-auto h-5 w-5 text-primary" />
+                            ) : val === false ? (
+                              <Minus className="mx-auto h-5 w-5 text-muted-foreground/40" />
+                            ) : (
+                              <span className="text-sm font-medium">{val}</span>
+                            )}
+                          </TableCell>
+                        );
+                      })}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* eSIM Spotlight */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 md:py-20">
+          <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-muted/30">
+            <div className="grid gap-0 md:grid-cols-2">
+              {/* Left: content */}
+              <div className="flex flex-col justify-center p-8 md:p-12">
+                <Badge variant="secondary" className="mb-4 w-fit gap-1.5">
+                  <Globe className="h-3.5 w-3.5" />
+                  eSIM Included
+                </Badge>
+                <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+                  Stay connected everywhere
+                </h2>
+                <p className="mt-4 text-muted-foreground">
+                  Every membership tier includes eSIM benefits. From 10% off at Tier 4
+                  to a premium free eSIM card at Tier 1—stay connected in 200+
+                  countries without hunting for local SIM cards.
+                </p>
+                <ul className="mt-6 space-y-3">
+                  {[
+                    "Instant activation—no physical SIM needed",
+                    "Coverage in 200+ countries and regions",
+                    "Flexible data plans from 1GB to unlimited",
+                    "Stake 12 months, get 14 months of eSIM coverage",
+                  ].map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                      <span className="text-sm text-muted-foreground">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-8">
+                  <Link href="/esim">
+                    <Button variant="outline" className="gap-2">
+                      Explore eSIM Plans
+                      <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right: visual grid */}
+              <div className="flex items-center justify-center bg-muted/20 p-8 md:p-12">
+                <div className="grid w-full max-w-xs grid-cols-2 gap-4">
+                  {TIERS_DISPLAY.map((tier) => {
+                    const Icon = tier.icon;
+                    return (
+                      <div
+                        key={tier.id}
+                        className={cn(
+                          "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors",
+                          selectedTier === tier.id
+                            ? `${tier.accentBorder} ${tier.accentBg}`
+                            : "border-border/50 bg-card/50",
+                        )}
+                      >
+                        <Icon className={cn("h-5 w-5", tier.accent)} />
+                        <p className="text-xs font-medium text-foreground">
+                          {tier.name}
+                        </p>
+                        <p className={cn("text-xs font-semibold", tier.accent)}>
+                          {tier.benefits.esim}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* 12 Month Incentive */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5">
+            <div className="p-8 text-center md:p-12">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Timer className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+                Stake 12 Months, Get 14 Months of eSIM
+              </h2>
+              <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+                Commit to a 12-month stake and we&apos;ll extend your eSIM
+                benefits to 14 months—that&apos;s 2 extra months completely
+                free. Your membership benefits, shipping discounts, and
+                everything else stay active for the full staking period.
+              </p>
+
+              <div className="mx-auto mt-10 grid max-w-lg gap-6 sm:grid-cols-2">
+                <div
+                  className={cn(
+                    "cursor-pointer rounded-xl border-2 p-6 transition-all",
+                    stakeDuration === "30d"
+                      ? "border-primary bg-card shadow-md"
+                      : "border-border bg-card/50 hover:border-border/80",
+                  )}
+                  onClick={() => setStakeDuration("30d")}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setStakeDuration("30d");
+                    }
+                  }}
+                  aria-pressed={stakeDuration === "30d"}
+                >
+                  <p className="text-3xl font-bold text-foreground">30</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    days
+                  </p>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Minimum staking period. Great for trying out your tier.
+                  </p>
+                </div>
+                <div
+                  className={cn(
+                    "relative cursor-pointer rounded-xl border-2 p-6 transition-all",
+                    stakeDuration === "12m"
+                      ? "border-primary bg-card shadow-md"
+                      : "border-border bg-card/50 hover:border-border/80",
+                  )}
+                  onClick={() => setStakeDuration("12m")}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setStakeDuration("12m");
+                    }
+                  }}
+                  aria-pressed={stakeDuration === "12m"}
+                >
+                  <div className="absolute -top-2.5 right-3">
+                    <Badge className="gap-1 bg-chart-1 text-white">
+                      +2 months free
+                    </Badge>
+                  </div>
+                  <p className="text-3xl font-bold text-foreground">12</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    months
+                  </p>
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Get 14 months of eSIM coverage. Best value for committed
+                    members.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Dynamic Pricing Explainer */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-3xl text-center">
+            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+              Dynamic Staking Requirements
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Staking thresholds adjust automatically based on two factors, keeping
+              membership fair and accessible.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-12 grid max-w-3xl gap-8 md:grid-cols-2">
+            <Card className="border-border">
+              <CardHeader>
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Token Price</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-muted-foreground">
+                  As the CULT token price (market cap) increases, the number
+                  of tokens required to stake decreases proportionally—so the
+                  dollar value of membership stays reasonable.
+                </CardDescription>
+              </CardContent>
+            </Card>
+            <Card className="border-border">
+              <CardHeader>
+                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Users className="h-5 w-5 text-primary" />
+                </div>
+                <CardTitle className="text-lg">Staker Count</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CardDescription className="text-muted-foreground">
+                  Similar to a bonding curve, the more people already staked at
+                  a tier, the slightly higher the threshold becomes. Early
+                  members benefit from lower requirements.
+                </CardDescription>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Stake CTA */}
+        {/* --------------------------------------------------------------- */}
+        <section
+          id="stake-cta"
+          className="scroll-mt-20 py-16 md:py-20"
+        >
+          <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+            {/* Header */}
+            <div className="border-b bg-muted/30 px-8 py-6">
+              <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
+                Stake CULT &amp; Join
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Select your tier and duration, then connect your wallet to
+                stake.
+              </p>
+            </div>
+
+            <div className="space-y-6 p-8">
+              {/* Selected tier summary */}
+              <div className="flex items-center gap-4 rounded-xl border p-4">
+                <div
+                  className={cn(
+                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+                    selectedTierData.accentBg,
+                  )}
+                >
+                  <selectedTierData.icon
+                    className={cn("h-6 w-6", selectedTierData.accent)}
+                  />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-foreground">
+                    {selectedTierData.name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedTierData.tagline}
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={scrollToTiers}
+                  className="shrink-0"
+                >
+                  Change
+                </Button>
+              </div>
+
+              {/* Duration picker (inline) */}
+              <div>
+                <p className="mb-3 text-sm font-medium text-foreground">
+                  Staking Duration
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    className={cn(
+                      "rounded-lg border-2 px-4 py-3 text-left transition-all",
+                      stakeDuration === "30d"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/30",
+                    )}
+                    onClick={() => setStakeDuration("30d")}
+                  >
+                    <p className="font-semibold text-foreground">30 Days</p>
+                    <p className="text-xs text-muted-foreground">
+                      Minimum period
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(
+                      "relative rounded-lg border-2 px-4 py-3 text-left transition-all",
+                      stakeDuration === "12m"
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-muted-foreground/30",
+                    )}
+                    onClick={() => setStakeDuration("12m")}
+                  >
+                    <Badge className="absolute -top-2 right-2 gap-1 bg-chart-1 text-[10px] text-white">
+                      Best Value
+                    </Badge>
+                    <p className="font-semibold text-foreground">12 Months</p>
+                    <p className="text-xs text-muted-foreground">
+                      14 months eSIM coverage
+                    </p>
+                  </button>
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="space-y-3 rounded-xl bg-muted/30 p-4">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Tokens to Stake</span>
+                  <span className="font-semibold tabular-nums text-foreground">
+                    {formatTokens(stakeAmount)} CULT
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span className="font-medium text-foreground">
+                    {stakeDuration === "30d" ? "30 days" : "12 months"}
+                  </span>
+                </div>
+                {stakeDuration === "12m" && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      eSIM Coverage
+                    </span>
+                    <span className="font-medium text-chart-1">
+                      14 months (+2 free)
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t pt-3 text-sm">
+                  <span className="text-muted-foreground">
+                    eSIM Benefit
+                  </span>
+                  <span className="font-medium text-foreground">
+                    {selectedTierData.benefits.esimDetail}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Shipping</span>
+                  <span className="font-medium text-foreground">
+                    {selectedTierData.benefits.shippingDetail}
+                  </span>
+                </div>
+              </div>
+
+              {/* Upgrade nudge for lower tiers */}
+              {selectedTier > 1 && (
+                <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                  <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">
+                      Stake{" "}
+                      {formatTokens(
+                        getStakeRequirement(selectedTier - 1) - stakeAmount,
+                      )}{" "}
+                      more for{" "}
+                      {TIERS.find((t) => t.id === selectedTier - 1)?.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Unlock{" "}
+                      {
+                        TIERS.find((t) => t.id === selectedTier - 1)?.benefits
+                          .esimDetail
+                      }{" "}
+                      and{" "}
+                      {TIERS
+                        .find((t) => t.id === selectedTier - 1)
+                        ?.benefits.shippingDetail.toLowerCase()}
+                      .
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action */}
+              <Button size="lg" className="w-full gap-2 text-base">
+                <Wallet className="h-5 w-5" />
+                Connect Wallet &amp; Stake
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                Your tokens remain yours. They are locked in a smart contract
+                and returned to your wallet when you unstake.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* FAQ */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-3xl">
+            <h2 className="text-center font-display text-2xl font-semibold text-foreground md:text-3xl">
+              Frequently Asked Questions
+            </h2>
+
+            <div className="mt-10 space-y-0 rounded-xl border border-border">
+              {FAQ_ITEMS.map(({ q, a }) => (
+                <details
+                  key={q}
+                  className="group border-b border-border last:border-b-0 [&[open]_svg]:rotate-180"
+                >
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-6 py-5 font-medium text-foreground transition-colors hover:text-primary [&::-webkit-details-marker]:hidden">
+                    <span>{q}</span>
+                    <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform" />
+                  </summary>
+                  <p className="px-6 pb-5 pr-12 text-muted-foreground">{a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Final CTA */}
+        {/* --------------------------------------------------------------- */}
+        <section className="py-16 text-center md:py-20">
+          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            Ready to Join?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
+            Stake CULT tokens today and start enjoying exclusive membership
+            benefits. The earlier you join, the lower the staking threshold.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+            <Button size="lg" className="gap-2" onClick={scrollToCTA}>
+              Stake Now
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <Link href="/token">
+              <Button size="lg" variant="outline" className="gap-2">
+                Learn About CULT
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Disclaimer */}
+        {/* --------------------------------------------------------------- */}
+        <section className="space-y-4 border-t border-border py-12">
+          <p className="text-xs text-muted-foreground">
+            <strong className="text-foreground">Disclaimer:</strong> Membership
+            tiers, staking requirements, and benefits are subject to change as
+            the ecosystem evolves. Staking requirements are dynamic and may
+            differ from the estimates shown above.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The CULT token is a utility token. There is no guarantee of
+            financial return. The value of staked tokens may fluctuate. Token
+            holders participate at their own risk. This is not financial, legal,
+            or investment advice.
+          </p>
+        </section>
+      </div>
+    </div>
+  );
+}

@@ -325,7 +325,8 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       !pathname.startsWith("/auth") &&
       !pathname.startsWith("/contact") &&
       !pathname.startsWith("/policies") &&
-      !pathname.startsWith("/telegram"));
+      !pathname.startsWith("/telegram") &&
+      !pathname.startsWith("/membership"));
   const authPending = !useAuthState || isPending;
 
   const handleMobileSearchSubmit = (e: React.FormEvent) => {
@@ -420,6 +421,19 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                             />
                           </li>
                         )}
+                      <li>
+                        <Link
+                          className={cn(
+                            "text-lg font-medium transition-colors hover:text-primary",
+                            pathname?.startsWith("/membership")
+                              ? "font-semibold text-primary"
+                              : "text-muted-foreground",
+                          )}
+                          href="/membership"
+                        >
+                          Membership
+                        </Link>
+                      </li>
                       <li>
                         <Link
                           className={cn(

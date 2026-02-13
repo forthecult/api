@@ -7,6 +7,7 @@ import {
   Package,
   Search,
   Smartphone,
+  Star,
   Sun,
   UserIcon,
 } from "lucide-react";
@@ -234,6 +235,21 @@ export function MobileNavSheet({
               )}
             </div>
 
+            <Link
+              className={cn(
+                "block rounded-md px-4 py-2 text-base font-medium",
+                pathname?.startsWith("/membership")
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground hover:bg-muted/50",
+              )}
+              href="/membership"
+              onClick={() => onOpenChange(false)}
+            >
+              <span className="flex items-center gap-2">
+                <Star className="h-4 w-4" />
+                Membership
+              </span>
+            </Link>
             <Link
               className={cn(
                 "block rounded-md px-4 py-2 text-base font-medium",
