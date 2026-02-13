@@ -2,7 +2,6 @@
 
 import {
   ArrowLeft,
-  CreditCard,
   Globe,
   Loader2,
   Signal,
@@ -20,27 +19,6 @@ import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 import { Separator } from "~/ui/primitives/separator";
-
-// ---------- Payment Methods ----------
-
-type PaymentMethodId =
-  | "stripe"
-  | "solana_pay"
-  | "eth_pay"
-  | "btcpay"
-  | "ton_pay";
-
-const PAYMENT_METHODS: {
-  id: PaymentMethodId;
-  label: string;
-  description: string;
-}[] = [
-  { id: "stripe", label: "Card / PayPal", description: "Credit card, debit card, or PayPal" },
-  { id: "solana_pay", label: "Solana Pay", description: "SOL, USDC, and SPL tokens" },
-  { id: "eth_pay", label: "ETH / EVM", description: "ETH, USDC on Ethereum, Base, Polygon, etc." },
-  { id: "btcpay", label: "Bitcoin", description: "BTC via BTCPay" },
-  { id: "ton_pay", label: "TON", description: "TON network" },
-];
 
 // ---------- Types ----------
 
@@ -90,8 +68,6 @@ export function EsimPackageDetailClient({
   const [pkg, setPkg] = useState<PackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
-  const [selectedPayment, setSelectedPayment] =
-    useState<PaymentMethodId>("stripe");
 
   useEffect(() => {
     setLoading(true);
@@ -108,20 +84,21 @@ export function EsimPackageDetailClient({
 
   const handlePurchase = useCallback(async () => {
     if (!user) {
-      router.push(`/auth/sign-in?redirect=/esim/${packageId}`);
+      // Use callbackUrl so after sign-in they return to this eSIM page to complete purchase
+      router.push(`/login?callbackUrl=${encodeURIComponent(`/esim/${packageId}`)}`);
       return;
     }
 
     setPurchasing(true);
     try {
-      // Step 1: Create the pending order + eSIM order record
+      // Step 1: Create the pending order + eSIM order record (card/PayPal only for now)
       const orderRes = await fetch("/api/esim/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           packageId,
           packageType: pkg?.package_type ?? "DATA-ONLY",
-          paymentMethod: selectedPayment,
+          paymentMethod: "stripe",
         }),
       });
       const orderData = await orderRes.json();
@@ -132,35 +109,26 @@ export function EsimPackageDetailClient({
 
       const orderId = orderData.data.orderId as string;
 
-      // Step 2: Route to the correct payment flow
-      if (selectedPayment === "stripe") {
-        // Create a Stripe Checkout session and redirect
-        const checkoutRes = await fetch("/api/esim/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
-        });
-        const checkoutData = await checkoutRes.json();
-        if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
-          toast.error(
-            checkoutData.message ?? "Failed to create checkout session.",
-          );
-          return;
-        }
-        window.location.href = checkoutData.data.checkoutUrl;
-      } else {
-        // For crypto payment methods, redirect to the checkout page
-        // which handles all crypto payments with the existing UI
-        router.push(
-          `/checkout?orderId=${orderId}&paymentMethod=${selectedPayment}&esim=true`,
+      // Step 2: Create Stripe Checkout session and redirect
+      const checkoutRes = await fetch("/api/esim/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId }),
+      });
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
+        toast.error(
+          checkoutData.message ?? "Failed to create checkout session.",
         );
+        return;
       }
+      window.location.href = checkoutData.data.checkoutUrl;
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setPurchasing(false);
     }
-  }, [user, router, packageId, pkg?.package_type, selectedPayment]);
+  }, [user, router, packageId, pkg?.package_type]);
 
   const coverageCountries = pkg?.countries ?? pkg?.romaing_countries ?? [];
 
@@ -407,43 +375,9 @@ export function EsimPackageDetailClient({
                   </div>
                 </div>
 
-                {/* Payment method selector */}
-                <div className="space-y-2">
-                  <p className="text-sm font-medium flex items-center gap-1.5">
-                    <CreditCard className="h-4 w-4" />
-                    Payment Method
-                  </p>
-                  <div className="space-y-1.5">
-                    {PAYMENT_METHODS.map((pm) => (
-                      <button
-                        key={pm.id}
-                        type="button"
-                        onClick={() => setSelectedPayment(pm.id)}
-                        className={`w-full flex items-center gap-3 rounded-lg border p-2.5 text-left text-sm transition-colors ${
-                          selectedPayment === pm.id
-                            ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                            : "border-border hover:border-primary/40"
-                        }`}
-                      >
-                        <div
-                          className={`h-3 w-3 shrink-0 rounded-full border-2 ${
-                            selectedPayment === pm.id
-                              ? "border-primary bg-primary"
-                              : "border-muted-foreground/30"
-                          }`}
-                        />
-                        <div className="min-w-0">
-                          <p className="font-medium leading-tight">
-                            {pm.label}
-                          </p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {pm.description}
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                <p className="text-sm text-muted-foreground">
+                  Secure payment by card or PayPal at checkout.
+                </p>
 
                 <Button
                   className="w-full"

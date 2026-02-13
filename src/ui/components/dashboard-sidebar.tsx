@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Coins,
   Headphones,
   Heart,
   Link2,
@@ -51,26 +50,11 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [counts, setCounts] = useState<Counts>(defaultCounts);
-  const [isAdmin, setIsAdmin] = useState(false);
-
   useEffect(() => {
     let cancelled = false;
     fetchCounts().then((data) => {
       if (!cancelled) setCounts(data);
     });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/admin/me", { credentials: "include" })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (!cancelled && data?.ok) setIsAdmin(true);
-      })
-      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -183,27 +167,6 @@ export function DashboardSidebar() {
             </li>
           </ul>
         </div>
-
-        {isAdmin && (
-          <div>
-            <h2 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Admin
-            </h2>
-            <ul className="space-y-0.5">
-              <li>
-                <Link
-                  href="/dashboard/admin/solana-sweep"
-                  className={navLinkClass("/dashboard/admin/solana-sweep")}
-                >
-                  <span className="flex items-center gap-2">
-                    <Coins className="h-4 w-4 shrink-0" aria-hidden />
-                    Solana sweep
-                  </span>
-                </Link>
-              </li>
-            </ul>
-          </div>
-        )}
 
         <div>
           <h2 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
