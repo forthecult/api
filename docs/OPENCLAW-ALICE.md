@@ -95,18 +95,24 @@ Once OpenClaw is running and you can open the dashboard (e.g. `/openclaw?token=.
 
 - **Config:** In the dashboard go to **Config** (or Config editor on `/setup`).
   - Ensure `gateway.auth` is set so the store can call the API.
-  - **Enable the chat completions endpoint** (it is off by default; otherwise the store gets **405 Method Not Allowed**).
+  - **Enable the responses endpoint** (recommended): the store prefers the OpenResponses API (`POST /v1/responses`). Set `gateway.http.endpoints.responses.enabled: true`.
+  - **Enable the chat completions endpoint** if you want a fallback (it is off by default; otherwise the store gets **405 Method Not Allowed**).
   - **Trust Railway’s proxy** so the gateway stops logging *"Proxy headers detected from untrusted address"* and treats connections correctly behind the reverse proxy:
   ```json
   "gateway": {
     "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_TOKEN}" },
     "http": {
-      "endpoints": { "chatCompletions": { "enabled": true } }
+      "endpoints": {
+        "responses": { "enabled": true },
+        "chatCompletions": { "enabled": true }
+      }
     },
     "trustedProxies": ["10.0.0.0/8", "172.16.0.0/12", "127.0.0.1", "::1"]
   }
   ```
+  **Privacy:** All traffic is between your store and your OpenClaw instance (HTTPS + Bearer token). "Open" in OpenClaw/OpenResponses is the product/API spec name—conversations are not exposed publicly.
   `trustedProxies` lists IPs/CIDRs that are allowed to send proxy headers (e.g. Railway’s internal proxy). The values above cover common private ranges and loopback; adjust if your host uses different proxy IPs.
+  - **Session routing for chat completions:** The store sends `model: "openclaw:main"`. If the `chatCompletions` endpoint does not have session routing configured, the gateway accepts the connection but never routes the request to the main agent, so the request times out with no response. When OpenClaw documents the required config (e.g. in gateway config or endpoint options), add it here so `openclaw:main` is correctly routed to the main agent session.
   If you used the backup import, add this block at the top of the config and Save.
 
 - **Env vars on the OpenClaw service:**  

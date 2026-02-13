@@ -150,13 +150,29 @@ export async function POST(
       .set({ updatedAt: now })
       .where(eq(supportChatConversationTable.id, conversationId));
 
-    // If not taken over, generate and store AI reply (rate-limited per conversation)
+    // If not taken over, return immediately with user message; generate AI reply in background.
+    // Client sees instant response and typing indicator until poll returns the AI message.
     if (!conv!.takenOverBy) {
       const msgRl = await checkRateLimit(`chat-msg:${conversationId}`, { limit: 10, windowSeconds: 60 });
       if (!msgRl.success) {
         // Don't generate AI reply if rate limited, but still save the user message
-        return NextResponse.json({ id: messageId, rateLimited: true });
+        const messagesRateLimited = await db
+          .select({
+            id: supportChatMessageTable.id,
+            role: supportChatMessageTable.role,
+            content: supportChatMessageTable.content,
+            createdAt: supportChatMessageTable.createdAt,
+          })
+          .from(supportChatMessageTable)
+          .where(eq(supportChatMessageTable.conversationId, conversationId))
+          .orderBy(asc(supportChatMessageTable.createdAt));
+        return NextResponse.json({
+          messages: messagesRateLimited,
+          takenOverBy: conv!.takenOverBy ?? undefined,
+          rateLimited: true,
+        });
       }
+
       const recentRows = await db
         .select({
           role: supportChatMessageTable.role,
@@ -169,28 +185,15 @@ export async function POST(
       const session = await auth.api.getSession({ headers: request.headers });
       const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
 
-      const aiReply = await generateSupportChatReply({
+      const context = {
         recentMessages: recentRows.map((r) => ({ role: r.role, content: r.content })),
         storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Cult",
         conversationId,
         userId: session?.user?.id ?? guestId ?? undefined,
-      });
+      };
 
-      const aiMessageId = crypto.randomUUID();
-      const aiNow = new Date();
-      await db.insert(supportChatMessageTable).values({
-        id: aiMessageId,
-        conversationId,
-        role: "ai",
-        content: aiReply,
-        createdAt: aiNow,
-      });
-      await db
-        .update(supportChatConversationTable)
-        .set({ updatedAt: aiNow })
-        .where(eq(supportChatConversationTable.id, conversationId));
-
-      const messages = await db
+      // Return immediately with current messages (user message only); AI reply will appear when client polls.
+      const messagesNow = await db
         .select({
           id: supportChatMessageTable.id,
           role: supportChatMessageTable.role,
@@ -201,8 +204,29 @@ export async function POST(
         .where(eq(supportChatMessageTable.conversationId, conversationId))
         .orderBy(asc(supportChatMessageTable.createdAt));
 
+      // Generate and store AI reply in background (do not await).
+      void generateSupportChatReply(context)
+        .then(async (aiReply) => {
+          const aiMessageId = crypto.randomUUID();
+          const aiNow = new Date();
+          await db.insert(supportChatMessageTable).values({
+            id: aiMessageId,
+            conversationId,
+            role: "ai",
+            content: aiReply,
+            createdAt: aiNow,
+          });
+          await db
+            .update(supportChatConversationTable)
+            .set({ updatedAt: aiNow })
+            .where(eq(supportChatConversationTable.id, conversationId));
+        })
+        .catch((err) => {
+          console.error("[SupportChat] Background AI reply failed:", err);
+        });
+
       return NextResponse.json({
-        messages,
+        messages: messagesNow,
         takenOverBy: conv!.takenOverBy ?? undefined,
       });
     }

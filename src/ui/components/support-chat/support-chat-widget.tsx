@@ -216,6 +216,7 @@ export function SupportChatWidget() {
     };
     setMessages(data.messages ?? []);
     setTakenOverBy(data.takenOverBy ?? null);
+    setLoading(false); // clear typing indicator when we get latest messages (e.g. AI reply arrived)
   }, []);
 
   React.useEffect(() => {
@@ -260,6 +261,7 @@ export function SupportChatWidget() {
     setInput("");
     setLoading(true);
     const guestId = getGuestId();
+    let expectingAiReply = false;
     try {
       const res = await fetch(
         `${API_BASE}/api/support-chat/conversations/${cid}/messages`,
@@ -274,15 +276,19 @@ export function SupportChatWidget() {
         messages?: Message[];
         error?: string;
         takenOverBy?: string;
+        rateLimited?: boolean;
       };
       if (!res.ok) {
         setError(data.error ?? "Failed to send.");
+        setLoading(false);
         return;
       }
       setMessages(data.messages ?? []);
       setTakenOverBy(data.takenOverBy ?? null);
+      expectingAiReply = !data.takenOverBy && !data.rateLimited;
+      if (!expectingAiReply) setLoading(false);
     } finally {
-      setLoading(false);
+      if (!expectingAiReply) setLoading(false);
     }
   }, [input, conversationId, ensureConversation]);
 
