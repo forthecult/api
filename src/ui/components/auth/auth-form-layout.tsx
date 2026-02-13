@@ -55,9 +55,9 @@ export function AuthFormLayout({
         </div>
       </div>
 
-      {/* Right side - Form content */}
-      <div className="flex min-w-0 items-center justify-center p-4 md:p-8">
-        <div className="w-full min-w-0 max-w-md space-y-4">{children}</div>
+      {/* Right side - Form content: aligned to top so no scroll on laptop; compact spacing */}
+      <div className="flex min-w-0 items-start justify-center overflow-y-auto px-4 py-6 md:px-8 md:pt-10 md:pb-8">
+        <div className="w-full min-w-0 max-w-md space-y-3">{children}</div>
       </div>
     </div>
   );
@@ -70,8 +70,8 @@ interface AuthFormHeaderProps {
 
 export function AuthFormHeader({ title, subtitle }: AuthFormHeaderProps) {
   return (
-    <div className="space-y-4 text-center md:text-left">
-      <h2 className="text-3xl font-bold">{title}</h2>
+    <div className="space-y-1 text-center md:text-left">
+      <h2 className="text-2xl font-bold sm:text-3xl">{title}</h2>
       <p className="text-sm text-muted-foreground">{subtitle}</p>
     </div>
   );

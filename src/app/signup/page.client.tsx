@@ -105,20 +105,20 @@ export function SignupPageClient() {
       />
 
       <Card className="border-none shadow-sm">
-        <CardContent className="pt-2">
+        <CardContent className="px-4 py-3 sm:px-6 sm:py-4">
           <SocialLoginButtons
             disabled={loading}
             onError={setError}
             showWalletConnect
           />
 
-          <div className="mt-6">
+          <div className="mt-4">
             <AuthFormDivider text="Or continue with" />
           </div>
 
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="grid gap-2">
+          <form className="mt-4 space-y-3" onSubmit={handleSubmit}>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0">
+              <div className="grid gap-1.5">
                 <Label htmlFor="firstName">First name (optional)</Label>
                 <Input
                   id="firstName"
@@ -129,7 +129,7 @@ export function SignupPageClient() {
                   value={formData.firstName}
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1.5">
                 <Label htmlFor="lastName">Last name (optional)</Label>
                 <Input
                   id="lastName"
@@ -141,7 +141,7 @@ export function SignupPageClient() {
                 />
               </div>
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-1.5">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
@@ -153,7 +153,7 @@ export function SignupPageClient() {
                 value={formData.email}
               />
             </div>
-            <div className="grid gap-2">
+            <div className="grid gap-1.5">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
@@ -190,7 +190,7 @@ export function SignupPageClient() {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
+          <div className="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
               className="text-primary underline-offset-4 hover:underline"

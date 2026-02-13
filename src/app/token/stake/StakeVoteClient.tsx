@@ -186,9 +186,15 @@ function StakeForm({
         </CardTitle>
         <CardDescription>
           Stake CULT on-chain to keep it in the pool. Staked balance counts toward voting power. You can unstake anytime.
+          {!wallet && " Connect your Solana wallet above to stake or unstake."}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {!wallet && (
+          <p className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+            Connect your wallet to use the form below.
+          </p>
+        )}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium">Stake (CULT)</label>
@@ -578,16 +584,14 @@ export function StakeVoteClient() {
         </CardHeader>
       </Card>
 
-      {/* On-chain staking */}
-      {connected && (
-        <StakeForm
-          wallet={wallet}
-          sendTransaction={sendTransaction}
-          connection={connection}
-          openConnectModal={openConnectModal}
-          refreshBalances={refreshBalances}
-        />
-      )}
+      {/* On-chain staking — always visible; connect wallet to use */}
+      <StakeForm
+        wallet={wallet}
+        sendTransaction={sendTransaction}
+        connection={connection}
+        openConnectModal={openConnectModal}
+        refreshBalances={refreshBalances}
+      />
 
       {/* Proposals */}
       <div>

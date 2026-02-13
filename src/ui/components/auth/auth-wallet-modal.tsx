@@ -171,6 +171,8 @@ export function AuthWalletModal({
   } = useWallet();
 
   const signFlowStarted = useRef(false);
+  /** Prevent duplicate connect() when effect re-runs before adapter state updates. */
+  const solanaConnectStartedRef = useRef(false);
   const [step, setStep] = useState<
     "wallet" | "network" | "signing" | "error"
   >("wallet");
@@ -224,6 +226,7 @@ export function AuthWalletModal({
     (wallet: Wallet) => {
       setError("");
       setSelectedWallet(wallet);
+      solanaConnectStartedRef.current = false;
       const name = wallet.adapter.name;
       if (isMultiChainWallet(name)) {
         setStep("network");
@@ -232,8 +235,6 @@ export function AuthWalletModal({
       setSelectedChain("solana");
       console.log("[auth] Selecting Solana wallet:", name);
       select(wallet.adapter.name);
-      // Don't call connect() here — select() is a React state update.
-      // The pendingSolanaConnect effect will call connect() once the wallet adapter is ready.
       setPendingSolanaConnect(true);
     },
     [select],
@@ -250,45 +251,64 @@ export function AuthWalletModal({
         setStep("signing");
         return;
       }
+      solanaConnectStartedRef.current = false;
       console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
       select(wallet.adapter.name);
-      // Don't call connect() here — select() is a React state update.
-      // The pendingSolanaConnect effect will call connect() once the wallet adapter is ready.
       setPendingSolanaConnect(true);
     },
     [selectedWallet, select],
   );
 
   // Solana: once the wallet adapter registers the selection (currentWallet becomes available),
-  // call connect(). This replaces the old "select → setTimeout(200) → connect" race condition.
+  // call connect() once. Ref prevents duplicate connect() when effect re-runs (e.g. Strict Mode).
   useEffect(() => {
     if (!pendingSolanaConnect || !open) return;
-    // Wait for select() to propagate — currentWallet updates on next React render
     if (!currentWallet) return;
-    // If already connecting, wait for it to finish
     if (connecting) return;
-    // If already connected (e.g. auto-connect from previous session), skip to signing
     if (connected && publicKey) {
       console.log("[auth] Solana wallet already connected:", currentWallet.adapter.name);
       setPendingSolanaConnect(false);
+      solanaConnectStartedRef.current = false;
       setStep("signing");
       return;
     }
-    // Wallet adapter is ready — now it's safe to connect
+    // Only start connect once per selection
+    if (solanaConnectStartedRef.current) return;
+    solanaConnectStartedRef.current = true;
     setPendingSolanaConnect(false);
+
     let cancelled = false;
-    console.log("[auth] Wallet adapter ready, connecting to:", currentWallet.adapter.name);
-    connect()
+    const adapterName = currentWallet.adapter.name;
+    console.log("[auth] Wallet adapter ready, connecting to:", adapterName);
+
+    const connectPromise = connect();
+    const timeoutMs = 45000;
+    const timeoutId = window.setTimeout(() => {
+      if (cancelled) return;
+      console.error("[auth] Solana connect timed out after", timeoutMs, "ms");
+      solanaConnectStartedRef.current = false;
+      setError(
+        "Connection is taking too long. Check that your wallet extension is unlocked and try again. If you use an ad blocker, try disabling it for this site.",
+      );
+      setStep("wallet");
+      setSelectedWallet(null);
+      setSelectedChain(null);
+    }, timeoutMs);
+
+    connectPromise
       .then(async () => {
         if (cancelled) return;
+        window.clearTimeout(timeoutId);
+        solanaConnectStartedRef.current = false;
         console.log("[auth] Solana wallet connected, moving to signing step");
-        // Small delay to let connected/publicKey state propagate
         await new Promise((r) => setTimeout(r, 100));
         if (cancelled) return;
         setStep("signing");
       })
       .catch((err) => {
         if (cancelled) return;
+        window.clearTimeout(timeoutId);
+        solanaConnectStartedRef.current = false;
         console.error("[auth] Solana wallet connection failed:", err);
         const msg = err instanceof Error ? err.message : "";
         const isUserRejection =
@@ -302,8 +322,10 @@ export function AuthWalletModal({
         setSelectedWallet(null);
         setSelectedChain(null);
       });
+
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
     };
   }, [pendingSolanaConnect, open, currentWallet, connected, connecting, publicKey, connect]);
 
