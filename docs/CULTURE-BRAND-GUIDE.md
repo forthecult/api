@@ -7,11 +7,11 @@
 
 ## PREAMBLE: WHAT THIS BRAND ACTUALLY IS
 
-Culture is not a store. It is a point of view about how to live.
+Culture is not a store. It is a lfestyle brand.
 
-It began in 2015 selling Bitcoin tees to cypherpunks. It shut down in 2019. It came back as something larger: a curated collection of products that protect your health and expand your autonomy — from organic cotton apparel to hardware wallets, from mycotoxin-tested coffee to GrapheneOS phones.
+It began in 2015 selling crypto merch to cypherpunks. It shut down in 2019. It came back as something larger: a curated collection of products that protect your health and expand your autonomy — from organic cotton apparel to hardware wallets, from mycotoxin-tested coffee to GrapheneOS phones.
 
-The crypto community taught this brand everything it knows: self-sovereignty, privacy, quality over quantity, skepticism of centralized systems. Now it brings those values to everyone — including people who have never heard of Solana.
+The future will be decentralized, open source, and enable human flourishing. We bring these ideas to customers who understand this first.
 
 **The brand sits at a specific intersection:**
 - Health-conscious, but not granola
@@ -171,7 +171,7 @@ Linen texture. Morning light through a window. A well-organized desk. Japanese p
 
 ## Logo Direction
 
-### Concept 1: "The Wordmark" — CULTURE
+### Concept 1: "The Wordmark" — For the Cult
 
 A clean, spaced wordmark in Manrope ExtraBold (or a custom-drawn geometric sans). All capitals. Generous letter-spacing (+0.08em to +0.12em). No symbol, no icon.
 
@@ -222,11 +222,9 @@ A minimal geometric shape: an open-topped rectangle or arch — like a container
 
 7. **Never place text over a photograph without a sufficient contrast layer.** If text overlays an image, use a gradient overlay or solid panel. Readability is non-negotiable.
 
-8. **Never use crypto jargon without context.** If a term like "staking" or "token-gated" appears, it is either explained inline or linked to an explanation. The brand is accessible to someone who has never held crypto.
+8. **Never fake scarcity or urgency.** No countdown timers unless a sale is real. No "Only 2 left!" unless inventory is genuinely that low. Trust is the brand's most important asset.
 
-9. **Never fake scarcity or urgency.** No countdown timers unless a sale is real. No "Only 2 left!" unless inventory is genuinely that low. Trust is the brand's most important asset.
-
-10. **Never let the design compete with the product.** The website, the packaging, the brand system — all of it is a frame. The product is the painting. If someone remembers the animation more than the product, the design failed.
+9. **Never let the design compete with the product.** The website, the packaging, the brand system — all of it is a frame. The product is the painting. If someone remembers the animation more than the product, the design failed.
 
 ---
 
