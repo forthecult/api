@@ -342,7 +342,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   const headerEl = (
     <header
       className={cn(
-        "w-full border-b bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 dark:border-[#222] dark:bg-[#0A0A0A]/90 dark:supports-[backdrop-filter]:bg-[#0A0A0A]/70",
+        "w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
         !isCheckout && "sticky top-0 z-40",
       )}
     >
@@ -380,9 +380,12 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
               ) : (
                 <span
                   className={cn(
-                    "text-xl font-bold tracking-tight",
+                    "text-xl font-bold",
                     !isDashboard &&
-                      "bg-gradient-to-r from-[#9945FF] to-[#14F195] bg-clip-text text-transparent hover:opacity-90 transition-opacity",
+                      `
+                        bg-gradient-to-r from-primary to-primary/70 bg-clip-text
+                        tracking-tight text-transparent
+                      `,
                   )}
                 >
                   {SEO_CONFIG.name}
@@ -422,9 +425,9 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "text-lg font-medium transition-colors hover:text-[#9945FF] border-b-2 border-transparent hover:border-[#9945FF]",
+                            "text-lg font-medium transition-colors hover:text-primary",
                             pathname?.startsWith("/esim")
-                              ? "font-semibold text-[#9945FF] border-[#9945FF]"
+                              ? "font-semibold text-primary"
                               : "text-muted-foreground",
                           )}
                           href="/esim"
@@ -435,9 +438,9 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "text-lg font-medium transition-colors hover:text-[#9945FF] border-b-2 border-transparent hover:border-[#9945FF]",
+                            "text-lg font-medium transition-colors hover:text-primary",
                             pathname === "/about"
-                              ? "font-semibold text-[#9945FF] border-[#9945FF]"
+                              ? "font-semibold text-primary"
                               : "text-muted-foreground",
                           )}
                           href="/about"

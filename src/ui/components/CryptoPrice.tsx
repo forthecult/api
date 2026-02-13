@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-import { cn } from "~/lib/cn";
 import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
 
 interface CryptoPriceProps {
@@ -21,10 +20,7 @@ export function CryptoPrice({ usdAmount, className }: CryptoPriceProps) {
   if (!mounted) {
     return (
       <span
-        className={cn(
-          "font-[family-name:var(--font-mono-crypto),ui-monospace,monospace] text-sm text-muted-foreground",
-          className,
-        )}
+        className={className ?? "text-sm text-muted-foreground"}
         data-crypto-price
         aria-hidden
         style={{ minWidth: "8ch" }}
@@ -38,10 +34,7 @@ export function CryptoPrice({ usdAmount, className }: CryptoPriceProps) {
   if (cryptoAmount == null) return null;
   return (
     <span
-      className={cn(
-        "font-[family-name:var(--font-mono-crypto),ui-monospace,monospace] text-sm text-muted-foreground",
-        className,
-      )}
+      className={className ?? "text-sm text-muted-foreground"}
       data-crypto-price
     >
       {formatCrypto(cryptoAmount)}

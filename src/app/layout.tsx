@@ -5,7 +5,6 @@ import { Suspense } from "react";
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import { extractRouterConfig } from "uploadthing/server";
 
 import { SEO_CONFIG } from "~/app";
@@ -38,22 +37,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
-});
-
-/* Degen Premium redesign: headings + body + crypto/terminal */
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-heading-degen",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-body-degen",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono-crypto",
 });
 
 // getPublicSiteUrl() ensures full https:// URL and handles host-only env values (e.g. Railway)
@@ -191,20 +174,16 @@ export default async function RootLayout({
         className={`
           ${geistSans.variable}
           ${geistMono.variable}
-          ${spaceGrotesk.variable}
-          ${inter.variable}
-          ${jetbrainsMono.variable}
           min-h-screen bg-gradient-to-br from-white to-slate-100
           text-neutral-900 antialiased
           selection:bg-primary/80
-          dark:bg-[#0A0A0A] dark:text-neutral-100
-          font-[family-name:var(--font-body-degen),var(--font-geist-sans),sans-serif]
+          dark:from-neutral-950 dark:to-neutral-900 dark:text-neutral-100
         `}
         suppressHydrationWarning
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           disableTransitionOnChange
           enableSystem
         >

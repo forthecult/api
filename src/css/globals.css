@@ -6,20 +6,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Degen Premium design tokens (culture redesign) */
-:root {
-  --degen-bg: #0a0a0a;
-  --degen-surface: #141414;
-  --degen-border: #222222;
-  --degen-primary: #9945ff;
-  --degen-green: #14f195;
-  --degen-orange: #f7931a;
-  --degen-warning: #ff6b6b;
-  --degen-muted: #888888;
-  --degen-body: #cccccc;
-  --degen-heading: #ffffff;
-}
-
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -71,44 +57,42 @@
   --sidebar-ring: oklch(0.871 0.006 286.286);
 }
 
-/* Degen Premium: dark, high-contrast, Solana purple/green */
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
-  --card: #141414;
-  --card-foreground: #ffffff;
-  --popover: #141414;
-  --popover-foreground: #ffffff;
-  --primary: #9945ff;
-  --primary-foreground: #ffffff;
-  --secondary: #1a1a1a;
-  --secondary-foreground: #ffffff;
-  --muted: #1a1a1a;
-  --muted-foreground: #888888;
-  --accent: #14f195;
-  --accent-foreground: #0a0a0a;
-  --destructive: #ff6b6b;
-  --destructive-foreground: #ffffff;
-  --border: #222222;
-  --input: #222222;
-  --ring: #9945ff;
-  --chart-1: #9945ff;
-  --chart-2: #14f195;
-  --chart-3: #f7931a;
-  --chart-4: #627eea;
-  --chart-5: #ff6b6b;
-  --sidebar: #141414;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #9945ff;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a1a;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #222222;
-  --sidebar-ring: #9945ff;
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.141 0.005 285.823);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.141 0.005 285.823);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.396 0.141 25.723);
+  --destructive-foreground: oklch(0.637 0.237 25.331);
+  --border: oklch(0.274 0.006 286.033);
+  --input: oklch(0.274 0.006 286.033);
+  --ring: oklch(0.442 0.017 285.786);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(0.274 0.006 286.033);
+  --sidebar-ring: oklch(0.442 0.017 285.786);
 }
 
 @theme inline {
-  --font-family-display: var(--font-heading-degen), var(--font-geist-sans), ui-sans-serif, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -252,18 +236,6 @@
   animation: marquee 20s linear infinite;
 }
 
-@keyframes marquee-ticker {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-.animate-marquee-ticker {
-  animation: marquee-ticker 40s linear infinite;
-}
-
 /* Testimonials: 4 sets, pause on hover */
 .animate-marquee-testimonials {
   animation: marquee-quarter 80s linear infinite;
@@ -297,111 +269,4 @@
   /* IE and Edge */
   scrollbar-width: none;
   /* Firefox */
-}
-
-/* ——— Degen Premium redesign ——— */
-
-/* Gradient text (purple → green) */
-.text-gradient-degen {
-  background: linear-gradient(135deg, #9945ff, #14f195);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-/* Primary CTA: gradient bg + hover glow */
-.btn-gradient-degen {
-  background: linear-gradient(135deg, #9945ff, #14f195);
-  color: #fff;
-  position: relative;
-  overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-.btn-gradient-degen::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  transition: left 0.3s ease;
-}
-.btn-gradient-degen:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(153, 69, 255, 0.4);
-}
-.btn-gradient-degen:hover::before {
-  left: 100%;
-}
-
-/* Glitch effect (e.g. logo hover) */
-@keyframes glitch-degen {
-  0%,
-  100% {
-    transform: translate(0);
-  }
-  25% {
-    transform: translate(-2px, 2px);
-  }
-  50% {
-    transform: translate(2px, -2px);
-  }
-  75% {
-    transform: translate(-2px, -2px);
-  }
-}
-.hover-glitch:hover {
-  animation: glitch-degen 0.3s ease;
-}
-
-/* Subtle CRT scanlines (hero) */
-.hero-scanlines::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    rgba(0, 0, 0, 0.08),
-    rgba(0, 0, 0, 0.08) 1px,
-    transparent 1px,
-    transparent 2px
-  );
-  pointer-events: none;
-  opacity: 0.5;
-}
-
-/* Product card: gradient border on hover */
-.product-card-degen {
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
-}
-.product-card-degen:hover {
-  box-shadow: 0 0 0 1px transparent, 0 0 20px rgba(153, 69, 255, 0.25);
-}
-.dark .product-card-degen:hover {
-  box-shadow: 0 0 0 1px rgba(153, 69, 255, 0.4), 0 0 24px rgba(153, 69, 255, 0.2);
-}
-
-/* Monospace for crypto prices / terminal aesthetic */
-.font-mono-crypto {
-  font-family: var(--font-mono-crypto), "JetBrains Mono", "Fira Code", ui-monospace, monospace;
-}
-
-/* New badge pulse */
-@keyframes pulse-new {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.85;
-  }
-}
-.badge-new-pulse {
-  animation: pulse-new 2s ease-in-out infinite;
 }

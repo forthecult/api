@@ -69,7 +69,7 @@ export function SectionHeading({
         className,
       )}
     >
-      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl dark:text-gradient-degen">
+      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
         {title}
       </h2>
       {subtitle ? (
@@ -96,10 +96,10 @@ export function SectionHeadingBlock({
         className,
       )}
     >
-      <h2 className="font-display text-3xl leading-tight font-bold tracking-tight md:text-4xl dark:text-gradient-degen">
+      <h2 className="font-display text-3xl leading-tight font-bold tracking-tight md:text-4xl">
         {title}
       </h2>
-      <div className="mt-2 h-1 w-12 rounded-full bg-primary dark:bg-gradient-to-r dark:from-[#9945FF] dark:to-[#14F195]" />
+      <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
       {description ? (
         <p className="mt-4 max-w-2xl text-center text-muted-foreground">
           {description}
