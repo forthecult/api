@@ -53,6 +53,7 @@ function TelegramIcon({ className }: { className?: string }) {
 export function Footer({ className }: { className?: string }) {
   return (
     <footer className={cn("relative border-t bg-background", className)}>
+      <FooterDogePeek />
       <div
         className={`
           container mx-auto max-w-7xl px-4 py-12
