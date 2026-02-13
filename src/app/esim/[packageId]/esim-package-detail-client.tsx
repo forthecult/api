@@ -655,16 +655,16 @@ export function EsimPackageDetailClient({
           </p>
           <ul className="text-sm text-muted-foreground space-y-3 list-disc list-outside pl-5 break-words">
             <li className="leading-relaxed">
+              <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
+              If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
+            </li>
+            <li className="leading-relaxed">
               <span className="font-medium text-foreground">Instant refund:</span>{" "}
               Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.
             </li>
             <li className="leading-relaxed">
               <span className="font-medium text-foreground">Activated or used:</span>{" "}
               Any eSIM that has been activated, partially used, or has data consumption is <strong>non-refundable</strong>. Once an eSIM connects to a network, it is considered delivered and consumed.
-            </li>
-            <li className="leading-relaxed">
-              <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
-              If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
             </li>
             <li className="leading-relaxed">
               <span className="font-medium text-foreground">Carrier &amp; network:</span>{" "}
