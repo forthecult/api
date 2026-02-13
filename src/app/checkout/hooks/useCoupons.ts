@@ -11,6 +11,12 @@ export interface UseCouponsArgs {
   subtotal: number;
   shippingCents: number;
   items: Array<{ productId?: string; id: string; quantity?: number }>;
+  /**
+   * The selected payment method key (from PAYMENT_METHOD_DEFAULTS).
+   * Used to match automatic discounts with a payment method restriction.
+   * e.g. "crypto_troll", "crypto_solana", "stripe", etc.
+   */
+  paymentMethodKey?: string | null;
 }
 
 export interface UseCouponsResult {
@@ -30,6 +36,7 @@ export function useCoupons({
   subtotal,
   shippingCents,
   items,
+  paymentMethodKey,
 }: UseCouponsArgs): UseCouponsResult {
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
@@ -54,6 +61,7 @@ export function useCoupons({
           subtotalCents: Math.round(subtotal * 100),
           shippingFeeCents: Math.round(shippingCents),
           productIds: items.map((i) => i.productId ?? i.id),
+          paymentMethodKey: paymentMethodKey || undefined,
         }),
       });
       const data = (await res.json()) as
@@ -94,7 +102,7 @@ export function useCoupons({
     } finally {
       setCouponLoading(false);
     }
-  }, [discountCodeInput, subtotal, shippingCents, items]);
+  }, [discountCodeInput, subtotal, shippingCents, items, paymentMethodKey]);
 
   const removeCoupon = useCallback(() => {
     setAppliedCoupon(null);
@@ -126,6 +134,7 @@ export function useCoupons({
         shippingFeeCents: Math.round(shippingCents),
         productCount,
         productIds: items.map((i) => i.productId ?? i.id),
+        paymentMethodKey: paymentMethodKey || undefined,
       }),
     })
       .then((res) => res.json())
@@ -161,7 +170,7 @@ export function useCoupons({
     return () => {
       cancelled = true;
     };
-  }, [items, subtotal, shippingCents, discountEvalKey]);
+  }, [items, subtotal, shippingCents, paymentMethodKey, discountEvalKey]);
 
   return {
     appliedCoupon,

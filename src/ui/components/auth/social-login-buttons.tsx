@@ -88,7 +88,7 @@ export function SocialLoginButtons({
         </Button>
       )}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 items-center gap-4">
         <Button
           className="flex items-center gap-2"
           disabled={disabled}

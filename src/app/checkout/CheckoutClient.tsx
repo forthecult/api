@@ -145,6 +145,8 @@ export function CheckoutClient() {
   });
   /** Crypto total label (e.g. "≈ 0.0875 SOL") set by PaymentMethodSection for OrderSummary. */
   const [cryptoTotalLabel, setCryptoTotalLabel] = useState<string | null>(null);
+  /** Selected payment method key (e.g. "crypto_troll") for payment-method discount resolution. */
+  const [selectedPaymentMethodKey, setSelectedPaymentMethodKey] = useState<string | null>(null);
 
   const handleShippingUpdate = useCallback((update: ShippingUpdate) => {
     setShipping(update);
@@ -181,6 +183,7 @@ export function CheckoutClient() {
     subtotal,
     shippingCents,
     items,
+    paymentMethodKey: selectedPaymentMethodKey,
   });
   const {
     appliedCoupon,
@@ -368,6 +371,7 @@ export function CheckoutClient() {
               setNavigatingToPay={setNavigatingToPay}
               onCryptoTotalLabelChange={setCryptoTotalLabel}
               hasEsimInCart={hasEsimInCart}
+              onPaymentMethodKeyChange={setSelectedPaymentMethodKey}
             />
           </div>
           {/* Right: Your order only — sticky offset below header (max-h-24) so header doesn't overlap */}

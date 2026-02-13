@@ -180,6 +180,7 @@ export async function POST(request: NextRequest) {
       tokenHolderMinBalance?: string | null;
       categoryIds?: string[];
       productIds?: string[];
+      rulePaymentMethodKey?: string | null;
       ruleSubtotalMinCents?: number | null;
       ruleSubtotalMaxCents?: number | null;
       ruleShippingMinCents?: number | null;
@@ -276,6 +277,7 @@ export async function POST(request: NextRequest) {
       tokenHolderChain: body.tokenHolderChain ?? null,
       tokenHolderTokenAddress: body.tokenHolderTokenAddress ?? null,
       tokenHolderMinBalance: body.tokenHolderMinBalance ?? null,
+      rulePaymentMethodKey: body.rulePaymentMethodKey ?? null,
       ruleSubtotalMinCents: body.ruleSubtotalMinCents ?? null,
       ruleSubtotalMaxCents: body.ruleSubtotalMaxCents ?? null,
       ruleShippingMinCents: body.ruleShippingMinCents ?? null,

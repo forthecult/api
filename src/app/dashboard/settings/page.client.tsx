@@ -1,6 +1,9 @@
 "use client";
 
 import { Bot, Globe, Mail, MessageCircle, Phone } from "lucide-react";
+
+import { DiscordIcon } from "~/ui/components/icons/discord";
+import Link from "next/link";
 import * as React from "react";
 
 import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
@@ -16,12 +19,13 @@ import {
   TableRow,
 } from "~/ui/primitives/table";
 
-// Notification channels: Website, Email, SMS, Telegram, AI Companion
+// Notification channels: Website, Email, SMS, Telegram, Discord, AI Companion
 const NOTIFICATION_CHANNELS = [
   { id: "website", label: "Website", icon: Globe, description: "In-app notifications" },
   { id: "email", label: "Email", icon: Mail, description: "Receive via email" },
   { id: "sms", label: "SMS", icon: Phone, description: "Text messages" },
   { id: "telegram", label: "Telegram", icon: MessageCircle, description: "Telegram messages", requiresTelegram: true },
+  { id: "discord", label: "Discord", icon: DiscordIcon, description: "Discord messages", requiresDiscord: true },
   { id: "aiCompanion", label: "AI Companion", icon: Bot, description: "AI assistant notifications" },
 ] as const;
 
@@ -33,6 +37,7 @@ type ChannelPreferences = {
 
 type NotificationPrefs = {
   hasTelegramLinked: boolean;
+  hasDiscordLinked: boolean;
   transactional: ChannelPreferences;
   marketing: ChannelPreferences;
   // Legacy fields
@@ -112,9 +117,12 @@ export function SettingsPageClient() {
       if ("requiresTelegram" in channel && channel.requiresTelegram && !notificationPrefs?.hasTelegramLinked) {
         return true;
       }
+      if ("requiresDiscord" in channel && channel.requiresDiscord && !notificationPrefs?.hasDiscordLinked) {
+        return true;
+      }
       return false;
     },
-    [notificationPrefs?.hasTelegramLinked],
+    [notificationPrefs?.hasTelegramLinked, notificationPrefs?.hasDiscordLinked],
   );
 
   return (
@@ -247,8 +255,34 @@ export function SettingsPageClient() {
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Telegram not linked</p>
                       <p className="text-sm text-muted-foreground">
-                        Link your Telegram account to receive notifications via Telegram. Sign in
-                        with Telegram or link it in your account settings.
+                        Link your Telegram account to enable the options above.{" "}
+                        <Link
+                          href="/dashboard/security"
+                          className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                        >
+                          Link Telegram in Security →
+                        </Link>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Discord Link Notice */}
+              {!notificationPrefs?.hasDiscordLinked && (
+                <div className="rounded-lg border border-muted bg-muted/30 p-4">
+                  <div className="flex items-start gap-3">
+                    <DiscordIcon className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Discord not linked</p>
+                      <p className="text-sm text-muted-foreground">
+                        Link your Discord account to enable the options above.{" "}
+                        <Link
+                          href="/dashboard/security"
+                          className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                        >
+                          Link Discord in Security →
+                        </Link>
                       </p>
                     </div>
                   </div>

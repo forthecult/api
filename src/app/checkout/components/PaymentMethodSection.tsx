@@ -127,6 +127,8 @@ export interface PaymentMethodSectionProps {
   onCryptoTotalLabelChange?: (label: string | null) => void;
   /** When true, refund policy popup includes eSIM-specific rules. */
   hasEsimInCart?: boolean;
+  /** Callback when the selected payment method key changes (for discount resolution). */
+  onPaymentMethodKeyChange?: (key: string | null) => void;
 }
 
 export function PaymentMethodSection({
@@ -143,6 +145,7 @@ export function PaymentMethodSection({
   setNavigatingToPay,
   onCryptoTotalLabelChange,
   hasEsimInCart = false,
+  onPaymentMethodKeyChange,
 }: PaymentMethodSectionProps) {
   const router = useRouter();
 
@@ -162,6 +165,34 @@ export function PaymentMethodSection({
   const cardLogosCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+
+  // Compute the payment method key (matching PAYMENT_METHOD_DEFAULTS) and notify parent.
+  useEffect(() => {
+    let key: string | null = null;
+    if (paymentMethod === "credit-card") {
+      key = "stripe";
+    } else if (paymentMethod === "paypal") {
+      key = "paypal";
+    } else if (paymentMethod === "crypto") {
+      const sub = paymentSubOption;
+      if (sub === "bitcoin") key = "crypto_bitcoin";
+      else if (sub === "dogecoin") key = "crypto_dogecoin";
+      else if (sub === "eth") key = "crypto_ethereum";
+      else if (sub === "solana") key = "crypto_solana";
+      else if (sub === "monero") key = "crypto_monero";
+      else if (sub === "crust") key = "crypto_crust";
+      else if (sub === "pump") key = "crypto_pump";
+      else if (sub === "troll") key = "crypto_troll";
+      else if (sub === "other") {
+        if (cryptoOtherSubOption === "sui") key = "crypto_sui";
+        else if (cryptoOtherSubOption === "ton") key = "crypto_ton";
+      }
+    } else if (paymentMethod === "stablecoins") {
+      if (stablecoinToken === "usdc") key = "stablecoin_usdc";
+      else if (stablecoinToken === "usdt") key = "stablecoin_usdt";
+    }
+    onPaymentMethodKeyChange?.(key);
+  }, [paymentMethod, paymentSubOption, cryptoOtherSubOption, stablecoinToken, onPaymentMethodKeyChange]);
 
   const {
     open: solanaPayOpen,

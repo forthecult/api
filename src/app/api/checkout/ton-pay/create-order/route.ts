@@ -103,6 +103,7 @@ export async function POST(request: NextRequest) {
         shippingFeeCents,
         userId: session?.user?.id,
         productIds,
+        paymentMethodKey: "crypto_ton",
       });
 
     // ── Validate client total ──────────────────────────────────────────

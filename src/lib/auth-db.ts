@@ -71,12 +71,14 @@ async function main() {
   transactionalWebsite: boolean("transactional_website").notNull().default(true),
   transactionalSms: boolean("transactional_sms").notNull().default(false),
   transactionalTelegram: boolean("transactional_telegram").notNull().default(false),
+  transactionalDiscord: boolean("transactional_discord").notNull().default(false),
   transactionalAiCompanion: boolean("transactional_ai_companion").notNull().default(false),
   // Notification preferences - Marketing (per channel)
   marketingEmail: boolean("marketing_email").notNull().default(true),
   marketingWebsite: boolean("marketing_website").notNull().default(false),
   marketingSms: boolean("marketing_sms").notNull().default(false),
   marketingTelegram: boolean("marketing_telegram").notNull().default(false),
+  marketingDiscord: boolean("marketing_discord").notNull().default(false),
   marketingAiCompanion: boolean("marketing_ai_companion").notNull().default(false),
   // Legacy fields (kept for backward compatibility)
   receiveMarketing: boolean("receive_marketing").notNull().default(false),

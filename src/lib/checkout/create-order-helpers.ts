@@ -244,6 +244,8 @@ export async function resolveDiscounts(params: {
   shippingFeeCents: number;
   userId?: string | null;
   productIds: string[];
+  /** Payment method key for payment-method-restricted coupons. */
+  paymentMethodKey?: string | null;
 }): Promise<DiscountResult> {
   const {
     affiliateCode,
@@ -252,6 +254,7 @@ export async function resolveDiscounts(params: {
     shippingFeeCents,
     userId,
     productIds,
+    paymentMethodKey,
   } = params;
 
   const affiliateResult = await resolveAffiliateForOrder(
@@ -264,6 +267,7 @@ export async function resolveDiscounts(params: {
     ? await resolveCouponForCheckout(couponCode, subtotalCents, shippingFeeCents, {
         userId: userId ?? undefined,
         productIds,
+        paymentMethodKey: paymentMethodKey ?? undefined,
       })
     : null;
 

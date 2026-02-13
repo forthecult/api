@@ -14,6 +14,8 @@ const validateSchema = {
       ? (v as unknown[])
           .filter((id): id is string => typeof id === "string" && id.length > 0)
       : [],
+  paymentMethodKey: (v: unknown) =>
+    typeof v === "string" && v.length > 0 ? v : undefined,
 };
 
 /**
@@ -39,6 +41,9 @@ export async function POST(request: NextRequest) {
     const subtotalCents = validateSchema.subtotalCents(body?.subtotalCents);
     const productIds = validateSchema.productIds(body?.productIds);
     const shippingFeeCents = validateSchema.subtotalCents(body?.shippingFeeCents);
+    const paymentMethodKey = validateSchema.paymentMethodKey(
+      body?.paymentMethodKey,
+    );
 
     const result = await resolveCouponForCheckout(
       code,
@@ -47,6 +52,7 @@ export async function POST(request: NextRequest) {
       {
         userId: session?.user?.id ?? undefined,
         productIds: productIds.length > 0 ? productIds : undefined,
+        paymentMethodKey,
       },
     );
 

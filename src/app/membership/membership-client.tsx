@@ -206,11 +206,6 @@ const BENEFIT_ROWS: BenefitRow[] = [
     values: { 4: false, 3: false, 2: true, 1: true },
   },
   {
-    label: "Priority Support",
-    icon: Star,
-    values: { 4: false, 3: false, 2: false, 1: true },
-  },
-  {
     label: "Exclusive Products",
     icon: Crown,
     values: { 4: false, 3: false, 2: false, 1: true },
@@ -251,7 +246,9 @@ function formatTokens(n: number): string {
 
 function formatUsd(n: number): string {
   if (n >= 1) return `$${n.toFixed(2)}`;
-  return `$${n.toFixed(2)}`;
+  if (n >= 0.01) return `$${n.toFixed(2)}`;
+  if (n > 0) return `$${n.toFixed(6)}`;
+  return "$0.00";
 }
 
 function formatMarketCap(n: number): string {
@@ -554,8 +551,8 @@ export function MembershipClient() {
         {/* Stake & Join — below the fold, left card + right benefits */}
         {/* --------------------------------------------------------------- */}
         <section id="stake-cta" className="scroll-mt-20 py-16 md:py-20">
-          <div className="grid gap-8 lg:grid-cols-[1fr,1fr] lg:gap-12">
-            {/* Left: Stake card */}
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,28rem),1fr] lg:gap-12">
+            {/* Left: Stake card — constrained width so benefits sit on the right */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
               <div className="border-b bg-muted/30 px-6 py-5">
                 <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
@@ -700,17 +697,28 @@ export function MembershipClient() {
             </div>
 
             {/* Right: Benefits for selected tier */}
-            <div className="flex flex-col">
+            <div className="flex min-w-0 flex-col">
               <h3 className="mb-4 font-display text-lg font-semibold text-foreground">
                 Your benefits
               </h3>
               <div
                 className={cn(
-                  "flex-1 rounded-2xl border border-border bg-card p-6",
+                  "flex flex-1 flex-col rounded-2xl border border-border bg-card p-6",
                   selectedTierData.accentBorder,
                   selectedTierData.accentBg,
                 )}
               >
+                {/* eSIM graphic */}
+                <div className="mb-5 flex items-center justify-center rounded-xl border border-border/60 bg-muted/30 py-6">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                      <Globe className="h-8 w-8 text-primary" />
+                    </div>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      eSIM included
+                    </span>
+                  </div>
+                </div>
                 <div className="mb-4 flex items-center gap-3">
                   <div
                     className={cn(
@@ -812,11 +820,6 @@ export function MembershipClient() {
             <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
               Choose Your Tier
             </h2>
-            <p className="mt-3 text-muted-foreground">
-              Staking requirements are dynamic—based on CULT&apos;s market cap
-              and the number of existing stakers. Early members get in at lower
-              thresholds.
-            </p>
           </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -1386,8 +1389,7 @@ export function MembershipClient() {
           <p className="text-xs text-muted-foreground">
             <strong className="text-foreground">Disclaimer:</strong> Membership
             tiers, staking requirements, and benefits are subject to change as
-            the ecosystem evolves. Staking requirements are dynamic and may
-            differ from the estimates shown above.
+            the ecosystem evolves.
           </p>
           <p className="text-xs text-muted-foreground">
             The {tokenSymbol} token is a utility token. There is no guarantee of

@@ -43,6 +43,7 @@ export async function GET(
         tokenHolderChain: couponsTable.tokenHolderChain,
         tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
         tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+        rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
         ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
         ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
         ruleShippingMinCents: couponsTable.ruleShippingMinCents,
@@ -102,6 +103,7 @@ export async function GET(
       tokenHolderChain: coupon.tokenHolderChain ?? null,
       tokenHolderTokenAddress: coupon.tokenHolderTokenAddress ?? null,
       tokenHolderMinBalance: coupon.tokenHolderMinBalance ?? null,
+      rulePaymentMethodKey: coupon.rulePaymentMethodKey ?? null,
       ruleSubtotalMinCents: coupon.ruleSubtotalMinCents ?? null,
       ruleSubtotalMaxCents: coupon.ruleSubtotalMaxCents ?? null,
       ruleShippingMinCents: coupon.ruleShippingMinCents ?? null,
@@ -157,6 +159,7 @@ export async function PATCH(
       tokenHolderChain?: string | null;
       tokenHolderTokenAddress?: string | null;
       tokenHolderMinBalance?: string | null;
+      rulePaymentMethodKey?: string | null;
       categoryIds?: string[];
       productIds?: string[];
       ruleSubtotalMinCents?: number | null;
@@ -236,6 +239,8 @@ export async function PATCH(
       updates.tokenHolderTokenAddress = body.tokenHolderTokenAddress ?? null;
     if (body.tokenHolderMinBalance !== undefined)
       updates.tokenHolderMinBalance = body.tokenHolderMinBalance ?? null;
+    if (body.rulePaymentMethodKey !== undefined)
+      updates.rulePaymentMethodKey = body.rulePaymentMethodKey ?? null;
     if (body.ruleSubtotalMinCents !== undefined)
       updates.ruleSubtotalMinCents = body.ruleSubtotalMinCents ?? null;
     if (body.ruleSubtotalMaxCents !== undefined)
@@ -321,6 +326,7 @@ export async function PATCH(
       maxUses: updated.maxUses,
       maxUsesPerCustomer: updated.maxUsesPerCustomer,
       maxUsesPerCustomerType: updated.maxUsesPerCustomerType,
+      rulePaymentMethodKey: updated.rulePaymentMethodKey ?? null,
       ruleSubtotalMinCents: updated.ruleSubtotalMinCents ?? null,
       ruleSubtotalMaxCents: updated.ruleSubtotalMaxCents ?? null,
       ruleShippingMinCents: updated.ruleShippingMinCents ?? null,

@@ -41,6 +41,7 @@ type CryptoCheckoutBody = {
   orderId: string;
   paymentMethod: "solana_pay" | "eth_pay" | "btcpay" | "ton_pay";
   chain?: string;
+  /** For solana_pay: "solana" | "usdc" | "crust" | "pump" | "troll". For eth_pay: "ETH" | "USDC" | "USDT". */
   token?: string;
 };
 
@@ -119,11 +120,21 @@ export async function POST(request: Request) {
         );
       }
       const depositAddress = deriveDepositAddress(orderId);
+      // Map token name to cryptoCurrency for the checkout page (USDC, CRUST, PUMP, TROLL, SOL)
+      const solToken = (token ?? "solana").toLowerCase();
+      const cryptoCurrency =
+        solToken === "usdc" ? "USDC"
+        : solToken === "crust" ? "CRUST"
+        : solToken === "pump" ? "PUMP"
+        : solToken === "troll" ? "TROLL"
+        : "SOL";
       await db
         .update(ordersTable)
         .set({
           paymentMethod: "solana_pay",
           solanaPayDepositAddress: depositAddress,
+          cryptoCurrency,
+          cryptoCurrencyNetwork: "solana",
           updatedAt: new Date(),
         })
         .where(eq(ordersTable.id, orderId));

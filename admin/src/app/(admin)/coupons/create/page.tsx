@@ -24,6 +24,24 @@ type DiscountKind =
   | "buy_x_get_y"
   | "free_shipping";
 
+/** Payment method keys from the main app's PAYMENT_METHOD_DEFAULTS. */
+const PAYMENT_METHOD_OPTIONS: { key: string; label: string }[] = [
+  { key: "stripe", label: "Stripe (Credit / Debit card)" },
+  { key: "paypal", label: "PayPal" },
+  { key: "crypto_bitcoin", label: "Bitcoin (BTC)" },
+  { key: "crypto_dogecoin", label: "Dogecoin (DOGE)" },
+  { key: "crypto_ethereum", label: "Ethereum (ETH)" },
+  { key: "crypto_solana", label: "Solana (SOL)" },
+  { key: "crypto_monero", label: "Monero (XMR)" },
+  { key: "crypto_crust", label: "Crustafarian (CRUST)" },
+  { key: "crypto_pump", label: "Pump (PUMP)" },
+  { key: "crypto_troll", label: "Troll (TROLL)" },
+  { key: "crypto_sui", label: "Sui (SUI)" },
+  { key: "crypto_ton", label: "TON" },
+  { key: "stablecoin_usdc", label: "USDC (Stablecoin)" },
+  { key: "stablecoin_usdt", label: "USDT (Stablecoin)" },
+];
+
 export default function AdminDiscountCreatePage() {
   const router = useRouter();
   const [optionsLoading, setOptionsLoading] = useState(true);
@@ -61,6 +79,7 @@ export default function AdminDiscountCreatePage() {
   const [tokenHolderChain, setTokenHolderChain] = useState<string>("");
   const [tokenHolderTokenAddress, setTokenHolderTokenAddress] = useState("");
   const [tokenHolderMinBalance, setTokenHolderMinBalance] = useState("");
+  const [rulePaymentMethodKey, setRulePaymentMethodKey] = useState("");
   // Automatic discount ruleset (display in $, send as cents)
   const [ruleSubtotalMin, setRuleSubtotalMin] = useState("");
   const [ruleSubtotalMax, setRuleSubtotalMax] = useState("");
@@ -176,6 +195,7 @@ export default function AdminDiscountCreatePage() {
           productIds,
         };
         if (method === "automatic") {
+          body.rulePaymentMethodKey = rulePaymentMethodKey.trim() || null;
           body.ruleSubtotalMinCents = ruleSubtotalMin.trim()
             ? Math.round(Number.parseFloat(ruleSubtotalMin) * 100)
             : null;
@@ -248,6 +268,7 @@ export default function AdminDiscountCreatePage() {
       tokenHolderChain,
       tokenHolderTokenAddress,
       tokenHolderMinBalance,
+      rulePaymentMethodKey,
       categoryIds,
       productIds,
       ruleSubtotalMin,
@@ -571,6 +592,30 @@ export default function AdminDiscountCreatePage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="rulePaymentMethodKey" className={labelClass}>
+                  Payment method restriction
+                </label>
+                <select
+                  id="rulePaymentMethodKey"
+                  value={rulePaymentMethodKey}
+                  onChange={(e) => setRulePaymentMethodKey(e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="">Any payment method</option>
+                  {PAYMENT_METHOD_OPTIONS.map((pm) => (
+                    <option key={pm.key} value={pm.key}>
+                      {pm.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-muted-foreground">
+                  When set, this discount only applies when the customer pays
+                  with the selected method. For example, set &quot;Troll
+                  (TROLL)&quot; and a Troll category to give 5% off to $TROLL
+                  buyers in that category.
+                </p>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
                 <div className="space-y-2">
                   <label htmlFor="ruleSubtotalMin" className={labelClass}>

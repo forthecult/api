@@ -5,9 +5,9 @@ import Image from "next/image";
 import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
 
 /** How much of the doge head is visible above the bar (px) */
-const PEEK_HEIGHT = 110;
+const PEEK_HEIGHT = 138;
 /** Rendered width of the doge image (px) */
-const IMAGE_WIDTH = 240;
+const IMAGE_WIDTH = 300;
 
 export function FooterDogePeek() {
   const { selectedCrypto } = useCryptoCurrency();

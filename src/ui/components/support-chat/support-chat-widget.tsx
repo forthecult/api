@@ -225,35 +225,92 @@ export function SupportChatWidget() {
 
   if (isCheckout) return null;
 
+  const quickPrompts = [
+    { label: "Place an Order", icon: "🛒" },
+    { label: "Order Status", icon: "📦" },
+    { label: "Shipping Info", icon: "🚚" },
+    { label: "Returns & Refunds", icon: "↩️" },
+    { label: "Account Help", icon: "👤" },
+  ];
+
+  const handleQuickPrompt = (prompt: string) => {
+    setInput(prompt);
+  };
+
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
       {open && (
         <div
           className={cn(
-            "relative z-10 flex w-[min(100vw-2rem,380px)] flex-col rounded-lg border bg-background shadow-lg",
-            "max-h-[min(70vh,420px)] overflow-hidden",
+            "relative z-10 flex w-[min(100vw-2rem,400px)] flex-col rounded-xl border bg-background shadow-xl",
+            "max-h-[min(90vh,640px)] overflow-hidden",
           )}
         >
-          <div className="flex items-center justify-between border-b px-3 py-2">
-            <span className="text-sm font-medium">
-              {takenOverBy ? "Support" : "Chat"}
-            </span>
+          {/* Header with avatar */}
+          <div className="flex items-center gap-3 border-b px-4 py-3">
+            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
+              {/* Avatar placeholder – replace src with actual Alice avatar */}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              <span className="absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full border-2 border-background bg-green-500" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold leading-tight">
+                {takenOverBy ? "Live Support Agent" : "Alice AI Support Agent"}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {takenOverBy ? "A team member is helping you" : "Online · Typically replies instantly"}
+              </span>
+            </div>
             <Button
               type="button"
               variant="ghost"
               size="sm"
               aria-label="Close chat"
               onClick={handleCloseClick}
-              className="h-8 w-8 p-0"
+              className="ml-auto h-8 w-8 shrink-0 p-0"
             >
               ×
             </Button>
           </div>
+
+          {/* Messages area */}
           <div className="flex-1 overflow-y-auto p-3">
             {messages.length === 0 && !loading && !error && (
-              <p className="text-muted-foreground text-sm">
-                Say hello. We&apos;ll reply shortly.
-              </p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </div>
+                <p className="text-sm font-medium">Hi there! I&apos;m Alice</p>
+                <p className="text-muted-foreground text-xs max-w-[240px]">
+                  Your AI support assistant. How can I help you today?
+                </p>
+              </div>
             )}
             {error && (
               <p className="text-destructive text-sm">{error}</p>
@@ -263,19 +320,36 @@ export function SupportChatWidget() {
                 <li
                   key={m.id}
                   className={cn(
-                    "rounded-md px-2 py-1.5 text-sm",
+                    "rounded-lg px-3 py-2 text-sm",
                     m.role === "customer"
                       ? "ml-8 bg-primary text-primary-foreground"
                       : "mr-8 bg-muted",
                   )}
                 >
-                  <span className="font-medium capitalize">{m.role}: </span>
+                  <span className="font-medium capitalize">{m.role === "customer" ? "You" : "Alice"}: </span>
                   {m.content}
                 </li>
               ))}
             </ul>
           </div>
-          <div className="border-t p-2">
+
+          {/* Quick prompts + input area */}
+          <div className="border-t px-3 pb-2 pt-2">
+            {messages.length === 0 && !loading && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {quickPrompts.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => handleQuickPrompt(p.label)}
+                    className="inline-flex items-center gap-1 rounded-full border bg-muted/50 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted hover:border-primary/30 active:scale-95"
+                  >
+                    <span>{p.icon}</span>
+                    <span>{p.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2">
               <Input
                 placeholder="Type a message..."

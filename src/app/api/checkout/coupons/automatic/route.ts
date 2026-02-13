@@ -18,6 +18,8 @@ const validateSchema = {
       ? (v as unknown[])
           .filter((id): id is string => typeof id === "string" && id.length > 0)
       : [],
+  paymentMethodKey: (v: unknown) =>
+    typeof v === "string" && v.length > 0 ? v : undefined,
 };
 
 /**
@@ -34,6 +36,9 @@ export async function POST(request: NextRequest) {
     );
     const productCount = validateSchema.productCount(body?.productCount);
     const productIds = validateSchema.productIds(body?.productIds);
+    const paymentMethodKey = validateSchema.paymentMethodKey(
+      body?.paymentMethodKey,
+    );
 
     const input: AutomaticCouponInput = {
       subtotalCents,
@@ -41,6 +46,7 @@ export async function POST(request: NextRequest) {
       productCount,
       productIds: productIds.length > 0 ? productIds : undefined,
       userId: session?.user?.id ?? undefined,
+      paymentMethodKey,
     };
 
     const result = await resolveAutomaticCouponForCheckout(input);

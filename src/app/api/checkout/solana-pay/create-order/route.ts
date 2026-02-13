@@ -93,6 +93,19 @@ export async function POST(request: NextRequest) {
     const { validatedItems, productIds, subtotalCents } = productResult;
 
     // ── Resolve discounts ──────────────────────────────────────────────
+    const TOKEN_TO_PAYMENT_METHOD_KEY: Record<string, string | null> = {
+      solana: "crypto_solana",
+      crust: "crypto_crust",
+      pump: "crypto_pump",
+      troll: "crypto_troll",
+      usdc: "stablecoin_usdc",
+      whitewhale: null,
+    };
+    const paymentMethodKey =
+      tokenFromBody && TOKEN_TO_PAYMENT_METHOD_KEY[tokenFromBody]
+        ? TOKEN_TO_PAYMENT_METHOD_KEY[tokenFromBody]
+        : null;
+
     const { affiliateResult, couponResult, expectedTotal } =
       await resolveDiscounts({
         affiliateCode,
@@ -101,6 +114,7 @@ export async function POST(request: NextRequest) {
         shippingFeeCents,
         userId: session?.user?.id,
         productIds,
+        paymentMethodKey,
       });
 
     // ── Validate client total ──────────────────────────────────────────

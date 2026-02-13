@@ -20,6 +20,8 @@ export type CouponCheckoutResult = {
   discountCents: number;
   freeShipping: boolean;
   totalAfterDiscountCents: number;
+  /** If set, this discount only applies when paying with this payment method key. */
+  paymentMethodKey?: string | null;
 };
 
 /**
@@ -34,6 +36,7 @@ export async function resolveCouponForCheckout(
   options: {
     userId?: string | null;
     productIds?: string[];
+    paymentMethodKey?: string | null;
   } = {},
 ): Promise<CouponCheckoutResult | null> {
   const raw = code?.trim();
@@ -59,6 +62,7 @@ export async function resolveCouponForCheckout(
       tokenHolderChain: couponsTable.tokenHolderChain,
       tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
       tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+      rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
     })
     .from(couponsTable)
     .where(eq(couponsTable.code, normalizedCode))
@@ -132,6 +136,13 @@ export async function resolveCouponForCheckout(
     }
   }
 
+  // Payment method restriction: coupon applies only when paying with a specific method.
+  const couponPaymentMethodKey = coupon.rulePaymentMethodKey?.trim();
+  if (couponPaymentMethodKey) {
+    const selectedKey = options.paymentMethodKey?.trim();
+    if (!selectedKey || selectedKey !== couponPaymentMethodKey) return null;
+  }
+
   const discountKind = coupon.discountKind ?? "amount_off_order";
   const discountType = coupon.discountType ?? "percent";
   const discountValue = coupon.discountValue ?? 0;
@@ -186,6 +197,13 @@ export type AutomaticCouponInput = {
   productCount: number;
   productIds?: string[];
   userId?: string | null;
+  /**
+   * The selected payment method key (from PAYMENT_METHOD_DEFAULTS).
+   * Used to match coupons with a `rulePaymentMethodKey` restriction.
+   * e.g. "crypto_troll", "crypto_solana", "stripe", etc.
+   * When undefined, coupons with a payment method restriction are skipped.
+   */
+  paymentMethodKey?: string | null;
 };
 
 function meetsRuleset(
@@ -306,6 +324,7 @@ export async function resolveAutomaticCouponForCheckout(
       tokenHolderChain: couponsTable.tokenHolderChain,
       tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
       tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+      rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
       ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
       ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
       ruleShippingMinCents: couponsTable.ruleShippingMinCents,
@@ -352,6 +371,14 @@ export async function resolveAutomaticCouponForCheckout(
     }
 
     if (!meetsRuleset(coupon, input)) continue;
+
+    // Payment method restriction: if the coupon requires a specific payment method,
+    // skip it when no payment method is selected or when it doesn't match.
+    const requiredPaymentMethodKey = coupon.rulePaymentMethodKey?.trim();
+    if (requiredPaymentMethodKey) {
+      const selectedKey = input.paymentMethodKey?.trim();
+      if (!selectedKey || selectedKey !== requiredPaymentMethodKey) continue;
+    }
 
     const productIds = input.productIds ?? [];
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
@@ -428,6 +455,7 @@ export async function resolveAutomaticCouponForCheckout(
       discountCents,
       freeShipping,
       totalAfterDiscountCents,
+      paymentMethodKey: coupon.rulePaymentMethodKey ?? null,
     };
     if (
       !best ||

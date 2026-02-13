@@ -39,6 +39,10 @@ export const couponsTable = pgTable("coupon", {
   tokenHolderChain: text("token_holder_chain"), // "solana" | "evm"
   tokenHolderTokenAddress: text("token_holder_token_address"), // mint (Solana) or contract (EVM)
   tokenHolderMinBalance: text("token_holder_min_balance"), // decimal string, e.g. "1"
+  // Payment method restriction: only apply when the customer pays with this method.
+  // Uses methodKey values from PAYMENT_METHOD_DEFAULTS (e.g. "crypto_troll", "crypto_solana", "stripe").
+  // null = no restriction (applies regardless of payment method).
+  rulePaymentMethodKey: text("rule_payment_method_key"),
   // Automatic discount ruleset: all set conditions must be met (AND). null = no constraint.
   ruleSubtotalMinCents: integer("rule_subtotal_min_cents"),
   ruleSubtotalMaxCents: integer("rule_subtotal_max_cents"),

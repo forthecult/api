@@ -189,6 +189,15 @@ export async function POST(request: NextRequest) {
     const shippingRounded = Math.round(shippingCentsForTotal);
 
     // ── Resolve discounts ──────────────────────────────────────────────
+    // Map token to payment method key
+    const tokenUp = token.toUpperCase();
+    const paymentMethodKey =
+      tokenUp === "USDC"
+        ? "stablecoin_usdc"
+        : tokenUp === "USDT"
+          ? "stablecoin_usdt"
+          : "crypto_ethereum";
+
     const { affiliateResult, couponResult, expectedTotal } =
       await resolveDiscounts({
         affiliateCode,
@@ -197,6 +206,7 @@ export async function POST(request: NextRequest) {
         shippingFeeCents: shippingRounded,
         userId: session?.user?.id,
         productIds,
+        paymentMethodKey,
       });
 
     // ── Validate client total ($5 tolerance for crypto price drift) ───

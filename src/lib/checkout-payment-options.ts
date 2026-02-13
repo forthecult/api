@@ -196,16 +196,18 @@ export function hasAnyStablecoinEnabled(v: PaymentVisibility): boolean {
 }
 
 /** USDC network options filtered by admin-enabled networks. Null/empty = all. */
-export function visibleUsdcNetworks(v: PaymentVisibility): { value: string; label: string }[] {
+export function visibleUsdcNetworks(v: PaymentVisibility | null): { value: string; label: string }[] {
   const opts = USDC_SUB_OPTIONS;
+  if (!v) return opts;
   const allowed = v.enabledUsdcNetworks;
   if (!allowed || allowed.length === 0) return opts;
   return opts.filter((o) => allowed.includes(o.value));
 }
 
 /** USDT network options filtered by admin-enabled networks. Null/empty = all. */
-export function visibleUsdtNetworks(v: PaymentVisibility): { value: string; label: string }[] {
+export function visibleUsdtNetworks(v: PaymentVisibility | null): { value: string; label: string }[] {
   const opts = USDT_SUB_OPTIONS;
+  if (!v) return opts;
   const allowed = v.enabledUsdtNetworks;
   if (!allowed || allowed.length === 0) return opts;
   return opts.filter((o) => allowed.includes(o.value));
