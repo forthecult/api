@@ -130,13 +130,14 @@ function ProductCardInner({
   const isInWishlist =
     typeof isInWishlistProp === "boolean" ? isInWishlistProp : localWishlist;
 
-  /** Is this product considered "New"? */
-  const isNew = React.useMemo(() => {
-    if (!product.createdAt) return false;
+  /** Is this product considered "New"? Computed after mount to avoid server/client Date mismatch (hydration #418). */
+  const [isNew, setIsNew] = React.useState(false);
+  React.useEffect(() => {
+    if (!product.createdAt) return;
     const created = new Date(product.createdAt);
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - NEW_PRODUCT_DAYS);
-    return created >= cutoff;
+    setIsNew(created >= cutoff);
   }, [product.createdAt]);
 
   /** Secondary image for hover (first image from images array that differs from primary). */

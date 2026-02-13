@@ -37,9 +37,13 @@ function isOpenClawConfigured(): boolean {
   );
 }
 
+const OPENCLAW_FETCH_TIMEOUT_MS = 60_000; // 60s — OpenClaw can be slow on cold start
+const OPENCLAW_RETRY_DELAY_MS = 2_000;
+
 /**
  * Generate an AI reply via OpenClaw Gateway (Alice agent).
  * Returns null on failure so the caller can fall back.
+ * Uses a long timeout and one retry to handle cold starts and transient HeadersTimeoutError.
  */
 async function generateViaOpenClaw(
   context: SupportChatContext,
@@ -57,31 +61,52 @@ async function generateViaOpenClaw(
     .join("\n")
     .slice(-MAX_CONTEXT_CHARS);
 
-  try {
-    const body: Record<string, unknown> = {
-      model: `openclaw:${agentId}`,
-      messages: [
-        { role: "user", content: truncated || "Hello" },
-      ],
-      max_tokens: 500,
-      // OpenClaw uses the `user` field to derive a stable session key,
-      // so the same customer gets session continuity across messages.
-      ...(context.userId ? { user: context.userId } : {}),
-    };
+  const body: Record<string, unknown> = {
+    model: `openclaw:${agentId}`,
+    messages: [
+      { role: "user", content: truncated || "Hello" },
+    ],
+    max_tokens: 500,
+    ...(context.userId ? { user: context.userId } : {}),
+  };
 
-    const res = await fetch(`${gatewayUrl}/v1/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${gatewayToken}`,
-        "x-openclaw-agent-id": agentId,
-        // Pass conversation ID so OpenClaw can group messages
-        ...(context.conversationId
-          ? { "x-openclaw-session-key": context.conversationId }
-          : {}),
-      },
-      body: JSON.stringify(body),
-    });
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${gatewayToken}`,
+    "x-openclaw-agent-id": agentId,
+    ...(context.conversationId
+      ? { "x-openclaw-session-key": context.conversationId }
+      : {}),
+  };
+
+  const doFetch = async (): Promise<Response> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      OPENCLAW_FETCH_TIMEOUT_MS,
+    );
+    try {
+      const res = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      return res;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
+  try {
+    let res: Response;
+    try {
+      res = await doFetch();
+    } catch (firstErr) {
+      // One retry on timeout or network failure (e.g. HeadersTimeoutError)
+      await new Promise((r) => setTimeout(r, OPENCLAW_RETRY_DELAY_MS));
+      res = await doFetch();
+    }
 
     if (!res.ok) {
       const errorBody = await res.text().catch(() => "(unreadable)");

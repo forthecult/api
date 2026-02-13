@@ -93,10 +93,15 @@ Once OpenClaw is running and you can open the dashboard (e.g. `/openclaw?token=.
 
 ### 1. OpenClaw (Railway) — config and env
 
-- **Config:** In the dashboard go to **Config** (or Config editor on `/setup`). Ensure `gateway.auth` is set so the store can call the API:
+- **Config:** In the dashboard go to **Config** (or Config editor on `/setup`).
+  - Ensure `gateway.auth` is set so the store can call the API.
+  - **Enable the chat completions endpoint** (it is off by default; otherwise the store gets **405 Method Not Allowed**):
   ```json
   "gateway": {
-    "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_TOKEN}" }
+    "auth": { "mode": "token", "token": "${OPENCLAW_GATEWAY_TOKEN}" },
+    "http": {
+      "endpoints": { "chatCompletions": { "enabled": true } }
+    }
   }
   ```
   If you used the backup import, add this block at the top of the config and Save.

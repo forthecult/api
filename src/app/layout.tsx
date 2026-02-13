@@ -179,6 +179,7 @@ export default async function RootLayout({
           selection:bg-primary/80
           dark:from-neutral-950 dark:to-neutral-900 dark:text-neutral-100
         `}
+        suppressHydrationWarning
       >
         <ThemeProvider
           attribute="class"

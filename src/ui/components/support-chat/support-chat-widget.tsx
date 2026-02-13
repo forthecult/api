@@ -64,6 +64,7 @@ export function SupportChatWidget() {
   const [endingChat, setEndingChat] = React.useState(false);
   const guestIdRef = React.useRef<string | null>(null);
   const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const messagesScrollRef = React.useRef<HTMLDivElement>(null);
 
   // ── Drag-to-move state ──────────────────────────────────────────────
   const [position, setPosition] = React.useState<{ bottom: number; right: number }>({ bottom: 16, right: 16 });
@@ -336,6 +337,12 @@ export function SupportChatWidget() {
     setInput(prompt);
   };
 
+  // Scroll messages to bottom when typing indicator appears or when a new message arrives
+  React.useEffect(() => {
+    const el = messagesScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [loading, messages.length]);
+
   return (
     <div
       className="fixed z-50 flex flex-col items-end gap-2"
@@ -393,7 +400,10 @@ export function SupportChatWidget() {
           </div>
 
           {/* Messages area */}
-          <div className="flex-1 overflow-y-auto p-3">
+          <div
+            ref={messagesScrollRef}
+            className="flex-1 overflow-y-auto p-3"
+          >
             {messages.length === 0 && !loading && !error && (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md">
@@ -458,6 +468,31 @@ export function SupportChatWidget() {
                   </li>
                 );
               })}
+              {loading && (
+                <li
+                  className="mr-8 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  <span className="font-medium text-muted-foreground">
+                    {takenOverBy ? "Live Support Agent" : "Alice"}:
+                  </span>
+                  <span className="flex gap-1" aria-hidden>
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-bounce"
+                      style={{ animationDelay: "0ms" }}
+                    />
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-bounce"
+                      style={{ animationDelay: "160ms" }}
+                    />
+                    <span
+                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-bounce"
+                      style={{ animationDelay: "320ms" }}
+                    />
+                  </span>
+                </li>
+              )}
             </ul>
           </div>
 

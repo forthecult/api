@@ -8,6 +8,7 @@ import Link from "next/link";
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
+import { ImageWithRetry } from "~/ui/components/image-with-retry";
 import {
   PageContainer,
   PageSection,
@@ -329,7 +330,7 @@ export default async function HomePage() {
                     via-transparent to-transparent
                   `}
                 />
-                <Image
+                <ImageWithRetry
                   alt="For the Cult — curated tech, premium apparel, and lifestyle gear. Where smart living and technology meet."
                   title="Culture lifestyle"
                   className="object-cover"
