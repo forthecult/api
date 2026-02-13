@@ -6,6 +6,7 @@ import {
   AFFILIATE_COOKIE_MAX_AGE_SECONDS,
   AFFILIATE_COOKIE_NAME,
 } from "~/lib/affiliate-tracking";
+import { getAgentHostname } from "~/lib/app-url";
 
 const DEFAULT_ADMIN_ORIGINS = [
   "http://localhost:3001",
@@ -92,6 +93,14 @@ const COUNTRY_CURRENCY_COOKIE = "country-currency";
 
 function proxyHandler(request: NextRequest) {
   const path = request.nextUrl.pathname;
+
+  // AI subdomain redirect: ai.forthecult.store/ → /for-agents
+  const host = request.nextUrl.hostname?.toLowerCase();
+  const agentHost = getAgentHostname();
+  if (agentHost && host === agentHost && (path === "/" || path === "")) {
+    return NextResponse.redirect(new URL("/for-agents", request.url));
+  }
+
   const isAuthApi = path.startsWith("/api/auth/");
   const isAdminApi = path.startsWith("/api/admin/");
   const isUserApi = path.startsWith("/api/user/");

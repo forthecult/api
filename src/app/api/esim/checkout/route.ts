@@ -106,6 +106,11 @@ export async function POST(request: Request) {
       mode: "payment",
       success_url: `${baseUrl}/dashboard/esim?purchased=${orderId}`,
       cancel_url: `${baseUrl}/esim/${esimOrder.packageId}`,
+      // Digital product — don't collect shipping or phone.
+      // Stripe still collects email + card billing by default.
+      billing_address_collection: "auto",
+      shipping_address_collection: undefined,
+      phone_number_collection: { enabled: false },
       metadata: {
         orderId,
         esimOrderId: esimOrder.id,
@@ -120,6 +125,9 @@ export async function POST(request: Request) {
           },
         ]),
       },
+      ...(paymentMethod === "paypal"
+        ? { payment_method_types: ["paypal"] as const }
+        : {}),
     });
 
     // Store the Stripe session ID on the order
