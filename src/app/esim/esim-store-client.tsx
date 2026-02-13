@@ -8,6 +8,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
+import { formatEsimPackageName } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
@@ -43,6 +44,8 @@ type Package = {
   package_validity_unit: string;
   package_type?: string;
   unlimited?: boolean;
+  /** When true, show 5G badge (from coverage data; list API may not provide this). */
+  has5g?: boolean;
 };
 
 type ValidityFilter = "all" | "7" | "14" | "30" | "30+";
@@ -98,18 +101,29 @@ function PackageCard({
         <CardContent className="flex flex-col gap-3 p-5 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-              {pkg.name}
+              {formatEsimPackageName(pkg.name)}
             </h3>
-            {pkg.package_type === "DATA-VOICE-SMS" && (
-              <Badge variant="secondary" className="shrink-0 text-[10px]">
-                Voice+SMS
-              </Badge>
-            )}
+            <div className="flex shrink-0 items-center gap-1">
+              {pkg.has5g && (
+                <span
+                  className="inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+                  title="5G available"
+                >
+                  <Signal className="h-3 w-3" />
+                  5G
+                </span>
+              )}
+              {pkg.package_type === "DATA-VOICE-SMS" && (
+                <Badge variant="secondary" className="text-[10px]">
+                  Voice+SMS
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Wifi className="h-3.5 w-3.5" />
-              {pkg.unlimited ? "Unlimited" : `${pkg.data_quantity} ${pkg.data_unit}`}
+              {pkg.unlimited || pkg.data_quantity === 0 ? "∞" : `${pkg.data_quantity} ${pkg.data_unit}`}
             </span>
             <span className="flex items-center gap-1">
               <Signal className="h-3.5 w-3.5" />

@@ -63,6 +63,12 @@ export async function POST(request: Request) {
     const costCents = Math.round(Number(pkg.price) * 100);
     const priceCents = Math.round(costCents * (1 + markup / 100));
 
+    // Coerce API values (external API may return strings or omit fields)
+    const dataQuantity = Number(pkg.data_quantity);
+    const validityDays = Number(pkg.package_validity) || 1;
+    const dataUnit = (pkg.data_unit && String(pkg.data_unit).toUpperCase()) === "MB" ? "MB" : "GB";
+    const packageTypeVal = (pkg.package_type === "DATA-VOICE-SMS" ? "DATA-VOICE-SMS" : "DATA-ONLY") as "DATA-ONLY" | "DATA-VOICE-SMS";
+
     // Determine country name from package details
     const countryName =
       pkg.countries?.[0]?.name ??
@@ -105,11 +111,11 @@ export async function POST(request: Request) {
       userId: user?.id ?? null,
       orderId,
       packageId,
-      packageName: pkg.name,
-      packageType,
-      dataQuantity: pkg.data_quantity,
-      dataUnit: pkg.data_unit,
-      validityDays: pkg.package_validity,
+      packageName: String(pkg.name ?? "eSIM"),
+      packageType: packageTypeVal,
+      dataQuantity: Number.isNaN(dataQuantity) ? 0 : dataQuantity,
+      dataUnit,
+      validityDays,
       countryName,
       costCents,
       priceCents,
@@ -133,9 +139,14 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error("eSIM purchase error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("eSIM purchase error:", message, error);
     return NextResponse.json(
-      { status: false, message: "Failed to create eSIM order" },
+      {
+        status: false,
+        message: "Failed to create eSIM order",
+        ...(process.env.NODE_ENV === "development" && { detail: message }),
+      },
       { status: 500 },
     );
   }

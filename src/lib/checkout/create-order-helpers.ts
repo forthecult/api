@@ -500,7 +500,12 @@ export async function createEsimOrderRecordsForOrder(params: {
     const costCents = Math.round(Number(pkg.price) * 100);
     const countryName =
       pkg.countries?.[0]?.name ?? pkg.romaing_countries?.[0]?.name ?? null;
-    const packageType = (pkg.package_type ?? "DATA-ONLY") as string;
+    const dataQuantity = Number(pkg.data_quantity);
+    const validityDays = Number(pkg.package_validity) || 1;
+    const dataUnit =
+      pkg.data_unit && String(pkg.data_unit).toUpperCase() === "MB" ? "MB" : "GB";
+    const packageTypeVal =
+      pkg.package_type === "DATA-VOICE-SMS" ? "DATA-VOICE-SMS" : "DATA-ONLY";
 
     for (let q = 0; q < item.quantity; q++) {
       await db.insert(esimOrdersTable).values({
@@ -508,11 +513,11 @@ export async function createEsimOrderRecordsForOrder(params: {
         userId,
         orderId,
         packageId: item.esimPackageId!,
-        packageName: pkg.name,
-        packageType,
-        dataQuantity: pkg.data_quantity,
-        dataUnit: pkg.data_unit,
-        validityDays: pkg.package_validity,
+        packageName: String(pkg.name ?? "eSIM"),
+        packageType: packageTypeVal,
+        dataQuantity: Number.isNaN(dataQuantity) ? 0 : dataQuantity,
+        dataUnit,
+        validityDays,
         countryName,
         costCents,
         priceCents: item.priceCents,

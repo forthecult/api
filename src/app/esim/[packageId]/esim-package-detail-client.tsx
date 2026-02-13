@@ -12,11 +12,18 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { useCurrentUser } from "~/lib/auth-client";
+import { formatEsimPackageName } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
+import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
+import {
+  hasAnyCryptoEnabled,
+  hasAnyStablecoinEnabled,
+  type PaymentVisibility,
+} from "~/lib/checkout-payment-options";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -25,12 +32,29 @@ import { Label } from "~/ui/primitives/label";
 import { Separator } from "~/ui/primitives/separator";
 
 type PaymentCategory = "card" | "paypal" | "crypto";
-type CryptoOption = "solana_pay" | "eth_pay" | "btcpay" | "ton_pay";
-const CRYPTO_OPTIONS: { value: CryptoOption; label: string }[] = [
-  { value: "solana_pay", label: "Solana" },
-  { value: "eth_pay", label: "Ethereum" },
-  { value: "btcpay", label: "Bitcoin" },
-  { value: "ton_pay", label: "TON" },
+type CryptoOption =
+  | "solana_pay"
+  | "eth_pay"
+  | "btcpay"
+  | "ton_pay"
+  | "eth_pay_stable";
+
+/** All possible crypto options; visibility filters which are shown. */
+const ALL_CRYPTO_OPTIONS: Array<{
+  value: CryptoOption;
+  label: string;
+  /** When true (or visibility null), show this option. */
+  visible: (v: PaymentVisibility | null) => boolean;
+}> = [
+  { value: "solana_pay", label: "Solana", visible: (v) => v?.cryptoSolana !== false },
+  { value: "eth_pay", label: "Ethereum", visible: (v) => v?.cryptoEthereum !== false },
+  { value: "btcpay", label: "Bitcoin", visible: (v) => v?.cryptoBitcoin !== false },
+  { value: "ton_pay", label: "TON", visible: (v) => v?.cryptoTon !== false },
+  {
+    value: "eth_pay_stable",
+    label: "Stablecoin (USDC/USDT)",
+    visible: (v) => (v?.stablecoinUsdc ?? true) || (v?.stablecoinUsdt ?? true),
+  },
 ];
 
 // ---------- Types ----------
@@ -77,13 +101,47 @@ export function EsimPackageDetailClient({
 }) {
   const { user } = useCurrentUser();
   const { addItem, openCart } = useCart();
+  const { visibility: paymentVisibility } = usePaymentMethodSettings();
 
   const [pkg, setPkg] = useState<PackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
-  const [paymentCategory, setPaymentCategory] = useState<PaymentCategory>("card");
-  const [cryptoOption, setCryptoOption] = useState<CryptoOption>("solana_pay");
+
+  const showCard = paymentVisibility?.creditCard !== false;
+  const showPaypal = paymentVisibility?.paypal !== false;
+  const showCrypto =
+    paymentVisibility === null
+      ? true
+      : hasAnyCryptoEnabled(paymentVisibility) ||
+        hasAnyStablecoinEnabled(paymentVisibility);
+
+  const visibleCryptoOptions = useMemo(
+    () => ALL_CRYPTO_OPTIONS.filter((o) => o.visible(paymentVisibility)),
+    [paymentVisibility],
+  );
+
+  const defaultCategory: PaymentCategory = showCard
+    ? "card"
+    : showPaypal
+      ? "paypal"
+      : "crypto";
+  const defaultCryptoOption: CryptoOption =
+    visibleCryptoOptions[0]?.value ?? "solana_pay";
+
+  const [paymentCategory, setPaymentCategory] =
+    useState<PaymentCategory>("card");
+  const [cryptoOption, setCryptoOption] =
+    useState<CryptoOption>("solana_pay");
+
+  const hasAppliedVisibilityRef = useRef(false);
+  useEffect(() => {
+    if (paymentVisibility !== null && !hasAppliedVisibilityRef.current) {
+      hasAppliedVisibilityRef.current = true;
+      setPaymentCategory(defaultCategory);
+      setCryptoOption(defaultCryptoOption);
+    }
+  }, [paymentVisibility, defaultCategory, defaultCryptoOption]);
 
   useEffect(() => {
     setLoading(true);
@@ -100,7 +158,9 @@ export function EsimPackageDetailClient({
 
   const paymentMethod =
     paymentCategory === "crypto"
-      ? cryptoOption
+      ? cryptoOption === "eth_pay_stable"
+        ? "eth_pay"
+        : cryptoOption
       : paymentCategory === "paypal"
         ? "paypal"
         : "stripe";
@@ -158,10 +218,20 @@ export function EsimPackageDetailClient({
       }
 
       // Crypto: set up payment details and redirect to checkout page
+      const isStablecoin = cryptoOption === "eth_pay_stable";
+      const cryptoPayload: Record<string, string> = {
+        orderId,
+        paymentMethod: isStablecoin ? "eth_pay" : cryptoOption,
+      };
+      if (isStablecoin) {
+        cryptoPayload.chain = "ethereum";
+        cryptoPayload.token =
+          paymentVisibility?.stablecoinUsdc !== false ? "USDC" : "USDT";
+      }
       const cryptoRes = await fetch("/api/esim/crypto-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId, paymentMethod: cryptoOption }),
+        body: JSON.stringify(cryptoPayload),
       });
       const cryptoData = await cryptoRes.json();
       if (!cryptoData.status) {
@@ -171,7 +241,7 @@ export function EsimPackageDetailClient({
       const hash =
         cryptoOption === "solana_pay"
           ? "solana"
-          : cryptoOption === "eth_pay"
+          : cryptoOption === "eth_pay" || cryptoOption === "eth_pay_stable"
             ? "eth"
             : cryptoOption === "btcpay"
               ? "bitcoin"
@@ -191,13 +261,14 @@ export function EsimPackageDetailClient({
     guestEmail,
     paymentCategory,
     cryptoOption,
+    paymentVisibility,
   ]);
 
   const handleAddToCart = useCallback(() => {
     if (!pkg) return;
     addItem({
       id: `esim_${pkg.id}`,
-      name: `eSIM: ${pkg.name}`,
+      name: `eSIM: ${formatEsimPackageName(pkg.name)}`,
       price: parseFloat(pkg.price),
       category: "eSIM",
       image: "/placeholder.svg",
@@ -210,6 +281,11 @@ export function EsimPackageDetailClient({
   }, [pkg, addItem, openCart]);
 
   const coverageCountries = pkg?.countries ?? pkg?.romaing_countries ?? [];
+  const has5g =
+    coverageCountries.some((c) =>
+      c.network_coverage?.some((n) => n.five_G),
+    ) ?? false;
+  const displayName = pkg ? formatEsimPackageName(pkg.name) : "";
 
   if (loading) {
     return (
@@ -254,12 +330,23 @@ export function EsimPackageDetailClient({
         {/* Package Info - Left */}
         <div className="lg:col-span-3 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{pkg.name}</h1>
-            <div className="mt-2 flex flex-wrap gap-2">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {displayName}
+            </h1>
+            <div className="mt-2 flex flex-wrap gap-2 items-center">
               {pkg.package_type && (
                 <Badge variant="secondary">{pkg.package_type}</Badge>
               )}
               {pkg.unlimited && <Badge>Unlimited</Badge>}
+              {has5g && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                  title="5G available"
+                >
+                  <Signal className="h-3.5 w-3.5" />
+                  5G
+                </span>
+              )}
             </div>
           </div>
 
@@ -275,8 +362,8 @@ export function EsimPackageDetailClient({
                   <div>
                     <p className="text-sm text-muted-foreground">Data</p>
                     <p className="font-semibold">
-                      {pkg.unlimited
-                        ? "Unlimited"
+                      {pkg.unlimited || pkg.data_quantity === 0
+                        ? "∞"
                         : `${pkg.data_quantity} ${pkg.data_unit}`}
                     </p>
                   </div>
@@ -418,8 +505,8 @@ export function EsimPackageDetailClient({
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Data</span>
                     <span className="font-medium">
-                      {pkg.unlimited
-                        ? "Unlimited"
+                      {pkg.unlimited || pkg.data_quantity === 0
+                        ? "∞"
                         : `${pkg.data_quantity} ${pkg.data_unit}`}
                     </span>
                   </div>
@@ -472,36 +559,42 @@ export function EsimPackageDetailClient({
                 <div className="space-y-2">
                   <Label>Payment method</Label>
                   <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant={paymentCategory === "card" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPaymentCategory("card")}
-                    >
-                      <CreditCard className="mr-1 h-3.5 w-3.5" />
-                      Card
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={paymentCategory === "paypal" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPaymentCategory("paypal")}
-                    >
-                      PayPal
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={paymentCategory === "crypto" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setPaymentCategory("crypto")}
-                    >
-                      <Wallet className="mr-1 h-3.5 w-3.5" />
-                      Crypto
-                    </Button>
+                    {showCard && (
+                      <Button
+                        type="button"
+                        variant={paymentCategory === "card" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPaymentCategory("card")}
+                      >
+                        <CreditCard className="mr-1 h-3.5 w-3.5" />
+                        Card
+                      </Button>
+                    )}
+                    {showPaypal && (
+                      <Button
+                        type="button"
+                        variant={paymentCategory === "paypal" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPaymentCategory("paypal")}
+                      >
+                        PayPal
+                      </Button>
+                    )}
+                    {showCrypto && (
+                      <Button
+                        type="button"
+                        variant={paymentCategory === "crypto" ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setPaymentCategory("crypto")}
+                      >
+                        <Wallet className="mr-1 h-3.5 w-3.5" />
+                        Crypto
+                      </Button>
+                    )}
                   </div>
-                  {paymentCategory === "crypto" && (
+                  {paymentCategory === "crypto" && visibleCryptoOptions.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-2">
-                      {CRYPTO_OPTIONS.map((opt) => (
+                      {visibleCryptoOptions.map((opt) => (
                         <Button
                           key={opt.value}
                           type="button"
@@ -541,14 +634,49 @@ export function EsimPackageDetailClient({
                   Add to Cart
                 </Button>
 
-                <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
-                  <p className="font-medium text-foreground">
+                <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground space-y-2">
+                  <p className="font-semibold text-base text-foreground">
                     Instant Digital Delivery
                   </p>
                   <p>
                     After payment, your eSIM will be provisioned and available in
                     your dashboard. Scan the QR code on your device to activate.
                   </p>
+                </div>
+
+                <div className="rounded-lg border border-muted bg-muted/30 p-4 space-y-3">
+                  <p className="font-semibold text-foreground">
+                    eSIM refund eligibility
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    eSIM plans have different refund rules. Please review before purchasing.
+                  </p>
+                  <ul className="text-sm text-muted-foreground space-y-2 list-disc list-inside">
+                    <li>
+                      <span className="font-medium text-foreground">Instant refund:</span>{" "}
+                      Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">Activated or used:</span>{" "}
+                      Any eSIM that has been activated, partially used, or has data consumption is <strong>non-refundable</strong>. Once an eSIM connects to a network, it is considered delivered and consumed.
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
+                      If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">Carrier &amp; network:</span>{" "}
+                      No refund for country-wide shutdowns, temporary carrier outages, or local regulations affecting connectivity; service resumes when the network is available again.
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">Vodafone &amp; O2:</span>{" "}
+                      Validity is only in officially supported countries. Using the eSIM outside those regions will disable the eSIM and no refund will be issued.
+                    </li>
+                    <li>
+                      <span className="font-medium text-foreground">Voice &amp; SMS plans:</span>{" "}
+                      All eSIM plans that include Voice and/or SMS are <strong>non-refundable</strong>, regardless of activation or usage.
+                    </li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
