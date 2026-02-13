@@ -11,9 +11,9 @@ export const esimOrdersTable = pgTable(
   "esim_order",
   {
     id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => userTable.id, {
+      onDelete: "cascade",
+    }), // null for guest checkout
 
     // Link to the main order (for payment tracking)
     orderId: text("order_id").references(() => ordersTable.id, {

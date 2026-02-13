@@ -75,7 +75,7 @@ export interface ShippingUpdate {
 
 export interface ShippingAddressFormProps {
   countryOptions: { value: string; label: string }[];
-  items: { productId?: string; id: string; productVariantId?: string; quantity: number }[];
+  items: { productId?: string; id: string; productVariantId?: string; quantity: number; digital?: boolean }[];
   subtotal: number;
   appliedCoupon: { code: string; freeShipping: boolean } | null;
   selectedCountry: string | null;
@@ -86,6 +86,8 @@ export interface ShippingAddressFormProps {
   authPending: boolean;
   validationErrors: string[];
   onShippingUpdate: (update: ShippingUpdate) => void;
+  /** When true, only show email field and skip shipping address/method (e.g. digital-only cart). */
+  emailOnly?: boolean;
 }
 
 export interface ShippingAddressFormRef {
@@ -94,6 +96,14 @@ export interface ShippingAddressFormRef {
   getTextNews: () => boolean;
   validate: () => string[];
   persistForm: () => void;
+}
+
+function validateEmailOnlyForm(form: CheckoutFormState): string[] {
+  const err: string[] = [];
+  if (!form.email?.trim()) err.push("Email is required");
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+    err.push("Please enter a valid email address");
+  return err;
 }
 
 function validateShippingForm(
@@ -264,6 +274,7 @@ export const ShippingAddressForm = forwardRef<
     authPending,
     validationErrors,
     onShippingUpdate,
+    emailOnly = false,
   },
   ref,
 ) {
@@ -475,6 +486,10 @@ export const ShippingAddressForm = forwardRef<
       taxNote: null,
       customsDutiesNote: null,
     };
+    if (emailOnly) {
+      updateShipping(EMPTY_SHIPPING);
+      return;
+    }
     const country = form.country?.trim();
     if (!country || items.length === 0) {
       updateShipping(EMPTY_SHIPPING);
@@ -552,6 +567,7 @@ export const ShippingAddressForm = forwardRef<
       clearTimeout(timeoutId);
     };
   }, [
+    emailOnly,
     form.country,
     form.state,
     form.city,
@@ -565,8 +581,9 @@ export const ShippingAddressForm = forwardRef<
   ]);
 
   const validate = useCallback(() => {
+    if (emailOnly) return validateEmailOnlyForm(form);
     return validateShippingForm(form, localShipping.shippingSpeed);
-  }, [form, localShipping.shippingSpeed]);
+  }, [emailOnly, form, localShipping.shippingSpeed]);
 
   useImperativeHandle(
     ref,
@@ -643,6 +660,8 @@ export const ShippingAddressForm = forwardRef<
         </CardContent>
       </Card>
 
+      {!emailOnly && (
+      <>
       {/* Shipping address */}
       <Card className="shadow-none">
         <CardHeader>
@@ -1024,6 +1043,8 @@ export const ShippingAddressForm = forwardRef<
           </div>
         </CardContent>
       </Card>
+      </>
+      )}
     </>
   );
 });

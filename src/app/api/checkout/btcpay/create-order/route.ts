@@ -11,6 +11,7 @@ import {
 } from "~/lib/btcpay";
 import {
   buildOrderErrorMessage,
+  createEsimOrderRecordsForOrder,
   insertOrder,
   insertOrderItems,
   postOrderBookkeeping,
@@ -192,6 +193,14 @@ export async function POST(request: NextRequest) {
       couponResult,
       emailMarketingConsent,
       smsMarketingConsent,
+    });
+
+    // ── eSIM order records (for cart items with esimPackageId) ──────────
+    await createEsimOrderRecordsForOrder({
+      orderId,
+      userId: userIdVal,
+      paymentMethod: "btcpay",
+      items: validatedItems,
     });
 
     return NextResponse.json({

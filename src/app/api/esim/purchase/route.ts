@@ -10,32 +10,41 @@ type PurchaseBody = {
   packageId: string;
   packageType?: "DATA-ONLY" | "DATA-VOICE-SMS";
   paymentMethod: string; // "stripe" | "solana_pay" | "eth_pay" | "btcpay" | "ton_pay"
+  /** Required when not authenticated (guest checkout). */
+  email?: string;
 };
 
 /**
  * POST /api/esim/purchase
  *
- * Creates a pending order + eSIM order record for the authenticated user.
- * Returns the orderId so the frontend can route to the appropriate payment
- * flow (Stripe checkout, Solana Pay, etc.). The eSIM is NOT provisioned
+ * Creates a pending order + eSIM order record. No auth required: if the user
+ * is logged in we use their userId and email; if not, email is required in the body.
+ * Returns the orderId for the payment flow. The eSIM is NOT provisioned
  * until payment is confirmed via webhook / confirm endpoint.
  */
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { status: false, message: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
     const body = (await request.json()) as PurchaseBody;
-    const { packageId, packageType = "DATA-ONLY", paymentMethod = "stripe" } = body;
+    const { packageId, packageType = "DATA-ONLY", paymentMethod = "stripe", email: bodyEmail } = body;
 
     if (!packageId) {
       return NextResponse.json(
         { status: false, message: "packageId is required" },
+        { status: 400 },
+      );
+    }
+
+    const email = (user?.email ?? bodyEmail?.trim()) || null;
+    if (!email) {
+      return NextResponse.json(
+        { status: false, message: "Email is required for guest checkout" },
+        { status: 400 },
+      );
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json(
+        { status: false, message: "Please enter a valid email address" },
         { status: 400 },
       );
     }
@@ -69,7 +78,7 @@ export async function POST(request: Request) {
     await db.insert(ordersTable).values({
       id: orderId,
       createdAt: now,
-      email: user.email ?? "guest@checkout.local",
+      email: email.toLowerCase(),
       fulfillmentStatus: "unfulfilled",
       paymentMethod,
       paymentStatus: "pending",
@@ -77,7 +86,7 @@ export async function POST(request: Request) {
       totalCents: priceCents,
       shippingFeeCents: 0,
       updatedAt: now,
-      userId: user.id,
+      userId: user?.id ?? null,
     });
 
     // Create an order item (so it shows in order details like physical products)
@@ -93,7 +102,7 @@ export async function POST(request: Request) {
     // Create the eSIM-specific order record (pending until payment confirmed)
     await db.insert(esimOrdersTable).values({
       id: esimOrderId,
-      userId: user.id,
+      userId: user?.id ?? null,
       orderId,
       packageId,
       packageName: pkg.name,

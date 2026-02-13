@@ -12,6 +12,7 @@ import {
   affiliateTable,
   couponRedemptionTable,
   couponsTable,
+  esimOrdersTable,
   orderItemsTable,
   ordersTable,
   productVariantsTable,
@@ -20,6 +21,7 @@ import {
 import { userTable } from "~/db/schema/users/tables";
 import { resolveAffiliateForOrder } from "~/lib/affiliate";
 import { resolveCouponForCheckout } from "~/lib/coupon";
+import { getEsimPackageDetail } from "~/lib/esim-api";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -32,6 +34,8 @@ export interface ValidatedOrderItem {
   name: string;
   priceCents: number;
   quantity: number;
+  /** Set for eSIM items (productId starts with esim_); package ID from reseller API. */
+  esimPackageId?: string;
 }
 
 /** Raw item from the client request (after Zod parsing). */
@@ -169,6 +173,26 @@ export async function validateAndFetchProducts(
       item.quantity < 1
     )
       continue;
+
+    // eSIM items: pass through without DB lookup (client sends priceCents and name)
+    if (item.productId.startsWith("esim_")) {
+      const name = typeof item.name === "string" && item.name.trim() ? item.name.trim() : null;
+      const priceCents =
+        typeof item.priceCents === "number" && item.priceCents >= 0
+          ? item.priceCents
+          : null;
+      if (!name || priceCents === null) continue;
+      const esimPackageId = item.productId.replace(/^esim_/, "");
+      if (!esimPackageId) continue;
+      validatedItems.push({
+        productId: item.productId,
+        name,
+        priceCents,
+        quantity: item.quantity,
+        esimPackageId,
+      });
+      continue;
+    }
 
     const product = productMap.get(item.productId);
     if (!product) continue;
@@ -367,7 +391,8 @@ export async function insertOrderItems(
       name: item.name,
       orderId,
       priceCents: item.priceCents,
-      productId: item.productId,
+      // eSIM items have no product row; store null to satisfy FK
+      productId: item.esimPackageId ? null : item.productId,
       productVariantId: item.productVariantId ?? null,
       quantity: item.quantity,
     })),
@@ -444,6 +469,65 @@ export async function postOrderBookkeeping(
 }
 
 // ---------------------------------------------------------------------------
+// 6b. createEsimOrderRecordsForOrder
+// ---------------------------------------------------------------------------
+
+/**
+ * For orders that contain eSIM line items, create esim_order records.
+ * Called after insertOrderItems in create-order routes. Fetches package
+ * details from the eSIM API and inserts one esim order per quantity per item.
+ */
+export async function createEsimOrderRecordsForOrder(params: {
+  orderId: string;
+  userId: string | null;
+  paymentMethod: string;
+  items: ValidatedOrderItem[];
+}): Promise<void> {
+  const { orderId, userId, paymentMethod, items } = params;
+  const esimItems = items.filter((i) => i.esimPackageId);
+  if (esimItems.length === 0) return;
+
+  const now = new Date();
+  for (const item of esimItems) {
+    const pkgResult = await getEsimPackageDetail(item.esimPackageId!);
+    if (!pkgResult.status || !pkgResult.data) {
+      console.error(
+        `[createEsimOrderRecords] Package not found: ${item.esimPackageId}`,
+      );
+      continue;
+    }
+    const pkg = pkgResult.data;
+    const costCents = Math.round(Number(pkg.price) * 100);
+    const countryName =
+      pkg.countries?.[0]?.name ?? pkg.romaing_countries?.[0]?.name ?? null;
+    const packageType = (pkg.package_type ?? "DATA-ONLY") as string;
+
+    for (let q = 0; q < item.quantity; q++) {
+      await db.insert(esimOrdersTable).values({
+        id: createId(),
+        userId,
+        orderId,
+        packageId: item.esimPackageId!,
+        packageName: pkg.name,
+        packageType,
+        dataQuantity: pkg.data_quantity,
+        dataUnit: pkg.data_unit,
+        validityDays: pkg.package_validity,
+        countryName,
+        costCents,
+        priceCents: item.priceCents,
+        currency: "USD",
+        paymentMethod,
+        paymentStatus: "pending",
+        status: "pending",
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 7. createOrderTransaction (wraps insert + items + bookkeeping in a tx)
 // ---------------------------------------------------------------------------
 
@@ -504,7 +588,7 @@ export async function createOrderTransaction(params: {
           name: item.name,
           orderId: params.base.orderId,
           priceCents: item.priceCents,
-          productId: item.productId,
+          productId: item.esimPackageId ? null : item.productId,
           productVariantId: item.productVariantId ?? null,
           quantity: item.quantity,
         })),

@@ -15,6 +15,12 @@ export interface CartItem {
   productId?: string;
   /** Variant id when adding a product variant to cart. */
   productVariantId?: string;
+  /** True for digital products (eSIM, downloads) — skip shipping at checkout */
+  digital?: boolean;
+  /** eSIM-specific: package ID from reseller API */
+  esimPackageId?: string;
+  /** eSIM-specific: package type */
+  esimPackageType?: string;
 }
 
 interface CartProps {

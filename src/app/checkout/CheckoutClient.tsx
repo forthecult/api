@@ -3,7 +3,10 @@
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import {
+  forwardRef,
   useCallback,
+  useEffect,
+  useImperativeHandle,
   useReducer,
   useRef,
   useState,
@@ -11,6 +14,7 @@ import {
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useCurrentUser } from "~/lib/auth-client";
+import { defaultForm } from "./checkout-shared";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
@@ -81,11 +85,33 @@ const COUNTRY_OPTIONS: { value: string; label: string }[] = [
   ),
 ];
 
+/** Stub ref for digital-only checkout when user is logged in: no form shown, ref exposes user email. */
+const DigitalOnlyStubRef = forwardRef<
+  ShippingAddressFormRef,
+  { user: { email?: string } | null }
+>(function DigitalOnlyStubRef({ user }, ref) {
+  useImperativeHandle(
+    ref,
+    () => ({
+      getForm: () => ({ ...defaultForm, email: user?.email ?? "" }),
+      getEmailNews: () => false,
+      getTextNews: () => false,
+      validate: () => [],
+      persistForm: () => {},
+    }),
+    [user?.email],
+  );
+  return null;
+});
+
 export function CheckoutClient() {
   const { isHydrated, items, subtotal, itemCount, updateQuantity, removeItem } = useCart();
   const { user, isPending: authPending } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
   const isLoggedIn = Boolean(user?.email);
+  const isDigitalOnly =
+    items.length > 0 &&
+    items.every((i) => (i as { digital?: boolean }).digital === true);
   const userReceiveMarketing =
     (user as { receiveMarketing?: boolean } | null)?.receiveMarketing === true;
   const userReceiveSmsMarketing =
@@ -123,6 +149,22 @@ export function CheckoutClient() {
   const handleShippingUpdate = useCallback((update: ShippingUpdate) => {
     setShipping(update);
   }, []);
+
+  // Digital-only cart: force shipping/tax to zero (stub path doesn't run form's useEffect)
+  useEffect(() => {
+    if (!isDigitalOnly) return;
+    handleShippingUpdate({
+      shippingCents: 0,
+      shippingLabel: null,
+      shippingFree: true,
+      shippingLoading: false,
+      canShipToCountry: true,
+      shippingSpeed: "standard",
+      taxCents: 0,
+      taxNote: null,
+      customsDutiesNote: null,
+    });
+  }, [isDigitalOnly, handleShippingUpdate]);
 
   const {
     shippingCents,
@@ -209,6 +251,8 @@ export function CheckoutClient() {
     };
   }, [items, shippingCents, taxCents, user?.id, isLoggedIn, userReceiveMarketing, userReceiveSmsMarketing, appliedCoupon]);
 
+  const hasEsimInCart = items.some((item) => item.digital === true);
+
   const discountCents = appliedCoupon?.discountCents ?? 0;
   const totalCents =
     Math.round(subtotal * 100) - discountCents + shippingCents + taxCents;
@@ -286,21 +330,29 @@ export function CheckoutClient() {
         <div className="grid gap-8 pt-4 sm:grid-cols-[1fr,340px] md:grid-cols-[1fr,380px] lg:grid-cols-[1fr,400px]">
           {/* Left: contact, address, shipping method, payment, place order + policy links */}
           <div className="min-w-0 space-y-6 sm:col-start-1">
-            <ShippingAddressForm
-              ref={shippingFormRef}
-              countryOptions={COUNTRY_OPTIONS}
-              items={items}
-              subtotal={subtotal}
-              appliedCoupon={appliedCoupon}
-              selectedCountry={selectedCountry}
-              user={user}
-              isLoggedIn={isLoggedIn}
-              userReceiveMarketing={userReceiveMarketing}
-              userReceiveSmsMarketing={userReceiveSmsMarketing}
-              authPending={authPending}
-              validationErrors={validationErrors}
-              onShippingUpdate={handleShippingUpdate}
-            />
+            {isDigitalOnly && isLoggedIn ? (
+              <DigitalOnlyStubRef
+                ref={shippingFormRef}
+                user={user ? { email: user.email } : null}
+              />
+            ) : (
+              <ShippingAddressForm
+                ref={shippingFormRef}
+                countryOptions={COUNTRY_OPTIONS}
+                items={items}
+                subtotal={subtotal}
+                appliedCoupon={appliedCoupon}
+                selectedCountry={selectedCountry}
+                user={user}
+                isLoggedIn={isLoggedIn}
+                userReceiveMarketing={userReceiveMarketing}
+                userReceiveSmsMarketing={userReceiveSmsMarketing}
+                authPending={authPending}
+                validationErrors={validationErrors}
+                onShippingUpdate={handleShippingUpdate}
+                emailOnly={isDigitalOnly}
+              />
+            )}
 
             <PaymentMethodSection
               buildOrderPayload={buildOrderPayload}
@@ -315,6 +367,7 @@ export function CheckoutClient() {
               navigatingToPay={navigatingToPay}
               setNavigatingToPay={setNavigatingToPay}
               onCryptoTotalLabelChange={setCryptoTotalLabel}
+              hasEsimInCart={hasEsimInCart}
             />
           </div>
           {/* Right: Your order only — sticky offset below header (max-h-24) so header doesn't overlap */}

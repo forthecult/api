@@ -3,6 +3,8 @@
  *
  * Called from every payment confirmation path (Stripe webhook, Solana Pay,
  * ETH Pay, BTCPay, TON Pay) following the same pattern as Printful/Printify.
+ * After provisioning, sends an activation email to the customer; for guests,
+ * includes a signup link so they can create an account.
  */
 
 import { eq } from "drizzle-orm";
@@ -14,6 +16,7 @@ import {
   purchaseEsimPackage,
   getMyEsims,
 } from "~/lib/esim-api";
+import { sendEsimActivationEmail } from "~/lib/send-esim-activation-email";
 
 export type EsimFulfillmentResult = {
   success: boolean;
@@ -42,6 +45,12 @@ export async function fulfillEsimOrder(
   orderId: string,
 ): Promise<EsimFulfillmentResult> {
   try {
+    const [order] = await db
+      .select({ email: ordersTable.email, userId: ordersTable.userId })
+      .from(ordersTable)
+      .where(eq(ordersTable.id, orderId))
+      .limit(1);
+
     // Find all pending eSIM orders linked to this order
     const esimOrders = await db
       .select()
@@ -51,6 +60,8 @@ export async function fulfillEsimOrder(
     if (esimOrders.length === 0) {
       return { success: true }; // Nothing to fulfill
     }
+
+    const activationItems: { packageName: string; activationLink: string | null }[] = [];
 
     for (const esimOrder of esimOrders) {
       // Skip if already fulfilled
@@ -119,6 +130,10 @@ export async function fulfillEsimOrder(
           })
           .where(eq(esimOrdersTable.id, esimOrder.id));
 
+        activationItems.push({
+          packageName: esimOrder.packageName,
+          activationLink,
+        });
         console.log(
           `eSIM provisioned for esim_order ${esimOrder.id}: esimId=${esimId}, status=${simApplied ? "active" : "processing"}`,
         );
@@ -142,6 +157,21 @@ export async function fulfillEsimOrder(
         updatedAt: new Date(),
       })
       .where(eq(ordersTable.id, orderId));
+
+    // Send activation email to customer (guest = no userId; include signup CTA for them)
+    const email = order?.email?.trim();
+    if (email && activationItems.length > 0) {
+      try {
+        await sendEsimActivationEmail({
+          to: email,
+          orderId,
+          items: activationItems,
+          isGuest: order?.userId == null,
+        });
+      } catch (emailErr) {
+        console.error("[fulfillEsimOrder] Failed to send activation email:", emailErr);
+      }
+    }
 
     return { success: true, esimOrderId: esimOrders[0]?.id };
   } catch (error) {

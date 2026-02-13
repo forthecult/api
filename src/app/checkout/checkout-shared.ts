@@ -202,6 +202,16 @@ export const SHIPPING_POLICY_CONTENT =
 export const REFUND_POLICY_SUMMARY =
   "We want you to be happy with your purchase. You have 30 days from delivery to request a return; items must be unworn/unused, with tags and original packaging. Contact us first for a return label. Refunds are processed within 10 business days after we receive and inspect your return. EU/UK: 14-day right to cancel for any reason.";
 
+/** Short eSIM refund rules for checkout popup when cart contains eSIM. */
+export const ESIM_REFUND_POPUP_ITEMS = [
+  "Instant refund only for verified technical/install or carrier signal failure; eSIM must not be activated and have no data use.",
+  "Once activated or any data used, eSIM is non-refundable.",
+  "Unused eSIMs: refund request within 30 days of purchase only.",
+  "No refund for carrier outages, country shutdowns, or local regulations.",
+  "Vodafone & O2: valid only in supported countries; use outside = disabled, no refund.",
+  "Plans with Voice and/or SMS: always non-refundable.",
+] as const;
+
 export const PRIVACY_POLICY_SUMMARY =
   "Your privacy matters to us. We collect only what we need—contact and account details, order and shipping info, and basic usage data for security. We do not sell your data or use it for targeted advertising. We use only essential cookies (sign-in, cart, security). You have rights to access, correct, delete, or port your data.";
 

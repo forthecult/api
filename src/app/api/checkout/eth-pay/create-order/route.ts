@@ -5,6 +5,7 @@ import { auth } from "~/lib/auth";
 import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   buildOrderErrorMessage,
+  createEsimOrderRecordsForOrder,
   insertOrder,
   insertOrderItems,
   postOrderBookkeeping,
@@ -334,6 +335,14 @@ export async function POST(request: NextRequest) {
       couponResult,
       emailMarketingConsent,
       smsMarketingConsent,
+    });
+
+    // ── eSIM order records (for cart items with esimPackageId) ──────────
+    await createEsimOrderRecordsForOrder({
+      orderId,
+      userId: userIdVal,
+      paymentMethod: "eth_pay",
+      items: validatedItems,
     });
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour

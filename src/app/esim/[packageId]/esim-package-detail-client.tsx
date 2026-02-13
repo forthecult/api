@@ -2,23 +2,36 @@
 
 import {
   ArrowLeft,
+  CreditCard,
   Globe,
   Loader2,
   Signal,
   Smartphone,
+  Wallet,
   Wifi,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useCurrentUser } from "~/lib/auth-client";
+import { useCart } from "~/lib/hooks/use-cart";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
+import { Input } from "~/ui/primitives/input";
+import { Label } from "~/ui/primitives/label";
 import { Separator } from "~/ui/primitives/separator";
+
+type PaymentCategory = "card" | "paypal" | "crypto";
+type CryptoOption = "solana_pay" | "eth_pay" | "btcpay" | "ton_pay";
+const CRYPTO_OPTIONS: { value: CryptoOption; label: string }[] = [
+  { value: "solana_pay", label: "Solana" },
+  { value: "eth_pay", label: "Ethereum" },
+  { value: "btcpay", label: "Bitcoin" },
+  { value: "ton_pay", label: "TON" },
+];
 
 // ---------- Types ----------
 
@@ -62,12 +75,15 @@ export function EsimPackageDetailClient({
 }: {
   packageId: string;
 }) {
-  const router = useRouter();
   const { user } = useCurrentUser();
+  const { addItem, openCart } = useCart();
 
   const [pkg, setPkg] = useState<PackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [guestEmail, setGuestEmail] = useState("");
+  const [paymentCategory, setPaymentCategory] = useState<PaymentCategory>("card");
+  const [cryptoOption, setCryptoOption] = useState<CryptoOption>("solana_pay");
 
   useEffect(() => {
     setLoading(true);
@@ -82,23 +98,35 @@ export function EsimPackageDetailClient({
       .finally(() => setLoading(false));
   }, [packageId]);
 
+  const paymentMethod =
+    paymentCategory === "crypto"
+      ? cryptoOption
+      : paymentCategory === "paypal"
+        ? "paypal"
+        : "stripe";
+
   const handlePurchase = useCallback(async () => {
-    if (!user) {
-      // Use callbackUrl so after sign-in they return to this eSIM page to complete purchase
-      router.push(`/login?callbackUrl=${encodeURIComponent(`/esim/${packageId}`)}`);
+    if (!pkg) return;
+    const email = user?.email ?? guestEmail.trim();
+    if (!email) {
+      toast.error("Please enter your email address.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("Please enter a valid email address.");
       return;
     }
 
     setPurchasing(true);
     try {
-      // Step 1: Create the pending order + eSIM order record (card/PayPal only for now)
       const orderRes = await fetch("/api/esim/purchase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           packageId,
-          packageType: pkg?.package_type ?? "DATA-ONLY",
-          paymentMethod: "stripe",
+          packageType: pkg.package_type ?? "DATA-ONLY",
+          paymentMethod,
+          ...(user ? {} : { email: guestEmail.trim() }),
         }),
       });
       const orderData = await orderRes.json();
@@ -109,26 +137,77 @@ export function EsimPackageDetailClient({
 
       const orderId = orderData.data.orderId as string;
 
-      // Step 2: Create Stripe Checkout session and redirect
-      const checkoutRes = await fetch("/api/esim/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId }),
-      });
-      const checkoutData = await checkoutRes.json();
-      if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
-        toast.error(
-          checkoutData.message ?? "Failed to create checkout session.",
-        );
+      if (paymentCategory === "card" || paymentCategory === "paypal") {
+        const checkoutRes = await fetch("/api/esim/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderId,
+            paymentMethod: paymentCategory === "paypal" ? "paypal" : "card",
+          }),
+        });
+        const checkoutData = await checkoutRes.json();
+        if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
+          toast.error(
+            checkoutData.message ?? "Failed to create checkout session.",
+          );
+          return;
+        }
+        window.location.href = checkoutData.data.checkoutUrl;
         return;
       }
-      window.location.href = checkoutData.data.checkoutUrl;
+
+      // Crypto: set up payment details and redirect to checkout page
+      const cryptoRes = await fetch("/api/esim/crypto-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, paymentMethod: cryptoOption }),
+      });
+      const cryptoData = await cryptoRes.json();
+      if (!cryptoData.status) {
+        toast.error(cryptoData.message ?? "Failed to set up crypto payment.");
+        return;
+      }
+      const hash =
+        cryptoOption === "solana_pay"
+          ? "solana"
+          : cryptoOption === "eth_pay"
+            ? "eth"
+            : cryptoOption === "btcpay"
+              ? "bitcoin"
+              : "ton";
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
+      window.location.href = `${baseUrl}/checkout/${orderId}#${hash}`;
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setPurchasing(false);
     }
-  }, [user, router, packageId, pkg?.package_type]);
+  }, [
+    user,
+    pkg,
+    packageId,
+    guestEmail,
+    paymentCategory,
+    cryptoOption,
+  ]);
+
+  const handleAddToCart = useCallback(() => {
+    if (!pkg) return;
+    addItem({
+      id: `esim_${pkg.id}`,
+      name: `eSIM: ${pkg.name}`,
+      price: parseFloat(pkg.price),
+      category: "eSIM",
+      image: "/placeholder.svg",
+      digital: true,
+      esimPackageId: pkg.id,
+      esimPackageType: pkg.package_type ?? "DATA-ONLY",
+    });
+    toast.success("eSIM added to cart");
+    openCart();
+  }, [pkg, addItem, openCart]);
 
   const coverageCountries = pkg?.countries ?? pkg?.romaing_countries ?? [];
 
@@ -375,9 +454,67 @@ export function EsimPackageDetailClient({
                   </div>
                 </div>
 
-                <p className="text-sm text-muted-foreground">
-                  Secure payment by card or PayPal at checkout.
-                </p>
+                {!user && (
+                  <div className="space-y-2">
+                    <Label htmlFor="esim-guest-email">Email</Label>
+                    <Input
+                      id="esim-guest-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      autoComplete="email"
+                      className="w-full"
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>Payment method</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      variant={paymentCategory === "card" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPaymentCategory("card")}
+                    >
+                      <CreditCard className="mr-1 h-3.5 w-3.5" />
+                      Card
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={paymentCategory === "paypal" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPaymentCategory("paypal")}
+                    >
+                      PayPal
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={paymentCategory === "crypto" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setPaymentCategory("crypto")}
+                    >
+                      <Wallet className="mr-1 h-3.5 w-3.5" />
+                      Crypto
+                    </Button>
+                  </div>
+                  {paymentCategory === "crypto" && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      {CRYPTO_OPTIONS.map((opt) => (
+                        <Button
+                          key={opt.value}
+                          type="button"
+                          variant={cryptoOption === opt.value ? "secondary" : "outline"}
+                          size="sm"
+                          onClick={() => setCryptoOption(opt.value)}
+                        >
+                          {opt.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
                 <Button
                   className="w-full"
@@ -395,11 +532,14 @@ export function EsimPackageDetailClient({
                   )}
                 </Button>
 
-                {!user && (
-                  <p className="text-xs text-center text-muted-foreground">
-                    You&apos;ll be asked to sign in before purchase
-                  </p>
-                )}
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  size="lg"
+                  onClick={handleAddToCart}
+                >
+                  Add to Cart
+                </Button>
 
                 <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground space-y-1">
                   <p className="font-medium text-foreground">

@@ -3,9 +3,12 @@
 import { Globe, Loader2, MapPin, Search, Signal, Wifi } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
+import { useCart } from "~/lib/hooks/use-cart";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
@@ -42,13 +45,57 @@ type Package = {
   unlimited?: boolean;
 };
 
+type ValidityFilter = "all" | "7" | "14" | "30" | "30+";
+type DataFilter =
+  | "all"
+  | "1"
+  | "1-5"
+  | "5-10"
+  | "10-25"
+  | "25+"
+  | "unlimited";
+
+function matchesValidity(pkg: Package, filter: ValidityFilter): boolean {
+  if (filter === "all") return true;
+  const days =
+    (pkg.package_validity_unit ?? "day").toLowerCase().startsWith("day")
+      ? pkg.package_validity
+      : pkg.package_validity;
+  if (filter === "7") return days === 7;
+  if (filter === "14") return days === 14;
+  if (filter === "30") return days === 30;
+  if (filter === "30+") return days >= 30;
+  return true;
+}
+
+function matchesData(pkg: Package, filter: DataFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "unlimited") return Boolean(pkg.unlimited);
+  const gb =
+    (pkg.data_unit ?? "GB").toUpperCase() === "GB"
+      ? pkg.data_quantity
+      : pkg.data_quantity / 1024;
+  if (filter === "1") return gb >= 0.5 && gb < 2;
+  if (filter === "1-5") return gb >= 1 && gb < 5;
+  if (filter === "5-10") return gb >= 5 && gb < 10;
+  if (filter === "10-25") return gb >= 10 && gb < 25;
+  if (filter === "25+") return gb >= 25;
+  return true;
+}
+
 // ---------- Sub-components ----------
 
-function PackageCard({ pkg }: { pkg: Package }) {
+function PackageCard({
+  pkg,
+  onAddToCart,
+}: {
+  pkg: Package;
+  onAddToCart?: (pkg: Package) => void;
+}) {
   return (
-    <Link href={`/esim/${pkg.id}`}>
-      <Card className="group h-full transition-all hover:shadow-md hover:border-primary/30">
-        <CardContent className="flex flex-col gap-3 p-5">
+    <Card className="group h-full transition-all hover:shadow-md hover:border-primary/30 flex flex-col">
+      <Link href={`/esim/${pkg.id}`} className="flex flex-col flex-1 min-h-0">
+        <CardContent className="flex flex-col gap-3 p-5 flex-1">
           <div className="flex items-start justify-between gap-2">
             <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
               {pkg.name}
@@ -82,8 +129,23 @@ function PackageCard({ pkg }: { pkg: Package }) {
             </span>
           </div>
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+      {onAddToCart && (
+        <div className="px-5 pb-5 pt-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={(e) => {
+              e.preventDefault();
+              onAddToCart(pkg);
+            }}
+          >
+            Add to Cart
+          </Button>
+        </div>
+      )}
+    </Card>
   );
 }
 
@@ -149,7 +211,45 @@ function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
 
 // ---------- Main Component ----------
 
+const VALIDITY_OPTIONS: { value: ValidityFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "7", label: "7 days" },
+  { value: "14", label: "14 days" },
+  { value: "30", label: "30 days" },
+  { value: "30+", label: "30+ days" },
+];
+
+const DATA_OPTIONS: { value: DataFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "1", label: "1 GB" },
+  { value: "1-5", label: "1-5 GB" },
+  { value: "5-10", label: "5-10 GB" },
+  { value: "10-25", label: "10-25 GB" },
+  { value: "25+", label: "25+ GB" },
+  { value: "unlimited", label: "Unlimited" },
+];
+
+function parseValidity(s: string | null): ValidityFilter {
+  if (s === "7" || s === "14" || s === "30" || s === "30+") return s;
+  return "all";
+}
+
+function parseData(s: string | null): DataFilter {
+  if (
+    s === "1" ||
+    s === "1-5" ||
+    s === "5-10" ||
+    s === "10-25" ||
+    s === "25+" ||
+    s === "unlimited"
+  )
+    return s;
+  return "all";
+}
+
 export function EsimStorePage() {
+  const searchParams = useSearchParams();
+  const { addItem, openCart } = useCart();
   const [activeTab, setActiveTab] = useState("countries");
   const [countries, setCountries] = useState<Country[]>([]);
   const [continents, setContinents] = useState<Continent[]>([]);
@@ -162,6 +262,12 @@ export function EsimStorePage() {
   const [packageType, setPackageType] = useState<
     "DATA-ONLY" | "DATA-VOICE-SMS"
   >("DATA-ONLY");
+  const [filterValidity, setFilterValidity] = useState<ValidityFilter>(
+    () => parseValidity(searchParams.get("validity")),
+  );
+  const [filterData, setFilterData] = useState<DataFilter>(() =>
+    parseData(searchParams.get("data")),
+  );
 
   // Fetch countries
   useEffect(() => {
@@ -254,6 +360,33 @@ export function EsimStorePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageType]);
 
+  // Sync filter to URL
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (filterValidity === "all") params.delete("validity");
+    else params.set("validity", filterValidity);
+    if (filterData === "all") params.delete("data");
+    else params.set("data", filterData);
+    const next = params.toString();
+    const current = searchParams.toString();
+    if (next !== current) {
+      window.history.replaceState(
+        null,
+        "",
+        next ? `${window.location.pathname}?${next}` : window.location.pathname,
+      );
+    }
+  }, [filterValidity, filterData, searchParams]);
+
+  // Client-side filter packages by validity and data
+  const filteredPackages = useMemo(
+    () =>
+      packages.filter(
+        (pkg) => matchesValidity(pkg, filterValidity) && matchesData(pkg, filterData),
+      ),
+    [packages, filterValidity, filterData],
+  );
+
   // Filter countries by search
   const filteredCountries = useMemo(
     () =>
@@ -270,6 +403,24 @@ export function EsimStorePage() {
     setSelectedContinent(null);
     setPackages([]);
   };
+
+  const handleAddToCart = useCallback(
+    (pkg: Package) => {
+      addItem({
+        id: `esim_${pkg.id}`,
+        name: `eSIM: ${pkg.name}`,
+        price: parseFloat(pkg.price),
+        category: "eSIM",
+        image: "/placeholder.svg",
+        digital: true,
+        esimPackageId: pkg.id,
+        esimPackageType: pkg.package_type ?? "DATA-ONLY",
+      });
+      toast.success("eSIM added to cart");
+      openCart();
+    },
+    [addItem, openCart],
+  );
 
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -310,7 +461,7 @@ export function EsimStorePage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); clearSelection(); }}>
+      <Tabs value={activeTab} onValueChange={(v: string) => { setActiveTab(v); clearSelection(); }}>
         <TabsList className="mx-auto mb-6">
           <TabsTrigger value="countries">
             <MapPin className="mr-1 h-4 w-4" />
@@ -377,11 +528,57 @@ export function EsimStorePage() {
               {loading ? (
                 <LoadingSpinner text="Loading packages..." />
               ) : packages.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {packages.map((pkg) => (
-                    <PackageCard key={pkg.id} pkg={pkg} />
-                  ))}
-                </div>
+                <>
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-muted-foreground">Filter:</span>
+                    <select
+                      value={filterValidity}
+                      onChange={(e) =>
+                        setFilterValidity(e.target.value as ValidityFilter)
+                      }
+                      className={cn(
+                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                      )}
+                      aria-label="Filter by validity"
+                    >
+                      {VALIDITY_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={filterData}
+                      onChange={(e) =>
+                        setFilterData(e.target.value as DataFilter)
+                      }
+                      className={cn(
+                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                      )}
+                      aria-label="Filter by data"
+                    >
+                      {DATA_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filteredPackages.map((pkg) => (
+                      <PackageCard
+                        key={pkg.id}
+                        pkg={pkg}
+                        onAddToCart={handleAddToCart}
+                      />
+                    ))}
+                  </div>
+                  {filteredPackages.length === 0 && (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No packages match the selected filters.
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="py-16 text-center text-muted-foreground">
                   No {packageType === "DATA-VOICE-SMS" ? "Data+Voice+SMS" : "data"} packages available for{" "}
@@ -417,11 +614,57 @@ export function EsimStorePage() {
               {loading ? (
                 <LoadingSpinner text="Loading packages..." />
               ) : packages.length > 0 ? (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {packages.map((pkg) => (
-                    <PackageCard key={pkg.id} pkg={pkg} />
-                  ))}
-                </div>
+                <>
+                  <div className="mb-4 flex flex-wrap items-center gap-3">
+                    <span className="text-sm text-muted-foreground">Filter:</span>
+                    <select
+                      value={filterValidity}
+                      onChange={(e) =>
+                        setFilterValidity(e.target.value as ValidityFilter)
+                      }
+                      className={cn(
+                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                      )}
+                      aria-label="Filter by validity"
+                    >
+                      {VALIDITY_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      value={filterData}
+                      onChange={(e) =>
+                        setFilterData(e.target.value as DataFilter)
+                      }
+                      className={cn(
+                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                      )}
+                      aria-label="Filter by data"
+                    >
+                      {DATA_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>
+                          {o.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    {filteredPackages.map((pkg) => (
+                      <PackageCard
+                        key={pkg.id}
+                        pkg={pkg}
+                        onAddToCart={handleAddToCart}
+                      />
+                    ))}
+                  </div>
+                  {filteredPackages.length === 0 && (
+                    <p className="py-8 text-center text-muted-foreground">
+                      No packages match the selected filters.
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="py-16 text-center text-muted-foreground">
                   No packages available for {selectedContinent.name}.
@@ -436,11 +679,57 @@ export function EsimStorePage() {
           {loading ? (
             <LoadingSpinner text="Loading global packages..." />
           ) : packages.length > 0 ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {packages.map((pkg) => (
-                <PackageCard key={pkg.id} pkg={pkg} />
-              ))}
-            </div>
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-3">
+                <span className="text-sm text-muted-foreground">Filter:</span>
+                <select
+                  value={filterValidity}
+                  onChange={(e) =>
+                    setFilterValidity(e.target.value as ValidityFilter)
+                  }
+                  className={cn(
+                    "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                  )}
+                  aria-label="Filter by validity"
+                >
+                  {VALIDITY_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={filterData}
+                  onChange={(e) =>
+                    setFilterData(e.target.value as DataFilter)
+                  }
+                  className={cn(
+                    "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                  )}
+                  aria-label="Filter by data"
+                >
+                  {DATA_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {filteredPackages.map((pkg) => (
+                  <PackageCard
+                    key={pkg.id}
+                    pkg={pkg}
+                    onAddToCart={handleAddToCart}
+                  />
+                ))}
+              </div>
+              {filteredPackages.length === 0 && (
+                <p className="py-8 text-center text-muted-foreground">
+                  No packages match the selected filters.
+                </p>
+              )}
+            </>
           ) : (
             <p className="py-16 text-center text-muted-foreground">
               No global packages available.

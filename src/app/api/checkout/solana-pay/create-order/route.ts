@@ -6,6 +6,7 @@ import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import { auth } from "~/lib/auth";
 import {
   buildOrderErrorMessage,
+  createEsimOrderRecordsForOrder,
   insertOrder,
   insertOrderItems,
   postOrderBookkeeping,
@@ -173,6 +174,14 @@ export async function POST(request: NextRequest) {
       couponResult,
       emailMarketingConsent,
       smsMarketingConsent,
+    });
+
+    // ── eSIM order records (for cart items with esimPackageId) ──────────
+    await createEsimOrderRecordsForOrder({
+      orderId,
+      userId: userIdVal,
+      paymentMethod: "solana_pay",
+      items: validatedItems,
     });
 
     return NextResponse.json({

@@ -55,6 +55,7 @@ import {
 import { PAYMENT_CONFIG } from "~/app";
 import type { OrderPayload } from "../checkout-shared";
 import {
+  ESIM_REFUND_POPUP_ITEMS,
   paymentButtonClass,
   paymentOptionRowClass,
 } from "../checkout-shared";
@@ -124,6 +125,8 @@ export interface PaymentMethodSectionProps {
   navigatingToPay: boolean;
   setNavigatingToPay: (v: boolean) => void;
   onCryptoTotalLabelChange?: (label: string | null) => void;
+  /** When true, refund policy popup includes eSIM-specific rules. */
+  hasEsimInCart?: boolean;
 }
 
 export function PaymentMethodSection({
@@ -139,6 +142,7 @@ export function PaymentMethodSection({
   navigatingToPay,
   setNavigatingToPay,
   onCryptoTotalLabelChange,
+  hasEsimInCart = false,
 }: PaymentMethodSectionProps) {
   const router = useRouter();
 
@@ -1409,6 +1413,21 @@ export function PaymentMethodSection({
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Refunds processed within <strong>10 business days</strong> after inspection</li>
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />EU/UK customers: 14-day right to cancel for any reason</li>
                   </ul>
+                  {hasEsimInCart ? (
+                    <>
+                      <div className="border-t border-border pt-3">
+                        <p className="mb-2 text-sm font-medium text-foreground">eSIM plans (in your cart)</p>
+                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                          {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
+                            <li key={i} className="flex items-start gap-2">
+                              <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-amber-500/60" aria-hidden />
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  ) : null}
                   <p className="text-sm text-muted-foreground">We want you to love your purchase. If something isn&apos;t right, we&apos;ll make it right.</p>
                 </div>
               }

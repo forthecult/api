@@ -15,19 +15,12 @@ type CheckoutBody = {
  * POST /api/esim/checkout
  *
  * Creates a Stripe Checkout session for an existing eSIM order.
- * Returns the Stripe checkout URL. After payment, the Stripe webhook
- * handles fulfillment (provisioning the eSIM from the reseller API).
+ * No auth required: if the order has a userId, only that user can checkout;
+ * otherwise (guest order) anyone with the orderId can proceed.
  */
 export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { status: false, message: "Authentication required" },
-        { status: 401 },
-      );
-    }
-
     const body = (await request.json()) as CheckoutBody;
     const { orderId, paymentMethod } = body;
 
@@ -38,14 +31,21 @@ export async function POST(request: Request) {
       );
     }
 
-    // Verify order exists and belongs to user
     const [order] = await db
       .select()
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
       .limit(1);
 
-    if (!order || order.userId !== user.id) {
+    if (!order) {
+      return NextResponse.json(
+        { status: false, message: "Order not found" },
+        { status: 404 },
+      );
+    }
+
+    // If order is tied to a user, only that user can checkout
+    if (order.userId != null && user?.id !== order.userId) {
       return NextResponse.json(
         { status: false, message: "Order not found" },
         { status: 404 },
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       metadata: {
         orderId,
         esimOrderId: esimOrder.id,
-        userId: user.id,
+        ...(user?.id ? { userId: user.id } : {}),
         isEsim: "true",
         orderItems: JSON.stringify([
           {
