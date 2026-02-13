@@ -4,10 +4,7 @@ Lifestyle brand
 
 CHANNELS
 - Web / mobile
-	URL ideas:
-	- forthecult.store -> taken, need something else
-	- forthecult.store -> good play on words for pump.fun
-	- culturevibe.store (although culturevibes.store is taken
+	URL ideas: forthecult.store
 - AI
 - X
 - TikTok
@@ -20,7 +17,9 @@ REVENUE MODEL
 4) Referral fees
 
 PRODUCTS
-High quality products that promote cultural trends, memes, wellness, longevity, technology (futurism), integrating current trends (memes) and cultural icons.
+High quality products that we want ourselves. Products that improve health, autonomy, and culture.
+
+Product ideas:
 
 *Food*
 - Coffee
@@ -70,26 +69,35 @@ Alice
 	- CULT token holders can ask Alice to create a new product
 	- Integrated into telegram, Discord, and X
 	
-PAYMENT
+PAYMENT Methods
 
-*Solana Pay*
-	- SOL, stablecoins, SPLs, & CULT
-*BTCPay*
-	- BTC, DOGE, XMR, 
+Bitcoin (BTCPay Server)
+Bitcoin Lightning Network
+Dogecoin
+Monero
+Stablecoins (EVM, tron, sol networks)
+Ethereum
+EVMs (Base, Arbitrum, Polygon, BNB)
+Solana (Solana Pay)
+SPL tokens
+CULT token
+SUI
+TON
+Credit / debit card
 
-*EVM*
+
 	
 TECHNOLOGY
 Native Web3 integration and privacy features
 
 	- Sign up optional
-	- Sign up / login with wallet or email address
+	- Sign up / login with wallet, email, telegram, Discord, X
 	- Instant refund (stablecoin) if item not shipped yet
 	- Customer data can be downloaded, stored locally (browser), and/or removed from central database (after item has shipped) (long-term goal)
 
 *Frontend*
 - React
-- Host: Github?
+- Host: Railway
 - Better Auth
 - Libraries
 	- WEB3:
@@ -106,13 +114,13 @@ Native Web3 integration and privacy features
 
 *Backend*
 - Drizzle PostgresSQL
-- Host: Needs research
+- Host: Supabase
 - Uploadthing
 
 *AI*
 - LLM: Venice
-- Lang? Eliza?
-- Host: Needs research
+- Openclaw
+- Host: Railway, might need changing
 
 *EMAIL*
 - Resend
@@ -123,9 +131,11 @@ Host: Needs research
 
 CUSTOMER PROFILE
 
-First customer: AI that purchases things for owners
+Agentic AI
+- Gifts for human
+- eSIMs, data, products for self
 
-Second customer:
+Human customer:
 Age: 18 - 50
 
 city dwellers, technology enthusiasts, CT,  men (mostly), women,
@@ -163,7 +173,7 @@ TOKEN MECHANICS
 - token burn
 
 *Staking*
-- Receive 10% profits?
+- Receive 5% creator fees
 - View sales data
 - Product input
 
@@ -258,7 +268,6 @@ Features:
 - Spend it on cool shit
 - Get cool shit early
 - Regular token burns
-- Hold 25M tokens for free shipping
 - Gating on Discord / Telegram
 - Access to store sales
 - Free shipping
@@ -284,11 +293,10 @@ First, let's break market into three broad segments:
 -   Crypto bros (probably your biggest market, currently)
 -   Normies (no coiners)
 
-I think your market will likely die soonish because everyone knows crypto now. The normies are where the real profit is. My ideas target the normie market through an encompassing narrative that brings them closer to crypto OGs, without making the narrative about crypto. Crypto becomes the means, rather than the end.
+Target the normie market through an encompassing narrative that brings them closer to crypto OGs, without making the narrative about crypto. Crypto becomes the means, rather than the end.
 
-I believe this can be done by shifting toward a lifestyle brand. The narrative weaves wellness with personal and financial freedom. This can be done by utilizing the cross-sections of decentralisation, open-source, privacy, longevity, health.
+The narrative weaves wellness with personal and financial freedom. This can be done by utilizing the cross-sections of decentralisation, open-source, privacy, longevity, health.
 
-The result is a consistent, trusted brand that can withstand market changes. You might be wondering how this all fits together as it relates to your brand, hopefully the examples below start putting it together.
 
 The most important aspect is consistency in the curation of the products, they must stick to the core values mentioned above, without compromise.
 
@@ -309,7 +317,7 @@ For example, starting with the crypto side:
 -   Add crypto swap widget on website for instant crypto<->crypto conversion, get referral fee (crypto markets)
     
 -   Add carefully curated decentralized crypto services for the referral revenue
--   High quality phones with GrapheneOS, open source and private
+-   High quality phones with GrapheneOS, open source
 -   Referrals to privacy enhancing tools (e.g. https://joindeleteme.com/)
 
 
@@ -335,9 +343,8 @@ The health and wellness products are where everything comes together as a lifest
 -   Go phygital. Clothes are tokenized, and in some cases offer limited runs and scarcity
 
 -   High quality shoes and apparel (https://www.earthrunners.com/)
--   Travel bags, with security and durability in mind (https://pacsafe.com/)
--   Decentralized water filter
--   Atmospheric water generator (https://www.spoutwater.com/)
+-   Travel bags, with security and durability in mind
+-   Atmospheric water generator
 -   Red lights (red light therapy)
 -   Foodstuff related to health and wellness (well sourced, quality coffee)
 

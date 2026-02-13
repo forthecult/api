@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Culture is a lifestyle brand for the age of human flourishing. We curate premium products that protect what matters most: your health, your privacy, your assets, and your autonomy. From toxin-free apparel to hardware wallets, from decentralized water filters to AI-native commerce—every product we offer is chosen to help you thrive in an increasingly complex world.
+Culture is a lifestyle brand for the age of human flourishing. We curate premium products that protect what matters most: your health and your autonomy. From toxin-free apparel to hardware wallets, from decentralized water filters to AI-native commerce—every product we offer is chosen to help you thrive in an increasingly complex world.
 
 We are not just a store. We are a movement toward intentional living.
 
@@ -14,7 +14,7 @@ We are not just a store. We are a movement toward intentional living.
 
 ## Our Origin Story
 
-Culture began in 2015 as a small store serving the early Bitcoin community. We sold hardware wallets, crypto-themed apparel, and physical bitcoins to cypherpunks, developers, and early adopters who believed in a decentralized future.
+Culture began in 2015 as a small store serving the early crypto community. We sold hardware wallets, crypto-themed apparel, and other merchandize to cypherpunks, developers, and early adopters who believed in a decentralized future.
 
 As the movement grew, we expanded our mission beyond crypto merchandise to include products aligned with decentralization principles: water filters that don't rely on municipal systems, travel gear designed for digital nomads, VR headsets enabling new forms of human connection.
 
@@ -42,9 +42,9 @@ Culture exists to offer an alternative.
 
 ## Our Philosophy
 
-### The Four Pillars of Culture
+### The Pillars of Culture
 
-**1. PROTECT YOUR HEALTH**
+**HEALTH**
 
 The products you interact with daily—clothing against your skin, water you drink, food you consume—directly impact your wellbeing. We curate products that enhance health rather than compromise it:
 
@@ -53,8 +53,20 @@ The products you interact with daily—clothing against your skin, water you dri
 - Carefully sourced coffee and food products
 - Red light therapy devices backed by research
 - Products free from known carcinogens and endocrine disruptors
+- 
+**AUTONOMY**
 
-**2. PROTECT YOUR PRIVACY**
+Personal responsibility should be empowering. Technology should expand your capabilities, not constrain them.
+
+- Smart home devices, open source, preserve your privacy
+- Hardware wallets from trusted manufacturers
+- GrapheneOS phones (open-source, secure)
+- eSIMs for location-independent connectivity
+- VR/AR headsets for new frontiers of human experience
+- Financial sovereignty
+
+
+**DATA PRIVACY**
 
 Your data belongs to you. Period.
 
@@ -64,27 +76,6 @@ Your data belongs to you. Period.
 - Full data portability: download, store locally, or delete
 - Crypto payment options for those who value financial privacy
 
-**3. PROTECT YOUR ASSETS**
-
-Financial sovereignty is fundamental to freedom.
-
-- Hardware wallets from trusted manufacturers (Trezor, Ledger)
-- Accept Bitcoin, Ethereum, Solana, and 50+ cryptocurrencies
-- Smart contracts for trustless transactions
-- No intermediaries holding your funds
-
-**4. PROTECT YOUR AUTONOMY**
-
-Technology should expand your capabilities, not constrain them.
-
-- VPN subscriptions from privacy-respecting providers
-- GrapheneOS phones (open-source, secure)
-- Smart home devices that don't spy on you
-- eSIMs for location-independent connectivity
-- VR/AR headsets for new frontiers of human experience
-
----
-
 ## Who We Serve
 
 ### Our Primary Customers
@@ -93,10 +84,7 @@ Technology should expand your capabilities, not constrain them.
 Age 25-50. Urban or suburban. Values quality over quantity. Researches purchases before buying. Willing to pay more for products that align with their values. Increasingly skeptical of mainstream narratives around health and technology.
 
 **The AI Agent**
-Yes, you read that correctly. We are building Culture to be natively accessible to AI systems. As AI agents increasingly handle commerce on behalf of humans, we're positioning Culture as the trusted destination for AI-assisted purchasing. Our APIs are designed for machine consumption. Our product data is structured and transparent. We welcome our new robot customers.
-
-**The Crypto Native**
-Our roots. Bitcoin holders, Ethereum developers, Solana degens, and everyone who understands why self-custody matters. They appreciate our payment options and share our values.
+We are building Culture to be natively accessible to AI systems. As AI agents increasingly handle commerce on behalf of humans, we're positioning Culture as the trusted destination for AI-assisted purchasing. Our APIs are designed for machine consumption. Our product data is structured and transparent. We welcome our new robot customers.
 
 **The Wellness Seeker**
 Discovered us through health content. Interested in longevity, biohacking, clean eating, and toxin-free living. May not care about crypto but deeply cares about what they put in and on their bodies.
@@ -135,12 +123,12 @@ Every product in our catalog must pass our curation criteria:
 - Premium coffee (single-origin, tested for mycotoxins)
 - Dark chocolate (high cacao, ethically sourced)
 
-### Technology & Privacy
-- Hardware wallets (Trezor, Ledger)
+### Technology
+- Hardware wallets (Trezor)
 - VPN subscriptions
 - eSIM cards
 - Solana phones
-- Smart home devices (privacy-respecting)
+- Smart home devices (open source)
 - VR/AR headsets
 
 ### Lifestyle & Travel
@@ -152,7 +140,6 @@ Every product in our catalog must pass our curation criteria:
 ### Future Categories (Roadmap)
 - GrapheneOS phones
 - DePIN nodes (Helium, etc.)
-- Atmospheric water generators
 - Biohacking test kits
 - 3D printed products
 
@@ -162,24 +149,25 @@ Every product in our catalog must pass our curation criteria:
 
 Culture is powered by the CULT token on Solana. Token holders are more than customers—they're stakeholders in our mission.
 
-### Token Benefits
+### Become a CULT Member
 
-- **Free Shipping**: Hold 25M CULT for free worldwide shipping
+Stake CULT for membership benefits that range based on your stake. They include
+
+- **Free Shipping and discounted shipping**
 - **Early Access**: First access to limited-edition drops
 - **Exclusive Products**: Some items only available to token holders
-- **Governance**: Vote on new product additions
-- **Revenue Share**: Stakers receive portion of store profits
+- **Voting**: Vote on new product additions
 - **Community Access**: Gated Discord and Telegram channels
 
 ### Token Economics
 
-- **Transaction Fee Revenue**: 65% of CULT trading fees flow to operations
+- **Transaction Fee Revenue**: 65% of CULT creator fees flow to operations
 - **Regular Burns**: Deflationary mechanism to reward holders
 - **Creator Fees Distribution**:
   - 5% burned
   - 5% to stakers
   - 10% to inventory and artwork
-  - 10% to charity/research
+  - 5% to charity/research
   - Remainder to operations and AI development
 
 ---
@@ -209,7 +197,7 @@ We believe AI agents will increasingly handle commerce for humans. When your AI 
 
 ---
 
-## Privacy Commitment
+## Autonomy Commitment
 
 ### What We Don't Do
 - No Shopify or platforms that sell customer data
@@ -247,13 +235,13 @@ We believe AI agents will increasingly handle commerce for humans. When your AI 
 > "We've been accepting Bitcoin since 2015. Self-sovereignty isn't just for your money—it's for your entire life."
 
 **For General Audiences:**
-> "Premium products that protect your health, your privacy, and your future. Welcome to Culture."
+> "Premium products that protect your health, your autonomy, and your future. Welcome to Culture."
 
 ### Taglines (Options)
+- "Are you in?"
 - "Products for Human Flourishing"
 - "Live Intentionally"
 - "The Age of Decentralization"
-- "Premium Products. Protected Privacy. Principled Living."
 - "For Those Who Choose Carefully"
 
 ---
@@ -275,7 +263,7 @@ We believe AI agents will increasingly handle commerce for humans. When your AI 
 
 ### Blog Topics
 - Health: Toxins in everyday products, water quality research, fabric safety
-- Privacy: Data sovereignty, VPN comparisons, digital hygiene
+- Data sovereignty, VPN comparisons, digital hygiene
 - Technology: Hardware wallet tutorials, DePIN explainers, AI developments
 - Lifestyle: Intentional living, minimalism, digital nomad guides
 - Crypto: Market education, project reviews, payment tutorials
@@ -324,9 +312,9 @@ We're not building a store. We're building the commercial infrastructure for hum
 
 ## Closing Statement
 
-A decade ago, we sold Bitcoin t-shirts to cypherpunks.
+A decade ago, we sold crypto t-shirts to cypherpunks.
 
-Today, we're a lifestyle brand that embodies everything that movement stood for: sovereignty over your money, your data, your health, and your future.
+Today, we're a lifestyle brand that embodies everything that movement stood for: autonomy, wellness and your future.
 
 The products have evolved. The mission hasn't.
 

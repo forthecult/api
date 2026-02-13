@@ -120,7 +120,7 @@ export function FooterBottom() {
       >
         {fiatPrice != null && currentCrypto && (
           <span
-            className={`flex items-center gap-1.5 font-medium ${selectedCrypto === "SOL" || selectedCrypto === "PUMP" ? "font-semibold" : ""}`}
+            className={`flex items-center gap-1.5 font-mono-crypto font-medium ${selectedCrypto === "SOL" || selectedCrypto === "PUMP" ? "font-semibold" : ""}`}
             style={{ color: CRYPTO_COLORS[selectedCrypto] }}
           >
             <Image

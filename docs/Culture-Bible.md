@@ -2,17 +2,18 @@ Culture Brand Bible
 Internal Training Document | February 2026
 
 1. What Culture Is
-Culture is a lifestyle brand selling premium products that promote health, autonomy, and human flourishing. We are plugged into the latest trends, building off the popular Pump Fun memecoin launchpad that is dialed into the latest trends, and sometimes even creates them.
+Culture is a lifestyle brand selling quality products that promote health, autonomy, and human flourishing. We are plugged into the latest trends, building off the popular Pump Fun memecoin launchpad that is dialed into the latest trends, and sometimes even creates them.
 
 1. Origin
-Culture started in 2015 selling hardware wallets and Bitcoin apparel to the early crypto community. Over a decade, we learned what that community values: self-sovereignty, privacy, quality, and skepticism of centralized systems. We shut down in 2019. Now, we no longer see a need to start a business that promotes crypto because everyone knows what crypto is. We are building a brand where crypto is a means, rather than an ends.
+Culture started in 2015 selling crypto merchandise from apparel to hardware wallets to the early crypto community. Over a decade, we learned what that community values: self-sovereignty, quality, and skepticism of centralized systems. We shut down in 2019. Now, we no longer see a need to start a business that promotes crypto because everyone knows what crypto is. We are building a lifestyle brand where crypto is a means, rather than an ends.
 
-We think a lifestyle brand that sells quality products great for health, longevity, and futurists.
-
-1. The Four Pillars
+1. The Pillars
 Every product we sell must serve at least one pillar. Most serve multiple.
-Protect Your Health
-The products touching your body affect your wellbeing. We sell:
+
+Health
+The products you put in your body and touching your body affect your wellbeing, happiness, longevity.
+
+We sell:
 
 Apparel made from natural fibers only (organic cotton, bamboo, alpaca)
 No polyester, no cancer causing synthetic blends
@@ -21,38 +22,22 @@ Red light therapy devices
 Premium coffee (single-origin, mycotoxin-tested)
 Dark chocolate (high cacao, ethically sourced)
 Food stuffs that are proven to be good for you long-term
+Natural health products (jojoba oil rather than lotions)
 
 Why no synthetics? Polyester and synthetic fabrics are linked to endocrine disruption and increased cancer risk. Natural fibers breathe better, last longer, and don't shed microplastics.
 
-Protect Your Privacy
-Your data belongs to you.
-
-No mandatory account creation
-No third-party analytics or trackers
-Customer data shared only with shipping carriers
-Full data export and deletion on request
-Crypto payment options for financial privacy
-
-What we don't use: Shopify, Google Analytics, Facebook Pixel, or any platform that monetizes customer data.
-Protect Your Assets
-Financial sovereignty requires proper tools.
-
-Hardware wallets (Trezor, Ledger)
-Accept 50+ cryptocurrencies via Solana Pay, BTCPay, and EVM chains
-Smart contract-based transactions
-No intermediaries holding funds
-
-Protect Your Autonomy
-Technology should expand capability, not constrain it.
+Autonomy
+Personal responsibility should be empowering. Technology should expand capability, not constrain it.
 
 VPN subscriptions (privacy-respecting providers only)
 eSIM cards for location independence
 GrapheneOS phones (open-source, secure)
 Smart home devices that don't require cloud accounts
 VR/AR headsets
+DeFi
 
 
-4. Product Curation Standards
+1. Product Curation Standards
 Before adding any product, it must pass all five criteria:
 Does it meaningfully improve the customer's life?
 Does it serve at least one pillar?
@@ -81,9 +66,10 @@ Red light therapy panels
 Premium coffee
 Dark chocolate
 
-Technology & Privacy
+Technology
 
-Hardware wallets (Trezor, Ledger)
+Smart home devices
+Hardware wallets (Trezor)
 VPN subscriptions
 eSIM cards
 Solana phones
@@ -98,38 +84,36 @@ Planned Additions
 
 GrapheneOS phones
 DePIN nodes (Helium, etc.)
-Atmospheric water generators
-Smart home devices (curated for privacy)
 VR/AR headsets
 Laptops (open-source, repairable)
 Biohacking test kits
 
 
-6. Customer Segments
+1. Customer Segments
 
-New market: AI agents.
+New market: 
+
+AI agents.
 This will be the fastest growing business for us over the next 10 years if we do it right and do it early. AI agents have their own crypto. Are looking for ways to spend it and this gives an opportunity for humans with AI companions to give more utility to their AI by empowering them to purchase and presenting them with high quality products.
 
-Secondary: Intentional Consumers
+Intentional Consumers
 Age 18-50. Urban or suburban with disposable income.. Characteristics:
 
 Early adopters. Technically savvy. Research purchases before buying
 Pay more for quality and values alignment
 Skeptical of mainstream health and tech narratives
-Privacy-conscious
 
 Sub-segments:
 
 Crypto Natives: Our roots. Understand self-custody, appreciate our payment options.
 Wellness Seekers: Care about toxin-free living, longevity, clean eating. May not care about crypto.
-Privacy Advocates: VPN users, GrapheneOS enthusiasts, data minimalists.
 Digital Nomads: Need portable, durable, location-independent products.
 
 
-7. The CULT
+    CULT token
 CULT is our Solana-based token launched on Pump.Fun, a memecoin platform. Holders are stakeholders.
 Holder Benefits
-Hold $250 worth of CULT (at market price) for free worldwide shipping
+Become a member by staking CULT. There are different tiers with different benefits, from free shipping to exclusive products
 CULT holding Exclusive products
 Token-gatedGovernance votes
 Staked CULT Revenue share
@@ -148,30 +132,31 @@ Creator Fee Distribution
 5% burned
 5% to stakers
 10% to inventory and artwork
-10% to charity/research
+5% to charity/research
 Remainder to operations and AI development
 
 
 1. Payment Methods
+Credit/debit card
 Crypto
-Solana Pay: SOL, USDC, USDT, SPL tokens, CULT
-BTCPay: BTC, LTC, XMR, DOGE
+BTC, LTC, XMR, DOGE
+Solana: SOL, USDC, USDT, SPL tokens, CULT
 EVM Chains: ETH, Base, Polygon (USDC, USDT, native tokens)
 Fiat
 Stripe for credit/debit cards
-Pricing Display
+PayPal
 
 Default: USD
 User can toggle to view in BTC, ETH, SOL, or other supported currencies
 Crypto prices update every 60 seconds
 
 
-9. Privacy Commitment
+1. Autonomy Commitment
 
-Accept crypto for financial privacy
+Accept crypto
 Allow guest checkout (no account required)
 Provide full data export
-Delete customer data on request (after order fulfillment)
+Enable delete customer data on request (after order fulfillment)
 Use minimal, self-hosted analytics
 Offer PGP encryption for sensitive communications
 
@@ -197,7 +182,6 @@ Our AI agent, accessible via:
 Website chat
 Discord
 Telegram
-X (Twitter)
 
 Alice can:
 
@@ -241,11 +225,11 @@ Tagline Options
 
 "Products for Human Flourishing"
 "Live Intentionally"
-"Premium Products. Protected Privacy."
+"Premium Products."
 "For Those Who Choose Carefully"
 
 
-12. Messaging by Audience
+1.  Messaging by Audience
 For Crypto Natives
 
 "We've accepted Bitcoin since 2015. Self-sovereignty isn't just for your money—it's for your entire life."
@@ -256,7 +240,8 @@ For Wellness Seekers
 "The clothes you wear, the water you drink—they become part of you. Choose wisely."
 
 Topics: Natural fibers, water filtration, toxin-free living, red light therapy
-For Privacy Advocates
+
+For Privacy Conscious
 
 "Your data is yours. We collect what we need to ship your order. Nothing more."
 
@@ -276,10 +261,9 @@ Water quality: what's actually in your tap
 Red light therapy: what the research says
 Mycotoxins in coffee: how to avoid them
 
-Privacy
+Autonomy
 
 How to audit your digital footprint
-VPN comparison (honest, not sponsored)
 Why we don't use Shopify
 Data minimalism guide
 
@@ -332,7 +316,7 @@ Disclose affiliate relationships
 Keep crypto jargon accessible
 
 
-14. Visual Identity
+1.  Visual Identity
 Photography Style
 
 Clean, minimal backgrounds
@@ -414,7 +398,7 @@ Proof that principled commerce outperforms exploitative commerce
 When evaluating any product, partnership, or decision:
 
 Does it improve someone's life meaningfully?
-Does it align with at least one pillar (health, privacy, assets, autonomy)?
+Does it align with at least one pillar (health, autonomy)?
 Is it premium quality that will last?
 Would we use it ourselves?
 Does it avoid harmful materials and practices?

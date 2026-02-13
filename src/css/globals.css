@@ -93,6 +93,8 @@
 }
 
 @theme inline {
+  /* JetBrains Mono for crypto prices, code, and data values */
+  --font-family-mono-crypto: var(--font-mono-crypto), "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

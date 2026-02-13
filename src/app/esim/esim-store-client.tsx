@@ -15,6 +15,7 @@ import {
   getUnlimitedPlanGroupKey,
 } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
+import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
@@ -196,9 +197,15 @@ function PackageCard({
               )}
             </div>
           )}
-          <div className="mt-auto pt-2 flex items-baseline justify-between border-t">
-            <span className="text-xl font-bold text-primary">${pkg.price}</span>
-            <span className="text-xs text-muted-foreground">
+          <div className="mt-auto pt-2 flex items-start justify-between gap-2 border-t">
+            <div className="flex flex-col gap-0.5">
+              <span className="text-xl font-bold text-primary">${pkg.price}</span>
+              <CryptoPrice
+                usdAmount={Number(pkg.price)}
+                className="text-sm text-muted-foreground"
+              />
+            </div>
+            <span className="text-xs text-muted-foreground shrink-0">
               ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
             </span>
           </div>
@@ -261,11 +268,17 @@ function UnlimitedPlanCard({
         >
           ∞ {baseName}
         </h3>
-        <div className="flex items-baseline gap-2">
-          <span className="text-xl font-bold text-primary">
-            ${selected.price}
-          </span>
-          <span className="text-xs text-muted-foreground">USD</span>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-bold text-primary">
+              ${selected.price}
+            </span>
+            <span className="text-xs text-muted-foreground">USD</span>
+          </div>
+          <CryptoPrice
+            usdAmount={Number(selected.price)}
+            className="text-sm text-muted-foreground"
+          />
         </div>
         {(groupPackages[0]?.package_type === "DATA-VOICE-SMS" ||
           (groupPackages.some((p) => (p.voice_quantity ?? 0) > 0 || (p.sms_quantity ?? 0) > 0))) && (

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import { extractRouterConfig } from "uploadthing/server";
 
 import { SEO_CONFIG } from "~/app";
@@ -37,6 +37,11 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-geist-mono",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono-crypto",
 });
 
 // getPublicSiteUrl() ensures full https:// URL and handles host-only env values (e.g. Railway)
@@ -149,6 +154,7 @@ export default async function RootLayout({
           className={`
             ${geistSans.variable}
             ${geistMono.variable}
+            ${jetbrainsMono.variable}
             min-h-screen bg-white text-neutral-900 antialiased
             selection:bg-primary/20
             dark:bg-neutral-950 dark:text-neutral-100
@@ -174,6 +180,7 @@ export default async function RootLayout({
         className={`
           ${geistSans.variable}
           ${geistMono.variable}
+          ${jetbrainsMono.variable}
           min-h-screen bg-gradient-to-br from-white to-slate-100
           text-neutral-900 antialiased
           selection:bg-primary/80
