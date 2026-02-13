@@ -7,7 +7,13 @@ import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
-import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
+const FeaturedProductsSection = nextDynamic(
+  () =>
+    import("~/app/FeaturedProductsSection").then(
+      (m) => m.FeaturedProductsSection,
+    ),
+  { ssr: false },
+);
 import {
   PageContainer,
   PageSection,

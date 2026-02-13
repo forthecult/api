@@ -41,11 +41,14 @@ export function getClientBaseUrl(): string {
  * Base URL for the agent-facing experience (e.g. ai.forthecult.store).
  * Use for capabilities, for-agents page, and auth instruction links.
  * Set NEXT_PUBLIC_AGENT_APP_URL (e.g. https://ai.forthecult.store) to use a subdomain.
+ * Returns empty string when not configured — callers must handle this.
  */
 export function getAgentBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_AGENT_APP_URL?.trim();
   if (raw && /^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
-  return getPublicSiteUrl().replace(/\/$/, "");
+  // Do NOT fall back to the main site URL — that would cause isAgentSubdomain()
+  // to match every request, rendering the agent layout for the main site.
+  return "";
 }
 
 /** Hostname of the agent app URL (e.g. ai.forthecult.store). Empty if not set. */

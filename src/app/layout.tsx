@@ -116,7 +116,7 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-async function CookieLayoutContent({
+async function CookieCountryProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   let countryCookie: string | null = null;
@@ -128,7 +128,7 @@ async function CookieLayoutContent({
   }
   return (
     <CountryCurrencyProvider initialCountry={countryCookie}>
-      <LayoutShell>{children}</LayoutShell>
+      {children}
     </CountryCurrencyProvider>
   );
 }
@@ -190,21 +190,29 @@ export default async function RootLayout({
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <CartProvider>
             <CryptoCurrencyProvider>
-              <WalletErrorBoundary>
-                <WagmiProvider>
-                  <AuthWalletModalProvider>
-                    <Suspense
-                      fallback={
-                        <CountryCurrencyProvider initialCountry={null}>
+              <Suspense
+                fallback={
+                  <CountryCurrencyProvider initialCountry={null}>
+                    <WalletErrorBoundary>
+                      <WagmiProvider>
+                        <AuthWalletModalProvider>
                           <LayoutShell>{children}</LayoutShell>
-                        </CountryCurrencyProvider>
-                      }
-                    >
-                      <CookieLayoutContent>{children}</CookieLayoutContent>
-                    </Suspense>
-                  </AuthWalletModalProvider>
-                </WagmiProvider>
-              </WalletErrorBoundary>
+                        </AuthWalletModalProvider>
+                      </WagmiProvider>
+                    </WalletErrorBoundary>
+                  </CountryCurrencyProvider>
+                }
+              >
+                <CookieCountryProvider>
+                  <WalletErrorBoundary>
+                    <WagmiProvider>
+                      <AuthWalletModalProvider>
+                        <LayoutShell>{children}</LayoutShell>
+                      </AuthWalletModalProvider>
+                    </WagmiProvider>
+                  </WalletErrorBoundary>
+                </CookieCountryProvider>
+              </Suspense>
             </CryptoCurrencyProvider>
           </CartProvider>
         </ThemeProvider>
