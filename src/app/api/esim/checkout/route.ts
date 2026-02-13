@@ -74,10 +74,13 @@ export async function POST(request: Request) {
     }
 
     const stripe = getStripe();
+    // Derive base URL from the incoming request so Stripe redirects
+    // back to the correct domain (production, preview, or localhost).
+    const reqUrl = new URL(request.url);
     const baseUrl =
-      process.env.NEXT_SERVER_APP_URL ??
       process.env.NEXT_PUBLIC_APP_URL ??
-      "http://localhost:3000";
+      process.env.NEXT_SERVER_APP_URL ??
+      `${reqUrl.protocol}//${reqUrl.host}`;
 
     // Build line item description
     const description = [

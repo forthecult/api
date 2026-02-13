@@ -115,7 +115,11 @@ export async function POST(request: NextRequest) {
     }
 
     const stripe = getStripe();
-    const baseUrl = process.env.NEXT_SERVER_APP_URL ?? "http://localhost:3000";
+    const reqUrl = new URL(request.url);
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ??
+      process.env.NEXT_SERVER_APP_URL ??
+      `${reqUrl.protocol}//${reqUrl.host}`;
 
     if (orderItems.length === 0) {
       return NextResponse.json(

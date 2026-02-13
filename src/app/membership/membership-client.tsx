@@ -191,7 +191,7 @@ const BENEFIT_ROWS: BenefitRow[] = [
     values: { 4: true, 3: true, 2: true, 1: true },
   },
   {
-    label: "Governance Voting",
+    label: "Voting",
     icon: Shield,
     values: { 4: true, 3: true, 2: true, 1: true },
   },
@@ -527,10 +527,6 @@ export function MembershipClient() {
                 MC {formatMarketCap(marketCap)}
               </span>
               <span className="hidden sm:inline text-border">|</span>
-              <span>
-                {stakerCount} staker{stakerCount !== 1 ? "s" : ""}
-              </span>
-              <span className="hidden sm:inline text-border">|</span>
               <span className="text-xs">
                 {pricingBracket}
               </span>
@@ -554,6 +550,212 @@ export function MembershipClient() {
       </section>
 
       <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* --------------------------------------------------------------- */}
+        {/* Stake & Join — below the fold, left card + right benefits */}
+        {/* --------------------------------------------------------------- */}
+        <section id="stake-cta" className="scroll-mt-20 py-16 md:py-20">
+          <div className="grid gap-8 lg:grid-cols-[1fr,1fr] lg:gap-12">
+            {/* Left: Stake card */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+              <div className="border-b bg-muted/30 px-6 py-5">
+                <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
+                  Stake {tokenSymbol} &amp; Join
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Select your tier and duration, then connect your wallet to stake.
+                </p>
+              </div>
+
+              <div className="space-y-5 p-6">
+                {/* Inline tier selector — change tier without scrolling */}
+                <div>
+                  <p className="mb-2 text-sm font-medium text-foreground">
+                    Tier
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {TIERS_DISPLAY.map((tier) => {
+                      const Icon = tier.icon;
+                      const isSelected = selectedTier === tier.id;
+                      return (
+                        <button
+                          key={tier.id}
+                          type="button"
+                          onClick={() => setSelectedTier(tier.id)}
+                          className={cn(
+                            "flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all",
+                            isSelected
+                              ? "border-primary bg-primary/10 text-primary"
+                              : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
+                          {tier.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Duration */}
+                <div>
+                  <p className="mb-2 text-sm font-medium text-foreground">
+                    Staking Duration
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      className={cn(
+                        "rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all",
+                        stakeDuration === "30d"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30",
+                      )}
+                      onClick={() => setStakeDuration("30d")}
+                    >
+                      <span className="font-semibold">30 Days</span>
+                      <span className="block text-xs text-muted-foreground">
+                        Minimum period
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        "relative rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all",
+                        stakeDuration === "12m"
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-muted-foreground/30",
+                      )}
+                      onClick={() => setStakeDuration("12m")}
+                    >
+                      <Badge className="absolute -top-1.5 right-1.5 bg-chart-1 text-[10px] text-white">
+                        Best Value
+                      </Badge>
+                      <span className="font-semibold">12 Months</span>
+                      <span className="block text-xs text-muted-foreground">
+                        14 months eSIM
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="space-y-2 rounded-xl bg-muted/30 p-4">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tokens to Stake</span>
+                    <span className="font-semibold tabular-nums">
+                      {formatTokens(stakeAmount)} {tokenSymbol}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Duration</span>
+                    <span className="font-medium">
+                      {stakeDuration === "30d" ? "30 days" : "12 months"}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedTier > 1 && (() => {
+                  const nextTierPrice = tierPriceMap[selectedTier - 1];
+                  const extraUsd = nextTierPrice
+                    ? nextTierPrice.costUsd - (selectedTierPrice?.costUsd ?? 0)
+                    : 0;
+                  const extraTokens = nextTierPrice
+                    ? nextTierPrice.tokensNeeded - stakeAmount
+                    : 0;
+                  return (
+                    <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                      <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <p className="text-xs font-medium text-foreground">
+                        {extraUsd > 0
+                          ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
+                          : "Upgrade to "}
+                        {TIERS.find((t) => t.id === selectedTier - 1)?.name}
+                        {" — "}
+                        {TIERS.find((t) => t.id === selectedTier - 1)?.benefits.esimDetail}
+                        {" and "}
+                        {TIERS.find((t) => t.id === selectedTier - 1)?.benefits.shippingDetail.toLowerCase()}.
+                      </p>
+                    </div>
+                  );
+                })()}
+
+                <Button
+                  size="lg"
+                  className="w-full gap-2 text-base"
+                  onClick={handleStake}
+                  disabled={stakePending}
+                >
+                  <Wallet className="h-5 w-5" />
+                  {stakePending
+                    ? "Preparing transaction…"
+                    : wallet
+                      ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
+                      : "Connect Wallet & Stake"}
+                </Button>
+                <p className="text-center text-xs text-muted-foreground">
+                  Your tokens remain yours. They are locked in a smart contract
+                  and returned to your wallet when you unstake.
+                </p>
+              </div>
+            </div>
+
+            {/* Right: Benefits for selected tier */}
+            <div className="flex flex-col">
+              <h3 className="mb-4 font-display text-lg font-semibold text-foreground">
+                Your benefits
+              </h3>
+              <div
+                className={cn(
+                  "flex-1 rounded-2xl border border-border bg-card p-6",
+                  selectedTierData.accentBorder,
+                  selectedTierData.accentBg,
+                )}
+              >
+                <div className="mb-4 flex items-center gap-3">
+                  <div
+                    className={cn(
+                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+                      selectedTierData.accentBg,
+                    )}
+                  >
+                    <selectedTierData.icon
+                      className={cn("h-6 w-6", selectedTierData.accent)}
+                    />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-foreground">
+                      {selectedTierData.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedTierData.tagline}
+                    </p>
+                  </div>
+                </div>
+                <ul className="space-y-3 text-sm">
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>
+                      <strong>eSIM:</strong> {selectedTierData.benefits.esimDetail}
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <span>
+                      <strong>Shipping:</strong> {selectedTierData.benefits.shippingDetail}
+                    </span>
+                  </li>
+                  {selectedTierData.benefits.extras.map((extra) => (
+                    <li key={extra} className="flex items-start gap-2">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <span>{extra}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* --------------------------------------------------------------- */}
         {/* How It Works */}
         {/* --------------------------------------------------------------- */}
@@ -1065,200 +1267,6 @@ export function MembershipClient() {
                 </CardDescription>
               </CardContent>
             </Card>
-          </div>
-        </section>
-
-        {/* --------------------------------------------------------------- */}
-        {/* Stake CTA */}
-        {/* --------------------------------------------------------------- */}
-        <section
-          id="stake-cta"
-          className="scroll-mt-20 py-16 md:py-20"
-        >
-          <div className="mx-auto max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
-            {/* Header */}
-            <div className="border-b bg-muted/30 px-8 py-6">
-              <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
-                Stake {tokenSymbol} &amp; Join
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Select your tier and duration, then connect your wallet to
-                stake.
-              </p>
-            </div>
-
-            <div className="space-y-6 p-8">
-              {/* Selected tier summary */}
-              <div className="flex items-center gap-4 rounded-xl border p-4">
-                <div
-                  className={cn(
-                    "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
-                    selectedTierData.accentBg,
-                  )}
-                >
-                  <selectedTierData.icon
-                    className={cn("h-6 w-6", selectedTierData.accent)}
-                  />
-                </div>
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground">
-                    {selectedTierData.name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedTierData.tagline}
-                  </p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={scrollToTiers}
-                  className="shrink-0"
-                >
-                  Change
-                </Button>
-              </div>
-
-              {/* Duration picker (inline) */}
-              <div>
-                <p className="mb-3 text-sm font-medium text-foreground">
-                  Staking Duration
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    className={cn(
-                      "rounded-lg border-2 px-4 py-3 text-left transition-all",
-                      stakeDuration === "30d"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/30",
-                    )}
-                    onClick={() => setStakeDuration("30d")}
-                  >
-                    <p className="font-semibold text-foreground">30 Days</p>
-                    <p className="text-xs text-muted-foreground">
-                      Minimum period
-                    </p>
-                  </button>
-                  <button
-                    type="button"
-                    className={cn(
-                      "relative rounded-lg border-2 px-4 py-3 text-left transition-all",
-                      stakeDuration === "12m"
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-muted-foreground/30",
-                    )}
-                    onClick={() => setStakeDuration("12m")}
-                  >
-                    <Badge className="absolute -top-2 right-2 gap-1 bg-chart-1 text-[10px] text-white">
-                      Best Value
-                    </Badge>
-                    <p className="font-semibold text-foreground">12 Months</p>
-                    <p className="text-xs text-muted-foreground">
-                      14 months eSIM coverage
-                    </p>
-                  </button>
-                </div>
-              </div>
-
-              {/* Summary */}
-              <div className="space-y-3 rounded-xl bg-muted/30 p-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Cost</span>
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {selectedTierPrice ? formatUsd(selectedTierPrice.costUsd) : "—"}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Tokens to Stake</span>
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {formatTokens(stakeAmount)} {tokenSymbol}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Duration</span>
-                  <span className="font-medium text-foreground">
-                    {stakeDuration === "30d" ? "30 days" : "12 months"}
-                  </span>
-                </div>
-                {stakeDuration === "12m" && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      eSIM Coverage
-                    </span>
-                    <span className="font-medium text-chart-1">
-                      14 months (+2 free)
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between border-t pt-3 text-sm">
-                  <span className="text-muted-foreground">
-                    eSIM Benefit
-                  </span>
-                  <span className="font-medium text-foreground">
-                    {selectedTierData.benefits.esimDetail}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Shipping</span>
-                  <span className="font-medium text-foreground">
-                    {selectedTierData.benefits.shippingDetail}
-                  </span>
-                </div>
-              </div>
-
-              {/* Upgrade nudge for lower tiers */}
-              {selectedTier > 1 && (() => {
-                const nextTierPrice = tierPriceMap[selectedTier - 1];
-                const extraUsd = nextTierPrice
-                  ? nextTierPrice.costUsd - (selectedTierPrice?.costUsd ?? 0)
-                  : 0;
-                const extraTokens = nextTierPrice
-                  ? nextTierPrice.tokensNeeded - stakeAmount
-                  : 0;
-                return (
-                  <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-4">
-                    <TrendingUp className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">
-                        {extraUsd > 0 ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for ` : "Upgrade to "}
-                        {TIERS.find((t) => t.id === selectedTier - 1)?.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Unlock{" "}
-                        {
-                          TIERS.find((t) => t.id === selectedTier - 1)?.benefits
-                            .esimDetail
-                        }{" "}
-                        and{" "}
-                        {TIERS
-                          .find((t) => t.id === selectedTier - 1)
-                          ?.benefits.shippingDetail.toLowerCase()}
-                        .
-                      </p>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Action */}
-              <Button
-                size="lg"
-                className="w-full gap-2 text-base"
-                onClick={handleStake}
-                disabled={stakePending}
-              >
-                <Wallet className="h-5 w-5" />
-                {stakePending
-                  ? "Preparing transaction…"
-                  : wallet
-                    ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
-                    : "Connect Wallet & Stake"}
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Your tokens remain yours. They are locked in a smart contract
-                and returned to your wallet when you unstake.
-              </p>
-            </div>
           </div>
         </section>
 

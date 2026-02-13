@@ -202,10 +202,10 @@
 @keyframes doge-peek {
   0%,
   100% {
-    transform: translateY(0);
+    transform: translateY(-15px);
   }
   50% {
-    transform: translateY(-8px);
+    transform: translateY(0);
   }
 }
 

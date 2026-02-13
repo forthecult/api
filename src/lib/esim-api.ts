@@ -273,6 +273,30 @@ export async function getPackageHas5g(packageId: string): Promise<boolean> {
   }
 }
 
+/**
+ * Check whether a package is still available from the provider AND whether
+ * it has 5G coverage, in a single detail call. This is used by list endpoints
+ * to filter out packages the provider no longer serves.
+ */
+export async function checkPackageAvailability(
+  packageId: string,
+): Promise<{ available: boolean; has5g: boolean }> {
+  try {
+    const result = await getEsimPackageDetail(packageId);
+    if (!result.status || !result.data) {
+      return { available: false, has5g: false };
+    }
+    const countries =
+      result.data.countries ?? result.data.romaing_countries ?? [];
+    const has5g = countries.some((c) =>
+      (c.network_coverage ?? []).some((n) => n.five_G),
+    );
+    return { available: true, has5g };
+  } catch {
+    return { available: false, has5g: false };
+  }
+}
+
 /** Get list of countries with eSIM coverage */
 export async function getEsimCountries(): Promise<{
   status: boolean;

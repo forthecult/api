@@ -15,7 +15,7 @@ export function FooterDogePeek() {
 
   return (
     <div
-      className="doge-peek-bob pointer-events-none absolute right-6 overflow-hidden sm:right-10 lg:right-16"
+      className="pointer-events-none absolute right-6 overflow-hidden sm:right-10 lg:right-16"
       aria-hidden
       style={{
         bottom: "100%",
@@ -23,10 +23,12 @@ export function FooterDogePeek() {
         width: IMAGE_WIDTH,
       }}
     >
-      {/* Image is placed normally so the top (head/ears) shows first.
-          The container clips whatever extends past PEEK_HEIGHT — hiding the body below the bar. */}
+      {/* Container is fixed at the bar. The image bobs up/down INSIDE it,
+          so the bar always clips the bottom — doge peeks more/less without
+          ever lifting off the line. */}
       <Image
         alt=""
+        className="doge-peek-bob"
         height={869}
         role="presentation"
         src="/images/doge-peek.png"

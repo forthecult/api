@@ -25,6 +25,10 @@ import {
   hasAnyStablecoinEnabled,
   type PaymentVisibility,
 } from "~/lib/checkout-payment-options";
+import {
+  USDC_SUB_OPTIONS,
+  USDT_SUB_OPTIONS,
+} from "~/app/checkout/checkout-payment-constants";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -137,6 +141,32 @@ export function EsimPackageDetailClient({
     useState<PaymentCategory>("card");
   const [cryptoOption, setCryptoOption] =
     useState<CryptoOption>("solana_pay");
+  const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">(
+    () => (paymentVisibility?.stablecoinUsdc !== false ? "usdc" : "usdt"),
+  );
+  const [stablecoinChain, setStablecoinChain] = useState<string>(
+    () => USDC_SUB_OPTIONS[0]?.value ?? "solana",
+  );
+
+  // Derive which stablecoin tokens are enabled
+  const showUsdc = paymentVisibility?.stablecoinUsdc !== false;
+  const showUsdt = paymentVisibility?.stablecoinUsdt !== false;
+
+  // Chain options for the selected stablecoin token
+  const stablecoinChainOptions = useMemo(
+    () => (stablecoinToken === "usdt" ? USDT_SUB_OPTIONS : USDC_SUB_OPTIONS),
+    [stablecoinToken],
+  );
+
+  // When the token changes, reset chain to the first option for that token
+  const handleStablecoinTokenChange = useCallback(
+    (token: "usdc" | "usdt") => {
+      setStablecoinToken(token);
+      const opts = token === "usdt" ? USDT_SUB_OPTIONS : USDC_SUB_OPTIONS;
+      setStablecoinChain(opts[0]?.value ?? "ethereum");
+    },
+    [],
+  );
 
   const hasAppliedVisibilityRef = useRef(false);
   useEffect(() => {
@@ -228,9 +258,8 @@ export function EsimPackageDetailClient({
         paymentMethod: isStablecoin ? "eth_pay" : cryptoOption,
       };
       if (isStablecoin) {
-        cryptoPayload.chain = "ethereum";
-        cryptoPayload.token =
-          paymentVisibility?.stablecoinUsdc !== false ? "USDC" : "USDT";
+        cryptoPayload.chain = stablecoinChain;
+        cryptoPayload.token = stablecoinToken.toUpperCase();
       }
       const cryptoRes = await fetch("/api/esim/crypto-checkout", {
         method: "POST",
@@ -257,6 +286,8 @@ export function EsimPackageDetailClient({
     guestEmail,
     paymentCategory,
     cryptoOption,
+    stablecoinToken,
+    stablecoinChain,
     paymentVisibility,
   ]);
 
@@ -590,18 +621,70 @@ export function EsimPackageDetailClient({
                     )}
                   </div>
                   {paymentCategory === "crypto" && visibleCryptoOptions.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {visibleCryptoOptions.map((opt) => (
-                        <Button
-                          key={opt.value}
-                          type="button"
-                          variant={cryptoOption === opt.value ? "secondary" : "outline"}
-                          size="sm"
-                          onClick={() => setCryptoOption(opt.value)}
-                        >
-                          {opt.label}
-                        </Button>
-                      ))}
+                    <div className="space-y-3 pt-2">
+                      {/* Crypto option picker (Solana, Ethereum, Bitcoin, Stablecoin, etc.) */}
+                      <div className="flex flex-wrap gap-2">
+                        {visibleCryptoOptions.map((opt) => (
+                          <Button
+                            key={opt.value}
+                            type="button"
+                            variant={cryptoOption === opt.value ? "secondary" : "outline"}
+                            size="sm"
+                            onClick={() => setCryptoOption(opt.value)}
+                          >
+                            {opt.label}
+                          </Button>
+                        ))}
+                      </div>
+
+                      {/* Stablecoin sub-selectors: token + chain */}
+                      {cryptoOption === "eth_pay_stable" && (
+                        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+                          {/* Token: USDC or USDT */}
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground">Token</p>
+                            <div className="flex gap-2">
+                              {showUsdc && (
+                                <Button
+                                  type="button"
+                                  variant={stablecoinToken === "usdc" ? "secondary" : "outline"}
+                                  size="sm"
+                                  onClick={() => handleStablecoinTokenChange("usdc")}
+                                >
+                                  USDC
+                                </Button>
+                              )}
+                              {showUsdt && (
+                                <Button
+                                  type="button"
+                                  variant={stablecoinToken === "usdt" ? "secondary" : "outline"}
+                                  size="sm"
+                                  onClick={() => handleStablecoinTokenChange("usdt")}
+                                >
+                                  USDT
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                          {/* Chain / network */}
+                          <div className="space-y-1">
+                            <p className="text-xs font-medium text-muted-foreground">Network</p>
+                            <div className="flex flex-wrap gap-2">
+                              {stablecoinChainOptions.map((opt) => (
+                                <Button
+                                  key={opt.value}
+                                  type="button"
+                                  variant={stablecoinChain === opt.value ? "secondary" : "outline"}
+                                  size="sm"
+                                  onClick={() => setStablecoinChain(opt.value)}
+                                >
+                                  {opt.label}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

@@ -37,25 +37,11 @@ export async function GET(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("eSIM package detail error:", message, error);
-    // Provider 404/500 or "not found" → product unavailable; return 200 so no HTTP error, client shows "Sold out" / "Unavailable"
-    if (
-      message.includes("404") ||
-      message.includes("500") ||
-      message.includes("not found")
-    ) {
-      return NextResponse.json({
-        status: false,
-        available: false,
-        message: "This eSIM is currently unavailable.",
-      });
-    }
-    return NextResponse.json(
-      {
-        status: false,
-        message: "Failed to fetch package details",
-        ...(process.env.NODE_ENV === "development" && { detail: message }),
-      },
-      { status: 500 },
-    );
+    // Any failure fetching the package → treat as unavailable (return 200 so the client never sees an HTTP error)
+    return NextResponse.json({
+      status: false,
+      available: false,
+      message: "This eSIM is currently unavailable.",
+    });
   }
 }

@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 
 import { NextResponse } from "next/server";
 
-import { getEsimContinentPackages, getPackageHas5g } from "~/lib/esim-api";
+import { checkPackageAvailability, getEsimContinentPackages } from "~/lib/esim-api";
 
 export async function GET(
   request: NextRequest,
@@ -25,17 +25,22 @@ export async function GET(
       page,
     );
 
-    const data = await Promise.all(
+    // Check availability + 5G in parallel and drop unavailable packages
+    const enriched = await Promise.all(
       result.data.map(async (pkg) => {
-        const has5g = await getPackageHas5g(pkg.id);
-        return {
-          ...pkg,
-          reseller_price: pkg.price,
-          price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
-          has5g,
-        };
+        const { available, has5g } = await checkPackageAvailability(pkg.id);
+        return { pkg, available, has5g };
       }),
     );
+
+    const data = enriched
+      .filter((e) => e.available)
+      .map(({ pkg, has5g }) => ({
+        ...pkg,
+        reseller_price: pkg.price,
+        price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
+        has5g,
+      }));
 
     return NextResponse.json({ ...result, data });
   } catch (error) {

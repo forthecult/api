@@ -30,13 +30,19 @@ interface TelegramAuthUser {
 export function TelegramLoginWidget({
   botUsername,
   disabled,
+  link = false,
   onError,
+  onLinked,
   showFallbackLabel = false,
   size = "medium",
 }: {
   botUsername: string;
   disabled?: boolean;
+  /** When true, link Telegram to the current user instead of signing in. Use on dashboard security page. */
+  link?: boolean;
   onError?: (message: string) => void;
+  /** Called after successfully linking (when link is true). */
+  onLinked?: () => void;
   /** When true, show "Telegram" + icon until the widget iframe loads (avoids empty/grey placeholder). */
   showFallbackLabel?: boolean;
   size?: "large" | "medium" | "small";
@@ -56,7 +62,7 @@ export function TelegramLoginWidget({
         const res = await fetch(`${API_BASE}/api/auth/sign-in/telegram`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(user),
+          body: JSON.stringify(link ? { ...user, link: true } : user),
           credentials: "include",
         });
 
@@ -70,15 +76,20 @@ export function TelegramLoginWidget({
           return;
         }
 
-        router.push(SYSTEM_CONFIG.redirectAfterSignIn);
-        router.refresh();
+        if (link) {
+          router.refresh();
+          onLinked?.();
+        } else {
+          router.push(SYSTEM_CONFIG.redirectAfterSignIn);
+          router.refresh();
+        }
       } catch (err) {
         onError?.("Failed to sign in with Telegram");
         console.error(err);
         setLoading(false);
       }
     },
-    [disabled, loading, onError, router],
+    [disabled, link, loading, onError, onLinked, router],
   );
 
   useEffect(() => {
@@ -89,6 +100,13 @@ export function TelegramLoginWidget({
       TELEGRAM_CALLBACK_NAME
     ] = handleTelegramAuth;
 
+    // Prevent "TWidgetLogin is not defined" when Telegram's widget script fails to load
+    // (e.g. ERR_NETWORK_CHANGED) or when their injected script runs before the main script.
+    const win = window as unknown as Record<string, unknown>;
+    if (typeof win.TWidgetLogin !== "function") {
+      win.TWidgetLogin = function TWidgetLoginNoop() {};
+    }
+
     const script = document.createElement("script");
     script.src = TELEGRAM_WIDGET_SCRIPT;
     script.setAttribute("data-telegram-login", botUsername.trim());
@@ -96,15 +114,21 @@ export function TelegramLoginWidget({
     script.setAttribute("data-onauth", `${TELEGRAM_CALLBACK_NAME}(user)`);
     script.setAttribute("data-request-access", "write");
     script.async = true;
+
+    script.onerror = () => {
+      script.remove();
+      container.innerHTML = "";
+      onError?.("Telegram sign-in is temporarily unavailable.");
+    };
+
     container.appendChild(script);
 
     return () => {
       script.remove();
-      delete (window as unknown as Record<string, unknown>)[
-        TELEGRAM_CALLBACK_NAME
-      ];
+      container.innerHTML = "";
+      delete win[TELEGRAM_CALLBACK_NAME];
     };
-  }, [botUsername, size, handleTelegramAuth]);
+  }, [botUsername, size, handleTelegramAuth, onError]);
 
   // When showFallbackLabel, detect when the widget iframe has been injected so we can hide the fallback
   useEffect(() => {
@@ -143,7 +167,9 @@ export function TelegramLoginWidget({
         {!widgetReady && (
           <div className="flex items-center gap-2" aria-hidden={widgetReady}>
             <TelegramIcon className="h-5 w-5 shrink-0" />
-            <span className="text-sm font-medium">Telegram</span>
+            <span className="text-sm font-medium">
+              {link ? "Connect Telegram" : "Telegram"}
+            </span>
           </div>
         )}
         {/* Keep widget container in DOM so iframe is not unmounted when widgetReady toggles */}

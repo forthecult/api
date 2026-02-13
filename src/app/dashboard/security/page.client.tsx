@@ -18,6 +18,11 @@ import {
   WALLET_LINKED_EVENT,
 } from "~/ui/components/auth/auth-wallet-modal";
 import { DiscordIcon } from "~/ui/components/icons/discord";
+import { TelegramIcon } from "~/ui/components/icons/telegram";
+import {
+  getTelegramBotUsername,
+  TelegramLoginWidget,
+} from "~/ui/components/auth/telegram-login-widget";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
@@ -675,7 +680,13 @@ export function SecurityPageClient() {
                         Discord
                       </>
                     )}
-                    {!["credential", "solana", "ethereum", "discord"].includes(
+                    {acc.providerId === "telegram" && (
+                      <>
+                        <TelegramIcon className="size-4 shrink-0" />
+                        Telegram
+                      </>
+                    )}
+                    {!["credential", "solana", "ethereum", "discord", "telegram"].includes(
                       acc.providerId,
                     ) && (
                       <span className="font-mono text-muted-foreground">
@@ -729,6 +740,19 @@ export function SecurityPageClient() {
                 Connect Discord
               </Button>
             )}
+            {!accounts.some((a) => a.providerId === "telegram") &&
+              getTelegramBotUsername() && (
+                <div className="flex h-9 min-w-0 items-center [&_iframe]:!h-9 [&_iframe]:!min-h-9">
+                  <TelegramLoginWidget
+                    botUsername={getTelegramBotUsername()}
+                    link
+                    onError={(msg) => setError(msg)}
+                    onLinked={() => setError("")}
+                    showFallbackLabel
+                    size="medium"
+                  />
+                </div>
+              )}
           </div>
         </CardContent>
       </Card>
