@@ -61,12 +61,23 @@ interface DiscordProfile {
   email?: string;
 }
 
+interface TwitterProfile {
+  [key: string]: unknown;
+  name?: string;
+  username?: string;
+  email?: string;
+}
+
 interface SocialProviderConfig {
   [key: string]: unknown;
   clientId: string;
   clientSecret: string;
   mapProfileToUser: (
-    profile: GitHubProfile | GoogleProfile | DiscordProfile,
+    profile:
+      | GitHubProfile
+      | GoogleProfile
+      | DiscordProfile
+      | TwitterProfile,
   ) => Record<string, unknown>;
   redirectURI?: string;
   scope: string[];
@@ -89,6 +100,12 @@ const hasDiscordCredentials =
   process.env.AUTH_DISCORD_SECRET &&
   process.env.AUTH_DISCORD_ID.length > 0 &&
   process.env.AUTH_DISCORD_SECRET.length > 0;
+
+const hasTwitterCredentials =
+  process.env.AUTH_TWITTER_ID &&
+  process.env.AUTH_TWITTER_SECRET &&
+  process.env.AUTH_TWITTER_ID.length > 0 &&
+  process.env.AUTH_TWITTER_SECRET.length > 0;
 
 // Build social providers configuration
 const socialProviders: Record<string, SocialProviderConfig> = {};
@@ -140,6 +157,30 @@ if (hasDiscordCredentials) {
       lastName: "",
     }),
     scope: ["identify", "email"],
+  };
+}
+
+if (hasTwitterCredentials) {
+  socialProviders.twitter = {
+    clientId: process.env.AUTH_TWITTER_ID ?? "",
+    clientSecret: process.env.AUTH_TWITTER_SECRET ?? "",
+    mapProfileToUser: (profile: TwitterProfile) => {
+      let firstName = "";
+      let lastName = "";
+      if (profile.name) {
+        const nameParts = profile.name.split(" ");
+        firstName = nameParts[0];
+        lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : "";
+      } else if (profile.username) {
+        firstName = profile.username;
+      }
+      return {
+        age: null,
+        firstName,
+        lastName,
+      };
+    },
+    scope: ["users.read", "tweet.read"],
   };
 }
 

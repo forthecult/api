@@ -178,6 +178,14 @@ export function Footer({ className }: { className?: string }) {
                   All Products
                 </Link>
               </li>
+              <li>
+                <Link
+                  className="text-muted-foreground hover:text-foreground"
+                  href="/esim"
+                >
+                  eSIMs
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -214,17 +222,6 @@ export function Footer({ className }: { className?: string }) {
                   href="/lookbook"
                 >
                   Lookbook
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
-                  href="/esim"
-                >
-                  eSIMs
                 </Link>
               </li>
               <li>
