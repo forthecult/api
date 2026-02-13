@@ -175,8 +175,28 @@ export function CartProvider({ children }: React.PropsWithChildren) {
 /*                                 Hook                                      */
 /* -------------------------------------------------------------------------- */
 
+/** SSR-safe fallback: returned when CartProvider is not yet in the tree (e.g. during SSR). */
+const SSR_FALLBACK: CartContextType = {
+  addItem: () => {},
+  clearCart: () => {},
+  isHydrated: false,
+  itemCount: 0,
+  items: [],
+  openCart: () => {},
+  removeItem: () => {},
+  setCartOpen: () => {},
+  subtotal: 0,
+  updateQuantity: () => {},
+  cartOpen: false,
+};
+
 export function useCart(): CartContextType {
-  const ctx = React.use(CartContext);
-  if (!ctx) throw new Error("useCart must be used within a CartProvider");
+  const ctx = React.useContext(CartContext);
+  if (!ctx) {
+    // During SSR the provider tree may not be mounted yet — return a safe
+    // no-op fallback instead of throwing so the page can still render.
+    if (typeof window === "undefined") return SSR_FALLBACK;
+    throw new Error("useCart must be used within a CartProvider");
+  }
   return ctx;
 }
