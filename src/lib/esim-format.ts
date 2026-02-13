@@ -18,18 +18,38 @@ export function getUnlimitedPlanBaseName(name: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+const VARIANT_REGEX = /(Throttled|Unthrottled|V2)/i;
+
+/** Strip Throttled/Unthrottled/V2 from a string (and surrounding comma/space). */
+function stripVariant(text: string): string {
+  return text
+    .replace(/,?\s*(Throttled|Unthrottled|V2)\s*,?/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/,?\s*$/, "");
+}
+
+/** Extract first Throttled|Unthrottled|V2 from a string (case-preserved). */
+function getVariantFromName(name: string): string | null {
+  const m = name.match(VARIANT_REGEX);
+  return m ? m[1]! : null;
+}
+
 /**
  * Group key for unlimited plans so we don't merge different product lines.
- * e.g. "Unlimited Data ... Throttled" and "Unlimited Data ... Unthrottled" are different.
+ * Throttled vs Unthrottled (and V2) are always separate listings.
  * Returns null if the name doesn't match the unlimited pattern.
  */
 export function getUnlimitedPlanGroupKey(name: string): string | null {
   if (!name || typeof name !== "string") return null;
   const match = name.match(/^(.+?)\s+For\s+\d+\s*Days?\s+(.+)$/is);
   if (!match) return null;
-  const base = match[1].trim();
-  const suffix = match[2].trim(); // e.g. "in Korea, Throttled" or "in Korea, Unthrottled"
-  return `${base}|${suffix}`;
+  const rawBase = match[1].trim();
+  const rawSuffix = match[2].trim();
+  const variant = getVariantFromName(name) ?? "default";
+  const base = stripVariant(rawBase);
+  const suffix = stripVariant(rawSuffix);
+  return `${base || rawBase}|${suffix || rawSuffix}|${variant}`;
 }
 
 /** Format validity for dropdown: "1 Day", "7 Days", etc. */

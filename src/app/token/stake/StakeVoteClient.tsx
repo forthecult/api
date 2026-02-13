@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -90,6 +91,7 @@ function StakeForm({
 }: StakeFormProps) {
   const [stakeAmount, setStakeAmount] = useState("");
   const [unstakeAmount, setUnstakeAmount] = useState("");
+  const [lockDuration, setLockDuration] = useState<number>(LOCK_30_DAYS);
   const [stakeTxPending, setStakeTxPending] = useState(false);
   const [unstakeTxPending, setUnstakeTxPending] = useState(false);
 
@@ -108,7 +110,7 @@ function StakeForm({
       const res = await fetch("/api/governance/stake/prepare", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet, amount }),
+        body: JSON.stringify({ wallet, amount, lockDuration }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -133,7 +135,7 @@ function StakeForm({
     } finally {
       setStakeTxPending(false);
     }
-  }, [wallet, sendTransaction, connection, stakeAmount, openConnectModal, refreshBalances]);
+  }, [wallet, sendTransaction, connection, stakeAmount, lockDuration, openConnectModal, refreshBalances]);
 
   const handleUnstake = useCallback(async () => {
     if (!wallet || !sendTransaction) {
@@ -185,7 +187,7 @@ function StakeForm({
           Stake CULT
         </CardTitle>
         <CardDescription>
-          Stake CULT on-chain to keep it in the pool. Staked balance counts toward voting power. You can unstake anytime.
+          Stake CULT on-chain. Staked balance counts toward voting power. Choose a lock period (30 days or 12 months). Tokens cannot be unstaked until the lock expires.
           {!wallet && " Connect your Solana wallet above to stake or unstake."}
         </CardDescription>
       </CardHeader>
@@ -195,6 +197,28 @@ function StakeForm({
             Connect your wallet to use the form below.
           </p>
         )}
+        {/* Lock duration selector */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Lock Duration</label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              size="sm"
+              variant={lockDuration === LOCK_30_DAYS ? "default" : "outline"}
+              onClick={() => setLockDuration(LOCK_30_DAYS)}
+            >
+              30 Days
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant={lockDuration === LOCK_12_MONTHS ? "default" : "outline"}
+              onClick={() => setLockDuration(LOCK_12_MONTHS)}
+            >
+              12 Months
+            </Button>
+          </div>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium">Stake (CULT)</label>

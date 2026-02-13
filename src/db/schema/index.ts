@@ -21,6 +21,7 @@ export * from "./coupons/relations";
 export * from "./coupons/tables";
 export * from "./coupons/types";
 
+export * from "./esim/membership-claims";
 export * from "./esim/relations";
 export * from "./esim/tables";
 export * from "./esim/types";

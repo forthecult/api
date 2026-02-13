@@ -1,6 +1,8 @@
 /**
  * POST /api/governance/stake/prepare
- * Body: { wallet: string, amount: string } (amount in human CULT, e.g. "1000")
+ * Body: { wallet: string, amount: string, lockDuration: number }
+ *   - amount: human CULT (e.g. "1000")
+ *   - lockDuration: 2592000 (30 days) or 31536000 (12 months)
  * Returns { transaction: string } (base64 serialized transaction for client to sign and send).
  */
 
@@ -9,8 +11,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
+  LOCK_12_MONTHS,
+  LOCK_30_DAYS,
   buildStakeTransaction,
   getStakingProgramId,
+  isValidLockDuration,
+  type LockDuration,
 } from "~/lib/cult-staking";
 import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
@@ -20,6 +26,9 @@ const CULT_DECIMALS = 6;
 const bodySchema = z.object({
   wallet: z.string().min(32).max(44),
   amount: z.string().min(1),
+  lockDuration: z.number().refine(isValidLockDuration, {
+    message: `Lock duration must be ${LOCK_30_DAYS} (30 days) or ${LOCK_12_MONTHS} (12 months)`,
+  }),
 });
 
 export async function POST(request: Request) {
@@ -43,7 +52,7 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { wallet, amount } = parsed.data;
+  const { wallet, amount, lockDuration } = parsed.data;
   const amountNum = Number.parseFloat(amount);
   if (!Number.isFinite(amountNum) || amountNum <= 0) {
     return NextResponse.json(
@@ -71,6 +80,7 @@ export async function POST(request: Request) {
       mint,
       owner,
       amount: amountRaw,
+      lockDuration: lockDuration as LockDuration,
       blockhash,
       lastValidBlockHeight,
     });

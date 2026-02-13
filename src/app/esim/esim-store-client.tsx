@@ -117,10 +117,10 @@ function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
   for (const [groupKey, pkgs] of unlimitedGroups) {
     if (pkgs.length > 1) {
       pkgs.sort((a, b) => (a.package_validity ?? 0) - (b.package_validity ?? 0));
-      const base = getUnlimitedPlanBaseName(pkgs[0]!.name) ?? groupKey.split("|")[0] ?? "Unlimited";
-      const suffix = groupKey.includes("|") ? groupKey.split("|").slice(1).join("|").trim() : "";
-      const modifier = suffix.match(/(?:^|,)\s*(Throttled|Unthrottled|V2)(?:\s|$|,)/i)?.[1];
-      const baseName = modifier ? `${base} (${modifier})` : base;
+      const parts = groupKey.split("|");
+      const base = parts[0]?.trim() || getUnlimitedPlanBaseName(pkgs[0]!.name) || "Unlimited";
+      const variant = parts.length >= 3 ? parts[2]!.trim() : "";
+      const baseName = variant && variant !== "default" ? `${base} (${variant})` : base;
       result.push({ type: "unlimited", baseName, packages: pkgs });
     } else {
       singles.push(pkgs[0]!);

@@ -1,11 +1,13 @@
 "use client";
 
-import { ChevronRight, UserIcon } from "lucide-react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { ArrowRight, ChevronRight, Crown, Shield, Signal, Star, UserIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { useCurrentUserOrRedirect } from "~/lib/auth-client";
+import { Badge } from "~/ui/primitives/badge";
 import { Card, CardContent } from "~/ui/primitives/card";
 
 /** Only show real emails; hide wallet placeholders (e.g. solana_xxx@wallet.local) */
@@ -41,8 +43,43 @@ function formatBalance(cents: number | null | undefined): string {
   }).format(cents / 100);
 }
 
+// Membership tier thresholds (must match membership page)
+const TIER_THRESHOLDS = [
+  { id: 1, name: "Tier 1", minStake: 500_000, icon: Crown, accent: "text-chart-1" },
+  { id: 2, name: "Tier 2", minStake: 200_000, icon: Star, accent: "text-chart-4" },
+  { id: 3, name: "Tier 3", minStake: 75_000, icon: Shield, accent: "text-chart-2" },
+  { id: 4, name: "Tier 4", minStake: 25_000, icon: Signal, accent: "text-muted-foreground" },
+] as const;
+
+type MembershipInfo = {
+  tierId: number;
+  tierName: string;
+  icon: typeof Crown;
+  accent: string;
+  isLocked: boolean;
+  unlocksAt: string | null;
+} | null;
+
+function detectTier(stakedAmount: number): MembershipInfo {
+  for (const tier of TIER_THRESHOLDS) {
+    if (stakedAmount >= tier.minStake) {
+      return {
+        tierId: tier.id,
+        tierName: tier.name,
+        icon: tier.icon,
+        accent: tier.accent,
+        isLocked: false,
+        unlocksAt: null,
+      };
+    }
+  }
+  return null;
+}
+
 export function ProfileViewClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
+  const { publicKey } = useWallet();
+  const wallet = publicKey?.toBase58() ?? null;
   const [profile, setProfile] = useState<{
     firstName: string;
     lastName: string;
@@ -53,7 +90,31 @@ export function ProfileViewClient() {
   } | null>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
   const [cultBalanceCents, setCultBalanceCents] = useState<number | null>(null);
+  const [membership, setMembership] = useState<MembershipInfo>(null);
+  const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Fetch membership tier from staking balance
+  useEffect(() => {
+    if (!wallet) {
+      setMembership(null);
+      return;
+    }
+    setMembershipLoading(true);
+    fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`)
+      .then((r) => r.json())
+      .then((data: { stakedBalance?: string; lock?: { isLocked?: boolean; unlocksAt?: string } | null }) => {
+        const staked = Number.parseFloat(data.stakedBalance ?? "0");
+        const tier = detectTier(staked);
+        if (tier && data.lock) {
+          tier.isLocked = data.lock.isLocked ?? false;
+          tier.unlocksAt = data.lock.unlocksAt ?? null;
+        }
+        setMembership(tier);
+      })
+      .catch(() => setMembership(null))
+      .finally(() => setMembershipLoading(false));
+  }, [wallet]);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -159,9 +220,22 @@ export function ProfileViewClient() {
               </p>
             </div>
             <div className="shrink-0 text-right">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Silver user
-              </span>
+              {membershipLoading ? (
+                <span className="text-xs text-muted-foreground">Loading…</span>
+              ) : membership ? (
+                <Badge variant="outline" className="gap-1.5">
+                  <membership.icon className={`h-3.5 w-3.5 ${membership.accent}`} />
+                  {membership.tierName} Member
+                </Badge>
+              ) : (
+                <Link
+                  href="/membership"
+                  className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
+                >
+                  Join the Cult
+                  <ArrowRight className="h-3 w-3" />
+                </Link>
+              )}
             </div>
           </CardContent>
         </Card>

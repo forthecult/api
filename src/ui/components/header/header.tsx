@@ -421,19 +421,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                             />
                           </li>
                         )}
-                      <li>
-                        <Link
-                          className={cn(
-                            "text-lg font-medium transition-colors hover:text-primary",
-                            pathname?.startsWith("/membership")
-                              ? "font-semibold text-primary"
-                              : "text-muted-foreground",
-                          )}
-                          href="/membership"
-                        >
-                          Membership
-                        </Link>
-                      </li>
+                      {/* Membership link hidden until launch */}
                       <li>
                         <Link
                           className={cn(

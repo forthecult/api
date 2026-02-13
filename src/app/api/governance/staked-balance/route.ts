@@ -1,12 +1,18 @@
 /**
  * GET /api/governance/staked-balance?wallet=<base58>
- * Returns staked CULT amount (on-chain staking program). 0 if program not deployed or no stake.
+ * Returns staked CULT amount + lock status (on-chain staking program).
+ * Returns 0 / unlocked if program not deployed or no stake.
  */
 
 import { Connection } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
-import { fetchStakedBalance, getStakingProgramId } from "~/lib/cult-staking";
+import {
+  fetchUserStake,
+  getLockStatus,
+  getStakingProgramId,
+  lockDurationLabel,
+} from "~/lib/cult-staking";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 
 const CULT_DECIMALS = 6;
@@ -26,21 +32,45 @@ export async function GET(request: Request) {
       stakedBalance: "0",
       stakedBalanceRaw: "0",
       decimals: CULT_DECIMALS,
+      lock: null,
     });
   }
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
-    const raw = await fetchStakedBalance(connection, programId, wallet);
-    const human = Number(raw) / Math.pow(10, CULT_DECIMALS);
+    const stake = await fetchUserStake(connection, programId, wallet);
+
+    if (!stake || stake.amount === 0n) {
+      return NextResponse.json({
+        stakedBalance: "0",
+        stakedBalanceRaw: "0",
+        decimals: CULT_DECIMALS,
+        lock: null,
+      });
+    }
+
+    const human = Number(stake.amount) / Math.pow(10, CULT_DECIMALS);
+    const lockStatus = getLockStatus(stake);
+
     return NextResponse.json({
       stakedBalance: human.toFixed(CULT_DECIMALS),
-      stakedBalanceRaw: raw.toString(),
+      stakedBalanceRaw: stake.amount.toString(),
       decimals: CULT_DECIMALS,
+      lock: {
+        isLocked: lockStatus.isLocked,
+        secondsRemaining: lockStatus.secondsRemaining,
+        unlocksAt: lockStatus.unlocksAt,
+        durationLabel: lockStatus.durationLabel,
+        stakedAt: new Date(stake.stakedAt * 1000).toISOString(),
+        lockDurationSeconds: stake.lockDuration,
+      },
     });
   } catch (e) {
     console.error("[governance] staked-balance error:", e);
-    return NextResponse.json(
-      { stakedBalance: "0", stakedBalanceRaw: "0", decimals: CULT_DECIMALS },
-    );
+    return NextResponse.json({
+      stakedBalance: "0",
+      stakedBalanceRaw: "0",
+      decimals: CULT_DECIMALS,
+      lock: null,
+    });
   }
 }

@@ -19,11 +19,15 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Transaction } from "@solana/web3.js";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
-import { SEO_CONFIG } from "~/app";
+import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { cn } from "~/lib/cn";
+import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -155,8 +159,8 @@ const TIERS: Tier[] = [
   },
 ];
 
-// Reverse for display: show Tier 4 (entry) on left, Tier 1 (premium) on right
-const TIERS_DISPLAY = [...TIERS].reverse();
+// Display order: Tier 4 (entry) on left → Tier 1 (premium) on right (worst to best)
+const TIERS_DISPLAY = TIERS;
 
 // ---------------------------------------------------------------------------
 // Benefits comparison rows for table
@@ -279,9 +283,49 @@ const FAQ_ITEMS = [
 // Component
 // ---------------------------------------------------------------------------
 
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 export function MembershipClient() {
   const [selectedTier, setSelectedTier] = useState<number>(2);
   const [stakeDuration, setStakeDuration] = useState<"30d" | "12m">("30d");
+  const [stakePending, setStakePending] = useState(false);
+
+  // eSIM claim state
+  const [claimEligible, setClaimEligible] = useState(false);
+  const [claimAlreadyClaimed, setClaimAlreadyClaimed] = useState(false);
+  const [claimTier, setClaimTier] = useState<number | null>(null);
+  const [claimPending, setClaimPending] = useState(false);
+  const [claimSuccess, setClaimSuccess] = useState(false);
+
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
+  const wallet = publicKey?.toBase58() ?? null;
+
+  // Fetch claim status when wallet is connected
+  useEffect(() => {
+    if (!wallet) {
+      setClaimEligible(false);
+      setClaimAlreadyClaimed(false);
+      setClaimTier(null);
+      return;
+    }
+    fetch(`/api/esim/membership-claim/status?wallet=${encodeURIComponent(wallet)}`)
+      .then((r) => r.json())
+      .then((data: { eligible?: boolean; claimed?: boolean; tier?: number | null }) => {
+        setClaimEligible(data.eligible ?? false);
+        setClaimAlreadyClaimed(data.claimed ?? false);
+        setClaimTier(data.tier ?? null);
+      })
+      .catch(() => {
+        setClaimEligible(false);
+        setClaimAlreadyClaimed(false);
+      });
+  }, [wallet]);
 
   const stakeAmount = useMemo(
     () => getStakeRequirement(selectedTier),
@@ -293,6 +337,12 @@ export function MembershipClient() {
     [selectedTier],
   );
 
+  const lockDuration = stakeDuration === "12m" ? LOCK_12_MONTHS : LOCK_30_DAYS;
+
+  const openConnectModal = useCallback(() => {
+    window.dispatchEvent(new CustomEvent(OPEN_AUTH_WALLET_MODAL));
+  }, []);
+
   const scrollToTiers = useCallback(() => {
     document.getElementById("tiers")?.scrollIntoView({ behavior: "smooth" });
   }, []);
@@ -300,6 +350,80 @@ export function MembershipClient() {
   const scrollToCTA = useCallback(() => {
     document.getElementById("stake-cta")?.scrollIntoView({ behavior: "smooth" });
   }, []);
+
+  const handleStake = useCallback(async () => {
+    if (!wallet || !sendTransaction) {
+      openConnectModal();
+      return;
+    }
+    setStakePending(true);
+    try {
+      const res = await fetch("/api/governance/stake/prepare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallet,
+          amount: stakeAmount.toString(),
+          lockDuration,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 503) {
+          toast.error("Staking is not available yet.");
+        } else {
+          toast.error(data.error ?? "Failed to prepare stake transaction");
+        }
+        return;
+      }
+      const txBuf = base64ToUint8Array(data.transaction);
+      const tx = Transaction.from(txBuf);
+      const sig = await sendTransaction(tx, connection, {
+        skipPreflight: false,
+        preflightCommitment: "confirmed",
+      });
+      toast.success(
+        `Staked ${formatTokens(stakeAmount)} CULT for ${stakeDuration === "12m" ? "12 months" : "30 days"}! Tx: ${sig.slice(0, 8)}…`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Stake failed");
+    } finally {
+      setStakePending(false);
+    }
+  }, [wallet, sendTransaction, connection, stakeAmount, lockDuration, stakeDuration, openConnectModal]);
+
+  // ------ eSIM Claim handler ------
+  const handleClaimEsim = useCallback(async () => {
+    if (!wallet) {
+      toast.error("Connect your wallet first");
+      return;
+    }
+    setClaimPending(true);
+    try {
+      const res = await fetch("/api/esim/membership-claim", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          wallet,
+          // Use a well-known global 1GB/30-day data-only package as the default free SIM
+          // This can be swapped for a configurable package later
+          packageId: "esim-free-tier2-default",
+        }),
+      });
+      const data = (await res.json()) as { status: boolean; message?: string; data?: { message?: string } };
+      if (!res.ok || !data.status) {
+        toast.error(data.message ?? "Failed to claim eSIM");
+        return;
+      }
+      setClaimSuccess(true);
+      setClaimAlreadyClaimed(true);
+      toast.success(data.data?.message ?? "Free eSIM claimed! Check your email for activation.");
+    } catch {
+      toast.error("Network error — please try again");
+    } finally {
+      setClaimPending(false);
+    }
+  }, [wallet]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background to-background">
@@ -331,7 +455,7 @@ export function MembershipClient() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Stake CULT tokens to unlock exclusive membership tiers. Free eSIM cards,
+            Stake CULT to unlock exclusive membership benefits. Free eSIM cards,
             free shipping, member-only discounts, and more. The longer you
             stake, the more you save.
           </p>
@@ -349,37 +473,6 @@ export function MembershipClient() {
             </Link>
           </div>
 
-          {/* Quick value props */}
-          <div className="mx-auto mt-16 grid max-w-3xl gap-6 sm:grid-cols-3">
-            {[
-              {
-                icon: Smartphone,
-                label: "Free eSIM Cards",
-                sub: "From Tier 2 and above",
-              },
-              {
-                icon: Truck,
-                label: "Free Shipping",
-                sub: "Tier 1 members ship free",
-              },
-              {
-                icon: Timer,
-                label: "12 mo = 14 mo eSIM",
-                sub: "2 bonus months when you commit",
-              },
-            ].map(({ icon: Icon, label, sub }) => (
-              <div
-                key={label}
-                className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-card/50 p-5 backdrop-blur-sm"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                  <Icon className="h-5 w-5 text-primary" />
-                </div>
-                <p className="font-medium text-foreground">{label}</p>
-                <p className="text-sm text-muted-foreground">{sub}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -1034,9 +1127,18 @@ export function MembershipClient() {
               )}
 
               {/* Action */}
-              <Button size="lg" className="w-full gap-2 text-base">
+              <Button
+                size="lg"
+                className="w-full gap-2 text-base"
+                onClick={handleStake}
+                disabled={stakePending}
+              >
                 <Wallet className="h-5 w-5" />
-                Connect Wallet &amp; Stake
+                {stakePending
+                  ? "Preparing transaction…"
+                  : wallet
+                    ? `Stake ${formatTokens(stakeAmount)} CULT`
+                    : "Connect Wallet & Stake"}
               </Button>
               <p className="text-center text-xs text-muted-foreground">
                 Your tokens remain yours. They are locked in a smart contract
@@ -1045,6 +1147,64 @@ export function MembershipClient() {
             </div>
           </div>
         </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Claim Free eSIM (Tier 2+) */}
+        {/* --------------------------------------------------------------- */}
+        {wallet && (claimEligible || claimAlreadyClaimed) && (
+          <section className="py-16 md:py-20">
+            <div className="mx-auto max-w-2xl">
+              <Card className="overflow-hidden border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+                <CardHeader className="text-center">
+                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                    <Smartphone className="h-7 w-7 text-primary" />
+                  </div>
+                  <CardTitle className="font-display text-2xl">
+                    {claimAlreadyClaimed
+                      ? "eSIM Claimed"
+                      : "Claim Your Free eSIM"}
+                  </CardTitle>
+                  <CardDescription className="text-base">
+                    {claimAlreadyClaimed
+                      ? claimSuccess
+                        ? "Your free eSIM has been provisioned! Check your email for the activation link or visit your eSIM dashboard."
+                        : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage it."
+                      : `As a Tier ${claimTier} member, you're eligible for a free eSIM card. Claim it now — no payment required.`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-4 pb-8">
+                  {claimAlreadyClaimed ? (
+                    <Button asChild variant="outline" size="lg" className="gap-2">
+                      <Link href="/dashboard/esim">
+                        <Globe className="h-5 w-5" />
+                        View My eSIMs
+                        <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    </Button>
+                  ) : (
+                    <>
+                      <Button
+                        size="lg"
+                        className="gap-2 text-base"
+                        onClick={handleClaimEsim}
+                        disabled={claimPending}
+                      >
+                        <Smartphone className="h-5 w-5" />
+                        {claimPending
+                          ? "Claiming eSIM…"
+                          : "Claim Free eSIM"}
+                      </Button>
+                      <p className="text-center text-xs text-muted-foreground">
+                        Your free eSIM will be provisioned instantly and sent to
+                        your email. One claim per staking period.
+                      </p>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </section>
+        )}
 
         {/* --------------------------------------------------------------- */}
         {/* FAQ */}
@@ -1080,7 +1240,7 @@ export function MembershipClient() {
             Ready to Join?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
-            Stake CULT tokens today and start enjoying exclusive membership
+            Stake CULT today and start enjoying exclusive membership
             benefits. The earlier you join, the lower the staking threshold.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
