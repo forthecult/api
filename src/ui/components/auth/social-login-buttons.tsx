@@ -117,14 +117,13 @@ export function SocialLoginButtons({
           Discord
         </Button>
         {showTelegram && (
-          <div className="flex min-h-10 items-center justify-center rounded-md border border-input bg-background px-4 py-2 [&_iframe]:!max-h-9">
-            <TelegramLoginWidget
-              botUsername={telegramBotUsername}
-              disabled={disabled}
-              onError={onError}
-              size="medium"
-            />
-          </div>
+          <TelegramLoginWidget
+            botUsername={telegramBotUsername}
+            disabled={disabled}
+            onError={onError}
+            size="medium"
+            showFallbackLabel
+          />
         )}
       </div>
     </div>

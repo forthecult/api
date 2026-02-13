@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { SYSTEM_CONFIG } from "~/app";
+import { TelegramIcon } from "~/ui/components/icons/telegram";
 
 const TELEGRAM_WIDGET_SCRIPT = "https://telegram.org/js/telegram-widget.js?22";
 const TELEGRAM_CALLBACK_NAME = "onTelegramAuth";
@@ -30,16 +31,20 @@ export function TelegramLoginWidget({
   botUsername,
   disabled,
   onError,
+  showFallbackLabel = false,
   size = "medium",
 }: {
   botUsername: string;
   disabled?: boolean;
   onError?: (message: string) => void;
+  /** When true, show "Telegram" + icon until the widget iframe loads (avoids empty/grey placeholder). */
+  showFallbackLabel?: boolean;
   size?: "large" | "medium" | "small";
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [widgetReady, setWidgetReady] = useState(false);
 
   const handleTelegramAuth = useCallback(
     async (user: TelegramAuthUser) => {
@@ -101,13 +106,51 @@ export function TelegramLoginWidget({
     };
   }, [botUsername, size, handleTelegramAuth]);
 
-  return (
+  // When showFallbackLabel, detect when the widget iframe has been injected so we can hide the fallback
+  useEffect(() => {
+    if (!showFallbackLabel || !containerRef.current) return;
+    const container = containerRef.current;
+    const observer = new MutationObserver(() => {
+      if (container.querySelector("iframe")) setWidgetReady(true);
+    });
+    observer.observe(container, { childList: true, subtree: true });
+    if (container.querySelector("iframe")) setWidgetReady(true);
+    return () => observer.disconnect();
+  }, [showFallbackLabel]);
+
+  const widgetEl = (
     <div
       ref={containerRef}
-      className="inline-block [&_iframe]:!max-h-10 [&_iframe]:!min-h-[40px]"
+      className={
+        showFallbackLabel
+          ? "absolute inset-0 flex items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
+          : "inline-block [&_iframe]:!max-h-10 [&_iframe]:!min-h-[40px]"
+      }
       aria-hidden={disabled}
     />
   );
+
+  if (showFallbackLabel) {
+    return (
+      <div className="relative flex min-h-10 min-w-0 items-center justify-center rounded-md border border-input bg-background px-4 py-2 shadow-sm">
+        {/* Fallback: visible until the Telegram widget iframe loads */}
+        <div
+          className={
+            widgetReady
+              ? "pointer-events-none invisible flex items-center gap-2"
+              : "flex items-center gap-2"
+          }
+          aria-hidden={widgetReady}
+        >
+          <TelegramIcon className="h-5 w-5 shrink-0" />
+          <span className="text-sm font-medium">Telegram</span>
+        </div>
+        {widgetEl}
+      </div>
+    );
+  }
+
+  return widgetEl;
 }
 
 export function getTelegramBotUsername(): string {
