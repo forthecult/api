@@ -311,7 +311,6 @@ export function Footer({ className }: { className?: string }) {
           </div>
         </div>
         <div className="relative mt-12 border-t pt-8">
-          <FooterDogePeek />
           <div className="mb-6">
             <FooterPaymentsBar />
           </div>

@@ -4,8 +4,10 @@ import Image from "next/image";
 
 import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
 
-const PEEK_HEIGHT = 44;
-const PEEK_WIDTH = 80;
+/** How much of the doge is visible above the bar (px) */
+const PEEK_HEIGHT = 55;
+/** Rendered width of the doge image (px) */
+const IMAGE_WIDTH = 120;
 
 export function FooterDogePeek() {
   const { selectedCrypto } = useCryptoCurrency();
@@ -13,31 +15,29 @@ export function FooterDogePeek() {
 
   return (
     <div
-      className="pointer-events-none absolute right-0 flex justify-end overflow-hidden"
+      className="pointer-events-none absolute right-6 overflow-hidden sm:right-10 lg:right-16"
       aria-hidden
       style={{
         bottom: "100%",
         height: PEEK_HEIGHT,
-        width: PEEK_WIDTH,
+        width: IMAGE_WIDTH,
       }}
     >
       <div
         className="doge-peek-bob absolute bottom-0"
-        style={{ height: PEEK_HEIGHT * 2, width: PEEK_WIDTH * 2, left: "50%" }}
+        style={{ width: IMAGE_WIDTH }}
       >
         <Image
           alt=""
-          className="object-cover object-top"
-          height={PEEK_HEIGHT * 3}
+          height={869}
           role="presentation"
           src="/images/doge-peek.png"
           unoptimized
-          width={PEEK_WIDTH * 3}
+          width={1000}
           style={{
-            position: "absolute",
-            top: 0,
-            left: "50%",
-            transform: "translateX(-50%)",
+            width: IMAGE_WIDTH,
+            height: "auto",
+            display: "block",
           }}
         />
       </div>
