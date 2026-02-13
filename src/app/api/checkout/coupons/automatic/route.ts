@@ -4,6 +4,7 @@ import { auth } from "~/lib/auth";
 import {
   resolveAutomaticCouponForCheckout,
   type AutomaticCouponInput,
+  type CartLineItem,
 } from "~/lib/coupon";
 
 const validateSchema = {
@@ -20,6 +21,23 @@ const validateSchema = {
       : [],
   paymentMethodKey: (v: unknown) =>
     typeof v === "string" && v.length > 0 ? v : undefined,
+  items: (v: unknown): CartLineItem[] => {
+    if (!Array.isArray(v)) return [];
+    return (v as unknown[])
+      .filter(
+        (item): item is { productId: string; priceCents: number; quantity: number } =>
+          typeof item === "object" &&
+          item !== null &&
+          typeof (item as Record<string, unknown>).productId === "string" &&
+          typeof (item as Record<string, unknown>).priceCents === "number" &&
+          typeof (item as Record<string, unknown>).quantity === "number",
+      )
+      .map((item) => ({
+        productId: item.productId,
+        priceCents: Math.round(item.priceCents),
+        quantity: Math.max(1, Math.round(item.quantity)),
+      }));
+  },
 };
 
 /**
@@ -40,6 +58,8 @@ export async function POST(request: NextRequest) {
       body?.paymentMethodKey,
     );
 
+    const items = validateSchema.items(body?.items);
+
     const input: AutomaticCouponInput = {
       subtotalCents,
       shippingFeeCents,
@@ -47,6 +67,7 @@ export async function POST(request: NextRequest) {
       productIds: productIds.length > 0 ? productIds : undefined,
       userId: session?.user?.id ?? undefined,
       paymentMethodKey,
+      items: items.length > 0 ? items : undefined,
     };
 
     const result = await resolveAutomaticCouponForCheckout(input);

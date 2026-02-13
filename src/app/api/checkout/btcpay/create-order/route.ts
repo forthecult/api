@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
         productIds,
         paymentMethodKey: "crypto_bitcoin",
+        items: validatedItems.map(i => ({ productId: i.productId, priceCents: i.priceCents, quantity: i.quantity })),
       });
 
     // ── Validate client total ──────────────────────────────────────────

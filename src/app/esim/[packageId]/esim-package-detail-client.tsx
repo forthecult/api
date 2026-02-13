@@ -199,10 +199,9 @@ export function EsimPackageDetailClient({
     if (paymentMethod === "paypal") return { method: "paypal", hash: "" } as const;
 
     if (paymentMethod === "stablecoins") {
-      const isSolana = stablecoinChain === "solana";
-      if (isSolana && stablecoinToken === "usdc") {
-        // USDC on Solana → solana_pay
-        return { method: "solana_pay" as const, hash: "#solana", token: "usdc", chain: "solana" };
+      if (stablecoinChain === "solana") {
+        // USDC/USDT on Solana → solana_pay
+        return { method: "solana_pay" as const, hash: "#solana", token: stablecoinToken, chain: "solana" };
       }
       // EVM stablecoins
       return { method: "eth_pay" as const, hash: "#eth", token: stablecoinToken.toUpperCase(), chain: stablecoinChain };
@@ -665,7 +664,7 @@ export function EsimPackageDetailClient({
                             <Button
                               key={opt.value}
                               type="button"
-                              variant={cryptoSub === opt.value ? "secondary" : "outline"}
+                              variant={cryptoSub === opt.value ? "default" : "outline"}
                               size="sm"
                               onClick={() => setCryptoSub(opt.value as CryptoSub)}
                               className="gap-1.5"
@@ -688,7 +687,7 @@ export function EsimPackageDetailClient({
                               <Button
                                 key={opt.value}
                                 type="button"
-                                variant={ethChain === opt.value ? "secondary" : "outline"}
+                                variant={ethChain === opt.value ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => setEthChain(opt.value)}
                               >
@@ -709,7 +708,7 @@ export function EsimPackageDetailClient({
                                 <Button
                                   key={opt.value}
                                   type="button"
-                                  variant={cryptoOtherSub === opt.value ? "secondary" : "outline"}
+                                  variant={cryptoOtherSub === opt.value ? "default" : "outline"}
                                   size="sm"
                                   onClick={() => setCryptoOtherSub(opt.value)}
                                   className="gap-1.5"
@@ -737,7 +736,7 @@ export function EsimPackageDetailClient({
                           {showUsdc && (
                             <Button
                               type="button"
-                              variant={stablecoinToken === "usdc" ? "secondary" : "outline"}
+                              variant={stablecoinToken === "usdc" ? "default" : "outline"}
                               size="sm"
                               onClick={() => handleStablecoinTokenChange("usdc")}
                             >
@@ -747,7 +746,7 @@ export function EsimPackageDetailClient({
                           {showUsdt && (
                             <Button
                               type="button"
-                              variant={stablecoinToken === "usdt" ? "secondary" : "outline"}
+                              variant={stablecoinToken === "usdt" ? "default" : "outline"}
                               size="sm"
                               onClick={() => handleStablecoinTokenChange("usdt")}
                             >
@@ -764,7 +763,7 @@ export function EsimPackageDetailClient({
                             <Button
                               key={opt.value}
                               type="button"
-                              variant={stablecoinChain === opt.value ? "secondary" : "outline"}
+                              variant={stablecoinChain === opt.value ? "default" : "outline"}
                               size="sm"
                               onClick={() => setStablecoinChain(opt.value)}
                             >

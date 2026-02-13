@@ -10,7 +10,13 @@ import type { AppliedCoupon } from "../checkout-shared";
 export interface UseCouponsArgs {
   subtotal: number;
   shippingCents: number;
-  items: Array<{ productId?: string; id: string; quantity?: number }>;
+  items: Array<{
+    productId?: string;
+    id: string;
+    quantity?: number;
+    /** Unit price in dollars (e.g. 9.99). Used to compute per-product discounts. */
+    price: number;
+  }>;
   /**
    * The selected payment method key (from PAYMENT_METHOD_DEFAULTS).
    * Used to match automatic discounts with a payment method restriction.
@@ -62,6 +68,11 @@ export function useCoupons({
           shippingFeeCents: Math.round(shippingCents),
           productIds: items.map((i) => i.productId ?? i.id),
           paymentMethodKey: paymentMethodKey || undefined,
+          items: items.map((i) => ({
+            productId: i.productId ?? i.id,
+            priceCents: Math.round(i.price * 100),
+            quantity: i.quantity ?? 1,
+          })),
         }),
       });
       const data = (await res.json()) as
@@ -135,6 +146,11 @@ export function useCoupons({
         productCount,
         productIds: items.map((i) => i.productId ?? i.id),
         paymentMethodKey: paymentMethodKey || undefined,
+        items: items.map((i) => ({
+          productId: i.productId ?? i.id,
+          priceCents: Math.round(i.price * 100),
+          quantity: i.quantity ?? 1,
+        })),
       }),
     })
       .then((res) => res.json())

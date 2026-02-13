@@ -214,7 +214,11 @@ export async function POST(request: NextRequest) {
         ? body.discountKind
         : "amount_off_order";
     const appliesTo =
-      discountKind === "free_shipping" ? "shipping" : "subtotal";
+      discountKind === "free_shipping"
+        ? "shipping"
+        : discountKind === "amount_off_products"
+          ? "product"
+          : "subtotal";
 
     const discountType = body.discountType === "fixed" ? "fixed" : "percent";
     const discountValue =

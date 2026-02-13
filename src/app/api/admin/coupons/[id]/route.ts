@@ -210,7 +210,11 @@ export async function PATCH(
     ) {
       updates.discountKind = body.discountKind;
       updates.appliesTo =
-        body.discountKind === "free_shipping" ? "shipping" : "subtotal";
+        body.discountKind === "free_shipping"
+          ? "shipping"
+          : body.discountKind === "amount_off_products"
+            ? "product"
+            : "subtotal";
     }
     if (body.discountType !== undefined)
       updates.discountType = body.discountType;

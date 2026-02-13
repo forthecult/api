@@ -65,6 +65,105 @@ export function SupportChatWidget() {
   const guestIdRef = React.useRef<string | null>(null);
   const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── Drag-to-move state ──────────────────────────────────────────────
+  const [position, setPosition] = React.useState<{ bottom: number; right: number }>({ bottom: 16, right: 16 });
+  const isDraggingRef = React.useRef(false);
+  const dragStartRef = React.useRef({ mouseX: 0, mouseY: 0, bottom: 16, right: 16 });
+  const hasDraggedRef = React.useRef(false);
+  const latestPosRef = React.useRef({ bottom: 16, right: 16 });
+
+  // Load persisted position from localStorage
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem("support-chat-pos");
+      if (raw) {
+        const p = JSON.parse(raw) as { bottom?: number; right?: number };
+        if (typeof p.bottom === "number" && typeof p.right === "number") {
+          const clamped = {
+            bottom: Math.max(16, Math.min(window.innerHeight - 64, p.bottom)),
+            right: Math.max(16, Math.min(window.innerWidth - 64, p.right)),
+          };
+          setPosition(clamped);
+          latestPosRef.current = clamped;
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleDragStart = React.useCallback((clientX: number, clientY: number) => {
+    isDraggingRef.current = true;
+    hasDraggedRef.current = false;
+    dragStartRef.current = {
+      mouseX: clientX,
+      mouseY: clientY,
+      bottom: latestPosRef.current.bottom,
+      right: latestPosRef.current.right,
+    };
+  }, []);
+
+  const handleDragMove = React.useCallback((clientX: number, clientY: number) => {
+    if (!isDraggingRef.current) return;
+    const dx = clientX - dragStartRef.current.mouseX;
+    const dy = clientY - dragStartRef.current.mouseY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      hasDraggedRef.current = true;
+    }
+    const next = {
+      right: Math.max(16, Math.min(window.innerWidth - 64, dragStartRef.current.right - dx)),
+      bottom: Math.max(16, Math.min(window.innerHeight - 64, dragStartRef.current.bottom - dy)),
+    };
+    latestPosRef.current = next;
+    setPosition(next);
+  }, []);
+
+  const handleDragEnd = React.useCallback(() => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    try {
+      localStorage.setItem("support-chat-pos", JSON.stringify(latestPosRef.current));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // Global pointer listeners for drag tracking
+  React.useEffect(() => {
+    const onMM = (e: MouseEvent) => handleDragMove(e.clientX, e.clientY);
+    const onMU = () => handleDragEnd();
+    const onTM = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) handleDragMove(t.clientX, t.clientY);
+    };
+    const onTE = () => handleDragEnd();
+    document.addEventListener("mousemove", onMM);
+    document.addEventListener("mouseup", onMU);
+    document.addEventListener("touchmove", onTM, { passive: true });
+    document.addEventListener("touchend", onTE);
+    return () => {
+      document.removeEventListener("mousemove", onMM);
+      document.removeEventListener("mouseup", onMU);
+      document.removeEventListener("touchmove", onTM);
+      document.removeEventListener("touchend", onTE);
+    };
+  }, [handleDragMove, handleDragEnd]);
+
+  /** Shared pointer-down handler for draggable areas (FAB button + chat header) */
+  const onPointerDownDrag = React.useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      if ("touches" in e) {
+        const t = e.touches[0];
+        if (t) handleDragStart(t.clientX, t.clientY);
+      } else {
+        e.preventDefault();
+        handleDragStart(e.clientX, e.clientY);
+      }
+    },
+    [handleDragStart],
+  );
+  // ── End drag-to-move ────────────────────────────────────────────────
+
   const fetchConversations = React.useCallback(async () => {
     const guestId = getGuestId();
     guestIdRef.current = guestId;
@@ -238,7 +337,10 @@ export function SupportChatWidget() {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+    <div
+      className="fixed z-50 flex flex-col items-end gap-2"
+      style={{ bottom: `${position.bottom}px`, right: `${position.right}px` }}
+    >
       {open && (
         <div
           className={cn(
@@ -246,8 +348,12 @@ export function SupportChatWidget() {
             "max-h-[min(90vh,640px)] overflow-hidden",
           )}
         >
-          {/* Header with avatar */}
-          <div className="flex items-center gap-3 border-b px-4 py-3">
+          {/* Header with avatar – draggable */}
+          <div
+            className="flex items-center gap-3 border-b px-4 py-3 cursor-grab active:cursor-grabbing select-none"
+            onMouseDown={onPointerDownDrag}
+            onTouchStart={onPointerDownDrag}
+          >
             <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
               {/* Avatar placeholder – replace src with actual Alice avatar */}
               <svg
@@ -407,8 +513,15 @@ export function SupportChatWidget() {
         type="button"
         size="icon"
         aria-label={open ? "Close chat" : "Open support chat"}
-        onClick={() => setOpen((o) => !o)}
-        className={cn("h-12 w-12 rounded-full shadow-md", open && "relative z-0")}
+        onClick={() => {
+          if (!hasDraggedRef.current) setOpen((o) => !o);
+        }}
+        onMouseDown={onPointerDownDrag}
+        onTouchStart={onPointerDownDrag}
+        className={cn(
+          "h-12 w-12 rounded-full shadow-md cursor-grab active:cursor-grabbing",
+          open && "relative z-0",
+        )}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

@@ -207,6 +207,7 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
         productIds,
         paymentMethodKey,
+        items: validatedItems.map(i => ({ productId: i.productId, priceCents: i.priceCents, quantity: i.quantity })),
       });
 
     // ── Validate client total ($5 tolerance for crypto price drift) ───

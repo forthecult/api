@@ -37,6 +37,7 @@ export async function resolveCouponForCheckout(
     userId?: string | null;
     productIds?: string[];
     paymentMethodKey?: string | null;
+    items?: CartLineItem[];
   } = {},
 ): Promise<CouponCheckoutResult | null> {
   const raw = code?.trim();
@@ -68,7 +69,10 @@ export async function resolveCouponForCheckout(
     .where(eq(couponsTable.code, normalizedCode))
     .limit(1);
 
-  if (!coupon || coupon.method !== "code") return null;
+  // Code-based coupons must have method "code"; automatic coupons (AUTO-*) are
+  // also resolved here when a coupon code is forwarded from the automatic flow
+  if (!coupon || (coupon.method !== "code" && coupon.method !== "automatic"))
+    return null;
 
   if (coupon.dateStart && now < coupon.dateStart) return null;
   if (coupon.dateEnd && now > coupon.dateEnd) return null;
@@ -103,18 +107,58 @@ export async function resolveCouponForCheckout(
   }
 
   const productIds = options.productIds ?? [];
+  let qualifyingSubtotalCents: number | undefined;
   if (productIds.length > 0) {
-    const allowedProductIds = (
-      await db
+    const [allowedProductIds, couponCategoryIds] = await Promise.all([
+      db
         .select({ productId: couponProductTable.productId })
         .from(couponProductTable)
         .where(eq(couponProductTable.couponId, coupon.id))
-    ).map((r) => r.productId);
-    if (
-      allowedProductIds.length > 0 &&
-      !productIds.some((id) => allowedProductIds.includes(id))
-    ) {
-      return null;
+        .then((rows) => rows.map((r) => r.productId)),
+      db
+        .select({ categoryId: couponCategoryTable.categoryId })
+        .from(couponCategoryTable)
+        .where(eq(couponCategoryTable.couponId, coupon.id))
+        .then((rows) => rows.map((r) => r.categoryId)),
+    ]);
+    const hasProductRule = allowedProductIds.length > 0;
+    const hasCategoryRule = couponCategoryIds.length > 0;
+    if (hasProductRule || hasCategoryRule) {
+      const cartHasAllowedProduct =
+        hasProductRule &&
+        productIds.some((id) => allowedProductIds.includes(id));
+      let matchingCategoryProductIds: string[] = [];
+      let cartHasProductFromCategory = false;
+      if (hasCategoryRule) {
+        const categoryMatches = await db
+          .select({ productId: productCategoriesTable.productId })
+          .from(productCategoriesTable)
+          .where(
+            and(
+              inArray(productCategoriesTable.categoryId, couponCategoryIds),
+              inArray(productCategoriesTable.productId, productIds),
+            ),
+          );
+        matchingCategoryProductIds = categoryMatches.map((r) => r.productId);
+        cartHasProductFromCategory = matchingCategoryProductIds.length > 0;
+      }
+      if (!cartHasAllowedProduct && !cartHasProductFromCategory) return null;
+
+      // For amount_off_products: compute qualifying subtotal from matching items only
+      if (
+        (coupon.discountKind === "amount_off_products" ||
+          coupon.appliesTo === "product") &&
+        options.items &&
+        options.items.length > 0
+      ) {
+        const qualifyingProductIdSet = new Set<string>([
+          ...(hasProductRule ? allowedProductIds : []),
+          ...matchingCategoryProductIds,
+        ]);
+        qualifyingSubtotalCents = options.items
+          .filter((item) => qualifyingProductIdSet.has(item.productId))
+          .reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
+      }
     }
   }
 
@@ -143,33 +187,12 @@ export async function resolveCouponForCheckout(
     if (!selectedKey || selectedKey !== couponPaymentMethodKey) return null;
   }
 
-  const discountKind = coupon.discountKind ?? "amount_off_order";
-  const discountType = coupon.discountType ?? "percent";
-  const discountValue = coupon.discountValue ?? 0;
-
-  let discountCents = 0;
-  const freeShipping = discountKind === "free_shipping";
-
-  if (freeShipping) {
-    discountCents = shippingFeeCents;
-  } else if (discountKind === "amount_off_order") {
-    const totalCents = subtotalCents + shippingFeeCents;
-    if (discountType === "percent") {
-      discountCents = Math.round(
-        totalCents * (Math.min(100, discountValue) / 100),
-      );
-    } else {
-      discountCents = Math.min(discountValue, totalCents);
-    }
-  } else if (discountKind === "amount_off_products") {
-    if (discountType === "percent") {
-      discountCents = Math.round(
-        subtotalCents * (Math.min(100, discountValue) / 100),
-      );
-    } else {
-      discountCents = Math.min(discountValue, subtotalCents);
-    }
-  }
+  const { discountCents, freeShipping } = computeDiscountFromCoupon(
+    coupon,
+    subtotalCents,
+    shippingFeeCents,
+    qualifyingSubtotalCents,
+  );
 
   const totalBeforeDiscount = subtotalCents + shippingFeeCents;
   const totalAfterDiscountCents = Math.max(
@@ -180,14 +203,21 @@ export async function resolveCouponForCheckout(
   return {
     couponId: coupon.id,
     code: coupon.code,
-    discountKind,
-    discountType,
-    discountValue,
+    discountKind: coupon.discountKind ?? "amount_off_order",
+    discountType: coupon.discountType ?? "percent",
+    discountValue: coupon.discountValue ?? 0,
     discountCents,
     freeShipping,
     totalAfterDiscountCents,
   };
 }
+
+/** A cart line item with price info, used to compute per-product discounts. */
+export type CartLineItem = {
+  productId: string;
+  priceCents: number;
+  quantity: number;
+};
 
 /** Input for automatic discount resolution (cart snapshot). */
 export type AutomaticCouponInput = {
@@ -204,6 +234,12 @@ export type AutomaticCouponInput = {
    * When undefined, coupons with a payment method restriction are skipped.
    */
   paymentMethodKey?: string | null;
+  /**
+   * Individual cart items with prices. Required for per-product discounts
+   * (discountKind "amount_off_products") so the discount is calculated only
+   * on qualifying items rather than the full subtotal.
+   */
+  items?: CartLineItem[];
 };
 
 function meetsRuleset(
@@ -271,6 +307,12 @@ function computeDiscountFromCoupon(
   },
   subtotalCents: number,
   shippingFeeCents: number,
+  /**
+   * For "amount_off_products": the subtotal of only the qualifying items.
+   * When provided, the discount is applied to this amount instead of the
+   * full subtotal. When undefined, falls back to full subtotal.
+   */
+  qualifyingSubtotalCents?: number,
 ): { discountCents: number; freeShipping: boolean } {
   const discountKind = coupon.discountKind ?? "amount_off_order";
   const discountType = coupon.discountType ?? "percent";
@@ -289,12 +331,14 @@ function computeDiscountFromCoupon(
       discountCents = Math.min(discountValue, totalCents);
     }
   } else if (discountKind === "amount_off_products") {
+    // Use qualifying product subtotal when available, otherwise full subtotal
+    const basis = qualifyingSubtotalCents ?? subtotalCents;
     if (discountType === "percent") {
       discountCents = Math.round(
-        subtotalCents * (Math.min(100, discountValue) / 100),
+        basis * (Math.min(100, discountValue) / 100),
       );
     } else {
-      discountCents = Math.min(discountValue, subtotalCents);
+      discountCents = Math.min(discountValue, basis);
     }
   }
   return { discountCents, freeShipping };
@@ -318,6 +362,7 @@ export async function resolveAutomaticCouponForCheckout(
       discountKind: couponsTable.discountKind,
       discountType: couponsTable.discountType,
       discountValue: couponsTable.discountValue,
+      appliesTo: couponsTable.appliesTo,
       maxUses: couponsTable.maxUses,
       maxUsesPerCustomer: couponsTable.maxUsesPerCustomer,
       maxUsesPerCustomerType: couponsTable.maxUsesPerCustomerType,
@@ -382,6 +427,8 @@ export async function resolveAutomaticCouponForCheckout(
 
     const productIds = input.productIds ?? [];
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
+    // Also compute the qualifying subtotal for per-product discounts (amount_off_products).
+    let qualifyingSubtotalCents: number | undefined;
     if (productIds.length > 0) {
       const [allowedProductIds, couponCategoryIds] = await Promise.all([
         db
@@ -401,9 +448,11 @@ export async function resolveAutomaticCouponForCheckout(
         const cartHasAllowedProduct =
           hasProductRule &&
           productIds.some((id) => allowedProductIds.includes(id));
+        // For per-product discounts, also find which specific product IDs match by category
+        let matchingCategoryProductIds: string[] = [];
         let cartHasProductFromCategory = false;
         if (hasCategoryRule) {
-          const [match] = await db
+          const categoryMatches = await db
             .select({ productId: productCategoriesTable.productId })
             .from(productCategoriesTable)
             .where(
@@ -411,12 +460,28 @@ export async function resolveAutomaticCouponForCheckout(
                 inArray(productCategoriesTable.categoryId, couponCategoryIds),
                 inArray(productCategoriesTable.productId, productIds),
               ),
-            )
-            .limit(1);
-          cartHasProductFromCategory = Boolean(match);
+            );
+          matchingCategoryProductIds = categoryMatches.map((r) => r.productId);
+          cartHasProductFromCategory = matchingCategoryProductIds.length > 0;
         }
         // Pass if either rule is satisfied (OR when both are set)
         if (!cartHasAllowedProduct && !cartHasProductFromCategory) continue;
+
+        // For amount_off_products: compute qualifying subtotal from matching items only
+        if (
+          (coupon.discountKind === "amount_off_products" ||
+            coupon.appliesTo === "product") &&
+          input.items &&
+          input.items.length > 0
+        ) {
+          const qualifyingProductIdSet = new Set<string>([
+            ...(hasProductRule ? allowedProductIds : []),
+            ...matchingCategoryProductIds,
+          ]);
+          qualifyingSubtotalCents = input.items
+            .filter((item) => qualifyingProductIdSet.has(item.productId))
+            .reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
+        }
       }
     }
 
@@ -441,6 +506,7 @@ export async function resolveAutomaticCouponForCheckout(
       coupon,
       input.subtotalCents,
       input.shippingFeeCents,
+      qualifyingSubtotalCents,
     );
     const totalAfterDiscountCents = Math.max(
       0,

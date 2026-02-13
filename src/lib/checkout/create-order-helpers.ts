@@ -20,7 +20,7 @@ import {
 } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
 import { resolveAffiliateForOrder } from "~/lib/affiliate";
-import { resolveCouponForCheckout } from "~/lib/coupon";
+import { resolveCouponForCheckout, type CartLineItem } from "~/lib/coupon";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 
 // ---------------------------------------------------------------------------
@@ -246,6 +246,8 @@ export async function resolveDiscounts(params: {
   productIds: string[];
   /** Payment method key for payment-method-restricted coupons. */
   paymentMethodKey?: string | null;
+  /** Cart items with prices for per-product discount computation. */
+  items?: CartLineItem[];
 }): Promise<DiscountResult> {
   const {
     affiliateCode,
@@ -255,6 +257,7 @@ export async function resolveDiscounts(params: {
     userId,
     productIds,
     paymentMethodKey,
+    items,
   } = params;
 
   const affiliateResult = await resolveAffiliateForOrder(
@@ -268,6 +271,7 @@ export async function resolveDiscounts(params: {
         userId: userId ?? undefined,
         productIds,
         paymentMethodKey: paymentMethodKey ?? undefined,
+        items,
       })
     : null;
 

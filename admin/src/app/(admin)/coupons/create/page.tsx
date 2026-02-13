@@ -71,9 +71,9 @@ export default function AdminDiscountCreatePage() {
   const [maxUsesPerCustomerType, setMaxUsesPerCustomerType] = useState<
     "account" | "phone" | "shipping_address" | ""
   >("");
-  const [appliesTo, setAppliesTo] = useState<"subtotal" | "shipping">(
-    "subtotal",
-  );
+  const [appliesTo, setAppliesTo] = useState<
+    "subtotal" | "shipping" | "product"
+  >("subtotal");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [productIds, setProductIds] = useState<string[]>([]);
   const [tokenHolderChain, setTokenHolderChain] = useState<string>("");
@@ -122,12 +122,16 @@ export default function AdminDiscountCreatePage() {
     void fetchOptions();
   }, [fetchOptions]);
 
-  // Keep appliesTo in sync with discount kind (free_shipping -> shipping)
-  useEffect(() => {
-    setAppliesTo(
-      discountKind === "free_shipping" ? "shipping" : "subtotal",
-    );
-  }, [discountKind]);
+  // Sync discountKind ↔ appliesTo bidirectionally
+  const handleAppliesToChange = useCallback(
+    (value: "subtotal" | "shipping" | "product") => {
+      setAppliesTo(value);
+      if (value === "shipping") setDiscountKind("free_shipping");
+      else if (value === "product") setDiscountKind("amount_off_products");
+      else setDiscountKind("amount_off_order");
+    },
+    [],
+  );
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -388,15 +392,27 @@ export default function AdminDiscountCreatePage() {
                   id="appliesTo"
                   value={appliesTo}
                   onChange={(e) =>
-                    setAppliesTo(e.target.value as "subtotal" | "shipping")
+                    handleAppliesToChange(
+                      e.target.value as "subtotal" | "shipping" | "product",
+                    )
                   }
                   className={inputClass}
                 >
                   <option value="subtotal">Order subtotal</option>
+                  <option value="product">
+                    Product (specific items / categories)
+                  </option>
                   <option value="shipping">
                     Shipping only (e.g. free shipping)
                   </option>
                 </select>
+                {appliesTo === "product" && (
+                  <p className="text-xs text-muted-foreground">
+                    Discount is calculated on qualifying products only.
+                    Select products or categories below to restrict which
+                    items receive the discount.
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">

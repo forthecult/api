@@ -272,7 +272,11 @@ export default function AdminDiscountDetailPage() {
       setSaving(true);
       try {
         const appliesTo =
-          discountKind === "free_shipping" ? "shipping" : "subtotal";
+          discountKind === "free_shipping"
+            ? "shipping"
+            : discountKind === "amount_off_products"
+              ? "product"
+              : "subtotal";
         const body: Record<string, unknown> = {
           method,
           code: codeTrim,
