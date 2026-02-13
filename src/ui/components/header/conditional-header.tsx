@@ -13,10 +13,11 @@ function isCryptoPayPage(pathname: string | null): boolean {
   return pathname.length > "/checkout/".length;
 }
 
-/** Renders TopBanner + Header except on checkout (no banner) and on crypto payment page (/checkout/[invoiceId], no header/banner). */
+/** Renders TopBanner + Header except on checkout (no banner), on crypto payment page (/checkout/[invoiceId], no header/banner), and inside Telegram Mini App (/telegram). */
 export function ConditionalHeader(props: React.ComponentProps<typeof Header>) {
   const pathname = usePathname();
   if (isCryptoPayPage(pathname)) return null;
+  if (pathname?.startsWith("/telegram")) return null;
   const isCheckout = pathname?.startsWith("/checkout") ?? false;
   return (
     <>

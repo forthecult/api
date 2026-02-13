@@ -424,6 +424,19 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                         <Link
                           className={cn(
                             "text-lg font-medium transition-colors hover:text-primary",
+                            pathname?.startsWith("/esim")
+                              ? "font-semibold text-primary"
+                              : "text-muted-foreground",
+                          )}
+                          href="/esim"
+                        >
+                          eSIM
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          className={cn(
+                            "text-lg font-medium transition-colors hover:text-primary",
                             pathname === "/about"
                               ? "font-semibold text-primary"
                               : "text-muted-foreground",

@@ -24,6 +24,10 @@ export * from "./coupons/relations";
 export * from "./coupons/tables";
 export * from "./coupons/types";
 
+export * from "./esim/relations";
+export * from "./esim/tables";
+export * from "./esim/types";
+
 export * from "./customer-comments/relations";
 export * from "./customer-comments/tables";
 export * from "./customer-comments/types";

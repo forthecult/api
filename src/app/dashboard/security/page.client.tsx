@@ -17,6 +17,7 @@ import {
   OPEN_LINK_WALLET_MODAL,
   WALLET_LINKED_EVENT,
 } from "~/ui/components/auth/auth-wallet-modal";
+import { DiscordIcon } from "~/ui/components/icons/discord";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
@@ -668,7 +669,13 @@ export function SecurityPageClient() {
                         </span>
                       </>
                     )}
-                    {!["credential", "solana", "ethereum"].includes(
+                    {acc.providerId === "discord" && (
+                      <>
+                        <DiscordIcon className="size-4 shrink-0" />
+                        Discord
+                      </>
+                    )}
+                    {!["credential", "solana", "ethereum", "discord"].includes(
                       acc.providerId,
                     ) && (
                       <span className="font-mono text-muted-foreground">
@@ -696,15 +703,33 @@ export function SecurityPageClient() {
               ))}
             </ul>
           )}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleOpenLinkWallet}
-            className="gap-2"
-          >
-            <Wallet className="size-4" />
-            Connect wallet (Solana or Ethereum)
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleOpenLinkWallet}
+              className="gap-2"
+            >
+              <Wallet className="size-4" />
+              Connect wallet (Solana or Ethereum)
+            </Button>
+            {!accounts.some((a) => a.providerId === "discord") && (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  void authClient.linkSocial({
+                    provider: "discord",
+                    callbackURL: "/dashboard/security",
+                  });
+                }}
+              >
+                <DiscordIcon className="size-4" />
+                Connect Discord
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
 

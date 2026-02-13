@@ -47,3 +47,21 @@ export function getAgentBaseUrl(): string {
   if (raw && /^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
   return getPublicSiteUrl().replace(/\/$/, "");
 }
+
+/** Hostname of the agent app URL (e.g. ai.forthecult.store). Empty if not set. */
+export function getAgentHostname(): string {
+  const url = getAgentBaseUrl();
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
+/** True when the request host is the configured AI/agent subdomain. */
+export function isAgentSubdomain(host: string | null | undefined): boolean {
+  const agentHost = getAgentHostname();
+  if (!agentHost) return false;
+  const h = (host ?? "").trim().toLowerCase();
+  return h === agentHost || h.endsWith(`.${agentHost}`);
+}

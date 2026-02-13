@@ -1,0 +1,492 @@
+"use client";
+
+import { Globe, Loader2, MapPin, Search, Signal, Wifi } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { cn } from "~/lib/cn";
+import { Badge } from "~/ui/primitives/badge";
+import { Button } from "~/ui/primitives/button";
+import { Card, CardContent } from "~/ui/primitives/card";
+import { Input } from "~/ui/primitives/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/ui/primitives/tabs";
+
+// ---------- Types ----------
+
+type Country = {
+  id: number;
+  name: string;
+  image_url: string;
+};
+
+type Continent = {
+  id: number;
+  name: string;
+  code: string;
+  image_url: string;
+};
+
+type Package = {
+  id: string;
+  name: string;
+  price: string;
+  data_quantity: number;
+  data_unit: string;
+  voice_quantity?: number;
+  voice_unit?: string;
+  sms_quantity?: number;
+  package_validity: number;
+  package_validity_unit: string;
+  package_type?: string;
+  unlimited?: boolean;
+};
+
+// ---------- Sub-components ----------
+
+function PackageCard({ pkg }: { pkg: Package }) {
+  return (
+    <Link href={`/esim/${pkg.id}`}>
+      <Card className="group h-full transition-all hover:shadow-md hover:border-primary/30">
+        <CardContent className="flex flex-col gap-3 p-5">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors">
+              {pkg.name}
+            </h3>
+            {pkg.package_type === "DATA-VOICE-SMS" && (
+              <Badge variant="secondary" className="shrink-0 text-[10px]">
+                Voice+SMS
+              </Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1">
+              <Wifi className="h-3.5 w-3.5" />
+              {pkg.unlimited ? "Unlimited" : `${pkg.data_quantity} ${pkg.data_unit}`}
+            </span>
+            <span className="flex items-center gap-1">
+              <Signal className="h-3.5 w-3.5" />
+              {pkg.package_validity} {pkg.package_validity_unit}s
+            </span>
+          </div>
+          {(pkg.voice_quantity ?? 0) > 0 && (
+            <div className="text-xs text-muted-foreground">
+              {pkg.voice_quantity} {pkg.voice_unit} &middot;{" "}
+              {pkg.sms_quantity} SMS
+            </div>
+          )}
+          <div className="mt-auto pt-2 flex items-baseline justify-between border-t">
+            <span className="text-xl font-bold text-primary">${pkg.price}</span>
+            <span className="text-xs text-muted-foreground">
+              ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
+            </span>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
+  );
+}
+
+function CountryCard({
+  country,
+  onClick,
+}: {
+  country: Country;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border bg-card p-3 text-left transition-all",
+        "hover:shadow-md hover:border-primary/30 cursor-pointer w-full",
+      )}
+    >
+      <Image
+        src={country.image_url}
+        alt={country.name}
+        width={40}
+        height={28}
+        className="rounded-sm object-cover"
+        unoptimized
+      />
+      <span className="text-sm font-medium">{country.name}</span>
+    </button>
+  );
+}
+
+function ContinentCard({
+  continent,
+  onClick,
+}: {
+  continent: Continent;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center gap-2 rounded-lg border bg-card p-5 transition-all",
+        "hover:shadow-md hover:border-primary/30 cursor-pointer",
+      )}
+    >
+      <Globe className="h-8 w-8 text-primary" />
+      <span className="text-sm font-semibold">{continent.name}</span>
+    </button>
+  );
+}
+
+function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-16">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <span className="text-sm text-muted-foreground">{text}</span>
+    </div>
+  );
+}
+
+// ---------- Main Component ----------
+
+export function EsimStorePage() {
+  const [activeTab, setActiveTab] = useState("countries");
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [continents, setContinents] = useState<Continent[]>([]);
+  const [packages, setPackages] = useState<Package[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [selectedContinent, setSelectedContinent] =
+    useState<Continent | null>(null);
+  const [packageType, setPackageType] = useState<
+    "DATA-ONLY" | "DATA-VOICE-SMS"
+  >("DATA-ONLY");
+
+  // Fetch countries
+  useEffect(() => {
+    fetch("/api/esim/countries")
+      .then((res) => res.json())
+      .then((data: { status: boolean; data?: Country[] }) => {
+        if (data.status && data.data) {
+          setCountries(data.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Fetch continents
+  useEffect(() => {
+    fetch("/api/esim/continents")
+      .then((res) => res.json())
+      .then((data: { status: boolean; data?: Continent[] }) => {
+        if (data.status && data.data) {
+          setContinents(data.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  // Fetch global packages when tab is "global"
+  useEffect(() => {
+    if (activeTab !== "global") return;
+    setLoading(true);
+    fetch(`/api/esim/packages/global?package_type=${packageType}`)
+      .then((res) => res.json())
+      .then((data: { status: boolean; data?: Package[] }) => {
+        if (data.status && data.data) {
+          setPackages(data.data);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, [activeTab, packageType]);
+
+  // Fetch country packages
+  const handleCountrySelect = useCallback(
+    (country: Country) => {
+      setSelectedCountry(country);
+      setSelectedContinent(null);
+      setLoading(true);
+      fetch(
+        `/api/esim/packages/country/${country.id}?package_type=${packageType}`,
+      )
+        .then((res) => res.json())
+        .then((data: { status: boolean; data?: Package[] }) => {
+          if (data.status && data.data) {
+            setPackages(data.data);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    },
+    [packageType],
+  );
+
+  // Fetch continent packages
+  const handleContinentSelect = useCallback(
+    (continent: Continent) => {
+      setSelectedContinent(continent);
+      setSelectedCountry(null);
+      setLoading(true);
+      fetch(
+        `/api/esim/packages/continent/${continent.id}?package_type=${packageType}`,
+      )
+        .then((res) => res.json())
+        .then((data: { status: boolean; data?: Package[] }) => {
+          if (data.status && data.data) {
+            setPackages(data.data);
+          }
+        })
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    },
+    [packageType],
+  );
+
+  // Re-fetch when packageType changes
+  useEffect(() => {
+    if (selectedCountry) {
+      handleCountrySelect(selectedCountry);
+    } else if (selectedContinent) {
+      handleContinentSelect(selectedContinent);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [packageType]);
+
+  // Filter countries by search
+  const filteredCountries = useMemo(
+    () =>
+      searchQuery.trim()
+        ? countries.filter((c) =>
+            c.name.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+        : countries,
+    [countries, searchQuery],
+  );
+
+  const clearSelection = () => {
+    setSelectedCountry(null);
+    setSelectedContinent(null);
+    setPackages([]);
+  };
+
+  return (
+    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Hero */}
+      <div className="mb-10 text-center">
+        <div className="mb-4 flex justify-center">
+          <div className="rounded-full bg-primary/10 p-4">
+            <Wifi className="h-10 w-10 text-primary" />
+          </div>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          eSIM Data Plans
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
+          Get instant mobile data for 200+ countries. No physical SIM card
+          needed — activate in seconds right from your phone.
+        </p>
+      </div>
+
+      {/* Package type toggle */}
+      <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+        <Button
+          variant={packageType === "DATA-ONLY" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setPackageType("DATA-ONLY")}
+        >
+          <Wifi className="mr-1 h-4 w-4" />
+          Data Only
+        </Button>
+        <Button
+          variant={packageType === "DATA-VOICE-SMS" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setPackageType("DATA-VOICE-SMS")}
+        >
+          <Signal className="mr-1 h-4 w-4" />
+          Data + Voice + SMS
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); clearSelection(); }}>
+        <TabsList className="mx-auto mb-6">
+          <TabsTrigger value="countries">
+            <MapPin className="mr-1 h-4 w-4" />
+            By Country
+          </TabsTrigger>
+          <TabsTrigger value="continents">
+            <Globe className="mr-1 h-4 w-4" />
+            By Region
+          </TabsTrigger>
+          <TabsTrigger value="global">
+            <Wifi className="mr-1 h-4 w-4" />
+            Global
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Countries Tab */}
+        <TabsContent value="countries">
+          {!selectedCountry ? (
+            <>
+              <div className="relative mb-6 max-w-md mx-auto">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search countries..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                {filteredCountries.map((country) => (
+                  <CountryCard
+                    key={country.id}
+                    country={country}
+                    onClick={() => handleCountrySelect(country)}
+                  />
+                ))}
+              </div>
+              {filteredCountries.length === 0 && (
+                <p className="py-16 text-center text-muted-foreground">
+                  No countries found matching &ldquo;{searchQuery}&rdquo;
+                </p>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="mb-6 flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={clearSelection}>
+                  &larr; All Countries
+                </Button>
+                <div className="flex items-center gap-2">
+                  <Image
+                    src={selectedCountry.image_url}
+                    alt={selectedCountry.name}
+                    width={32}
+                    height={22}
+                    className="rounded-sm"
+                    unoptimized
+                  />
+                  <h2 className="text-lg font-semibold">
+                    {selectedCountry.name}
+                  </h2>
+                </div>
+              </div>
+              {loading ? (
+                <LoadingSpinner text="Loading packages..." />
+              ) : packages.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {packages.map((pkg) => (
+                    <PackageCard key={pkg.id} pkg={pkg} />
+                  ))}
+                </div>
+              ) : (
+                <p className="py-16 text-center text-muted-foreground">
+                  No {packageType === "DATA-VOICE-SMS" ? "Data+Voice+SMS" : "data"} packages available for{" "}
+                  {selectedCountry.name}.
+                </p>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Continents Tab */}
+        <TabsContent value="continents">
+          {!selectedContinent ? (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              {continents.map((continent) => (
+                <ContinentCard
+                  key={continent.id}
+                  continent={continent}
+                  onClick={() => handleContinentSelect(continent)}
+                />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="mb-6 flex items-center gap-3">
+                <Button variant="outline" size="sm" onClick={clearSelection}>
+                  &larr; All Regions
+                </Button>
+                <h2 className="text-lg font-semibold">
+                  {selectedContinent.name}
+                </h2>
+              </div>
+              {loading ? (
+                <LoadingSpinner text="Loading packages..." />
+              ) : packages.length > 0 ? (
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {packages.map((pkg) => (
+                    <PackageCard key={pkg.id} pkg={pkg} />
+                  ))}
+                </div>
+              ) : (
+                <p className="py-16 text-center text-muted-foreground">
+                  No packages available for {selectedContinent.name}.
+                </p>
+              )}
+            </>
+          )}
+        </TabsContent>
+
+        {/* Global Tab */}
+        <TabsContent value="global">
+          {loading ? (
+            <LoadingSpinner text="Loading global packages..." />
+          ) : packages.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {packages.map((pkg) => (
+                <PackageCard key={pkg.id} pkg={pkg} />
+              ))}
+            </div>
+          ) : (
+            <p className="py-16 text-center text-muted-foreground">
+              No global packages available.
+            </p>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Info section */}
+      <section className="mt-16 border-t pt-12">
+        <h2 className="text-2xl font-bold text-center mb-8">
+          How eSIM Works
+        </h2>
+        <div className="grid gap-8 sm:grid-cols-3 max-w-3xl mx-auto">
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-lg font-bold text-primary">1</span>
+            </div>
+            <h3 className="font-semibold">Choose a Plan</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Select a country or region and pick a data plan that fits your
+              needs.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-lg font-bold text-primary">2</span>
+            </div>
+            <h3 className="font-semibold">Purchase &amp; Install</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Complete your purchase and scan the QR code or tap the activation
+              link on your device.
+            </p>
+          </div>
+          <div className="text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-lg font-bold text-primary">3</span>
+            </div>
+            <h3 className="font-semibold">Stay Connected</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Your eSIM activates instantly. Enjoy high-speed data wherever you
+              go.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}

@@ -10,6 +10,7 @@ import {
   Package,
   Settings,
   Shield,
+  Smartphone,
   UserIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -166,6 +167,17 @@ export function DashboardSidebar() {
                 <span className="flex items-center gap-2">
                   <Link2 className="h-4 w-4 shrink-0" aria-hidden />
                   Affiliate
+                </span>
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/dashboard/esim"
+                className={navLinkClass("/dashboard/esim")}
+              >
+                <span className="flex items-center gap-2">
+                  <Smartphone className="h-4 w-4 shrink-0" aria-hidden />
+                  My eSIMs
                 </span>
               </Link>
             </li>

@@ -6,6 +6,7 @@ import {
   Moon,
   Package,
   Search,
+  Smartphone,
   Sun,
   UserIcon,
 } from "lucide-react";
@@ -233,6 +234,21 @@ export function MobileNavSheet({
               )}
             </div>
 
+            <Link
+              className={cn(
+                "block rounded-md px-4 py-2 text-base font-medium",
+                pathname?.startsWith("/esim")
+                  ? "bg-primary/10 text-primary"
+                  : "text-foreground hover:bg-muted/50",
+              )}
+              href="/esim"
+              onClick={() => onOpenChange(false)}
+            >
+              <span className="flex items-center gap-2">
+                <Smartphone className="h-4 w-4" />
+                eSIM
+              </span>
+            </Link>
             <Link
               className={cn(
                 "block rounded-md px-4 py-2 text-base font-medium",

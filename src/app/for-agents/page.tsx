@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
-import { getAgentBaseUrl, getPublicSiteUrl } from "~/lib/app-url";
+import { getAgentBaseUrl, isAgentSubdomain } from "~/lib/app-url";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -13,7 +14,6 @@ import {
 } from "~/ui/primitives/card";
 
 const agentBase = getAgentBaseUrl();
-const siteUrl = getPublicSiteUrl();
 
 export const metadata: Metadata = {
   title: `For AI Agents | ${SEO_CONFIG.name}`,
@@ -75,7 +75,81 @@ const API_LINKS = [
   },
 ];
 
-export default function ForAgentsPage() {
+/** AI-oriented view: document structure, pre/code blocks, minimal decoration. */
+function ForAgentsPageAgentView() {
+  return (
+    <article className="mx-auto max-w-3xl px-4 py-8 font-mono text-sm">
+      <h1 className="mb-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+        For the Cult — API for AI agents
+      </h1>
+      <p className="mb-6 text-neutral-600 dark:text-neutral-400">
+        API-first store. Browse products, optional Sign in with Moltbook, checkout with crypto. Start with GET /api/agent/capabilities.
+      </p>
+
+      <section className="mb-8">
+        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+          Quick start
+        </h2>
+        <ol className="list-inside list-decimal space-y-1 text-neutral-700 dark:text-neutral-300">
+          <li>GET /api/agent/capabilities — endpoints, payment options, limits.</li>
+          <li>Optional: header X-Moltbook-Identity for /api/agent/me, /api/agent/me/orders, /api/agent/me/preferences; same header at checkout links order to agent.</li>
+          <li>GET /api/agent/products or POST /api/products/semantic-search → POST /api/checkout.</li>
+        </ol>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+          Endpoints (one per line)
+        </h2>
+        <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900" data-endpoints>
+          {API_LINKS.map((l) => `${l.method ?? "LINK"} ${l.href}`).join("\n")}
+        </pre>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+          Endpoint reference
+        </h2>
+        <dl className="space-y-3 text-neutral-700 dark:text-neutral-300">
+          {API_LINKS.map((l) => (
+            <div key={l.href} className="border-b border-neutral-100 pb-2 dark:border-neutral-800">
+              <dt className="font-semibold">
+                {l.title}
+                {l.method ? (
+                  <span className="ml-2 font-normal text-neutral-500">({l.method})</span>
+                ) : null}
+              </dt>
+              <dd className="mt-0.5">{l.description}</dd>
+              <dd className="mt-1 break-all text-xs text-blue-600 dark:text-blue-400">
+                <a href={l.href} target="_blank" rel="noopener noreferrer">
+                  {l.href}
+                </a>
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+          Links
+        </h2>
+        <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+          <a href={`${agentBase}/api/docs`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {agentBase}/api/docs
+          </a>
+          {"\n"}
+          <a href="https://moltbook.com/developers.md" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            https://moltbook.com/developers.md
+          </a>
+        </pre>
+      </section>
+    </article>
+  );
+}
+
+/** Human-oriented view: cards, buttons, store styling. */
+function ForAgentsPageHumanView() {
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
       <header className="mb-10 border-b border-border pb-8">
@@ -161,4 +235,12 @@ export default function ForAgentsPage() {
       </footer>
     </div>
   );
+}
+
+export default async function ForAgentsPage() {
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "";
+  const useAgentFormat = isAgentSubdomain(host);
+
+  return useAgentFormat ? <ForAgentsPageAgentView /> : <ForAgentsPageHumanView />;
 }

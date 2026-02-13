@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ShoppingBag } from "lucide-react";
+import { ChevronRight, ShoppingBag, ShoppingCart } from "lucide-react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { ProductCard } from "~/ui/components/product-card";
@@ -184,13 +184,23 @@ export function TelegramStoreClient() {
     <div className="flex min-h-screen flex-col pb-24">
       <header className="sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20 bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link
-            href="/telegram"
-            className="font-semibold text-[var(--tg-theme-text-color,#000)]"
-          >
-            Culture
-          </Link>
-          {inTelegram ? null : (
+          <span className="font-semibold text-[var(--tg-theme-text-color,#000)]">
+            Shop
+          </span>
+          {inTelegram ? (
+            <Link
+              href="/telegram/cart"
+              className="relative flex items-center justify-center rounded-full p-2 text-[var(--tg-theme-text-color,#000)] hover:bg-[var(--tg-theme-hint-color,#999)]/10"
+              aria-label={`Cart, ${itemCount} items`}
+            >
+              <ShoppingCart className="size-6" />
+              {itemCount > 0 ? (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--tg-theme-button-color,#3390ec)] px-1 text-[10px] font-bold text-[var(--tg-theme-button-text-color,#fff)]">
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              ) : null}
+            </Link>
+          ) : (
             <p className="text-xs text-[var(--tg-theme-hint-color,#999)]">
               Open in Telegram for the full experience
             </p>

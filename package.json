@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "next build --webpack",
+    "build": "bun run scripts/conditional-build.ts",
     "start": "next start",
     "dev": "next dev -p 3000",
     "dev:turbo": "next dev --turbopack -p 3000",
@@ -85,8 +85,6 @@
     "@solana/wallet-adapter-wallets": "^0.19.37",
     "@solana/web3-compat": "^0.0.21",
     "@solana/web3.js": "^1.98.4",
-    "@stripe/react-stripe-js": "^5.6.0",
-    "@stripe/stripe-js": "^8.7.0",
     "@tanstack/react-form": "^1.28.0",
     "@tanstack/react-query": "^5.90.20",
     "@tanstack/react-table": "8.21.3",

@@ -244,6 +244,8 @@ const config = {
       { hostname: "images-api.printify.com", protocol: "https" },
       // Seeed Studio curated product images (seed + upload-curated)
       { hostname: "media-cdn.seeedstudio.com", protocol: "https" },
+      // eSIM Card API: country flag icons
+      { hostname: "flagcdn.com", protocol: "https" },
     ],
   },
 } as NextConfig;

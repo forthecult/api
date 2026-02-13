@@ -118,7 +118,11 @@ export default function TelegramCartPage() {
               <Button asChild className="w-full" size="lg">
                 <Link href="/telegram/checkout">Proceed to checkout</Link>
               </Button>
-              <Button asChild variant="outline" className="mt-3 w-full">
+              <Button
+                asChild
+                variant="outline"
+                className="mt-3 w-full border-[var(--tg-theme-button-color,#3390ec)] bg-[var(--tg-theme-secondary-bg-color,#f5f5f5)] text-[var(--tg-theme-text-color,#000)] hover:bg-[var(--tg-theme-hint-color,#999)]/10"
+              >
                 <Link href="/telegram">Continue shopping</Link>
               </Button>
             </div>

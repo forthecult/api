@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
 import React from "react";
 
 const SupportChatWidget = dynamic(
@@ -16,8 +17,10 @@ const SUPPORT_CHAT_DEFER_MS = 10_000;
 /**
  * Wraps the chat widget: waits 10s after mount, then fetches visibility from API
  * and lazy-loads the widget. Defers chat JS and API work to keep initial load fast.
+ * Hidden inside Telegram Mini App (/telegram) to avoid overlap and duplicate chrome.
  */
 export function SupportChatWidgetWrapper() {
+  const pathname = usePathname();
   const [canLoad, setCanLoad] = React.useState(false);
   const [visible, setVisible] = React.useState<boolean | null>(null);
 
@@ -42,6 +45,7 @@ export function SupportChatWidgetWrapper() {
     };
   }, [canLoad]);
 
+  if (pathname?.startsWith("/telegram")) return null;
   if (!canLoad || visible === false) return null;
   if (visible === null) return null;
   return <SupportChatWidget />;

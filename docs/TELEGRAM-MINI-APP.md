@@ -6,6 +6,43 @@ This document plans and confirms the flow for turning For the Cult into a **Tele
 
 ---
 
+## How many bots?
+
+You need **2 bots**, not 3:
+
+| Bot | Purpose | Token / config |
+|-----|--------|----------------|
+| **Store bot** | Telegram **Login Widget** (sign-in on website), **Mini App** (store inside Telegram), and **order notifications** (shipped/fulfilled → DM). All use the same bot. | `TELEGRAM_BOT_TOKEN` + `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` |
+| **Alice (OpenClaw) bot** | AI assistant in Telegram: users message the bot, OpenClaw backend replies. Separate bot so the store and the AI have different @usernames and tokens. | OpenClaw / Alice config (see `docs/OPENCLAW-ALICE.md`) |
+
+- **Telegram authentication** = Store bot + the two env vars below. No separate “auth bot.”
+- **Telegram Mini App** = Same Store bot; add Mini App URL in BotFather.
+- **Telegram OpenClaw** = Alice bot (second bot).
+
+---
+
+## Telegram authentication (Login Widget) — setup
+
+Sign-in with Telegram on the **website** (login/signup page) uses the [Telegram Login Widget](https://core.telegram.org/widgets/login). Code: `src/lib/auth-telegram-plugin.ts`, `src/ui/components/auth/telegram-login-widget.tsx`. The button only appears when `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME` is set.
+
+**Steps:**
+
+1. **Create the Store bot** (if you don’t have it yet):
+   - Open [@BotFather](https://t.me/BotFather) → `/newbot` → name + username (e.g. `YourStoreBot`).
+   - Copy the **bot token** (e.g. `123456:ABC-Def...`).
+
+2. **Set environment variables** (e.g. in `.env`):
+   - `TELEGRAM_BOT_TOKEN=<token>` — server-only; used to verify the widget’s hash and (later) to send order notifications.
+   - `NEXT_PUBLIC_TELEGRAM_BOT_USERNAME=YourStoreBot` — bot username **without** `@`; used by the Login Widget script.
+
+3. **Restart** the dev server so env is picked up.
+
+4. **Test:** Open `/login` or `/signup`; the “Sign in with Telegram” option should appear. Click it, authorize in Telegram; you should be signed in and redirected.
+
+**Linking Telegram to an existing account:** From Dashboard → Security (or the flow that shows “Link Telegram”), use the same widget with `link: true` so the Telegram account is attached to the current user (and order notifications via Telegram can be enabled in Settings → Notifications).
+
+---
+
 ## 0. Current Status (Implemented)
 
 | Area | Status |
@@ -124,7 +161,15 @@ For the “easiest” path, the plan keeps **crypto-only** first; Telegram Stars
 
 ---
 
-## 5. Security Notes
+## 5. Design (dark mode)
+
+- The Mini App uses Telegram theme CSS variables (`--tg-theme-bg-color`, `--tg-theme-text-color`, `--tg-theme-button-color`, etc.) so the UI adapts to the user’s Telegram theme (light/dark). When Telegram is in dark mode, these vars are set by the client so text and backgrounds stay readable.
+- On `/telegram` we hide the main site header, footer, and support chat widget to avoid duplicate chrome and overlapping elements; the in-app header shows “Shop” and a cart icon only.
+- Secondary actions (e.g. “Continue shopping” on the cart page) use explicit theme vars for border and text so they remain readable in both themes.
+
+---
+
+## 6. Security Notes
 
 - **Validate initData on the server** if you ever use it for auth or sensitive actions: Telegram signs `initData`; verify the hash using the bot token so clients can’t forge user id. For “identity only” and order association, many apps only validate when needed (e.g. before sending a notification to that user).
 - **Rate limiting:** Keep existing checkout/cart rate limits; optionally add a stricter limit for requests that include `telegram_user_id` to avoid abuse.
@@ -132,7 +177,7 @@ For the “easiest” path, the plan keeps **crypto-only** first; Telegram Stars
 
 ---
 
-## 6. File Checklist
+## 7. File Checklist
 
 | File / area | Purpose |
 |-------------|--------|
@@ -154,7 +199,7 @@ For the “easiest” path, the plan keeps **crypto-only** first; Telegram Stars
 
 ---
 
-## 7. Deployment
+## 8. Deployment
 
 - Deploy the Next.js app as usual. No separate “Telegram app” build.
 - Set the bot’s Mini App URL to `https://<your-domain>/telegram`.

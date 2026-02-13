@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
@@ -8,7 +8,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { extractRouterConfig } from "uploadthing/server";
 
 import { SEO_CONFIG } from "~/app";
-import { getPublicSiteUrl } from "~/lib/app-url";
+import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
+import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
 import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
@@ -131,11 +132,41 @@ async function CookieLayoutContent({
   );
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "";
+  const useAgentLayout = isAgentSubdomain(host);
+
+  if (useAgentLayout) {
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`
+            ${geistSans.variable}
+            ${geistMono.variable}
+            min-h-screen bg-white text-neutral-900 antialiased
+            selection:bg-primary/20
+            dark:bg-neutral-950 dark:text-neutral-100
+          `}
+        >
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            disableTransitionOnChange
+            enableSystem
+          >
+            <AgentSubdomainLayout>{children}</AgentSubdomainLayout>
+            <Toaster />
+          </ThemeProvider>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
