@@ -72,6 +72,7 @@ export function CartClient({ className }: CartClientProps) {
         <Badge
           className={`
             absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-[10px]
+            dark:bg-[#14F195] dark:text-[#0A0A0A]
           `}
           variant="default"
         >

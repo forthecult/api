@@ -140,8 +140,11 @@ export function ShopMegaMenu({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 text-lg font-medium transition-colors hover:text-primary",
-            isActive ? "font-semibold text-primary" : "text-muted-foreground",
+            "inline-flex items-center gap-1 text-lg font-medium transition-colors",
+            "hover:text-primary dark:hover:text-[#9945FF] dark:border-b-2 dark:border-transparent dark:hover:border-[#9945FF]",
+            isActive
+              ? "font-semibold text-primary dark:text-[#9945FF] dark:border-[#9945FF]"
+              : "text-muted-foreground",
             className,
           )}
           aria-expanded={open}

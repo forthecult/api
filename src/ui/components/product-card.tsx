@@ -217,11 +217,11 @@ function ProductCardInner({
         <Card
           className={cn(
             `
-              relative flex h-full flex-col overflow-hidden rounded-lg py-0
-              transition-all duration-200 ease-in-out will-change-transform
-              hover:shadow-md hover:-translate-y-0.5
+              product-card-degen relative flex h-full flex-col overflow-hidden
+              rounded-lg py-0 transition-all duration-200 ease-in-out
+              will-change-transform hover:shadow-md hover:-translate-y-0.5
             `,
-            isHovered && "ring-1 ring-primary/20",
+            isHovered && "ring-1 ring-primary/20 dark:ring-[#9945FF]/30",
           )}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -337,7 +337,7 @@ function ProductCardInner({
                   {product.category}
                 </Badge>
                 {isNew && (
-                  <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                  <Badge className="badge-new-pulse bg-emerald-600 text-white hover:bg-emerald-600 dark:bg-[#14F195] dark:text-[#0A0A0A]">
                     New
                   </Badge>
                 )}

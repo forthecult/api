@@ -9,6 +9,7 @@ import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
 import { ImageWithRetry } from "~/ui/components/image-with-retry";
+import { LiveDataTicker } from "~/ui/components/live-data-ticker";
 import {
   PageContainer,
   PageSection,
@@ -227,13 +228,14 @@ export default async function HomePage() {
     <>
       <main
         className={`
-          flex min-h-screen flex-col gap-y-16 bg-gradient-to-b from-muted/50
-          via-muted/25 to-background
+          flex min-h-screen flex-col gap-y-16
+          bg-gradient-to-b from-muted/50 via-muted/25 to-background
+          dark:bg-[#0A0A0A]
         `}
       >
-        {/* Hero Section */}
-        <section className="relative overflow-hidden py-24 md:py-32">
-          <div className="bg-grid-black/[0.02] absolute inset-0 bg-[length:20px_20px]" />
+        {/* Hero Section — Degen Premium */}
+        <section className="relative overflow-hidden py-24 md:py-32 dark:bg-[#0A0A0A]">
+          <div className="bg-grid-black/[0.02] absolute inset-0 bg-[length:20px_20px] dark:bg-[length:24px_24px] dark:opacity-20" />
           <PageContainer className="relative z-10">
             <div
               className={`
@@ -247,89 +249,57 @@ export default async function HomePage() {
                     className={`
                       font-display text-4xl leading-tight font-bold
                       tracking-tight text-foreground
-                      sm:text-5xl
-                      md:text-6xl
-                      lg:leading-[1.1]
+                      sm:text-5xl md:text-6xl lg:leading-[1.1]
+                      dark:text-gradient-degen
                     `}
                   >
-                    Where smart living and{" "}
-                    <span
-                      className={`
-                        bg-gradient-to-r from-primary to-primary/70 bg-clip-text
-                        text-transparent
-                      `}
-                    >
-                      technology meet
-                    </span>
+                    WHERE SMART LIVING AND
+                    <br />
+                    TECHNOLOGY MEET
                   </h1>
                   <p
                     className={`
-                      max-w-[700px] text-lg text-muted-foreground
-                      md:text-xl
+                      max-w-[700px] text-lg text-muted-foreground md:text-xl
                     `}
                   >
-                    Curated tech, premium apparel, wellness gear, and travel
-                    essentials—for people who invest in themselves.
+                    Premium products for those who choose carefully.
+                    Crypto-first. Privacy-focused. Quality-obsessed.
                   </p>
                 </div>
-                <div
-                  className={`
-                    flex flex-col gap-3
-                    sm:flex-row
-                  `}
-                >
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <Link href="/products">
                     <Button
-                      className={`
-                        h-12 gap-1.5 px-8 transition-colors duration-200
-                      `}
+                      className="h-12 gap-1.5 px-8 transition-colors duration-200"
                       size="lg"
                     >
                       Shop now <ArrowRight className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href="/signup">
+                  <Link href="/about">
                     <Button
                       className="h-12 px-8 transition-colors duration-200"
                       size="lg"
                       variant="outline"
                     >
-                      Join for membership benefits
+                      Read Manifesto
                     </Button>
                   </Link>
                 </div>
-                <div
-                  className={`
-                    flex flex-wrap gap-5 text-sm text-muted-foreground
-                  `}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="h-5 w-5 text-primary/70" />
-                    <span>Free shipping over $200</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-5 w-5 text-primary/70" />
-                    <span>Worldwide delivery</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <ShoppingBag className="h-5 w-5 text-primary/70" />
-                    <span>Pay with card or crypto</span>
-                  </div>
+                <div className="flex flex-wrap gap-5 text-sm text-muted-foreground font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]">
+                  <span>₿ PAY WITH 50+ COINS • NO KYC</span>
+                  <span>🔒 ZERO TRACKERS • YOUR DATA IS YOURS</span>
+                  <span>↩️ 30-DAY RETURNS • 🚚 SHIPS 2–5 DAYS</span>
                 </div>
               </div>
               <div
                 className={`
                   relative mx-auto hidden aspect-square w-full max-w-md
-                  overflow-hidden rounded-xl border shadow-lg
+                  overflow-hidden rounded-xl border border-border shadow-lg
+                  dark:border-[#222] dark:shadow-[0_0_40px_rgba(153,69,255,0.15)]
                   lg:block
                 `}
               >
-                <div
-                  className={`
-                    absolute inset-0 z-10 bg-gradient-to-tr from-primary/20
-                    via-transparent to-transparent
-                  `}
-                />
+                <div className="absolute inset-0 z-10 bg-gradient-to-tr from-primary/20 via-transparent to-transparent dark:from-[#9945FF]/20" />
                 <ImageWithRetry
                   alt="For the Cult — curated tech, premium apparel, and lifestyle gear. Where smart living and technology meet."
                   title="Culture lifestyle"
@@ -342,11 +312,14 @@ export default async function HomePage() {
               </div>
             </div>
           </PageContainer>
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent dark:via-[#9945FF]/30" />
         </section>
 
+        {/* Live Data Ticker */}
+        <LiveDataTicker />
+
         {/* Where culture and technology merge */}
-        <PageSection>
+        <PageSection className="dark:bg-[#0A0A0A]">
           <PageContainer>
             <div className="mx-auto max-w-3xl space-y-6 text-center">
               <SectionHeading
@@ -363,7 +336,7 @@ export default async function HomePage() {
         </PageSection>
 
         {/* Quality that looks good and does good */}
-        <PageSection background="muted">
+        <PageSection background="muted" className="dark:bg-[#141414]">
           <PageContainer>
             <div className="mx-auto max-w-3xl space-y-4 text-center">
               <h2
@@ -409,7 +382,7 @@ export default async function HomePage() {
         </PageSection>
 
         {/* Curated collections */}
-        <PageSection>
+        <PageSection className="dark:bg-[#0A0A0A]">
           <PageContainer>
             <SectionHeading
               title="Tech, style, and everyday essentials"
@@ -419,10 +392,10 @@ export default async function HomePage() {
         </PageSection>
 
         {/* Featured Categories */}
-        <PageSection>
+        <PageSection className="dark:bg-[#0A0A0A]">
           <PageContainer>
             <SectionHeadingBlock
-              title="Shop by category"
+              title="Shop by pillar"
               description="Browse curated tech, apparel, wellness, and travel essentials—each category handpicked for quality and value"
             />
             <div
@@ -439,6 +412,8 @@ export default async function HomePage() {
                       group flex flex-col rounded-2xl border bg-card
                       p-5 shadow transition-all duration-300
                       hover:shadow-lg hover:border-primary/30
+                      dark:bg-[#141414] dark:border-[#222]
+                      dark:hover:border-[#9945FF]/50 dark:hover:shadow-[0_0_20px_rgba(153,69,255,0.15)]
                     `}
                     href={`/${category.slug ?? category.id}`}
                     key={category.id}
@@ -446,7 +421,7 @@ export default async function HomePage() {
                     <div className="mb-2 text-lg font-medium">
                       {category.name}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]">
                       {category.productCount} products
                     </p>
                   </Link>
@@ -469,7 +444,7 @@ export default async function HomePage() {
         {/* Featured Products */}
         <section
           className={`
-            bg-muted/50 py-12
+            bg-muted/50 py-12 dark:bg-[#141414]
             md:py-16
           `}
         >
@@ -484,12 +459,12 @@ export default async function HomePage() {
               <h2
                 className={`
                   font-display text-3xl leading-tight font-bold tracking-tight
-                  md:text-4xl
+                  md:text-4xl dark:text-gradient-degen
                 `}
               >
                 Featured Products
               </h2>
-              <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
+              <div className="mt-2 h-1 w-12 rounded-full bg-primary dark:bg-gradient-to-r dark:from-[#9945FF] dark:to-[#14F195]" />
               <p className="mt-4 max-w-2xl text-center text-muted-foreground">
                 Handpicked tech, apparel, wellness, and travel gear for how you
                 live
@@ -521,10 +496,10 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Features Section */}
+        {/* Features Section — Why Choose Us */}
         <section
           className={`
-            py-12
+            py-12 dark:bg-[#0A0A0A]
             md:py-16
           `}
           id="features"
@@ -540,12 +515,12 @@ export default async function HomePage() {
               <h2
                 className={`
                   font-display text-3xl leading-tight font-bold tracking-tight
-                  md:text-4xl
+                  md:text-4xl dark:text-gradient-degen
                 `}
               >
                 Why Choose Us
               </h2>
-              <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
+              <div className="mt-2 h-1 w-12 rounded-full bg-primary dark:bg-gradient-to-r dark:from-[#9945FF] dark:to-[#14F195]" />
               <p
                 className={`
                   mt-4 max-w-2xl text-center text-muted-foreground
@@ -567,8 +542,9 @@ export default async function HomePage() {
                 <Card
                   className={`
                     rounded-2xl border-none bg-background shadow transition-all
-                    duration-300
-                    hover:shadow-lg
+                    duration-300 hover:shadow-lg
+                    dark:bg-[#141414] dark:border dark:border-[#222]
+                    dark:hover:border-[#9945FF]/40 dark:hover:shadow-[0_0_24px_rgba(153,69,255,0.1)]
                   `}
                   key={feature.title}
                 >
@@ -576,7 +552,8 @@ export default async function HomePage() {
                     <div
                       className={`
                         mb-3 flex h-12 w-12 items-center justify-center
-                        rounded-full bg-primary/10
+                        rounded-full bg-primary/10 dark:bg-[#9945FF]/20
+                        dark:text-[#14F195]
                       `}
                     >
                       {feature.icon}
@@ -597,7 +574,7 @@ export default async function HomePage() {
         {/* Testimonials */}
         <section
           className={`
-            bg-muted/50 py-12
+            bg-muted/50 py-12 dark:bg-[#141414]
             md:py-16
           `}
         >
@@ -620,7 +597,7 @@ export default async function HomePage() {
         {/* CTA Section */}
         <section
           className={`
-            py-12
+            py-12 dark:bg-[#0A0A0A]
             md:py-16
           `}
         >
@@ -633,21 +610,18 @@ export default async function HomePage() {
           >
             <div
               className={`
-                relative overflow-hidden rounded-xl bg-primary/10 p-8 shadow-lg
+                relative overflow-hidden rounded-xl border border-border
+                bg-primary/10 p-8 shadow-lg dark:bg-[#141414] dark:border-[#222]
+                dark:shadow-[0_0_40px_rgba(153,69,255,0.1)]
                 md:p-12
               `}
             >
-              <div
-                className={`
-                  bg-grid-white/[0.05] absolute inset-0
-                  bg-[length:16px_16px]
-                `}
-              />
+              <div className="bg-grid-white/[0.05] absolute inset-0 bg-[length:16px_16px] dark:opacity-30" />
               <div className="relative z-10 mx-auto max-w-2xl text-center">
                 <h2
                   className={`
                     font-display text-3xl leading-tight font-bold tracking-tight
-                    md:text-4xl
+                    md:text-4xl dark:text-gradient-degen
                   `}
                 >
                   Ready to live the Culture lifestyle?

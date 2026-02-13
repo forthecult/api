@@ -52,7 +52,12 @@ function TelegramIcon({ className }: { className?: string }) {
 
 export function Footer({ className }: { className?: string }) {
   return (
-    <footer className={cn("relative border-t bg-background", className)}>
+    <footer
+      className={cn(
+        "relative border-t bg-background dark:border-[#222] dark:bg-[#0A0A0A]",
+        className,
+      )}
+    >
       <FooterDogePeek />
       <div
         className={`
@@ -73,18 +78,19 @@ export function Footer({ className }: { className?: string }) {
                 className={`
                   bg-gradient-to-r from-primary to-primary/70 bg-clip-text
                   text-xl font-bold tracking-tight text-transparent
+                  dark:from-[#9945FF] dark:to-[#14F195]
                 `}
               >
                 {SEO_CONFIG.name}
               </span>
             </Link>
             <p className="text-sm text-muted-foreground">
-            Health. Autonomy. Culture.
+              Health. Autonomy. Culture.
             </p>
             <div className="flex space-x-4">
               <Button
                 asChild
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full transition-shadow dark:hover:shadow-[0_0_12px_rgba(153,69,255,0.5)]"
                 size="icon"
                 variant="ghost"
               >
@@ -99,7 +105,7 @@ export function Footer({ className }: { className?: string }) {
               </Button>
               <Button
                 asChild
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full transition-shadow dark:hover:shadow-[0_0_12px_rgba(153,69,255,0.5)]"
                 size="icon"
                 variant="ghost"
               >
@@ -114,7 +120,7 @@ export function Footer({ className }: { className?: string }) {
               </Button>
               <Button
                 asChild
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full transition-shadow dark:hover:shadow-[0_0_12px_rgba(153,69,255,0.5)]"
                 size="icon"
                 variant="ghost"
               >
@@ -129,7 +135,7 @@ export function Footer({ className }: { className?: string }) {
               </Button>
               <Button
                 asChild
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full transition-shadow dark:hover:shadow-[0_0_12px_rgba(153,69,255,0.5)]"
                 size="icon"
                 variant="ghost"
               >
@@ -310,7 +316,7 @@ export function Footer({ className }: { className?: string }) {
             </ul>
           </div>
         </div>
-        <div className="relative mt-12 border-t pt-8">
+        <div className="relative mt-12 border-t border-border dark:border-[#222] pt-8">
           <div className="mb-6">
             <FooterPaymentsBar />
           </div>

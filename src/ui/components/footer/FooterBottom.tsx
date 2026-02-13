@@ -109,8 +109,8 @@ export function FooterBottom() {
         md:flex-row
       `}
     >
-      <p className="text-sm text-muted-foreground">
-        COPYLEFT {new Date().getFullYear()} {SEO_CONFIG.name}
+      <p className="text-sm text-muted-foreground font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]">
+        © {new Date().getFullYear()} {SEO_CONFIG.name} • No trackers. Privacy.
       </p>
       <div
         className={`

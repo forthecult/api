@@ -46,6 +46,9 @@ const buttonVariants = cva(
           bg-primary text-primary-foreground shadow-xs
           hover:bg-primary/90 hover:shadow-md
           focus-visible:ring-2 focus-visible:ring-primary/60
+          dark:bg-gradient-to-r dark:from-[#9945FF] dark:to-[#14F195] dark:border-0
+          dark:hover:shadow-[0_8px_24px_rgba(153,69,255,0.4)] dark:hover:-translate-y-0.5
+          dark:focus-visible:ring-[#9945FF]/60
         `,
         destructive: `
           bg-destructive text-white shadow-xs
@@ -67,7 +70,8 @@ const buttonVariants = cva(
           border bg-background shadow-xs
           hover:bg-accent hover:text-accent-foreground hover:shadow-md
           focus-visible:ring-2 focus-visible:ring-accent/40
-          dark:border-input dark:bg-input/30 dark:hover:bg-input/50
+          dark:border-[#222] dark:bg-transparent dark:hover:border-[#9945FF]/50
+          dark:hover:bg-[#141414]
         `,
         secondary: `
           bg-secondary text-secondary-foreground shadow-xs
