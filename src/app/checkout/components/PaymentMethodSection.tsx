@@ -253,6 +253,44 @@ export function PaymentMethodSection({
     visibility === null || hasAnyCryptoEnabled(visibility);
   const showStablecoinsRow =
     visibility === null || hasAnyStablecoinEnabled(visibility);
+
+  /** Icons shown in the collapsed Crypto row — only enabled methods. */
+  const cryptoRowIcons = useMemo(() => {
+    const icons: { alt: string; src: string }[] = [];
+    if (!visibility) {
+      // Fallback before API loads: show icons matching VISIBLE_CRYPTO_SUB_OPTIONS
+      if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin)
+        icons.push({ alt: "Bitcoin", src: "/crypto/bitcoin/bitcoin-logo.svg" });
+      icons.push({ alt: "Ethereum", src: "/crypto/ethereum/ethereum-logo.svg" });
+      icons.push({ alt: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
+      if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin)
+        icons.push({ alt: "Dogecoin", src: "/payments/doge.svg" });
+      if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero)
+        icons.push({ alt: "Monero", src: "/crypto/monero/monero-xmr-logo.svg" });
+      return icons;
+    }
+    if (visibility.cryptoBitcoin)
+      icons.push({ alt: "Bitcoin", src: "/crypto/bitcoin/bitcoin-logo.svg" });
+    if (visibility.cryptoEthereum)
+      icons.push({ alt: "Ethereum", src: "/crypto/ethereum/ethereum-logo.svg" });
+    if (visibility.cryptoSolana)
+      icons.push({ alt: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
+    if (visibility.cryptoDogecoin)
+      icons.push({ alt: "Dogecoin", src: "/payments/doge.svg" });
+    if (visibility.cryptoMonero)
+      icons.push({ alt: "Monero", src: "/crypto/monero/monero-xmr-logo.svg" });
+    if (visibility.cryptoCrust)
+      icons.push({ alt: "Crust", src: "/crypto/solana/solanaLogoMark.svg" });
+    if (visibility.cryptoPump)
+      icons.push({ alt: "Pump", src: "/crypto/pump/pump-logomark.svg" });
+    if (visibility.cryptoTroll)
+      icons.push({ alt: "Troll", src: "/crypto/troll/troll-logomark.png" });
+    if (visibility.cryptoSui)
+      icons.push({ alt: "Sui", src: "/crypto/sui/sui-logo.svg" });
+    if (visibility.cryptoTon)
+      icons.push({ alt: "TON", src: "/crypto/ton/ton_logo.svg" });
+    return icons;
+  }, [visibility]);
   const visibleUsdcSubOptions = useMemo(() => {
     const base =
       visibility !== null
@@ -902,47 +940,16 @@ export function PaymentMethodSection({
                   <span className="text-sm font-medium">Crypto</span>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {!hiddenOptions.cryptoBitcoin && (
+                  {cryptoRowIcons.map((icon) => (
                     <Image
-                      alt="Bitcoin"
+                      key={icon.alt}
+                      alt={icon.alt}
                       className="size-5 shrink-0 object-contain"
                       height={20}
-                      src="/crypto/bitcoin/bitcoin-logo.svg"
+                      src={icon.src}
                       width={20}
                     />
-                  )}
-                  <Image
-                    alt="Ethereum"
-                    className="size-5 shrink-0 object-contain"
-                    height={20}
-                    src="/crypto/ethereum/ethereum-logo.svg"
-                    width={20}
-                  />
-                  <Image
-                    alt="Solana"
-                    className="size-5 shrink-0 object-contain"
-                    height={20}
-                    src="/crypto/solana/solanaLogoMark.svg"
-                    width={20}
-                  />
-                  {!hiddenOptions.cryptoDogecoin && (
-                    <Image
-                      alt="Dogecoin"
-                      className="size-5 shrink-0 object-contain"
-                      height={20}
-                      src="/payments/doge.svg"
-                      width={20}
-                    />
-                  )}
-                  {!hiddenOptions.cryptoMonero && (
-                    <Image
-                      alt="Monero"
-                      className="size-5 shrink-0 object-contain"
-                      height={20}
-                      src="/crypto/monero/monero-xmr-logo.svg"
-                      width={20}
-                    />
-                  )}
+                  ))}
                 </div>
               </label>
               {paymentMethod === "crypto" && (
@@ -1061,7 +1068,9 @@ export function PaymentMethodSection({
                     onChange={() => setPaymentTop("stablecoins")}
                     className="size-4 border-input text-primary focus:ring-primary"
                   />
-                  <span className="text-sm font-medium">Stablecoins (USDC / USDT)</span>
+                  <span className="text-sm font-medium">
+                    Stablecoins ({showUsdcOption && showUsdtOption ? "USDC / USDT" : showUsdcOption ? "USDC" : "USDT"})
+                  </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   {showUsdcOption && (

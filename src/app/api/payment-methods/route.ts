@@ -83,14 +83,9 @@ export async function GET() {
   return NextResponse.json({ data: list });
   } catch (err) {
     console.error("Payment methods GET error:", err);
-    const fallback: PaymentMethodSetting[] = PAYMENT_METHOD_DEFAULTS.map(
-      (d) => ({
-        methodKey: d.methodKey,
-        label: d.label,
-        enabled: true,
-        displayOrder: d.displayOrder,
-      }),
-    ).sort((a, b) => a.displayOrder - b.displayOrder);
-    return NextResponse.json({ data: fallback });
+    // Return empty list on DB error so the frontend can distinguish "no data"
+    // from "all enabled". The checkout UI treats null visibility (empty data) as
+    // a loading/fallback state with sensible defaults.
+    return NextResponse.json({ data: [] });
   }
 }

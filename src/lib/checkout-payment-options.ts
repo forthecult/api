@@ -46,6 +46,7 @@ const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
   crypto_monero: "cryptoMonero",
   crypto_crust: "cryptoCrust",
   crypto_pump: "cryptoPump",
+  crypto_troll: "cryptoTroll",
   crypto_sui: "cryptoSui",
   crypto_ton: "cryptoTon",
   stablecoin_usdc: "stablecoinUsdc",

@@ -551,9 +551,9 @@ export function MembershipClient() {
         {/* Stake & Join — below the fold, left card + right benefits */}
         {/* --------------------------------------------------------------- */}
         <section id="stake-cta" className="scroll-mt-20 py-16 md:py-20">
-          <div className="grid gap-8 md:grid-cols-[minmax(0,28rem),1fr] md:gap-10">
-            {/* Left: Stake card — constrained width so benefits sit on the right */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+          <div className="flex flex-col gap-8 md:flex-row md:gap-10">
+            {/* Left: Stake card */}
+            <div className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl md:w-[28rem] md:shrink-0">
               <div className="border-b bg-muted/30 px-6 py-5">
                 <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
                   Stake {tokenSymbol} &amp; Join
@@ -644,7 +644,7 @@ export function MembershipClient() {
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Duration</span>
+                    <span className="text-muted-foreground">Lock Duration</span>
                     <span className="font-medium">
                       {stakeDuration === "30d" ? "30 days" : "12 months"}
                     </span>
@@ -697,7 +697,7 @@ export function MembershipClient() {
             </div>
 
             {/* Right: Benefits for selected tier */}
-            <div className="flex min-w-0 flex-col">
+            <div className="flex min-w-0 flex-1 flex-col">
               <h3 className="mb-4 font-display text-lg font-semibold text-foreground">
                 Your benefits
               </h3>
