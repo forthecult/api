@@ -1394,7 +1394,7 @@ export function PaymentMethodSection({
             {navigatingToPay ? "Redirecting…" : "Pay with TON"}
           </Button>
         ) : paymentMethod === "" ? (
-          <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <p className="rounded-md border border-border bg-muted/50 px-4 py-3.5 text-base text-muted-foreground">
             Select a payment method above.
           </p>
         ) : paymentMethod === "crypto" && paymentSubOption === "" ? (
@@ -1413,17 +1413,17 @@ export function PaymentMethodSection({
           </p>
         )}
         {/* Reassurance messaging */}
-        <div className="flex flex-col gap-2 rounded-md border border-[#C4873A]/20 bg-[#C4873A]/5 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm text-[#C4873A]">
-            <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+        <div className="flex flex-col gap-2.5 rounded-md border border-[#C4873A]/20 bg-[#C4873A]/5 px-4 py-3.5">
+          <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
+            <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             <span className="font-medium">30-day money-back guarantee</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-[#C4873A]">
-            <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
+          <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
+            <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
             <span>Secure, encrypted transactions</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-[#C4873A]">
-            <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+          <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
+            <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             <span>Customer support available 7 days a week</span>
           </div>
         </div>

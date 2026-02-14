@@ -24,11 +24,21 @@ export class WalletErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    console.error(
-      "[WalletErrorBoundary] Wallet provider crashed — rendering children without wallet support:",
-      error,
-      info,
-    );
+    const isReact300 =
+      typeof error?.message === "string" &&
+      error.message.includes("Minified React error #300");
+    if (isReact300 && process.env.NODE_ENV === "production") {
+      // Known adapter hook-order quirk; avoid noisy console in production
+      console.warn(
+        "[WalletErrorBoundary] Wallet provider unavailable — checkout continues without wallet support.",
+      );
+    } else {
+      console.error(
+        "[WalletErrorBoundary] Wallet provider crashed — rendering children without wallet support:",
+        error,
+        info,
+      );
+    }
   }
 
   render() {

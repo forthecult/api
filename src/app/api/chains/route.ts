@@ -40,7 +40,7 @@ export async function GET() {
           },
           {
             symbol: "TROLL",
-            name: "Troll",
+            name: "Trololol",
             type: "spl",
             mint: TROLL_MINT_MAINNET,
             decimals: 6,
