@@ -23,7 +23,7 @@ function getVariantKey(
   index: number,
 ): "color" | "size" | "gender" | "label" {
   const lower = optionName.toLowerCase();
-  if (lower.includes("color")) return "color";
+  if (lower.includes("color") || lower.includes("finish")) return "color";
   if (lower.includes("size")) return "size";
   // Output, connection type, etc. are their own option type (stored in label, or size for legacy)
   if (

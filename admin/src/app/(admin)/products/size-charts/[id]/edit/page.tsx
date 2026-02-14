@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
+import { SizeChartDataEditor, type SizeChartData } from "~/ui/size-chart-editor";
 
 const API_BASE = getMainAppUrl();
 const inputClass =
@@ -31,9 +32,10 @@ export default function AdminSizeChartsEditPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [dataImperialRaw, setDataImperialRaw] = useState("");
-  const [dataMetricRaw, setDataMetricRaw] = useState("");
+  const [dataImperial, setDataImperial] = useState<SizeChartData | null>(null);
+  const [dataMetric, setDataMetric] = useState<SizeChartData | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -49,11 +51,19 @@ export default function AdminSizeChartsEditPage() {
         if (!cancelled) {
           setChart(data);
           setDisplayName(data.displayName ?? "");
-          setDataImperialRaw(
-            data.dataImperial != null ? JSON.stringify(data.dataImperial, null, 2) : "",
+          setDataImperial(
+            data.dataImperial != null
+              ? (typeof data.dataImperial === "string"
+                  ? (JSON.parse(data.dataImperial) as SizeChartData)
+                  : (data.dataImperial as SizeChartData))
+              : null,
           );
-          setDataMetricRaw(
-            data.dataMetric != null ? JSON.stringify(data.dataMetric, null, 2) : "",
+          setDataMetric(
+            data.dataMetric != null
+              ? (typeof data.dataMetric === "string"
+                  ? (JSON.parse(data.dataMetric) as SizeChartData)
+                  : (data.dataMetric as SizeChartData))
+              : null,
           );
         }
       } catch {
@@ -73,49 +83,31 @@ export default function AdminSizeChartsEditPage() {
       if (!id || !chart) return;
       setSaving(true);
       setError(null);
+      setSuccess(false);
       try {
-        let dataImperial: unknown = undefined;
-        let dataMetric: unknown = undefined;
-        if (dataImperialRaw.trim()) {
-          try {
-            dataImperial = JSON.parse(dataImperialRaw) as unknown;
-          } catch {
-            setError("Imperial data must be valid JSON.");
-            setSaving(false);
-            return;
-          }
-        }
-        if (dataMetricRaw.trim()) {
-          try {
-            dataMetric = JSON.parse(dataMetricRaw) as unknown;
-          } catch {
-            setError("Metric data must be valid JSON.");
-            setSaving(false);
-            return;
-          }
-        }
         const res = await fetch(`${API_BASE}/api/admin/size-charts/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
             displayName: displayName.trim(),
-            dataImperial,
-            dataMetric,
+            dataImperial: dataImperial ?? null,
+            dataMetric: dataMetric ?? null,
           }),
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as { error?: string };
           throw new Error(body.error ?? "Failed to update");
         }
-        router.push("/products/size-charts");
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to update");
       } finally {
         setSaving(false);
       }
     },
-    [id, chart, displayName, dataImperialRaw, dataMetricRaw, router],
+    [id, chart, displayName, dataImperial, dataMetric],
   );
 
   if (loading || !chart) {
@@ -139,25 +131,46 @@ export default function AdminSizeChartsEditPage() {
         </h2>
       </div>
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>
-            {chart.provider} · {chart.brand} · {chart.model}
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Provider, brand and model cannot be changed. Edit display name and size data below.
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
           </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </p>
-            )}
+        )}
+        {success && (
+          <p className="rounded-md border border-green-500/50 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+            Size chart saved successfully.
+          </p>
+        )}
+
+        {/* Identity (read-only) + Display Name */}
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {chart.provider} · {chart.brand} · {chart.model}
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Provider, brand, and model cannot be changed. Edit display name and size data below.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label className={labelClass}>Provider</label>
+                <input type="text" value={chart.provider} disabled className={inputClass + " opacity-60"} />
+              </div>
+              <div>
+                <label className={labelClass}>Brand</label>
+                <input type="text" value={chart.brand} disabled className={inputClass + " opacity-60"} />
+              </div>
+              <div>
+                <label className={labelClass}>Model</label>
+                <input type="text" value={chart.model} disabled className={inputClass + " opacity-60"} />
+              </div>
+            </div>
             <div>
               <label htmlFor="displayName" className={labelClass}>
-                Display name (accordion title) <span className="text-destructive">*</span>
+                Display name (shown in accordion) <span className="text-destructive">*</span>
               </label>
               <input
                 id="displayName"
@@ -166,45 +179,46 @@ export default function AdminSizeChartsEditPage() {
                 onChange={(e) => setDisplayName(e.target.value)}
                 className={inputClass}
                 required
+                placeholder="e.g. Hoodies"
               />
             </div>
-            <div>
-              <label htmlFor="dataImperial" className={labelClass}>
-                Data (Imperial / inches) – JSON
-              </label>
-              <textarea
-                id="dataImperial"
-                rows={8}
-                value={dataImperialRaw}
-                onChange={(e) => setDataImperialRaw(e.target.value)}
-                className={inputClass + " font-mono text-xs"}
-              />
-            </div>
-            <div>
-              <label htmlFor="dataMetric" className={labelClass}>
-                Data (Metric / cm) – JSON
-              </label>
-              <textarea
-                id="dataMetric"
-                rows={8}
-                value={dataMetricRaw}
-                onChange={(e) => setDataMetricRaw(e.target.value)}
-                className={inputClass + " font-mono text-xs"}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
-                {saving ? "Saving…" : "Save changes"}
-              </Button>
-              <Link href="/products/size-charts">
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Imperial data */}
+        <Card>
+          <CardContent className="pt-6">
+            <SizeChartDataEditor
+              label="Imperial (inches)"
+              data={dataImperial}
+              onChange={setDataImperial}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Metric data */}
+        <Card>
+          <CardContent className="pt-6">
+            <SizeChartDataEditor
+              label="Metric (cm)"
+              data={dataMetric}
+              onChange={setDataMetric}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={saving}>
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+          <Link href="/products/size-charts">
+            <Button type="button" variant="outline">
+              Back to list
+            </Button>
+          </Link>
+        </div>
+      </form>
     </div>
   );
 }

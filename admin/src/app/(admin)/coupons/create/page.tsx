@@ -129,11 +129,15 @@ export default function AdminDiscountCreatePage() {
   const handleAppliesToChange = useCallback(
     (value: "subtotal" | "shipping" | "product") => {
       setAppliesTo(value);
-      if (value === "shipping") setDiscountKind("free_shipping");
-      else if (value === "product") setDiscountKind("amount_off_products");
+      if (value === "shipping") {
+        setDiscountKind("free_shipping");
+        // Default to 100% (free shipping) but let user change it
+        if (!discountValue) setDiscountValue("100");
+        setDiscountType("percent");
+      } else if (value === "product") setDiscountKind("amount_off_products");
       else setDiscountKind("amount_off_order");
     },
-    [],
+    [discountValue],
   );
 
   const handleSubmit = useCallback(
@@ -146,15 +150,12 @@ export default function AdminDiscountCreatePage() {
         return;
       }
       const val =
-        discountKind !== "free_shipping" && discountKind !== "buy_x_get_y"
+        discountKind !== "buy_x_get_y"
           ? discountType === "percent"
             ? Number.parseInt(discountValue, 10)
             : Math.round(Number.parseFloat(discountValue || "0") * 100)
-          : discountKind === "free_shipping"
-            ? 100
-            : 0;
+          : 0;
       if (
-        discountKind !== "free_shipping" &&
         discountKind !== "buy_x_get_y" &&
         (Number.isNaN(val) || val < 0)
       ) {
@@ -162,7 +163,6 @@ export default function AdminDiscountCreatePage() {
         return;
       }
       if (
-        discountKind !== "free_shipping" &&
         discountKind !== "buy_x_get_y" &&
         discountType === "percent" &&
         val > 100
@@ -189,9 +189,8 @@ export default function AdminDiscountCreatePage() {
           dateStart: dateStart ? new Date(dateStart).toISOString() : null,
           dateEnd: dateEnd ? new Date(dateEnd).toISOString() : null,
           discountKind,
-          discountType:
-            discountKind === "free_shipping" ? "percent" : discountType,
-          discountValue: discountKind === "free_shipping" ? 100 : val,
+          discountType,
+          discountValue: val,
           appliesTo:
             discountKind === "free_shipping" ? "shipping" : appliesTo,
           maxUses: maxUses.trim() ? Number.parseInt(maxUses, 10) : null,
@@ -426,7 +425,7 @@ export default function AdminDiscountCreatePage() {
                     Product (specific items / categories)
                   </option>
                   <option value="shipping">
-                    Shipping only (e.g. free shipping)
+                    Shipping discount (% or $ off shipping)
                   </option>
                 </select>
                 {appliesTo === "product" && (
@@ -471,7 +470,8 @@ export default function AdminDiscountCreatePage() {
               </div>
             </div>
             {(discountKind === "amount_off_products" ||
-              discountKind === "amount_off_order") && (
+              discountKind === "amount_off_order" ||
+              discountKind === "free_shipping") && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className={labelClass}>Amount type</label>
@@ -500,7 +500,9 @@ export default function AdminDiscountCreatePage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="discountValue" className={labelClass}>
-                    {discountType === "percent" ? "Discount %" : "Discount ($)"}
+                    {discountType === "percent"
+                      ? `Discount %${discountKind === "free_shipping" ? " off shipping" : ""}`
+                      : `Discount ($)${discountKind === "free_shipping" ? " off shipping" : ""}`}
                   </label>
                   <input
                     id="discountValue"
@@ -512,10 +514,15 @@ export default function AdminDiscountCreatePage() {
                     onChange={(e) => setDiscountValue(e.target.value)}
                     className={inputClass}
                     placeholder={
-                      discountType === "percent" ? "e.g. 20" : "e.g. 10.00"
+                      discountType === "percent" ? "e.g. 100 for free shipping" : "e.g. 10.00"
                     }
                     required
                   />
+                  {discountKind === "free_shipping" && (
+                    <p className="text-xs text-muted-foreground">
+                      Set to 100% for free shipping, or a lower value for a partial shipping discount.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -595,11 +602,6 @@ export default function AdminDiscountCreatePage() {
               </div>
             )}
 
-            {discountKind === "free_shipping" && (
-              <p className="text-sm text-muted-foreground">
-                Free shipping: shipping cost will be discounted at checkout.
-              </p>
-            )}
           </CardContent>
         </Card>
 

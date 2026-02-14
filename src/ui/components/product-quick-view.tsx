@@ -14,7 +14,9 @@ import {
   type PhoneBrand,
 } from "~/lib/sort-phone-models";
 import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { useCart } from "~/lib/hooks/use-cart";
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
@@ -62,6 +64,7 @@ interface QuickViewProduct {
   hasVariants: boolean;
   optionDefinitions?: OptionDefinition[];
   variants?: QuickViewVariant[];
+  availableCountryCodes?: string[];
 }
 
 interface ProductQuickViewProps {
@@ -161,7 +164,7 @@ function getVariantKey(
   index: number,
 ): "color" | "size" | "gender" | "label" {
   const lower = optionName.toLowerCase();
-  if (lower.includes("color")) return "color";
+  if (lower.includes("color") || lower.includes("finish")) return "color";
   if (lower.includes("size")) return "size";
   if (lower === "option") return "gender";
   if (
@@ -461,6 +464,27 @@ export function ProductQuickView({
     };
   }, [open, productSlugOrId]);
 
+  // Country availability check (same logic as product-variant-section)
+  const { selectedCountry: footerCountry } = useCountryCurrency();
+  const unavailableInCountry = React.useMemo(() => {
+    if (!product) return false;
+    const allowedCountries = product.availableCountryCodes ?? [];
+    const hasCountryRestriction = allowedCountries.length > 0;
+    const currentCountryUpper =
+      footerCountry?.trim().toUpperCase().slice(0, 2) ?? "";
+    const notInAllowedCountries =
+      hasCountryRestriction &&
+      currentCountryUpper.length === 2 &&
+      !allowedCountries.some(
+        (c) => c?.trim().toUpperCase().slice(0, 2) === currentCountryUpper,
+      );
+    return (
+      (currentCountryUpper.length === 2 &&
+        isShippingExcluded(currentCountryUpper)) ||
+      notInAllowedCountries
+    );
+  }, [product, footerCountry]);
+
   const inWishlist = product ? isInWishlist(product.id) : false;
 
   const currentPrice = selectedVariant
@@ -617,6 +641,13 @@ export function ProductQuickView({
                   />
                 </div>
 
+                {/* Country availability */}
+                {unavailableInCountry && (
+                  <p className="text-sm font-medium text-[#B5594E]">
+                    Not available in your country
+                  </p>
+                )}
+
                 {/* Description */}
                 {product.description && (
                   <p className="text-sm leading-relaxed text-muted-foreground line-clamp-4">
@@ -680,17 +711,20 @@ export function ProductQuickView({
                     disabled={
                       !product.inStock ||
                       isAdding ||
+                      unavailableInCountry ||
                       (variantRequired && !selectedVariant)
                     }
                     onClick={handleAddToCart}
                     size="lg"
                   >
                     <ShoppingCart className="h-4 w-4" />
-                    {isAdding
-                      ? "Adding…"
-                      : variantRequired && !selectedVariant
-                        ? "Select options"
-                        : "Add to Cart"}
+                    {unavailableInCountry
+                      ? "Unavailable"
+                      : isAdding
+                        ? "Adding…"
+                        : variantRequired && !selectedVariant
+                          ? "Select options"
+                          : "Add to Cart"}
                   </Button>
 
                   <Button

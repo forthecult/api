@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, Ruler, Search, Trash2 } from "lucide-react";
+import { Pencil, Plus, RefreshCw, Ruler, Search, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -28,6 +28,8 @@ export default function AdminSizeChartsPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [fixingNames, setFixingNames] = useState(false);
+  const [fixResult, setFixResult] = useState<string | null>(null);
 
   const fetchCharts = useCallback(async () => {
     setLoading(true);
@@ -72,21 +74,64 @@ export default function AdminSizeChartsPage() {
     [fetchCharts],
   );
 
+  const handleFixNames = useCallback(async () => {
+    setFixingNames(true);
+    setFixResult(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/printful/sync`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ action: "fix_size_chart_names" }),
+      });
+      if (!res.ok) throw new Error("Failed");
+      const data = (await res.json()) as { fixed: number; total: number };
+      setFixResult(`Fixed ${data.fixed} of ${data.total} display names.`);
+      if (data.fixed > 0) void fetchCharts();
+    } catch {
+      setFixResult("Failed to fix display names.");
+    } finally {
+      setFixingNames(false);
+    }
+  }, [fetchCharts]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-2xl font-semibold tracking-tight">Size Charts</h2>
-        <Link href="/products/size-charts/create">
-          <Button type="button" className="gap-2">
-            <Plus className="size-4" /> Add Size Chart
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="gap-2"
+            onClick={handleFixNames}
+            disabled={fixingNames}
+          >
+            <RefreshCw className={cn("size-4", fixingNames && "animate-spin")} /> Fix Names
           </Button>
-        </Link>
+          <Link href="/products/size-charts/create">
+            <Button type="button" className="gap-2">
+              <Plus className="size-4" /> Add Size Chart
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <p className="text-sm text-muted-foreground">
         Size charts are stored once per Brand + Model. Products with the same brand and model (e.g. Bella + Canvas 3001)
         share one chart. Charts are imported from Printful when you sync products; you can also add or edit them manually.
       </p>
+
+      {fixResult && (
+        <p className={cn(
+          "rounded-md border px-3 py-2 text-sm",
+          fixResult.startsWith("Failed")
+            ? "border-destructive/50 bg-destructive/10 text-destructive"
+            : "border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400",
+        )}>
+          {fixResult}
+        </p>
+      )}
 
       <Card>
         <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

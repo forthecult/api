@@ -522,7 +522,7 @@ export default function AdminDiscountDetailPage() {
                   </option>
                   <option value="amount_off_order">Amount off order</option>
                   <option value="buy_x_get_y">Buy X, get Y</option>
-                  <option value="free_shipping">Free shipping</option>
+                  <option value="free_shipping">Shipping discount</option>
                 </select>
               </div>
             </div>
@@ -559,7 +559,8 @@ export default function AdminDiscountDetailPage() {
               </div>
             </div>
             {(discountKind === "amount_off_products" ||
-              discountKind === "amount_off_order") && (
+              discountKind === "amount_off_order" ||
+              discountKind === "free_shipping") && (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <label className={labelClass}>Amount type</label>
@@ -588,7 +589,9 @@ export default function AdminDiscountDetailPage() {
                 </div>
                 <div className="space-y-2">
                   <label htmlFor="discountValue" className={labelClass}>
-                    {discountType === "percent" ? "Discount %" : "Discount ($)"}
+                    {discountType === "percent"
+                      ? `Discount %${discountKind === "free_shipping" ? " off shipping" : ""}`
+                      : `Discount ($)${discountKind === "free_shipping" ? " off shipping" : ""}`}
                   </label>
                   <input
                     id="discountValue"
@@ -600,10 +603,15 @@ export default function AdminDiscountDetailPage() {
                     onChange={(e) => setDiscountValue(e.target.value)}
                     className={inputClass}
                     placeholder={
-                      discountType === "percent" ? "e.g. 20" : "e.g. 10.00"
+                      discountType === "percent" ? "e.g. 100 for free shipping" : "e.g. 10.00"
                     }
                     required
                   />
+                  {discountKind === "free_shipping" && (
+                    <p className="text-xs text-muted-foreground">
+                      Set to 100% for free shipping, or a lower value for a partial shipping discount.
+                    </p>
+                  )}
                 </div>
               </div>
             )}
@@ -680,11 +688,6 @@ export default function AdminDiscountDetailPage() {
               </div>
             )}
 
-            {discountKind === "free_shipping" && (
-              <p className="text-sm text-muted-foreground">
-                Free shipping: shipping cost will be discounted at checkout.
-              </p>
-            )}
           </CardContent>
         </Card>
 

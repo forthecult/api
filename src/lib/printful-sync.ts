@@ -243,6 +243,38 @@ export async function importSizeChartsForAllPrintfulProducts(): Promise<{
 }
 
 /**
+ * Fix miscapitalized display names on existing size charts.
+ * The old title-casing bug produced names like "HOodies", "POlos", "CAnvas".
+ * This applies correct title casing to every stored display name and updates
+ * any that changed. Safe to call multiple times (idempotent).
+ */
+export async function fixSizeChartDisplayNames(): Promise<{
+  fixed: number;
+  total: number;
+}> {
+  const allCharts = await db
+    .select({ id: sizeChartsTable.id, displayName: sizeChartsTable.displayName })
+    .from(sizeChartsTable);
+
+  let fixed = 0;
+  for (const chart of allCharts) {
+    // Re-apply correct title casing: lowercase the whole thing, then uppercase first letter of each word
+    const corrected = chart.displayName
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    if (corrected !== chart.displayName) {
+      await db
+        .update(sizeChartsTable)
+        .set({ displayName: corrected, updatedAt: new Date() })
+        .where(eq(sizeChartsTable.id, chart.id));
+      fixed++;
+    }
+  }
+
+  return { fixed, total: allCharts.length };
+}
+
+/**
  * Import size chart for a single Printful product by our product id.
  * Uses the product's stored externalId (catalog product id), brand, and model.
  * Call this after a single-product resync to ensure the size chart is pulled even if the in-flow import was skipped or failed.

@@ -229,7 +229,7 @@ export async function POST(request: NextRequest) {
       typeof body.discountValue === "number" && body.discountValue >= 0
         ? Math.round(body.discountValue)
         : 0;
-    if (discountKind !== "buy_x_get_y" && discountKind !== "free_shipping") {
+    if (discountKind !== "buy_x_get_y") {
       if (discountType === "percent" && discountValue > 100) {
         return NextResponse.json(
           { error: "discountValue for percent must be 0-100" },

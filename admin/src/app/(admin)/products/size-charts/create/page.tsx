@@ -7,6 +7,7 @@ import { useCallback, useState } from "react";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
+import { SizeChartDataEditor, type SizeChartData } from "~/ui/size-chart-editor";
 
 const API_BASE = getMainAppUrl();
 const inputClass =
@@ -21,8 +22,8 @@ export default function AdminSizeChartsCreatePage() {
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [dataImperialRaw, setDataImperialRaw] = useState("");
-  const [dataMetricRaw, setDataMetricRaw] = useState("");
+  const [dataImperial, setDataImperial] = useState<SizeChartData | null>(null);
+  const [dataMetric, setDataMetric] = useState<SizeChartData | null>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -34,26 +35,6 @@ export default function AdminSizeChartsCreatePage() {
       setSaving(true);
       setError(null);
       try {
-        let dataImperial: unknown = null;
-        let dataMetric: unknown = null;
-        if (dataImperialRaw.trim()) {
-          try {
-            dataImperial = JSON.parse(dataImperialRaw) as unknown;
-          } catch {
-            setError("Imperial data must be valid JSON.");
-            setSaving(false);
-            return;
-          }
-        }
-        if (dataMetricRaw.trim()) {
-          try {
-            dataMetric = JSON.parse(dataMetricRaw) as unknown;
-          } catch {
-            setError("Metric data must be valid JSON.");
-            setSaving(false);
-            return;
-          }
-        }
         const res = await fetch(`${API_BASE}/api/admin/size-charts`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -78,7 +59,7 @@ export default function AdminSizeChartsCreatePage() {
         setSaving(false);
       }
     },
-    [provider, brand, model, displayName, dataImperialRaw, dataMetricRaw, router],
+    [provider, brand, model, displayName, dataImperial, dataMetric, router],
   );
 
   return (
@@ -92,116 +73,118 @@ export default function AdminSizeChartsCreatePage() {
         <h2 className="text-2xl font-semibold tracking-tight">Add Size Chart</h2>
       </div>
 
-      <Card className="max-w-2xl">
-        <CardHeader>
-          <CardTitle>New size chart (Brand + Model)</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Use the same provider, brand and model as your products (e.g. Printful, Bella + Canvas, 3001).
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {error && (
+          <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
           </p>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </p>
-            )}
-            <div>
-              <label htmlFor="provider" className={labelClass}>
-                Provider
-              </label>
-              <select
-                id="provider"
-                value={provider}
-                onChange={(e) => setProvider(e.target.value as "printful" | "printify" | "manual")}
-                className={inputClass}
-              >
-                <option value="printful">Printful</option>
-                <option value="printify">Printify</option>
-                <option value="manual">Manual</option>
-              </select>
-            </div>
-            <div>
-              <label htmlFor="brand" className={labelClass}>
-                Brand <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="brand"
-                type="text"
-                value={brand}
-                onChange={(e) => setBrand(e.target.value)}
-                placeholder="e.g. Bella + Canvas"
-                className={inputClass}
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="model" className={labelClass}>
-                Model <span className="text-destructive">*</span>
-              </label>
-              <input
-                id="model"
-                type="text"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                placeholder="e.g. 3001"
-                className={inputClass}
-                required
-              />
+        )}
+
+        {/* Identity + Display Name */}
+        <Card>
+          <CardHeader>
+            <CardTitle>New size chart (Brand + Model)</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Use the same provider, brand and model as your products (e.g. Printful, Bella + Canvas, 3001).
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div>
+                <label htmlFor="provider" className={labelClass}>
+                  Provider
+                </label>
+                <select
+                  id="provider"
+                  value={provider}
+                  onChange={(e) => setProvider(e.target.value as "printful" | "printify" | "manual")}
+                  className={inputClass}
+                >
+                  <option value="printful">Printful</option>
+                  <option value="printify">Printify</option>
+                  <option value="manual">Manual</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="brand" className={labelClass}>
+                  Brand <span className="text-destructive">*</span>
+                </label>
+                <input
+                  id="brand"
+                  type="text"
+                  value={brand}
+                  onChange={(e) => setBrand(e.target.value)}
+                  placeholder="e.g. Bella + Canvas"
+                  className={inputClass}
+                  required
+                />
+              </div>
+              <div>
+                <label htmlFor="model" className={labelClass}>
+                  Model <span className="text-destructive">*</span>
+                </label>
+                <input
+                  id="model"
+                  type="text"
+                  value={model}
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="e.g. 3001"
+                  className={inputClass}
+                  required
+                />
+              </div>
             </div>
             <div>
               <label htmlFor="displayName" className={labelClass}>
-                Display name (accordion title) <span className="text-destructive">*</span>
+                Display name (shown in accordion) <span className="text-destructive">*</span>
               </label>
               <input
                 id="displayName"
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="e.g. T-Shirts"
+                placeholder="e.g. Hoodies"
                 className={inputClass}
                 required
               />
             </div>
-            <div>
-              <label htmlFor="dataImperial" className={labelClass}>
-                Data (Imperial / inches) – JSON
-              </label>
-              <textarea
-                id="dataImperial"
-                rows={6}
-                value={dataImperialRaw}
-                onChange={(e) => setDataImperialRaw(e.target.value)}
-                placeholder='{ "availableSizes": ["S","M","L"], "sizeTables": [...] }'
-                className={inputClass + " font-mono text-xs"}
-              />
-            </div>
-            <div>
-              <label htmlFor="dataMetric" className={labelClass}>
-                Data (Metric / cm) – JSON
-              </label>
-              <textarea
-                id="dataMetric"
-                rows={6}
-                value={dataMetricRaw}
-                onChange={(e) => setDataMetricRaw(e.target.value)}
-                placeholder='{ "availableSizes": ["S","M","L"], "sizeTables": [...] }'
-                className={inputClass + " font-mono text-xs"}
-              />
-            </div>
-            <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
-                {saving ? "Creating…" : "Create size chart"}
-              </Button>
-              <Link href="/products/size-charts">
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Imperial data */}
+        <Card>
+          <CardContent className="pt-6">
+            <SizeChartDataEditor
+              label="Imperial (inches)"
+              data={dataImperial}
+              onChange={setDataImperial}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Metric data */}
+        <Card>
+          <CardContent className="pt-6">
+            <SizeChartDataEditor
+              label="Metric (cm)"
+              data={dataMetric}
+              onChange={setDataMetric}
+            />
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3">
+          <Button type="submit" disabled={saving}>
+            {saving ? "Creating…" : "Create size chart"}
+          </Button>
+          <Link href="/products/size-charts">
+            <Button type="button" variant="outline">
+              Cancel
+            </Button>
+          </Link>
+        </div>
+      </form>
     </div>
   );
 }

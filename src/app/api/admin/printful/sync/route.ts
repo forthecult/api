@@ -8,6 +8,7 @@ import {
   importSinglePrintfulProduct,
   importSizeChartForPrintfulProduct,
   importSizeChartsForAllPrintfulProducts,
+  fixSizeChartDisplayNames,
   exportProductToPrintful,
   exportAllPrintfulProducts,
 } from "~/lib/printful-sync";
@@ -210,10 +211,19 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    case "fix_size_chart_names": {
+      console.log("Fixing size chart display names...");
+      const result = await fixSizeChartDisplayNames();
+      return NextResponse.json({
+        success: true,
+        ...result,
+      });
+    }
+
     default:
       return NextResponse.json(
         {
-          error: `Unknown action: ${action}. Valid: import_all, import_single, import_size_charts, export_single, export_all`,
+          error: `Unknown action: ${action}. Valid: import_all, import_single, import_size_charts, fix_size_chart_names, export_single, export_all`,
         },
         { status: 400 },
       );
@@ -243,6 +253,8 @@ export async function GET(request: NextRequest) {
         "POST with { action: 'import_single', printfulSyncProductId: 123 } or { action: 'import_single', productId: 'our-id', overwrite: true }",
       import_size_charts:
         "POST with { action: 'import_size_charts' } - Backfill size charts for all Printful products",
+      fix_size_chart_names:
+        "POST with { action: 'fix_size_chart_names' } - Fix miscapitalized display names (e.g. HOodies → Hoodies)",
       export_single: "POST with { action: 'export_single', productId: 'abc' }",
       export_all:
         "POST with { action: 'export_all' } - Push prices to Printful",
