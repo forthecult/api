@@ -46,6 +46,7 @@
     "generate:openapi": "bun run scripts/generate-openapi.ts",
     "printful:sync": "bun run scripts/printful-sync-products.ts",
     "printful:resync": "bun run scripts/printful-resync-products.ts",
+    "printful:update-seo": "bun run scripts/update-printful-products-seo.ts",
     "printify:sync": "bun run scripts/printify-sync-products.ts",
     "db:list-products": "bun run scripts/list-products.ts",
     "buyback-burn": "bun run scripts/buyback-burn.ts",
