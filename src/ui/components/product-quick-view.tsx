@@ -150,6 +150,30 @@ function MiniGallery({
 
 const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
 
+/** Map option definition name to variant field (same as product-variant-section). */
+function getVariantKey(
+  optionName: string,
+  index: number,
+): "color" | "size" | "gender" | "label" {
+  const lower = optionName.toLowerCase();
+  if (lower.includes("color")) return "color";
+  if (lower.includes("size")) return "size";
+  if (lower === "option") return "gender";
+  if (
+    lower.includes("men") ||
+    lower.includes("women") ||
+    lower.includes("gender") ||
+    lower.includes("style") ||
+    lower.includes("phone") ||
+    lower.includes("model") ||
+    lower.includes("device") ||
+    lower.includes("grind")
+  )
+    return "gender";
+  if (lower === "variant") return "label";
+  return index === 0 ? "color" : index === 1 ? "gender" : "size";
+}
+
 function VariantSelector({
   optionDefinitions,
   variants,
@@ -165,16 +189,17 @@ function VariantSelector({
     Record<number, string>
   >({});
 
-  // Auto-select single-value options
+  // Auto-select single-value options; pre-select first value for multi-value options so a variant is selected by default
   React.useEffect(() => {
-    const auto: Record<number, string> = {};
+    const initial: Record<number, string> = {};
     optionDefinitions.forEach((opt, idx) => {
-      if (opt.values.length === 1) auto[idx] = opt.values[0]!;
+      const values = (opt.values ?? []).filter(Boolean);
+      if (values.length >= 1) initial[idx] = values[0]!;
     });
-    if (Object.keys(auto).length > 0) setSelectedByIndex(auto);
+    if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
   }, [optionDefinitions]);
 
-  // When selections change, find matching variant
+  // When selections change, find matching variant (use getVariantKey so "Men/Women" -> gender, etc.)
   React.useEffect(() => {
     if (
       Object.keys(selectedByIndex).length < optionDefinitions.length
@@ -186,10 +211,17 @@ function VariantSelector({
       return optionDefinitions.every((opt, idx) => {
         const sel = selectedByIndex[idx];
         if (!sel) return false;
-        const key = opt.name.toLowerCase() as keyof QuickViewVariant;
-        return (
-          String(v[key] ?? v.label ?? "").toLowerCase() === sel.toLowerCase()
-        );
+        if (opt.name === "Variant") return (v.label ?? "") === sel;
+        const key = getVariantKey(opt.name, idx);
+        const variantValue =
+          key === "color"
+            ? v.color
+            : key === "size"
+              ? v.size
+              : key === "gender"
+                ? v.gender
+                : v.label;
+        return (variantValue ?? "") === sel;
       });
     });
     onSelectVariant(match ?? null);

@@ -140,7 +140,7 @@ export function ShopMegaMenu({
         <button
           type="button"
           className={cn(
-            "accent-underline inline-flex items-center gap-1 text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+            "accent-underline inline-flex items-center gap-1 rounded-md bg-transparent py-1.5 text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
             isActive ? "font-semibold text-[#C4873A]" : "text-[#8A857E]",
             className,
           )}

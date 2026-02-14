@@ -140,7 +140,7 @@ export function FooterBottom() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                className="h-auto gap-1.5 px-0 py-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                className="h-auto gap-1.5 px-0 py-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
                 variant="ghost"
               >
                 {currentCrypto && (
@@ -182,14 +182,16 @@ export function FooterBottom() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            className="h-auto gap-1.5 px-0 py-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+            className="h-auto gap-1.5 px-0 py-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
             variant="ghost"
             onClick={() => setPrefsOpen(true)}
             aria-label="Country and payment currency"
           >
             {mounted && currentCountry ? (
               <span className="flex items-center gap-1.5" aria-hidden>
-                <span>{countryFlag(currentCountry.code)}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-base leading-none">
+                  {countryFlag(currentCountry.code)}
+                </span>
                 <span>{prefsLabel}</span>
               </span>
             ) : (

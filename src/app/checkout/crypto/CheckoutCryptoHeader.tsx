@@ -117,7 +117,7 @@ export function CheckoutCryptoHeader() {
                   className="h-8 w-auto object-contain"
                 />
               ) : (
-                <span className="text-xl font-bold tracking-tight text-foreground">
+                <span className="font-heading text-lg font-bold uppercase tracking-[0.2em] text-[#1A1611] dark:text-[#F5F1EB]">
                   {SEO_CONFIG.name}
                 </span>
               )}

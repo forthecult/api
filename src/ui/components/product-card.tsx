@@ -450,7 +450,8 @@ function ProductCardInner({
               <Button
                 className={cn(
                   "w-full gap-2 transition-all",
-                  product.hasVariants && "text-[#1A1611] dark:text-[#F5F1EB]",
+                  product.hasVariants &&
+                    "bg-secondary text-[#1A1611] dark:bg-transparent dark:text-[#F5F1EB] [&_svg]:text-inherit",
                   isAddingToCart && "opacity-70",
                 )}
                 disabled={isAddingToCart}
