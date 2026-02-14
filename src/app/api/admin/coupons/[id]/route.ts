@@ -53,6 +53,7 @@ export async function GET(
         ruleProductCountMax: couponsTable.ruleProductCountMax,
         ruleOrderTotalMinCents: couponsTable.ruleOrderTotalMinCents,
         ruleOrderTotalMaxCents: couponsTable.ruleOrderTotalMaxCents,
+        ruleAppliesToEsim: couponsTable.ruleAppliesToEsim,
         createdAt: couponsTable.createdAt,
         updatedAt: couponsTable.updatedAt,
       })
@@ -114,6 +115,7 @@ export async function GET(
       ruleProductCountMax: coupon.ruleProductCountMax ?? null,
       ruleOrderTotalMinCents: coupon.ruleOrderTotalMinCents ?? null,
       ruleOrderTotalMaxCents: coupon.ruleOrderTotalMaxCents ?? null,
+      ruleAppliesToEsim: coupon.ruleAppliesToEsim ?? null,
       categoryIds: categoryRows.map((r) => r.categoryId),
       productIds: productRows.map((r) => r.productId),
       redemptionCount: redemptionTotal,
@@ -173,6 +175,7 @@ export async function PATCH(
       ruleProductCountMax?: number | null;
       ruleOrderTotalMinCents?: number | null;
       ruleOrderTotalMaxCents?: number | null;
+      ruleAppliesToEsim?: number | null;
     };
 
     const [existing] = await db
@@ -194,6 +197,9 @@ export async function PATCH(
         typeof body.label === "string" && body.label.trim().length > 0
           ? body.label.trim()
           : null;
+    }
+    if (body.ruleAppliesToEsim !== undefined) {
+      updates.ruleAppliesToEsim = body.ruleAppliesToEsim === 1 ? 1 : null;
     }
     if (body.method === "automatic" || body.method === "code") {
       updates.method = body.method;

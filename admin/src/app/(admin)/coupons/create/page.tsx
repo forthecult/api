@@ -77,6 +77,7 @@ export default function AdminDiscountCreatePage() {
   >("subtotal");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [productIds, setProductIds] = useState<string[]>([]);
+  const [ruleAppliesToEsim, setRuleAppliesToEsim] = useState(false);
   const [tokenHolderChain, setTokenHolderChain] = useState<string>("");
   const [tokenHolderTokenAddress, setTokenHolderTokenAddress] = useState("");
   const [tokenHolderMinBalance, setTokenHolderMinBalance] = useState("");
@@ -199,6 +200,7 @@ export default function AdminDiscountCreatePage() {
           maxUsesPerCustomerType: maxUsesPerCustomerType || null,
           categoryIds,
           productIds,
+          ruleAppliesToEsim: ruleAppliesToEsim ? 1 : null,
         };
         if (method === "automatic") {
           body.rulePaymentMethodKey = rulePaymentMethodKey.trim() || null;
@@ -947,7 +949,20 @@ export default function AdminDiscountCreatePage() {
               products.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={ruleAppliesToEsim}
+                onChange={(e) => setRuleAppliesToEsim(e.target.checked)}
+                className="size-4 rounded border-input"
+              />
+              <span>Applies to eSIM products</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              When checked, this discount applies to any eSIM in the cart (eSIMs
+              are virtual products and do not appear in the list below).
+            </p>
             <div className="max-h-60 overflow-y-auto rounded border p-3">
               {optionsLoading ? (
                 <p className="text-sm text-muted-foreground">

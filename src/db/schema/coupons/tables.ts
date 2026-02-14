@@ -54,6 +54,8 @@ export const couponsTable = pgTable("coupon", {
   ruleProductCountMax: integer("rule_product_count_max"),
   ruleOrderTotalMinCents: integer("rule_order_total_min_cents"), // subtotal + shipping
   ruleOrderTotalMaxCents: integer("rule_order_total_max_cents"),
+  // When 1, discount applies to eSIM items (cart IDs starting with "esim_"). 0/null = no restriction.
+  ruleAppliesToEsim: integer("rule_applies_to_esim"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });

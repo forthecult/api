@@ -1076,23 +1076,23 @@ export function CryptoPayClient() {
                       </div>
                     )}
                   </div>
-                  <div className="rounded-lg border border-border bg-muted/30 p-3">
-                    <h2 className="mb-4 text-base font-semibold">
+                  <div className="rounded-lg border border-border bg-muted/30 p-5">
+                    <h2 className="mb-5 text-lg font-semibold">
                       Payment details
                     </h2>
-                    <div className="space-y-4">
-                      <div className="text-sm">
-                        <p className="mb-1 text-muted-foreground">
+                    <div className="space-y-5">
+                      <div>
+                        <p className="mb-1.5 text-sm text-muted-foreground">
                           Payment unique address
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
-                          <code className="break-all rounded bg-background px-2 py-1 font-mono text-xs">
+                          <code className="break-all rounded bg-background px-3 py-1.5 font-mono text-sm">
                             {paymentAddress || "—"}
                           </code>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="shrink-0 gap-1.5"
+                            className="shrink-0 gap-1.5 text-sm"
                             onClick={copyAddress}
                             disabled={!paymentAddress}
                           >
@@ -1105,18 +1105,18 @@ export function CryptoPayClient() {
                           </Button>
                         </div>
                       </div>
-                      <div className="text-sm">
-                        <p className="mb-1 text-muted-foreground">
+                      <div>
+                        <p className="mb-1.5 text-sm text-muted-foreground">
                           Amount to pay
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">
+                          <span className="text-lg font-semibold">
                             {amountDisplayStr} {amountUnit}
                           </span>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="shrink-0 gap-1.5"
+                            className="shrink-0 gap-1.5 text-sm"
                             onClick={copyAmount}
                             disabled={
                               (token === "crust" && crustSolPerToken == null) ||
@@ -1132,9 +1132,9 @@ export function CryptoPayClient() {
                           </Button>
                         </div>
                       </div>
-                      <div className="text-base">
-                        <p className="mb-1 text-muted-foreground">Expires in</p>
-                        <p className="font-mono font-medium tabular-nums">
+                      <div>
+                        <p className="mb-1.5 text-sm text-muted-foreground">Expires in</p>
+                        <p className="text-lg font-mono font-semibold tabular-nums">
                           {formattedTime}
                         </p>
                       </div>
@@ -1154,7 +1154,7 @@ export function CryptoPayClient() {
                           height={32}
                         />
                       )}
-                      <span className="font-mono text-sm">
+                      <span className="font-mono text-base">
                         {publicKey
                           ? truncateAddress(publicKey.toBase58())
                           : "—"}

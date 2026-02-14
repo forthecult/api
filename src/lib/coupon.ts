@@ -64,6 +64,7 @@ export async function resolveCouponForCheckout(
       tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
       tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
       rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
+      ruleAppliesToEsim: couponsTable.ruleAppliesToEsim,
     })
     .from(couponsTable)
     .where(eq(couponsTable.code, normalizedCode))
@@ -107,6 +108,8 @@ export async function resolveCouponForCheckout(
   }
 
   const productIds = options.productIds ?? [];
+  const hasEsimRule = coupon.ruleAppliesToEsim === 1;
+  const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
   let qualifyingSubtotalCents: number | undefined;
   if (productIds.length > 0) {
     const [allowedProductIds, couponCategoryIds] = await Promise.all([
@@ -123,7 +126,7 @@ export async function resolveCouponForCheckout(
     ]);
     const hasProductRule = allowedProductIds.length > 0;
     const hasCategoryRule = couponCategoryIds.length > 0;
-    if (hasProductRule || hasCategoryRule) {
+    if (hasProductRule || hasCategoryRule || hasEsimRule) {
       const cartHasAllowedProduct =
         hasProductRule &&
         productIds.some((id) => allowedProductIds.includes(id));
@@ -142,7 +145,12 @@ export async function resolveCouponForCheckout(
         matchingCategoryProductIds = categoryMatches.map((r) => r.productId);
         cartHasProductFromCategory = matchingCategoryProductIds.length > 0;
       }
-      if (!cartHasAllowedProduct && !cartHasProductFromCategory) return null;
+      if (
+        !cartHasAllowedProduct &&
+        !cartHasProductFromCategory &&
+        !(hasEsimRule && cartHasEsim)
+      )
+        return null;
 
       // For amount_off_products: compute qualifying subtotal from matching items only
       if (
@@ -154,6 +162,9 @@ export async function resolveCouponForCheckout(
         const qualifyingProductIdSet = new Set<string>([
           ...(hasProductRule ? allowedProductIds : []),
           ...matchingCategoryProductIds,
+          ...(hasEsimRule
+            ? productIds.filter((id) => id.startsWith("esim_"))
+            : []),
         ]);
         qualifyingSubtotalCents = options.items
           .filter((item) => qualifyingProductIdSet.has(item.productId))
@@ -161,6 +172,7 @@ export async function resolveCouponForCheckout(
       }
     }
   }
+  if (hasEsimRule && !cartHasEsim) return null;
 
   // Token-holder restriction: coupon applies only if user holds required token balance (linked wallet).
   const tokenChain = coupon.tokenHolderChain?.trim();
@@ -370,6 +382,7 @@ export async function resolveAutomaticCouponForCheckout(
       tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
       tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
       rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
+      ruleAppliesToEsim: couponsTable.ruleAppliesToEsim,
       ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
       ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
       ruleShippingMinCents: couponsTable.ruleShippingMinCents,
@@ -426,6 +439,8 @@ export async function resolveAutomaticCouponForCheckout(
     }
 
     const productIds = input.productIds ?? [];
+    const hasEsimRule = coupon.ruleAppliesToEsim === 1;
+    const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
     // Also compute the qualifying subtotal for per-product discounts (amount_off_products).
     let qualifyingSubtotalCents: number | undefined;
@@ -444,7 +459,7 @@ export async function resolveAutomaticCouponForCheckout(
       ]);
       const hasProductRule = allowedProductIds.length > 0;
       const hasCategoryRule = couponCategoryIds.length > 0;
-      if (hasProductRule || hasCategoryRule) {
+      if (hasProductRule || hasCategoryRule || hasEsimRule) {
         const cartHasAllowedProduct =
           hasProductRule &&
           productIds.some((id) => allowedProductIds.includes(id));
@@ -465,7 +480,12 @@ export async function resolveAutomaticCouponForCheckout(
           cartHasProductFromCategory = matchingCategoryProductIds.length > 0;
         }
         // Pass if either rule is satisfied (OR when both are set)
-        if (!cartHasAllowedProduct && !cartHasProductFromCategory) continue;
+        if (
+          !cartHasAllowedProduct &&
+          !cartHasProductFromCategory &&
+          !(hasEsimRule && cartHasEsim)
+        )
+          continue;
 
         // For amount_off_products: compute qualifying subtotal from matching items only
         if (
@@ -477,6 +497,9 @@ export async function resolveAutomaticCouponForCheckout(
           const qualifyingProductIdSet = new Set<string>([
             ...(hasProductRule ? allowedProductIds : []),
             ...matchingCategoryProductIds,
+            ...(hasEsimRule
+              ? productIds.filter((id) => id.startsWith("esim_"))
+              : []),
           ]);
           qualifyingSubtotalCents = input.items
             .filter((item) => qualifyingProductIdSet.has(item.productId))
@@ -484,6 +507,7 @@ export async function resolveAutomaticCouponForCheckout(
         }
       }
     }
+    if (hasEsimRule && !cartHasEsim) continue;
 
     const tokenChain = coupon.tokenHolderChain?.trim();
     const tokenAddress = coupon.tokenHolderTokenAddress?.trim();

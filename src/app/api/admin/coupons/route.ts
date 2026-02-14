@@ -192,6 +192,7 @@ export async function POST(request: NextRequest) {
       ruleProductCountMax?: number | null;
       ruleOrderTotalMinCents?: number | null;
       ruleOrderTotalMaxCents?: number | null;
+      ruleAppliesToEsim?: number | null;
     };
 
     const method = body.method === "automatic" ? "automatic" : "code";
@@ -299,6 +300,7 @@ export async function POST(request: NextRequest) {
       ruleProductCountMax: body.ruleProductCountMax ?? null,
       ruleOrderTotalMinCents: body.ruleOrderTotalMinCents ?? null,
       ruleOrderTotalMaxCents: body.ruleOrderTotalMaxCents ?? null,
+      ruleAppliesToEsim: body.ruleAppliesToEsim === 1 ? 1 : null,
       createdAt: now,
       updatedAt: now,
     });
