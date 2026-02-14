@@ -323,15 +323,33 @@ async function main() {
       productLabel,
       variants,
     });
+    const printifyId = result.externalProductId ?? result.printifyProductId;
     created.push({
       productLabel,
       localProductId: result.localProductId,
+      printifyProductId: printifyId,
     });
-    console.log("  Created Printify product:", result.printifyProductId, "Local:", result.localProductId ?? "—");
+    console.log("  Created Printify product:", printifyId, "Local:", result.localProductId ?? "—");
 
-    if (result.localProductId) {
+    let localId = result.localProductId;
+    if (!localId && printifyId) {
+      const syncRes = await fetch(`${API_BASE}/api/admin/printify/sync`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: "import_single",
+          printifyProductId: printifyId,
+        }),
+      });
+      if (syncRes.ok) {
+        const syncData = (await syncRes.json()) as { productId?: string };
+        localId = syncData.productId;
+        if (localId) console.log("  Synced to store:", localId);
+      }
+    }
+    if (localId) {
       await patchProductSeoAndFeatures(
-        result.localProductId,
+        localId,
         productLabel,
         categoryId,
       );
