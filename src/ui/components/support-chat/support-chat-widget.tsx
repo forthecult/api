@@ -219,18 +219,30 @@ export function SupportChatWidget() {
     setLoading(false); // clear typing indicator when we get latest messages (e.g. AI reply arrived)
   }, []);
 
+  // When chat opens: only load an existing open conversation; do NOT create one.
+  // A conversation is created only when the customer sends their first message.
   React.useEffect(() => {
     if (!open) return;
     let cancelled = false;
     (async () => {
-      const cid = conversationId ?? (await ensureConversation());
-      if (cancelled || !cid) return;
-      await fetchMessages(cid);
+      if (conversationId) {
+        await fetchMessages(conversationId);
+        return;
+      }
+      const list = await fetchConversations();
+      const openConversations = list.filter((c) => c.status === "open");
+      if (cancelled) return;
+      if (openConversations.length > 0) {
+        const cid = openConversations[0]!.id;
+        setConversationId(cid);
+        await fetchMessages(cid);
+      }
+      // No open conversation: leave conversationId null; creation happens on first send.
     })();
     return () => {
       cancelled = true;
     };
-  }, [open, conversationId, ensureConversation, fetchMessages]);
+  }, [open, conversationId, fetchConversations, fetchMessages]);
 
   React.useEffect(() => {
     if (!open || !conversationId) return;

@@ -1,3 +1,4 @@
+import { revalidateTag } from "next/cache";
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -72,6 +73,7 @@ export async function PATCH(request: NextRequest) {
       });
     }
 
+    revalidateTag("support-chat-widget-visible", "max");
     return NextResponse.json({ visible });
   } catch (err) {
     console.error("Admin support-chat widget-visible PATCH:", err);
