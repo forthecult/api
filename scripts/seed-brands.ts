@@ -138,6 +138,13 @@ const BRANDS: Array<{
     featured: true,
     logoUrl: "https://files.minirigs.co.uk/mr4/minirig-4-logo-white.png",
   },
+  {
+    name: "Bon Charge",
+    websiteUrl: "https://boncharge.com/",
+    description:
+      "Science-backed wellness and recovery products: red light therapy, infrared sauna blankets, PEMF devices, blue light blocking, and EMF protection. Official Red Light & Recovery Partner of Fulham FC. HSA/FSA-eligible. Free shipping on orders over $125.",
+    featured: true,
+  },
 ];
 
 async function main() {

@@ -207,6 +207,7 @@ export async function GET(request: NextRequest) {
           where: inArray(productsTable.id, sortedIds),
           with: {
             productCategories: { with: { category: true } },
+            productVariants: { columns: { stockQuantity: true } },
           },
         });
         const orderMap = new Map(sortedIds.map((id, i) => [id, i]));
@@ -246,6 +247,7 @@ export async function GET(request: NextRequest) {
             productCategories: {
               with: { category: true },
             },
+            productVariants: { columns: { stockQuantity: true } },
           },
         });
         const orderMap = new Map(ids.map((id, i) => [id, i]));
@@ -263,6 +265,7 @@ export async function GET(request: NextRequest) {
           productCategories: {
             with: { category: true },
           },
+          productVariants: { columns: { stockQuantity: true } },
         },
       } as Parameters<typeof db.query.productsTable.findMany>[0]);
     }
@@ -317,12 +320,22 @@ export async function GET(request: NextRequest) {
 
     type ProductWithRelations = (typeof rows)[number] & {
       productCategories?: Array<{ isMain?: boolean; category?: { name?: string; slug?: string } }>;
+      productVariants?: Array<{ stockQuantity?: number | null }>;
     };
     const rawItems = rows.map((p: ProductWithRelations) => {
       const mainPc =
         p.productCategories?.find((pc: { isMain?: boolean }) => pc.isMain) ??
         p.productCategories?.[0];
       const tokenGated = (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id);
+      const inStock = (() => {
+        if (p.continueSellingWhenOutOfStock) return true;
+        if (p.hasVariants) {
+          const variants = p.productVariants ?? [];
+          return variants.some((v) => (v.stockQuantity ?? 0) > 0);
+        }
+        if (!p.trackQuantity) return true;
+        return (p.quantity ?? 0) > 0;
+      })();
       return {
         id: p.id,
         slug: p.slug ?? undefined,
@@ -337,7 +350,7 @@ export async function GET(request: NextRequest) {
             ? p.compareAtPriceCents / 100
             : undefined,
         hasVariants: p.hasVariants ?? false,
-        inStock: true,
+        inStock,
         rating: 0,
         tokenGated,
         ...(tokenGated && tokenGateSummaryByProductId.has(p.id)

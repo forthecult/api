@@ -52,6 +52,7 @@
     "vanity:grind": "bun run scripts/solana-vanity-grind.ts",
     "db:crawl-brand-shipping": "bun run scripts/crawl-brand-shipping.ts",
     "db:seed-shipping-by-brand": "bun run scripts/seed-shipping-by-brand.ts",
+    "db:seed-bon-charge": "bun run scripts/seed-bon-charge-via-api.ts",
     "tests": "bun test ./.tests",
     "email:test": "bun run scripts/send-test-email.ts",
     "prepare": "husky"

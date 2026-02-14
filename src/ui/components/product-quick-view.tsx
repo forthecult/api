@@ -93,10 +93,10 @@ function MiniGallery({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+      <div className="relative aspect-square overflow-hidden rounded-xl bg-white">
         <Image
           alt={productName}
-          className="object-cover"
+          className="object-contain"
           fill
           sizes="(max-width: 640px) 100vw, 400px"
           src={mainSrc}

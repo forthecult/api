@@ -229,7 +229,7 @@ function ProductCardInner({
         >
           <div
             className={cn(
-              "relative overflow-hidden",
+              "relative overflow-hidden bg-white",
               imageAspect === "wide" ? "aspect-[4/3]" : "aspect-square",
               isGated ? "rounded-lg" : "rounded-t-lg",
             )}
@@ -238,7 +238,7 @@ function ProductCardInner({
               <Image
                 alt={product.name}
                 className={cn(
-                  "object-cover transition-all duration-300 ease-in-out",
+                  "object-contain transition-all duration-300 ease-in-out",
                   isHovered && !isGated && "scale-105",
                   isHovered && hoverImage && !hoverImageError && "opacity-0",
                 )}
@@ -256,7 +256,7 @@ function ProductCardInner({
               <Image
                 alt={`${product.name} - alternate view`}
                 className={cn(
-                  "absolute inset-0 object-cover transition-all duration-300 ease-in-out",
+                  "absolute inset-0 object-contain transition-all duration-300 ease-in-out",
                   isHovered ? "scale-105 opacity-100" : "opacity-0",
                 )}
                 fill
@@ -328,7 +328,7 @@ function ProductCardInner({
               </div>
             )}
 
-            {/* Top-left badges: category + New */}
+            {/* Top-left badges: category + New + Out of stock */}
             {!isGated && (
               <div className="absolute top-2 left-2 z-[5] flex flex-col gap-1">
                 <Badge
@@ -340,6 +340,14 @@ function ProductCardInner({
                 {isNew && (
                   <Badge className="bg-[#C4873A] text-[#111111] font-semibold hover:bg-[#C4873A]">
                     New
+                  </Badge>
+                )}
+                {product.inStock === false && (
+                  <Badge
+                    className="bg-destructive/90 text-destructive-foreground"
+                    variant="secondary"
+                  >
+                    Out of stock
                   </Badge>
                 )}
               </div>
@@ -454,7 +462,7 @@ function ProductCardInner({
                     "bg-secondary text-[#1A1611] dark:bg-transparent dark:text-[#F5F1EB] [&_svg]:text-inherit",
                   isAddingToCart && "opacity-70",
                 )}
-                disabled={isAddingToCart}
+                disabled={isAddingToCart || product.inStock === false}
                 onClick={handleAddToCart}
                 variant={product.hasVariants ? "outline" : "default"}
               >
@@ -468,7 +476,11 @@ function ProductCardInner({
                 ) : (
                   <ShoppingCart className="h-4 w-4" />
                 )}
-                {product.hasVariants ? "Select Options" : "Add to Cart"}
+                {product.inStock === false
+                  ? "Out of stock"
+                  : product.hasVariants
+                    ? "Select Options"
+                    : "Add to Cart"}
               </Button>
             </CardFooter>
           )}
@@ -494,6 +506,10 @@ function ProductCardInner({
                 {unavailableInCountry ? (
                   <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
                     Unavailable in your country
+                  </span>
+                ) : product.inStock === false ? (
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Out of stock
                   </span>
                 ) : (
                   <Button

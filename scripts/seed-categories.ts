@@ -153,6 +153,18 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     parentId: null,
   },
   {
+    id: "emf-protection",
+    name: "EMF Protection",
+    slug: "emf-protection",
+    title: "EMF Protection — Radiation Blocking & EMF-Free Tech | Culture",
+    metaDescription:
+      "EMF blocking laptop mats, phone pouches, and air tube earphones. Reduce exposure to electromagnetic radiation from devices. Bon Charge and more. Pay with crypto or card. Culture.",
+    description:
+      "Reduce your exposure to electromagnetic radiation. EMF blocking laptop mats, phone pouches, and air tube earphones so you can work and listen safely. Science-backed products from trusted brands like Bon Charge. Pay with crypto or card.",
+    level: 1,
+    parentId: null,
+  },
+  {
     id: "ai",
     name: "AI",
     slug: "ai",

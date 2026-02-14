@@ -119,6 +119,42 @@ export const BRAND_SHIPPING_OVERRIDES: Record<string, ShippingOptionSeed[]> = {
       estimatedDaysText: "1-2 weeks",
     },
   ],
+  /** boncharge.com: Free shipping on orders over $125; otherwise US $4 + $1/item, International $8 + $1/item. */
+  "bon-charge": [
+    {
+      name: "Bon Charge US Free over $125",
+      countryCode: "US",
+      minOrderCents: 12500,
+      maxOrderCents: null,
+      type: "free",
+      amountCents: null,
+      additionalItemCents: null,
+      priority: 2,
+      estimatedDaysText: "1-2 weeks",
+    },
+    {
+      name: "Bon Charge US Under $125",
+      countryCode: "US",
+      minOrderCents: null,
+      maxOrderCents: 12499,
+      type: "flat_plus_per_item",
+      amountCents: 400,
+      additionalItemCents: 100,
+      priority: 1,
+      estimatedDaysText: "1-2 weeks",
+    },
+    {
+      name: "Bon Charge International",
+      countryCode: null,
+      minOrderCents: null,
+      maxOrderCents: null,
+      type: "flat_plus_per_item",
+      amountCents: 800,
+      additionalItemCents: 100,
+      priority: 0,
+      estimatedDaysText: "1-3 weeks",
+    },
+  ],
   /** UK: £5.00; US: £26.00 (+ tax where applicable). Ships 1–5 working days (minirigs.co.uk). */
   minirig: [
     {

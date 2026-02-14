@@ -346,6 +346,8 @@ export async function POST(request: NextRequest) {
       description?: string | null;
       features?: string[];
       imageUrl?: string | null;
+      mainImageAlt?: string | null;
+      mainImageTitle?: string | null;
       metaDescription?: string | null;
       pageTitle?: string | null;
       seoOptimized?: boolean;
@@ -438,6 +440,8 @@ export async function POST(request: NextRequest) {
             )
           : null,
       imageUrl: body.imageUrl?.trim() ?? null,
+      mainImageAlt: body.mainImageAlt?.trim() ?? null,
+      mainImageTitle: body.mainImageTitle?.trim() ?? null,
       metaDescription: body.metaDescription?.trim() ?? null,
       pageTitle: body.pageTitle?.trim() ?? null,
       seoOptimized: body.seoOptimized ?? false,

@@ -100,7 +100,7 @@ export function ProductImageGallery({
       {/* Main image with hover zoom */}
       <div
         ref={containerRef}
-        className="relative aspect-square overflow-hidden rounded-lg bg-muted"
+        className="relative aspect-square overflow-hidden rounded-lg bg-white"
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setZoomOpen(false)}
         onMouseEnter={() => setZoomOpen(true)}
@@ -110,7 +110,7 @@ export function ProductImageGallery({
           key={selectedVariant?.id ?? mainSrc ?? "main"}
           alt={mainAlt}
           className={cn(
-            "object-cover transition-transform duration-150",
+            "object-contain transition-transform duration-150",
             zoomOpen && "cursor-zoom-out scale-150",
           )}
           fill

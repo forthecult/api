@@ -24,14 +24,26 @@ export class WalletErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    const isReact300 =
-      typeof error?.message === "string" &&
-      error.message.includes("Minified React error #300");
-    if (isReact300 && process.env.NODE_ENV === "production") {
-      // Known adapter hook-order quirk; avoid noisy console in production
-      console.warn(
-        "[WalletErrorBoundary] Wallet provider unavailable — checkout continues without wallet support.",
-      );
+    const msg = typeof error?.message === "string" ? error.message : "";
+    const isReact300 = msg.includes("Minified React error #300");
+    const isReact418 = msg.includes("Minified React error #418");
+    if (process.env.NODE_ENV === "production") {
+      if (isReact300) {
+        console.warn(
+          "[WalletErrorBoundary] Wallet provider unavailable — checkout continues without wallet support.",
+        );
+      } else if (isReact418) {
+        // Hydration mismatch often caused by wallet extensions modifying DOM
+        console.warn(
+          "[WalletErrorBoundary] Hydration mismatch (e.g. from wallet extension) — continuing without wallet support.",
+        );
+      } else {
+        console.error(
+          "[WalletErrorBoundary] Wallet provider crashed — rendering children without wallet support:",
+          error,
+          info,
+        );
+      }
     } else {
       console.error(
         "[WalletErrorBoundary] Wallet provider crashed — rendering children without wallet support:",

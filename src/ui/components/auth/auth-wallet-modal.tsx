@@ -29,13 +29,21 @@ const ETHEREUM_WALLET_OPTIONS = [
 const SOLANA_WALLET_NAMES_TO_SKIP = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
 
 /** Wallets that support both Solana and EVM; after selecting one we show "Choose network" step. */
-const MULTI_CHAIN_WALLET_NAMES = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
+const MULTI_CHAIN_WALLET_NAMES = [
+  "Phantom",
+  "Ctrl Wallet",
+  "Ctrl",
+  "Brave Wallet",
+  "Brave",
+];
 
 /** Return true if this wallet should see the "Choose network" (Solana vs EVM) step. */
 function isMultiChainWallet(name: string): boolean {
   const lower = name.toLowerCase();
-  if (MULTI_CHAIN_WALLET_NAMES.some((n) => n.toLowerCase() === lower)) return true;
+  if (MULTI_CHAIN_WALLET_NAMES.some((n) => n.toLowerCase() === lower))
+    return true;
   if (lower.includes("ctrl")) return true; // e.g. "Ctrl", "Ctrl Wallet", any variant
+  if (lower === "phantom") return true;
   return false;
 }
 
@@ -233,9 +241,13 @@ export function AuthWalletModal({
         return;
       }
       setSelectedChain("solana");
-      console.log("[auth] Selecting Solana wallet:", name);
-      select(wallet.adapter.name);
+      // Defer select() to next tick to avoid Phantom's "Cannot redefine property: phantom"
+      // conflict when extension and adapter run in the same synchronous click stack.
+      const adapterName = wallet.adapter.name;
       setPendingSolanaConnect(true);
+      setTimeout(() => {
+        select(adapterName);
+      }, 0);
     },
     [select],
   );
@@ -252,9 +264,12 @@ export function AuthWalletModal({
         return;
       }
       solanaConnectStartedRef.current = false;
-      console.log("[auth] Selecting Solana wallet:", wallet.adapter.name);
-      select(wallet.adapter.name);
+      const adapterName = wallet.adapter.name;
       setPendingSolanaConnect(true);
+      // Defer select() to avoid wallet extension redefinition errors on first interaction.
+      setTimeout(() => {
+        select(adapterName);
+      }, 0);
     },
     [selectedWallet, select],
   );
@@ -266,7 +281,6 @@ export function AuthWalletModal({
     if (!currentWallet) return;
     if (connecting) return;
     if (connected && publicKey) {
-      console.log("[auth] Solana wallet already connected:", currentWallet.adapter.name);
       setPendingSolanaConnect(false);
       solanaConnectStartedRef.current = false;
       setStep("signing");
@@ -278,9 +292,6 @@ export function AuthWalletModal({
     setPendingSolanaConnect(false);
 
     let cancelled = false;
-    const adapterName = currentWallet.adapter.name;
-    console.log("[auth] Wallet adapter ready, connecting to:", adapterName);
-
     const connectPromise = connect();
     const timeoutMs = 45000;
     const timeoutId = window.setTimeout(() => {
@@ -300,7 +311,6 @@ export function AuthWalletModal({
         if (cancelled) return;
         window.clearTimeout(timeoutId);
         solanaConnectStartedRef.current = false;
-        console.log("[auth] Solana wallet connected, moving to signing step");
         await new Promise((r) => setTimeout(r, 100));
         if (cancelled) return;
         setStep("signing");
@@ -347,11 +357,6 @@ export function AuthWalletModal({
   useEffect(() => {
     if (!open || selectedChain !== "solana") return;
     
-    // Debug: log state when in signing step
-    if (step === "signing") {
-      console.log("[auth] Solana signing state:", { connected, publicKey: publicKey?.toBase58(), hasSignMessage: !!signMessage, signFlowStarted: signFlowStarted.current });
-    }
-    
     // If we're in signing step but signMessage is not available after connection, show error
     if (step === "signing" && connected && publicKey && !signMessage && !signFlowStarted.current) {
       console.error("[auth] Solana: signMessage not available from wallet adapter");
@@ -372,7 +377,6 @@ export function AuthWalletModal({
       let cancelled = false;
       (async () => {
         try {
-          console.info("[auth] Solana: requesting challenge…");
           const res = await fetch(
             `${API_BASE}/api/auth/sign-in/solana/challenge`,
             {
@@ -459,7 +463,6 @@ export function AuthWalletModal({
       if (!signatureBase64 && !signatureBase58) {
         throw new Error("Could not read signature from wallet. Try again.");
       }
-      console.info("[auth] Solana: verifying signature…");
       const verifyRes = await fetch(
         `${API_BASE}/api/auth/sign-in/solana/verify`,
         {
@@ -482,7 +485,6 @@ export function AuthWalletModal({
         if (isDev) console.error("[auth] Solana verify failed:", msg);
         throw new Error(msg);
       }
-      console.info("[auth] Solana sign-in succeeded");
       (document.activeElement as HTMLElement)?.blur?.();
       onOpenChange(false);
       if (link) {
