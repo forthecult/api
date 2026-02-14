@@ -360,6 +360,19 @@ export function updatePrintifyProduct(
     title?: string;
     description?: string;
     tags?: string[];
+    print_areas?: Array<{
+      variant_ids: number[];
+      placeholders: Array<{
+        position: string;
+        images: Array<{
+          id: string;
+          x: number;
+          y: number;
+          scale: number;
+          angle: number;
+        }>;
+      }>;
+    }>;
     images?: Array<{
       src: string;
       variant_ids: number[];

@@ -1,7 +1,8 @@
 /**
- * Create 8 Printify products with the SOLUNA logo via admin API.
- * Products match PumpFun Printify lineup only (hoodie is Printful, so excluded): shot glass, ping pong paddle, t-shirt, poster, sticker, tote bag, throw pillow, phone case. No coffee.
+ * Create 6 Printify products with the SOLUNA logo via admin API.
+ * Exact PumpFun Printify lineup (no coffee): shot glass, ping pong paddle, sticker, phone case, wireless charger, poker playing cards. No t-shirt/hoodie (Printful).
  * Uses SOLUNA category + Solana; sets features and SEO on each product.
+ * Use transparent-background PNG; run scripts/fix-soluna-printify-products.ts to fix existing products.
  *
  * Usage:
  *   cd relivator
@@ -46,16 +47,14 @@ const SOLUNA_IMAGE_PATH =
     "assets/soluna_300dpi-b2ae2c87-5ed6-46dd-8481-adb428fad8a5.png",
   );
 
-// 8 product types: same as PumpFun on Printify only (hoodie is Printful, so excluded). No coffee.
+// 6 product types: exact PumpFun Printify lineup (no coffee, no hoodie/tshirt — those are Printful).
 const PRODUCT_SEARCHES: { search: string; productLabel: string }[] = [
   { search: "shot glass", productLabel: "Shot Glass" },
   { search: "ping pong", productLabel: "Ping Pong Paddle" },
-  { search: "t-shirt", productLabel: "T-Shirt" },
-  { search: "poster", productLabel: "Poster" },
   { search: "sticker", productLabel: "Sticker" },
-  { search: "tote", productLabel: "Tote Bag" },
-  { search: "pillow", productLabel: "Throw Pillow" },
   { search: "phone case", productLabel: "Phone Case" },
+  { search: "wireless charger", productLabel: "Wireless Charger" },
+  { search: "poker playing cards", productLabel: "Poker Playing Cards" },
 ];
 
 const SOLUNA_CATEGORY_ID = "soluna";

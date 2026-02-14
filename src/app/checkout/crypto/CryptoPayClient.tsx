@@ -64,7 +64,7 @@ const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
   crust: { src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" },
   pump: { src: "/crypto/pump/pump-logomark.svg", alt: "Pump" },
   troll: { src: "/crypto/troll/troll-logomark.png", alt: "TROLL" },
-  soluna: { src: "/crypto/pump/pump-logomark.svg", alt: "SOLUNA" },
+  soluna: { src: "/crypto/soluna/soluna-logo.svg", alt: "SOLUNA" },
   sui: { src: "/crypto/sui/sui-logo.svg", alt: "Sui" },
 };
 

@@ -97,7 +97,7 @@ export const CRYPTO_LOGO_SRC: Partial<
   crust: "/crypto/solana/solanaLogoMark.svg",
   pump: "/crypto/pump/pump-logomark.svg",
   troll: "/crypto/troll/troll-logomark.png",
-  soluna: "/crypto/pump/pump-logomark.svg",
+  soluna: "/crypto/soluna/soluna-logo.svg",
 };
 
 export const USDC_SUB_OPTIONS: {
