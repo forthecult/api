@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
@@ -7,6 +7,10 @@ import {
 } from "~/lib/cors-public-api";
 import { db } from "~/db";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
+import {
+  CRYPTO_CATEGORY_NAMES,
+  SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
+} from "~/lib/storefront-categories";
 import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
 import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import {
@@ -123,6 +127,47 @@ export async function GET(request: NextRequest) {
             categories: await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
           }),
         );
+      }
+    } else {
+      // "All" products: exclude crypto-only categories unless product is in show-in-all-products
+      const allowedByCategory = await db
+        .selectDistinct({ productId: productCategoriesTable.productId })
+        .from(productCategoriesTable)
+        .innerJoin(
+          categoriesTable,
+          eq(productCategoriesTable.categoryId, categoriesTable.id),
+        )
+        .where(
+          or(
+            notInArray(categoriesTable.name, [...CRYPTO_CATEGORY_NAMES]),
+            eq(categoriesTable.slug, SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG),
+          ),
+        );
+      const allowedIds = new Set(allowedByCategory.map((r) => r.productId));
+      const allPublishedIds = await db
+        .select({ id: productsTable.id })
+        .from(productsTable)
+        .where(
+          and(eq(productsTable.published, true), eq(productsTable.hidden, false)),
+        );
+      const uncategorizedIds = await db
+        .select({ id: productsTable.id })
+        .from(productsTable)
+        .leftJoin(
+          productCategoriesTable,
+          eq(productsTable.id, productCategoriesTable.productId),
+        )
+        .where(
+          and(
+            eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
+            isNull(productCategoriesTable.productId),
+          ),
+        );
+      for (const r of uncategorizedIds) allowedIds.add(r.id);
+      productIdsFilter = allPublishedIds.filter((r) => allowedIds.has(r.id)).map((r) => r.id);
+      if (productIdsFilter.length === 0) {
+        productIdsFilter = null;
       }
     }
 

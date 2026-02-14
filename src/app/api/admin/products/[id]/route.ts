@@ -1,9 +1,10 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
 import { db } from "~/db";
 import {
+  categoriesTable,
   productAvailableCountryTable,
   productCategoriesTable,
   productImagesTable,
@@ -417,6 +418,23 @@ export async function PATCH(
       const mainCategoryId = typeof body.mainCategoryId === "string" && body.mainCategoryId.trim()
         ? body.mainCategoryId.trim()
         : categoryIds[0] ?? null;
+      if (categoryIds.length > 0) {
+        const existingCategories = await db
+          .select({ id: categoriesTable.id })
+          .from(categoriesTable)
+          .where(inArray(categoriesTable.id, categoryIds));
+        const existingIds = new Set(existingCategories.map((r) => r.id));
+        const invalidIds = categoryIds.filter((cid) => !existingIds.has(cid));
+        if (invalidIds.length > 0) {
+          return NextResponse.json(
+            {
+              error: "Invalid category ID(s). Categories may have been deleted or the list is stale. Refresh the page and try again.",
+              invalidCategoryIds: invalidIds,
+            },
+            { status: 400 },
+          );
+        }
+      }
       await db
         .delete(productCategoriesTable)
         .where(eq(productCategoriesTable.productId, id));
@@ -675,8 +693,13 @@ export async function PATCH(
     });
   } catch (err) {
     console.error("Admin product update error:", err);
+    const message =
+      err instanceof Error ? err.message : "Failed to update product";
     return NextResponse.json(
-      { error: "Failed to update product" },
+      {
+        error: "Failed to update product",
+        ...(process.env.NODE_ENV === "development" && { detail: message }),
+      },
       { status: 500 },
     );
   }

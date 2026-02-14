@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SEO_CONFIG } from "~/app";
 import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
+import { CRYPTO_CATEGORY_NAMES_SET } from "~/lib/storefront-categories";
 import { cn } from "~/lib/cn";
 import { Cart } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
@@ -98,16 +99,10 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
     }>
   >([]);
 
-  // Mega menu: exclude specific categories and only show categories that have products
-  const MEGA_MENU_EXCLUDED_NAMES = new Set([
-    "Currency (Potential)",
-    "Application Tokens",
-    "Application Token (dApps, DAOs)",
-    "Network (Artificial Organism)",
-  ]);
+  // Mega menu: exclude crypto categories (they appear in Shop by Crypto when user has Web3)
   const filteredShopCategories = useMemo(() => {
     return shopCategories
-      .filter((cat) => !MEGA_MENU_EXCLUDED_NAMES.has(cat.name))
+      .filter((cat) => !CRYPTO_CATEGORY_NAMES_SET.has(cat.name))
       .filter((cat) => {
         const topCount = cat.productCount ?? 0;
         const subCount = (cat.subcategories ?? []).reduce(
@@ -156,7 +151,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   // Crypto categories for "Shop by Crypto" dropdown: Currency, Network, Application (exactly that order), only with products
   const cryptoShopCategories = useMemo(() => {
     const onlyCrypto = shopCategories.filter((cat) =>
-      MEGA_MENU_EXCLUDED_NAMES.has(cat.name),
+      CRYPTO_CATEGORY_NAMES_SET.has(cat.name),
     );
     const withProducts = onlyCrypto.filter((cat) => {
       const topCount = cat.productCount ?? 0;

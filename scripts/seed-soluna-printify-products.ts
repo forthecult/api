@@ -219,13 +219,13 @@ async function createProduct(params: {
 }): Promise<{ localProductId?: string; printifyProductId: string }> {
   const { imageId, imageUrl, blueprintId, printProviderId, productLabel, variants } = params;
   const title = buildProductTitle(productLabel);
-  const priceCents = Math.round(
+  const avgCost =
     variants.length > 0
       ? variants.reduce((s, v) => s + v.priceCents, 0) / variants.length
-      : 1999,
-  );
+      : 0;
+  const priceCents = Math.max(999, Math.round(avgCost));
   const markup = Math.round(priceCents * 0.4);
-  const sellPrice = priceCents + markup;
+  const sellPrice = Math.max(100, priceCents + markup);
 
   const body = {
     provider: "printify",
@@ -356,11 +356,15 @@ async function main() {
       }
     }
     if (localId) {
-      await patchProductSeoAndFeatures(
-        localId,
-        productLabel,
-        categoryId,
-      );
+      try {
+        await patchProductSeoAndFeatures(
+          localId,
+          productLabel,
+          categoryId,
+        );
+      } catch (patchErr) {
+        console.warn("  PATCH features/SEO failed (product created in Printify):", patchErr instanceof Error ? patchErr.message : patchErr);
+      }
     }
 
     await new Promise((r) => setTimeout(r, 400));

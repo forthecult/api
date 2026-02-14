@@ -893,8 +893,16 @@ export default function AdminProductEditPage() {
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
             error?: string;
+            detail?: string;
+            invalidCategoryIds?: string[];
           };
-          throw new Error(body.error ?? "Failed to save");
+          const message = body.detail ?? body.error ?? "Failed to save";
+          if (body.invalidCategoryIds?.length) {
+            throw new Error(
+              `${message} (invalid categories: ${body.invalidCategoryIds.join(", ")})`,
+            );
+          }
+          throw new Error(message);
         }
         const saved = (await res.json()) as {
           tokenGates?: Array<{
