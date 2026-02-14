@@ -31,13 +31,12 @@ export function TestimonialCard({
     <Card
       {...(href ? { href } : {})}
       className={cn(
-        "flex flex-col rounded-lg border-t",
-        "bg-gradient-to-b from-muted/50 to-muted/10",
+        "flex flex-col rounded-lg border border-[#2A2A2A] bg-[#1A1A1A]",
         `
           p-4 text-start
           sm:p-6
         `,
-        "hover:from-muted/60 hover:to-muted/20",
+        "hover:border-[#C4873A]/20 hover:bg-[#1E1E1E]",
         `
           max-w-[320px]
           sm:max-w-[320px]
@@ -55,7 +54,7 @@ export function TestimonialCard({
           />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col items-start">
-          <h3 className="text-md leading-none font-semibold">{author.name}</h3>
+          <h3 className="text-md leading-none font-semibold text-[#F5F1EB]">{author.name}</h3>
           {rating != null && rating > 0 && (
             <div
               className="mt-1.5 flex items-center gap-0.5"
@@ -80,7 +79,7 @@ export function TestimonialCard({
       <p
         className={`
           sm:text-md
-          mt-4 text-sm text-muted-foreground
+          mt-4 text-sm text-[#8A857E]
         `}
       >
         {text}

@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
-import { ArrowRight, Clock, ShoppingBag, Star, Truck } from "lucide-react";
+import { ArrowRight, Clock, Globe, Shield, Star, Truck, Zap } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
-import { ImageWithRetry } from "~/ui/components/image-with-retry";
+
 import {
   PageContainer,
   PageSection,
@@ -175,26 +175,26 @@ export const metadata: Metadata = {
 const featuresWhyChooseUs = [
   {
     description:
-      "Free shipping on orders over $200. Fast, reliable delivery worldwide. Members get free shipping on most orders.",
-    icon: <Truck className="h-6 w-6 text-primary" />,
-    title: "Free shipping",
+      "Free shipping on orders over $200. Fast, reliable delivery worldwide. Cult members get free shipping on most orders.",
+    icon: <Truck className="h-5 w-5 text-[#C4873A]" />,
+    title: "Free worldwide shipping",
   },
   {
     description:
-      "Secure encryption and you control your data. Checkout is guest-friendly—sign up optional.",
-    icon: <ShoppingBag className="h-6 w-6 text-primary" />,
+      "Pay with card, crypto, or SOL. Secure encryption, guest-friendly checkout. Your data, your rules.",
+    icon: <Shield className="h-5 w-5 text-[#C4873A]" />,
     title: "Pay your way",
   },
   {
     description:
-      "Our support team is here for orders, returns, and questions. We respond quickly and care about your experience.",
-    icon: <Clock className="h-6 w-6 text-primary" />,
+      "Real humans, real responses. Our support team is here for orders, returns, and questions.",
+    icon: <Clock className="h-5 w-5 text-[#C4873A]" />,
     title: "Support when you need it",
   },
   {
     description:
-      "Every product is curated for quality. We stand behind what we sell with a 30-day money-back guarantee.",
-    icon: <Star className="h-6 w-6 text-primary" />,
+      "Every product is curated for quality and tested by the community. 30-day money-back guarantee.",
+    icon: <Star className="h-5 w-5 text-[#C4873A]" />,
     title: "Quality guarantee",
   },
 ];
@@ -225,366 +225,256 @@ export default async function HomePage() {
 
   return (
     <>
-      <main
-        className={`
-          flex min-h-screen flex-col gap-y-16 bg-gradient-to-b from-muted/50
-          via-muted/25 to-background
-        `}
-      >
-        {/* Hero Section */}
-        <section className="relative overflow-hidden py-24 md:py-32">
-          <div className="bg-grid-black/[0.02] absolute inset-0 bg-[length:20px_20px]" />
+      <div className="flex min-h-screen flex-col bg-[#111111]">
+
+        {/* ═══════════════════════════════════════════
+            HERO — Dark, futuristic, cult-y
+            ═══════════════════════════════════════════ */}
+        <section className="hero-scanlines relative overflow-hidden py-28 md:py-40">
+          {/* Dot grid background */}
+          <div className="bg-dot-grid absolute inset-0" />
+          {/* Radial amber glow at top-center */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(196,135,58,0.12),transparent)]" />
           <PageContainer className="relative z-10">
-            <div
-              className={`
-                grid items-center gap-10
-                lg:grid-cols-2 lg:gap-12
-              `}
-            >
-              <div className="flex flex-col justify-center space-y-6">
-                <div className="space-y-4">
-                  <h1
-                    className={`
-                      font-display text-4xl leading-tight font-bold
-                      tracking-tight text-foreground
-                      sm:text-5xl
-                      md:text-6xl
-                      lg:leading-[1.1]
-                    `}
-                  >
-                    Where smart living and{" "}
-                    <span
-                      className={`
-                        bg-gradient-to-r from-primary to-primary/70 bg-clip-text
-                        text-transparent
-                      `}
-                    >
-                      technology meet
-                    </span>
-                  </h1>
-                  <p
-                    className={`
-                      max-w-[700px] text-lg text-muted-foreground
-                      md:text-xl
-                    `}
-                  >
-                    Curated tech, premium apparel, wellness gear, and travel
-                    essentials—for people who invest in themselves.
-                  </p>
-                </div>
-                <div
-                  className={`
-                    flex flex-col gap-3
-                    sm:flex-row
-                  `}
-                >
-                  <Link href="/products">
-                    <Button
-                      className={`
-                        h-12 gap-1.5 px-8 transition-colors duration-200
-                      `}
-                      size="lg"
-                    >
-                      Shop now <ArrowRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/signup">
-                    <Button
-                      className="h-12 px-8 transition-colors duration-200"
-                      size="lg"
-                      variant="outline"
-                    >
-                      Join for membership benefits
-                    </Button>
-                  </Link>
-                </div>
-                <div
-                  className={`
-                    flex flex-wrap gap-5 text-sm text-muted-foreground
-                  `}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Truck className="h-5 w-5 text-primary/70" />
-                    <span>Free shipping over $200</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Clock className="h-5 w-5 text-primary/70" />
-                    <span>Worldwide delivery</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <ShoppingBag className="h-5 w-5 text-primary/70" />
-                    <span>Pay with card or crypto</span>
-                  </div>
-                </div>
+            <div className="mx-auto max-w-4xl text-center">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#2A2A2A] bg-[#1A1A1A]/80 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.15em] text-[#8A857E] backdrop-blur-sm">
+                <Zap className="h-3 w-3 text-[#C4873A]" />
+                For the Cult
               </div>
-              <div
-                className={`
-                  relative mx-auto hidden aspect-square w-full max-w-md
-                  overflow-hidden rounded-xl border shadow-lg
-                  lg:block
-                `}
-              >
-                <div
-                  className={`
-                    absolute inset-0 z-10 bg-gradient-to-tr from-primary/20
-                    via-transparent to-transparent
-                  `}
-                />
-                <ImageWithRetry
-                  alt="For the Cult — curated tech, premium apparel, and lifestyle gear. Where smart living and technology meet."
-                  title="Culture lifestyle"
-                  className="object-cover"
-                  fill
-                  priority
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  src="/lookbook/culture-brand-lifestyle-premium-apparel.jpg"
-                />
+              <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight text-[#F5F1EB] sm:text-5xl md:text-7xl lg:leading-[1.05]">
+                Where culture and{" "}
+                <span className="text-gradient-brand">technology</span>{" "}
+                converge
+              </h1>
+              <p className="mx-auto mt-6 max-w-2xl text-lg text-[#8A857E] md:text-xl">
+                Curated tech, premium apparel, wellness gear, and travel essentials
+                — for people who invest in themselves and the future they&apos;re building.
+              </p>
+              <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+                <Link href="/products">
+                  <Button className="h-12 gap-2 px-8 text-sm uppercase tracking-wider" size="lg">
+                    Enter the shop <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <Link href="/about">
+                  <Button className="h-12 px-8 text-sm uppercase tracking-wider" size="lg" variant="outline">
+                    Read the manifesto
+                  </Button>
+                </Link>
+              </div>
+              {/* Trust signals */}
+              <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-xs uppercase tracking-wider text-[#8A857E]">
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-[#C4873A]/70" />
+                  <span>Ships worldwide</span>
+                </div>
+                <div className="h-3 w-px bg-[#2A2A2A]" />
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-[#C4873A]/70" />
+                  <span>Card &amp; crypto</span>
+                </div>
+                <div className="h-3 w-px bg-[#2A2A2A]" />
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-[#C4873A]/70" />
+                  <span>Free shipping over $200</span>
+                </div>
               </div>
             </div>
           </PageContainer>
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+          {/* Bottom amber gradient line */}
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#C4873A]/30 to-transparent" />
         </section>
 
-        {/* Where culture and technology merge */}
-        <PageSection>
+        {/* ═══════════════════════════════════════════
+            BRAND STATEMENT
+            ═══════════════════════════════════════════ */}
+        <section className="py-20 md:py-28">
           <PageContainer>
-            <div className="mx-auto max-w-3xl space-y-6 text-center">
-              <SectionHeading
-                title="A lifestyle for the independent"
-                subtitle="You're in the right place. We curate tech, apparel, wellness, and travel gear that fits how you live—and the future you're building. Join as a member for product discounts, free shipping for CULT members, exclusive drops, and early access to new arrivals."
-              />
+            <div className="mx-auto max-w-3xl space-y-8 text-center">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#C4873A]">
+                A lifestyle for the independent
+              </p>
+              <h2 className="font-heading text-2xl font-bold leading-snug text-[#F5F1EB] md:text-4xl">
+                We curate tech, apparel, wellness, and travel gear that fits how you live
+                — and the future you&apos;re building.
+              </h2>
+              <p className="text-[#8A857E] md:text-lg">
+                Join as a member for product discounts, free shipping, exclusive drops,
+                and early access to new arrivals. This isn&apos;t just a store — it&apos;s a signal.
+              </p>
               <Link href="/signup">
-                <Button variant="outline" size="lg">
-                  Learn about membership
+                <Button variant="outline" size="lg" className="uppercase tracking-wider text-sm">
+                  Join the cult
                 </Button>
               </Link>
             </div>
           </PageContainer>
-        </PageSection>
+        </section>
 
-        {/* Quality that looks good and does good */}
-        <PageSection background="muted">
+        {/* Thin divider */}
+        <div className="mx-auto h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-[#2A2A2A] to-transparent" />
+
+        {/* ═══════════════════════════════════════════
+            LOOKBOOK / VISUAL BREAK
+            ═══════════════════════════════════════════ */}
+        <section className="bg-[#0D0D0D] py-20 md:py-28">
           <PageContainer>
             <div className="mx-auto max-w-3xl space-y-4 text-center">
-              <h2
-                className={`
-                  font-display text-2xl font-semibold tracking-tight
-                  text-foreground md:text-3xl
-                `}
-              >
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#C4873A]">
+                Lookbook
+              </p>
+              <h2 className="font-heading text-2xl font-bold tracking-tight text-[#F5F1EB] md:text-3xl">
                 Quality that looks good and does good
               </h2>
-              <p className="text-muted-foreground md:text-lg">
+              <p className="text-[#8A857E] md:text-lg">
                 What you wear and use should look great and support how you feel.
-                We focus on quality materials and thoughtfully curated
-                apparel—gear we'd use ourselves, for a lifestyle you can feel
-                good about.
+                Thoughtfully curated apparel — gear we&apos;d use ourselves.
               </p>
               <Link href="/lookbook">
-                <Button variant="secondary" size="lg">
+                <Button variant="outline" size="lg" className="mt-2 uppercase tracking-wider text-sm">
                   View lookbook
                 </Button>
               </Link>
             </div>
-            <div className="mx-auto mt-10 max-w-4xl">
+            <div className="mx-auto mt-12 max-w-4xl">
               <Link
                 href="/lookbook"
-                className="block overflow-hidden rounded-xl border border-border shadow-md transition hover:opacity-95"
+                className="group relative block overflow-hidden rounded-lg border border-[#2A2A2A] transition-all duration-300 hover:border-[#C4873A]/20 hover:shadow-lg hover:shadow-[#C4873A]/5"
               >
+                <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#0D0D0D]/60 via-transparent to-transparent" />
                 <Image
                   src="/lookbook/culture-lookbook-lifestyle-and-apparel.jpg"
                   alt="Culture lookbook — premium apparel and lifestyle photography. Photos by George J. Patterson."
                   title="Culture lookbook"
                   width={900}
                   height={600}
-                  className="h-auto w-full object-cover"
+                  className="h-auto w-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
                   sizes="(max-width: 896px) 100vw, 900px"
                 />
               </Link>
-              <p className="mt-2 text-center text-xs text-muted-foreground">
+              <p className="mt-3 text-center text-xs text-[#8A857E]">
                 Photos by George J. Patterson
               </p>
             </div>
           </PageContainer>
-        </PageSection>
+        </section>
 
-        {/* Curated collections */}
-        <PageSection>
+        {/* ═══════════════════════════════════════════
+            FEATURED CATEGORIES
+            ═══════════════════════════════════════════ */}
+        <section className="py-20 md:py-28">
           <PageContainer>
-            <SectionHeading
-              title="Tech, style, and everyday essentials"
-              subtitle="From travel tech and premium apparel to wellness and lifestyle gear—each piece is chosen for quality and how you actually live. Functional, refined, and built to last."
-            />
-          </PageContainer>
-        </PageSection>
-
-        {/* Featured Categories */}
-        <PageSection>
-          <PageContainer>
-            <SectionHeadingBlock
-              title="Shop by category"
-              description="Browse curated tech, apparel, wellness, and travel essentials—each category handpicked for quality and value"
-            />
-            <div
-              className={`
-                grid grid-cols-2 gap-4
-                md:grid-cols-3 lg:grid-cols-6 md:gap-6
-              `}
-            >
+            <div className="mb-12 flex flex-col items-center text-center">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#C4873A]">
+                Collections
+              </p>
+              <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-[#F5F1EB] md:text-4xl">
+                Shop by category
+              </h2>
+              <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-[#C4873A] to-[#C4873A]/30" />
+              <p className="mt-4 max-w-2xl text-[#8A857E]">
+                Browse curated tech, apparel, wellness, and travel essentials — each category handpicked for quality
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6 md:gap-5">
               {topLevelShop.length > 0 ? (
                 topLevelShop.map((category) => (
                   <Link
                     aria-label={`Browse ${category.name} products`}
-                    className={`
-                      group flex flex-col rounded-2xl border bg-card
-                      p-5 shadow transition-all duration-300
-                      hover:shadow-lg hover:border-primary/30
-                    `}
+                    className="cult-glow group flex flex-col rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] p-5 transition-all duration-300"
                     href={`/${category.slug ?? category.id}`}
                     key={category.id}
                   >
-                    <div className="mb-2 text-lg font-medium">
+                    <div className="mb-2 text-base font-medium text-[#F5F1EB] group-hover:text-[#C4873A] transition-colors">
                       {category.name}
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs font-mono-crypto text-[#8A857E]">
                       {category.productCount} products
                     </p>
                   </Link>
                 ))
               ) : (
                 <Link
-                  className="rounded-2xl border bg-card p-5 shadow hover:border-primary/30"
+                  className="cult-glow rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] p-5"
                   href="/products"
                 >
-                  <div className="text-lg font-medium">All Products</div>
-                  <p className="text-sm text-muted-foreground">
+                  <div className="text-base font-medium text-[#F5F1EB]">All Products</div>
+                  <p className="text-xs text-[#8A857E]">
                     Browse the store
                   </p>
                 </Link>
               )}
             </div>
           </PageContainer>
-        </PageSection>
+        </section>
 
-        {/* Featured Products */}
-        <section
-          className={`
-            bg-muted/50 py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
-            <div className="mb-8 flex flex-col items-center text-center">
-              <h2
-                className={`
-                  font-display text-3xl leading-tight font-bold tracking-tight
-                  md:text-4xl
-                `}
-              >
-                Featured Products
+        {/* Thin divider */}
+        <div className="mx-auto h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-[#2A2A2A] to-transparent" />
+
+        {/* ═══════════════════════════════════════════
+            FEATURED PRODUCTS
+            ═══════════════════════════════════════════ */}
+        <section className="bg-[#0D0D0D] py-20 md:py-28">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-12 flex flex-col items-center text-center">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#C4873A]">
+                Curated picks
+              </p>
+              <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-[#F5F1EB] md:text-4xl">
+                Featured products
               </h2>
-              <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
-              <p className="mt-4 max-w-2xl text-center text-muted-foreground">
-                Handpicked tech, apparel, wellness, and travel gear for how you
-                live
+              <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-[#C4873A] to-[#C4873A]/30" />
+              <p className="mt-4 max-w-2xl text-[#8A857E]">
+                Handpicked tech, apparel, wellness, and travel gear for how you live
               </p>
             </div>
-            <div
-              className={`
-                grid grid-cols-1 gap-6
-                sm:grid-cols-2
-                lg:grid-cols-3
-                xl:grid-cols-4
-              `}
-            >
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <FeaturedProductsSection products={featuredProducts} />
             </div>
-            <div className="mt-10 flex justify-center">
+            <div className="mt-12 flex justify-center">
               <Link href="/products">
-                <Button className="group h-12 px-8" size="lg" variant="outline">
-                  View All Products
-                  <ArrowRight
-                    className={`
-                      ml-2 h-4 w-4 transition-transform duration-300
-                      group-hover:translate-x-1
-                    `}
-                  />
+                <Button className="group h-12 px-8 uppercase tracking-wider text-sm" size="lg" variant="outline">
+                  View all products
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Button>
               </Link>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section
-          className={`
-            py-12
-            md:py-16
-          `}
-          id="features"
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
-            <div className="mb-8 flex flex-col items-center text-center">
-              <h2
-                className={`
-                  font-display text-3xl leading-tight font-bold tracking-tight
-                  md:text-4xl
-                `}
-              >
-                Why Choose Us
+        {/* ═══════════════════════════════════════════
+            WHY CHOOSE US — Feature Grid
+            ═══════════════════════════════════════════ */}
+        <section className="py-20 md:py-28" id="features">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-12 flex flex-col items-center text-center">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#C4873A]">
+                The standard
+              </p>
+              <h2 className="mt-3 font-heading text-3xl font-bold tracking-tight text-[#F5F1EB] md:text-4xl">
+                Why choose us
               </h2>
-              <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
-              <p
-                className={`
-                  mt-4 max-w-2xl text-center text-muted-foreground
-                  md:text-lg
-                `}
-              >
-                Secure checkout, crypto or card, free shipping over $200, and
-                support when you need it
+              <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-[#C4873A] to-[#C4873A]/30" />
+              <p className="mt-4 max-w-2xl text-[#8A857E] md:text-lg">
+                Secure checkout, crypto or card, free shipping over $200, and real support when you need it
               </p>
             </div>
-            <div
-              className={`
-                grid gap-8
-                md:grid-cols-2
-                lg:grid-cols-4
-              `}
-            >
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               {featuresWhyChooseUs.map((feature) => (
                 <Card
-                  className={`
-                    rounded-2xl border-none bg-background shadow transition-all
-                    duration-300
-                    hover:shadow-lg
-                  `}
+                  className="cult-glow rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] shadow-none transition-all duration-300"
                   key={feature.title}
                 >
                   <CardHeader className="pb-2">
-                    <div
-                      className={`
-                        mb-3 flex h-12 w-12 items-center justify-center
-                        rounded-full bg-primary/10
-                      `}
-                    >
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[#C4873A]/10 border border-[#C4873A]/20">
                       {feature.icon}
                     </div>
-                    <CardTitle>{feature.title}</CardTitle>
+                    <CardTitle className="text-[#F5F1EB] text-base font-semibold">
+                      {feature.title}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-base">
+                    <CardDescription className="text-sm text-[#8A857E]">
                       {feature.description}
                     </CardDescription>
                   </CardContent>
@@ -594,94 +484,51 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section
-          className={`
-            bg-muted/50 py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
+        {/* Thin divider */}
+        <div className="mx-auto h-px w-full max-w-7xl bg-gradient-to-r from-transparent via-[#2A2A2A] to-transparent" />
+
+        {/* ═══════════════════════════════════════════
+            TESTIMONIALS
+            ═══════════════════════════════════════════ */}
+        <section className="bg-[#0D0D0D] py-20 md:py-28">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <TestimonialsSection
               className="py-0"
-              description="Don't just take our word for it—hear from people who live the Culture lifestyle"
+              description="Don't just take our word for it — hear from people who live it"
               testimonials={testimonials}
-              title="What our customers say"
+              title="From the community"
             />
           </div>
         </section>
 
-        {/* CTA Section */}
-        <section
-          className={`
-            py-12
-            md:py-16
-          `}
-        >
-          <div
-            className={`
-              container mx-auto max-w-7xl px-4
-              sm:px-6
-              lg:px-8
-            `}
-          >
-            <div
-              className={`
-                relative overflow-hidden rounded-xl bg-primary/10 p-8 shadow-lg
-                md:p-12
-              `}
-            >
-              <div
-                className={`
-                  bg-grid-white/[0.05] absolute inset-0
-                  bg-[length:16px_16px]
-                `}
-              />
+        {/* ═══════════════════════════════════════════
+            CTA — Join the Cult
+            ═══════════════════════════════════════════ */}
+        <section className="py-20 md:py-28">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="relative overflow-hidden rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] p-10 md:p-16">
+              {/* Ambient amber glow */}
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_40%_at_50%_50%,rgba(196,135,58,0.06),transparent)]" />
+              <div className="bg-dot-grid absolute inset-0 opacity-50" />
               <div className="relative z-10 mx-auto max-w-2xl text-center">
-                <h2
-                  className={`
-                    font-display text-3xl leading-tight font-bold tracking-tight
-                    md:text-4xl
-                  `}
-                >
-                  Ready to live the Culture lifestyle?
-                </h2>
-                <p
-                  className={`
-                    mt-4 text-lg text-muted-foreground
-                    md:text-xl
-                  `}
-                >
-                  Join for member discounts, early access to new arrivals, and
-                  free shipping over $200. Sign
-                  up today.
+                <p className="text-xs font-medium uppercase tracking-[0.2em] text-[#C4873A]">
+                  Join us
                 </p>
-                <div
-                  className={`
-                    mt-6 flex flex-col items-center justify-center gap-3
-                    sm:flex-row
-                  `}
-                >
+                <h2 className="mt-4 font-heading text-3xl font-bold tracking-tight text-[#F5F1EB] md:text-4xl">
+                  Ready to join the Cult?
+                </h2>
+                <p className="mt-4 text-lg text-[#8A857E] md:text-xl">
+                  Member discounts, early access to new drops, free shipping on most orders.
+                  This is more than a store — it&apos;s a community.
+                </p>
+                <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <Link href="/signup">
-                    <Button
-                      className="h-12 px-8 transition-colors duration-200"
-                      size="lg"
-                    >
+                    <Button className="h-12 px-8 uppercase tracking-wider text-sm" size="lg">
                       Sign up now
                     </Button>
                   </Link>
                   <Link href="/products">
-                    <Button
-                      className="h-12 px-8 transition-colors duration-200"
-                      size="lg"
-                      variant="outline"
-                    >
+                    <Button className="h-12 px-8 uppercase tracking-wider text-sm" size="lg" variant="outline">
                       Browse products
                     </Button>
                   </Link>
@@ -690,7 +537,7 @@ export default async function HomePage() {
             </div>
           </div>
         </section>
-      </main>
+      </div>
     </>
   );
 }

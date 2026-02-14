@@ -43,9 +43,10 @@ const buttonVariants = cva(
       },
       variant: {
         default: `
-          bg-primary text-primary-foreground shadow-xs
-          hover:bg-primary/90 hover:shadow-md
-          focus-visible:ring-2 focus-visible:ring-primary/60
+          bg-[#C4873A] text-[#111111] shadow-xs font-semibold
+          hover:bg-[#D4A05A] hover:shadow-md hover:shadow-[#C4873A]/20
+          focus-visible:ring-2 focus-visible:ring-[#C4873A]/60
+          active:bg-[#A8702F]
         `,
         destructive: `
           bg-destructive text-white shadow-xs
@@ -54,9 +55,8 @@ const buttonVariants = cva(
           dark:bg-destructive/60 dark:focus-visible:ring-destructive/40
         `,
         ghost: `
-          hover:bg-accent hover:text-accent-foreground
-          focus-visible:ring-2 focus-visible:ring-accent/40
-          dark:hover:bg-accent/50
+          hover:bg-[#1E1E1E] hover:text-[#F5F1EB]
+          focus-visible:ring-2 focus-visible:ring-[#C4873A]/40
         `,
         link: `
           text-primary underline-offset-4
@@ -64,10 +64,9 @@ const buttonVariants = cva(
           focus-visible:ring-2 focus-visible:ring-primary/40
         `,
         outline: `
-          border bg-background shadow-xs
-          hover:bg-accent hover:text-accent-foreground hover:shadow-md
-          focus-visible:ring-2 focus-visible:ring-accent/40
-          dark:border-input dark:bg-input/30 dark:hover:bg-input/50
+          border border-[#2A2A2A] bg-transparent text-[#F5F1EB] shadow-xs
+          hover:border-[#C4873A]/50 hover:bg-[#1A1A1A] hover:text-[#C4873A] hover:shadow-md
+          focus-visible:ring-2 focus-visible:ring-[#C4873A]/40
         `,
         secondary: `
           bg-secondary text-secondary-foreground shadow-xs

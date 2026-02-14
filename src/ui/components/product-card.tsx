@@ -214,14 +214,15 @@ function ProductCardInner({
         className="flex h-full flex-col"
         href={`/${product.slug ?? product.id}`}
       >
-        <Card
+          <Card
           className={cn(
             `
               relative flex h-full flex-col overflow-hidden rounded-lg py-0
-              transition-all duration-200 ease-in-out will-change-transform
-              hover:shadow-md hover:-translate-y-0.5
+              border-[#2A2A2A] bg-[#1A1A1A]
+              transition-all duration-300 ease-in-out will-change-transform
+              hover:shadow-lg hover:shadow-[#C4873A]/5 hover:-translate-y-0.5
             `,
-            isHovered && "ring-1 ring-primary/20",
+            isHovered && "ring-1 ring-[#C4873A]/20 border-[#C4873A]/20",
           )}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -337,7 +338,7 @@ function ProductCardInner({
                   {product.category}
                 </Badge>
                 {isNew && (
-                  <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+                  <Badge className="bg-[#C4873A] text-[#111111] font-semibold hover:bg-[#C4873A]">
                     New
                   </Badge>
                 )}
@@ -406,8 +407,8 @@ function ProductCardInner({
             {/* Product name with line clamp */}
             <h3
               className={`
-                line-clamp-2 text-base font-medium transition-colors
-                group-hover:text-primary
+                line-clamp-2 text-base font-medium text-[#F5F1EB] transition-colors
+                group-hover:text-[#C4873A]
               `}
             >
               {product.name}

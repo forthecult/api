@@ -140,8 +140,8 @@ export function ShopMegaMenu({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 text-lg font-medium transition-colors hover:text-primary",
-            isActive ? "font-semibold text-primary" : "text-muted-foreground",
+            "accent-underline inline-flex items-center gap-1 text-sm font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+            isActive ? "font-semibold text-[#C4873A]" : "text-[#8A857E]",
             className,
           )}
           aria-expanded={open}
@@ -161,7 +161,7 @@ export function ShopMegaMenu({
       <PopoverContent
         align="start"
         sideOffset={4}
-        className="w-[min(95vw,1060px)] rounded-xl border bg-popover p-0 shadow-xl"
+        className="w-[min(95vw,1060px)] rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] p-0 shadow-xl"
       >
         {/* ── Category grid ── */}
         <div
@@ -173,7 +173,7 @@ export function ShopMegaMenu({
           {sections.map((section) => (
             <div key={section.label} className="px-5 pb-5 pt-4">
               {/* Section header */}
-              <div className="mb-3 flex items-center gap-1.5 text-base font-bold uppercase tracking-widest text-muted-foreground/70">
+              <div className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-[#C4873A]">
                 {section.icon}
                 {section.label}
               </div>
@@ -194,7 +194,7 @@ export function ShopMegaMenu({
                     <div key={cat.id}>
                       <Link
                         href={href}
-                        className="group inline-flex items-center gap-1 text-lg font-semibold leading-snug transition-colors hover:text-primary"
+                        className="group inline-flex items-center gap-1 text-base font-semibold leading-snug text-[#F5F1EB] transition-colors hover:text-[#C4873A]"
                         onClick={() => setOpen(false)}
                       >
                         {cat.name}
@@ -210,7 +210,7 @@ export function ShopMegaMenu({
                               <li key={sub.id}>
                                 <Link
                                   href={subHref}
-                                  className="block rounded-md px-2 py-1.5 text-base text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                                  className="block rounded-md px-2 py-1.5 text-sm text-[#8A857E] transition-colors hover:bg-[#2A2A2A] hover:text-[#F5F1EB]"
                                   onClick={() => setOpen(false)}
                                 >
                                   {sub.name}
@@ -227,7 +227,7 @@ export function ShopMegaMenu({
                             <li>
                               <Link
                                 href={href}
-                                className="inline-flex items-center gap-0.5 px-2 py-1.5 text-base font-medium text-primary transition-colors hover:underline"
+                                className="inline-flex items-center gap-0.5 px-2 py-1.5 text-sm font-medium text-[#C4873A] transition-colors hover:underline"
                                 onClick={() => setOpen(false)}
                               >
                                 View all
@@ -246,17 +246,17 @@ export function ShopMegaMenu({
         </div>
 
         {/* ── Bottom CTA bar ── */}
-        <div className="flex items-center justify-between border-t bg-muted/40 px-5 py-2.5">
+        <div className="flex items-center justify-between border-t border-[#2A2A2A] bg-[#111111] px-5 py-2.5">
           <Link
             href="/products"
-            className="group inline-flex items-center gap-2 text-lg font-semibold text-primary transition-colors hover:text-primary/80"
+            className="group inline-flex items-center gap-2 text-sm font-semibold text-[#C4873A] transition-colors hover:text-[#D4A05A]"
             onClick={() => setOpen(false)}
           >
-            <Sparkles className="h-5 w-5" />
+            <Sparkles className="h-4 w-4" />
             Browse All Products
-            <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </Link>
-          <span className="hidden text-base text-muted-foreground sm:inline">
+          <span className="hidden text-xs uppercase tracking-wider text-[#8A857E] sm:inline">
             Free worldwide shipping for CULT Members
           </span>
         </div>

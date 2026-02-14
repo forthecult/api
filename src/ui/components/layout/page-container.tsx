@@ -41,7 +41,7 @@ export function PageSection({
       id={id}
       className={cn(
         padding === "default" && SECTION_PADDING,
-        background === "muted" && "bg-muted/50",
+        background === "muted" && "bg-[#0D0D0D]",
         className,
       )}
     >
@@ -69,7 +69,7 @@ export function SectionHeading({
         className,
       )}
     >
-      <h2 className="font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+      <h2 className="font-heading text-2xl font-bold tracking-tight text-[#F5F1EB] md:text-3xl">
         {title}
       </h2>
       {subtitle ? (
@@ -96,10 +96,10 @@ export function SectionHeadingBlock({
         className,
       )}
     >
-      <h2 className="font-display text-3xl leading-tight font-bold tracking-tight md:text-4xl">
+      <h2 className="font-heading text-3xl leading-tight font-bold tracking-tight text-[#F5F1EB] md:text-4xl">
         {title}
       </h2>
-      <div className="mt-2 h-1 w-12 rounded-full bg-primary" />
+      <div className="mt-2 h-0.5 w-16 bg-gradient-to-r from-[#C4873A] to-[#C4873A]/30" />
       {description ? (
         <p className="mt-4 max-w-2xl text-center text-muted-foreground">
           {description}

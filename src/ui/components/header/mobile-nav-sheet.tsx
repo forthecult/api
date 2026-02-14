@@ -126,7 +126,7 @@ export function MobileNavSheet({
                 </Button>
               </SheetClose>
               <Link
-                className="font-bold tracking-tight text-foreground"
+                className="font-heading text-sm font-bold tracking-[0.2em] uppercase text-[#F5F1EB]"
                 href="/"
                 onClick={() => onOpenChange(false)}
               >

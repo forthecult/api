@@ -3,7 +3,7 @@ export const SEO_CONFIG = {
     "For the Cult is a lifestyle store for people who invest in themselves. Curated tech, premium apparel, wellness gear, and travel essentials. Pay with crypto or card. Hold 250,000 CULT for free shipping.",
   fullName: "For the Cult",
   name: "For the Culture",
-  slogan: "Where smart living and technology meet.",
+  slogan: "Where culture and technology converge.",
   /** Store logo URL. Shown in header and structured data. Omit to use site name in header and /logo.png in structured data. */
   brandLogoUrl: undefined as string | undefined,
   /** used in meta description and open graph; keep under ~160 chars for SEO */

@@ -4,7 +4,7 @@ import { Suspense } from "react";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono, Manrope } from "next/font/google";
 import { extractRouterConfig } from "uploadthing/server";
 
 import { SEO_CONFIG } from "~/app";
@@ -42,6 +42,12 @@ const geistMono = Geist_Mono({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono-crypto",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 // getPublicSiteUrl() ensures full https:// URL and handles host-only env values (e.g. Railway)
@@ -113,7 +119,7 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
       <ConditionalHeader showAuth={true} />
-      <main className="flex min-h-screen flex-col">{children}</main>
+      <main className="flex min-h-screen flex-col bg-[#111111]">{children}</main>
       <ConditionalFooter />
       <SupportChatWidgetWrapper />
       <Toaster />
@@ -155,9 +161,9 @@ export default async function RootLayout({
             ${geistSans.variable}
             ${geistMono.variable}
             ${jetbrainsMono.variable}
-            min-h-screen bg-white text-neutral-900 antialiased
-            selection:bg-primary/20
-            dark:bg-neutral-950 dark:text-neutral-100
+            ${manrope.variable}
+            min-h-screen bg-[#111111] text-[#F5F1EB] antialiased
+            selection:bg-[#C4873A]/30
           `}
         >
           <ThemeProvider
@@ -181,16 +187,15 @@ export default async function RootLayout({
           ${geistSans.variable}
           ${geistMono.variable}
           ${jetbrainsMono.variable}
-          min-h-screen bg-gradient-to-br from-white to-slate-100
-          text-neutral-900 antialiased
-          selection:bg-primary/80
-          dark:from-neutral-950 dark:to-neutral-900 dark:text-neutral-100
+          ${manrope.variable}
+          min-h-screen bg-[#111111] text-[#F5F1EB] antialiased
+          selection:bg-[#C4873A]/30
         `}
         suppressHydrationWarning
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="dark"
           disableTransitionOnChange
           enableSystem
         >

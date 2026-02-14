@@ -57,42 +57,44 @@
   --sidebar-ring: oklch(0.871 0.006 286.286);
 }
 
+/* Culture brand dark: Obsidian + Parchment + Amber */
 .dark {
-  --background: oklch(0.141 0.005 285.823);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.141 0.005 285.823);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.141 0.005 285.823);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.274 0.006 286.033);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.274 0.006 286.033);
-  --muted-foreground: oklch(0.705 0.015 286.067);
-  --accent: oklch(0.274 0.006 286.033);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.274 0.006 286.033);
-  --input: oklch(0.274 0.006 286.033);
-  --ring: oklch(0.442 0.017 285.786);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.274 0.006 286.033);
-  --sidebar-ring: oklch(0.442 0.017 285.786);
+  --background: #111111;
+  --foreground: #F5F1EB;
+  --card: #1A1A1A;
+  --card-foreground: #F5F1EB;
+  --popover: #1A1A1A;
+  --popover-foreground: #F5F1EB;
+  --primary: #C4873A;
+  --primary-foreground: #111111;
+  --secondary: #1E1E1E;
+  --secondary-foreground: #F5F1EB;
+  --muted: #1E1E1E;
+  --muted-foreground: #8A857E;
+  --accent: #C4873A;
+  --accent-foreground: #111111;
+  --destructive: #B5594E;
+  --destructive-foreground: #F5F1EB;
+  --border: #2A2A2A;
+  --input: #2A2A2A;
+  --ring: #C4873A;
+  --chart-1: #C4873A;
+  --chart-2: #6B8F71;
+  --chart-3: #B5594E;
+  --chart-4: #8A857E;
+  --chart-5: #F5F1EB;
+  --sidebar: #1A1A1A;
+  --sidebar-foreground: #F5F1EB;
+  --sidebar-primary: #C4873A;
+  --sidebar-primary-foreground: #111111;
+  --sidebar-accent: #1E1E1E;
+  --sidebar-accent-foreground: #F5F1EB;
+  --sidebar-border: #2A2A2A;
+  --sidebar-ring: #C4873A;
 }
 
 @theme inline {
+  --font-family-display: var(--font-heading), "Manrope", var(--font-geist-sans), ui-sans-serif, sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -172,6 +174,96 @@
 /* JetBrains Mono for crypto prices, data values, and terminal aesthetic */
 .font-mono-crypto {
   font-family: var(--font-mono-crypto), "JetBrains Mono", "Fira Code", ui-monospace, monospace;
+}
+
+/* Heading / display font (Manrope) */
+.font-heading {
+  font-family: var(--font-heading), "Manrope", var(--font-geist-sans), ui-sans-serif, sans-serif;
+}
+
+/* ===========================
+   CULTURE BRAND UTILITIES
+   =========================== */
+
+/* Amber text gradient */
+.text-gradient-brand {
+  background: linear-gradient(135deg, #C4873A 0%, #D4A05A 50%, #C4873A 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Subtle scanline overlay for hero sections */
+.hero-scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(196, 135, 58, 0.02) 2px,
+    rgba(196, 135, 58, 0.02) 4px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Cult glow on hover */
+.cult-glow {
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.cult-glow:hover {
+  box-shadow: 0 0 20px rgba(196, 135, 58, 0.15), 0 0 40px rgba(196, 135, 58, 0.05);
+  border-color: rgba(196, 135, 58, 0.3);
+}
+
+/* Amber accent underline */
+.accent-underline {
+  position: relative;
+}
+
+.accent-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 1px;
+  background: #C4873A;
+  transition: width 0.3s ease;
+}
+
+.accent-underline:hover::after {
+  width: 100%;
+}
+
+/* CULTURE letter-spaced wordmark */
+.wordmark {
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* Dot grid background pattern */
+.bg-dot-grid {
+  background-image: radial-gradient(circle, rgba(196, 135, 58, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Animated border pulse for featured items */
+@keyframes border-pulse {
+  0%, 100% {
+    border-color: rgba(196, 135, 58, 0.2);
+  }
+  50% {
+    border-color: rgba(196, 135, 58, 0.5);
+  }
+}
+
+.border-pulse {
+  animation: border-pulse 3s ease-in-out infinite;
 }
 
 /* Product card hover effects — will-change only on hover to avoid permanent compositor layers */

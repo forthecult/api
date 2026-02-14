@@ -29,7 +29,7 @@ export function TestimonialsSection({
   return (
     <section
       className={cn(
-        "bg-background text-foreground",
+        "bg-[#0D0D0D] text-[#F5F1EB]",
         `
           px-0 py-12
           sm:py-24
@@ -52,7 +52,7 @@ export function TestimonialsSection({
         >
           <h2
             className={`
-              max-w-[720px] text-3xl leading-tight font-semibold
+              font-heading max-w-[720px] text-3xl leading-tight font-bold text-[#F5F1EB]
               sm:text-5xl sm:leading-tight
             `}
           >
@@ -60,7 +60,7 @@ export function TestimonialsSection({
           </h2>
           <p
             className={`
-              text-md max-w-[600px] font-medium text-muted-foreground
+              text-md max-w-[600px] font-medium text-[#8A857E]
               sm:text-xl
             `}
           >

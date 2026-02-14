@@ -52,7 +52,7 @@ function TelegramIcon({ className }: { className?: string }) {
 
 export function Footer({ className }: { className?: string }) {
   return (
-    <footer className={cn("relative border-t bg-background", className)}>
+    <footer className={cn("relative border-t border-[#2A2A2A] bg-[#0D0D0D]", className)}>
       <FooterDogePeek />
       <div
         className={`
@@ -70,15 +70,12 @@ export function Footer({ className }: { className?: string }) {
           <div className="space-y-4">
             <Link className="flex items-center gap-2" href="/">
               <span
-                className={`
-                  bg-gradient-to-r from-primary to-primary/70 bg-clip-text
-                  text-xl font-bold tracking-tight text-transparent
-                `}
+                className="font-heading text-lg font-bold tracking-[0.2em] uppercase text-[#F5F1EB] hover:text-[#C4873A] transition-colors duration-300"
               >
                 {SEO_CONFIG.name}
               </span>
             </Link>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-[#8A857E]">
             Health. Autonomy. Culture.
             </p>
             <div className="flex space-x-4">
@@ -145,11 +142,11 @@ export function Footer({ className }: { className?: string }) {
             </div>
           </div>
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Shop</h3>
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.15em] text-[#C4873A]">Shop</h3>
             <ul className="space-y-2 text-sm" aria-label="Shop">
               <li>
                 <Link
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/health-wellness"
                 >
                   Health &amp; Wellness
@@ -157,7 +154,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/travel-lifestyle"
                 >
                   Travel &amp; Lifestyle
@@ -165,7 +162,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/best-sellers"
                 >
                   Best Sellers
@@ -173,7 +170,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/products"
                 >
                   All Products
@@ -181,7 +178,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/esim"
                 >
                   eSIMs
@@ -190,14 +187,11 @@ export function Footer({ className }: { className?: string }) {
             </ul>
           </div>
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Store Links</h3>
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.15em] text-[#C4873A]">Store Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/about"
                 >
                   About Us
@@ -205,10 +199,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/token"
                 >
                   CULT
@@ -216,10 +207,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/lookbook"
                 >
                   Lookbook
@@ -227,10 +215,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/affiliate-program"
                 >
                   Affiliate Program
@@ -238,10 +223,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/changelog"
                 >
                   Changelog
@@ -249,10 +231,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/api/docs"
                 >
                   API
@@ -261,14 +240,11 @@ export function Footer({ className }: { className?: string }) {
             </ul>
           </div>
           <div>
-            <h3 className="mb-4 text-sm font-semibold">Support</h3>
+            <h3 className="mb-4 text-xs font-semibold uppercase tracking-[0.15em] text-[#C4873A]">Support</h3>
             <ul className="space-y-2 text-sm">
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/track-order"
                 >
                   Track order
@@ -276,10 +252,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/contact"
                 >
                   Contact Us
@@ -287,10 +260,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/policies/shipping"
                 >
                   Shipping policy
@@ -298,10 +268,7 @@ export function Footer({ className }: { className?: string }) {
               </li>
               <li>
                 <Link
-                  className={`
-                    text-muted-foreground
-                    hover:text-foreground
-                  `}
+                  className="text-[#8A857E] hover:text-[#F5F1EB] transition-colors"
                   href="/policies/refund"
                 >
                   Refund policy
@@ -310,7 +277,7 @@ export function Footer({ className }: { className?: string }) {
             </ul>
           </div>
         </div>
-        <div className="relative mt-12 border-t pt-8">
+        <div className="relative mt-12 border-t border-[#2A2A2A] pt-8">
           <div className="mb-6">
             <FooterPaymentsBar />
           </div>

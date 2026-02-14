@@ -70,9 +70,7 @@ export function CartClient({ className }: CartClientProps) {
       <ShoppingCart className="h-4 w-4" />
       {totalItems > 0 && (
         <Badge
-          className={`
-            absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-[10px]
-          `}
+          className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-[10px] bg-[#C4873A] text-[#111111] font-bold"
           variant="default"
         >
           {totalItems}
