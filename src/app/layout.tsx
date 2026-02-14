@@ -181,14 +181,14 @@ export default async function RootLayout({
   }
 
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`
           ${geistSans.variable}
           ${geistMono.variable}
           ${jetbrainsMono.variable}
           ${manrope.variable}
-          min-h-screen bg-[#111111] text-[#F5F1EB] antialiased
+          min-h-screen bg-background text-foreground antialiased
           selection:bg-[#C4873A]/30
         `}
         suppressHydrationWarning
@@ -196,9 +196,8 @@ export default async function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
-          forcedTheme="dark"
           disableTransitionOnChange
-          enableSystem={false}
+          enableSystem
         >
           <CriticalRoutePrefetcher />
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
