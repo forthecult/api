@@ -1234,7 +1234,7 @@ export function PaymentMethodSection({
               {paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled && (
                 <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
                   <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5">
-                    <Lock className="size-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
+                    <Lock className="size-4 shrink-0 text-[#C4873A]" aria-hidden />
                     <p className="text-sm text-muted-foreground">
                       You&apos;ll be securely redirected to complete your purchase with PayPal.
                     </p>
@@ -1413,16 +1413,16 @@ export function PaymentMethodSection({
           </p>
         )}
         {/* Reassurance messaging */}
-        <div className="flex flex-col gap-2 rounded-md border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
-          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+        <div className="flex flex-col gap-2 rounded-md border border-[#C4873A]/20 bg-[#C4873A]/5 px-4 py-3">
+          <div className="flex items-center gap-2 text-sm text-[#C4873A]">
             <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
             <span className="font-medium">30-day money-back guarantee</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+          <div className="flex items-center gap-2 text-sm text-[#C4873A]">
             <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
             <span>Secure, encrypted transactions</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
+          <div className="flex items-center gap-2 text-sm text-[#C4873A]">
             <svg className="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             <span>Customer support available 7 days a week</span>
           </div>
@@ -1433,9 +1433,9 @@ export function PaymentMethodSection({
               title="Refund policy"
               richContent={
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 rounded-md bg-green-50 px-3 py-2 dark:bg-green-950/30">
-                    <svg className="size-4 shrink-0 text-green-600 dark:text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                    <span className="text-sm font-medium text-green-700 dark:text-green-400">30-day money-back guarantee on all orders</span>
+                  <div className="flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3 py-2">
+                    <svg className="size-4 shrink-0 text-[#C4873A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+                    <span className="text-sm font-medium text-[#C4873A]">30-day money-back guarantee on all orders</span>
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Return any item within <strong>30 days of delivery</strong> for a full refund</li>

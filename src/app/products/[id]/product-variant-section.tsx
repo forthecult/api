@@ -205,15 +205,15 @@ export function ProductVariantSection({
         </div>
         <div aria-atomic="true" aria-live="polite" className="mb-6 mt-2">
           {unavailableInCountry ? (
-            <p className="text-sm font-medium text-amber-600">
+            <p className="text-sm font-medium text-[#B5594E]">
               Not available in your country
             </p>
           ) : product.inStock ? (
-            <p className="text-sm font-medium text-green-600">
-              Stock Available
+            <p className="text-sm font-medium text-[#C4873A]">
+              In Stock
             </p>
           ) : (
-            <p className="text-sm font-medium text-red-500">Out of Stock</p>
+            <p className="text-sm font-medium text-[#B5594E]">Out of Stock</p>
           )}
         </div>
         <div className="mb-6">
@@ -274,12 +274,12 @@ export function ProductVariantSection({
                       disabled={outOfStock}
                       onClick={() => handleOptionSelect(optionIndex, value)}
                       className={cn(
-                        "rounded-md border px-3 py-2 text-sm font-medium transition-colors",
+                        "rounded-md border px-3 py-2 text-sm font-medium transition-all duration-200",
                         isSelected
-                          ? "border-foreground bg-foreground text-background"
+                          ? "border-[#C4873A] bg-[#C4873A] text-[#111111] shadow-sm shadow-[#C4873A]/20"
                           : outOfStock
-                            ? "cursor-not-allowed border-input bg-muted text-muted-foreground"
-                            : "border-input bg-background hover:border-foreground/50 hover:bg-muted/50",
+                            ? "cursor-not-allowed border-[#2A2A2A] bg-[#1A1A1A] text-[#8A857E]/50"
+                            : "border-[#2A2A2A] bg-[#1A1A1A] text-[#F5F1EB] hover:border-[#C4873A]/50 hover:bg-[#1E1E1E]",
                       )}
                       aria-pressed={isSelected}
                       aria-disabled={outOfStock}
@@ -307,13 +307,13 @@ export function ProductVariantSection({
       {/* Stock / country availability */}
       <div aria-atomic="true" aria-live="polite" className="mb-6">
         {unavailableInCountry ? (
-          <p className="text-sm font-medium text-amber-600">
+          <p className="text-sm font-medium text-[#B5594E]">
             Not available in your country
           </p>
         ) : displayInStock ? (
-          <p className="text-sm font-medium text-green-600">Stock Available</p>
+          <p className="text-sm font-medium text-[#C4873A]">In Stock</p>
         ) : (
-          <p className="text-sm font-medium text-red-500">Out of Stock</p>
+          <p className="text-sm font-medium text-[#B5594E]">Out of Stock</p>
         )}
       </div>
 

@@ -1,4 +1,4 @@
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, exists, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -39,6 +39,30 @@ export async function GET(request: NextRequest) {
     );
     const offset = (page - 1) * limit;
 
+    // Only show open conversations.
+    // For guest conversations (no userId), only include if they have at least
+    // one customer message — this avoids showing empty guest sessions.
+    const activeFilter = and(
+      eq(supportChatConversationTable.status, "open"),
+      or(
+        isNotNull(supportChatConversationTable.userId),
+        exists(
+          db
+            .select({ one: sql`1` })
+            .from(supportChatMessageTable)
+            .where(
+              and(
+                eq(
+                  supportChatMessageTable.conversationId,
+                  supportChatConversationTable.id,
+                ),
+                eq(supportChatMessageTable.role, "customer"),
+              ),
+            ),
+        ),
+      ),
+    );
+
     const conversations = await db
       .select({
         id: supportChatConversationTable.id,
@@ -53,13 +77,15 @@ export async function GET(request: NextRequest) {
       })
       .from(supportChatConversationTable)
       .leftJoin(userTable, eq(supportChatConversationTable.userId, userTable.id))
+      .where(activeFilter)
       .orderBy(desc(supportChatConversationTable.updatedAt))
       .limit(limit)
       .offset(offset);
 
     const [countResult] = await db
       .select({ count: sql<number>`count(*)::int` })
-      .from(supportChatConversationTable);
+      .from(supportChatConversationTable)
+      .where(activeFilter);
 
     const total = countResult?.count ?? 0;
     const totalPages = Math.ceil(total / limit) || 1;

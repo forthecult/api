@@ -1077,36 +1077,36 @@ export function EsimStorePage() {
 
       {/* Info section */}
       <section className="mt-16 border-t pt-12">
-        <h2 className="text-2xl font-bold text-center mb-8">
+        <h2 className="text-3xl font-bold text-center mb-10">
           How eSIM Works
         </h2>
         <div className="grid gap-8 sm:grid-cols-3 max-w-3xl mx-auto">
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-lg font-bold text-primary">1</span>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-xl font-bold text-primary">1</span>
             </div>
-            <h3 className="font-semibold">Choose a Plan</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-xl font-semibold">Choose a Plan</h3>
+            <p className="mt-2 text-base text-muted-foreground">
               Select a country or region and pick a data plan that fits your
               needs.
             </p>
           </div>
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-lg font-bold text-primary">2</span>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-xl font-bold text-primary">2</span>
             </div>
-            <h3 className="font-semibold">Purchase &amp; Install</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-xl font-semibold">Purchase &amp; Install</h3>
+            <p className="mt-2 text-base text-muted-foreground">
               Complete your purchase and scan the QR code or tap the activation
               link on your device.
             </p>
           </div>
           <div className="text-center">
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-lg font-bold text-primary">3</span>
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-xl font-bold text-primary">3</span>
             </div>
-            <h3 className="font-semibold">Stay Connected</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
+            <h3 className="text-xl font-semibold">Stay Connected</h3>
+            <p className="mt-2 text-base text-muted-foreground">
               Your eSIM activates instantly. Enjoy high-speed data wherever you
               go.
             </p>
