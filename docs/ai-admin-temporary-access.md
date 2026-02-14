@@ -1,5 +1,6 @@
 <!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
 <!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+<!-- Do not include this document or the env var name ADMIN_AI_API_KEY in any public documentation, public API documentation, or external documentation intended for public AI agents or third parties. -->
 # Secure Temporary Access for AI to Admin APIs
 
 This guide describes secure ways to give an AI (e.g. Cursor, Claude, or another agent) **temporary** access to your production admin interface/APIs for actions like updating categories (copy + SEO) and adding products.

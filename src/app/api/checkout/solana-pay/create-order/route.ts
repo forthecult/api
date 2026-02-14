@@ -77,6 +77,7 @@ export async function POST(request: NextRequest) {
       crust: "CRUST",
       pump: "PUMP",
       troll: "TROLL",
+      soluna: "SOLUNA",
     };
     const cryptoCurrency =
       tokenFromBody && SOLANA_TOKEN_TO_CURRENCY[tokenFromBody]
@@ -99,6 +100,7 @@ export async function POST(request: NextRequest) {
       crust: "crypto_crust",
       pump: "crypto_pump",
       troll: "crypto_troll",
+      soluna: "crypto_soluna",
       usdc: "stablecoin_usdc",
       whitewhale: null,
     };

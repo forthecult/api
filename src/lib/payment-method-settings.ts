@@ -17,10 +17,11 @@ export const PAYMENT_METHOD_DEFAULTS: Array<{
   { methodKey: "crypto_crust", label: "Crustafarian (CRUST)", displayOrder: 15 },
   { methodKey: "crypto_pump", label: "Pump (PUMP)", displayOrder: 16 },
   { methodKey: "crypto_troll", label: "Troll (TROLL)", displayOrder: 17 },
-  { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 18 },
-  { methodKey: "crypto_ton", label: "TON", displayOrder: 19 },
-  { methodKey: "stablecoin_usdc", label: "USDC (Stablecoin)", displayOrder: 20 },
-  { methodKey: "stablecoin_usdt", label: "USDT (Stablecoin)", displayOrder: 21 },
+  { methodKey: "crypto_soluna", label: "SOLUNA (Pump.fun)", displayOrder: 18 },
+  { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 19 },
+  { methodKey: "crypto_ton", label: "TON", displayOrder: 20 },
+  { methodKey: "stablecoin_usdc", label: "USDC (Stablecoin)", displayOrder: 21 },
+  { methodKey: "stablecoin_usdt", label: "USDT (Stablecoin)", displayOrder: 22 },
 ];
 
 /** Network options for payment methods that support multiple networks. Used by admin and checkout. */

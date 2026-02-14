@@ -99,6 +99,7 @@ type CryptoSub =
   | "crust"
   | "pump"
   | "troll"
+  | "soluna"
   | "other";
 type UsdcSub = "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
 type UsdtSub = "ethereum" | "arbitrum" | "bnb" | "polygon";
@@ -183,6 +184,7 @@ export function PaymentMethodSection({
       else if (sub === "crust") key = "crypto_crust";
       else if (sub === "pump") key = "crypto_pump";
       else if (sub === "troll") key = "crypto_troll";
+      else if (sub === "soluna") key = "crypto_soluna";
       else if (sub === "other") {
         if (cryptoOtherSubOption === "sui") key = "crypto_sui";
         else if (cryptoOtherSubOption === "ton") key = "crypto_ton";
@@ -213,6 +215,7 @@ export function PaymentMethodSection({
     CRUST?: number;
     PUMP?: number;
     TROLL?: number;
+    SOLUNA?: number;
   }>({});
 
   const { currency } = useCountryCurrency();
@@ -231,7 +234,7 @@ export function PaymentMethodSection({
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number }) => {
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number; SOLUNA?: number }) => {
         if (data && typeof data === "object") setCryptoPrices(data);
       })
       .catch((err: unknown) => {
@@ -538,11 +541,13 @@ export function PaymentMethodSection({
           ? "pump"
           : paymentMethod === "crypto" && paymentSubOption === "troll"
             ? "troll"
-            : paymentMethod === "stablecoins" &&
-              stablecoinToken === "usdc" &&
-              paymentSubOption === "solana"
-              ? "usdc"
-              : "solana";
+            : paymentMethod === "crypto" && paymentSubOption === "soluna"
+              ? "soluna"
+              : paymentMethod === "stablecoins" &&
+                stablecoinToken === "usdc" &&
+                paymentSubOption === "solana"
+                ? "usdc"
+                : "solana";
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         method: "POST",

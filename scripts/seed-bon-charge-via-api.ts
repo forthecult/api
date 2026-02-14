@@ -236,7 +236,7 @@ const products: Array<{
   metaDescription: string;
   hasVariants: boolean;
   optionDefinitionsJson?: string;
-  variants?: Array<{ size?: string; color?: string; priceCents: number; sku?: string }>;
+  variants?: Array<{ size?: string | null; color?: string | null; label?: string | null; priceCents: number; sku?: string }>;
 }> = [
   {
     name: "EMF Radiation Blocking Laptop Mat",
@@ -282,8 +282,8 @@ const products: Array<{
     hasVariants: true,
     optionDefinitionsJson: JSON.stringify([{ name: "Output", values: ["AUX", "USB-C"] }]),
     variants: [
-      { size: "AUX", priceCents: EARPHONES_AUX, sku: "BC-AIR-TUBE-AUX" },
-      { size: "USB-C", priceCents: EARPHONES_USBC, sku: "BC-AIR-TUBE-USBC" },
+      { size: null, label: "AUX", priceCents: EARPHONES_AUX, sku: "BC-AIR-TUBE-AUX" },
+      { size: null, label: "USB-C", priceCents: EARPHONES_USBC, sku: "BC-AIR-TUBE-USBC" },
     ],
   },
   {
@@ -344,6 +344,7 @@ async function createOrUpdateProduct(
     body.variants = payload.variants.map((v) => ({
       size: v.size ?? null,
       color: v.color ?? null,
+      label: v.label ?? null,
       priceCents: v.priceCents,
       sku: v.sku ?? null,
     }));

@@ -16,33 +16,38 @@ export function useCryptoPrices({
   suiUsdRate: number | null;
   crustPriceUsd: number | null;
   pumpPriceUsd: number | null;
+  solunaPriceUsd: number | null;
 } {
   const [solUsdRate, setSolUsdRate] = useState<number | null>(null);
   const [crustPriceUsd, setCrustPriceUsd] = useState<number | null>(null);
   const [pumpPriceUsd, setPumpPriceUsd] = useState<number | null>(null);
+  const [solunaPriceUsd, setSolunaPriceUsd] = useState<number | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number }) => {
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; SOLUNA?: number }) => {
         if (typeof data?.SOL === "number" && data.SOL > 0)
           setSolUsdRate(data.SOL);
         if (typeof data?.CRUST === "number" && data.CRUST > 0)
           setCrustPriceUsd(data.CRUST);
         if (typeof data?.PUMP === "number" && data.PUMP > 0)
           setPumpPriceUsd(data.PUMP);
+        if (typeof data?.SOLUNA === "number" && data.SOLUNA > 0)
+          setSolunaPriceUsd(data.SOLUNA);
       })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setSolUsdRate(SOL_USD_FALLBACK);
         setCrustPriceUsd(null);
         setPumpPriceUsd(null);
+        setSolunaPriceUsd(null);
       });
     return () => ac.abort();
   }, [enabled]);
 
   // suiUsdRate: not currently provided by the prices API
-  return { solUsdRate, suiUsdRate: null, crustPriceUsd, pumpPriceUsd };
+  return { solUsdRate, suiUsdRate: null, crustPriceUsd, pumpPriceUsd, solunaPriceUsd };
 }

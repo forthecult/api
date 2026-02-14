@@ -15,6 +15,7 @@ import {
   getSolanaRpcUrlServer,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
+  SOLUNA_MINT_MAINNET,
   TROLL_MINT_MAINNET,
 } from "~/lib/solana-pay";
 
@@ -40,6 +41,7 @@ export type CryptoPricesResponse = {
   CRUST?: number;
   PUMP?: number;
   TROLL?: number;
+  SOLUNA?: number;
   XMR?: number;
   /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
   XAU?: number;
@@ -57,6 +59,7 @@ const FALLBACK_PRICES: CryptoPricesResponse = {
   CRUST: 0.0001,
   PUMP: 0.01,
   TROLL: 1,
+  SOLUNA: 0.01,
   XMR: 150,
   XAU: 2650,
 };
@@ -98,7 +101,7 @@ export async function GET() {
     if (typeof solUsd === "number" && solUsd > 0) {
       try {
         const connection = new Connection(getSolanaRpcUrlServer());
-        const [crustSolPerToken, pumpSolPerToken, trollSolPerToken] =
+        const [crustSolPerToken, pumpSolPerToken, trollSolPerToken, solunaSolPerToken] =
           await Promise.all([
             Promise.race([
               getPumpTokenPriceInSol(connection, new PublicKey(CRUST_MINT_MAINNET)),
@@ -127,6 +130,15 @@ export async function GET() {
                 setTimeout(() => resolve(0), FETCH_TIMEOUT),
               ),
             ]),
+            Promise.race([
+              getPumpTokenPriceInSol(
+                connection,
+                new PublicKey(SOLUNA_MINT_MAINNET),
+              ),
+              new Promise<number>((resolve) =>
+                setTimeout(() => resolve(0), FETCH_TIMEOUT),
+              ),
+            ]),
           ]);
         if (crustSolPerToken > 0) prices.CRUST = crustSolPerToken * solUsd;
         if (pumpSolPerToken > 0 && (prices.PUMP == null || prices.PUMP <= 0)) {
@@ -134,6 +146,9 @@ export async function GET() {
         }
         if (trollSolPerToken > 0) {
           prices.TROLL = trollSolPerToken * solUsd;
+        }
+        if (solunaSolPerToken > 0) {
+          prices.SOLUNA = solunaSolPerToken * solUsd;
         }
       } catch {
         // pump.fun price fetch failed, continue with CoinGecko-only prices
@@ -143,6 +158,11 @@ export async function GET() {
     // TROLL fallback when pump.fun doesn't return a price
     if (prices.TROLL == null || prices.TROLL <= 0) {
       prices.TROLL = 1;
+    }
+
+    // SOLUNA fallback when pump.fun doesn't return a price
+    if (prices.SOLUNA == null || prices.SOLUNA <= 0) {
+      prices.SOLUNA = FALLBACK_PRICES.SOLUNA ?? 0.01;
     }
 
     return NextResponse.json(prices);

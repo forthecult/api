@@ -400,6 +400,7 @@ export async function POST(request: NextRequest) {
         id?: string;
         size?: string | null;
         color?: string | null;
+        label?: string | null;
         sku?: string | null;
         stockQuantity?: number | null;
         priceCents: number;
@@ -564,6 +565,7 @@ export async function POST(request: NextRequest) {
           productId: id,
           size: v.size?.trim() ?? null,
           color: v.color?.trim() ?? null,
+          label: v.label?.trim() ?? null,
           sku: v.sku?.trim() ?? null,
           stockQuantity: v.stockQuantity ?? null,
           priceCents: v.priceCents,

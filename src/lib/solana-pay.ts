@@ -34,6 +34,10 @@ export const PUMP_MINT_MAINNET =
 export const TROLL_MINT_MAINNET =
   "5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2";
 
+/** SOLUNA SPL (pump.fun), Token-2022. CA: 2qT8JVotQ2C1gKbqpuqNatkpSBWxiKHbXkCyTqH9pump */
+export const SOLUNA_MINT_MAINNET =
+  "2qT8JVotQ2C1gKbqpuqNatkpSBWxiKHbXkCyTqH9pump";
+
 export function getSolanaPayRecipient(): string | undefined {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined

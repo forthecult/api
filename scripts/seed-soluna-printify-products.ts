@@ -1,6 +1,6 @@
 /**
  * Create 8 Printify products with the SOLUNA logo via admin API.
- * Products: shot glass, ping pong paddle, t-shirt, hoodie, poster, sticker, tote bag, pillow (no coffee).
+ * Products match PumpFun Printify lineup only (hoodie is Printful, so excluded): shot glass, ping pong paddle, t-shirt, poster, sticker, tote bag, throw pillow, phone case. No coffee.
  * Uses SOLUNA category + Solana; sets features and SEO on each product.
  *
  * Usage:
@@ -46,16 +46,16 @@ const SOLUNA_IMAGE_PATH =
     "assets/soluna_300dpi-b2ae2c87-5ed6-46dd-8481-adb428fad8a5.png",
   );
 
-// 8 product types (same style as PumpFun lineup, excluding coffee)
+// 8 product types: same as PumpFun on Printify only (hoodie is Printful, so excluded). No coffee.
 const PRODUCT_SEARCHES: { search: string; productLabel: string }[] = [
   { search: "shot glass", productLabel: "Shot Glass" },
   { search: "ping pong", productLabel: "Ping Pong Paddle" },
   { search: "t-shirt", productLabel: "T-Shirt" },
-  { search: "hoodie", productLabel: "Hoodie" },
   { search: "poster", productLabel: "Poster" },
   { search: "sticker", productLabel: "Sticker" },
   { search: "tote", productLabel: "Tote Bag" },
   { search: "pillow", productLabel: "Throw Pillow" },
+  { search: "phone case", productLabel: "Phone Case" },
 ];
 
 const SOLUNA_CATEGORY_ID = "soluna";
@@ -255,12 +255,20 @@ async function createProduct(params: {
     throw new Error(`Create product failed: ${res.status} ${text}`);
   }
   const result = (await res.json()) as {
+    success?: boolean;
     localProductId?: string;
     externalProductId?: string;
+    printifyProductId?: string;
+    errors?: string[];
   };
+  if (result.success === false && result.errors?.length) {
+    console.warn("  Create response errors:", result.errors.join("; "));
+  }
+  const printifyId = result.externalProductId ?? result.printifyProductId ?? "";
   return {
     localProductId: result.localProductId,
-    printifyProductId: result.externalProductId ?? "",
+    printifyProductId: printifyId,
+    externalProductId: printifyId,
   };
 }
 
@@ -298,7 +306,7 @@ async function main() {
   const categoryId = await ensureSolunaCategory();
   const { imageId, imageUrl } = await uploadImage();
 
-  const created: Array<{ productLabel: string; localProductId?: string }> = [];
+  const created: Array<{ productLabel: string; localProductId?: string; printifyProductId?: string }> = [];
   for (const { search, productLabel } of PRODUCT_SEARCHES) {
     console.log("\nResolving blueprint for:", productLabel, `(search: ${search})`);
     const bp = await getPrintifyBlueprintAndProvider(search);
@@ -323,13 +331,13 @@ async function main() {
       productLabel,
       variants,
     });
-    const printifyId = result.externalProductId ?? result.printifyProductId;
+    const printifyId = result.externalProductId ?? result.printifyProductId ?? "";
     created.push({
       productLabel,
       localProductId: result.localProductId,
       printifyProductId: printifyId,
     });
-    console.log("  Created Printify product:", printifyId, "Local:", result.localProductId ?? "—");
+    console.log("  Created Printify product:", printifyId || "(no id in response)", "Local:", result.localProductId ?? "—");
 
     let localId = result.localProductId;
     if (!localId && printifyId) {
@@ -360,8 +368,14 @@ async function main() {
 
   console.log("\nDone. Created", created.length, "SOLUNA products.");
   created.forEach((c) =>
-    console.log(" -", c.productLabel, c.localProductId ? `(local: ${c.localProductId})` : "(no local sync)"),
+    console.log(
+      " -",
+      c.productLabel,
+      c.printifyProductId ? `Printify ID: ${c.printifyProductId}` : "(no Printify ID)",
+      c.localProductId ? `| local: ${c.localProductId}` : "",
+    ),
   );
+  console.log("\nIf you don't see these in Printify, confirm the shop at forthecult.store uses the same PRINTIFY_SHOP_ID as the account you're viewing.");
 }
 
 main().catch((err) => {

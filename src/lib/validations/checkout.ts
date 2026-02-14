@@ -42,9 +42,9 @@ export const createOrderSchema = z.object({
   couponCode: z.string().trim().max(64).optional(),
   // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).
   wallet: z.string().trim().max(64).optional(),
-  // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll)
+  // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna)
   token: z
-    .enum(["solana", "usdc", "whitewhale", "crust", "pump", "troll"])
+    .enum(["solana", "usdc", "whitewhale", "crust", "pump", "troll", "soluna"])
     .optional(),
   // Shipping address (optional). Only required for physical goods; digital-only orders often omit it.
   shipping: z

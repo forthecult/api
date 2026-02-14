@@ -8,7 +8,7 @@ export type OrderPaymentInfo = {
   totalCents: number;
   email?: string;
   expiresAt: string;
-  /** Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll). Used for balance check. */
+  /** Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna). Used for balance check. */
   token?: string;
 };
 

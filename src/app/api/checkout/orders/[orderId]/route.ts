@@ -81,6 +81,7 @@ export async function GET(
       CRUST: "crust",
       PUMP: "pump",
       TROLL: "troll",
+      SOLUNA: "soluna",
     };
     const solanaPayToken =
       isSolanaPay && order.cryptoCurrency

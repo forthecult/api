@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import {
   PUMP_MINT_MAINNET,
+  SOLUNA_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
 } from "~/lib/solana-pay";
@@ -43,6 +44,13 @@ export async function GET() {
             name: "Trololol",
             type: "spl",
             mint: TROLL_MINT_MAINNET,
+            decimals: 6,
+          },
+          {
+            symbol: "SOLUNA",
+            name: "SOLUNA",
+            type: "spl",
+            mint: SOLUNA_MINT_MAINNET,
             decimals: 6,
           },
         ],

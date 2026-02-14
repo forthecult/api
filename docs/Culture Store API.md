@@ -2,6 +2,8 @@
 
 **The most AI-agent-friendly eCommerce API.** Designed for seamless integration with AI assistants, chatbots, and autonomous agents. Browse products, place orders, and pay — all through simple API calls.
 
+**Scope:** This document describes the **public** API only. Admin endpoints (`/api/admin/*`) are not part of the public API and are not documented here for security.
+
 ---
 
 ## Quick Start (3 API Calls to Purchase)

@@ -35,6 +35,7 @@ import {
   getSolanaPayLabel,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
+  SOLUNA_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
@@ -63,6 +64,7 @@ const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
   crust: { src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" },
   pump: { src: "/crypto/pump/pump-logomark.svg", alt: "Pump" },
   troll: { src: "/crypto/troll/troll-logomark.png", alt: "TROLL" },
+  soluna: { src: "/crypto/pump/pump-logomark.svg", alt: "SOLUNA" },
   sui: { src: "/crypto/sui/sui-logo.svg", alt: "Sui" },
 };
 
@@ -73,6 +75,7 @@ const PAYMENT_TITLE: Record<string, string> = {
   crust: "Pay with CRUST (Solana)",
   pump: "Pay with Pump (Solana)",
   troll: "Pay with TROLL (Solana)",
+  soluna: "Pay with SOLUNA (Solana)",
   sui: "Pay with SUI (Sui Network)",
 };
 
@@ -84,6 +87,7 @@ const TOKEN_LABEL: Record<string, string> = {
   crust: "CRUST",
   pump: "PUMP",
   troll: "TROLL",
+  soluna: "SOLUNA",
 };
 
 const LAMPORTS_PER_SOL = 1e9;
@@ -139,7 +143,7 @@ export function CryptoPayClient() {
   // Parse hash synchronously on first render — no useEffect cascade
   const [suiParsed] = useState(() => parseSuiHash());
   const [token, setToken] = useState<
-    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "troll" | "sui"
+    "solana" | "usdc" | "whitewhale" | "crust" | "pump" | "troll" | "soluna" | "sui"
   >(() => (suiParsed ? "sui" : "usdc"));
   const [suiFromHash] = useState(() => suiParsed?.suiFromHash ?? null);
 
@@ -161,7 +165,7 @@ export function CryptoPayClient() {
     enabled: true,
     suiFromHash,
   });
-  const { solUsdRate, suiUsdRate, crustPriceUsd, pumpPriceUsd } =
+  const { solUsdRate, suiUsdRate, crustPriceUsd, pumpPriceUsd, solunaPriceUsd } =
     useCryptoPrices();
 
   // Sync token from order when available so balance check matches selected payment method
@@ -173,6 +177,7 @@ export function CryptoPayClient() {
     "crust",
     "pump",
     "troll",
+    "soluna",
   ] as const;
   useEffect(() => {
     if (!order?.token) return;
@@ -204,6 +209,10 @@ export function CryptoPayClient() {
     token === "pump" && pumpPriceUsd != null && pumpPriceUsd > 0 && rate > 0
       ? pumpPriceUsd / rate
       : null;
+  const solunaSolPerToken =
+    token === "soluna" && solunaPriceUsd != null && solunaPriceUsd > 0 && rate > 0
+      ? solunaPriceUsd / rate
+      : null;
   const amountSol = amountUsd > 0 && rate > 0 ? amountUsd / rate : 0;
   const amountSolStr = amountSol.toFixed(6);
   const crustTokenPriceUsd =
@@ -213,6 +222,10 @@ export function CryptoPayClient() {
   const pumpTokenPriceUsd =
     pumpSolPerToken != null && pumpSolPerToken > 0 && rate > 0
       ? pumpSolPerToken * rate
+      : 0;
+  const solunaTokenPriceUsd =
+    solunaSolPerToken != null && solunaSolPerToken > 0 && rate > 0
+      ? solunaSolPerToken * rate
       : 0;
   const amountCrust =
     amountUsd > 0 && crustTokenPriceUsd > 0
@@ -224,6 +237,11 @@ export function CryptoPayClient() {
       ? amountUsd / pumpTokenPriceUsd
       : 0;
   const amountPumpStr = amountPump.toFixed(6);
+  const amountSoluna =
+    amountUsd > 0 && solunaTokenPriceUsd > 0
+      ? amountUsd / solunaTokenPriceUsd
+      : 0;
+  const amountSolunaStr = amountSoluna.toFixed(6);
   const amountUsdStr = amountUsd.toFixed(2);
   const amountSui =
     token === "sui" && amountUsd > 0 && (suiUsdRate ?? 0) > 0
@@ -235,13 +253,15 @@ export function CryptoPayClient() {
       ? `1 CRUST ≈ ${crustTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
       : token === "pump" && pumpTokenPriceUsd > 0
         ? `1 PUMP ≈ ${pumpTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
-        : token === "usdc"
-          ? "1 USDC = 1 USD"
-          : token === "whitewhale"
-            ? "1 WhiteWhale ≈ 1 USD"
-            : token === "troll"
-              ? "1 TROLL ≈ 1 USD"
-            : `1 SOL = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+        : token === "soluna" && solunaTokenPriceUsd > 0
+          ? `1 SOLUNA ≈ ${solunaTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
+          : token === "usdc"
+            ? "1 USDC = 1 USD"
+            : token === "whitewhale"
+              ? "1 WhiteWhale ≈ 1 USD"
+              : token === "troll"
+                ? "1 TROLL ≈ 1 USD"
+              : `1 SOL = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
 
   const { user } = useCurrentUser();
   const email = user?.email ?? order?.email ?? "";
@@ -256,9 +276,11 @@ export function CryptoPayClient() {
             ? "Pump (PUMP)"
             : token === "troll"
               ? "Troll (TROLL)"
-            : token === "sui"
-              ? "Sui (SUI)"
-              : "Solana";
+              : token === "soluna"
+                ? "SOLUNA (Pump.fun)"
+                : token === "sui"
+                  ? "Sui (SUI)"
+                  : "Solana";
 
   useEffect(() => {
     if (token === "sui") {
@@ -324,6 +346,24 @@ export function CryptoPayClient() {
       setPaymentAddress(recipient);
       return;
     }
+    if (token === "soluna") {
+      const solPerToken = solunaSolPerToken ?? 0;
+      const r = solUsdRate ?? SOL_USD_FALLBACK;
+      if (solPerToken <= 0 || r <= 0) return;
+      const amount = new BigNumber(amountUsd).div(new BigNumber(solPerToken).times(r));
+      const keypair = Keypair.generate();
+      const url = encodeURL({
+        recipient: new PublicKey(recipient),
+        amount,
+        splToken: new PublicKey(SOLUNA_MINT_MAINNET),
+        reference: keypair.publicKey,
+        label: getSolanaPayLabel(),
+        message: `Order total: $${amountUsd.toFixed(2)}`,
+      });
+      setPaymentUrl(url);
+      setPaymentAddress(recipient);
+      return;
+    }
     // Native SOL payment (no SPL token)
     if (token === "solana") {
       const r = solUsdRate ?? SOL_USD_FALLBACK;
@@ -368,6 +408,7 @@ export function CryptoPayClient() {
     token,
     crustSolPerToken,
     pumpSolPerToken,
+    solunaSolPerToken,
     solUsdRate,
     order?.depositAddress,
     order?.orderId,
@@ -413,11 +454,13 @@ export function CryptoPayClient() {
         ? CRUST_MINT_MAINNET
         : token === "pump"
           ? PUMP_MINT_MAINNET
-          : token === "whitewhale"
-            ? WHITEWHALE_MINT_MAINNET
-            : token === "troll"
-              ? TROLL_MINT_MAINNET
-              : USDC_MINT_MAINNET;
+          : token === "soluna"
+            ? SOLUNA_MINT_MAINNET
+            : token === "whitewhale"
+              ? WHITEWHALE_MINT_MAINNET
+              : token === "troll"
+                ? TROLL_MINT_MAINNET
+                : USDC_MINT_MAINNET;
     // For native SOL, amount is in lamports (server uses raw lamport comparison).
     // For SPL tokens, amount must be in human-readable token units (e.g. "1" for 1 USDC),
     // because @solana/pay's validateTransfer multiplies by 10^decimals internally.
@@ -445,7 +488,17 @@ export function CryptoPayClient() {
               rate,
               6,
             ).div(1e6).toString()
-          : String(amountUsd);
+          : token === "soluna" &&
+            solunaSolPerToken != null &&
+            solunaSolPerToken > 0 &&
+            rate > 0
+            ? tokenAmountFromUsdWithPrice(
+                amountUsd,
+                solunaSolPerToken,
+                rate,
+                6,
+              ).div(1e6).toString()
+            : String(amountUsd);
     const params = new URLSearchParams({
       depositAddress: order.depositAddress,
       amount: amountStr,
@@ -505,6 +558,7 @@ export function CryptoPayClient() {
     isExpired,
     crustSolPerToken,
     pumpSolPerToken,
+    solunaSolPerToken,
     rate,
     router,
     publicKey,
@@ -523,21 +577,25 @@ export function CryptoPayClient() {
       ? amountCrustStr
       : token === "pump"
         ? amountPumpStr
-        : token === "usdc" || token === "whitewhale" || token === "troll"
-          ? amountUsdStr
-          : amountSolStr;
+        : token === "soluna"
+          ? amountSolunaStr
+          : token === "usdc" || token === "whitewhale" || token === "troll"
+            ? amountUsdStr
+            : amountSolStr;
   const amountUnit =
     token === "crust"
       ? "CRUST"
       : token === "pump"
         ? "PUMP"
-        : token === "usdc"
-          ? "USDC"
-          : token === "whitewhale"
-            ? "WhiteWhale"
-            : token === "troll"
-              ? "TROLL"
-              : "SOL";
+        : token === "soluna"
+          ? "SOLUNA"
+          : token === "usdc"
+            ? "USDC"
+            : token === "whitewhale"
+              ? "WhiteWhale"
+              : token === "troll"
+                ? "TROLL"
+                : "SOL";
 
   const copyAmount = useCallback(() => {
     void navigator.clipboard.writeText(`${amountDisplayStr} ${amountUnit}`);
@@ -608,6 +666,23 @@ export function CryptoPayClient() {
             6,
           );
           splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
+        } else if (token === "soluna") {
+          if (
+            solunaSolPerToken == null ||
+            solunaSolPerToken <= 0 ||
+            rate <= 0
+          ) {
+            setPayError("SOLUNA price unavailable. Please try again.");
+            setPayStatus("error");
+            return;
+          }
+          amountBigNumber = tokenAmountFromUsdWithPrice(
+            amountUsd,
+            solunaSolPerToken,
+            rate,
+            6,
+          );
+          splTokenMint = new PublicKey(SOLUNA_MINT_MAINNET);
         } else if (token === "usdc") {
           amountBigNumber = usdcAmountFromUsd(amountUsd);
           splTokenMint = new PublicKey(USDC_MINT_MAINNET);
@@ -744,6 +819,7 @@ export function CryptoPayClient() {
     amountUsd,
     crustSolPerToken,
     pumpSolPerToken,
+    solunaSolPerToken,
     rate,
     requiredLamports,
   ]);
@@ -790,6 +866,16 @@ export function CryptoPayClient() {
           6,
         );
         splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
+      } else if (token === "soluna") {
+        if (solunaSolPerToken == null || solunaSolPerToken <= 0 || rate <= 0)
+          return { sufficient: false, reason: "token" };
+        amountBaseUnits = tokenAmountFromUsdWithPrice(
+          amountUsd,
+          solunaSolPerToken,
+          rate,
+          6,
+        );
+        splTokenMint = new PublicKey(SOLUNA_MINT_MAINNET);
       } else if (token === "usdc") {
         amountBaseUnits = usdcAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(USDC_MINT_MAINNET);
@@ -850,6 +936,7 @@ export function CryptoPayClient() {
     amountUsd,
     crustSolPerToken,
     pumpSolPerToken,
+    solunaSolPerToken,
     rate,
     requiredLamports,
   ]);
@@ -1024,6 +1111,10 @@ export function CryptoPayClient() {
                       <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
                         Loading Pump price from pump.fun…
                       </div>
+                    ) : token === "soluna" && solunaSolPerToken === null ? (
+                      <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                        Loading SOLUNA price from pump.fun…
+                      </div>
                     ) : token === "crust" && crustSolPerToken === 0 ? (
                       <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
                         <AlertCircle className="size-10 shrink-0" aria-hidden />
@@ -1039,6 +1130,15 @@ export function CryptoPayClient() {
                         <p className="font-medium">Pump price unavailable</p>
                         <p className="text-muted-foreground">
                           We couldn&apos;t load the Pump price. Check your
+                          connection and refresh.
+                        </p>
+                      </div>
+                    ) : token === "soluna" && solunaSolPerToken === 0 ? (
+                      <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
+                        <AlertCircle className="size-10 shrink-0" aria-hidden />
+                        <p className="font-medium">SOLUNA price unavailable</p>
+                        <p className="text-muted-foreground">
+                          We couldn&apos;t load the SOLUNA price. Check your
                           connection and refresh.
                         </p>
                       </div>
@@ -1120,7 +1220,8 @@ export function CryptoPayClient() {
                             onClick={copyAmount}
                             disabled={
                               (token === "crust" && crustSolPerToken == null) ||
-                              (token === "pump" && pumpSolPerToken == null)
+                              (token === "pump" && pumpSolPerToken == null) ||
+                              (token === "soluna" && solunaSolPerToken == null)
                             }
                           >
                             {copied === "amount" ? (
@@ -1377,13 +1478,15 @@ export function CryptoPayClient() {
                         ? `${amountCrustStr} CRUST`
                         : token === "pump"
                           ? `${amountPumpStr} PUMP`
-                          : token === "usdc"
-                            ? `${amountUsdStr} USDC`
-                            : token === "whitewhale"
-                              ? `${amountUsdStr} WhiteWhale`
-                              : token === "troll"
-                                ? `${amountUsdStr} TROLL`
-                                : `${amountSolStr} SOL`}
+                          : token === "soluna"
+                            ? `${amountSolunaStr} SOLUNA`
+                            : token === "usdc"
+                              ? `${amountUsdStr} USDC`
+                              : token === "whitewhale"
+                                ? `${amountUsdStr} WhiteWhale`
+                                : token === "troll"
+                                  ? `${amountUsdStr} TROLL`
+                                  : `${amountSolStr} SOL`}
                   </dd>
                 </div>
               </dl>
@@ -1398,13 +1501,15 @@ export function CryptoPayClient() {
                     ? `We've converted this price from USD to CRUST at our rate of approximately ${rateLabel}.`
                     : token === "pump"
                       ? `We've converted this price from USD to PUMP at our rate of approximately ${rateLabel}.`
-                      : token === "usdc"
-                        ? `Pay in USDC (Solana). ${rateLabel}.`
-                        : token === "whitewhale"
-                          ? `Pay in WhiteWhale. ${rateLabel}.`
-                          : token === "troll"
-                            ? `Pay in TROLL. ${rateLabel}.`
-                            : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
+                      : token === "soluna"
+                        ? `We've converted this price from USD to SOLUNA at our rate of approximately ${rateLabel}.`
+                        : token === "usdc"
+                          ? `Pay in USDC (Solana). ${rateLabel}.`
+                          : token === "whitewhale"
+                            ? `Pay in WhiteWhale. ${rateLabel}.`
+                            : token === "troll"
+                              ? `Pay in TROLL. ${rateLabel}.`
+                              : `We've converted this price from USD to SOL at our rate of approximately ${rateLabel}.`}
               </p>
             </div>
           </div>
