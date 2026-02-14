@@ -242,6 +242,11 @@ const config = {
       { hostname: "cdn.shopify.com", protocol: "https" },
       // Printify product/mockup images (POD sync)
       { hostname: "images-api.printify.com", protocol: "https" },
+      // Printful variant/mockup images (POD sync)
+      { hostname: "files.cdnprintful.com", protocol: "https" },
+      { hostname: "cdn.printful.com", protocol: "https" },
+      // Cloudflare Images (e.g. Trezor seed data)
+      { hostname: "imagedelivery.net", protocol: "https" },
       // Seeed Studio curated product images (seed + upload-curated)
       { hostname: "media-cdn.seeedstudio.com", protocol: "https" },
       // eSIM Card API: country flag icons

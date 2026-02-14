@@ -412,7 +412,11 @@ export default async function HomePage() {
                           fill
                           sizes="(max-width: 768px) 50vw, 16vw"
                           src={category.image}
-                          unoptimized={category.image.startsWith("data:")}
+                          unoptimized={
+                            category.image.startsWith("data:") ||
+                            category.image.startsWith("http://") ||
+                            category.image.startsWith("https://")
+                          }
                         />
                       </div>
                     ) : null}

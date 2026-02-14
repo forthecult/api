@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 
 import { MetaMaskProvider } from "~/lib/metamask-sdk";
 import { WagmiProvider } from "~/lib/wagmi-provider";
@@ -32,15 +32,7 @@ export default function CheckoutInvoiceLayout({
   const orderId = (params?.invoiceId as string) ?? "";
   const [open, setOpen] = useState(false);
   const [isEvm, setIsEvm] = useState(false);
-  /** Defer mounting wallet-dependent UI so providers run a full commit first (avoids React #300 from adapter hooks). */
-  const [walletUiReady, setWalletUiReady] = useState(false);
-  const searchParams = useSearchParams();
   const openModal = useCallback(() => setOpen(true), []);
-
-  useEffect(() => {
-    const t = setTimeout(() => setWalletUiReady(true), 0);
-    return () => clearTimeout(t);
-  }, []);
 
   useEffect(() => {
     if (isEvmFromHash()) {
@@ -83,9 +75,12 @@ export default function CheckoutInvoiceLayout({
       window.removeEventListener(OPEN_CONNECT_WALLET_MODAL, handleOpen);
   }, []);
 
+  // Check for ?openConnect=1 on mount (manual URL parse avoids useSearchParams
+  // which requires a Suspense boundary and can cause a full-page flash).
   useEffect(() => {
-    if (searchParams.get("openConnect") === "1") setOpen(true);
-  }, [searchParams]);
+    const sp = new URLSearchParams(window.location.search);
+    if (sp.get("openConnect") === "1") setOpen(true);
+  }, []);
 
   // All crypto payments get all wallet providers (users may be authenticated with any wallet type)
   // For EVM payments, EthPayClient has its own header; for Solana/Sui, use shared header
@@ -99,13 +94,14 @@ export default function CheckoutInvoiceLayout({
                 // ETH payments: EthPayClient has its own header
                 children
               ) : (
-                // Solana/Sui payments: use shared header and connect modal (defer wallet UI to avoid adapter hook-order issues)
+                // Solana/Sui payments: use shared header and connect modal.
+                // Header and modal render immediately to avoid a layout shift
+                // (the old walletUiReady defer caused a visible flash when the
+                // 64px header appeared after setTimeout(0)).
                 <OpenConnectWalletModalProvider openModal={openModal}>
-                  {walletUiReady && <CheckoutCryptoHeader />}
+                  <CheckoutCryptoHeader />
                   {children}
-                  {walletUiReady && (
-                    <ConnectWalletModal open={open} onOpenChange={setOpen} />
-                  )}
+                  <ConnectWalletModal open={open} onOpenChange={setOpen} />
                 </OpenConnectWalletModalProvider>
               )}
             </SolanaWalletProvider>
