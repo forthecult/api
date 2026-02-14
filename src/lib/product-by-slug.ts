@@ -3,7 +3,7 @@
  * Used by the storefront [slug] page (no self-fetch) and by the products API.
  */
 
-import { and, asc, eq, or } from "drizzle-orm";
+import { and, asc, eq, ilike, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
@@ -313,8 +313,9 @@ export async function getProductBySlugOrId(
 
   // Stock calculation logic:
   // 1. If continueSellingWhenOutOfStock is true, always in stock (POD/made-to-order products)
-  // 2. If trackQuantity is false, assume in stock (no inventory tracking)
-  // 3. Otherwise, check actual stock quantities
+  // 2. If product has variants, product-level stock is derived from variant stock only (so "In Stock" matches at least one variant)
+  // 3. If trackQuantity is false (simple product only), assume in stock
+  // 4. Otherwise, check simple product quantity
   const continueSellingWhenOutOfStock = product.continueSellingWhenOutOfStock;
   const trackQuantity = product.trackQuantity;
 
@@ -325,12 +326,8 @@ export async function getProductBySlugOrId(
     // POD products or products marked to continue selling - always available
     inStock = true;
     stockStatus = "in_stock";
-  } else if (!trackQuantity) {
-    // Not tracking inventory - assume in stock
-    inStock = true;
-    stockStatus = "in_stock";
-  } else if (hasVariantRows && variants) {
-    // Check variant stock quantities
+  } else if (hasVariantRows && variants && variants.length > 0) {
+    // Products with variants: product is in stock only if at least one variant has stock
     const hasStock = variants.some((v) => (v.stockQuantity ?? 0) > 0);
     const hasLowStock = variants.some(
       (v) => (v.stockQuantity ?? 0) > 0 && (v.stockQuantity ?? 0) < 5,
@@ -341,6 +338,10 @@ export async function getProductBySlugOrId(
       : hasLowStock
         ? "low_stock"
         : "in_stock";
+  } else if (!trackQuantity) {
+    // Simple product, not tracking inventory - assume in stock
+    inStock = true;
+    stockStatus = "in_stock";
   } else {
     // Simple product - check product quantity
     const qty = product.quantity ?? 0;
@@ -356,7 +357,9 @@ export async function getProductBySlugOrId(
   let sizeChart: { displayName: string; dataImperial: unknown; dataMetric: unknown } | null = null;
   if (product.brand?.trim() && product.model?.trim()) {
     const provider = product.source === "printful" || product.source === "printify" ? product.source : "manual";
-    const [chartRow] = await db
+    const brandTrim = product.brand.trim();
+    const modelTrim = product.model.trim();
+    let [chartRow] = await db
       .select({
         displayName: sizeChartsTable.displayName,
         dataImperial: sizeChartsTable.dataImperial,
@@ -366,11 +369,29 @@ export async function getProductBySlugOrId(
       .where(
         and(
           eq(sizeChartsTable.provider, provider),
-          eq(sizeChartsTable.brand, product.brand.trim()),
-          eq(sizeChartsTable.model, product.model.trim()),
+          eq(sizeChartsTable.brand, brandTrim),
+          eq(sizeChartsTable.model, modelTrim),
         ),
       )
       .limit(1);
+    // Fallback: case-insensitive match when exact match misses (e.g. DB has different casing)
+    if (!chartRow) {
+      [chartRow] = await db
+        .select({
+          displayName: sizeChartsTable.displayName,
+          dataImperial: sizeChartsTable.dataImperial,
+          dataMetric: sizeChartsTable.dataMetric,
+        })
+        .from(sizeChartsTable)
+        .where(
+          and(
+            eq(sizeChartsTable.provider, provider),
+            ilike(sizeChartsTable.brand, brandTrim),
+            ilike(sizeChartsTable.model, modelTrim),
+          ),
+        )
+        .limit(1);
+    }
     if (chartRow && (chartRow.dataImperial != null || chartRow.dataMetric != null)) {
       sizeChart = {
         displayName: chartRow.displayName,

@@ -282,6 +282,18 @@ export const StripeCardPayment = forwardRef<
             amount: totalCents,
             currency: "usd",
             paymentMethodTypes: ["card" as const],
+            appearance: {
+              theme: "night" as const,
+              variables: {
+                colorBackground: "#1a1a1a",
+                colorText: "#F5F1EB",
+                colorTextSecondary: "#a3a3a3",
+                colorTextPlaceholder: "#737373",
+                colorPrimary: "#C4873A",
+                colorDanger: "#ef4444",
+                borderRadius: "6px",
+              },
+            },
           }
         : undefined,
     [totalCents],

@@ -279,6 +279,7 @@ export default function AdminDiscountCreatePage() {
       rulePaymentMethodKey,
       categoryIds,
       productIds,
+      ruleAppliesToEsim,
       ruleSubtotalMin,
       ruleSubtotalMax,
       ruleShippingMin,

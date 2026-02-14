@@ -901,7 +901,7 @@ export function PaymentMethodSection({
                   />
                   <span className="text-sm font-medium">Crypto</span>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 items-center gap-1.5">
                   {!hiddenOptions.cryptoBitcoin && (
                     <Image
                       alt="Bitcoin"
@@ -1218,7 +1218,7 @@ export function PaymentMethodSection({
                     <span className="text-sm font-medium text-muted-foreground">
                       Pay with PayPal
                     </span>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-sm text-muted-foreground">
                       Enable in store settings
                     </span>
                   </div>

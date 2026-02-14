@@ -43,7 +43,7 @@ export function SecureCheckoutLine({
     <div className="mb-6 block w-full">
       {/* Aligned with Add to Cart button: offset by quantity controls width (approx 7rem) on sm+ screens */}
       <div
-        className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-muted-foreground sm:gap-x-3 sm:pl-28"
+        className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-base text-muted-foreground sm:gap-x-3 sm:pl-28"
         role="list"
         aria-label="Purchase assurances"
       >
@@ -57,29 +57,46 @@ export function SecureCheckoutLine({
         </span>
         <span role="listitem">🚚 {shippingText}</span>
       </div>
-      {icons.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:pl-28">
-          {icons.map(({ src, alt, type }) => {
-            const isCard = type === "card";
-            return (
-              <span
-                key={src + alt}
-                className={`relative flex shrink-0 items-center justify-center ${isCard ? "h-7 w-9" : "h-5 w-6"}`}
-                title={alt}
-              >
-                <Image
-                  alt={alt}
-                  className="object-contain"
-                  height={isCard ? 28 : 20}
-                  src={src}
-                  width={isCard ? 36 : 24}
-                  unoptimized={src.endsWith(".svg")}
-                />
-              </span>
-            );
-          })}
-        </div>
-      )}
+      {icons.length > 0 && (() => {
+        const cryptoIcons = icons.filter((i) => i.type === "crypto");
+        const cardIcons = icons.filter((i) => i.type === "card");
+        const renderIcon = (
+          { src, alt, type }: { src: string; alt: string; type: string },
+          key: string,
+        ) => {
+          const isCard = type === "card";
+          return (
+            <span
+              key={key}
+              className={`relative flex shrink-0 items-center justify-center ${isCard ? "h-7 w-9" : "h-5 w-6"}`}
+              title={alt}
+            >
+              <Image
+                alt={alt}
+                className="object-contain"
+                height={isCard ? 28 : 20}
+                src={src}
+                width={isCard ? 36 : 24}
+                unoptimized={src.endsWith(".svg")}
+              />
+            </span>
+          );
+        };
+        return (
+          <div className="mt-2 flex flex-wrap items-center justify-center gap-2 sm:pl-28">
+            {cryptoIcons.length > 0 && (
+              <div className="flex items-center gap-1.5" role="list" aria-label="Crypto payment options">
+                {cryptoIcons.map((icon, i) => renderIcon(icon, `crypto-${i}-${icon.src}`))}
+              </div>
+            )}
+            {cardIcons.length > 0 && (
+              <div className="flex items-center gap-2" role="list" aria-label="Card payment options">
+                {cardIcons.map((icon, i) => renderIcon(icon, `card-${i}-${icon.src}`))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

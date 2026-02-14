@@ -100,7 +100,7 @@ export function OrderSummary({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-tight">{item.name}</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="mt-0.5 text-sm text-muted-foreground">
                 <FiatPrice usdAmount={item.price} /> each
               </p>
               {/* Quantity controls */}

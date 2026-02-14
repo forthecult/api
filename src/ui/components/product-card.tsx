@@ -89,7 +89,7 @@ const StarRating = React.memo(function StarRating({
         />
       ))}
       {rating > 0 && (
-        <span className="ml-1 text-xs text-muted-foreground">
+        <span className="ml-1 text-sm text-muted-foreground">
           {rating.toFixed(1)}
         </span>
       )}

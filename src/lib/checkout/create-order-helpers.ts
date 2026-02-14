@@ -236,6 +236,10 @@ export async function validateAndFetchProducts(
  *
  * Returns the affiliate/coupon result objects (for later bookkeeping) and
  * the `expectedTotal` that should be compared against the client total.
+ *
+ * For eSIM-targeted coupons (ruleAppliesToEsim), productIds and items must
+ * include eSIM cart items (productId starting with "esim_"). validateAndFetchProducts
+ * already returns these in productIds and validatedItems.
  */
 export async function resolveDiscounts(params: {
   affiliateCode?: string | null;
@@ -246,7 +250,7 @@ export async function resolveDiscounts(params: {
   productIds: string[];
   /** Payment method key for payment-method-restricted coupons. */
   paymentMethodKey?: string | null;
-  /** Cart items with prices for per-product discount computation. */
+  /** Cart items with prices for per-product discount computation. Must include eSIM items (productId esim_*) for ruleAppliesToEsim. */
   items?: CartLineItem[];
 }): Promise<DiscountResult> {
   const {

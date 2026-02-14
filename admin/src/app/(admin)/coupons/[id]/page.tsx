@@ -76,6 +76,7 @@ export default function AdminDiscountDetailPage() {
   >("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [productIds, setProductIds] = useState<string[]>([]);
+  const [ruleAppliesToEsim, setRuleAppliesToEsim] = useState(false);
   const [redemptionCount, setRedemptionCount] = useState<number | null>(null);
   const [tokenHolderChain, setTokenHolderChain] = useState<string>("");
   const [tokenHolderTokenAddress, setTokenHolderTokenAddress] = useState("");
@@ -107,6 +108,7 @@ export default function AdminDiscountDetailPage() {
         throw new Error(body.error ?? `HTTP ${res.status}`);
       }
       const row = (await res.json()) as {
+        label?: string | null;
         method?: "automatic" | "code";
         code: string;
         dateStart: string | null;
@@ -134,6 +136,7 @@ export default function AdminDiscountDetailPage() {
         ruleProductCountMax?: number | null;
         ruleOrderTotalMinCents?: number | null;
         ruleOrderTotalMaxCents?: number | null;
+        ruleAppliesToEsim?: number | null;
         categoryIds: string[];
         productIds: string[];
         redemptionCount?: number;
@@ -212,6 +215,7 @@ export default function AdminDiscountDetailPage() {
       );
       setCategoryIds(row.categoryIds ?? []);
       setProductIds(row.productIds ?? []);
+      setRuleAppliesToEsim(row.ruleAppliesToEsim === 1);
       setRedemptionCount(row.redemptionCount ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load discount");
@@ -300,6 +304,7 @@ export default function AdminDiscountDetailPage() {
           rulePaymentMethodKey: rulePaymentMethodKey.trim() || null,
           categoryIds,
           productIds,
+          ruleAppliesToEsim: ruleAppliesToEsim ? 1 : null,
         };
         body.ruleSubtotalMinCents = ruleSubtotalMin.trim()
           ? Math.round(Number.parseFloat(ruleSubtotalMin) * 100)
@@ -361,6 +366,7 @@ export default function AdminDiscountDetailPage() {
       rulePaymentMethodKey,
       categoryIds,
       productIds,
+      ruleAppliesToEsim,
       ruleSubtotalMin,
       ruleSubtotalMax,
       ruleShippingMin,
@@ -1031,7 +1037,20 @@ export default function AdminDiscountDetailPage() {
               products.
             </p>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={ruleAppliesToEsim}
+                onChange={(e) => setRuleAppliesToEsim(e.target.checked)}
+                className="size-4 rounded border-input"
+              />
+              <span>Applies to eSIM products</span>
+            </label>
+            <p className="text-xs text-muted-foreground">
+              When checked, this discount applies to any eSIM in the cart (eSIMs
+              are virtual products and do not appear in the list below).
+            </p>
             <div className="max-h-60 overflow-y-auto rounded border p-3">
               <div className="flex flex-wrap gap-4">
                 {productOptions.length === 0 ? (

@@ -313,7 +313,7 @@ export function CheckoutClient() {
         </div>
 
         {/* Progress indicator */}
-        <div className="mb-6 flex items-center justify-center gap-2 text-xs sm:text-sm" role="navigation" aria-label="Checkout steps">
+        <div className="mb-6 flex items-center justify-center gap-2 text-sm" role="navigation" aria-label="Checkout steps">
           <div className="flex items-center gap-1.5">
             <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">1</span>
             <span className="font-medium text-foreground">Information</span>

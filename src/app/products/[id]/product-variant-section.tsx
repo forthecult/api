@@ -183,12 +183,12 @@ export function ProductVariantSection({
   const displayPrice =
     selectedVariant != null ? selectedVariant.priceCents / 100 : product.price;
   const displayOriginalPrice = product.originalPrice;
-  // Stock logic: if continueSellingWhenOutOfStock is true (POD products), always show in stock
+  // Stock: POD always in stock; with variants, use selected variant stock or "any variant in stock"; otherwise product.inStock
   const displayInStock = product.continueSellingWhenOutOfStock
     ? true
     : selectedVariant != null
       ? (selectedVariant.stockQuantity ?? 0) > 0
-      : product.inStock;
+      : variants.some((v) => (v.stockQuantity ?? 0) > 0);
 
   const handleOptionSelect = (optionIndex: number, value: string) => {
     setSelectedByIndex((prev) => ({ ...prev, [optionIndex]: value }));
@@ -286,7 +286,7 @@ export function ProductVariantSection({
                     >
                       {value}
                       {outOfStock && (
-                        <span className="ml-1 text-xs">(out of stock)</span>
+                        <span className="ml-1 text-sm">(out of stock)</span>
                       )}
                     </button>
                   );
@@ -323,7 +323,7 @@ export function ProductVariantSection({
           product={{
             ...product,
             price: product.price,
-            inStock: product.inStock,
+            inStock: displayInStock,
           }}
           selectedVariant={
             selectedVariant

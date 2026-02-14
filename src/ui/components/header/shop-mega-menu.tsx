@@ -140,7 +140,7 @@ export function ShopMegaMenu({
         <button
           type="button"
           className={cn(
-            "accent-underline inline-flex items-center gap-1 text-sm font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+            "accent-underline inline-flex items-center gap-1 text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
             isActive ? "font-semibold text-[#C4873A]" : "text-[#8A857E]",
             className,
           )}
@@ -173,7 +173,7 @@ export function ShopMegaMenu({
           {sections.map((section) => (
             <div key={section.label} className="px-5 pb-5 pt-4">
               {/* Section header */}
-              <div className="mb-3 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.15em] text-[#C4873A]">
+              <div className="mb-3 flex items-center gap-1.5 text-sm font-bold uppercase tracking-[0.15em] text-[#C4873A]">
                 {section.icon}
                 {section.label}
               </div>

@@ -9,42 +9,73 @@ import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-setting
 const ICON_WIDTH = 38;
 const ICON_HEIGHT = 24;
 
+const CARD_OR_PAYPAL_NAMES = new Set([
+  "PayPal",
+  "American Express",
+  "Apple Pay",
+  "Diners Club",
+  "Discover",
+  "Google Pay",
+  "Mastercard",
+  "Visa",
+]);
+
 export function FooterPaymentsBar() {
   const { visibility } = usePaymentMethodSettings();
   const paymentItems = getFooterPaymentItems(visibility);
+  const cryptoItems = paymentItems.filter(
+    (item) => !CARD_OR_PAYPAL_NAMES.has(item.name),
+  );
+  const cardItems = paymentItems.filter((item) =>
+    CARD_OR_PAYPAL_NAMES.has(item.name),
+  );
+
+  const renderItem = (item: { name: string; title?: string; src: string }) => (
+    <li key={item.name} className="shrink-0" role="listitem">
+      <span
+        className="flex items-center justify-center overflow-hidden"
+        style={{
+          width: ICON_WIDTH,
+          height: ICON_HEIGHT,
+          minWidth: ICON_WIDTH,
+          minHeight: ICON_HEIGHT,
+        }}
+      >
+        <Image
+          alt={item.name}
+          height={ICON_HEIGHT}
+          role="img"
+          src={item.src}
+          title={item.title ?? item.name}
+          unoptimized
+          width={ICON_WIDTH}
+          className="block max-h-full max-w-full object-contain object-center"
+        />
+      </span>
+    </li>
+  );
 
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <span className="sr-only">Payment methods</span>
-      <ul
-        className="flex flex-wrap items-center justify-center gap-2"
-        role="list"
-      >
-        {paymentItems.map((item) => (
-          <li key={item.name} className="shrink-0" role="listitem">
-            <span
-              className="flex items-center justify-center overflow-hidden"
-              style={{
-                width: ICON_WIDTH,
-                height: ICON_HEIGHT,
-                minWidth: ICON_WIDTH,
-                minHeight: ICON_HEIGHT,
-              }}
-            >
-              <Image
-                alt={item.name}
-                height={ICON_HEIGHT}
-                role="img"
-                src={item.src}
-                title={item.title ?? item.name}
-                unoptimized
-                width={ICON_WIDTH}
-                className="block max-h-full max-w-full object-contain object-center"
-              />
-            </span>
-          </li>
-        ))}
-      </ul>
+      {cryptoItems.length > 0 && (
+        <ul
+          className="flex flex-wrap items-center justify-center gap-1.5"
+          role="list"
+          aria-label="Crypto payment options"
+        >
+          {cryptoItems.map(renderItem)}
+        </ul>
+      )}
+      {cardItems.length > 0 && (
+        <ul
+          className="flex flex-wrap items-center justify-center gap-2"
+          role="list"
+          aria-label="Card and wallet payment options"
+        >
+          {cardItems.map(renderItem)}
+        </ul>
+      )}
     </div>
   );
 }

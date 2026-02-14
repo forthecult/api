@@ -587,14 +587,65 @@ function normalizeSizeGuideData(
   };
 }
 
-/** Derive size chart display name from Printful catalog product type/name (e.g. "Hoodie" → "Hoodies", "T-Shirt" → "T-Shirts", "Shoes" → "Shoes"). */
-function sizeChartDisplayNameFromCatalog(typeOrName: string | null | undefined): string {
-  const raw = (typeOrName ?? "").trim();
-  if (!raw) return "T-Shirts";
-  const titleCased = raw
-    .split(/[\s-]+/)
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(raw.includes("-") ? "-" : " ");
+/**
+ * Derive size chart display name from Printful catalog product type/name.
+ * Prefers product-type keywords (Hoodie, Sweatshirt, etc.) so hoodies don't show as "T-Shirts".
+ * Examples: "Hoodie" → "Hoodies", "Unisex Hoodie" → "Hoodies", "T-Shirt" → "T-Shirts".
+ */
+function sizeChartDisplayNameFromCatalog(
+  type: string | null | undefined,
+  name: string | null | undefined,
+): string {
+  const typeRaw = (type ?? "").trim();
+  const nameRaw = (name ?? "").trim();
+  const combined = [typeRaw, nameRaw].filter(Boolean).join(" ");
+  if (!combined) return "T-Shirts";
+
+  // Prefer product-type keywords so "Unisex Hoodie" / "HOODIE" → "Hoodies", not "Unisex Hoodies"
+  const lower = combined.toLowerCase();
+  const productTypeKeywords = [
+    "hoodie",
+    "sweatshirt",
+    "sweat shirt",
+    "long sleeve",
+    "t-shirt",
+    "t shirt",
+    "tank",
+    "polo",
+    "shirt",
+    "jacket",
+    "zip",
+    "fleece",
+    "joggers",
+    "leggings",
+    "shorts",
+    "pants",
+    "dress",
+    "skirt",
+    "hat",
+    "cap",
+    "bag",
+    "tote",
+    "poster",
+    "canvas",
+    "shoes",
+    "sneakers",
+    "sandals",
+  ];
+  for (const keyword of productTypeKeywords) {
+    if (lower.includes(keyword)) {
+      const word = keyword.replace(/\s+/g, " ");
+      const titleCased =
+        word.charAt(0).toUpperCase() + word.slice(1).replace(/\b\w/g, (c) => c.toUpperCase());
+      return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
+    }
+  }
+
+  // Fallback: title-case the first word of type or name
+  const first = (typeRaw || nameRaw).split(/[\s-]+/)[0] ?? "";
+  const titleCased = first
+    ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+    : "";
   if (!titleCased) return "T-Shirts";
   return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
 }
@@ -611,8 +662,11 @@ async function upsertPrintfulSizeChart(
     try {
       const catalogRes = await fetchCatalogProduct(catalogProductId);
       const catalog = catalogRes?.data;
-      if (catalog?.type ?? catalog?.name) {
-        displayName = sizeChartDisplayNameFromCatalog(catalog.type ?? catalog.name ?? null);
+      if (catalog) {
+        displayName = sizeChartDisplayNameFromCatalog(
+          catalog.type ?? null,
+          catalog.name ?? null,
+        );
       }
     } catch {
       // keep default
@@ -666,10 +720,11 @@ async function upsertPrintfulSizeChart(
       .onConflictDoUpdate({
         target: [sizeChartsTable.provider, sizeChartsTable.brand, sizeChartsTable.model],
         set: {
-          displayName,
           dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
           dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
           updatedAt: now,
+          // Don't overwrite displayName with "T-Shirts" so hoodies/sweatshirts keep correct label
+          ...(displayName !== "T-Shirts" && { displayName }),
         },
       });
     return true;

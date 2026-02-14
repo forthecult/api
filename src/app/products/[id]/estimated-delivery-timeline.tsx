@@ -80,9 +80,9 @@ export function EstimatedDeliveryTimeline({
   const getItByDate = format(ranges.deliveredStart, "MMM d");
 
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-5", className)}>
       {countdown != null && (countdown.hours > 0 || countdown.minutes > 0) && (
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           ⚡ Order within{" "}
           <span className="font-semibold text-green-600 dark:text-green-400">
             {countdown.hours}h {countdown.minutes}m
@@ -92,7 +92,7 @@ export function EstimatedDeliveryTimeline({
       )}
 
       <div
-        className="grid gap-2"
+        className="grid gap-3"
         style={{
           gridTemplateColumns: "1fr minmax(1.5rem, 2fr) 1fr minmax(1.5rem, 2fr) 1fr",
         }}
@@ -100,12 +100,12 @@ export function EstimatedDeliveryTimeline({
         {/* Ordered */}
         <div className="flex flex-col items-center gap-2">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted/50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted/50"
             aria-hidden
           >
-            <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+            <ShoppingBag className="h-6 w-6 text-muted-foreground" />
           </div>
-          <div className="text-center text-sm">
+          <div className="text-center text-base">
             <p className="font-semibold text-foreground">Ordered</p>
             <p className="text-muted-foreground">{formatted.ordered}</p>
           </div>
@@ -118,12 +118,12 @@ export function EstimatedDeliveryTimeline({
         {/* Shipped */}
         <div className="flex flex-col items-center gap-2">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted/50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted/50"
             aria-hidden
           >
-            <Truck className="h-5 w-5 text-muted-foreground" />
+            <Truck className="h-6 w-6 text-muted-foreground" />
           </div>
-          <div className="text-center text-sm">
+          <div className="text-center text-base">
             <p className="font-semibold text-foreground">Shipped</p>
             <p className="text-muted-foreground">{formatted.shippedRange}</p>
           </div>
@@ -136,12 +136,12 @@ export function EstimatedDeliveryTimeline({
         {/* Delivered */}
         <div className="flex flex-col items-center gap-2">
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted/50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-border bg-muted/50"
             aria-hidden
           >
-            <Package className="h-5 w-5 text-muted-foreground" />
+            <Package className="h-6 w-6 text-muted-foreground" />
           </div>
-          <div className="text-center text-sm">
+          <div className="text-center text-base">
             <p className="font-semibold text-foreground">Delivered</p>
             <p className="text-muted-foreground">{formatted.deliveredRange}</p>
           </div>

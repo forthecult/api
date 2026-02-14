@@ -31,7 +31,7 @@ export function TopBanner() {
   return (
     <div
       className={cn(
-        "relative flex w-full overflow-hidden border-b border-[#2A2A2A] bg-[#C4873A] text-xs font-medium uppercase tracking-[0.1em] text-[#111111] md:py-2",
+        "relative flex w-full overflow-hidden border-b border-[#2A2A2A] bg-[#C4873A] text-sm font-medium uppercase tracking-[0.1em] text-[#111111] md:py-2",
         mobileCollapsed ? "py-1.5" : "py-2",
       )}
       role="marquee"

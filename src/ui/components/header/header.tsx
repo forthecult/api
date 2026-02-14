@@ -421,7 +421,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "accent-underline text-sm font-medium tracking-wider transition-colors hover:text-[#C4873A]",
+                            "accent-underline text-base font-medium tracking-wider transition-colors hover:text-[#C4873A]",
                             "normal-case", // show as "eSIM" not "ESIM"
                             pathname?.startsWith("/esim")
                               ? "font-semibold text-[#C4873A]"
@@ -435,7 +435,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "accent-underline text-sm font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+                            "accent-underline text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
                             pathname === "/about"
                               ? "font-semibold text-[#C4873A]"
                               : "text-[#8A857E]",

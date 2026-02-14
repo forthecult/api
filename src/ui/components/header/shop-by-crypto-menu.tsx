@@ -92,8 +92,8 @@ export function ShopByCryptoMenu({
         <button
           type="button"
           className={cn(
-            "inline-flex items-center gap-1 text-lg font-medium transition-colors hover:text-primary",
-            "text-muted-foreground",
+            "accent-underline inline-flex items-center gap-1 text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+            "text-[#8A857E]",
             className,
           )}
           aria-expanded={open}
