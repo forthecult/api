@@ -86,7 +86,7 @@ export function CartClient({ className }: CartClientProps) {
         <div className="shrink-0 border-b px-6 py-4">
           <div>
             <div className="text-xl font-semibold">Your Cart</div>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-base text-muted-foreground">
               {totalItems === 0
                 ? "Your cart is empty"
                 : `You have ${totalItems} item${totalItems !== 1 ? "s" : ""} in your cart`}
@@ -107,8 +107,8 @@ export function CartClient({ className }: CartClientProps) {
                   <ShoppingCart className="h-10 w-10 text-muted-foreground" />
                 </div>
                 <h3 className="mb-2 text-lg font-medium">Your cart is empty</h3>
-                <p className="mb-6 text-center text-sm text-muted-foreground">
-                  Looks like you haven't added anything to your cart yet.
+                <p className="mb-6 text-center text-base text-muted-foreground">
+                  Looks like you haven&apos;t added anything to your cart yet.
                 </p>
                 {isDesktop ? (
                   <SheetClose asChild>

@@ -114,15 +114,15 @@ export default async function OrdersPage() {
                       className="flex flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap sm:gap-4"
                       data-testid="order-row"
                     >
-                      <span className="font-mono text-sm text-muted-foreground">
+                      <span className="font-mono text-base text-muted-foreground">
                         #{order.id.slice(0, 8)}
                       </span>
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${statusClass}`}
+                        className={`rounded-full px-2.5 py-0.5 text-sm font-medium ${statusClass}`}
                       >
                         {label}
                       </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-base text-muted-foreground">
                         {formatDateShort(order.createdAt)}
                       </span>
                       <span className="font-medium">

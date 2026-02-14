@@ -386,10 +386,10 @@ export function SupportChatWidget() {
               <span className="absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full border-2 border-background bg-green-500" />
             </div>
             <div className="flex flex-col">
-              <span className="text-sm font-semibold leading-tight">
+              <span className="text-base font-semibold leading-tight">
                 {takenOverBy ? "Live Support Agent" : "Alice AI Support Agent"}
               </span>
-              <span className="text-muted-foreground text-xs">
+              <span className="text-muted-foreground text-sm">
                 {takenOverBy ? "A team member is helping you" : "Online · Typically replies instantly"}
               </span>
             </div>
@@ -428,8 +428,8 @@ export function SupportChatWidget() {
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
-                <p className="text-sm font-medium">Hi there! I&apos;m Alice</p>
-                <p className="text-muted-foreground text-xs max-w-[240px]">
+                <p className="text-base font-medium">Hi there! I&apos;m Alice</p>
+                <p className="text-muted-foreground text-sm max-w-[240px]">
                   Your AI support assistant. How can I help you today?
                 </p>
               </div>
@@ -451,7 +451,7 @@ export function SupportChatWidget() {
                   <li
                     key={m.id}
                     className={cn(
-                      "rounded-lg px-3 py-2 text-sm",
+                      "rounded-lg px-3 py-2 text-base",
                       m.role === "customer"
                         ? "ml-8 bg-primary text-primary-foreground"
                         : "mr-8 bg-muted",
@@ -476,7 +476,7 @@ export function SupportChatWidget() {
               })}
               {loading && (
                 <li
-                  className="mr-8 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-sm"
+                  className="mr-8 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-base"
                   aria-live="polite"
                   aria-busy="true"
                 >
@@ -511,7 +511,7 @@ export function SupportChatWidget() {
                     key={p.label}
                     type="button"
                     onClick={() => handleQuickPrompt(p.label)}
-                    className="inline-flex items-center gap-1 rounded-full border bg-muted/50 px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted hover:border-primary/30 active:scale-95"
+                    className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3.5 py-2 text-sm font-medium transition-colors hover:bg-muted hover:border-primary/30 active:scale-95"
                   >
                     <span>{p.icon}</span>
                     <span>{p.label}</span>

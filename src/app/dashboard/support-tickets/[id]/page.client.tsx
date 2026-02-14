@@ -159,7 +159,7 @@ export function SupportTicketDetailClient() {
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <CardTitle>{ticket.subject}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-base text-muted-foreground mt-1">
               Created {formatDateTime(ticket.createdAt)}
               {ticket.updatedAt !== ticket.createdAt && (
                 <> · Updated {formatDateTime(ticket.updatedAt)}</>
@@ -194,13 +194,13 @@ export function SupportTicketDetailClient() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <h3 className="text-sm font-medium text-muted-foreground">Conversation</h3>
+            <h3 className="text-base font-medium text-muted-foreground">Conversation</h3>
             <div className="max-h-[400px] space-y-3 overflow-y-auto rounded-md border bg-muted/20 p-3">
               {ticket.messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={cn(
-                    "rounded-lg px-3 py-2 text-sm",
+                    "rounded-lg px-3 py-2 text-base",
                     msg.role === "customer"
                       ? "ml-6 bg-primary/10 text-foreground"
                       : "mr-6 bg-muted text-muted-foreground",
@@ -215,7 +215,7 @@ export function SupportTicketDetailClient() {
                     :{" "}
                   </span>
                   <span className="whitespace-pre-wrap">{msg.content}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
+                  <span className="ml-2 text-sm text-muted-foreground">
                     {formatDateTime(msg.createdAt)}
                   </span>
                 </div>
@@ -226,7 +226,7 @@ export function SupportTicketDetailClient() {
 
           {canReply ? (
             <form onSubmit={handleSendMessage} className="space-y-2">
-              <label htmlFor="new-message" className="text-sm font-medium">
+              <label htmlFor="new-message" className="text-base font-medium">
                 Add a message
               </label>
               <div className="flex gap-2">
@@ -247,7 +247,7 @@ export function SupportTicketDetailClient() {
                   <span className="sr-only">Send</span>
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 You can add more messages to this ticket. Support will reply here.
               </p>
               <Button

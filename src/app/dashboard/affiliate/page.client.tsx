@@ -38,7 +38,7 @@ function SnippetBlock({ label, text }: { label: string; text: string }) {
   };
   return (
     <div className="rounded-md border bg-muted/30 p-3">
-      <p className="mb-1.5 text-xs font-medium text-muted-foreground">{label}</p>
+      <p className="mb-1.5 text-sm font-medium text-muted-foreground">{label}</p>
       <p className="mb-2 break-all text-sm">{text}</p>
       <Button type="button" variant="ghost" size="sm" onClick={copy} className="h-8 text-xs">
         {copied ? "Copied!" : "Copy"}
@@ -310,7 +310,7 @@ export function AffiliatePageClient() {
                   className="font-mono uppercase"
                   aria-describedby="applyCodeHint"
                 />
-                <p id="applyCodeHint" className="text-xs text-muted-foreground">
+                <p id="applyCodeHint" className="text-sm text-muted-foreground">
                   Letters and numbers only, 4–24 characters. Leave blank for a random code.
                 </p>
               </div>
@@ -438,7 +438,7 @@ export function AffiliatePageClient() {
                         )}
                       </Button>
                     </div>
-                    <p id="codeEditPendingHint" className="text-xs text-muted-foreground">
+                    <p id="codeEditPendingHint" className="text-sm text-muted-foreground">
                       Letters and numbers only, 4–24 characters.
                     </p>
                     {codeMessage && (
@@ -522,7 +522,7 @@ export function AffiliatePageClient() {
                       )}
                     </Button>
                   </div>
-                  <p id="codeEditHint" className="text-xs text-muted-foreground">
+                  <p id="codeEditHint" className="text-sm text-muted-foreground">
                     Letters and numbers only, 4–24 characters. Changing your code invalidates your previous referral link.
                   </p>
                   {codeMessage && (
@@ -551,7 +551,7 @@ export function AffiliatePageClient() {
               <CardContent>
                 <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
                   <div>
-                    <dt className="text-xs font-medium uppercase text-muted-foreground">
+                    <dt className="text-sm font-medium uppercase text-muted-foreground">
                       Conversions
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -559,7 +559,7 @@ export function AffiliatePageClient() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-muted-foreground">
+                    <dt className="text-sm font-medium uppercase text-muted-foreground">
                       Total earned
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -567,7 +567,7 @@ export function AffiliatePageClient() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-muted-foreground">
+                    <dt className="text-sm font-medium uppercase text-muted-foreground">
                       Paid out
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -575,7 +575,7 @@ export function AffiliatePageClient() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-xs font-medium uppercase text-muted-foreground">
+                    <dt className="text-sm font-medium uppercase text-muted-foreground">
                       Pending
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -724,7 +724,7 @@ export function AffiliatePageClient() {
                   </Button>
                 </div>
                 <div className="space-y-3">
-                  <Label className="text-xs font-medium text-muted-foreground">
+                  <Label className="text-sm font-medium text-muted-foreground">
                     Marketing copy (copy & paste)
                   </Label>
                   <div className="space-y-2">

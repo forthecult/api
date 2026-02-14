@@ -162,8 +162,8 @@ export default async function RootLayout({
             ${geistMono.variable}
             ${jetbrainsMono.variable}
             ${manrope.variable}
-            min-h-screen bg-[#111111] text-[#F5F1EB] antialiased
-            selection:bg-[#C4873A]/30
+            min-h-screen bg-background text-foreground antialiased
+            selection:bg-primary/30
           `}
         >
           <ThemeProvider
@@ -188,8 +188,8 @@ export default async function RootLayout({
           ${geistMono.variable}
           ${jetbrainsMono.variable}
           ${manrope.variable}
-          min-h-screen bg-[#111111] text-[#F5F1EB] antialiased
-          selection:bg-[#C4873A]/30
+          min-h-screen bg-background text-foreground antialiased
+          selection:bg-primary/30
         `}
         suppressHydrationWarning
       >

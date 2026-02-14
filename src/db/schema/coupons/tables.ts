@@ -18,6 +18,8 @@ import { productsTable } from "../orders/tables";
  */
 export const couponsTable = pgTable("coupon", {
   id: text("id").primaryKey(),
+  /** Admin-facing label describing what the discount does (e.g. "10% off eSIMs with CULT"). */
+  label: text("label"),
   method: text("method").notNull().default("code"), // "automatic" | "code"
   code: text("code").notNull().unique(), // e.g. SAVE20 (stored uppercase); for automatic, e.g. AUTO-{id}
   dateStart: timestamp("date_start"), // null = no start

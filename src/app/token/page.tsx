@@ -175,7 +175,7 @@ export default function TokenPage() {
         {/* Hero */}
         <section className="relative overflow-hidden py-12 md:py-16">
           <div className="relative z-10 mx-auto max-w-3xl space-y-6 text-center">
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-base font-medium text-muted-foreground">
               {SEO_CONFIG.name}
             </p>
 
@@ -284,7 +284,7 @@ export default function TokenPage() {
               <Card key={label} className="border-border bg-card">
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{label}</CardTitle>
-                  <CardDescription className="text-sm text-muted-foreground">
+                  <CardDescription className="text-base text-muted-foreground">
                     {sublabel}
                   </CardDescription>
                 </CardHeader>
@@ -418,7 +418,7 @@ export default function TokenPage() {
                   <TableRow>
                     <TableHead className="w-[5rem]">Allocation</TableHead>
                     <TableHead>Use</TableHead>
-                    <TableHead className="min-w-0 font-mono text-xs text-muted-foreground">
+                    <TableHead className="min-w-0 font-mono text-sm text-muted-foreground">
                       Address
                     </TableHead>
                     <TableHead className="min-w-[7.5rem] text-right">
@@ -435,7 +435,7 @@ export default function TokenPage() {
                       <TableCell className="text-muted-foreground">
                         {subjectToChange ? `${label}*` : label}
                       </TableCell>
-                      <TableCell className="max-w-[12rem] truncate font-mono text-xs text-muted-foreground" title={wallet ?? undefined}>
+                      <TableCell className="max-w-[12rem] truncate font-mono text-sm text-muted-foreground" title={wallet ?? undefined}>
                         {wallet ?? "—"}
                       </TableCell>
                       <TableCell className="text-right">
@@ -532,7 +532,7 @@ export default function TokenPage() {
                 <CardTitle className="text-lg">Voting rights</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                <ul className="list-inside list-disc space-y-1 text-base text-muted-foreground">
                   <li>Charity funds allocation</li>
                   <li>Determine new products and features</li>
                   <li>Become a DAO one day? It's possible!</li>
@@ -544,7 +544,7 @@ export default function TokenPage() {
                 <CardTitle className="text-lg">Why a DAO in the future?</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-inside list-disc space-y-1 text-sm text-muted-foreground">
+                <ul className="list-inside list-disc space-y-1 text-base text-muted-foreground">
                   <li>Better capital management</li>
                   <li>Clear framework for decentralized operations</li>
                   <li>Path to community governance</li>
@@ -586,26 +586,26 @@ export default function TokenPage() {
               </Button>
             </Link>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-base text-muted-foreground">
             Use CULT token at checkout for up to 20% off eligible purchases.
           </p>
         </section>
 
         {/* Disclaimer */}
         <section className="space-y-4 border-t border-border py-12">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Disclaimer:</strong> The CULT
             ecosystem is under active development. Token mechanics, voting
             structures, and features described here are planned and subject to
             change.
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             The CULT token is a utility token intended for use within the
             ecosystem (purchase discounts and voting participation). There is no
             guarantee of financial return. The value of the CULT token may
             fluctuate and you may lose some or all of your purchase amount.
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             The purchase and use of CULT tokens may be subject to regulatory
             restrictions in your jurisdiction. This is not financial, legal, or
             investment advice. Please consult with qualified advisors before

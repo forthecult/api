@@ -109,12 +109,12 @@ export function FooterBottom() {
         md:flex-row
       `}
     >
-      <p className="text-sm text-muted-foreground">
+      <p className="text-base text-muted-foreground">
         COPYLEFT {new Date().getFullYear()} {SEO_CONFIG.name}
       </p>
       <div
         className={`
-          flex flex-col items-center gap-4 text-sm text-muted-foreground
+          flex flex-col items-center gap-4 text-base text-muted-foreground
           md:flex-row md:flex-wrap md:justify-center md:gap-4
         `}
       >

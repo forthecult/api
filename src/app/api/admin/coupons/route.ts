@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
     const couponRows = await db
       .select({
         id: couponsTable.id,
+        label: couponsTable.label,
         method: couponsTable.method,
         code: couponsTable.code,
         dateStart: couponsTable.dateStart,
@@ -103,6 +104,7 @@ export async function GET(request: NextRequest) {
 
     let items = coupons.map((c) => ({
       id: c.id,
+      label: c.label ?? null,
       method: c.method ?? "code",
       code: c.code,
       dateStart: c.dateStart?.toISOString() ?? null,
@@ -156,6 +158,7 @@ export async function POST(request: NextRequest) {
     if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
+      label?: string | null;
       method?: "automatic" | "code";
       code?: string;
       dateStart?: string | null;
@@ -261,8 +264,14 @@ export async function POST(request: NextRequest) {
         ? Math.round(body.getDiscountValue)
         : null;
 
+    const label =
+      typeof body.label === "string" && body.label.trim().length > 0
+        ? body.label.trim()
+        : null;
+
     await db.insert(couponsTable).values({
       id,
+      label,
       method,
       code: codeRaw,
       dateStart,

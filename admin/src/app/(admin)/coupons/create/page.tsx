@@ -50,6 +50,7 @@ export default function AdminDiscountCreatePage() {
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
 
+  const [label, setLabel] = useState("");
   const [method, setMethod] = useState<"automatic" | "code">("code");
   const [code, setCode] = useState("");
   const [dateStart, setDateStart] = useState("");
@@ -180,6 +181,7 @@ export default function AdminDiscountCreatePage() {
       setSaving(true);
       try {
         const body: Record<string, unknown> = {
+          label: label.trim() || null,
           method,
           code: codeTrim || undefined,
           dateStart: dateStart ? new Date(dateStart).toISOString() : null,
@@ -328,6 +330,23 @@ export default function AdminDiscountCreatePage() {
             <CardTitle>Discount</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="label" className={labelClass}>
+                Label
+              </label>
+              <input
+                id="label"
+                type="text"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                className={inputClass}
+                placeholder="e.g. 10% off eSIMs with CULT"
+              />
+              <p className="text-xs text-muted-foreground">
+                Internal label to help admins identify this discount. Not shown
+                to customers.
+              </p>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <label className={labelClass}>Apply</label>

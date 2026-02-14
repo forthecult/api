@@ -524,7 +524,7 @@ export function MembershipClient() {
                 MC {formatMarketCap(marketCap)}
               </span>
               <span className="hidden sm:inline text-border">|</span>
-              <span className="text-xs">
+              <span className="text-sm">
                 {pricingBracket}
               </span>
             </div>
@@ -551,7 +551,7 @@ export function MembershipClient() {
         {/* Stake & Join — below the fold, left card + right benefits */}
         {/* --------------------------------------------------------------- */}
         <section id="stake-cta" className="scroll-mt-20 py-16 md:py-20">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,28rem),1fr] lg:gap-12">
+          <div className="grid gap-8 md:grid-cols-[minmax(0,28rem),1fr] md:gap-10">
             {/* Left: Stake card — constrained width so benefits sit on the right */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
               <div className="border-b bg-muted/30 px-6 py-5">
@@ -610,7 +610,7 @@ export function MembershipClient() {
                       onClick={() => setStakeDuration("30d")}
                     >
                       <span className="font-semibold">30 Days</span>
-                      <span className="block text-xs text-muted-foreground">
+                      <span className="block text-sm text-muted-foreground">
                         Minimum period
                       </span>
                     </button>
@@ -628,7 +628,7 @@ export function MembershipClient() {
                         Best Value
                       </Badge>
                       <span className="font-semibold">12 Months</span>
-                      <span className="block text-xs text-muted-foreground">
+                      <span className="block text-sm text-muted-foreground">
                         14 months eSIM
                       </span>
                     </button>
@@ -662,7 +662,7 @@ export function MembershipClient() {
                   return (
                     <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
                       <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <p className="text-xs font-medium text-foreground">
+                      <p className="text-sm font-medium text-foreground">
                         {extraUsd > 0
                           ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
                           : "Upgrade to "}
@@ -689,7 +689,7 @@ export function MembershipClient() {
                       ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
                       : "Connect Wallet & Stake"}
                 </Button>
-                <p className="text-center text-xs text-muted-foreground">
+                <p className="text-center text-sm text-muted-foreground">
                   Your tokens remain yours. They are locked in a smart contract
                   and returned to your wallet when you unstake.
                 </p>
@@ -882,7 +882,7 @@ export function MembershipClient() {
                           <p className="text-2xl font-bold tabular-nums text-foreground">
                             {formatUsd(tierPrice.costUsd)}
                           </p>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-sm text-muted-foreground">
                             ≈ {formatTokens(tierPrice.tokensNeeded)} {tokenSymbol} to stake
                           </p>
                         </>
@@ -1018,7 +1018,7 @@ export function MembershipClient() {
                         {tp ? (
                           <div>
                             <div>{formatUsd(tp.costUsd)}</div>
-                            <div className="text-xs font-normal text-muted-foreground">
+                            <div className="text-sm font-normal text-muted-foreground">
                               ≈ {formatTokens(tp.tokensNeeded)} {tokenSymbol}
                             </div>
                           </div>
@@ -1127,10 +1127,10 @@ export function MembershipClient() {
                         )}
                       >
                         <Icon className={cn("h-5 w-5", tier.accent)} />
-                        <p className="text-xs font-medium text-foreground">
+                        <p className="text-sm font-medium text-foreground">
                           {tier.name}
                         </p>
-                        <p className={cn("text-xs font-semibold", tier.accent)}>
+                        <p className={cn("text-sm font-semibold", tier.accent)}>
                           {tier.benefits.esim}
                         </p>
                       </div>
@@ -1184,7 +1184,7 @@ export function MembershipClient() {
                   <p className="text-sm font-medium text-muted-foreground">
                     days
                   </p>
-                  <p className="mt-3 text-xs text-muted-foreground">
+                  <p className="mt-3 text-sm text-muted-foreground">
                     Minimum staking period. Great for trying out your tier.
                   </p>
                 </div>
@@ -1215,7 +1215,7 @@ export function MembershipClient() {
                   <p className="text-sm font-medium text-muted-foreground">
                     months
                   </p>
-                  <p className="mt-3 text-xs text-muted-foreground">
+                  <p className="mt-3 text-sm text-muted-foreground">
                     Get 14 months of eSIM coverage. Best value for committed
                     members.
                   </p>
@@ -1319,7 +1319,7 @@ export function MembershipClient() {
                           ? "Claiming eSIM…"
                           : "Claim Free eSIM"}
                       </Button>
-                      <p className="text-center text-xs text-muted-foreground">
+                      <p className="text-center text-sm text-muted-foreground">
                         Your free eSIM will be provisioned instantly and sent to
                         your email. One claim per staking period.
                       </p>
@@ -1386,12 +1386,12 @@ export function MembershipClient() {
         {/* Disclaimer */}
         {/* --------------------------------------------------------------- */}
         <section className="space-y-4 border-t border-border py-12">
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">Disclaimer:</strong> Membership
             tiers, staking requirements, and benefits are subject to change as
             the ecosystem evolves.
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             The {tokenSymbol} token is a utility token. There is no guarantee of
             financial return. The value of staked tokens may fluctuate. Token
             holders participate at their own risk. This is not financial, legal,

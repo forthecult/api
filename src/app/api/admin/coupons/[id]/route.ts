@@ -25,6 +25,7 @@ export async function GET(
     const [coupon] = await db
       .select({
         id: couponsTable.id,
+        label: couponsTable.label,
         method: couponsTable.method,
         code: couponsTable.code,
         dateStart: couponsTable.dateStart,
@@ -85,6 +86,7 @@ export async function GET(
 
     return NextResponse.json({
       id: coupon.id,
+      label: coupon.label ?? null,
       method: coupon.method ?? "code",
       code: coupon.code,
       dateStart: coupon.dateStart?.toISOString() ?? null,
@@ -137,6 +139,7 @@ export async function PATCH(
 
     const { id } = await params;
     const body = (await request.json()) as {
+      label?: string | null;
       method?: "automatic" | "code";
       code?: string;
       dateStart?: string | null;
@@ -186,6 +189,12 @@ export async function PATCH(
     }
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
+    if (body.label !== undefined) {
+      updates.label =
+        typeof body.label === "string" && body.label.trim().length > 0
+          ? body.label.trim()
+          : null;
+    }
     if (body.method === "automatic" || body.method === "code") {
       updates.method = body.method;
       if (body.method === "automatic") {

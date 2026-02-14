@@ -28,6 +28,7 @@ type DiscountKind =
 
 type CouponRow = {
   id: string;
+  label: string | null;
   method: "automatic" | "code";
   code: string;
   dateStart: string | null;
@@ -241,6 +242,12 @@ export default function AdminCouponsPage() {
                     >
                       Method
                     </th>
+                    <th
+                      className="whitespace-nowrap p-4 font-medium"
+                      scope="col"
+                    >
+                      Label
+                    </th>
                     <SortHeader column="code" label="Code" />
                     <th
                       className="whitespace-nowrap p-4 font-medium"
@@ -267,6 +274,9 @@ export default function AdminCouponsPage() {
                       className="border-b transition-colors hover:bg-muted/30"
                     >
                       <td className="p-4 capitalize">{row.method}</td>
+                      <td className="max-w-[200px] truncate p-4 text-muted-foreground" title={row.label ?? ""}>
+                        {row.label || "—"}
+                      </td>
                       <td className="p-4 font-medium">
                         <Link
                           href={`/coupons/${row.id}`}

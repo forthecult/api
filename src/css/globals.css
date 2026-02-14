@@ -21,40 +21,41 @@
   }
 }
 
+/* Culture brand light: Warm parchment + Amber */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.96 0.245 27.325);
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.871 0.006 286.286);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  --background: #FAFAF7;
+  --foreground: #1A1611;
+  --card: #FFFFFF;
+  --card-foreground: #1A1611;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1611;
+  --primary: #B07830;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0ECE4;
+  --secondary-foreground: #1A1611;
+  --muted: #F0ECE4;
+  --muted-foreground: #78716C;
+  --accent: #B07830;
+  --accent-foreground: #FFFFFF;
+  --destructive: #B5594E;
+  --destructive-foreground: #FFFFFF;
+  --border: #E5DFD5;
+  --input: #E5DFD5;
+  --ring: #B07830;
+  --chart-1: #C4873A;
+  --chart-2: #6B8F71;
+  --chart-3: #B5594E;
+  --chart-4: #78716C;
+  --chart-5: #1A1611;
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.871 0.006 286.286);
+  --sidebar: #F5F1EB;
+  --sidebar-foreground: #1A1611;
+  --sidebar-primary: #B07830;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F0ECE4;
+  --sidebar-accent-foreground: #1A1611;
+  --sidebar-border: #E5DFD5;
+  --sidebar-ring: #B07830;
 }
 
 /* Culture brand dark: Obsidian + Parchment + Amber */
