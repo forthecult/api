@@ -170,7 +170,7 @@ export function MobileNavSheet({
             onSubmit={handleSearchSubmit}
             className="flex shrink-0 items-center gap-2 border-b px-4 py-3"
           >
-            <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <Search className="h-4 w-4 shrink-0 text-[#1A1611] dark:text-[#F5F1EB]" />
             <Input
               type="search"
               placeholder="Search products..."

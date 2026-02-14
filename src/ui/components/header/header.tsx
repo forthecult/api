@@ -498,7 +498,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
             onSubmit={handleMobileSearchSubmit}
             className="flex items-center gap-2 border-t md:hidden"
           >
-            <Search className="ml-2 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+            <Search className="ml-2 h-4 w-4 shrink-0 text-[#1A1611] dark:text-[#F5F1EB]" aria-hidden />
             <Input
               type="search"
               placeholder="Search products..."

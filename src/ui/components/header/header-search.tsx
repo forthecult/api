@@ -41,6 +41,7 @@ export function HeaderSearch() {
         variant="ghost"
         onClick={handleOpen}
         aria-label="Search products"
+        className="text-[#1A1611] dark:text-[#F5F1EB]"
       >
         <Search className="h-5 w-5" aria-hidden />
       </Button>

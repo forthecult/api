@@ -14,6 +14,7 @@ interface TestimonialsSectionProps {
   testimonials: {
     author: TestimonialAuthor;
     href?: string;
+    productTitle?: string;
     rating?: number;
     text: string;
   }[];
@@ -95,6 +96,7 @@ export function TestimonialsSection({
                     author={testimonial.author}
                     text={testimonial.text}
                     rating={testimonial.rating}
+                    productTitle={testimonial.productTitle}
                     href={testimonial.href}
                   />
                 )),

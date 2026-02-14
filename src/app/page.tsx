@@ -42,18 +42,25 @@ type TestimonialItem = {
   author: { name: string; avatar?: string; handle?: string };
   text: string;
   rating?: number;
+  productTitle?: string;
 };
 
 async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
   const baseUrl = getServerBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/reviews?limit=20`, {
+    const res = await fetch(`${baseUrl}/api/reviews?limit=20&includeProductName=true`, {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return [];
     const data = (await res.json()) as {
-      items?: Array<{ id: string; comment: string; displayName: string; rating: number }>;
+      items?: Array<{
+        id: string;
+        comment: string;
+        displayName: string;
+        rating: number;
+        productName?: string | null;
+      }>;
     };
     const items = data.items ?? [];
     if (items.length === 0) return [];
@@ -61,6 +68,7 @@ async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
       author: { name: r.displayName },
       text: r.comment,
       rating: r.rating,
+      productTitle: r.productName ?? undefined,
     }));
   } catch {
     return [];

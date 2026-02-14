@@ -7,6 +7,7 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
+import { useTheme } from "next-themes";
 import {
   forwardRef,
   useCallback,
@@ -273,6 +274,8 @@ export const StripeCardPayment = forwardRef<
   const [stripePromise] = useState(() =>
     STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null,
   );
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const elementsOptions = useMemo(
     () =>
@@ -283,26 +286,40 @@ export const StripeCardPayment = forwardRef<
             currency: "usd",
             paymentMethodTypes: ["card" as const],
             appearance: {
-              theme: "night" as const,
-              variables: {
-                colorBackground: "#1a1a1a",
-                colorText: "#F5F1EB",
-                colorTextSecondary: "#a3a3a3",
-                colorTextPlaceholder: "#737373",
-                colorPrimary: "#C4873A",
-                colorDanger: "#ef4444",
-                borderRadius: "6px",
-              },
+              theme: (isDark ? "night" : "stripe") as "night" | "stripe",
+              variables: isDark
+                ? {
+                    colorBackground: "#1a1a1a",
+                    colorText: "#F5F1EB",
+                    colorTextSecondary: "#a3a3a3",
+                    colorTextPlaceholder: "#737373",
+                    colorPrimary: "#C4873A",
+                    colorDanger: "#ef4444",
+                    borderRadius: "6px",
+                  }
+                : {
+                    colorBackground: "#FAFAF7",
+                    colorText: "#1A1611",
+                    colorTextSecondary: "#78716C",
+                    colorTextPlaceholder: "#a8a29e",
+                    colorPrimary: "#B07830",
+                    colorDanger: "#B5594E",
+                    borderRadius: "6px",
+                  },
             },
           }
         : undefined,
-    [totalCents],
+    [totalCents, isDark],
   );
 
   if (!stripePromise || !elementsOptions) return null;
 
   return (
-    <Elements stripe={stripePromise} options={elementsOptions}>
+    <Elements
+      key={isDark ? "dark" : "light"}
+      stripe={stripePromise}
+      options={elementsOptions}
+    >
       <StripeCardPaymentInner
         ref={ref}
         buildOrderPayload={buildOrderPayload}

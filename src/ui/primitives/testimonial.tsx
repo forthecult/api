@@ -12,6 +12,8 @@ export interface TestimonialCardProps {
   author: TestimonialAuthor;
   className?: string;
   href?: string;
+  /** Product name/title for the review; shown when provided */
+  productTitle?: string;
   /** 1–5 star rating; shown when provided */
   rating?: number;
   text: string;
@@ -21,6 +23,7 @@ export function TestimonialCard({
   author,
   className,
   href,
+  productTitle,
   rating,
   text,
 }: TestimonialCardProps) {
@@ -45,6 +48,11 @@ export function TestimonialCard({
         className,
       )}
     >
+      {productTitle && (
+        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#8A857E]">
+          {productTitle}
+        </p>
+      )}
       <div className="flex items-center gap-3">
         {author.avatar ? (
           <img

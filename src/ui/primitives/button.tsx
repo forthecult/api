@@ -55,8 +55,8 @@ const buttonVariants = cva(
           dark:bg-destructive/60 dark:focus-visible:ring-destructive/40
         `,
         ghost: `
-          hover:bg-[#1E1E1E] hover:text-[#F5F1EB]
-          focus-visible:ring-2 focus-visible:ring-[#C4873A]/40
+          hover:bg-muted hover:text-foreground
+          focus-visible:ring-2 focus-visible:ring-primary/40
         `,
         link: `
           text-primary underline-offset-4
@@ -64,9 +64,10 @@ const buttonVariants = cva(
           focus-visible:ring-2 focus-visible:ring-primary/40
         `,
         outline: `
-          border border-[#2A2A2A] bg-transparent text-[#F5F1EB] shadow-xs
-          hover:border-[#C4873A]/50 hover:bg-[#1A1A1A] hover:text-[#C4873A] hover:shadow-md
-          focus-visible:ring-2 focus-visible:ring-[#C4873A]/40
+          border border-border bg-transparent shadow-xs
+          text-[#1A1611] dark:text-[#F5F1EB]
+          hover:border-primary/50 hover:bg-muted hover:text-primary hover:shadow-md
+          focus-visible:ring-2 focus-visible:ring-primary/40
         `,
         secondary: `
           bg-secondary text-secondary-foreground shadow-xs
