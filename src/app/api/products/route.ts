@@ -159,7 +159,8 @@ export async function GET(request: NextRequest) {
     } else {
       // "All" products. When forStorefront: exclude any product in a crypto (or sub) category
       // unless it is also in show-in-all-products. When not forStorefront (e.g. AI agents): no filter.
-      if (forStorefront) {
+      // When a search query is active, skip the crypto exclusion so users can find crypto products via search.
+      if (forStorefront && q.length === 0) {
         const categoryRows = await db
           .select({
             id: categoriesTable.id,
