@@ -82,7 +82,7 @@ export function EstimatedDeliveryTimeline({
   return (
     <div className={cn("space-y-5", className)}>
       {countdown != null && (countdown.hours > 0 || countdown.minutes > 0) && (
-        <p className="text-base text-muted-foreground">
+        <p className="text-lg text-muted-foreground">
           ⚡ Order within{" "}
           <span className="font-semibold text-green-600 dark:text-green-400">
             {countdown.hours}h {countdown.minutes}m

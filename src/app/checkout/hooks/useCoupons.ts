@@ -7,6 +7,13 @@ import {
 } from "react";
 import type { AppliedCoupon } from "../checkout-shared";
 
+export interface TierDiscountLine {
+  id: string;
+  label: string | null;
+  scope: string;
+  discountCents: number;
+}
+
 export interface UseCouponsArgs {
   subtotal: number;
   shippingCents: number;
@@ -23,10 +30,16 @@ export interface UseCouponsArgs {
    * e.g. "crypto_troll", "crypto_solana", "stripe", etc.
    */
   paymentMethodKey?: string | null;
+  /** Staking wallet (e.g. Solana) for CULT member tier; when set, tier-based discounts are fetched and stacked. */
+  wallet?: string | null;
 }
 
 export interface UseCouponsResult {
   appliedCoupon: AppliedCoupon | null;
+  /** Member tier discounts (stacked). Empty when no wallet or no tier discounts. */
+  tierDiscounts: TierDiscountLine[];
+  /** Total cents from tier discounts. */
+  tierDiscountTotalCents: number;
   discountCodeInput: string;
   setDiscountCodeInput: (value: string) => void;
   couponError: string;
@@ -43,9 +56,12 @@ export function useCoupons({
   shippingCents,
   items,
   paymentMethodKey,
+  wallet,
 }: UseCouponsArgs): UseCouponsResult {
   const [discountCodeInput, setDiscountCodeInput] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [tierDiscounts, setTierDiscounts] = useState<TierDiscountLine[]>([]);
+  const [tierDiscountTotalCents, setTierDiscountTotalCents] = useState(0);
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
   const [showDiscountCode, setShowDiscountCode] = useState(false);
@@ -101,6 +117,8 @@ export function useCoupons({
           source: "code",
         });
         setDiscountCodeInput("");
+        setTierDiscounts([]);
+        setTierDiscountTotalCents(0);
       } else {
         setCouponError(
           typeof data.error === "string" && data.error.length > 0
@@ -118,6 +136,8 @@ export function useCoupons({
   const removeCoupon = useCallback(() => {
     setAppliedCoupon(null);
     setCouponError("");
+    setTierDiscounts([]);
+    setTierDiscountTotalCents(0);
     setDiscountEvalKey((k) => k + 1);
   }, []);
 
@@ -126,11 +146,13 @@ export function useCoupons({
     setCouponError("");
   }, []);
 
-  // Fetch and apply best automatic discount when no code has been applied
+  // Fetch and apply best automatic discount + tier discounts when no code has been applied
   useEffect(() => {
     if (appliedCoupon?.source === "code") return;
     if (items.length === 0) {
       setAppliedCoupon(null);
+      setTierDiscounts([]);
+      setTierDiscountTotalCents(0);
       return;
     }
     let cancelled = false;
@@ -146,6 +168,7 @@ export function useCoupons({
         productCount,
         productIds: items.map((i) => i.productId ?? i.id),
         paymentMethodKey: paymentMethodKey || undefined,
+        wallet: wallet?.trim() || undefined,
         items: items.map((i) => ({
           productId: i.productId ?? i.id,
           priceCents: Math.round(i.price * 100),
@@ -156,7 +179,16 @@ export function useCoupons({
       .then((res) => res.json())
       .then((data: { applied: boolean } & Record<string, unknown>) => {
         if (cancelled) return;
-        if (data.applied && data.couponId && data.code != null) {
+        const tierList = Array.isArray(data.tierDiscounts)
+          ? (data.tierDiscounts as TierDiscountLine[])
+          : [];
+        const tierTotal =
+          typeof data.tierDiscountTotalCents === "number"
+            ? data.tierDiscountTotalCents
+            : 0;
+        setTierDiscounts(tierList);
+        setTierDiscountTotalCents(tierTotal);
+        if (data.applied && data.couponId != null && data.code != null) {
           setAppliedCoupon({
             couponId: data.couponId as string,
             code: data.code as string,
@@ -178,7 +210,11 @@ export function useCoupons({
         }
       })
       .catch(() => {
-        if (!cancelled) setAppliedCoupon(null);
+        if (!cancelled) {
+          setAppliedCoupon(null);
+          setTierDiscounts([]);
+          setTierDiscountTotalCents(0);
+        }
       })
       .finally(() => {
         if (!cancelled) setAutomaticCouponLoading(false);
@@ -186,10 +222,12 @@ export function useCoupons({
     return () => {
       cancelled = true;
     };
-  }, [items, subtotal, shippingCents, paymentMethodKey, discountEvalKey]);
+  }, [items, subtotal, shippingCents, paymentMethodKey, wallet, discountEvalKey]);
 
   return {
     appliedCoupon,
+    tierDiscounts,
+    tierDiscountTotalCents,
     discountCodeInput,
     setDiscountCodeInput: setDiscountCodeInputWithClearError,
     couponError,

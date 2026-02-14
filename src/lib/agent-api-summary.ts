@@ -75,9 +75,11 @@ export type AgentApiSummary = {
 /**
  * Build the JSON summary for agent discovery. Use for GET /api/agent/summary
  * and for the for-agents page script id="agent-api-summary".
+ * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
-export function getAgentApiSummary(): AgentApiSummary {
-  const base = getAgentBaseUrl() || "https://ai.forthecult.store";
+export function getAgentApiSummary(baseUrl?: string): AgentApiSummary {
+  const base =
+    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
   const links = buildApiLinks(base);
   return {
     name: "For the Cult",
@@ -96,8 +98,10 @@ export function getAgentApiSummary(): AgentApiSummary {
 
 /**
  * Full API_LINKS array for the for-agents page (includes descriptions).
+ * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
-export function getAgentApiLinks(): AgentApiEndpoint[] {
-  const base = getAgentBaseUrl() || "https://ai.forthecult.store";
+export function getAgentApiLinks(baseUrl?: string): AgentApiEndpoint[] {
+  const base =
+    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
   return buildApiLinks(base);
 }

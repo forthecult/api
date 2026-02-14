@@ -72,7 +72,7 @@ export function NotificationCenter({
         <DropdownMenuTrigger asChild>
           <Button
             aria-label="Notification"
-            className="relative h-9 w-9 rounded-full"
+            className="relative h-9 w-9 rounded-full text-[#1A1611] dark:text-[#F5F1EB]"
             size="icon"
             variant="outline"
           >

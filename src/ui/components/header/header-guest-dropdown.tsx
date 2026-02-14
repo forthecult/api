@@ -30,7 +30,7 @@ export function HeaderGuestDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className="h-9 w-9 rounded-full bg-background transition-colors hover:bg-muted"
+          className="h-9 w-9 rounded-full bg-background text-[#1A1611] dark:text-[#F5F1EB] transition-colors hover:bg-muted"
           size="icon"
           variant="ghost"
         >

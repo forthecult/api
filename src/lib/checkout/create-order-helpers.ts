@@ -22,6 +22,8 @@ import { userTable } from "~/db/schema/users/tables";
 import { resolveAffiliateForOrder } from "~/lib/affiliate";
 import { resolveCouponForCheckout, type CartLineItem } from "~/lib/coupon";
 import { getEsimPackageDetail } from "~/lib/esim-api";
+import { getMemberTierForWallet } from "~/lib/get-member-tier";
+import { resolveTierDiscountsForCheckout } from "~/lib/tier-discount";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -252,6 +254,8 @@ export async function resolveDiscounts(params: {
   paymentMethodKey?: string | null;
   /** Cart items with prices for per-product discount computation. Must include eSIM items (productId esim_*) for ruleAppliesToEsim. */
   items?: CartLineItem[];
+  /** Staking wallet for member tier; when set, tier-based discounts are applied and stacked with coupon/affiliate. */
+  wallet?: string | null;
 }): Promise<DiscountResult> {
   const {
     affiliateCode,
@@ -262,6 +266,7 @@ export async function resolveDiscounts(params: {
     productIds,
     paymentMethodKey,
     items,
+    wallet,
   } = params;
 
   const affiliateResult = await resolveAffiliateForOrder(
@@ -287,10 +292,9 @@ export async function resolveDiscounts(params: {
   let expectedTotal: number;
 
   if (couponResult && affiliateResult) {
-    // Both present – pick the one that gives the lower total
     if (couponResult.totalAfterDiscountCents <= affiliateResult.totalAfterDiscountCents) {
       expectedTotal = couponResult.totalAfterDiscountCents;
-      effectiveAffiliate = null; // coupon won → no affiliate commission
+      effectiveAffiliate = null;
     } else {
       expectedTotal = affiliateResult.totalAfterDiscountCents;
     }
@@ -300,6 +304,19 @@ export async function resolveDiscounts(params: {
     expectedTotal = affiliateResult.totalAfterDiscountCents;
   } else {
     expectedTotal = baseTotal;
+  }
+
+  // Stack tier-based member discounts (apply on top of coupon/affiliate).
+  if (wallet?.trim()) {
+    const memberTier = await getMemberTierForWallet(wallet.trim());
+    if (memberTier != null) {
+      const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
+        subtotalCents,
+        shippingFeeCents,
+        items: items ?? [],
+      });
+      expectedTotal = Math.max(0, expectedTotal - tierResult.totalCents);
+    }
   }
 
   return { affiliateResult: effectiveAffiliate, couponResult, expectedTotal };

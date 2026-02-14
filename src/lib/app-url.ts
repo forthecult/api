@@ -68,3 +68,15 @@ export function isAgentSubdomain(host: string | null | undefined): boolean {
   const h = (host ?? "").trim().toLowerCase();
   return h === agentHost || h.endsWith(`.${agentHost}`);
 }
+
+/**
+ * Base URL for the current request (from Host header).
+ * Use when you want links to reflect the origin the user is visiting (e.g. forthecult.store/for-agents → forthecult.store/api).
+ */
+export function getRequestBaseUrl(host: string | null | undefined): string {
+  const h = (host ?? "").trim();
+  if (!h) return getPublicSiteUrl();
+  const protocol =
+    process.env.NODE_ENV === "development" ? "http" : "https";
+  return `${protocol}://${h}`;
+}

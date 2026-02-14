@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
       telegramFirstName,
       affiliateCode,
       couponCode,
+      wallet,
       shipping,
     } = validation.data;
 
@@ -105,6 +106,7 @@ export async function POST(request: NextRequest) {
         productIds,
         paymentMethodKey: "crypto_ton",
         items: validatedItems.map(i => ({ productId: i.productId, priceCents: i.priceCents, quantity: i.quantity })),
+        wallet: wallet ?? undefined,
       });
 
     // ── Validate client total ──────────────────────────────────────────

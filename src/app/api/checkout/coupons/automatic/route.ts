@@ -6,6 +6,8 @@ import {
   type AutomaticCouponInput,
   type CartLineItem,
 } from "~/lib/coupon";
+import { getMemberTierForWallet } from "~/lib/get-member-tier";
+import { resolveTierDiscountsForCheckout } from "~/lib/tier-discount";
 
 const validateSchema = {
   subtotalCents: (v: unknown) =>
@@ -43,6 +45,7 @@ const validateSchema = {
 /**
  * POST /api/checkout/coupons/automatic
  * Public API: get the best automatic discount for the current cart. Returns discount info if one applies.
+ * Optional body.wallet: when provided, member tier is resolved and tier-based discounts are applied and stacked with the automatic coupon.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -57,6 +60,10 @@ export async function POST(request: NextRequest) {
     const paymentMethodKey = validateSchema.paymentMethodKey(
       body?.paymentMethodKey,
     );
+    const wallet =
+      typeof body?.wallet === "string" && body.wallet.trim().length > 0
+        ? body.wallet.trim()
+        : undefined;
 
     const items = validateSchema.items(body?.items);
 
@@ -70,15 +77,45 @@ export async function POST(request: NextRequest) {
       items: items.length > 0 ? items : undefined,
     };
 
+    const orderTotalCents = subtotalCents + shippingFeeCents;
+
+    // Resolve tier-based discounts when wallet is provided (stack with automatic coupon)
+    let tierDiscounts: { id: string; label: string | null; scope: string; discountCents: number }[] = [];
+    let tierDiscountTotalCents = 0;
+    if (wallet) {
+      const memberTier = await getMemberTierForWallet(wallet);
+      if (memberTier != null) {
+        const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
+          subtotalCents,
+          shippingFeeCents,
+          items: items.length > 0 ? items : [],
+        });
+        tierDiscounts = tierResult.discounts;
+        tierDiscountTotalCents = tierResult.totalCents;
+      }
+    }
+
     const result = await resolveAutomaticCouponForCheckout(input);
 
-    if (!result) {
+    const automaticDiscountCents = result?.discountCents ?? 0;
+    const totalDiscountCents = automaticDiscountCents + tierDiscountTotalCents;
+    const totalAfterDiscountCents = Math.max(
+      0,
+      orderTotalCents - totalDiscountCents,
+    );
+
+    if (!result && tierDiscountTotalCents === 0) {
       return NextResponse.json({ applied: false });
     }
 
     return NextResponse.json({
       applied: true,
-      ...result,
+      ...(result ?? {}),
+      tierDiscounts: tierDiscounts.length > 0 ? tierDiscounts : undefined,
+      tierDiscountTotalCents:
+        tierDiscountTotalCents > 0 ? tierDiscountTotalCents : undefined,
+      totalDiscountCents: totalDiscountCents,
+      totalAfterDiscountCents,
     });
   } catch (err) {
     console.error("Automatic coupon resolve error:", err);

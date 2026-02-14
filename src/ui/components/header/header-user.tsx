@@ -51,7 +51,7 @@ export function HeaderUserDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className="relative overflow-hidden rounded-full"
+          className="relative overflow-hidden rounded-full text-[#1A1611] dark:text-[#F5F1EB]"
           size="icon"
           variant="ghost"
         >

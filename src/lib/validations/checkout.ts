@@ -40,6 +40,8 @@ export const createOrderSchema = z.object({
   affiliateCode: z.string().trim().max(64).optional(),
   // Discount (coupon) code — applied at checkout; backend validates and records redemption
   couponCode: z.string().trim().max(64).optional(),
+  // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).
+  wallet: z.string().trim().max(64).optional(),
   // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll)
   token: z
     .enum(["solana", "usdc", "whitewhale", "crust", "pump", "troll"])

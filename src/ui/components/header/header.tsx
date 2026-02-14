@@ -342,7 +342,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   const headerEl = (
     <header
       className={cn(
-        "w-full border-b border-[#2A2A2A] bg-[#111111]/95 backdrop-blur-md supports-[backdrop-filter]:bg-[#111111]/80",
+        "w-full border-b border-border bg-background/95 text-foreground backdrop-blur-md supports-[backdrop-filter]:bg-background/80",
         !isCheckout && "sticky top-0 z-40",
       )}
     >
@@ -359,7 +359,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
             {!isCheckout && (
               <Button
                 aria-label="Open menu"
-                className="md:hidden"
+                className="md:hidden text-[#1A1611] dark:text-[#F5F1EB]"
                 onClick={() => setMobileMenuOpen(true)}
                 size="icon"
                 variant="ghost"
@@ -380,8 +380,8 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
               ) : (
                 <span
                   className={cn(
-                    "font-heading text-lg font-bold tracking-[0.2em] uppercase text-[#F5F1EB]",
-                    !isDashboard && "hover:text-[#C4873A] transition-colors duration-300",
+                    "font-heading text-lg font-bold tracking-[0.2em] uppercase text-[#1A1611] dark:text-[#F5F1EB]",
+                    !isDashboard && "hover:text-primary transition-colors duration-300",
                   )}
                 >
                   {SEO_CONFIG.name}
@@ -421,11 +421,11 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "accent-underline text-base font-medium tracking-wider transition-colors hover:text-[#C4873A]",
+                            "accent-underline text-base font-medium tracking-wider transition-colors hover:text-primary",
                             "normal-case", // show as "eSIM" not "ESIM"
                             pathname?.startsWith("/esim")
-                              ? "font-semibold text-[#C4873A]"
-                              : "text-[#8A857E]",
+                              ? "font-semibold text-primary"
+                              : "text-muted-foreground",
                           )}
                           href="/esim"
                         >
@@ -435,10 +435,10 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "accent-underline text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+                            "accent-underline text-base font-medium uppercase tracking-wider transition-colors hover:text-primary",
                             pathname === "/about"
-                              ? "font-semibold text-[#C4873A]"
-                              : "text-[#8A857E]",
+                              ? "font-semibold text-primary"
+                              : "text-muted-foreground",
                           )}
                           href="/about"
                         >

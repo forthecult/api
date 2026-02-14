@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { getAgentApiSummary, getAgentApiLinks } from "~/lib/agent-api-summary";
-import { getAgentBaseUrl, isAgentSubdomain } from "~/lib/app-url";
+import { getAgentBaseUrl, getRequestBaseUrl, isAgentSubdomain } from "~/lib/app-url";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -27,13 +27,13 @@ export const metadata: Metadata = {
     type: "website",
   },
   alternates: {
-    canonical: `${agentBase}/for-agents`,
+    canonical: agentBase ? `${agentBase}/for-agents` : undefined,
   },
 };
 
 /** Machine-readable summary for agents that parse the HTML. */
-function AgentApiSummaryScript() {
-  const summary = getAgentApiSummary();
+function AgentApiSummaryScript({ apiBaseUrl }: { apiBaseUrl: string }) {
+  const summary = getAgentApiSummary(apiBaseUrl);
   return (
     <script type="application/json" id="agent-api-summary">
       {JSON.stringify(summary)}
@@ -42,12 +42,12 @@ function AgentApiSummaryScript() {
 }
 
 /** AI-oriented view: document structure, pre/code blocks, minimal decoration. */
-function ForAgentsPageAgentView() {
-  const apiLinks = getAgentApiLinks();
-  const summary = getAgentApiSummary();
+function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
+  const apiLinks = getAgentApiLinks(apiBaseUrl);
+  const summary = getAgentApiSummary(apiBaseUrl);
   return (
     <article className="mx-auto max-w-3xl px-4 py-8 font-mono text-sm">
-      <AgentApiSummaryScript />
+      <AgentApiSummaryScript apiBaseUrl={apiBaseUrl} />
       <h1 className="mb-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
         For the Cult — API for AI agents
       </h1>
@@ -128,16 +128,16 @@ function ForAgentsPageAgentView() {
             {summary.summaryUrl}
           </a>
           {"\n"}
-          <a href={`${agentBase}/api/agent/capabilities`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
-            {agentBase}/api/agent/capabilities
+          <a href={`${apiBaseUrl}/api/agent/capabilities`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {apiBaseUrl}/api/agent/capabilities
           </a>
           {"\n"}
-          <a href={`${agentBase}/api/openapi.json`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
-            {agentBase}/api/openapi.json
+          <a href={`${apiBaseUrl}/api/openapi.json`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {apiBaseUrl}/api/openapi.json
           </a>
           {"\n"}
-          <a href={`${agentBase}/api/docs`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
-            {agentBase}/api/docs
+          <a href={`${apiBaseUrl}/api/docs`} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400">
+            {apiBaseUrl}/api/docs
           </a>
         </pre>
       </section>
@@ -146,8 +146,9 @@ function ForAgentsPageAgentView() {
 }
 
 /** Human-oriented view: cards, buttons, store styling. */
-function ForAgentsPageHumanView() {
-  const apiLinks = getAgentApiLinks();
+function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
+  const apiLinks = getAgentApiLinks(apiBaseUrl);
+  const agentBase = getAgentBaseUrl();
   return (
     <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
       <header className="mb-10 border-b border-border pb-8">
@@ -166,6 +167,11 @@ function ForAgentsPageHumanView() {
           </a>
           , and complete checkout with crypto. No human account required for shopping; use Moltbook to attach your agent identity when needed.
         </p>
+        {agentBase && apiBaseUrl !== agentBase && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            You can use either this site&apos;s API (<strong className="text-foreground">{apiBaseUrl}/api</strong>) or the agent subdomain (<strong className="text-foreground">{agentBase}/api</strong>); same endpoints.
+          </p>
+        )}
       </header>
 
       <section className="space-y-4">
@@ -230,6 +236,11 @@ export default async function ForAgentsPage() {
   const headersList = await headers();
   const host = headersList.get("host") ?? "";
   const useAgentFormat = isAgentSubdomain(host);
+  const apiBaseUrl = getRequestBaseUrl(host);
 
-  return useAgentFormat ? <ForAgentsPageAgentView /> : <ForAgentsPageHumanView />;
+  return useAgentFormat ? (
+    <ForAgentsPageAgentView apiBaseUrl={apiBaseUrl} />
+  ) : (
+    <ForAgentsPageHumanView apiBaseUrl={apiBaseUrl} />
+  );
 }

@@ -113,6 +113,7 @@ const ADMIN_SECTIONS: NavSection[] = [
     children: [
       { href: "/coupons", label: "Coupon List" },
       { href: "/coupons/create", label: "Create Coupon" },
+      { href: "/tier-discounts", label: "Tier Discounts" },
     ],
   },
   {

@@ -1,0 +1,157 @@
+/**
+ * Dark mode overrides for Swagger UI on /api/docs.
+ * Default Swagger UI uses dark grey text (#3b4151) which is unreadable on dark backgrounds.
+ * When .dark is on html (next-themes), we force higher-contrast light text.
+ */
+.dark .api-docs-wrapper .swagger-ui {
+  color: #e5e7eb;
+}
+
+.dark .api-docs-wrapper .swagger-ui .info .title {
+  color: #f5f5f5;
+}
+
+.dark .api-docs-wrapper .swagger-ui .info p,
+.dark .api-docs-wrapper .swagger-ui .info .description,
+.dark .api-docs-wrapper .swagger-ui .info .link {
+  color: #d4d4d8;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock .opblock-summary-description,
+.dark .api-docs-wrapper .swagger-ui .opblock-summary-description {
+  color: #e5e7eb;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock .opblock-summary-path,
+.dark .api-docs-wrapper .swagger-ui .opblock-summary-path {
+  color: #f5f5f5;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock-tag,
+.dark .api-docs-wrapper .swagger-ui .opblock-tag-section h3 {
+  color: #f5f5f5;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock-tag-section .opblock-tag-section__link {
+  color: #d4d4d8;
+}
+
+.dark .api-docs-wrapper .swagger-ui .model-box-control,
+.dark .api-docs-wrapper .swagger-ui .model .property-row,
+.dark .api-docs-wrapper .swagger-ui .model .prop-name,
+.dark .api-docs-wrapper .swagger-ui .model-title {
+  color: #e5e7eb;
+}
+
+.dark .api-docs-wrapper .swagger-ui .parameter__name,
+.dark .api-docs-wrapper .swagger-ui .table-container td,
+.dark .api-docs-wrapper .swagger-ui .table-container th {
+  color: #e5e7eb;
+}
+
+.dark .api-docs-wrapper .swagger-ui .response-col_status,
+.dark .api-docs-wrapper .swagger-ui .response-col_description {
+  color: #e5e7eb;
+}
+
+.dark .api-docs-wrapper .swagger-ui .prop-type {
+  color: #a5b4fc;
+}
+
+.dark .api-docs-wrapper .swagger-ui a {
+  color: #93c5fd;
+}
+
+.dark .api-docs-wrapper .swagger-ui a:hover {
+  color: #bfdbfe;
+}
+
+.dark .api-docs-wrapper .swagger-ui .btn.cancel {
+  color: #e5e7eb;
+  border-color: #71717a;
+}
+
+.dark .api-docs-wrapper .swagger-ui .topbar {
+  background-color: #18181b;
+}
+
+.dark .api-docs-wrapper .swagger-ui .info .base-url {
+  color: #d4d4d8;
+}
+
+.dark .api-docs-wrapper .swagger-ui .scheme-container {
+  background-color: #27272a;
+  border-color: #3f3f46;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock {
+  border-color: #3f3f46;
+  background-color: #27272a;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock.opblock-get {
+  border-color: #3b82f6;
+  background-color: #1e3a5f;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock.opblock-post {
+  border-color: #22c55e;
+  background-color: #14532d;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock.opblock-put,
+.dark .api-docs-wrapper .swagger-ui .opblock.opblock-patch {
+  border-color: #eab308;
+  background-color: #422006;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock.opblock-delete {
+  border-color: #ef4444;
+  background-color: #450a0a;
+}
+
+.dark .api-docs-wrapper .swagger-ui .opblock-body,
+.dark .api-docs-wrapper .swagger-ui .opblock-section-header,
+.dark .api-docs-wrapper .swagger-ui .tab li {
+  color: #e5e7eb;
+  border-color: #3f3f46;
+}
+
+.dark .api-docs-wrapper .swagger-ui .model-toggle {
+  color: #93c5fd;
+}
+
+.dark .api-docs-wrapper .swagger-ui .model-toggle:hover {
+  color: #bfdbfe;
+}
+
+.dark .api-docs-wrapper .swagger-ui .markdown p,
+.dark .api-docs-wrapper .swagger-ui .markdown code {
+  color: #d4d4d8;
+}
+
+.dark .api-docs-wrapper .swagger-ui .renderedMarkdown p {
+  color: #e5e7eb;
+}
+
+.dark .api-docs-wrapper .swagger-ui section.models h4 {
+  color: #f5f5f5;
+}
+
+.dark .api-docs-wrapper .swagger-ui .model-box {
+  background-color: #18181b;
+  border-color: #3f3f46;
+}
+
+.dark .api-docs-wrapper .swagger-ui .responses-inner h4,
+.dark .api-docs-wrapper .swagger-ui .responses-inner h5 {
+  color: #f5f5f5;
+}
+
+.dark .api-docs-wrapper .swagger-ui .parameter__type {
+  color: #a5b4fc;
+}
+
+.dark .api-docs-wrapper .swagger-ui .prop-format {
+  color: #a1a1aa;
+}

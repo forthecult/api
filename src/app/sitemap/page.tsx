@@ -13,12 +13,18 @@ const STATIC_LINKS: { href: string; label: string }[] = [
   { href: "/products", label: "Products" },
   { href: "/about", label: "About us" },
   { href: "/lookbook", label: "Lookbook" },
+  { href: "/esim", label: "eSIM" },
+  { href: "/membership", label: "Membership" },
   { href: "/contact", label: "Contact" },
   { href: "/track-order", label: "Track order" },
   { href: "/refund", label: "Refund requests" },
   { href: "/affiliate-program", label: "Affiliate program" },
   { href: "/for-agents", label: "For AI agents" },
   { href: "/token", label: "CULT" },
+  { href: "/token/stake", label: "Stake & Vote" },
+  { href: "/changelog", label: "Changelog" },
+  { href: "/login", label: "Log in" },
+  { href: "/signup", label: "Sign up" },
   { href: "/sitemap", label: "Sitemap" },
 ];
 

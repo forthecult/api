@@ -23,6 +23,7 @@ import {
   checkoutFieldHeight,
   type AppliedCoupon,
 } from "../checkout-shared";
+import type { TierDiscountLine } from "../hooks/useCoupons";
 import type { CartItem } from "~/ui/components/cart";
 
 export interface OrderSummaryProps {
@@ -36,6 +37,9 @@ export interface OrderSummaryProps {
   taxNote: string | null;
   customsDutiesNote: string | null;
   appliedCoupon: AppliedCoupon | null;
+  /** Member tier discounts (stacked). Shown as "Member savings". */
+  tierDiscounts?: TierDiscountLine[];
+  tierDiscountTotalCents?: number;
   total: number;
   cryptoTotalLabel: string | null;
   /** Discount code UI (state lives in parent so it can drive API/coupon logic). */
@@ -62,6 +66,8 @@ export function OrderSummary({
   taxCents,
   customsDutiesNote,
   appliedCoupon,
+  tierDiscounts = [],
+  tierDiscountTotalCents = 0,
   total,
   cryptoTotalLabel,
   showDiscountCode,
@@ -224,6 +230,14 @@ export function OrderSummary({
                     Remove
                   </button>
                 ) : null}
+              </span>
+            </div>
+          ) : null}
+          {tierDiscountTotalCents > 0 ? (
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Member savings</span>
+              <span className="font-medium">
+                -<FiatPrice usdAmount={tierDiscountTotalCents / 100} />
               </span>
             </div>
           ) : null}

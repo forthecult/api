@@ -1,5 +1,6 @@
 "use client";
 
+import { useWallet } from "@solana/wallet-adapter-react";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import Link from "next/link";
 import {
@@ -108,6 +109,8 @@ export function CheckoutClient() {
   const { isHydrated, items, subtotal, itemCount, updateQuantity, removeItem } = useCart();
   const { user, isPending: authPending } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
+  const { publicKey } = useWallet();
+  const wallet = publicKey?.toBase58() ?? undefined;
   const isLoggedIn = Boolean(user?.email);
   const isDigitalOnly =
     items.length > 0 &&
@@ -184,9 +187,12 @@ export function CheckoutClient() {
     shippingCents,
     items,
     paymentMethodKey: selectedPaymentMethodKey,
+    wallet,
   });
   const {
     appliedCoupon,
+    tierDiscounts,
+    tierDiscountTotalCents,
     discountCodeInput,
     setDiscountCodeInput,
     couponError,
@@ -214,7 +220,8 @@ export function CheckoutClient() {
       (sum, i) => sum + i.priceCents * i.quantity,
       0,
     );
-    const discountCentsForOrder = appliedCoupon?.discountCents ?? 0;
+    const discountCentsForOrder =
+      (appliedCoupon?.discountCents ?? 0) + (coupons.tierDiscountTotalCents ?? 0);
     const shippingFeeCentsRounded = Math.round(shippingCents);
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
@@ -250,13 +257,15 @@ export function CheckoutClient() {
         ...getTelegramOrderPayload(),
         ...getAffiliatePayload(),
         ...(appliedCoupon?.code ? { couponCode: appliedCoupon.code } : {}),
+        ...(wallet ? { wallet } : {}),
       },
     };
-  }, [items, shippingCents, taxCents, user?.id, isLoggedIn, userReceiveMarketing, userReceiveSmsMarketing, appliedCoupon]);
+  }, [items, shippingCents, taxCents, user?.id, isLoggedIn, userReceiveMarketing, userReceiveSmsMarketing, appliedCoupon, wallet, tierDiscountTotalCents]);
 
   const hasEsimInCart = items.some((item) => item.digital === true);
 
-  const discountCents = appliedCoupon?.discountCents ?? 0;
+  const discountCents =
+    (appliedCoupon?.discountCents ?? 0) + tierDiscountTotalCents;
   const totalCents =
     Math.round(subtotal * 100) - discountCents + shippingCents + taxCents;
   const total = Math.max(0, totalCents) / 100;
@@ -389,6 +398,8 @@ export function CheckoutClient() {
               taxNote={taxNote}
               customsDutiesNote={customsDutiesNote}
               appliedCoupon={appliedCoupon}
+              tierDiscounts={tierDiscounts}
+              tierDiscountTotalCents={tierDiscountTotalCents}
               total={total}
               cryptoTotalLabel={cryptoTotalLabel}
               showDiscountCode={showDiscountCode}

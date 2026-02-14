@@ -119,7 +119,7 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
       <ConditionalHeader showAuth={true} />
-      <main className="flex min-h-screen flex-col bg-[#111111]">{children}</main>
+      <main className="flex min-h-screen flex-col bg-background">{children}</main>
       <ConditionalFooter />
       <SupportChatWidgetWrapper />
       <Toaster />

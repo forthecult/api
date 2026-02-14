@@ -252,7 +252,7 @@ export function ProductActions({
 
       {/* Add to cart */}
       <Button
-        className="flex-1 min-h-[4.5rem]"
+        className="flex-1 min-h-[4.5rem] text-[#111111]"
         disabled={
           !inStock ||
           isAdding ||

@@ -553,7 +553,7 @@ export function MembershipClient() {
         <section id="stake-cta" className="scroll-mt-20 py-16 md:py-20">
           <div className="flex flex-col gap-8 md:flex-row md:gap-10">
             {/* Left: Stake card */}
-            <div className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl md:w-[28rem] md:shrink-0">
+            <div className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl md:w-1/2 md:shrink-0">
               <div className="border-b bg-muted/30 px-6 py-5">
                 <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
                   Stake {tokenSymbol} &amp; Join

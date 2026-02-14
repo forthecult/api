@@ -716,7 +716,8 @@ export function EsimStorePage() {
   );
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Hero */}
       <div className="mb-10 text-center">
         <div className="mb-4 flex justify-center">
@@ -1113,6 +1114,7 @@ export function EsimStorePage() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 }
