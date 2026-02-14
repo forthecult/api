@@ -2008,6 +2008,31 @@ export default function AdminProductEditPage() {
                   >
                     <GripVertical className="h-4 w-4 text-muted-foreground" />
                   </span>
+                  {img.url ? (
+                    <button
+                      type="button"
+                      onClick={() => setExpandedImageUrl(img.url)}
+                      className="relative size-16 shrink-0 overflow-hidden rounded border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
+                      title="Click to expand"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img.url}
+                        alt={img.alt ?? ""}
+                        className="size-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </button>
+                  ) : (
+                    <div
+                      className="size-16 shrink-0 rounded border border-dashed bg-muted/50 flex items-center justify-center text-xs text-muted-foreground"
+                      title="No image URL"
+                    >
+                      —
+                    </div>
+                  )}
                   <input
                     type="url"
                     placeholder="Image URL"

@@ -701,6 +701,21 @@ async function updateLocalProductFromPrintify(
     }
   }
 
+  // Sync product_images from Printify (so re-sync repopulates mockup URLs for re-host to UploadThing)
+  await db
+    .delete(productImagesTable)
+    .where(eq(productImagesTable.productId, productId));
+  let sortOrder = 0;
+  for (const img of printifyProduct.images) {
+    await db.insert(productImagesTable).values({
+      id: nanoid(),
+      productId,
+      url: img.src,
+      alt: printifyProduct.title,
+      sortOrder: sortOrder++,
+    });
+  }
+
   // Sync shipping countries from Printify catalog API (or fallback)
   await syncPrintifyProductCountries(productId, shippingData.countryCodes);
 

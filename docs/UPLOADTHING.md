@@ -100,6 +100,18 @@ Options:
 
 The script (and the admin action) update `product_image.url`, `product.imageUrl`, and `product_variant.imageUrl` (and related alt fields) to the new UploadThing URLs.
 
+**Re-importing mockups when nothing comes from Printify (e.g. after a bad run):**
+
+If product/variant images were overwritten with bad or UploadThing URLs and you need to pull fresh mockups from Printify into the DB, then re-host to UploadThing:
+
+1. **Re-sync from Printify with overwrite** so the DB gets the current Printify image URLs (product + gallery + variants). The sync now also repopulates the product gallery (`product_images`) from Printify on overwrite.
+   - **Per product (admin):** Edit the product → Printify section → **“Sync from Printify”** (this uses `overwrite: true`).
+   - **All Printify products (API):** `POST /api/admin/printify/sync` with `{ "action": "import_all", "overwrite": true }`.
+   - **Single product by ID (API):** `POST /api/admin/printify/sync` with `{ "action": "import_single", "productId": "<our-product-id>", "overwrite": true }`.
+2. **Re-host to UploadThing:** Run `bun run db:upload-product-mockups` or use **“Re-host images to UploadThing”** in admin for each product. Ensure `UPLOADTHING_TOKEN` is set.
+
+If Printify has not finished generating new mockups yet (e.g. after a design change), wait a few minutes and run sync again, then upload mockups.
+
 ### 6. Product photos for staging and production (curated products)
 
 Curated products (TRMNL, Earth Runners, Pacsafe, Trezor, Home Assistant, etc.) are seeded with **vendor/source image URLs** only. Those URLs are not used on the storefront; images must be **uploaded to UploadThing** and the DB updated so the app serves from `*.ufs.sh` / `utfs.io`.
