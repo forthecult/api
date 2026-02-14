@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
         customPosition: pa.customPosition,
       })),
       variants: input.variants,
-      syncToStore: input.syncToStore ?? false,
+      syncToStore: input.syncToStore ?? true,
       publish: input.publish ?? false,
     });
     return NextResponse.json(result);

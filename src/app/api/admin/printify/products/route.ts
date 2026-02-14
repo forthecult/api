@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 
 import { db } from "~/db";
-import { productsTable, productVariantsTable } from "~/db/schema";
+import {
+  productsTable,
+  productTagsTable,
+  productVariantsTable,
+} from "~/db/schema";
 import {
   listAvailablePrintifyProducts,
   getPrintifyProductSyncStatus,
@@ -40,6 +44,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url);
   const source = searchParams.get("source");
+  const tag = searchParams.get("tag")?.trim();
   const productId = searchParams.get("id");
   const printifyId = searchParams.get("printifyId");
 
@@ -60,8 +65,23 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // List local Printify products
+  // List local Printify products (optional filter by tag)
   if (source === "printify" || !source) {
+    let productIdsFilter: string[] | undefined;
+    if (tag) {
+      const tagged = await db
+        .select({ productId: productTagsTable.productId })
+        .from(productTagsTable)
+        .where(eq(productTagsTable.tag, tag));
+      productIdsFilter = [...new Set(tagged.map((r) => r.productId))];
+      if (productIdsFilter.length === 0) {
+        return NextResponse.json({
+          source: "local",
+          count: 0,
+          products: [],
+        });
+      }
+    }
     const products = await db
       .select({
         id: productsTable.id,
@@ -76,7 +96,15 @@ export async function GET(request: NextRequest) {
         updatedAt: productsTable.updatedAt,
       })
       .from(productsTable)
-      .where(eq(productsTable.source, "printify"))
+      .where(
+        productIdsFilter
+          ? and(
+              eq(productsTable.source, "printify"),
+              isNotNull(productsTable.printifyProductId),
+              inArray(productsTable.id, productIdsFilter),
+            )
+          : eq(productsTable.source, "printify"),
+      )
       .orderBy(productsTable.createdAt);
 
     // Get variant counts

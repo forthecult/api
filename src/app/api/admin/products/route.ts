@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
@@ -45,6 +45,41 @@ export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
     if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
+    const tagParam = request.nextUrl.searchParams.get("tag")?.trim() ?? "";
+    const minimal = request.nextUrl.searchParams.get("minimal") === "1";
+    if (tagParam === "SOLUNA" && minimal) {
+      const solunaProductIds = await db
+        .select({ productId: productTagsTable.productId })
+        .from(productTagsTable)
+        .where(eq(productTagsTable.tag, "SOLUNA"));
+      const ids = [...new Set(solunaProductIds.map((r) => r.productId))];
+      if (ids.length === 0) {
+        return NextResponse.json({ products: [] });
+      }
+      const rows = await db
+        .select({
+          id: productsTable.id,
+          printifyProductId: productsTable.printifyProductId,
+          name: productsTable.name,
+        })
+        .from(productsTable)
+        .where(
+          and(
+            inArray(productsTable.id, ids),
+            eq(productsTable.source, "printify"),
+            isNotNull(productsTable.printifyProductId),
+          ),
+        );
+      const products = rows
+        .filter((r) => r.printifyProductId != null)
+        .map((r) => ({
+          id: r.id,
+          printifyProductId: r.printifyProductId!,
+          name: r.name,
+        }));
+      return NextResponse.json({ products });
+    }
 
     const page = Math.max(
       1,

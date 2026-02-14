@@ -66,6 +66,8 @@ async function fetchProducts(
   });
   if (category && category !== "All") {
     params.set("category", category);
+  } else {
+    params.set("forStorefront", "1");
   }
   if (sort) params.set("sort", sort);
   const q = (search ?? "").trim().slice(0, 100);

@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { uploadToPrintify, uploadToPrintful } from "@/lib/pod/upload";
-import { analyzeImage, validateForPrint } from "@/lib/pod/image-processor";
+import {
+  analyzeImage,
+  validateForPrint,
+  makeBackgroundTransparent,
+} from "@/lib/pod/image-processor";
 import { getAdminAuth } from "@/lib/admin-api-auth";
 import type { PodProvider } from "@/lib/pod/types";
 
@@ -10,7 +14,7 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
  * POST /api/admin/pod/upload
  *
  * Upload an image for POD. FormData: file (image).
- * Query: provider=printify|printful, process=true (optional, validate/resize), printSpecId= (optional, for validation)
+ * Query: provider=printify|printful, process=true (optional), makeTransparent=true (optional, dark bg -> transparent)
  */
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -54,7 +58,19 @@ export async function POST(request: NextRequest) {
     );
   }
   const process = request.nextUrl.searchParams.get("process") === "true";
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const makeTransparent = request.nextUrl.searchParams.get("makeTransparent") === "true";
+  let buffer: Buffer = Buffer.from(await file.arrayBuffer());
+  if (makeTransparent) {
+    try {
+      buffer = (await makeBackgroundTransparent(buffer, 30)) as Buffer;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      return NextResponse.json(
+        { error: "makeTransparent failed", detail: message },
+        { status: 400 },
+      );
+    }
+  }
   const filename = file.name || "design.png";
   const warnings: string[] = [];
   let analysis: Awaited<ReturnType<typeof analyzeImage>> | undefined;

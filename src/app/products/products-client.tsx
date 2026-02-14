@@ -185,6 +185,7 @@ export function ProductsClient({
           sort: sortOption,
         });
         if (categorySlug !== "all") params.set("category", categorySlug);
+        else params.set("forStorefront", "1");
         if (subcategorySlug) params.set("subcategory", subcategorySlug);
         if (search.trim()) params.set("q", search.trim());
 
@@ -496,10 +497,10 @@ export function ProductsClient({
                   }
                 >
                   {cat.image?.trim() ? (
-                    <span className="relative size-6 shrink-0 overflow-hidden rounded-full">
+                    <span className="relative size-6 shrink-0 overflow-hidden rounded-full bg-white">
                       <Image
                         alt=""
-                        className="object-cover"
+                        className="object-contain"
                         fill
                         sizes="24px"
                         src={cat.image}

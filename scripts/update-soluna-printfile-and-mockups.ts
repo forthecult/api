@@ -7,6 +7,7 @@
  * 3. Trigger publish so Printify regenerates mockups.
  * 4. Re-sync each product from Printify so local DB gets new image URLs.
  * 5. Re-host mockup images to UploadThing for each product.
+ * 6. Patch each product with categories, feature section, and SEO.
  *
  * Run: cd relivator && bun run scripts/update-soluna-printfile-and-mockups.ts
  *
@@ -29,6 +30,7 @@ if (existsSync(envLocal)) {
 }
 
 const API_BASE = (
+  process.env.API_BASE ||
   process.env.NEXT_PUBLIC_APP_URL ||
   process.env.MAIN_APP_URL ||
   "http://localhost:3000"
@@ -176,17 +178,168 @@ async function uploadMockupsToUploadThing(productId: string): Promise<void> {
 async function getSolunaPrintifyProducts(): Promise<
   { id: string; printifyProductId: string; name: string }[]
 > {
-  const res = await fetch(`${API_BASE}/api/admin/products/soluna-printify`, {
-    headers: { Authorization: `Bearer ${API_KEY}` },
-  });
+  const res = await fetch(
+    `${API_BASE}/api/admin/products?tag=SOLUNA&minimal=1`,
+    { headers: { Authorization: `Bearer ${API_KEY}` } },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`List SOLUNA products failed: ${res.status} ${text}`);
   }
   const data = (await res.json()) as {
-    products: { id: string; printifyProductId: string; name: string }[];
+    products?: { id: string; printifyProductId: string; name: string }[];
+    items?: Array<{ id: string; name: string }>;
   };
-  return data.products ?? [];
+  if (data.products && data.products.length > 0) {
+    return data.products;
+  }
+  // Try dedicated endpoint (when deployed)
+  const solunaRes = await fetch(
+    `${API_BASE}/api/admin/products/soluna-printify`,
+    { headers: { Authorization: `Bearer ${API_KEY}` } },
+  );
+  if (solunaRes.ok) {
+    const solunaData = (await solunaRes.json()) as {
+      products?: { id: string; printifyProductId: string; name: string }[];
+    };
+    if (solunaData.products && solunaData.products.length > 0) {
+      return solunaData.products;
+    }
+  }
+  // Fallback: search SOLUNA then enrich with full product (printifyProductId; requires GET to return it)
+  const searchRes = await fetch(
+    `${API_BASE}/api/admin/products?search=SOLUNA&limit=50`,
+    { headers: { Authorization: `Bearer ${API_KEY}` } },
+  );
+  if (!searchRes.ok) {
+    throw new Error(`Products search failed: ${searchRes.status}`);
+  }
+  const searchData = (await searchRes.json()) as {
+    items?: Array<{ id: string; name: string }>;
+  };
+  const items = searchData.items ?? [];
+  const out: { id: string; printifyProductId: string; name: string }[] = [];
+  for (const item of items) {
+    const fullRes = await fetch(
+      `${API_BASE}/api/admin/products/${item.id}`,
+      { headers: { Authorization: `Bearer ${API_KEY}` } },
+    );
+    if (!fullRes.ok) continue;
+    const full = (await fullRes.json()) as {
+      source?: string;
+      printifyProductId?: string | null;
+      name?: string;
+      id?: string;
+    };
+    if (full.source === "printify" && full.printifyProductId) {
+      out.push({
+        id: full.id ?? item.id,
+        printifyProductId: full.printifyProductId,
+        name: full.name ?? item.name,
+      });
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  return out;
+}
+
+type CategoryIds = {
+  soluna: string | null;
+  solana: string | null;
+  glassware: string | null;
+  stickers: string | null;
+  [key: string]: string | null;
+};
+
+async function getCategoryIds(): Promise<CategoryIds> {
+  const res = await fetch(
+    `${API_BASE}/api/admin/categories?limit=500`,
+    { headers: { Authorization: `Bearer ${API_KEY}` } },
+  );
+  if (!res.ok) {
+    throw new Error(`Categories list failed: ${res.status}`);
+  }
+  const data = (await res.json()) as {
+    items?: Array<{ id: string; name: string; slug?: string | null }>;
+  };
+  const items = data.items ?? [];
+  const bySlug = new Map<string, string>();
+  const byNameLower = new Map<string, string>();
+  for (const c of items) {
+    if (c.slug) bySlug.set(c.slug.toLowerCase(), c.id);
+    byNameLower.set(c.name.toLowerCase(), c.id);
+  }
+  return {
+    soluna: bySlug.get("soluna") ?? byNameLower.get("soluna") ?? null,
+    solana: bySlug.get("solana") ?? byNameLower.get("solana") ?? null,
+    glassware:
+      bySlug.get("glassware") ?? byNameLower.get("glassware") ?? null,
+    stickers: bySlug.get("stickers") ?? byNameLower.get("stickers") ?? null,
+  };
+}
+
+function productLabelFromName(name: string): string {
+  return name.replace(/^SOLUNA\s+/i, "").trim() || name;
+}
+
+function buildFeatures(productLabel: string): string[] {
+  return [
+    `Official SOLUNA (Solana meme) ${productLabel.toLowerCase()} design`,
+    "Vibrant gradient SOLUNA logo — teal, fuchsia, purple",
+    "Premium quality; made to order",
+    "Pay with SOL, USDC, or card",
+  ];
+}
+
+function buildSeo(productLabel: string): {
+  pageTitle: string;
+  metaDescription: string;
+} {
+  const title = `SOLUNA ${productLabel}`;
+  return {
+    pageTitle: `${title} — Solana Meme Merch | Culture`,
+    metaDescription: `${title}. SOLUNA is the meme of Solana. Premium quality, vibrant design. Pay with SOL, USDC, or card. Culture.`,
+  };
+}
+
+async function patchProductCategoriesFeaturesSeo(
+  productId: string,
+  productName: string,
+  categoryIds: CategoryIds,
+): Promise<void> {
+  const label = productLabelFromName(productName);
+  const features = buildFeatures(label);
+  const seo = buildSeo(label);
+  const ids: string[] = [];
+  if (categoryIds.soluna) ids.push(categoryIds.soluna);
+  if (categoryIds.solana) ids.push(categoryIds.solana);
+  if (
+    (label.toLowerCase().includes("shot") && label.toLowerCase().includes("glass")) &&
+    categoryIds.glassware
+  ) {
+    ids.push(categoryIds.glassware);
+  }
+  if (label.toLowerCase().includes("sticker") && categoryIds.stickers) {
+    ids.push(categoryIds.stickers);
+  }
+  const mainCategoryId = categoryIds.soluna ?? ids[0] ?? null;
+  const res = await fetch(`${API_BASE}/api/admin/products/${productId}`, {
+    method: "PATCH",
+    headers,
+    body: JSON.stringify({
+      features,
+      pageTitle: seo.pageTitle,
+      metaDescription: seo.metaDescription,
+      seoOptimized: true,
+      mainCategoryId,
+      categoryIds: ids.length > 0 ? ids : undefined,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`PATCH product failed: ${res.status} ${text}`);
+  }
+  console.log("  Patched categories + features + SEO:", productName);
 }
 
 async function main() {
@@ -205,6 +358,18 @@ async function main() {
   if (products.length === 0) {
     console.error(
       "No SOLUNA Printify products found (tag SOLUNA + source printify).",
+    );
+    console.error(
+      "Deploy the app so these endpoints are available on production:",
+    );
+    console.error(
+      "  - GET /api/admin/products?tag=SOLUNA&minimal=1 (returns { products })",
+    );
+    console.error(
+      "  - GET /api/admin/products/soluna-printify (returns { products })",
+    );
+    console.error(
+      "  - GET /api/admin/products/[id] must include printifyProductId in the response (for search fallback).",
     );
     process.exit(1);
   }
@@ -261,8 +426,40 @@ async function main() {
     await new Promise((r) => setTimeout(r, 300));
   }
 
+  console.log("\n7. Patching categories, feature section, and SEO...");
+  let categoryIds: CategoryIds;
+  try {
+    categoryIds = await getCategoryIds();
+    console.log(
+      "   Categories: SOLUNA =",
+      categoryIds.soluna ?? "—",
+      "| Solana =",
+      categoryIds.solana ?? "—",
+      "| Glassware =",
+      categoryIds.glassware ?? "—",
+      "| Stickers =",
+      categoryIds.stickers ?? "—",
+    );
+  } catch (e) {
+    console.warn("   Could not load categories:", (e as Error).message);
+    categoryIds = {
+      soluna: null,
+      solana: null,
+      glassware: null,
+      stickers: null,
+    };
+  }
+  for (const p of products) {
+    try {
+      await patchProductCategoriesFeaturesSeo(p.id, p.name, categoryIds);
+    } catch (e) {
+      console.warn("   Skip patch", p.name, (e as Error).message);
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+
   console.log(
-    "\nDone. All SOLUNA products updated with new print file (transparent) and mockups re-hosted to UploadThing.",
+    "\nDone. All SOLUNA products: new print file (transparent), mockups to UploadThing, categories + features + SEO set.",
   );
 }
 

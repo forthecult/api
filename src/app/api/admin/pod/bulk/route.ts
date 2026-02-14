@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
           value: t.pricing.value,
         },
       })),
-      syncToStore: input.syncToStore ?? false,
+      syncToStore: input.syncToStore ?? true,
     });
     return NextResponse.json(result);
   } catch (e) {

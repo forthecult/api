@@ -139,6 +139,7 @@ export async function GET(
       brand: product.brand,
       vendor: product.vendor,
       source: product.source ?? "manual",
+      printifyProductId: product.printifyProductId ?? null,
       slug,
       sku: product.sku,
       barcode: product.barcode,

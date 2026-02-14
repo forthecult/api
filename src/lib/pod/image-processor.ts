@@ -197,6 +197,43 @@ export async function resizeForPrintArea(
 }
 
 /**
+ * Make dark/near-black background transparent. For print files that have a black
+ * background but should be transparent on merchandise.
+ * @param buffer - PNG/JPEG buffer
+ * @param threshold - RGB values <= this become transparent (default 30)
+ */
+export async function makeBackgroundTransparent(
+  buffer: Buffer,
+  threshold: number = 30,
+): Promise<Buffer> {
+  const img = sharp(buffer);
+  const { data, info } = await img
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const channels = info.channels ?? 4;
+  for (let i = 0; i < data.length; i += channels) {
+    const r = data[i]!;
+    const g = data[i + 1]!;
+    const b = data[i + 2]!;
+    if (r <= threshold && g <= threshold && b <= threshold) {
+      data[i + 3] = 0;
+    }
+  }
+
+  return sharp(data, {
+    raw: {
+      width: info.width,
+      height: info.height,
+      channels: 4,
+    },
+  })
+    .png()
+    .toBuffer();
+}
+
+/**
  * Light sharpening and optional resize for print quality (e.g. admin upload enhancement).
  */
 export async function enhanceForPrint(

@@ -405,10 +405,10 @@ export default async function HomePage() {
                     key={category.id}
                   >
                     {category.image ? (
-                      <div className="relative aspect-[4/3] w-full shrink-0 bg-muted">
+                      <div className="relative aspect-[4/3] w-full shrink-0 bg-white">
                         <Image
                           alt=""
-                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="object-contain transition-transform duration-300 group-hover:scale-105"
                           fill
                           sizes="(max-width: 768px) 50vw, 16vw"
                           src={category.image}

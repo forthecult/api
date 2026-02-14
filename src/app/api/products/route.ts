@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
@@ -8,7 +8,8 @@ import {
 import { db } from "~/db";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import {
-  CRYPTO_CATEGORY_NAMES,
+  computeCategoryIdAndDescendantIds,
+  computeCryptoCategoryIdsIncludingDescendants,
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 } from "~/lib/storefront-categories";
 import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
@@ -71,6 +72,9 @@ export async function GET(request: NextRequest) {
     );
     const category = searchParams.get("category")?.trim() || null;
     const subcategory = searchParams.get("subcategory")?.trim() || null;
+    const forStorefront =
+      searchParams.get("forStorefront") === "1" ||
+      searchParams.get("forStorefront") === "true";
     const q = (searchParams.get("q") ?? searchParams.get("search") ?? "").trim().slice(0, 100);
     const sortParam = (searchParams.get("sort")?.trim() || "newest") as ProductsSort;
     const sort: ProductsSort =
@@ -106,16 +110,40 @@ export async function GET(request: NextRequest) {
         productIdsFilter = null;
       }
     } else if (categorySlugToFilter) {
-      // Include all products in this category (main or not), so bulk-added / auto-assigned products show
+      // Include products in this category and all its subcategories
+      const categoryRows = await db
+        .select({
+          id: categoriesTable.id,
+          slug: categoriesTable.slug,
+          parentId: categoriesTable.parentId,
+        })
+        .from(categoriesTable);
+      const categoryIdsIncludingDescendants = computeCategoryIdAndDescendantIds(
+        categoryRows,
+        categorySlugToFilter,
+      );
+      if (categoryIdsIncludingDescendants.size === 0) {
+        return withPublicApiCors(
+          NextResponse.json({
+            items: [],
+            total: 0,
+            page: 1,
+            limit,
+            totalPages: 0,
+            categories: await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+          }),
+        );
+      }
       const rows = await db
         .select({ productId: productCategoriesTable.productId })
         .from(productCategoriesTable)
-        .innerJoin(
-          categoriesTable,
-          eq(productCategoriesTable.categoryId, categoriesTable.id),
-        )
-        .where(eq(categoriesTable.slug, categorySlugToFilter));
-      productIdsFilter = rows.map((r) => r.productId);
+        .where(
+          inArray(
+            productCategoriesTable.categoryId,
+            [...categoryIdsIncludingDescendants],
+          ),
+        );
+      productIdsFilter = [...new Set(rows.map((r) => r.productId))];
       if (productIdsFilter.length === 0) {
         return withPublicApiCors(
           NextResponse.json({
@@ -129,45 +157,62 @@ export async function GET(request: NextRequest) {
         );
       }
     } else {
-      // "All" products: exclude crypto-only categories unless product is in show-in-all-products
-      const allowedByCategory = await db
-        .selectDistinct({ productId: productCategoriesTable.productId })
-        .from(productCategoriesTable)
-        .innerJoin(
-          categoriesTable,
-          eq(productCategoriesTable.categoryId, categoriesTable.id),
-        )
-        .where(
-          or(
-            notInArray(categoriesTable.name, [...CRYPTO_CATEGORY_NAMES]),
-            eq(categoriesTable.slug, SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG),
-          ),
+      // "All" products. When forStorefront: exclude any product in a crypto (or sub) category
+      // unless it is also in show-in-all-products. When not forStorefront (e.g. AI agents): no filter.
+      if (forStorefront) {
+        const categoryRows = await db
+          .select({
+            id: categoriesTable.id,
+            name: categoriesTable.name,
+            parentId: categoriesTable.parentId,
+          })
+          .from(categoriesTable);
+        const cryptoCategoryIds = computeCryptoCategoryIdsIncludingDescendants(
+          categoryRows,
         );
-      const allowedIds = new Set(allowedByCategory.map((r) => r.productId));
-      const allPublishedIds = await db
-        .select({ id: productsTable.id })
-        .from(productsTable)
-        .where(
-          and(eq(productsTable.published, true), eq(productsTable.hidden, false)),
+        const productIdsInCrypto =
+          cryptoCategoryIds.size > 0
+            ? await db
+                .selectDistinct({ productId: productCategoriesTable.productId })
+                .from(productCategoriesTable)
+                .where(
+                  inArray(
+                    productCategoriesTable.categoryId,
+                    [...cryptoCategoryIds],
+                  ),
+                )
+            : [];
+        const productIdsInShowInAll = await db
+          .selectDistinct({ productId: productCategoriesTable.productId })
+          .from(productCategoriesTable)
+          .innerJoin(
+            categoriesTable,
+            eq(productCategoriesTable.categoryId, categoriesTable.id),
+          )
+          .where(eq(categoriesTable.slug, SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG));
+        const showInAllSet = new Set(
+          productIdsInShowInAll.map((r) => r.productId),
         );
-      const uncategorizedIds = await db
-        .select({ id: productsTable.id })
-        .from(productsTable)
-        .leftJoin(
-          productCategoriesTable,
-          eq(productsTable.id, productCategoriesTable.productId),
-        )
-        .where(
-          and(
-            eq(productsTable.published, true),
-            eq(productsTable.hidden, false),
-            isNull(productCategoriesTable.productId),
-          ),
+        const excludeFromAll = new Set(
+          productIdsInCrypto
+            .map((r) => r.productId)
+            .filter((id) => !showInAllSet.has(id)),
         );
-      for (const r of uncategorizedIds) allowedIds.add(r.id);
-      productIdsFilter = allPublishedIds.filter((r) => allowedIds.has(r.id)).map((r) => r.id);
-      if (productIdsFilter.length === 0) {
-        productIdsFilter = null;
+        const allPublished = await db
+          .select({ id: productsTable.id })
+          .from(productsTable)
+          .where(
+            and(
+              eq(productsTable.published, true),
+              eq(productsTable.hidden, false),
+            ),
+          );
+        productIdsFilter = allPublished
+          .filter((r) => !excludeFromAll.has(r.id))
+          .map((r) => r.id);
+        if (productIdsFilter.length === 0) {
+          productIdsFilter = null;
+        }
       }
     }
 
