@@ -333,7 +333,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
     e.preventDefault();
     const q = mobileSearchQuery.trim();
     if (q) {
-      router.push(`/products?search=${encodeURIComponent(q)}`);
+      router.push(`/products?q=${encodeURIComponent(q)}`);
     } else {
       router.push("/products");
     }

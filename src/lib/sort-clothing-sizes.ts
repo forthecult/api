@@ -1,8 +1,12 @@
 /**
  * Standard order for clothing sizes (smallest to largest).
  * Used so Size options display as XS, S, M, L, XL, 2XL, 3XL, etc.
+ * Generic labels (Small, Medium, Large) are ordered first so "Small" appears before "Large".
  */
 const SIZE_ORDER = [
+  "Small",
+  "Medium",
+  "Large",
   "XXS",
   "XS",
   "S",
@@ -28,7 +32,7 @@ const SIZE_ORDER_INDEX = new Map<string, number>(
 
 /**
  * Compare two size strings for sorting (smallest first).
- * Letter sizes (XS, S, M, L, XL, 2XL, ...) use standard order.
+ * Letter sizes (XS, S, M, L, XL, 2XL, ...) and generic labels (Small, Large) use standard order.
  * Numeric sizes (e.g. 28, 30, 32 or 5, 5.5, 6) sort by number.
  * Unknown sizes sort after known ones, then alphabetically.
  */
@@ -36,6 +40,10 @@ function sizeRank(a: string): number {
   const upper = a.toUpperCase().trim();
   const known = SIZE_ORDER_INDEX.get(upper);
   if (known !== undefined) return known;
+  // Match "Small - ..." or "Large - ..." style labels (use first word for ordering)
+  const firstWord = upper.split(/\s+/)[0];
+  const firstWordKnown = firstWord ? SIZE_ORDER_INDEX.get(firstWord) : undefined;
+  if (firstWordKnown !== undefined) return firstWordKnown;
   const num = parseFloat(a.replace(/,/g, ".").trim());
   if (!Number.isNaN(num)) return 1000 + num;
   return 2000 + upper.charCodeAt(0);

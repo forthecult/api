@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronRight, Home, Search, SlidersHorizontal, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Home, Search, SlidersHorizontal, X } from "lucide-react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
@@ -118,6 +118,8 @@ export function ProductsClient({
   const [loading, setLoading] = React.useState(false);
   /** True when loading the next page via "Load More" (append mode). */
   const [loadingMore, setLoadingMore] = React.useState(false);
+  /** When true, next sync from server props is skipped (we just did Load More and updated URL). */
+  const skipNextSyncRef = React.useRef(false);
 
   // Quick View state
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
@@ -228,6 +230,19 @@ export function ProductsClient({
     [],
   );
 
+  // Sync state from server when URL page changes (e.g. user clicked Previous or landed on ?page=6)
+  React.useEffect(() => {
+    if (skipNextSyncRef.current) {
+      skipNextSyncRef.current = false;
+      return;
+    }
+    setPage(initialPage);
+    setProducts(initialProducts);
+    setTotalPages(initialTotalPages);
+    setTotal(initialTotal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-sync when page in URL changes
+  }, [initialPage]);
+
   // When search query changes (user typed), go to page 1 and refetch
   const prevSearchRef = React.useRef(initialSearch);
   React.useEffect(() => {
@@ -275,10 +290,16 @@ export function ProductsClient({
   const handleLoadMore = React.useCallback(() => {
     const nextPage = page + 1;
     setPage(nextPage);
+    skipNextSyncRef.current = true; // avoid overwriting accumulated list when server re-renders
     // Update URL to reflect page (crawlers can follow)
     router.push(buildPath({ page: nextPage }), { scroll: false });
     fetchProducts(nextPage, selectedCategory, sort, selectedSubcategory, searchQuery, true);
   }, [page, router, selectedCategory, sort, selectedSubcategory, searchQuery, fetchProducts, buildPath]);
+
+  const handlePreviousPage = React.useCallback(() => {
+    if (page <= 1) return;
+    router.push(buildPath({ page: page - 1 }), { scroll: false });
+  }, [page, router, buildPath]);
 
   const handleAddToCart = React.useCallback(
     (productId: string) => {
@@ -574,29 +595,46 @@ export function ProductsClient({
                 </div>
               )}
 
-              {/* Load More */}
-              {page < totalPages && (
+              {/* Pagination: Previous + Load More */}
+              {(page > 1 || page < totalPages) && products.length > 0 && (
                 <div className="mt-10 flex flex-col items-center gap-3">
-                  <Button
-                    className="min-w-[200px] gap-2"
-                    disabled={loadingMore}
-                    onClick={handleLoadMore}
-                    variant="outline"
-                    size="lg"
-                  >
-                    {loadingMore ? (
-                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    ) : null}
-                    {loadingMore ? "Loading…" : "Load More Products"}
-                  </Button>
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    {page > 1 && (
+                      <Button
+                        className="gap-2"
+                        onClick={handlePreviousPage}
+                        variant="outline"
+                        size="lg"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                        Previous
+                      </Button>
+                    )}
+                    {page < totalPages && (
+                      <Button
+                        className="min-w-[200px] gap-2"
+                        disabled={loadingMore}
+                        onClick={handleLoadMore}
+                        variant="outline"
+                        size="lg"
+                      >
+                        {loadingMore ? (
+                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                        ) : null}
+                        {loadingMore ? "Loading…" : "Load More Products"}
+                      </Button>
+                    )}
+                  </div>
                   <span className="text-xs text-muted-foreground">
-                    Showing {products.length} of {total} products
+                    {page >= totalPages && total > limit
+                      ? `Showing all ${total} products`
+                      : `Showing ${products.length} of ${total} products`}
                   </span>
                 </div>
               )}
 
-              {/* All loaded indicator */}
-              {page >= totalPages && products.length > 0 && total > limit && (
+              {/* All loaded indicator (no pagination controls) */}
+              {page >= totalPages && products.length > 0 && total > limit && products.length >= total && (
                 <p className="mt-8 text-center text-sm text-muted-foreground">
                   Showing all {total} products
                 </p>

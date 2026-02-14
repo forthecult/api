@@ -7,6 +7,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
+import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
@@ -148,8 +149,6 @@ function MiniGallery({
 /*                         Variant Selector (simplified)                       */
 /* -------------------------------------------------------------------------- */
 
-const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL"];
-
 /** Map option definition name to variant field (same as product-variant-section). */
 function getVariantKey(
   optionName: string,
@@ -233,15 +232,7 @@ function VariantSelector({
         if (opt.values.length <= 1) return null;
         const values =
           opt.name.toLowerCase() === "size"
-            ? [...opt.values].sort(
-                (a, b) =>
-                  (SIZE_ORDER.indexOf(a.toUpperCase()) === -1
-                    ? 99
-                    : SIZE_ORDER.indexOf(a.toUpperCase())) -
-                  (SIZE_ORDER.indexOf(b.toUpperCase()) === -1
-                    ? 99
-                    : SIZE_ORDER.indexOf(b.toUpperCase())),
-              )
+            ? sortClothingSizes([...opt.values])
             : opt.values;
         return (
           <div key={opt.name}>

@@ -57,6 +57,7 @@ async function fetchProducts(
   limit: number,
   category?: string,
   sort?: string,
+  search?: string,
 ): Promise<ProductsResponse> {
   const baseUrl = getServerBaseUrl();
   const params = new URLSearchParams({
@@ -67,6 +68,8 @@ async function fetchProducts(
     params.set("category", category);
   }
   if (sort) params.set("sort", sort);
+  const q = (search ?? "").trim().slice(0, 100);
+  if (q) params.set("q", q);
 
   try {
     const res = await fetch(`${baseUrl}/api/products?${params}`, {
@@ -94,7 +97,7 @@ async function fetchProducts(
 }
 
 interface PageProps {
-  searchParams: Promise<{ page?: string; category?: string; sort?: string }>;
+  searchParams: Promise<{ page?: string; category?: string; sort?: string; q?: string; search?: string }>;
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
@@ -115,8 +118,9 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     )
       ? sortParam
       : "newest";
+  const searchQuery = (params.q ?? params.search ?? "").trim().slice(0, 100);
 
-  const data = await fetchProducts(page, limit, undefined, sort);
+  const data = await fetchProducts(page, limit, undefined, sort, searchQuery || undefined);
 
   const products = (data.items ?? []).map((p) => ({
     ...p,
@@ -146,6 +150,7 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           initialTotal={data.total ?? 0}
           initialCategory="all"
           initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating" | "manual"}
+          initialSearch={searchQuery}
         />
       </Suspense>
     </>

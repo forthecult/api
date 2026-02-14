@@ -27,7 +27,7 @@ export function HeaderSearch() {
     const q = query.trim();
     setOpen(false);
     if (q) {
-      router.push(`/products?search=${encodeURIComponent(q)}`);
+      router.push(`/products?q=${encodeURIComponent(q)}`);
     } else {
       router.push("/products");
     }
@@ -52,7 +52,7 @@ export function HeaderSearch() {
             <div className="flex items-center gap-2 border-b px-3 py-2">
               <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
               <Input
-                type="search"
+                type="text"
                 placeholder="Search products..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}

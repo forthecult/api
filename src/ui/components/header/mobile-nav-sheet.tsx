@@ -103,7 +103,7 @@ export function MobileNavSheet({
     const q = searchQuery.trim();
     onOpenChange(false);
     if (q) {
-      router.push(`/products?search=${encodeURIComponent(q)}`);
+      router.push(`/products?q=${encodeURIComponent(q)}`);
     } else {
       router.push("/products");
     }

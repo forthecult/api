@@ -435,18 +435,18 @@ function ProductCardInner({
                 <div className="mt-2 flex items-center gap-1.5">
                   <FiatPrice
                     usdAmount={product.price}
-                    className="font-medium text-foreground"
+                    className="font-medium text-[#F5F1EB]"
                   />
                   {product.originalPrice ? (
                     <FiatPrice
                       usdAmount={product.originalPrice}
-                      className="text-sm text-muted-foreground line-through"
+                      className="text-sm text-[#F5F1EB]/70 line-through"
                     />
                   ) : null}
                 </div>
                 <CryptoPrice
                   usdAmount={product.price}
-                  className="mt-0.5 text-sm text-muted-foreground"
+                  className="mt-0.5 text-sm text-[#F5F1EB]/80"
                 />
               </>
             )}
@@ -488,20 +488,23 @@ function ProductCardInner({
           {!isGated && variant === "compact" && (
             <CardFooter className="p-4 pt-0">
               <div className="flex w-full items-center justify-between">
-                <div className="flex flex-col gap-0.5">
+                  <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
                     <FiatPrice
                       usdAmount={product.price}
-                      className="font-medium text-foreground"
+                      className="font-medium text-[#F5F1EB]"
                     />
                     {product.originalPrice ? (
                       <FiatPrice
                         usdAmount={product.originalPrice}
-                        className="text-sm text-muted-foreground line-through"
+                        className="text-sm text-[#F5F1EB]/70 line-through"
                       />
                     ) : null}
                   </div>
-                  <CryptoPrice usdAmount={product.price} />
+                  <CryptoPrice
+                    usdAmount={product.price}
+                    className="text-[#F5F1EB]/80"
+                  />
                 </div>
                 {unavailableInCountry ? (
                   <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
@@ -534,19 +537,6 @@ function ProductCardInner({
                 )}
               </div>
             </CardFooter>
-          )}
-
-          {!isGated && !product.inStock && (
-            <div
-              className={`
-                absolute inset-0 flex items-center justify-center
-                bg-background/80 backdrop-blur-sm
-              `}
-            >
-              <Badge className="px-3 py-1 text-sm" variant="destructive">
-                Out of Stock
-              </Badge>
-            </div>
           )}
         </Card>
       </Link>
