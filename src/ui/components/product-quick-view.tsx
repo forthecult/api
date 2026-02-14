@@ -371,6 +371,14 @@ export function ProductQuickView({
     const lineId = selectedVariant
       ? `${product.id}__${selectedVariant.id}`
       : product.id;
+    const variantLabel = selectedVariant
+      ? selectedVariant.label?.trim() ||
+        [selectedVariant.color, selectedVariant.size, selectedVariant.gender]
+          .filter(Boolean)
+          .map((s) => s!.trim())
+          .join(" / ") ||
+        ""
+      : undefined;
     addItem(
       {
         category: product.category,
@@ -378,6 +386,7 @@ export function ProductQuickView({
         ...(selectedVariant && {
           productId: product.id,
           productVariantId: selectedVariant.id,
+          ...(variantLabel && { variantLabel }),
         }),
         image:
           selectedVariant?.imageUrl ?? product.imageUrl ?? "/placeholder.svg",

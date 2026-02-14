@@ -25,7 +25,7 @@ export const CRYPTO_SUB_OPTIONS: {
   { value: "crust", label: "Crustafarian (CRUST)" },
   { value: "pump", label: "Pump (PUMP)" },
   { value: "troll", label: "Troll (TROLL)" },
-  { value: "soluna", label: "SOLUNA (Pump.fun)" },
+  { value: "soluna", label: "SOLUNA (SOLUNA)" },
   { value: "other", label: "Other" },
 ];
 
@@ -97,7 +97,7 @@ export const CRYPTO_LOGO_SRC: Partial<
   crust: "/crypto/solana/solanaLogoMark.svg",
   pump: "/crypto/pump/pump-logomark.svg",
   troll: "/crypto/troll/troll-logomark.png",
-  soluna: "/crypto/soluna/soluna-logo.svg",
+  soluna: "/crypto/soluna/soluna-logo.png",
 };
 
 export const USDC_SUB_OPTIONS: {

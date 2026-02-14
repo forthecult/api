@@ -1,10 +1,13 @@
 import { eq } from "drizzle-orm";
+import { CreditCard } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { formatCents, formatDateLong } from "~/lib/format";
+import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 
 import { ReorderButton } from "../ReorderButton";
@@ -63,6 +66,8 @@ export default async function OrderDetailPage({
     notFound();
   }
 
+  const isUnpaid = order.paymentStatus?.toLowerCase() === "pending";
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -70,7 +75,16 @@ export default async function OrderDetailPage({
           Order{" "}
           <span className="font-mono text-muted-foreground">#{order.id}</span>
         </h1>
-        <ReorderButton orderId={order.id} />
+        {isUnpaid ? (
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/checkout/${order.id}`}>
+              <CreditCard className="mr-1.5 size-3.5" aria-hidden />
+              Pay Now
+            </Link>
+          </Button>
+        ) : (
+          <ReorderButton orderId={order.id} />
+        )}
       </div>
 
       <Card>

@@ -106,6 +106,11 @@ export function OrderSummary({
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-tight">{item.name}</p>
+              {item.variantLabel ? (
+                <p className="mt-0.5 text-sm text-muted-foreground">
+                  {item.variantLabel}
+                </p>
+              ) : null}
               <p className="mt-0.5 text-sm text-muted-foreground">
                 <FiatPrice usdAmount={item.price} /> each
               </p>

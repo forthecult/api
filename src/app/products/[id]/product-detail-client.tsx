@@ -38,6 +38,8 @@ interface ProductActionsProps {
   product: Product;
   /** When present, price/stock/image and add-to-cart use this variant. */
   selectedVariant?: SelectedVariant | null;
+  /** Human-readable variant (e.g. "Medium", "iPhone 16 Pro") for cart/checkout. */
+  variantLabel?: string;
   /** When true, Add to Cart is disabled until a variant is selected. */
   variantRequired?: boolean;
 }
@@ -70,6 +72,7 @@ export function ProductPriceDisplay({
 export function ProductActions({
   product,
   selectedVariant,
+  variantLabel,
   variantRequired = false,
 }: ProductActionsProps) {
   const { addItem } = useCart();
@@ -122,6 +125,7 @@ export function ProductActions({
           id: lineId,
           productId: product.id,
           productVariantId: selectedVariant.id,
+          ...(variantLabel && { variantLabel }),
           image: image,
           name: product.name,
           price,

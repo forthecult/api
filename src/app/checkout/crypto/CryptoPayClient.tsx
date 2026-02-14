@@ -64,7 +64,7 @@ const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
   crust: { src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" },
   pump: { src: "/crypto/pump/pump-logomark.svg", alt: "Pump" },
   troll: { src: "/crypto/troll/troll-logomark.png", alt: "TROLL" },
-  soluna: { src: "/crypto/soluna/soluna-logo.svg", alt: "SOLUNA" },
+  soluna: { src: "/crypto/soluna/soluna-logo.png", alt: "SOLUNA" },
   sui: { src: "/crypto/sui/sui-logo.svg", alt: "Sui" },
 };
 
@@ -277,7 +277,7 @@ export function CryptoPayClient() {
             : token === "troll"
               ? "Troll (TROLL)"
               : token === "soluna"
-                ? "SOLUNA (Pump.fun)"
+                ? "SOLUNA (SOLUNA)"
                 : token === "sui"
                   ? "Sui (SUI)"
                   : "Solana";

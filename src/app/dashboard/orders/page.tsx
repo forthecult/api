@@ -1,5 +1,5 @@
 import { desc, eq } from "drizzle-orm";
-import { Package } from "lucide-react";
+import { CreditCard, Package } from "lucide-react";
 import Link from "next/link";
 
 import { getCurrentUserOrRedirect } from "~/lib/auth";
@@ -129,7 +129,17 @@ export default async function OrdersPage() {
                         {formatCents(order.totalCents)}
                       </span>
                       <div className="ml-auto flex shrink-0 items-center gap-2">
-                        <ReorderButton orderId={order.id} />
+                        {paymentPending ? (
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/checkout/${order.id}`}>
+                              <CreditCard className="mr-1.5 size-3.5" aria-hidden />
+                              Pay Now
+                              <span className="sr-only"> for order {order.id}</span>
+                            </Link>
+                          </Button>
+                        ) : (
+                          <ReorderButton orderId={order.id} />
+                        )}
                         <Button asChild size="sm" variant="ghost">
                           <Link href={`/dashboard/orders/${order.id}`}>
                             Details

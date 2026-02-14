@@ -137,6 +137,13 @@ function PhoneModelDropdowns({
   );
 }
 
+/** Build a single display label for a variant (e.g. "Black / M" or "iPhone 16 Pro"). */
+function getVariantDisplayLabel(v: ProductVariantOption): string {
+  if (v.label?.trim()) return v.label.trim();
+  const parts = [v.color, v.size, v.gender].filter(Boolean).map((s) => s!.trim());
+  return parts.join(" / ") || "";
+}
+
 function findVariant(
   variants: ProductVariantOption[],
   optionDefinitions: ProductOptionDefinition[],
@@ -482,6 +489,9 @@ export function ProductVariantSection({
                   imageUrl: selectedVariant.imageUrl,
                 }
               : undefined
+          }
+          variantLabel={
+            selectedVariant ? getVariantDisplayLabel(selectedVariant) : undefined
           }
           variantRequired
         />

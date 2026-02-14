@@ -17,7 +17,7 @@ export const PAYMENT_METHOD_DEFAULTS: Array<{
   { methodKey: "crypto_crust", label: "Crustafarian (CRUST)", displayOrder: 15 },
   { methodKey: "crypto_pump", label: "Pump (PUMP)", displayOrder: 16 },
   { methodKey: "crypto_troll", label: "Troll (TROLL)", displayOrder: 17 },
-  { methodKey: "crypto_soluna", label: "SOLUNA (Pump.fun)", displayOrder: 18 },
+  { methodKey: "crypto_soluna", label: "SOLUNA (SOLUNA)", displayOrder: 18 },
   { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 19 },
   { methodKey: "crypto_ton", label: "TON", displayOrder: 20 },
   { methodKey: "stablecoin_usdc", label: "USDC (Stablecoin)", displayOrder: 21 },

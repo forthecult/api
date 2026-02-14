@@ -15,6 +15,8 @@ export interface CartItem {
   productId?: string;
   /** Variant id when adding a product variant to cart. */
   productVariantId?: string;
+  /** Human-readable variant (e.g. "Medium", "iPhone 16 Pro") for display in cart/checkout. */
+  variantLabel?: string;
   /** True for digital products (eSIM, downloads) — skip shipping at checkout */
   digital?: boolean;
   /** eSIM-specific: package ID from reseller API */

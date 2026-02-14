@@ -171,7 +171,9 @@ export function CartClient({ className }: CartClientProps) {
                           </button>
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {item.category}
+                          {item.variantLabel
+                            ? `${item.variantLabel}${item.category ? ` · ${item.category}` : ""}`
+                            : item.category}
                         </p>
                       </div>
                       <div className="mt-2 flex items-center justify-between">

@@ -124,7 +124,7 @@ const CRYPTO_SUB_OPTIONS: {
   { value: "crust", label: "Crustafarian (CRUST)" },
   { value: "pump", label: "Pump (PUMP)" },
   { value: "troll", label: "Troll (TROLL)" },
-  { value: "soluna", label: "SOLUNA (Pump.fun)" },
+  { value: "soluna", label: "SOLUNA (SOLUNA)" },
   { value: "other", label: "Other" },
 ];
 
@@ -331,7 +331,7 @@ export function getPaymentIconPaths(
     if (visibility.cryptoTroll)
       icons.push({ src: "/crypto/troll/troll-logomark.png", alt: "Troll", type: "crypto" });
     if (visibility.cryptoSoluna)
-      icons.push({ src: "/crypto/soluna/soluna-logo.svg", alt: "SOLUNA", type: "crypto" });
+      icons.push({ src: "/crypto/soluna/soluna-logo.png", alt: "SOLUNA", type: "crypto" });
     if (visibility.stablecoinUsdc)
       icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" });
     if (visibility.stablecoinUsdt)
@@ -387,7 +387,7 @@ export function getFooterPaymentItems(
     items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
     items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
-    items.push({ name: "SOLUNA", src: "/crypto/soluna/soluna-logo.svg" });
+    items.push({ name: "SOLUNA", src: "/crypto/soluna/soluna-logo.png" });
   } else {
     if (visibility.cryptoBitcoin) items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
     if (visibility.cryptoDogecoin)
@@ -403,7 +403,7 @@ export function getFooterPaymentItems(
     if (visibility.cryptoTroll)
       items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
     if (visibility.cryptoSoluna)
-      items.push({ name: "SOLUNA", src: "/crypto/soluna/soluna-logo.svg" });
+      items.push({ name: "SOLUNA", src: "/crypto/soluna/soluna-logo.png" });
   }
 
   // Stablecoins (USDC, USDT)
