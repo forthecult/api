@@ -330,6 +330,7 @@ export function PaymentMethodSection({
       (paymentMethod === "crypto" && paymentSubOption === "crust") ||
       (paymentMethod === "crypto" && paymentSubOption === "pump") ||
       (paymentMethod === "crypto" && paymentSubOption === "troll") ||
+      (paymentMethod === "crypto" && paymentSubOption === "soluna") ||
       (paymentMethod === "crypto" && paymentSubOption === "solana"));
 
   const isEvmPaySupported =
@@ -1381,11 +1382,13 @@ export function PaymentMethodSection({
                   ? "Pay with Pump"
                   : paymentMethod === "crypto" && paymentSubOption === "troll"
                     ? "Pay with TROLL"
-                    : paymentMethod === "stablecoins" &&
-                      stablecoinToken === "usdc" &&
-                      paymentSubOption === "solana"
-                    ? "Pay with USDC (Solana)"
-                    : "Pay with Solana"}
+                    : paymentMethod === "crypto" && paymentSubOption === "soluna"
+                      ? "Pay with SOLUNA"
+                      : paymentMethod === "stablecoins" &&
+                          stablecoinToken === "usdc" &&
+                          paymentSubOption === "solana"
+                        ? "Pay with USDC (Solana)"
+                        : "Pay with Solana"}
           </Button>
         ) : isSuiPaySupported ? (
           <Button

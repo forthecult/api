@@ -635,8 +635,7 @@ function sizeChartDisplayNameFromCatalog(
   for (const keyword of productTypeKeywords) {
     if (lower.includes(keyword)) {
       const word = keyword.replace(/\s+/g, " ");
-      const titleCased =
-        word.charAt(0).toUpperCase() + word.slice(1).replace(/\b\w/g, (c) => c.toUpperCase());
+      const titleCased = word.replace(/\b\w/g, (c) => c.toUpperCase());
       return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
     }
   }
@@ -858,6 +857,7 @@ async function createLocalProductFromPrintful(
     metaDescription,
     vendor: "Printful",
     brand,
+    model,
     sku: productSku,
     countryOfOrigin: catalogProduct?.countryOfOrigin ?? null,
     hsCode: catalogProduct?.hsCode ?? null,

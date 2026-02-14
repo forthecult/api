@@ -3,13 +3,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Minus, Plus, ShoppingBag, ShoppingCart, X } from "lucide-react";
+import * as React from "react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 
+const PLACEHOLDER_SRC = "/placeholder.svg";
+
 export default function TelegramCartPage() {
   const { items, removeItem, updateQuantity, itemCount, subtotal } = useCart();
+  const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
+    () => new Set(),
+  );
 
   return (
     <div className="flex min-h-screen flex-col pb-24">
@@ -43,14 +49,28 @@ export default function TelegramCartPage() {
                   key={item.id}
                   className="flex gap-3 rounded-lg border border-[var(--tg-theme-hint-color,#999)]/20 bg-[var(--tg-theme-secondary-bg-color,#f5f5f5)] p-3"
                 >
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded">
-                    <Image
-                      alt={item.name}
-                      className="object-cover"
-                      fill
-                      sizes="80px"
-                      src={item.image}
-                    />
+                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded bg-white">
+                    {failedImageIds.has(item.id) || !(item.image?.trim()) ? (
+                      <Image
+                        alt={item.name}
+                        className="object-contain"
+                        fill
+                        sizes="80px"
+                        src={PLACEHOLDER_SRC}
+                      />
+                    ) : (
+                      <Image
+                        alt={item.name}
+                        className="object-contain"
+                        fill
+                        sizes="80px"
+                        src={item.image.trim()}
+                        unoptimized={/^https?:\/\//i.test(item.image)}
+                        onError={() =>
+                          setFailedImageIds((prev) => new Set(prev).add(item.id))
+                        }
+                      />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-2">

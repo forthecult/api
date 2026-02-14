@@ -7,6 +7,12 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
+import {
+  getPhoneBrand,
+  groupPhoneModelsByBrand,
+  isPhoneModelsOption,
+  type PhoneBrand,
+} from "~/lib/sort-phone-models";
 import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
@@ -188,12 +194,19 @@ function VariantSelector({
     Record<number, string>
   >({});
 
-  // Auto-select single-value options; pre-select first value for multi-value options so a variant is selected by default
+  // Auto-select single-value options; for phone models use first brand's latest model, else first value
   React.useEffect(() => {
     const initial: Record<number, string> = {};
     optionDefinitions.forEach((opt, idx) => {
       const values = (opt.values ?? []).filter(Boolean);
-      if (values.length >= 1) initial[idx] = values[0]!;
+      if (values.length < 1) return;
+      if (isPhoneModelsOption(opt.name, values)) {
+        const groups = groupPhoneModelsByBrand(values);
+        const first = groups[0]?.models[0];
+        if (first) initial[idx] = first;
+      } else {
+        initial[idx] = values[0]!;
+      }
     });
     if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
   }, [optionDefinitions]);
@@ -226,21 +239,124 @@ function VariantSelector({
     onSelectVariant(match ?? null);
   }, [selectedByIndex, optionDefinitions, variants, onSelectVariant]);
 
+  // Sync phone option selection when displayed fallback model differs from current (e.g. brand switch)
+  React.useEffect(() => {
+    optionDefinitions.forEach((opt, idx) => {
+      const values = (opt.values ?? []).filter(Boolean);
+      if (values.length <= 1 || !isPhoneModelsOption(opt.name, values)) return;
+      const groups = groupPhoneModelsByBrand(values);
+      const currentVal = selectedByIndex[idx];
+      const currentBrand = currentVal ? getPhoneBrand(currentVal) : groups[0]?.brand;
+      const currentGroup = groups.find((g) => g.brand === currentBrand);
+      const models = currentGroup?.models ?? [];
+      const fallback = models[0];
+      if (fallback && currentVal !== fallback && !currentGroup?.models.includes(currentVal ?? "")) {
+        setSelectedByIndex((prev) => ({ ...prev, [idx]: fallback }));
+      }
+    });
+  }, [optionDefinitions, selectedByIndex]);
+
+  const selectStyles =
+    "w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
+
   return (
     <div className="space-y-3">
       {optionDefinitions.map((opt, idx) => {
-        if (opt.values.length <= 1) return null;
-        const values =
+        const values = (opt.values ?? []).filter(Boolean);
+        if (values.length <= 1) return null;
+
+        const isPhoneModels = isPhoneModelsOption(opt.name, values);
+        const groups = isPhoneModels ? groupPhoneModelsByBrand(values) : [];
+
+        if (isPhoneModels && groups.length > 0) {
+          const selectedValue = selectedByIndex[idx];
+          const currentBrand = selectedValue
+            ? getPhoneBrand(selectedValue)
+            : groups[0]?.brand ?? null;
+          const currentGroup = groups.find((g) => g.brand === currentBrand);
+          const models = currentGroup?.models ?? [];
+          const displayModel =
+            selectedValue && currentGroup?.models.includes(selectedValue)
+              ? selectedValue
+              : models[0] ?? "";
+
+          return (
+            <div key={opt.name} className="space-y-2">
+              <span className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                {opt.name}
+              </span>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="flex flex-col gap-1 sm:min-w-[8rem]">
+                  <label
+                    htmlFor={`qv-brand-${idx}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Brand
+                  </label>
+                  <select
+                    id={`qv-brand-${idx}`}
+                    value={currentBrand ?? ""}
+                    onChange={(e) => {
+                      const brand = e.target.value as PhoneBrand;
+                      const group = groups.find((g) => g.brand === brand);
+                      if (group?.models[0])
+                        setSelectedByIndex((prev) => ({
+                          ...prev,
+                          [idx]: group.models[0],
+                        }));
+                    }}
+                    className={selectStyles}
+                    aria-label="Phone brand"
+                  >
+                    {groups.map((g) => (
+                      <option key={g.brand} value={g.brand}>
+                        {g.brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1 sm:min-w-[10rem]">
+                  <label
+                    htmlFor={`qv-model-${idx}`}
+                    className="text-xs text-muted-foreground"
+                  >
+                    Model
+                  </label>
+                  <select
+                    id={`qv-model-${idx}`}
+                    value={displayModel}
+                    onChange={(e) =>
+                      setSelectedByIndex((prev) => ({
+                        ...prev,
+                        [idx]: e.target.value,
+                      }))
+                    }
+                    className={selectStyles}
+                    aria-label="Phone model"
+                  >
+                    {models.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const sortedValues =
           opt.name.toLowerCase() === "size"
-            ? sortClothingSizes([...opt.values])
-            : opt.values;
+            ? sortClothingSizes([...values])
+            : values;
         return (
           <div key={opt.name}>
             <span className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {opt.name}
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {values.map((val) => (
+              {sortedValues.map((val) => (
                 <Button
                   key={val}
                   variant={

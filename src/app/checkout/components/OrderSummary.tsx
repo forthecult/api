@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { CircleHelp, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import * as React from "react";
 import {
   Card,
   CardContent,
@@ -25,6 +26,15 @@ import {
 } from "../checkout-shared";
 import type { TierDiscountLine } from "../hooks/useCoupons";
 import type { CartItem } from "~/ui/components/cart";
+
+/** Show only the variant (e.g. "2XL") when variantLabel repeats the product name. */
+function variantDisplayOnly(productName: string, variantLabel: string): string {
+  if (!variantLabel?.trim()) return variantLabel ?? "";
+  const name = (productName ?? "").trim();
+  if (!name || !variantLabel.startsWith(name)) return variantLabel;
+  const rest = variantLabel.slice(name.length).replace(/^\s*\/\s*/, "").trim();
+  return rest || variantLabel;
+}
 
 export interface OrderSummaryProps {
   items: CartItem[];
@@ -81,6 +91,11 @@ export function OrderSummary({
   onUpdateQuantity,
   onRemoveItem,
 }: OrderSummaryProps) {
+  const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
+    () => new Set(),
+  );
+  const placeholderSrc = "/placeholder.svg";
+
   return (
     <Card className="shadow-none">
       <CardHeader>
@@ -95,20 +110,34 @@ export function OrderSummary({
             className="flex gap-3 rounded-lg border border-border/60 bg-muted/30 p-3"
             key={item.id}
           >
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md">
-              <Image
-                alt={item.name}
-                className="object-cover"
-                fill
-                sizes="64px"
-                src={item.image}
-              />
+            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white">
+              {failedImageIds.has(item.id) || !(item.image?.trim()) ? (
+                <Image
+                  alt={item.name}
+                  className="object-contain"
+                  fill
+                  sizes="64px"
+                  src={placeholderSrc}
+                />
+              ) : (
+                <Image
+                  alt={item.name}
+                  className="object-contain"
+                  fill
+                  sizes="64px"
+                  src={item.image.trim()}
+                  unoptimized={/^https?:\/\//i.test(item.image)}
+                  onError={() =>
+                    setFailedImageIds((prev) => new Set(prev).add(item.id))
+                  }
+                />
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium leading-tight">{item.name}</p>
               {item.variantLabel ? (
                 <p className="mt-0.5 text-sm text-muted-foreground">
-                  {item.variantLabel}
+                  {variantDisplayOnly(item.name, item.variantLabel)}
                 </p>
               ) : null}
               <p className="mt-0.5 text-sm text-muted-foreground">

@@ -9,7 +9,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SEO_CONFIG } from "~/app";
 import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
-import { CRYPTO_CATEGORY_NAMES_SET } from "~/lib/storefront-categories";
+import {
+  CRYPTO_CATEGORY_NAMES_SET,
+  SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
+} from "~/lib/storefront-categories";
 import { cn } from "~/lib/cn";
 import { Cart } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
@@ -100,9 +103,11 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   >([]);
 
   // Mega menu: exclude crypto categories (they appear in Shop by Crypto when user has Web3)
+  // and the show-in-all-products category (internal use only, not a real nav category)
   const filteredShopCategories = useMemo(() => {
     return shopCategories
       .filter((cat) => !CRYPTO_CATEGORY_NAMES_SET.has(cat.name))
+      .filter((cat) => cat.slug !== SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG)
       .filter((cat) => {
         const topCount = cat.productCount ?? 0;
         const subCount = (cat.subcategories ?? []).reduce(
@@ -114,7 +119,9 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       .map((cat) => ({
         ...cat,
         subcategories: (cat.subcategories ?? []).filter(
-          (s) => (s.productCount ?? 0) > 0,
+          (s) =>
+            (s.productCount ?? 0) > 0 &&
+            s.slug !== SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
         ),
       }));
   }, [shopCategories]);

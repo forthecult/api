@@ -30,12 +30,26 @@ import {
 
 import type { CartItem } from "./cart";
 
+/** Show only the variant (e.g. "2XL") when variantLabel repeats the product name. */
+function variantDisplayOnly(productName: string, variantLabel: string): string {
+  if (!variantLabel?.trim()) return variantLabel ?? "";
+  const name = (productName ?? "").trim();
+  if (!name || !variantLabel.startsWith(name)) return variantLabel;
+  const rest = variantLabel.slice(name.length).replace(/^\s*\/\s*/, "").trim();
+  return rest || variantLabel;
+}
+
 interface CartClientProps {
   className?: string;
 }
 
+const CART_PLACEHOLDER = "/placeholder.svg";
+
 export function CartClient({ className }: CartClientProps) {
   const [isMounted, setIsMounted] = React.useState(false);
+  const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
+    () => new Set(),
+  );
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
     items: cartItems,
@@ -135,14 +149,29 @@ export function CartClient({ className }: CartClientProps) {
                       hover:bg-accent/50 animate-in fade-in slide-in-from-bottom-2 duration-200
                     `}
                   >
-                    <div className="relative h-20 w-20 overflow-hidden rounded">
-                      <Image
-                        alt={item.name}
-                        className="object-cover"
-                        fill
-                        sizes="80px"
-                        src={item.image}
-                      />
+                    <div className="relative h-20 w-20 overflow-hidden rounded bg-white">
+                      {failedImageIds.has(item.id) ||
+                      !(item.image?.trim()) ? (
+                        <Image
+                          alt={item.name}
+                          className="object-contain"
+                          fill
+                          sizes="80px"
+                          src={CART_PLACEHOLDER}
+                        />
+                      ) : (
+                        <Image
+                          alt={item.name}
+                          className="object-contain"
+                          fill
+                          sizes="80px"
+                          src={item.image!.trim()}
+                          unoptimized={/^https?:\/\//i.test(item.image!)}
+                          onError={() =>
+                            setFailedImageIds((prev) => new Set(prev).add(item.id))
+                          }
+                        />
+                      )}
                     </div>
                     <div className="ml-4 flex flex-1 flex-col justify-between">
                       <div>
@@ -172,7 +201,7 @@ export function CartClient({ className }: CartClientProps) {
                         </div>
                         <p className="text-xs text-muted-foreground">
                           {item.variantLabel
-                            ? `${item.variantLabel}${item.category ? ` · ${item.category}` : ""}`
+                            ? `${variantDisplayOnly(item.name, item.variantLabel)}${item.category ? ` · ${item.category}` : ""}`
                             : item.category}
                         </p>
                       </div>

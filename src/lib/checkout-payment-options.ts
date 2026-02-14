@@ -387,7 +387,6 @@ export function getFooterPaymentItems(
     items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
     items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
-    items.push({ name: "SOLUNA", src: "/crypto/soluna/soluna-logo.png" });
   } else {
     if (visibility.cryptoBitcoin) items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
     if (visibility.cryptoDogecoin)
@@ -402,8 +401,6 @@ export function getFooterPaymentItems(
       items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     if (visibility.cryptoTroll)
       items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
-    if (visibility.cryptoSoluna)
-      items.push({ name: "SOLUNA", src: "/crypto/soluna/soluna-logo.png" });
   }
 
   // Stablecoins (USDC, USDT)

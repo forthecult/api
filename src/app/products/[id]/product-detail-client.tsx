@@ -108,7 +108,10 @@ export function ProductActions({
     : selectedVariant != null
       ? (selectedVariant.stockQuantity ?? 0) > 0
       : product.inStock;
-  const image = selectedVariant?.imageUrl ?? product.image;
+  // Prefer variant image only when non-empty; otherwise product image, then placeholder (avoids broken cart/checkout images)
+  const image =
+    (selectedVariant?.imageUrl?.trim() || product.image?.trim() || "").trim() ||
+    "/placeholder.svg";
 
   const handleQuantityChange = React.useCallback((newQty: number) => {
     setQuantity((prev) => (newQty >= 1 ? newQty : prev));
@@ -126,7 +129,7 @@ export function ProductActions({
           productId: product.id,
           productVariantId: selectedVariant.id,
           ...(variantLabel && { variantLabel }),
-          image: image,
+          image,
           name: product.name,
           price,
           ...(product.slug && { slug: product.slug }),
@@ -138,7 +141,7 @@ export function ProductActions({
         {
           category: product.category,
           id: product.id,
-          image: product.image,
+          image: product.image?.trim() || "/placeholder.svg",
           name: product.name,
           price: product.price,
           ...(product.slug && { slug: product.slug }),
