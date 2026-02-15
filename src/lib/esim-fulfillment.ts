@@ -81,7 +81,10 @@ export async function fulfillEsimOrder(
         }
 
         // Extract eSIM details
-        const purchaseData = purchaseResult.data as unknown as Record<string, unknown>;
+        const purchaseData = purchaseResult.data as unknown as Record<
+          string,
+          unknown
+        >;
         const sim = purchaseData.sim as
           | undefined
           | { iccid: string; id: string; status: string };

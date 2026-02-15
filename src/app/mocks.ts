@@ -2,8 +2,7 @@ export const featuredProductsHomepage = [
   {
     category: "Testing",
     id: "test-1",
-    image:
-      "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&auto=format&fit=crop&q=60",
+    image: "/placeholder.svg",
     inStock: true,
     name: "Test Product — $1 (Real Transactions)",
     price: 1,
@@ -12,8 +11,7 @@ export const featuredProductsHomepage = [
   {
     category: "Audio",
     id: "1",
-    image:
-      "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    image: "/placeholder.svg",
     inStock: true,
     name: "Premium Wireless Headphones",
     originalPrice: 249.99,
@@ -23,8 +21,7 @@ export const featuredProductsHomepage = [
   {
     category: "Wearables",
     id: "2",
-    image:
-      "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    image: "/placeholder.svg",
     inStock: true,
     name: "Smart Watch Series 5",
     originalPrice: 349.99,
@@ -34,8 +31,7 @@ export const featuredProductsHomepage = [
   {
     category: "Smartphones",
     id: "5",
-    image:
-      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    image: "/placeholder.svg",
     inStock: true,
     name: "Smartphone Pro Max",
     originalPrice: 1099.99,
@@ -45,8 +41,7 @@ export const featuredProductsHomepage = [
   {
     category: "Audio",
     id: "6",
-    image:
-      "https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
+    image: "/placeholder.svg",
     inStock: true,
     name: "Bluetooth Earbuds Pro",
     originalPrice: 179.99,
@@ -58,27 +53,27 @@ export const featuredProductsHomepage = [
 // Testimonials for the testimonials section (fallback when no DB reviews). No avatar/handle; rating 1–5.
 export const testimonials = [
   {
-    author: { name: "Sarah Johnson" },
+    author: { name: "Jesse" },
     rating: 5,
     text: "Honestly, I don't even remember how many times I've ordered from here. Never once had a bad experience. Stuff just works, and when I had a question, support was on it in like, five minutes.",
   },
   {
-    author: { name: "Michael Chen" },
+    author: { name: "Riley" },
     rating: 5,
     text: "Wasn't expecting much tbh, but ended up being super impressed. Got a keyboard that feels chef's kiss and arrived faster than other stores. No complaints.",
   },
   {
-    author: { name: "Emily Rodriguez" },
+    author: { name: "Sam" },
     rating: 5,
     text: "I was totally lost picking a laptop for freelance work. Dropped them a message and got a thoughtful reply within the hour. They didn't push the priciest option either, which I respect. Love what I got.",
   },
   {
-    author: { name: "David Park" },
+    author: { name: "Quinn" },
     rating: 5,
     text: "Site's clean, checkout was quick, and my order showed up two days early. Which never happens. Already eyeing my next upgrade 👀",
   },
   {
-    author: { name: "Sophia Martinez" },
+    author: { name: "Casey" },
     rating: 5,
     text: "Finally. A tech store that doesn't make me feel dumb. Everything's explained in plain English, and their chat team didn't treat me like I was annoying them. 10/10.",
   },

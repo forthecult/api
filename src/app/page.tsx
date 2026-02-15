@@ -217,7 +217,7 @@ const featuresWhyChooseUs = [
   },
   {
     description:
-      "Every product is curated for quality and tested by the community. 30-day money-back guarantee.",
+      "Every product is tested by the community. 30-day money-back guarantee.",
     icon: <Star className="h-5 w-5 text-primary" />,
     title: "Quality guarantee",
   },
@@ -266,9 +266,7 @@ export default async function HomePage() {
   return (
     <>
       <div className="flex min-h-screen flex-col bg-background">
-        {/* ═══════════════════════════════════════════
-            HERO — Dark, futuristic, cult-y
-            ═══════════════════════════════════════════ */}
+        {/* Hero */}
         <section
           className={`
           hero-scanlines relative overflow-hidden py-28
@@ -395,9 +393,7 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* ═══════════════════════════════════════════
-            BRAND STATEMENT
-            ═══════════════════════════════════════════ */}
+        {/* Brand statement */}
         <section
           className={`
           py-20
@@ -453,9 +449,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* ═══════════════════════════════════════════
-            LOOKBOOK / VISUAL BREAK
-            ═══════════════════════════════════════════ */}
+        {/* Lookbook */}
         <section
           className={`
           bg-background py-20
@@ -486,8 +480,7 @@ export default async function HomePage() {
               `}
               >
                 What you wear and use should look great and support how you
-                feel. Thoughtfully curated apparel — gear we&apos;d use
-                ourselves.
+                feel. Apparel we&apos;d use ourselves.
               </p>
               <Link href="/lookbook">
                 <Button
@@ -534,9 +527,7 @@ export default async function HomePage() {
           </PageContainer>
         </section>
 
-        {/* ═══════════════════════════════════════════
-            FEATURED CATEGORIES
-            ═══════════════════════════════════════════ */}
+        {/* Featured categories */}
         <section
           className={`
           py-20
@@ -567,8 +558,8 @@ export default async function HomePage() {
               `}
               />
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                Browse curated tech, apparel, wellness, and travel essentials —
-                each category handpicked for quality
+                Browse tech, apparel, wellness, and travel essentials — each
+                category chosen for quality
               </p>
             </div>
             <div
@@ -658,9 +649,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* ═══════════════════════════════════════════
-            FEATURED PRODUCTS
-            ═══════════════════════════════════════════ */}
+        {/* Featured products */}
         <section
           className={`
           bg-background py-20
@@ -680,7 +669,7 @@ export default async function HomePage() {
                 text-xs font-medium tracking-[0.2em] text-primary uppercase
               `}
               >
-                Curated picks
+                Staff picks
               </p>
               <h2
                 className={`
@@ -697,8 +686,7 @@ export default async function HomePage() {
               `}
               />
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                Handpicked tech, apparel, wellness, and travel gear for how you
-                live
+                Tech, apparel, wellness, and travel gear for how you live
               </p>
             </div>
             <div
@@ -731,9 +719,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════
-            WHY CHOOSE US — Feature Grid
-            ═══════════════════════════════════════════ */}
+        {/* Why choose us */}
         <section
           className={`
           py-20
@@ -832,9 +818,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* ═══════════════════════════════════════════
-            TESTIMONIALS
-            ═══════════════════════════════════════════ */}
+        {/* Testimonials */}
         <section
           className={`
           bg-background py-20
@@ -850,16 +834,14 @@ export default async function HomePage() {
           >
             <TestimonialsSection
               className="py-0"
-              description="Don't just take our word for it — hear from people who live it"
+              description="Reviews from people who've ordered"
               testimonials={testimonials}
               title="From the community"
             />
           </div>
         </section>
 
-        {/* ═══════════════════════════════════════════
-            CTA — Join the Cult
-            ═══════════════════════════════════════════ */}
+        {/* CTA */}
         <section
           className={`
           py-20

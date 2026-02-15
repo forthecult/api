@@ -394,11 +394,11 @@ export function SupportChatWidget() {
             <div
               className={`
               relative flex h-10 w-10 shrink-0 items-center justify-center
-              rounded-full bg-gradient-to-br from-violet-500 to-indigo-600
+              rounded-full bg-primary
               text-white shadow-sm
             `}
             >
-              {/* Avatar placeholder – replace src with actual Alice avatar */}
+              {/* Avatar */}
               <svg
                 fill="none"
                 height="20"
@@ -422,12 +422,12 @@ export function SupportChatWidget() {
             </div>
             <div className="flex flex-col">
               <span className="text-base leading-tight font-semibold">
-                {takenOverBy ? "Live Support Agent" : "Alice AI Support Agent"}
+                {takenOverBy ? "Live Support" : "Support"}
               </span>
               <span className="text-sm text-muted-foreground">
                 {takenOverBy
                   ? "A team member is helping you"
-                  : "Online · Typically replies instantly"}
+                  : "Online"}
               </span>
             </div>
             <Button
@@ -449,7 +449,7 @@ export function SupportChatWidget() {
                 <div
                   className={`
                   flex h-14 w-14 items-center justify-center rounded-full
-                  bg-gradient-to-br from-violet-500 to-indigo-600 text-white
+                  bg-primary text-primary-foreground
                   shadow-md
                 `}
                 >

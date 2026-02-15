@@ -423,11 +423,12 @@ export function ProductQuickView({
                       </ul>
                     )}
 
-                    {/* Variant selector */}
+                    {/* Variant selector — key by product id so state resets when opening a different product */}
                     {variantRequired &&
                       product.optionDefinitions &&
                       product.variants && (
                         <VariantSelector
+                          key={product.id}
                           onSelectVariant={setSelectedVariant}
                           optionDefinitions={product.optionDefinitions}
                           selectedVariant={selectedVariant}

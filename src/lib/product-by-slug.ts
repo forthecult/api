@@ -80,6 +80,41 @@ interface OptionDefinition {
 }
 
 /**
+ * Merge option definitions that share the same name so each dimension (e.g. Size)
+ * has exactly one row and one selection. Fixes products where duplicate names
+ * (e.g. two "Size" entries) would require two selections that no single variant satisfies.
+ */
+function mergeOptionDefinitionsByName(
+  optionDefinitions: OptionDefinition[],
+): OptionDefinition[] {
+  if (optionDefinitions.length <= 1) return optionDefinitions;
+  const byName = new Map<string, string[]>();
+  const order: string[] = [];
+  for (const opt of optionDefinitions) {
+    const name = opt.name?.trim() || "Option";
+    const values = (opt.values ?? []).map((v) => String(v).trim()).filter(Boolean);
+    if (values.length === 0) continue;
+    if (!byName.has(name)) {
+      order.push(name);
+      byName.set(name, []);
+    }
+    const existing = byName.get(name)!;
+    for (const v of values) {
+      if (!existing.includes(v)) existing.push(v);
+    }
+  }
+  return order.map((name) => {
+    const values = byName.get(name)!;
+    const isSize =
+      name.toLowerCase() === "size";
+    return {
+      name,
+      values: isSize ? sortClothingSizes([...values]) : [...values].sort(),
+    };
+  });
+}
+
+/**
  * Look up a published product by slug or id. Returns null if not found or not published.
  */
 export async function getProductBySlugOrId(
@@ -193,6 +228,9 @@ export async function getProductBySlugOrId(
     }
   }
   const hasVariantRows = variantsRows.length > 0;
+
+  // Merge duplicate option names (e.g. two "Size" entries) so each dimension has one row and one selection.
+  optionDefinitions = mergeOptionDefinitionsByName(optionDefinitions);
 
   // Product has option definitions (e.g. from Printful sync) but no variant rows yet — admin sees
   // Options (Size, Color) from JSON; customer section requires variant rows. Create variant rows

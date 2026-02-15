@@ -67,7 +67,7 @@
 | `bun latest`          | install latest deps                            |
 | `bun ui`              | add shadcn components                          |
 | `bun db:push`         | apply db schema changes                        |
-| `bun db:auth`         | update auth-related tables                     |
+| `bun db:auth`         | regenerate auth schema from better-auth config (then run `db:push` to sync DB) |
 | `bun db:studio`       | open visual db editor                          |
 | `bun db:seed:staging` | seed categories, brands, shipping-by-brand, products, reviews |
 

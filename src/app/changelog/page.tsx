@@ -260,7 +260,7 @@ const BADGE_STYLES: Record<
   coming: {
     className:
       "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-    label: "Coming soon",
+    label: "Planned",
   },
   fixed: {
     className:

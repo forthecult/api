@@ -43,6 +43,8 @@ async function main() {
  *
  * To modify the schema, edit src/lib/auth.ts instead,
  * then run 'bun db:auth' to regenerate this file.
+ * After regenerating, run 'bun db:push' so the database matches the new schema;
+ * otherwise sign-in/sign-up can return 500.
  *
  * Any direct changes to this file will be overwritten.
  */

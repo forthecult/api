@@ -160,6 +160,7 @@ function ProductCardInner({
   const handleAddToCart = React.useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       if (onAddToCart) {
         setIsAddingToCart(true);
         onAddToCart(product.id);

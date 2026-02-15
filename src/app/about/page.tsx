@@ -281,8 +281,7 @@ export default function AboutPage() {
               A decade ago we sold Bitcoin tees to cypherpunks. Today we're the
               lifestyle brand for everyone who gets it: sovereignty over your
               money, your data, your health, your future. The Age of
-              Decentralization is here. We're not going anywhere. Welcome to
-              Culture.
+              Decentralization is here. We're not going anywhere.
             </p>
           </section>
 

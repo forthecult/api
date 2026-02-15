@@ -156,12 +156,12 @@ export const NOTIFICATION_TEMPLATES: Record<
   },
   // ---- Marketing ----
   welcome_email: {
-    body: "Thanks for signing up. Explore our store and find something you'll love.",
+    body: "You're in. The shop's ready when you are.",
     emailBody:
-      "Thanks for signing up. We're glad to have you. Explore our store and find something you'll love.",
-    emailSubject: "Welcome!",
+      "You're in. We're glad to have you. The shop's ready when you are.",
+    emailSubject: "You're in",
     id: "welcome_email",
-    title: "Welcome",
+    title: "You're in",
     transactional: false,
   },
 };

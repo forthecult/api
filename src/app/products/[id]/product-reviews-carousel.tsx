@@ -77,7 +77,7 @@ export function ProductReviewsCarousel({
           What customers are saying
         </h2>
         <p className="mb-6 text-muted-foreground">
-          Don't just take our word for it—hear from people who live the Culture
+          Reviews from the community
           lifestyle
         </p>
       </div>

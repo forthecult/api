@@ -4,11 +4,11 @@ import type { Notification } from "./notification-center";
 
 export const mockNotifications: Notification[] = [
   {
-    description: "Thank you for signing up. Explore our features.",
+    description: "You're in. Check out the shop when you're ready.",
     id: "1",
     read: false,
     timestamp: new Date(Date.now() - 60 * 1000), // 1 minute ago
-    title: `Welcome to ${SEO_CONFIG.name}!`,
+    title: "You're in",
     type: "success",
   },
   {
