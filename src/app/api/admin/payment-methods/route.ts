@@ -70,12 +70,13 @@ export async function GET(request: NextRequest) {
   }
   list.sort((a, b) => a.displayOrder - b.displayOrder);
 
+  // New methods from PAYMENT_METHOD_DEFAULTS are inserted disabled so they don't appear until admin enables them.
   if (toInsert.length > 0) {
     for (const d of toInsert) {
       await db.insert(paymentMethodSettingTable).values({
         methodKey: d.methodKey,
         label: d.label,
-        enabled: true,
+        enabled: false,
         displayOrder: d.displayOrder,
         createdAt: now,
         updatedAt: now,

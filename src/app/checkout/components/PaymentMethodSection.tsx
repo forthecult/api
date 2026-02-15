@@ -186,6 +186,7 @@ export function PaymentMethodSection({
       else if (sub === "pump") key = "crypto_pump";
       else if (sub === "troll") key = "crypto_troll";
       else if (sub === "soluna") key = "crypto_soluna";
+      else if (sub === "seeker") key = "crypto_seeker";
       else if (sub === "other") {
         if (cryptoOtherSubOption === "sui") key = "crypto_sui";
         else if (cryptoOtherSubOption === "ton") key = "crypto_ton";
@@ -217,6 +218,7 @@ export function PaymentMethodSection({
     PUMP?: number;
     TROLL?: number;
     SOLUNA?: number;
+    SKR?: number;
   }>({});
 
   const { currency } = useCountryCurrency();
@@ -235,7 +237,7 @@ export function PaymentMethodSection({
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number; SOLUNA?: number }) => {
+      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number; SOLUNA?: number; SKR?: number }) => {
         if (data && typeof data === "object") setCryptoPrices(data);
       })
       .catch((err: unknown) => {
@@ -293,6 +295,8 @@ export function PaymentMethodSection({
       icons.push({ alt: "Sui", src: "/crypto/sui/sui-logo.svg" });
     if (visibility.cryptoTon)
       icons.push({ alt: "TON", src: "/crypto/ton/ton_logo.svg" });
+    if (visibility.cryptoSeeker)
+      icons.push({ alt: "Seeker (SKR)", src: "/crypto/seeker/S_Token_Circle_White.svg" });
     return icons;
   }, [visibility]);
   const visibleUsdcSubOptions = useMemo(() => {
@@ -332,6 +336,7 @@ export function PaymentMethodSection({
       (paymentMethod === "crypto" && paymentSubOption === "pump") ||
       (paymentMethod === "crypto" && paymentSubOption === "troll") ||
       (paymentMethod === "crypto" && paymentSubOption === "soluna") ||
+      (paymentMethod === "crypto" && paymentSubOption === "seeker") ||
       (paymentMethod === "crypto" && paymentSubOption === "solana"));
 
   const isEvmPaySupported =
@@ -404,6 +409,12 @@ export function PaymentMethodSection({
       const amount = total / rate;
       return `≈ ${formatCrypto(amount, 6)} TROLL`;
     }
+    if (paymentSubOption === "seeker") {
+      const rate = cryptoPrices.SKR;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${formatCrypto(amount, 6)} SKR`;
+    }
     return null;
   }, [
     paymentMethod,
@@ -415,6 +426,7 @@ export function PaymentMethodSection({
     cryptoPrices.CRUST,
     cryptoPrices.PUMP,
     cryptoPrices.TROLL,
+    cryptoPrices.SKR,
   ]);
 
   useEffect(() => {
@@ -1385,11 +1397,13 @@ export function PaymentMethodSection({
                     ? "Pay with TROLL"
                     : paymentMethod === "crypto" && paymentSubOption === "soluna"
                       ? "Pay with SOLUNA"
-                      : paymentMethod === "stablecoins" &&
-                          stablecoinToken === "usdc" &&
-                          paymentSubOption === "solana"
-                        ? "Pay with USDC (Solana)"
-                        : "Pay with Solana"}
+                      : paymentMethod === "crypto" && paymentSubOption === "seeker"
+                        ? "Pay with Seeker (SKR)"
+                        : paymentMethod === "stablecoins" &&
+                            stablecoinToken === "usdc" &&
+                            paymentSubOption === "solana"
+                          ? "Pay with USDC (Solana)"
+                          : "Pay with Solana"}
           </Button>
         ) : isSuiPaySupported ? (
           <Button
