@@ -16,7 +16,7 @@ import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardFooter } from "~/ui/primitives/card";
-import { Dialog, DialogContent } from "~/ui/primitives/dialog";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 
 type ProductCardProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -577,6 +577,9 @@ function ProductCardInner({
             sm:max-w-md
           `}
           >
+            <DialogTitle className="sr-only">
+              {product.name} — sign in to view
+            </DialogTitle>
             <TokenGateGuard
               className="min-h-0 py-0"
               onValidated={() => {

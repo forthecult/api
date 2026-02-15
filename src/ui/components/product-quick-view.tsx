@@ -259,12 +259,15 @@ export function ProductQuickView({
             data-[state=closed]:zoom-out-95
           `,
           "quickview-dialog",
-          "[&_[data-slot=dialog-close]]:size-10",
-          "[&_[data-slot=dialog-close]]:rounded-full",
-          "[&_[data-slot=dialog-close]]:border-2 [&_[data-slot=dialog-close]]:border-border",
+          "[&_[data-slot=dialog-close]]:flex [&_[data-slot=dialog-close]]:items-center [&_[data-slot=dialog-close]]:justify-center",
+          "[&_[data-slot=dialog-close]]:size-9 [&_[data-slot=dialog-close]]:rounded-full",
+          "[&_[data-slot=dialog-close]]:border [&_[data-slot=dialog-close]]:border-border",
           "[&_[data-slot=dialog-close]]:bg-background [&_[data-slot=dialog-close]]:opacity-100",
-          "[&_[data-slot=dialog-close]]:shadow-lg",
+          "[&_[data-slot=dialog-close]]:shadow-md",
+          "sm:[&_[data-slot=dialog-close]]:size-8",
+          "sm:[&_[data-slot=dialog-close]]:border-0 sm:[&_[data-slot=dialog-close]]:bg-transparent sm:[&_[data-slot=dialog-close]]:shadow-none",
           "[&_[data-slot=dialog-close]]:hover:bg-muted",
+          "sm:[&_[data-slot=dialog-close]]:hover:bg-accent",
         )}
       >
         <DialogTitle className="sr-only">

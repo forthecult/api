@@ -48,7 +48,8 @@ function DialogContent({
         {children}
         <DialogPrimitive.Close
           className={`
-            absolute top-4 right-4 rounded-xs opacity-70 ring-offset-background
+            absolute top-4 right-4 flex size-8 items-center justify-center
+            rounded-full opacity-70 ring-offset-background
             transition-opacity
             hover:opacity-100
             focus:ring-2 focus:ring-ring focus:ring-offset-2

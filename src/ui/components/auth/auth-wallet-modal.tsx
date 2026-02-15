@@ -281,16 +281,26 @@ export function AuthWalletModal({
 
   // Solana: once the wallet adapter registers the selection (currentWallet becomes available),
   // call connect() once. Ref prevents duplicate connect() when effect re-runs (e.g. Strict Mode).
+  // When user approves in Phantom, the adapter sets connected/publicKey; we must transition to
+  // "signing" even if pendingSolanaConnect was already cleared when we started connect().
   useEffect(() => {
-    if (!pendingSolanaConnect || !open) return;
+    if (!open) return;
     if (!currentWallet) return;
-    if (connecting) return;
-    if (connected && publicKey) {
+    // Wallet just became connected (e.g. user approved in Phantom) — move to signing step.
+    // Check step/selectedChain so we only do this when we're on the network step waiting for connection.
+    if (
+      (step === "network" || step === "wallet") &&
+      selectedChain === "solana" &&
+      connected &&
+      publicKey
+    ) {
       setPendingSolanaConnect(false);
       solanaConnectStartedRef.current = false;
       setStep("signing");
       return;
     }
+    if (!pendingSolanaConnect) return;
+    if (connecting) return;
     // Only start connect once per selection
     if (solanaConnectStartedRef.current) return;
     solanaConnectStartedRef.current = true;
@@ -350,6 +360,8 @@ export function AuthWalletModal({
     connecting,
     publicKey,
     connect,
+    step,
+    selectedChain,
   ]);
 
   // If Solana wallet disconnects while we're on "Sign the message", show error so user isn't stuck

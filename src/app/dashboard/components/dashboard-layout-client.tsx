@@ -89,7 +89,6 @@ export function DashboardLayoutClient({
               "sm:p-6",
               "md:p-8",
               "[&_[data-slot=card]]:shadow-none",
-              "max-md:[&>:first-child]:hidden",
             )}
           >
             {children}
