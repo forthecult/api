@@ -83,6 +83,20 @@ export default async function OrderDetailPage({
             <span>{formatDateLong(order.createdAt)}</span>
           </div>
           <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Payment</span>
+            <span>{formatPaymentMethod(order.paymentMethod, order.cryptoCurrency)}</span>
+          </div>
+          {isCryptoPayment(order.paymentMethod) &&
+            order.cryptoAmount != null &&
+            order.cryptoCurrency != null && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Paid (crypto)</span>
+                <span className="font-medium">
+                  {order.cryptoAmount} {order.cryptoCurrency}
+                </span>
+              </div>
+            )}
+          <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">Total</span>
             <span className="font-medium">{formatCents(order.totalCents)}</span>
           </div>
@@ -195,4 +209,40 @@ function getOrderStatusLabel(order: {
         order.status?.toLowerCase() ??
         "pending");
   return STATUS_LABELS[key] ?? key;
+}
+
+function isCryptoPayment(method: string | undefined): boolean {
+  const m = (method ?? "").toLowerCase();
+  return (
+    m === "solana_pay" ||
+    m === "eth_pay" ||
+    m === "btcpay" ||
+    m === "ton_pay" ||
+    m === "crypto"
+  );
+}
+
+function formatPaymentMethod(
+  method: string | undefined,
+  cryptoCurrency?: string | null,
+): string {
+  const m = (method ?? "").toLowerCase();
+  if (m === "stripe") return "Credit / Debit card";
+  if (m === "solana_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "SOL") return "SOL (Solana)";
+    if (token) return `${token} (Solana)`;
+    return "Solana";
+  }
+  if (m === "eth_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "ETH") return "ETH (Ethereum)";
+    if (token) return `${token} (Ethereum)`;
+    return "Ethereum";
+  }
+  if (m === "btcpay") return "Bitcoin";
+  if (m === "ton_pay") return "TON";
+  if (m === "paypal") return "PayPal";
+  if (m === "crypto") return "Crypto";
+  return method ?? "—";
 }

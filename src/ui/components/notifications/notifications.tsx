@@ -95,20 +95,35 @@ export const Notifications: React.FC<NotificationsProps> = ({
               <p className="text-xs text-muted-foreground">
                 {notification.description}
               </p>
-              {typeof notification.metadata?.orderStatusPath === "string" && (
+              {typeof notification.metadata?.esimDashboardPath === "string" && (
                 <Link
                   className={`
                     inline-flex items-center gap-1 text-xs font-medium
                     text-primary
                     hover:underline
                   `}
-                  href={notification.metadata.orderStatusPath as string}
+                  href={notification.metadata.esimDashboardPath as string}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  View order
+                  eSIM Dashboard
                   <ExternalLink className="h-3 w-3" />
                 </Link>
               )}
+              {typeof notification.metadata?.orderStatusPath === "string" &&
+                !notification.metadata?.esimDashboardPath && (
+                  <Link
+                    className={`
+                    inline-flex items-center gap-1 text-xs font-medium
+                    text-primary
+                    hover:underline
+                  `}
+                    href={notification.metadata.orderStatusPath as string}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View order
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                )}
               {typeof notification.metadata?.ticketPath === "string" && (
                 <Link
                   className={`

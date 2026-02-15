@@ -11,6 +11,7 @@ import type { NotificationType } from "~/lib/notification-templates";
 
 import { db } from "~/db";
 import {
+  orderItemsTable,
   ordersTable,
   supportTicketTable,
   userNotificationTable,
@@ -54,6 +55,16 @@ export async function createUserNotification(
   return { id };
 }
 
+/** True if the order contains only eSIM line items (all item names start with "eSIM:"). */
+async function orderIsEsimOnly(orderId: string): Promise<boolean> {
+  const items = await db
+    .select({ name: orderItemsTable.name })
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, orderId));
+  if (items.length === 0) return false;
+  return items.every((i) => /^eSIM:/i.test(i.name ?? ""));
+}
+
 /**
  * Called when an order is created (Stripe checkout complete, crypto create-order, or admin marks paid).
  * Sends Telegram "order placed", website notification, and order-confirmation email when preferences allow.
@@ -69,7 +80,11 @@ export async function onOrderCreated(orderId: string): Promise<void> {
     .limit(1);
   if (!order) return;
 
-  void notifyOrderUpdate(orderId, { kind: "order_placed" });
+  const isEsimOnly = await orderIsEsimOnly(orderId);
+  void notifyOrderUpdate(orderId, {
+    kind: "order_placed",
+    ...(isEsimOnly && { isEsimOrder: true }),
+  });
 
   // Resolve userId for web notification: use order's userId, or look up by order email for guest orders
   let webNotificationUserId: null | string = order.userId;
@@ -86,13 +101,24 @@ export async function onOrderCreated(orderId: string): Promise<void> {
     (await userWantsTransactionalWebsite(webNotificationUserId))
   ) {
     const shortId = orderId.slice(0, 8);
-    await createUserNotification({
-      description: `Order ${shortId} has been received. We'll notify you when it ships.`,
-      metadata: { orderId },
-      title: "Order confirmed",
-      type: "order_placed",
-      userId: webNotificationUserId,
-    });
+    if (isEsimOnly) {
+      await createUserNotification({
+        description:
+          "Thank you for your order. Check your eSIM Dashboard to activate your eSIM.",
+        metadata: { orderId, esimDashboardPath: "/dashboard/esim" },
+        title: "Order confirmed",
+        type: "order_placed",
+        userId: webNotificationUserId,
+      });
+    } else {
+      await createUserNotification({
+        description: `Order ${shortId} has been received. We'll notify you when it ships.`,
+        metadata: { orderId },
+        title: "Order confirmed",
+        type: "order_placed",
+        userId: webNotificationUserId,
+      });
+    }
   }
 
   if (
@@ -101,6 +127,7 @@ export async function onOrderCreated(orderId: string): Promise<void> {
   ) {
     void sendOrderConfirmationEmail({
       orderId,
+      isEsimOrder: isEsimOnly,
       to: order.email.trim(),
     });
   }

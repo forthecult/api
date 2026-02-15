@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  Check,
   CheckCircle,
   Clock,
+  Copy,
   ExternalLink,
   Loader2,
   Signal,
@@ -200,16 +202,25 @@ export function MyEsimsClient() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            <strong>iPhone:</strong> Go to Settings &gt; Cellular &gt; Add eSIM
-            &gt; Use QR Code. Scan the QR code or tap the activation link.
+            Each eSIM card above shows a <strong>QR code</strong> and an{" "}
+            <strong>activation link</strong>. Use the QR code on this page (scan
+            it with your phone) for the most reliable setup on both iPhone and
+            Android.
           </p>
           <p>
-            <strong>Android:</strong> Go to Settings &gt; Network &gt; SIMs &gt;
-            Add eSIM. Scan the QR code provided.
+            <strong>iPhone:</strong> Settings → Cellular → Add eSIM → Use QR
+            Code, then scan the QR code in the card. Or tap &quot;Open
+            activation link&quot; (may open in a new tab).
           </p>
           <p>
-            <strong>Note:</strong> Make sure your device is eSIM compatible and
-            connected to Wi-Fi before installing.
+            <strong>Android:</strong> Settings → Network &amp; internet → SIMs →
+            Add eSIM, then &quot;Scan QR code&quot; and scan the QR code in the
+            card. If your phone has no QR option, copy the activation link and
+            open it in Chrome on your phone.
+          </p>
+          <p>
+            <strong>Note:</strong> Use Wi‑Fi and ensure your device is eSIM
+            compatible before installing.
           </p>
         </CardContent>
       </Card>
@@ -220,9 +231,56 @@ export function MyEsimsClient() {
 function EsimOrderCard({ order }: { order: EsimOrder }) {
   const [usage, setUsage] = useState<null | UsageData>(null);
   const [loadingUsage, setLoadingUsage] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<null | string>(null);
+  const [qrError, setQrError] = useState<null | string>(null);
+  const [copied, setCopied] = useState(false);
 
   const statusConfig = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
+
+  // Generate QR code from activation link so Android and iPhone can scan it
+  useEffect(() => {
+    if (!order.activationLink?.trim()) {
+      setQrDataUrl(null);
+      setQrError(null);
+      return;
+    }
+    let cancelled = false;
+    setQrError(null);
+    import("qrcode")
+      .then((QRCodeModule) => {
+        const QRCode = QRCodeModule.default;
+        return QRCode.toDataURL(order.activationLink!.trim(), {
+          errorCorrectionLevel: "M",
+          margin: 2,
+          width: 200,
+        });
+      })
+      .then((dataUrl) => {
+        if (!cancelled && dataUrl?.startsWith("data:")) {
+          setQrDataUrl(dataUrl);
+        } else if (!cancelled) {
+          setQrError("QR code unavailable");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setQrError("QR code unavailable");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [order.activationLink]);
+
+  const copyActivationLink = () => {
+    if (!order.activationLink) return;
+    navigator.clipboard.writeText(order.activationLink).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      },
+      () => {},
+    );
+  };
 
   const fetchUsage = () => {
     if (!order.esimId || usage) return;
@@ -318,7 +376,7 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
               {formatCurrency(order.priceCents)}
             </span>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               {order.esimId && order.status === "active" && !usage && (
                 <Button
                   disabled={loadingUsage}
@@ -334,20 +392,85 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
                 </Button>
               )}
               {order.activationLink && (
-                <Button asChild size="sm" variant="outline">
-                  <a
-                    href={order.activationLink}
-                    rel="noopener noreferrer"
-                    target="_blank"
+                <>
+                  <Button
+                    onClick={copyActivationLink}
+                    size="sm"
+                    variant="outline"
                   >
-                    Install eSIM
-                    <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                </Button>
+                    {copied ? (
+                      <Check className="ml-1 h-3 w-3" />
+                    ) : (
+                      <Copy className="ml-1 h-3 w-3" />
+                    )}
+                    {copied ? "Copied" : "Copy link"}
+                  </Button>
+                  <Button asChild size="sm" variant="outline">
+                    <a
+                      href={order.activationLink}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      Open activation link
+                      <ExternalLink className="ml-1 h-3 w-3" />
+                    </a>
+                  </Button>
+                </>
               )}
             </div>
           </div>
         </div>
+
+        {/* Activate: QR code + instructions (when we have an activation link) */}
+        {order.activationLink && (order.status === "active" || order.status === "processing") && (
+          <div
+            className={`
+            mt-5 border-t border-border pt-5
+          `}
+          >
+            <h4 className="mb-3 text-sm font-semibold">Activate your eSIM</h4>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+              {qrDataUrl && (
+                <div className="flex shrink-0 flex-col items-center gap-1">
+                  <img
+                    alt="eSIM activation QR code — scan with your phone"
+                    className="rounded-lg border border-border bg-white p-2"
+                    height={200}
+                    src={qrDataUrl}
+                    width={200}
+                  />
+                  <span className="text-xs text-muted-foreground">
+                    Scan with your phone camera or eSIM installer
+                  </span>
+                </div>
+              )}
+              {qrError && (
+                <p className="text-xs text-muted-foreground">
+                  {qrError}. Use &quot;Copy link&quot; or &quot;Open activation link&quot; instead.
+                </p>
+              )}
+              <div className="min-w-0 flex-1 space-y-2 text-sm text-muted-foreground">
+                <p>
+                  <strong className="text-foreground">iPhone:</strong> Open
+                  Settings → Cellular → Add eSIM → Use QR Code, then scan the QR
+                  code above. Or tap &quot;Open activation link&quot; (may open
+                  in Apple&apos;s installer).
+                </p>
+                <p>
+                  <strong className="text-foreground">Android:</strong> Open
+                  Settings → Network &amp; internet → SIMs → Add eSIM (or
+                  Settings → Connections → SIM manager → Add eSIM). Choose &quot;Scan
+                  QR code&quot; and scan the QR code above. If your device has no
+                  QR option, copy the activation link and open it in Chrome on
+                  your phone.
+                </p>
+                <p className="text-xs">
+                  Use Wi‑Fi when installing. Your device must support eSIM.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

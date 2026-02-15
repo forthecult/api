@@ -20,6 +20,7 @@ import {
   useCurrentUser,
 } from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
+import { isRealEmail } from "~/lib/is-real-email";
 import { Button } from "~/ui/primitives/button";
 import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
@@ -47,6 +48,7 @@ interface OrderDetails {
   items: {
     name: string;
     priceUsd?: number;
+    productId?: string | null;
     quantity: number;
     subtotalUsd?: number;
   }[];
@@ -165,11 +167,17 @@ export function SuccessPageClient() {
             totals?: { totalUsd: number };
           };
           setOrder({
-            accessLevel: data.accessLevel,
+            accessLevel: (data as { accessLevel?: AccessLevel }).accessLevel,
             createdAt: data.createdAt,
             cryptoCurrency: data.cryptoCurrency,
             email: data.email,
-            items: data.items ?? [],
+            items: (data.items ?? []).map((i) => ({
+              name: i.name,
+              priceUsd: i.priceUsd,
+              productId: (i as { productId?: string | null }).productId,
+              quantity: i.quantity,
+              subtotalUsd: i.subtotalUsd,
+            })),
             orderId: data.orderId,
             paymentMethod: data.paymentMethod,
             shipping: data.shipping,
@@ -212,6 +220,11 @@ export function SuccessPageClient() {
   const canSeePII = order?.accessLevel !== "public";
   // Has full shipping info (not just countryCode)
   const hasFullShipping = order?.shipping?.address1 || order?.shipping?.name;
+  // Order is digital-only (all items are eSIM): no shipping copy, show eSIM dashboard CTA
+  const isDigitalOnlyOrder =
+    Boolean(order?.items?.length) &&
+    (order?.items ?? []).every((i) => /^eSIM:/i.test(i.name ?? ""));
+  const hasRealEmail = isRealEmail(order?.email);
 
   if (loading) {
     return (
@@ -260,8 +273,8 @@ export function SuccessPageClient() {
           Thank you for your purchase. We&apos;re preparing your order.
         </p>
 
-        {/* Confirmation email banner — only show when we have the actual email */}
-        {canSeePII && order?.email && (
+        {/* Confirmation email banner — only when we have a real email (not wallet placeholder) */}
+        {canSeePII && hasRealEmail && order?.email && (
           <div
             className={`
             mt-5 w-full max-w-md rounded-lg border border-green-200
@@ -284,12 +297,53 @@ export function SuccessPageClient() {
                   dark:text-green-400/70
                 `}
                 >
-                  We&apos;ve sent order details and tracking info to{" "}
-                  <span className="font-medium">{order.email}</span>. Most
-                  orders ship within 1 business day.
+                  {isDigitalOnlyOrder ? (
+                    <>
+                      We&apos;ve sent order details to{" "}
+                      <span className="font-medium">{order.email}</span>. Visit
+                      the eSIM dashboard to activate your eSIM now.
+                    </>
+                  ) : (
+                    <>
+                      We&apos;ve sent order details and tracking info to{" "}
+                      <span className="font-medium">{order.email}</span>. Most
+                      orders ship within 1 business day.
+                    </>
+                  )}
                 </p>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* No real email (e.g. crypto auth): show order lookup / account message */}
+        {canSeePII && !hasRealEmail && (
+          <div
+            className={`
+            mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50
+            px-4 py-3 text-left
+          `}
+          >
+            <p className="text-sm text-muted-foreground">
+              {user?.id ? (
+                <>Log into your account to see your order details.</>
+              ) : (
+                <>
+                  Save your Order ID{" "}
+                  {displayOrderId && (
+                    <span className="font-medium">
+                      #{displayOrderId.slice(0, 8)}
+                    </span>
+                  )}{" "}
+                  so you can look up your order any time.
+                </>
+              )}
+            </p>
+            {isDigitalOnlyOrder && (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Visit the eSIM dashboard to activate your eSIM now.
+              </p>
+            )}
           </div>
         )}
 
@@ -418,21 +472,42 @@ export function SuccessPageClient() {
                 </p>
               </div>
             )}
-            <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-              <p
-                className={`
-                text-xs font-medium tracking-wider text-muted-foreground
-                uppercase
-              `}
-              >
-                Estimated delivery
-              </p>
-              <p className="mt-0.5 text-sm">
-                {order.shipping?.countryCode === "US"
-                  ? "2–4 business days"
-                  : "5–14 business days"}
-              </p>
-            </div>
+            {isDigitalOnlyOrder ? (
+              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
+                <p
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
+                  Redeem now
+                </p>
+                <p className="mt-0.5 text-sm">
+                  <Link
+                    className="font-medium text-primary underline underline-offset-2 hover:no-underline"
+                    href="/dashboard/esim"
+                  >
+                    Your eSIM is ready — import it in your dashboard
+                  </Link>
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-lg bg-muted/50 px-3 py-2.5">
+                <p
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
+                  Estimated delivery
+                </p>
+                <p className="mt-0.5 text-sm">
+                  {order.shipping?.countryCode === "US"
+                    ? "2–4 business days"
+                    : "5–14 business days"}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Shipping address — full when authorized, hidden for public */}
@@ -481,11 +556,8 @@ export function SuccessPageClient() {
         >
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a confirmation
-            to your email with full order details and tracking information.
-          </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            You&apos;ll receive another email when your order ships.
+            Order #{displayOrderId.slice(0, 8)}. Sign in to view order details
+            or save this ID to look up your order any time.
           </p>
         </div>
       )}
@@ -505,13 +577,15 @@ export function SuccessPageClient() {
         </div>
       )}
 
-      {/* ───── Post-purchase sections (first visit only) ───── */}
-      {isFirstVisit && (
+      {/* ───── Post-purchase sections: first visit + notification options for owners ───── */}
+      {(isFirstVisit || (canSeePII && user?.id)) && (
         <div className="mt-10 space-y-8">
-          {/* Account creation for guests — via email verification link */}
-          <CreateAccountCard email={order?.email} />
+          {/* Account creation for guests (first visit with real email) */}
+          {isFirstVisit && (
+            <CreateAccountCard email={hasRealEmail ? order?.email : undefined} />
+          )}
 
-          {/* Marketing consent */}
+          {/* Notification / marketing consent — show for first visit or authenticated owner */}
           {(order?.orderId ?? orderIdParam) && (
             <div
               className={`
@@ -520,7 +594,7 @@ export function SuccessPageClient() {
             `}
             >
               <MarketingConsent
-                email={order?.email}
+                email={hasRealEmail ? order?.email : undefined}
                 hasPhone={Boolean(order?.shipping?.phone)}
                 orderId={order?.orderId ?? orderIdParam ?? ""}
               />
@@ -533,9 +607,21 @@ export function SuccessPageClient() {
       <div
         className={`
         mt-10 flex flex-col items-center gap-4
-        sm:flex-row sm:justify-center
+        sm:flex-row sm:flex-wrap sm:justify-center
       `}
       >
+        {isDigitalOnlyOrder && (
+          <Button
+            asChild
+            className="w-full sm:w-auto"
+            size="lg"
+          >
+            <Link href="/dashboard/esim">
+              <Package className="mr-2 size-4" />
+              eSIM dashboard
+            </Link>
+          </Button>
+        )}
         <Button
           asChild
           className={`
@@ -543,6 +629,7 @@ export function SuccessPageClient() {
           sm:w-auto
         `}
           size="lg"
+          variant={isDigitalOnlyOrder ? "outline" : undefined}
         >
           <Link href="/products">
             <ShoppingBag className="mr-2 size-4" />
@@ -552,9 +639,9 @@ export function SuccessPageClient() {
         <Button
           asChild
           className={`
-            w-full
-            sm:w-auto
-          `}
+          w-full
+          sm:w-auto
+        `}
           size="lg"
           variant="outline"
         >
@@ -825,6 +912,22 @@ function MarketingConsent({
       >
         <Check className="size-4" />
         <span>Preferences saved</span>
+      </div>
+    );
+  }
+
+  // No email (e.g. crypto auth): show guidance instead of form
+  if (!email) {
+    return (
+      <div className="space-y-3">
+        <p className="text-sm font-medium">Stay in the loop</p>
+        <p className="text-sm text-muted-foreground">
+          Add your email in account settings to receive order updates and
+          offers. Save your Order ID above to look up this order any time.
+        </p>
+        <Button asChild size="sm" variant="outline">
+          <Link href="/dashboard/profile">Account settings</Link>
+        </Button>
       </div>
     );
   }

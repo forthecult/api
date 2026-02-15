@@ -190,6 +190,7 @@ export async function GET(
         }),
         help: "Contact support@forthecult.store",
       },
+      accessLevel,
       createdAt: order.createdAt.toISOString(),
       cryptoCurrency: order.cryptoCurrency ?? undefined,
       email: canSeePII
@@ -197,7 +198,6 @@ export async function GET(
         : order.email
           ? redactEmail(order.email)
           : undefined,
-      // accessLevel omitted from response to avoid leaking internal auth model
       items: items.map((i) => ({
         name: i.name,
         priceUsd: i.priceCents / 100,

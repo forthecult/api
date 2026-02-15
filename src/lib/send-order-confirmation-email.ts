@@ -10,27 +10,42 @@ import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderConfirmationEmailParams {
   orderId: string;
+  /** When true, body and CTA direct to eSIM dashboard to activate eSIM. */
+  isEsimOrder?: boolean;
   to: string;
 }
 
 export async function sendOrderConfirmationEmail(
   params: SendOrderConfirmationEmailParams,
 ): Promise<void> {
-  const { orderId, to } = params;
+  const { orderId, isEsimOrder, to } = params;
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("order_placed");
   const subject = template.emailSubject ?? "Order confirmed";
-  const baseUrl = getPublicSiteUrl();
-  const orderStatusUrl = `${baseUrl.replace(/\/$/, "")}/dashboard/orders/${orderId}`;
-  let body =
-    template.emailBody ??
-    "Thanks for your order. We'll send another email when it ships.";
+  const baseUrl = getPublicSiteUrl().replace(/\/$/, "");
+
+  let body: string;
+  let ctaLabel: string;
+  let ctaUrl: string;
+
+  if (isEsimOrder) {
+    body =
+      "Thank you for your order. Check your eSIM Dashboard to activate your eSIM.";
+    ctaLabel = "eSIM Dashboard";
+    ctaUrl = `${baseUrl}/dashboard/esim`;
+  } else {
+    body =
+      template.emailBody ??
+      "Thanks for your order. We'll send another email when it ships.";
+    ctaLabel = "View order";
+    ctaUrl = `${baseUrl}/dashboard/orders/${orderId}`;
+  }
   body += `\n\nOrder ID: ${shortId}`;
 
   const contentHtml = plainTextToHtml(body);
   const html = buildEmailHtml(contentHtml, {
-    ctaLabel: "View order",
-    ctaUrl: orderStatusUrl,
+    ctaLabel,
+    ctaUrl,
   });
 
   if (process.env.RESEND_API_KEY) {
@@ -46,7 +61,7 @@ export async function sendOrderConfirmationEmail(
         from,
         html,
         subject,
-        text: body + `\n\nView order status: ${orderStatusUrl}`,
+        text: body + `\n\n${ctaLabel}: ${ctaUrl}`,
         to,
       });
     } catch (err) {

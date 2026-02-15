@@ -28,6 +28,8 @@ export type OrderNotificationKind =
 
 export interface OrderNotificationOptions {
   kind: OrderNotificationKind;
+  /** When true, message and button direct to eSIM dashboard to activate eSIM. */
+  isEsimOrder?: boolean;
   trackingNumber?: string;
   trackingUrl?: string;
 }
@@ -144,6 +146,9 @@ function buildMessage(
     case "on_hold":
       return `⏸ Order ${shortId} is on hold. We'll update you when it's moving again.`;
     case "order_placed":
+      if (options.isEsimOrder) {
+        return `✅ Thank you for your order. Check your eSIM Dashboard to activate your eSIM.`;
+      }
       return `✅ Order ${shortId} confirmed. We'll notify you when it ships.`;
     case "processing":
       return `🏭 Order ${shortId} is in production. We'll notify you when it ships.`;
@@ -174,10 +179,17 @@ function buildReplyMarkup(
   if (options.trackingUrl) {
     buttons.push({ text: "Track package", url: options.trackingUrl });
   }
-  buttons.push({
-    text: "View order",
-    web_app: { url: `${appUrl}/telegram/orders/${orderId}` },
-  });
+  if (options.kind === "order_placed" && options.isEsimOrder) {
+    buttons.push({
+      text: "eSIM Dashboard",
+      web_app: { url: `${appUrl}/dashboard/esim` },
+    });
+  } else {
+    buttons.push({
+      text: "View order",
+      web_app: { url: `${appUrl}/telegram/orders/${orderId}` },
+    });
+  }
 
   if (buttons.length === 0) return undefined;
   return { inline_keyboard: [buttons] };
