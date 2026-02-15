@@ -151,7 +151,10 @@ export async function resolveAutomaticCouponForCheckout(
         ? (input.productIds ?? [])
         : (input.items?.map((i) => i.productId).filter(Boolean) ?? []);
     const hasEsimRule = Number(coupon.ruleAppliesToEsim) === 1;
-    const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
+    const cartHasEsim =
+      productIds.some((id) => String(id).startsWith("esim_")) ||
+      (input.items?.some((i) => String(i.productId).startsWith("esim_")) ??
+        false);
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
     // Also compute the qualifying subtotal for per-product discounts (amount_off_products).
     let qualifyingSubtotalCents: number | undefined;
@@ -369,7 +372,10 @@ export async function resolveCouponForCheckout(
 
   const productIds = options.productIds ?? [];
   const hasEsimRule = Number(coupon.ruleAppliesToEsim) === 1;
-  const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
+  const cartHasEsim =
+    productIds.some((id) => String(id).startsWith("esim_")) ||
+    (options.items?.some((i) => String(i.productId).startsWith("esim_")) ??
+      false);
   let qualifyingSubtotalCents: number | undefined;
   if (productIds.length > 0) {
     const [allowedProductIds, couponCategoryIds] = await Promise.all([
@@ -503,29 +509,31 @@ function computeDiscountFromCoupon(
    */
   qualifyingSubtotalCents?: number,
 ): { discountCents: number; freeShipping: boolean } {
-  const discountKind = coupon.discountKind ?? "amount_off_order";
-  const discountType = coupon.discountType ?? "percent";
-  const discountValue = coupon.discountValue ?? 0;
+  const discountKind = (coupon.discountKind ?? "amount_off_order").toLowerCase();
+  const discountType = (coupon.discountType ?? "percent").toLowerCase();
+  const discountValue = Number(coupon.discountValue) || 0;
   const freeShipping = discountKind === "free_shipping";
   let discountCents = 0;
   if (freeShipping) {
     discountCents = shippingFeeCents;
   } else if (discountKind === "amount_off_order") {
     const totalCents = subtotalCents + shippingFeeCents;
-    if (discountType === "percent") {
+    if (discountType === "percent" || discountType === "percentage") {
       discountCents = Math.round(
-        totalCents * (Math.min(100, discountValue) / 100),
+        totalCents * (Math.min(100, Math.max(0, discountValue)) / 100),
       );
     } else {
-      discountCents = Math.min(discountValue, totalCents);
+      discountCents = Math.min(Math.round(discountValue), totalCents);
     }
   } else if (discountKind === "amount_off_products") {
     // Use qualifying product subtotal when available, otherwise full subtotal
     const basis = qualifyingSubtotalCents ?? subtotalCents;
-    if (discountType === "percent") {
-      discountCents = Math.round(basis * (Math.min(100, discountValue) / 100));
+    if (discountType === "percent" || discountType === "percentage") {
+      discountCents = Math.round(
+        basis * (Math.min(100, Math.max(0, discountValue)) / 100),
+      );
     } else {
-      discountCents = Math.min(discountValue, basis);
+      discountCents = Math.min(Math.round(discountValue), basis);
     }
   }
   return { discountCents, freeShipping };

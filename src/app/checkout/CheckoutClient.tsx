@@ -20,6 +20,7 @@ import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
+import { useIsMobile } from "~/lib/hooks/use-mobile";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
@@ -116,6 +117,7 @@ export function CheckoutClient() {
   const { selectedCountry } = useCountryCurrency();
   const { publicKey } = useWallet();
   const wallet = publicKey?.toBase58() ?? undefined;
+  const isMobile = useIsMobile();
   const isLoggedIn = Boolean(user?.email);
   const isDigitalOnly =
     items.length > 0 &&
@@ -521,13 +523,20 @@ export function CheckoutClient() {
             backdrop-blur supports-[backdrop-filter]:bg-background/80
           `}
         >
-          <div className="flex items-baseline gap-2">
-            <span className="text-sm font-medium text-muted-foreground">
-              Total
-            </span>
-            <span className="text-lg font-semibold">
-              <FiatPrice usdAmount={total} />
-            </span>
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-baseline gap-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Total
+              </span>
+              <span className="text-lg font-semibold">
+                <FiatPrice usdAmount={total} />
+              </span>
+            </div>
+            {isMobile && cryptoTotalLabel ? (
+              <span className="text-sm text-muted-foreground">
+                {cryptoTotalLabel}
+              </span>
+            ) : null}
           </div>
           <Button
             className="min-w-[12rem] shrink-0"

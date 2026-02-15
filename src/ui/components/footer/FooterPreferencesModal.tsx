@@ -9,6 +9,7 @@ import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   type CountryCode,
   CURRENCY_OPTIONS,
+  defaultCurrencyForCountry,
   LANGUAGE_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
@@ -95,6 +96,7 @@ export function FooterPreferencesModal({
 
   const selectCountry = useCallback((code: CountryCode) => {
     setDraftCountry(code);
+    setDraftCurrency(defaultCurrencyForCountry(code));
     setView("main");
   }, []);
 

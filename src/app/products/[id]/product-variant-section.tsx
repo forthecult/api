@@ -359,9 +359,12 @@ function toLowerSet(set: Set<string>): Set<string> {
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names (Brand, Model, Finishes, etc.) are not tied to
  * specific columns — any option values can live in color/size/gender/label.
- * Uses set equality when sizes match; otherwise allows variant set to be a
- * subset of selected (e.g. UI has Brand + Model but variant only stores full model name).
- * Comparison is case-insensitive so "XL" matches variant size "xl" (e.g. from sync).
+ * Comparison is case-insensitive.
+ *
+ * Match order:
+ * 1. Exact: selected set equals variant set (same values).
+ * 2. Subset: variant set ⊆ selected (e.g. UI has Brand+Model, variant has only model name — phone cases).
+ * 3. Superset: selected set ⊆ variant (e.g. UI shows only Size, variant has Size+Color — apparel).
  */
 function findVariant(
   variants: ProductVariantOption[],
@@ -374,24 +377,24 @@ function findVariant(
   );
   if (selectedSet.size === 0) return null;
   const selectedLower = toLowerSet(selectedSet);
-  // Exact match: variant's values exactly equal selected (case-insensitive)
-  const match = variants.find((v) => {
-    const variantSet = getVariantValueSet(v);
-    const variantLower = toLowerSet(variantSet);
+
+  // 1. Exact match
+  const exact = variants.find((v) => {
+    const variantLower = toLowerSet(getVariantValueSet(v));
     if (variantLower.size !== selectedLower.size) return false;
     for (const s of selectedLower) {
       if (!variantLower.has(s)) return false;
     }
     return true;
   });
-  if (match) return match;
-  // Subset match: variant's values all appear in selected (e.g. Brand+Model in UI, variant has only model name)
-  let best: null | ProductVariantOption = null;
-  let bestSize = 0;
+  if (exact) return exact;
+
+  // 2. Variant set ⊆ selected (phone cases: variant has "iPhone 16 Pro Max", selected has that)
+  let bestSubset: null | ProductVariantOption = null;
+  let bestSubsetSize = 0;
   for (const v of variants) {
-    const variantSet = getVariantValueSet(v);
-    const variantLower = toLowerSet(variantSet);
-    if (variantLower.size > bestSize && variantLower.size <= selectedLower.size) {
+    const variantLower = toLowerSet(getVariantValueSet(v));
+    if (variantLower.size > bestSubsetSize && variantLower.size <= selectedLower.size) {
       let allIn = true;
       for (const x of variantLower) {
         if (!selectedLower.has(x)) {
@@ -400,12 +403,27 @@ function findVariant(
         }
       }
       if (allIn) {
-        best = v;
-        bestSize = variantLower.size;
+        bestSubset = v;
+        bestSubsetSize = variantLower.size;
       }
     }
   }
-  return best;
+  if (bestSubset) return bestSubset;
+
+  // 3. Selected set ⊆ variant (apparel: UI shows only Size "L", variant has size "L" + color "Black")
+  for (const v of variants) {
+    const variantLower = toLowerSet(getVariantValueSet(v));
+    let allSelectedInVariant = true;
+    for (const s of selectedLower) {
+      if (!variantLower.has(s)) {
+        allSelectedInVariant = false;
+        break;
+      }
+    }
+    if (allSelectedInVariant) return v;
+  }
+
+  return null;
 }
 
 /** Build a single display label for a variant (e.g. "Black / M" or "iPhone 16 Pro"). */

@@ -4,6 +4,7 @@ import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
+import { clearChunkReloadFlag } from "~/ui/components/chunk-load-error-handler";
 import { Button } from "~/ui/primitives/button";
 
 interface ErrorPageProps {
@@ -68,10 +69,23 @@ export default function RootError({ error, reset }: ErrorPageProps) {
           sm:flex-row
         `}
         >
-          <Button onClick={reset} variant="default">
-            <RefreshCw className="mr-2 h-4 w-4" />
-            Try again
-          </Button>
+          {isChunk ? (
+            <Button
+              variant="default"
+              onClick={() => {
+                clearChunkReloadFlag();
+                window.location.reload();
+              }}
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Reload page
+            </Button>
+          ) : (
+            <Button onClick={reset} variant="default">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try again
+            </Button>
+          )}
           <Link href="/">
             <Button variant="outline">
               <Home className="mr-2 h-4 w-4" />
