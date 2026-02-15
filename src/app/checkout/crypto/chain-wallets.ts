@@ -56,7 +56,10 @@ export const CHAIN_WALLET_NAMES: Record<PaymentChain, string[]> = {
   ton: [],
 };
 
-/** wallets that support EVM + Solana but not Sui (hide Sui network option). */
+/** Wallets that are Solana-only (e.g. MWA). Skip network selection and connect to Solana directly. */
+export const SOLANA_ONLY_WALLETS = ["Mobile Wallet Adapter"];
+
+/** Wallets that support EVM + Solana but not Sui (hide Sui network option). */
 export const EVM_SOLANA_ONLY_WALLETS = [
   "Solflare",
   "Backpack",

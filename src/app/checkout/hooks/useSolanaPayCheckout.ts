@@ -111,6 +111,7 @@ export function useSolanaPayCheckout({
       });
       if (!createRes.ok) {
         setOpen(false);
+        // 429 is rate limit; user can retry after a short wait (no need to surface in dialog)
         return;
       }
       const data = (await createRes.json()) as {

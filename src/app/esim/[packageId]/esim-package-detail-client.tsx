@@ -495,7 +495,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return (
       <div
         className={`
-        container mx-auto max-w-4xl px-4 py-16
+        container mx-auto max-w-5xl px-4 py-16
         sm:px-6
         lg:px-8
       `}
@@ -514,7 +514,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     return (
       <div
         className={`
-        container mx-auto max-w-4xl px-4 py-16
+        container mx-auto max-w-5xl px-4 py-16
         sm:px-6
         lg:px-8
       `}
@@ -536,7 +536,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   return (
     <div
       className={`
-      container mx-auto max-w-4xl px-4 py-8
+      container mx-auto max-w-5xl px-4 py-8
       sm:px-6
       lg:px-8
     `}
@@ -559,7 +559,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         <div
           className={`
           space-y-6
-          lg:col-span-3
+          lg:col-span-2
         `}
         >
           <div>
@@ -720,8 +720,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           )}
         </div>
 
-        {/* Purchase Card - Right */}
-        <div className="lg:col-span-2">
+        {/* Purchase Card - Right (wider so price + CTA can sit above the fold on desktop) */}
+        <div className="lg:col-span-3">
           <div className="sticky top-24">
             <Card className="border-primary/20">
               <CardContent className="space-y-5 p-6">

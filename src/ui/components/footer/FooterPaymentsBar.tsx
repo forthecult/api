@@ -5,8 +5,9 @@ import Image from "next/image";
 import { getFooterPaymentItems } from "~/lib/checkout-payment-options";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 
-// SVGs are 38×24 with card chrome built in (or scaled to match)
-const ICON_WIDTH = 38;
+// Card SVGs are 38×24 with chrome built in; crypto marks are smaller so use narrower cells for tighter visual spacing
+const CARD_ICON_WIDTH = 38;
+const CRYPTO_ICON_WIDTH = 26;
 const ICON_HEIGHT = 24;
 
 const CARD_OR_PAYPAL_NAMES = new Set([
@@ -30,15 +31,18 @@ export function FooterPaymentsBar() {
     CARD_OR_PAYPAL_NAMES.has(item.name),
   );
 
-  const renderItem = (item: { name: string; src: string; title?: string }) => (
+  const renderItem = (
+    item: { name: string; src: string; title?: string },
+    iconWidth: number,
+  ) => (
     <li className="shrink-0" key={item.name} role="listitem">
       <span
         className="flex items-center justify-center overflow-hidden"
         style={{
           height: ICON_HEIGHT,
           minHeight: ICON_HEIGHT,
-          minWidth: ICON_WIDTH,
-          width: ICON_WIDTH,
+          minWidth: iconWidth,
+          width: iconWidth,
         }}
       >
         <Image
@@ -49,13 +53,12 @@ export function FooterPaymentsBar() {
           src={item.src}
           title={item.title ?? item.name}
           unoptimized
-          width={ICON_WIDTH}
+          width={iconWidth}
         />
       </span>
     </li>
   );
 
-  // Same gap for crypto and card rows so spacing is consistent (tighter gap so crypto row isn’t visually wider)
   const logoGap = "gap-1.5";
 
   return (
@@ -67,7 +70,7 @@ export function FooterPaymentsBar() {
           className={`flex flex-wrap items-center justify-center ${logoGap}`}
           role="list"
         >
-          {cryptoItems.map(renderItem)}
+          {cryptoItems.map((item) => renderItem(item, CRYPTO_ICON_WIDTH))}
         </ul>
       )}
       {cardItems.length > 0 && (
@@ -76,7 +79,7 @@ export function FooterPaymentsBar() {
           className={`flex flex-wrap items-center justify-center ${logoGap}`}
           role="list"
         >
-          {cardItems.map(renderItem)}
+          {cardItems.map((item) => renderItem(item, CARD_ICON_WIDTH))}
         </ul>
       )}
     </div>

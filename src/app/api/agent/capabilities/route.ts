@@ -94,7 +94,7 @@ export async function GET() {
       // Rate limits
       rateLimits: {
         _note: "Contact support for higher limits",
-        checkout: "10 requests/minute",
+        checkout: "20 requests/minute",
         default: "100 requests/minute",
         search: "30 requests/minute",
       },

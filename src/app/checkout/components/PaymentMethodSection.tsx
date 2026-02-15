@@ -651,10 +651,13 @@ export const PaymentMethodSection = forwardRef<
         setNavigatingToPay(false);
         const body = (await createRes.json().catch(() => ({}))) as {
           error?: string;
+          retryAfter?: number;
         };
-        setValidationErrors([
-          body?.error || "Could not create order. Please try again.",
-        ]);
+        const message =
+          createRes.status === 429
+            ? "Too many requests. Please wait a moment and try again."
+            : body?.error || "Could not create order. Please try again.";
+        setValidationErrors([message]);
         return;
       }
       const data = (await createRes.json()) as {

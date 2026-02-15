@@ -128,12 +128,21 @@ export async function resolveAutomaticCouponForCheckout(
 
     if (!meetsRuleset(coupon, input)) continue;
 
-    // Payment method restriction: if the coupon requires a specific payment method,
-    // skip it when no payment method is selected or when it doesn't match.
+    // Payment method: only apply coupons that are explicitly set up for the selected method.
+    // When the user has selected a payment method, do NOT apply coupons with no
+    // rulePaymentMethodKey (e.g. "any method" coupons), so only admin-configured
+    // payment-specific discounts apply.
     const requiredPaymentMethodKey = coupon.rulePaymentMethodKey?.trim();
-    if (requiredPaymentMethodKey) {
-      const selectedKey = input.paymentMethodKey?.trim();
-      if (!selectedKey || selectedKey !== requiredPaymentMethodKey) continue;
+    const selectedKey = input.paymentMethodKey?.trim();
+    if (selectedKey) {
+      if (
+        !requiredPaymentMethodKey ||
+        requiredPaymentMethodKey !== selectedKey
+      ) {
+        continue;
+      }
+    } else {
+      if (requiredPaymentMethodKey) continue;
     }
 
     // Use productIds from input; when empty, derive from items so eSIM-only coupons still match
