@@ -2,7 +2,7 @@
  * Add Sonoff brand and products via admin API (production or local).
  *
  * Usage (production — use uncommented key at bottom of .env, e.g. ADMIN_AI_API_KEY):
- *   cd relivator
+ *   cd ftc
  *   MAIN_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/seed-sonoff-via-api.ts
  *
  * Or load .env and use ADMIN_AI_API_KEY for production (do not use commented ADMIN_API_KEY).

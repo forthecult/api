@@ -5,7 +5,7 @@
  * Product: https://pacsafe.com/collections/accessories-locks/products/rfid-blocking-aluminum-slider-wallet
  *
  * Usage:
- *   cd relivator && MAIN_APP_URL=https://forthecult.store bun run scripts/seed-pacsafe-aluminum-slider-wallet-via-api.ts
+ *   cd ftc && MAIN_APP_URL=https://forthecult.store bun run scripts/seed-pacsafe-aluminum-slider-wallet-via-api.ts
  */
 
 import "dotenv/config";

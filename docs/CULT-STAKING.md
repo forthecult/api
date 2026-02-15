@@ -21,7 +21,7 @@ Program-based staking for the CULT token on Solana. Users stake CULT into a pool
 
 ### Build
 
-From the `relivator/programs` directory (Anchor workspace lives here so the app root stays Node-only for deployment):
+From the `ftc/programs` directory (Anchor workspace lives here so the app root stays Node-only for deployment):
 
 ```bash
 cd programs && anchor build
@@ -111,7 +111,7 @@ SOL (or other rewards) can be sent to stakers proportionally using a **cron job*
    Example: weekly on Sunday at midnight:
 
    ```bash
-   0 0 * * 0 cd /path/to/relivator && REWARD_SOL_TOTAL=0.5 STAKING_REWARDS_WALLET_SECRET_KEY=... CULT_STAKING_PROGRAM_ID=... bun run scripts/staking-rewards-distribute.ts
+   0 0 * * 0 cd /path/to/ftc && REWARD_SOL_TOTAL=0.5 STAKING_REWARDS_WALLET_SECRET_KEY=... CULT_STAKING_PROGRAM_ID=... bun run scripts/staking-rewards-distribute.ts
    ```
 
    Use your preferred way to inject env (e.g. a `.env` file only on the server, or your cron env).

@@ -18,7 +18,7 @@ They are only linked when something **writes those URLs into the database**. If 
 
 **Option A – Run the CDN scripts (after upload works)**
 
-1. Deploy the latest relivator app (upload route that correctly reads UploadThing’s response and returns the URL).
+1. Deploy the latest ftc app (upload route that correctly reads UploadThing’s response and returns the URL).
 2. Ensure `UPLOADTHING_TOKEN` is set in production.
 3. Run:
    - `MAIN_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/sonoff-images-to-cdn.ts`

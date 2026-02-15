@@ -175,6 +175,11 @@ function getVariantValueSet(v: QuickViewVariant): Set<string> {
 /**
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names are not tied to specific columns.
+ *
+ * Matching strategy (in priority order):
+ * 1. Exact: selectedSet === variantSet
+ * 2. variant ⊆ selected (UI shows more options than variant stores, e.g. Brand+Model but variant only has model)
+ * 3. selected ⊆ variant (UI shows fewer options than variant has, e.g. only Size shown but variant has Size+Color)
  */
 function findVariant(
   variants: QuickViewVariant[],
@@ -186,34 +191,42 @@ function findVariant(
       .map((s) => String(s).trim()),
   );
   if (selectedSet.size === 0) return null;
-  let match = variants.find((v) => {
-    const variantSet = getVariantValueSet(v);
-    if (variantSet.size !== selectedSet.size) return false;
-    for (const s of selectedSet) {
-      if (!variantSet.has(s)) return false;
-    }
+
+  // 1. Exact match
+  const exact = variants.find((v) => {
+    const vs = getVariantValueSet(v);
+    if (vs.size !== selectedSet.size) return false;
+    for (const s of selectedSet) if (!vs.has(s)) return false;
     return true;
   });
-  if (match) return match;
-  let best: QuickViewVariant | null = null;
-  let bestSize = 0;
+  if (exact) return exact;
+
+  // 2. variant ⊆ selected (variant values all in selected; prefer largest variant set)
+  let bestSub: QuickViewVariant | null = null;
+  let bestSubSize = 0;
+  // 3. selected ⊆ variant (selected values all in variant; prefer smallest variant set)
+  let bestSup: QuickViewVariant | null = null;
+  let bestSupSize = Infinity;
+
   for (const v of variants) {
-    const variantSet = getVariantValueSet(v);
-    if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
-      let allIn = true;
-      for (const x of variantSet) {
-        if (!selectedSet.has(x)) {
-          allIn = false;
-          break;
-        }
-      }
-      if (allIn) {
-        best = v;
-        bestSize = variantSet.size;
-      }
+    const vs = getVariantValueSet(v);
+    // variant ⊆ selected
+    if (vs.size <= selectedSet.size && vs.size > bestSubSize) {
+      let ok = true;
+      for (const x of vs) { if (!selectedSet.has(x)) { ok = false; break; } }
+      if (ok) { bestSub = v; bestSubSize = vs.size; }
+    }
+    // selected ⊆ variant
+    if (vs.size >= selectedSet.size && vs.size < bestSupSize) {
+      let ok = true;
+      for (const x of selectedSet) { if (!vs.has(x)) { ok = false; break; } }
+      if (ok) { bestSup = v; bestSupSize = vs.size; }
     }
   }
-  return best;
+
+  // Prefer the direction that matched more values
+  if (bestSub && bestSup) return bestSubSize >= selectedSet.size ? bestSub : bestSup;
+  return bestSub ?? bestSup;
 }
 
 function VariantSelector({

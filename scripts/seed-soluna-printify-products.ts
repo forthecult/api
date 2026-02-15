@@ -5,13 +5,13 @@
  * Use transparent-background PNG; run scripts/fix-soluna-printify-products.ts to fix existing products.
  *
  * Usage:
- *   cd relivator
+ *   cd ftc
  *   ADMIN_API_KEY=<key> bun run scripts/seed-soluna-printify-products.ts
  * Or with custom base URL:
  *   NEXT_PUBLIC_APP_URL=https://your-store.com ADMIN_API_KEY=<key> bun run scripts/seed-soluna-printify-products.ts
  *
  * Prerequisites: PRINTIFY_API_TOKEN, PRINTIFY_SHOP_ID. For production use Cursor Secrets
- * (ADMIN_AI_API_KEY) or create relivator/.env.local with ADMIN_AI_API_KEY=<production key>.
+ * (ADMIN_AI_API_KEY) or create ftc/.env.local with ADMIN_AI_API_KEY=<production key>.
  */
 
 import "dotenv/config";

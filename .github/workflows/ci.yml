@@ -22,8 +22,8 @@ jobs:
       - name: Resolve working directory (monorepo)
         id: wd
         run: |
-          if [ -d relivator ] && [ -f relivator/package.json ]; then
-            echo "dir=relivator" >> "$GITHUB_OUTPUT"
+          if [ -d ftc ] && [ -f ftc/package.json ]; then
+            echo "dir=ftc" >> "$GITHUB_OUTPUT"
           else
             echo "dir=." >> "$GITHUB_OUTPUT"
           fi

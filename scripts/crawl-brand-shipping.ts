@@ -230,7 +230,7 @@ async function fetchHtml(url: string): Promise<string | null> {
     const res = await fetch(url, {
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (compatible; BrandShippingCrawler/1.0; +https://github.com/relivator)",
+          "Mozilla/5.0 (compatible; BrandShippingCrawler/1.0; +https://github.com/ftc)",
       },
       redirect: "follow",
       signal: AbortSignal.timeout(15_000),

@@ -7,7 +7,7 @@
  *   MAIN_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/sonoff-images-to-cdn.ts
  *
  * Production must have: (1) latest admin upload route (reads UploadThing response shape correctly),
- * (2) UPLOADTHING_TOKEN set in env. If uploads return 500, deploy the relivator app and re-run.
+ * (2) UPLOADTHING_TOKEN set in env. If uploads return 500, deploy the ftc app and re-run.
  */
 
 const MAIN_APP_URL = process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";

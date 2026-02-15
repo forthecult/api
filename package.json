@@ -1,6 +1,6 @@
 {
-  "name": "relivator",
-  "description": "Relivator is a robust eCommerce template built with Next.js. It's designed for developers who want a fast, modern, and scalable foundation without reinventing the backend.",
+  "name": "ftc",
+  "description": "FTC is a robust eCommerce platform built with Next.js.",
   "version": "1.4.6",
   "type": "module",
   "private": true,

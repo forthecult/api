@@ -1,6 +1,6 @@
 /**
  * List products in the database (same DB as the app uses).
- * Use this to verify Printify/Printful sync: run from relivator so it uses .env DATABASE_URL.
+ * Use this to verify Printify/Printful sync: run from ftc so it uses .env DATABASE_URL.
  *
  * Run: bun run scripts/list-products.ts
  * Or:  npm run db:list-products  (if script is added to package.json)
@@ -17,7 +17,7 @@ const LIMIT = 50;
 
 async function main() {
   if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set. Run from relivator directory so .env is loaded.");
+    console.error("DATABASE_URL is not set. Run from ftc directory so .env is loaded.");
     process.exit(1);
   }
 
@@ -40,7 +40,7 @@ async function main() {
   console.log("");
 
   if (total === 0) {
-    console.log("No products. Run Printify sync from relivator:");
+    console.log("No products. Run Printify sync from ftc:");
     console.log("  bun run printify:sync");
     console.log("Or Printful: bun run printful:sync");
     return;

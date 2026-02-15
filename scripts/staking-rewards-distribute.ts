@@ -15,7 +15,7 @@
  *
  * Run: bun run scripts/staking-rewards-distribute.ts
  *
- * Cron example (weekly): 0 0 * * 0 cd /path/to/relivator && REWARD_SOL_TOTAL=0.5 bun run scripts/staking-rewards-distribute.ts
+ * Cron example (weekly): 0 0 * * 0 cd /path/to/ftc && REWARD_SOL_TOTAL=0.5 bun run scripts/staking-rewards-distribute.ts
  */
 
 import {

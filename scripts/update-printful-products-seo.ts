@@ -12,7 +12,7 @@
  *
  * Uses the admin API only (no DATABASE_URL required).
  *
- * Run from relivator:
+ * Run from ftc:
  *   bun run scripts/update-printful-products-seo.ts
  *   bun run printful:update-seo
  *

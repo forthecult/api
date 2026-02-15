@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "relivator-admin",
+      "name": "ftc-admin",
       "dependencies": {
         "better-auth": "^1.4.18",
         "class-variance-authority": "^0.7.1",

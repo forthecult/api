@@ -8,8 +8,8 @@
 # If the job is cancelled due to timeout, the database may still have been fully seeded
 # (schema, categories, brands, shipping, products, reviews). Check your DB before re-running.
 #
-# If this repo is a monorepo (e.g. repo root is Cult with relivator/ inside), each step
-# runs from relivator/ so that bun and db commands use the correct package.json and schema.
+# If this repo is a monorepo (e.g. repo root is Cult with ftc/ inside), each step
+# runs from ftc/ so that bun and db commands use the correct package.json and schema.
 
 name: Seed staging (DB schema + categories)
 
@@ -30,11 +30,11 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Use relivator dir in monorepo
+      - name: Use ftc dir in monorepo
         id: wd
         run: |
-          if [ -d relivator ] && [ -f relivator/package.json ]; then
-            echo "dir=relivator" >> "$GITHUB_OUTPUT"
+          if [ -d ftc ] && [ -f ftc/package.json ]; then
+            echo "dir=ftc" >> "$GITHUB_OUTPUT"
           else
             echo "dir=." >> "$GITHUB_OUTPUT"
           fi

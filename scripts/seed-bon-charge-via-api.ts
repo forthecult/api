@@ -9,7 +9,7 @@
  * - EMF Radiation Blocking Phone Pouch
  *
  * Usage (production):
- *   cd relivator
+ *   cd ftc
  *   MAIN_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/seed-bon-charge-via-api.ts
  *
  * Prerequisites:

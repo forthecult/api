@@ -16,7 +16,7 @@ export const SEO_CONFIG = {
 export const SYSTEM_CONFIG = {
   redirectAfterSignIn: "/dashboard/orders",
   redirectAfterSignUp: "/dashboard/orders",
-  repoName: "relivator",
+  repoName: "ftc",
   repoOwner: "blefnk",
   repoStars: true,
 };

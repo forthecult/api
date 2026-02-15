@@ -4,7 +4,7 @@
  * 2) POST /api/admin/printify/update-products-design { imageId }
  * All logic (design update, sync, mockups, categories/SEO) runs server-side.
  *
- * Run: cd relivator && bun run scripts/run-soluna-update-via-api.ts
+ * Run: cd ftc && bun run scripts/run-soluna-update-via-api.ts
  * Requires .env.local: ADMIN_AI_API_KEY, NEXT_PUBLIC_APP_URL (or MAIN_APP_URL)
  */
 

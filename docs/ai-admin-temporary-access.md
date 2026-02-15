@@ -7,7 +7,7 @@ This guide describes secure ways to give an AI (e.g. Cursor, Claude, or another 
 
 ---
 
-## Current auth (relivator)
+## Current auth (ftc)
 
 Admin APIs accept:
 
@@ -24,7 +24,7 @@ So an AI can already call admin routes if it has a valid key or session. The goa
 
 - **Do not** give the AI your main `ADMIN_API_KEY` (used by you or scripts).
 - Add a **second** key used only for the AI:
-  - In relivator: support `ADMIN_AI_API_KEY` in addition to `ADMIN_API_KEY` (same auth logic, different env var).
+  - In ftc: support `ADMIN_AI_API_KEY` in addition to `ADMIN_API_KEY` (same auth logic, different env var).
   - Set `ADMIN_AI_API_KEY` to a long random value (e.g. `openssl rand -hex 32`).
 - **Where the AI gets it:** Put it in a **Cursor rule** or **project `.env`** (gitignored). Do **not** paste it into normal chat or commit it.
 - **Temporary:** When the task is done (or at end of day), rotate the key: generate a new value, set it in production env and in the rule/env the AI uses. Old key stops working immediately.
@@ -90,4 +90,4 @@ So an AI can already call admin routes if it has a valid key or session. The goa
 For **quick and secure**: use a **separate `ADMIN_AI_API_KEY`** and rotate it when you're done.  
 For **temporary and scoped**: add **short-lived JWT** with scope limited to categories and products.
 
-If you want, the next step can be implementing option 1 (support `ADMIN_AI_API_KEY` in relivator) and/or option 2 (JWT issue + validation + scope in admin auth).
+If you want, the next step can be implementing option 1 (support `ADMIN_AI_API_KEY` in ftc) and/or option 2 (JWT issue + validation + scope in admin auth).

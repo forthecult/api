@@ -6,7 +6,7 @@
  * 4. Create 2 missing products (Wireless Charger, Poker Cards) with transparent design.
  * 5. Trigger publish so mockups regenerate.
  *
- * Run: cd relivator && bun run scripts/fix-soluna-printify-products.ts
+ * Run: cd ftc && bun run scripts/fix-soluna-printify-products.ts
  * Requires .env.local with ADMIN_AI_API_KEY and NEXT_PUBLIC_APP_URL (or MAIN_APP_URL).
  */
 

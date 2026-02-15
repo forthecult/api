@@ -5,10 +5,10 @@
  *
  * Use when images were uploaded to UploadThing multiple times but admin was never updated.
  * Requires: UPLOADTHING_TOKEN (base64 JSON: { apiKey, appId, regions }), ADMIN_AI_API_KEY, MAIN_APP_URL.
- * Run from relivator so .env is loaded, or pass env vars.
+ * Run from ftc so .env is loaded, or pass env vars.
  *
  * Usage:
- *   cd relivator && MAIN_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/sync-product-images-from-uploadthing.ts
+ *   cd ftc && MAIN_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/sync-product-images-from-uploadthing.ts
  */
 
 import { readFileSync, existsSync } from "node:fs";

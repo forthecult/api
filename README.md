@@ -1,8 +1,8 @@
-# 🏬 relivator • next.js ecommerce starter
+# 🏬 ftc • next.js ecommerce starter
 
-[demo](https://relivator.com) — [sponsor](https://github.com/sponsors/blefnk) — [discord](https://discord.gg/Pb8uKbwpsJ) — [github](https://github.com/blefnk/relivator) — [docs](https://deepwiki.com/blefnk/relivator-nextjs-template)
+[demo](https://ftc.com) — [sponsor](https://github.com/sponsors/blefnk) — [discord](https://discord.gg/Pb8uKbwpsJ) — [github](https://github.com/blefnk/ftc) — [docs](https://deepwiki.com/blefnk/ftc-nextjs-template)
 
-> **relivator** is a robust ecommerce template built with next.js and other modern technologies. it's designed for developers who want a fast, modern, and scalable foundation without reinventing the backend.
+> **ftc** is a robust ecommerce template built with next.js and other modern technologies. it's designed for developers who want a fast, modern, and scalable foundation without reinventing the backend.
 
 ## stack
 
@@ -29,8 +29,8 @@
 2. run:
 
    ```bash
-   git clone https://github.com/blefnk/relivator.git
-   cd relivator
+   git clone https://github.com/blefnk/ftc.git
+   cd ftc
    bun install
    copy .env.example .env
    ```
@@ -94,7 +94,7 @@ To run seeds individually: `bun run db:seed-categories`, `bun run db:seed-brands
 
 ## Subscription / billing integration
 
-relivator integrates with a subscription provider for payment processing and subscription management.
+ftc integrates with a subscription provider for payment processing and subscription management.
 
 ### features
 
@@ -154,12 +154,12 @@ get a key at [loqate.com](https://www.loqate.com) (14-day free trial). if not se
 
 ## notes
 
-- relivator 1.4.0+ is ai-ready — optimized for ai-powered ides like cursor, making onboarding effortless even for beginners.
-- version 1.3.0 evolved into versator, featuring [clerk](https://clerk.com) authentication and [stripe](https://stripe.com) payments. explore [versator demo](https://versator.relivator.com/en), [repo](https://github.com/blefnk/versator), or [docs](https://docs.reliverse.org/versator).
+- ftc 1.4.0+ is ai-ready — optimized for ai-powered ides like cursor, making onboarding effortless even for beginners.
+- version 1.3.0 evolved into versator, featuring [clerk](https://clerk.com) authentication and [stripe](https://stripe.com) payments. explore [versator demo](https://versator.ftc.com/en), [repo](https://github.com/blefnk/versator), or [docs](https://docs.reliverse.org/versator).
 
 ## stand with reliverse
 
-- ⭐ [star the repo](https://github.com/blefnk/relivator) to help the reliverse community grow.
+- ⭐ [star the repo](https://github.com/blefnk/ftc) to help the reliverse community grow.
 - 😉 follow this project's author, [nazar kornienko](https://github.com/blefnk) and his [reliverse](https://github.com/reliverse) ecosystem, to get updates about new projects faster.
 - 🦄 [become a sponsor](https://github.com/sponsors/blefnk) and power the next wave of tools that _just feel right_.
 

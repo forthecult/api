@@ -34,7 +34,7 @@ function constantTimeEqual(a: string, b: string): boolean {
  *
  * Use ADMIN_AI_API_KEY for temporary AI/agent access so you can rotate or revoke it
  * without affecting human admin or scripts using ADMIN_API_KEY. See
- * relivator/docs/ai-admin-temporary-access.md.
+ * ftc/docs/ai-admin-temporary-access.md.
  */
 export async function getAdminAuth(request: NextRequest): Promise<
   | { ok: true; method: "api_key"; source?: "ai" }

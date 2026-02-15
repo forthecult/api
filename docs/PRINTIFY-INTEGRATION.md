@@ -76,9 +76,9 @@ We return HTTP 200 right away for product events so Printify can clear the "Publ
 
 2. **Clear stuck "Publishing"** — Sync and Confirm publish often **do not** change status for products already stuck in Publishing (Printify may not re-send the webhook when we call the publish API again). **Reliable fix:** (1) Register webhooks via our API (`POST /api/admin/printify/webhooks` with `{ "action": "register_all" }` or use the "Register webhooks" button on the product edit page). (2) Delete the product in Printify (e.g. "Delete from Printify" on the product page, or by Printify product ID). (3) Re-create or re-publish the product in Printify; the webhook will fire, we return 200, and status becomes Published. You can then re-import the product if needed. Ensure [webhooks are registered](#webhooks) first (only way—no Printify front-end for this).
 
-3. **Manual import** — Pull all products from Printify into the store. **Run from the relivator directory** so the script uses the same `.env` and `DATABASE_URL` as the app:
+3. **Manual import** — Pull all products from Printify into the store. **Run from the ftc directory** so the script uses the same `.env` and `DATABASE_URL` as the app:
    ```bash
-   cd relivator
+   cd ftc
    bun run printify:sync
    ```
    Or call the admin API: `POST /api/admin/printify/sync` with body `{ "action": "import_all" }`.
@@ -87,7 +87,7 @@ We return HTTP 200 right away for product events so Printify can clear the "Publ
 
 4. **Verify products are in the database** — If you get 404 when opening a product by slug (e.g. admin edit or storefront), the product may not be in the DB. List products to confirm:
    ```bash
-   cd relivator
+   cd ftc
    bun run db:list-products
    ```
    This shows total count, breakdown by source (printify / printful / manual), and the first 50 products with id, slug, and name. If the list is empty or your product/slug is missing, run `bun run printify:sync` from the same directory.

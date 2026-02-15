@@ -12,7 +12,7 @@ import { join } from "node:path";
 const ASSETS_DIR = join(process.cwd(), "scripts", "brand-assets");
 const ALLOWED_EXT = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; BrandAssetFetcher/1.0; +https://github.com/relivator)";
+  "Mozilla/5.0 (compatible; BrandAssetFetcher/1.0; +https://github.com/ftc)";
 
 function slug(name: string): string {
   return name

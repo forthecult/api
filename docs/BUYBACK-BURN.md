@@ -80,7 +80,7 @@ Optional env:
 Schedule with cron, e.g. daily at 00:00:
 
 ```cron
-0 0 * * * cd /path/to/relivator && BUYBACK_WALLET_SECRET_KEY=... CULT_TOKEN_MINT_SOLANA=... bun run scripts/buyback-burn.ts
+0 0 * * * cd /path/to/ftc && BUYBACK_WALLET_SECRET_KEY=... CULT_TOKEN_MINT_SOLANA=... bun run scripts/buyback-burn.ts
 ```
 
 ### Railway setup (step-by-step)
@@ -89,11 +89,11 @@ Use a **separate Railway service** that only runs the buyback script on a schedu
 
 1. **Create a new service**
    - In your Railway project, click **+ New** → **GitHub Repo** (or **Empty Service** if you deploy another way).
-   - If using the same repo as your main app: choose the same repo, then we’ll point this service at the `relivator` folder.
+   - If using the same repo as your main app: choose the same repo, then we’ll point this service at the `ftc` folder.
 
 2. **Set root directory**
    - In the new service, go to **Settings** → **General**.
-   - Set **Root Directory** to `relivator` (so the service uses the folder that has `package.json` and `scripts/buyback-burn.ts`).
+   - Set **Root Directory** to `ftc` (so the service uses the folder that has `package.json` and `scripts/buyback-burn.ts`).
 
 3. **Build**
    - Under **Settings** → **Build**, set **Build Command** to:
@@ -136,9 +136,9 @@ Use a **separate Railway service** that only runs the buyback script on a schedu
    - After you have the token CA, add `CULT_TOKEN_MINT_SOLANA` in Variables and (if you want an immediate run) trigger a manual deploy or wait for the next scheduled run.
 
 8. **Optional: limit redeploys**
-   - If this service shares the repo with your main app, you may want redeploys only when buyback-related code changes. In **Settings** → **Build**, you can set **Watch Paths** to e.g. `relivator/package.json relivator/scripts/buyback-burn.ts relivator/bun.lock` so other changes don’t redeploy this service.
+   - If this service shares the repo with your main app, you may want redeploys only when buyback-related code changes. In **Settings** → **Build**, you can set **Watch Paths** to e.g. `ftc/package.json ftc/scripts/buyback-burn.ts ftc/bun.lock` so other changes don’t redeploy this service.
 
-**Summary:** New service → root `relivator` → build `bun install --frozen-lockfile` → start `bun run buyback-burn` → cron `0 0 * * *` → add env vars (CA later). Once the CA is set, the next cron run will perform buyback and burn when the wallet has enough SOL.
+**Summary:** New service → root `ftc` → build `bun install --frozen-lockfile` → start `bun run buyback-burn` → cron `0 0 * * *` → add env vars (CA later). Once the CA is set, the next cron run will perform buyback and burn when the wallet has enough SOL.
 
 ## Alternative: Jupiter
 

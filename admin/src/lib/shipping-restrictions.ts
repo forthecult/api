@@ -1,6 +1,6 @@
 /**
  * No-ship countries: we do not ship to these (all products).
- * Keep in sync with relivator/src/lib/shipping-restrictions.ts.
+ * Keep in sync with ftc/src/lib/shipping-restrictions.ts.
  * Aligned with Printful/Printify: RU, BY, UA, EC, CU, IR, KP, SY, PS (Gaza). Used in admin Markets.
  */
 export const EXCLUDED_SHIPPING_COUNTRY_CODES = [

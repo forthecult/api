@@ -44,7 +44,7 @@ bun run db:push
 
 Use the same `DATABASE_URL` you set on the Railway service.
 
-**Seeding staging from your machine (schema + categories + admin):** You do **not** run these inside Railway. Run them on your own computer, in the **repo root** (`relivator/`), with env vars set so they talk to your staging app and DB.
+**Seeding staging from your machine (schema + categories + admin):** You do **not** run these inside Railway. Run them on your own computer, in the **repo root** (`ftc/`), with env vars set so they talk to your staging app and DB.
 
 **Keeping the DB URL off your machine:** If your device is compromised, any credential on it (in `.env` or in shell history) is at risk. The only way to avoid having the staging DB URL on your machine at all is to **run the seed from somewhere that already has the credential**—e.g. GitHub Actions or Railway itself.
 
@@ -60,7 +60,7 @@ If you do run seeds locally (with `DATABASE_URL` in `.env` or on the command lin
 
 2. **Schema (if you haven’t already)**
    ```bash
-   cd relivator
+   cd ftc
    DATABASE_URL='postgresql://user:pass@host:port/railway' bun run db:push
    ```
    Use the exact `DATABASE_URL` you copied. This creates all tables (`user`, `category`, `product`, `brand`, etc.).
@@ -97,15 +97,15 @@ To run both the **store** and the **admin** dashboard:
 - **Start:** `bun run start`
 - **Port:** **3000** (or leave Railway’s default; Next uses `PORT`).
 - **Env:**
-  - `NEXT_PUBLIC_APP_URL` = main app’s Railway URL (e.g. `https://relivator-staging.up.railway.app`).
-  - `NEXT_PUBLIC_ADMIN_APP_URL` = admin app’s Railway URL (e.g. `https://relivator-admin-staging.up.railway.app`).
+  - `NEXT_PUBLIC_APP_URL` = main app’s Railway URL (e.g. `https://ftc-staging.up.railway.app`).
+  - `NEXT_PUBLIC_ADMIN_APP_URL` = admin app’s Railway URL (e.g. `https://ftc-admin-staging.up.railway.app`).
   - Plus `DATABASE_URL`, `AUTH_SECRET`, etc.
 
 ### Service 2 – Admin frontend
 
 - **Root directory:** Depends on your repo layout.
-  - If your **repo root** is the **relivator** folder (i.e. the repo contains `admin/`, `src/`, `package.json` at top level), use **`admin`**.
-  - If your **repo root** is the **parent** of `relivator` (e.g. repo contains `relivator/admin/`, `relivator/package.json`), use **`relivator/admin`**. Using `admin` here would point at the wrong path (there is no `admin` at repo root), the build may use the wrong app or fail, and routes like `/payment-methods` can 404.
+  - If your **repo root** is the **ftc** folder (i.e. the repo contains `admin/`, `src/`, `package.json` at top level), use **`admin`**.
+  - If your **repo root** is the **parent** of `ftc` (e.g. repo contains `ftc/admin/`, `ftc/package.json`), use **`ftc/admin`**. Using `admin` here would point at the wrong path (there is no `admin` at repo root), the build may use the wrong app or fail, and routes like `/payment-methods` can 404.
   - In both cases, the value must point at the directory that contains `admin/package.json` (the Next.js app with `admin/src/app/(admin)/payment-methods/page.tsx`).
 - **Build:** `bun run build` (runs in `admin/`).
 - **Start:** `bun run start` (runs `next start` in `admin/`).
@@ -133,7 +133,7 @@ If the **build** succeeds (e.g. Railpack shows green checkmarks) but the staging
 
 1. **Config as code** — The repo includes **`railway.json`** in the app root with explicit `buildCommand` and `startCommand`. That applies to any service whose **Root directory** is the repo root. It overrides dashboard settings and avoids "No start command could be found." Push and redeploy after changing that file.
 2. **Environment and branch** — In Railway, open the **staging** environment and confirm the service is there. Under **Settings** → **Source**, ensure the correct branch triggers a deploy. Via CLI: `railway up -e staging` (or your staging env name).
-3. **Root directory** — Main app: empty or `./`. Admin: `admin` (or `relivator/admin` if repo root is above relivator). A wrong root can make the build succeed but the start command run the wrong app or fail.
+3. **Root directory** — Main app: empty or `./`. Admin: `admin` (or `ftc/admin` if repo root is above ftc). A wrong root can make the build succeed but the start command run the wrong app or fail.
 4. **Deploy phase** — In **Deployments**, open the latest deployment. If the build finished but it's not "Active", check the deploy phase and runtime logs (missing start command, crash on boot from missing `DATABASE_URL`/`AUTH_SECRET`, or health check failure).
 5. **Required env** — Staging must have: `DATABASE_URL`, `AUTH_SECRET`, `NEXT_PUBLIC_APP_URL`. Without `DATABASE_URL`, the app can crash when it touches the DB.
 

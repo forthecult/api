@@ -30,7 +30,7 @@ import * as path from "node:path";
 import { db } from "../src/db";
 import { productReviewsTable, productsTable } from "../src/db/schema";
 
-// Prefer cwd so CI with working-directory: relivator finds data/
+// Prefer cwd so CI with working-directory: ftc finds data/
 const DATA_DIR = (() => {
   const fromCwd = path.join(process.cwd(), "data");
   if (fs.existsSync(fromCwd)) return fromCwd;

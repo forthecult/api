@@ -4,7 +4,7 @@
  * Use after changing sync product in Printful or to refresh Markets and mockups.
  *
  * Run from repo root: bun run printful:resync
- * Or: cd relivator && bun run printful:resync
+ * Or: cd ftc && bun run printful:resync
  *
  * Requires: PRINTFUL_API_TOKEN in .env
  */

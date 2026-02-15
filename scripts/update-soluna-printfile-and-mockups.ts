@@ -9,12 +9,12 @@
  * 5. Re-host mockup images to UploadThing for each product.
  * 6. Patch each product with categories, feature section, and SEO.
  *
- * Run: cd relivator && bun run scripts/update-soluna-printfile-and-mockups.ts
+ * Run: cd ftc && bun run scripts/update-soluna-printfile-and-mockups.ts
  *
  * Requires:
  * - .env.local (or .env): ADMIN_AI_API_KEY, NEXT_PUBLIC_APP_URL (or MAIN_APP_URL)
  * - UPLOADTHING_TOKEN (for step 5; can be in .env on the server if using API)
- * - SOLUNA_PRINTFILE_PATH: path to the PNG print file (default: relivator/assets/soluna_300dpi-e1244a91-efae-41ba-baae-84bd1ef9fd9f.png)
+ * - SOLUNA_PRINTFILE_PATH: path to the PNG print file (default: ftc/assets/soluna_300dpi-e1244a91-efae-41ba-baae-84bd1ef9fd9f.png)
  */
 
 import "dotenv/config";

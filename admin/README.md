@@ -4,10 +4,10 @@ Next.js app for the admin dashboard (products, orders, payment methods, etc.). I
 
 ## Deploy root directory
 
-- **If your repo root is `relivator`** (repo contains `admin/`, `src/`, root `package.json`): use **`admin`**.
-- **If your repo root is the parent of `relivator`** (repo contains `relivator/admin/`, `relivator/package.json`): use **`relivator/admin`**.
+- **If your repo root is `ftc`** (repo contains `admin/`, `src/`, root `package.json`): use **`admin`**.
+- **If your repo root is the parent of `ftc`** (repo contains `ftc/admin/`, `ftc/package.json`): use **`ftc/admin`**.
 
-Using `admin` when the app is actually at `relivator/admin` will build the wrong app or fail; routes like `/payment-methods` will 404.
+Using `admin` when the app is actually at `ftc/admin` will build the wrong app or fail; routes like `/payment-methods` will 404.
 
 ## Local
 
