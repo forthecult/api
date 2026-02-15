@@ -76,7 +76,11 @@ export function SolanaWalletProvider({
         list.push(
           new WalletConnectWalletAdapter({
             network: WalletAdapterNetwork.Mainnet,
-            options: { projectId: wcProjectId },
+            options: {
+              projectId: wcProjectId,
+              // Disable Pulse (pulse.walletconnect.org) so Brave Shield / privacy tools don't flag or block it.
+              telemetryEnabled: false,
+            },
           }),
         );
       } catch (e) {

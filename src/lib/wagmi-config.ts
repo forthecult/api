@@ -75,14 +75,13 @@ export const wagmiConfig = createConfig({
             },
             projectId,
             showQrModal: true,
-            // Disable Pulse/analytics to avoid tracker flags and ERR_BLOCKED_BY_CLIENT when
-            // ad blockers or privacy extensions block pulse.walletconnect.org.
+            // Disable Pulse (pulse.walletconnect.org) so Brave Shield / privacy tools don't flag or block it.
             telemetryEnabled: false,
           }),
         ]
       : []),
   ],
-  multiInjectedProviderDiscovery: true,
+  multiInjectedProviderDiscovery: false,
   transports: {
     [arbitrum.id]: http(rpcConfig[arbitrum.id]),
     [base.id]: http(rpcConfig[base.id]),
