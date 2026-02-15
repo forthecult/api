@@ -145,7 +145,7 @@ const config = {
             value: [
               "default-src 'self'",
               // 'unsafe-inline' required for Next.js style injection + Tailwind; 'unsafe-eval' for dev HMR (stripped by Next in prod)
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://js.stripe.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://js.stripe.com https://sideshift.ai",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
