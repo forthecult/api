@@ -39,7 +39,9 @@ export default function AdminPaymentMethodsPage() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
   const [networkSaving, setNetworkSaving] = useState<string | null>(null);
-  const [expandedNetworks, setExpandedNetworks] = useState<Set<string>>(new Set());
+  const [expandedNetworks, setExpandedNetworks] = useState<Set<string>>(
+    new Set(),
+  );
   const [error, setError] = useState<string | null>(null);
 
   const fetchMethods = useCallback(async () => {
@@ -79,13 +81,13 @@ export default function AdminPaymentMethodsPage() {
           body: JSON.stringify({ methodKey, enabled }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
         setMethods((prev) =>
-          prev.map((m) =>
-            m.methodKey === methodKey ? { ...m, enabled } : m,
-          ),
+          prev.map((m) => (m.methodKey === methodKey ? { ...m, enabled } : m)),
         );
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to update");
@@ -108,7 +110,9 @@ export default function AdminPaymentMethodsPage() {
           body: JSON.stringify({ methodKey, enabledNetworks }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
         setMethods((prev) =>
@@ -117,7 +121,9 @@ export default function AdminPaymentMethodsPage() {
           ),
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to update networks");
+        setError(
+          err instanceof Error ? err.message : "Failed to update networks",
+        );
       } finally {
         setNetworkSaving(null);
       }
@@ -137,8 +143,7 @@ export default function AdminPaymentMethodsPage() {
       const next = checked
         ? [...current, networkValue]
         : current.filter((v) => v !== networkValue);
-      const toSave =
-        next.length === options.length ? null : next;
+      const toSave = next.length === options.length ? null : next;
       setEnabledNetworks(methodKey, toSave);
     },
     [methods, setEnabledNetworks],
@@ -189,7 +194,7 @@ export default function AdminPaymentMethodsPage() {
                 const effectiveNetworks =
                   m.enabledNetworks?.length && m.enabledNetworks.length > 0
                     ? m.enabledNetworks
-                    : networks?.map((n) => n.value) ?? [];
+                    : (networks?.map((n) => n.value) ?? []);
                 return (
                   <li
                     key={m.methodKey}
@@ -209,7 +214,8 @@ export default function AdminPaymentMethodsPage() {
                             onClick={() =>
                               setExpandedNetworks((prev) => {
                                 const next = new Set(prev);
-                                if (next.has(m.methodKey)) next.delete(m.methodKey);
+                                if (next.has(m.methodKey))
+                                  next.delete(m.methodKey);
                                 else next.add(m.methodKey);
                                 return next;
                               })
@@ -234,10 +240,7 @@ export default function AdminPaymentMethodsPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         <span
-                          className={cn(
-                            "text-xs",
-                            "text-muted-foreground",
-                          )}
+                          className={cn("text-xs", "text-muted-foreground")}
                         >
                           {m.enabled ? "Enabled" : "Disabled"}
                         </span>
@@ -268,7 +271,9 @@ export default function AdminPaymentMethodsPage() {
                         </p>
                         <div className="flex flex-wrap gap-x-6 gap-y-2">
                           {networks!.map((n) => {
-                            const isChecked = effectiveNetworks.includes(n.value);
+                            const isChecked = effectiveNetworks.includes(
+                              n.value,
+                            );
                             return (
                               <label
                                 key={n.value}
@@ -278,8 +283,7 @@ export default function AdminPaymentMethodsPage() {
                                   type="checkbox"
                                   checked={isChecked}
                                   disabled={
-                                    networkSaving === m.methodKey ||
-                                    !m.enabled
+                                    networkSaving === m.methodKey || !m.enabled
                                   }
                                   onChange={(e) =>
                                     toggleNetwork(

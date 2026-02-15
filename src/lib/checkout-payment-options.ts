@@ -209,7 +209,9 @@ export function hasAnyStablecoinEnabled(v: PaymentVisibility): boolean {
 }
 
 /** USDC network options filtered by admin-enabled networks. Null/empty = all. */
-export function visibleUsdcNetworks(v: PaymentVisibility | null): { value: string; label: string }[] {
+export function visibleUsdcNetworks(
+  v: PaymentVisibility | null,
+): { value: string; label: string }[] {
   const opts = USDC_SUB_OPTIONS;
   if (!v) return opts;
   const allowed = v.enabledUsdcNetworks;
@@ -218,7 +220,9 @@ export function visibleUsdcNetworks(v: PaymentVisibility | null): { value: strin
 }
 
 /** USDT network options filtered by admin-enabled networks. Null/empty = all. */
-export function visibleUsdtNetworks(v: PaymentVisibility | null): { value: string; label: string }[] {
+export function visibleUsdtNetworks(
+  v: PaymentVisibility | null,
+): { value: string; label: string }[] {
   const opts = USDT_SUB_OPTIONS;
   if (!v) return opts;
   const allowed = v.enabledUsdtNetworks;
@@ -251,8 +255,12 @@ function getCryptoList(visibility?: PaymentVisibility | null): string[] {
 
 /** Build card payment copy for product accordion. */
 function getCardList(visibility?: PaymentVisibility | null): string[] {
-  const hideCard = visibility ? !visibility.creditCard : HIDDEN_PAYMENT_OPTIONS.creditCard;
-  const hidePaypal = visibility ? !visibility.paypal : HIDDEN_PAYMENT_OPTIONS.paypal;
+  const hideCard = visibility
+    ? !visibility.creditCard
+    : HIDDEN_PAYMENT_OPTIONS.creditCard;
+  const hidePaypal = visibility
+    ? !visibility.paypal
+    : HIDDEN_PAYMENT_OPTIONS.paypal;
   if (hideCard && hidePaypal) return [];
   const cards: string[] = [];
   if (!hideCard) {
@@ -304,13 +312,19 @@ export function getPaymentOptionsForDisplay(
   };
 }
 
-export type PaymentIconItem = { src: string; alt: string; type: "card" | "crypto" };
+export type PaymentIconItem = {
+  src: string;
+  alt: string;
+  type: "card" | "crypto";
+};
 
 /** Icon paths for payment methods (for product page "Secure Checkout" strip). Only visible methods. */
 export function getPaymentIconPaths(
   visibility?: PaymentVisibility | null,
 ): PaymentIconItem[] {
-  const hideCard = visibility ? !visibility.creditCard : HIDDEN_PAYMENT_OPTIONS.creditCard;
+  const hideCard = visibility
+    ? !visibility.creditCard
+    : HIDDEN_PAYMENT_OPTIONS.creditCard;
   const icons: PaymentIconItem[] = [];
   if (!hideCard) {
     icons.push(
@@ -321,42 +335,110 @@ export function getPaymentIconPaths(
   }
   if (visibility) {
     if (visibility.cryptoBitcoin)
-      icons.push({ src: "/crypto/bitcoin/bitcoin-logo.svg", alt: "Bitcoin", type: "crypto" });
+      icons.push({
+        src: "/crypto/bitcoin/bitcoin-logo.svg",
+        alt: "Bitcoin",
+        type: "crypto",
+      });
     if (visibility.cryptoEthereum)
-      icons.push({ src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum", type: "crypto" });
+      icons.push({
+        src: "/crypto/ethereum/ethereum-logo.svg",
+        alt: "Ethereum",
+        type: "crypto",
+      });
     if (visibility.cryptoSolana)
-      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana", type: "crypto" });
+      icons.push({
+        src: "/crypto/solana/solanaLogoMark.svg",
+        alt: "Solana",
+        type: "crypto",
+      });
     if (visibility.cryptoDogecoin)
-      icons.push({ src: "/payments/doge.svg", alt: "Dogecoin", type: "crypto" });
+      icons.push({
+        src: "/payments/doge.svg",
+        alt: "Dogecoin",
+        type: "crypto",
+      });
     if (visibility.cryptoMonero)
-      icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero", type: "crypto" });
+      icons.push({
+        src: "/crypto/monero/monero-xmr-logo.svg",
+        alt: "Monero",
+        type: "crypto",
+      });
     if (visibility.cryptoCrust)
-      icons.push({ src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST", type: "crypto" });
+      icons.push({
+        src: "/crypto/solana/solanaLogoMark.svg",
+        alt: "CRUST",
+        type: "crypto",
+      });
     if (visibility.cryptoPump)
-      icons.push({ src: "/crypto/pump/pump-logomark.svg", alt: "Pump", type: "crypto" });
+      icons.push({
+        src: "/crypto/pump/pump-logomark.svg",
+        alt: "Pump",
+        type: "crypto",
+      });
     if (visibility.cryptoTroll)
-      icons.push({ src: "/crypto/troll/troll-logomark.png", alt: "Troll", type: "crypto" });
+      icons.push({
+        src: "/crypto/troll/troll-logomark.png",
+        alt: "Troll",
+        type: "crypto",
+      });
     if (visibility.cryptoSoluna)
-      icons.push({ src: "/crypto/soluna/soluna-logo.png", alt: "SOLUNA", type: "crypto" });
+      icons.push({
+        src: "/crypto/soluna/soluna-logo.png",
+        alt: "SOLUNA",
+        type: "crypto",
+      });
     if (visibility.cryptoSeeker)
-      icons.push({ src: "/crypto/seeker/S_Token_Circle_White.svg", alt: "Seeker (SKR)", type: "crypto" });
+      icons.push({
+        src: "/crypto/seeker/S_Token_Circle_White.svg",
+        alt: "Seeker (SKR)",
+        type: "crypto",
+      });
     if (visibility.stablecoinUsdc)
-      icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" });
+      icons.push({
+        src: "/crypto/usdc/usdc-logo.svg",
+        alt: "USDC",
+        type: "crypto",
+      });
     if (visibility.stablecoinUsdt)
-      icons.push({ src: "/crypto/usdt/tether-usdt-logo.svg", alt: "USDT", type: "crypto" });
+      icons.push({
+        src: "/crypto/usdt/tether-usdt-logo.svg",
+        alt: "USDT",
+        type: "crypto",
+      });
   } else {
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin) {
-      icons.push({ src: "/crypto/bitcoin/bitcoin-logo.svg", alt: "Bitcoin", type: "crypto" });
+      icons.push({
+        src: "/crypto/bitcoin/bitcoin-logo.svg",
+        alt: "Bitcoin",
+        type: "crypto",
+      });
     }
     icons.push(
-      { src: "/crypto/ethereum/ethereum-logo.svg", alt: "Ethereum", type: "crypto" },
-      { src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana", type: "crypto" },
+      {
+        src: "/crypto/ethereum/ethereum-logo.svg",
+        alt: "Ethereum",
+        type: "crypto",
+      },
+      {
+        src: "/crypto/solana/solanaLogoMark.svg",
+        alt: "Solana",
+        type: "crypto",
+      },
     );
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin) {
-      icons.push({ src: "/payments/doge.svg", alt: "Dogecoin", type: "crypto" });
+      icons.push({
+        src: "/payments/doge.svg",
+        alt: "Dogecoin",
+        type: "crypto",
+      });
     }
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero) {
-      icons.push({ src: "/crypto/monero/monero-xmr-logo.svg", alt: "Monero", type: "crypto" });
+      icons.push({
+        src: "/crypto/monero/monero-xmr-logo.svg",
+        alt: "Monero",
+        type: "crypto",
+      });
     }
     icons.push(
       { src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" },
@@ -395,23 +477,39 @@ export function getFooterPaymentItems(
     items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
     items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
-    items.push({ name: "Seeker (SKR)", src: "/crypto/seeker/S_Token_Circle_White.svg" });
+    items.push({
+      name: "Seeker (SKR)",
+      src: "/crypto/seeker/S_Token_Circle_White.svg",
+    });
   } else {
-    if (visibility.cryptoBitcoin) items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
+    if (visibility.cryptoBitcoin)
+      items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
     if (visibility.cryptoDogecoin)
-      items.push({ name: "Dogecoin", title: "Much wow. Such spend.", src: "/payments/doge.svg" });
-    if (visibility.cryptoMonero) items.push({ name: "Monero", src: "/payments/monero.svg" });
-    if (visibility.cryptoEthereum) items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
+      items.push({
+        name: "Dogecoin",
+        title: "Much wow. Such spend.",
+        src: "/payments/doge.svg",
+      });
+    if (visibility.cryptoMonero)
+      items.push({ name: "Monero", src: "/payments/monero.svg" });
+    if (visibility.cryptoEthereum)
+      items.push({ name: "Ethereum", src: "/payments/ethereum.svg" });
     if (visibility.cryptoSolana)
       items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
     if (visibility.cryptoCrust)
-      items.push({ name: "Crustafarian", src: "/crypto/solana/solanaLogoMark.svg" });
+      items.push({
+        name: "Crustafarian",
+        src: "/crypto/solana/solanaLogoMark.svg",
+      });
     if (visibility.cryptoPump)
       items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     if (visibility.cryptoTroll)
       items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
     if (visibility.cryptoSeeker)
-      items.push({ name: "Seeker (SKR)", src: "/crypto/seeker/S_Token_Circle_White.svg" });
+      items.push({
+        name: "Seeker (SKR)",
+        src: "/crypto/seeker/S_Token_Circle_White.svg",
+      });
   }
 
   // Stablecoins (USDC, USDT)

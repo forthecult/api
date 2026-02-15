@@ -41,7 +41,5 @@ export const brandAssetTable = pgTable(
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  (t) => [
-    index("brand_asset_brand_id_idx").on(t.brandId),
-  ],
+  (t) => [index("brand_asset_brand_id_idx").on(t.brandId)],
 );

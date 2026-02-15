@@ -2,12 +2,7 @@
 
 import { MessageCircle, X } from "lucide-react";
 import Link from "next/link";
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
@@ -49,8 +44,11 @@ interface ConversationDetail {
 
 function playDing() {
   try {
-    const audioContext = new (window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext
+    )();
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     oscillator.connect(gainNode);
@@ -150,9 +148,7 @@ export function AdminChatPopup() {
           const lastSeen = lastSeenRef.current.get(c.id);
           const isNewMessage =
             initialDone &&
-            (lastSeen
-              ? new Date(c.lastMessageAt) > new Date(lastSeen)
-              : true);
+            (lastSeen ? new Date(c.lastMessageAt) > new Date(lastSeen) : true);
           if (isNewMessage) {
             toAdd.add(c.id);
             didPlayDing = true;
@@ -245,15 +241,18 @@ export function AdminChatPopup() {
     }
   }, [selectedId, staffInput, fetchDetail]);
 
-  const markConversationSeen = useCallback((id: string) => {
-    setUnreadIds((prev) => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
-    const row = conversations.find((c) => c.id === id);
-    if (row?.lastMessageAt) lastSeenRef.current.set(id, row.lastMessageAt);
-  }, [conversations]);
+  const markConversationSeen = useCallback(
+    (id: string) => {
+      setUnreadIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+      const row = conversations.find((c) => c.id === id);
+      if (row?.lastMessageAt) lastSeenRef.current.set(id, row.lastMessageAt);
+    },
+    [conversations],
+  );
 
   const openPopup = useCallback(() => {
     setOpen(true);
@@ -283,9 +282,7 @@ export function AdminChatPopup() {
           "transition-transform hover:scale-105",
         )}
         aria-label={
-          unreadCount > 0
-            ? `Support chat (${unreadCount} new)`
-            : "Support chat"
+          unreadCount > 0 ? `Support chat (${unreadCount} new)` : "Support chat"
         }
       >
         <MessageCircle className="size-7" />

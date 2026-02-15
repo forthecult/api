@@ -270,10 +270,16 @@ export async function createAndConfirmPrintifyOrder(
   let isPrintifyExpress = false;
   let isEconomyShipping = false;
 
-  if (shippingMethodStr.includes("printify_express") || shippingMethodStr === "printify-express") {
+  if (
+    shippingMethodStr.includes("printify_express") ||
+    shippingMethodStr === "printify-express"
+  ) {
     shippingMethod = 3;
     isPrintifyExpress = true;
-  } else if (shippingMethodStr.includes("express") || shippingMethodStr.includes("priority")) {
+  } else if (
+    shippingMethodStr.includes("express") ||
+    shippingMethodStr.includes("priority")
+  ) {
     shippingMethod = 2;
   } else if (shippingMethodStr.includes("economy")) {
     shippingMethod = 4;
@@ -294,7 +300,9 @@ export async function createAndConfirmPrintifyOrder(
 
   try {
     // Create the order — use Express endpoint if Printify Express shipping was selected
-    console.log(`Creating Printify order for order ${orderId} (method: ${shippingMethod}, express: ${isPrintifyExpress})...`);
+    console.log(
+      `Creating Printify order for order ${orderId} (method: ${shippingMethod}, express: ${isPrintifyExpress})...`,
+    );
     const createResponse = isPrintifyExpress
       ? await createPrintifyExpressOrder(config.shopId, createRequest)
       : await createPrintifyOrder(config.shopId, createRequest);
@@ -458,8 +466,10 @@ export async function updateOrderFromPrintifyWebhook(
       updates.deliveredAt = new Date();
       const deliveryShipment = event.data.shipment;
       if (deliveryShipment) {
-        if (deliveryShipment.carrier) updates.trackingCarrier = deliveryShipment.carrier;
-        if (deliveryShipment.number) updates.trackingNumber = deliveryShipment.number;
+        if (deliveryShipment.carrier)
+          updates.trackingCarrier = deliveryShipment.carrier;
+        if (deliveryShipment.number)
+          updates.trackingNumber = deliveryShipment.number;
         if (deliveryShipment.url) updates.trackingUrl = deliveryShipment.url;
         if (deliveryShipment.delivered_at) {
           updates.deliveredAt = new Date(deliveryShipment.delivered_at);
@@ -489,8 +499,10 @@ export async function updateOrderFromPrintifyWebhook(
       // Store tracking data if present in any order:updated event
       const updatedShipment = event.data.shipment;
       if (updatedShipment) {
-        if (updatedShipment.carrier) updates.trackingCarrier = updatedShipment.carrier;
-        if (updatedShipment.number) updates.trackingNumber = updatedShipment.number;
+        if (updatedShipment.carrier)
+          updates.trackingCarrier = updatedShipment.carrier;
+        if (updatedShipment.number)
+          updates.trackingNumber = updatedShipment.number;
         if (updatedShipment.url) updates.trackingUrl = updatedShipment.url;
       }
       break;
@@ -622,7 +634,10 @@ export async function calculatePrintifyShippingOptions(
         printifyMethodId: 2,
       });
     }
-    if (typeof result.printify_express === "number" && result.printify_express > 0) {
+    if (
+      typeof result.printify_express === "number" &&
+      result.printify_express > 0
+    ) {
       options.push({
         method: "printify_express",
         label: "Printify Express (2-5 days)",

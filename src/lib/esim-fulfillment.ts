@@ -61,7 +61,10 @@ export async function fulfillEsimOrder(
       return { success: true }; // Nothing to fulfill
     }
 
-    const activationItems: { packageName: string; activationLink: string | null }[] = [];
+    const activationItems: {
+      packageName: string;
+      activationLink: string | null;
+    }[] = [];
 
     for (const esimOrder of esimOrders) {
       // Skip if already fulfilled
@@ -86,9 +89,7 @@ export async function fulfillEsimOrder(
               updatedAt: new Date(),
             })
             .where(eq(esimOrdersTable.id, esimOrder.id));
-          console.error(
-            `eSIM purchase failed for esim_order ${esimOrder.id}`,
-          );
+          console.error(`eSIM purchase failed for esim_order ${esimOrder.id}`);
           continue;
         }
 
@@ -169,7 +170,10 @@ export async function fulfillEsimOrder(
           isGuest: order?.userId == null,
         });
       } catch (emailErr) {
-        console.error("[fulfillEsimOrder] Failed to send activation email:", emailErr);
+        console.error(
+          "[fulfillEsimOrder] Failed to send activation email:",
+          emailErr,
+        );
       }
     }
 

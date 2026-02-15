@@ -76,9 +76,7 @@ export function useCryptoOrder({
       })
       .catch((err) => {
         if (!cancelled)
-          setError(
-            err instanceof Error ? err.message : "Failed to load order",
-          );
+          setError(err instanceof Error ? err.message : "Failed to load order");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

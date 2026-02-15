@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AppliedCoupon } from "../checkout-shared";
 
 export interface TierDiscountLine {
@@ -59,7 +55,9 @@ export function useCoupons({
   wallet,
 }: UseCouponsArgs): UseCouponsResult {
   const [discountCodeInput, setDiscountCodeInput] = useState("");
-  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(
+    null,
+  );
   const [tierDiscounts, setTierDiscounts] = useState<TierDiscountLine[]>([]);
   const [tierDiscountTotalCents, setTierDiscountTotalCents] = useState(0);
   const [couponError, setCouponError] = useState("");
@@ -222,7 +220,14 @@ export function useCoupons({
     return () => {
       cancelled = true;
     };
-  }, [items, subtotal, shippingCents, paymentMethodKey, wallet, discountEvalKey]);
+  }, [
+    items,
+    subtotal,
+    shippingCents,
+    paymentMethodKey,
+    wallet,
+    discountEvalKey,
+  ]);
 
   return {
     appliedCoupon,

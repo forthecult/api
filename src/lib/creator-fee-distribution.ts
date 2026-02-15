@@ -168,9 +168,8 @@ export function computeShares(
 
     if (lamports <= 0) continue;
 
-    const sharePercent = totalStaked > 0
-      ? (Number(s.amount) / totalStaked) * 100
-      : 0;
+    const sharePercent =
+      totalStaked > 0 ? (Number(s.amount) / totalStaked) * 100 : 0;
 
     shares.push({
       wallet: s.owner,
@@ -220,12 +219,10 @@ async function executeDistribution(
     tx.recentBlockhash = blockhash;
     tx.feePayer = fromKeypair.publicKey;
 
-    const sig = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [fromKeypair],
-      { commitment: "confirmed", preflightCommitment: "confirmed" },
-    );
+    const sig = await sendAndConfirmTransaction(connection, tx, [fromKeypair], {
+      commitment: "confirmed",
+      preflightCommitment: "confirmed",
+    });
 
     txSignatures.push(sig);
     for (let j = 0; j < batch.length; j++) {
@@ -317,7 +314,10 @@ export async function runDailyDistribution(options?: {
       feeWalletBalance: balance,
     });
   } catch (e) {
-    console.error("[creator-fee-distribution] Failed to insert distribution:", e);
+    console.error(
+      "[creator-fee-distribution] Failed to insert distribution:",
+      e,
+    );
     return {
       ok: false,
       error: e instanceof Error ? e.message : String(e),

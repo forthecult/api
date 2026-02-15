@@ -33,8 +33,8 @@ export default function TokenStakePage() {
             </span>
           </h1>
           <p className="mt-1 text-muted-foreground">
-            Your CULT balance is your voting power. Connect your Solana wallet to
-            participate.
+            Your CULT balance is your voting power. Connect your Solana wallet
+            to participate.
           </p>
           <Link
             href="/token"

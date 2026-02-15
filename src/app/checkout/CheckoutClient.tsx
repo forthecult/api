@@ -41,10 +41,7 @@ import {
   type BillingAddressFormRef,
 } from "./components/BillingAddressForm";
 import { PaymentMethodSection } from "./components/PaymentMethodSection";
-import {
-  checkoutReducer,
-  initialCheckoutState,
-} from "./checkout-reducer";
+import { checkoutReducer, initialCheckoutState } from "./checkout-reducer";
 import { useCoupons } from "./hooks/useCoupons";
 
 function getAffiliatePayload(): { affiliateCode?: string } {
@@ -81,9 +78,9 @@ function getTelegramOrderPayload(): {
 /** All countries we ship to (from site country list, excluding restricted). */
 const COUNTRY_OPTIONS: { value: string; label: string }[] = [
   { value: "", label: "Select country" },
-  ...COUNTRY_OPTIONS_ALPHABETICAL.filter((o) => !isShippingExcluded(o.code)).map(
-    (o) => ({ value: o.code, label: o.countryName }),
-  ),
+  ...COUNTRY_OPTIONS_ALPHABETICAL.filter(
+    (o) => !isShippingExcluded(o.code),
+  ).map((o) => ({ value: o.code, label: o.countryName })),
 ];
 
 /** Stub ref for digital-only checkout when user is logged in: no form shown, ref exposes user email. */
@@ -106,7 +103,8 @@ const DigitalOnlyStubRef = forwardRef<
 });
 
 export function CheckoutClient() {
-  const { isHydrated, items, subtotal, itemCount, updateQuantity, removeItem } = useCart();
+  const { isHydrated, items, subtotal, itemCount, updateQuantity, removeItem } =
+    useCart();
   const { user, isPending: authPending } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
   const { publicKey } = useWallet();
@@ -149,7 +147,9 @@ export function CheckoutClient() {
   /** Crypto total label (e.g. "≈ 0.0875 SOL") set by PaymentMethodSection for OrderSummary. */
   const [cryptoTotalLabel, setCryptoTotalLabel] = useState<string | null>(null);
   /** Selected payment method key (e.g. "crypto_troll") for payment-method discount resolution. */
-  const [selectedPaymentMethodKey, setSelectedPaymentMethodKey] = useState<string | null>(null);
+  const [selectedPaymentMethodKey, setSelectedPaymentMethodKey] = useState<
+    string | null
+  >(null);
 
   const handleShippingUpdate = useCallback((update: ShippingUpdate) => {
     setShipping(update);
@@ -221,11 +221,15 @@ export function CheckoutClient() {
       0,
     );
     const discountCentsForOrder =
-      (appliedCoupon?.discountCents ?? 0) + (coupons.tierDiscountTotalCents ?? 0);
+      (appliedCoupon?.discountCents ?? 0) +
+      (coupons.tierDiscountTotalCents ?? 0);
     const shippingFeeCentsRounded = Math.round(shippingCents);
     const taxCentsRounded = Math.round(taxCents);
     const orderTotalCents =
-      subtotalCents - discountCentsForOrder + shippingFeeCentsRounded + taxCentsRounded;
+      subtotalCents -
+      discountCentsForOrder +
+      shippingFeeCentsRounded +
+      taxCentsRounded;
     const emailRaw = form?.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&
@@ -260,7 +264,18 @@ export function CheckoutClient() {
         ...(wallet ? { wallet } : {}),
       },
     };
-  }, [items, shippingCents, taxCents, user?.id, isLoggedIn, userReceiveMarketing, userReceiveSmsMarketing, appliedCoupon, wallet, tierDiscountTotalCents]);
+  }, [
+    items,
+    shippingCents,
+    taxCents,
+    user?.id,
+    isLoggedIn,
+    userReceiveMarketing,
+    userReceiveSmsMarketing,
+    appliedCoupon,
+    wallet,
+    tierDiscountTotalCents,
+  ]);
 
   const hasEsimInCart = items.some((item) => item.digital === true);
 
@@ -322,19 +337,29 @@ export function CheckoutClient() {
         </div>
 
         {/* Progress indicator */}
-        <div className="mb-6 flex items-center justify-center gap-2 text-sm" role="navigation" aria-label="Checkout steps">
+        <div
+          className="mb-6 flex items-center justify-center gap-2 text-sm"
+          role="navigation"
+          aria-label="Checkout steps"
+        >
           <div className="flex items-center gap-1.5">
-            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">1</span>
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">
+              1
+            </span>
             <span className="font-medium text-foreground">Information</span>
           </div>
           <div className="h-px w-6 bg-border sm:w-10" aria-hidden />
           <div className="flex items-center gap-1.5">
-            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">2</span>
+            <span className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:size-6 sm:text-xs">
+              2
+            </span>
             <span className="font-medium text-foreground">Shipping</span>
           </div>
           <div className="h-px w-6 bg-border sm:w-10" aria-hidden />
           <div className="flex items-center gap-1.5">
-            <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground sm:size-6 sm:text-xs">3</span>
+            <span className="flex size-5 items-center justify-center rounded-full bg-muted text-[10px] font-bold text-muted-foreground sm:size-6 sm:text-xs">
+              3
+            </span>
             <span className="text-muted-foreground">Payment</span>
           </div>
         </div>

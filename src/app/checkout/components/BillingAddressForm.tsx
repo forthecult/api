@@ -47,14 +47,20 @@ function validateBillingForm(form: BillingFormState): string[] {
 export const BillingAddressForm = forwardRef<
   BillingAddressFormRef,
   BillingAddressFormProps
->(function BillingAddressForm({ countryOptions, validationErrors, shippingFormRef }, ref) {
+>(function BillingAddressForm(
+  { countryOptions, validationErrors, shippingFormRef },
+  ref,
+) {
   const [useShippingAsBilling, setUseShippingAsBilling] = useState(true);
   const [billingForm, setBillingForm] =
     useState<BillingFormState>(defaultBillingForm);
 
-  const updateBilling = useCallback((field: keyof BillingFormState, value: string) => {
-    setBillingForm((prev) => ({ ...prev, [field]: value }));
-  }, []);
+  const updateBilling = useCallback(
+    (field: keyof BillingFormState, value: string) => {
+      setBillingForm((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
 
   const onLoqateSelect = useCallback((mapped: MappedShippingAddress) => {
     setBillingForm((prev) => ({
@@ -83,8 +89,7 @@ export const BillingAddressForm = forwardRef<
   useImperativeHandle(
     ref,
     () => ({
-      getBilling: () =>
-        useShippingAsBilling ? null : billingForm,
+      getBilling: () => (useShippingAsBilling ? null : billingForm),
       getUseShippingAsBilling: () => useShippingAsBilling,
       validate,
     }),
@@ -130,9 +135,8 @@ export const BillingAddressForm = forwardRef<
                 onChange={(e) => updateBilling("country", e.target.value)}
                 className={cn(
                   selectInputClass,
-                  validationErrors.includes(
-                    "Billing country is required",
-                  ) && "border-destructive",
+                  validationErrors.includes("Billing country is required") &&
+                    "border-destructive",
                 )}
               >
                 {countryOptions.map((opt) => (
@@ -150,15 +154,12 @@ export const BillingAddressForm = forwardRef<
                 )}
                 className={cn(
                   checkoutFieldHeight,
-                  validationErrors.includes(
-                    "Billing first name is required",
-                  ) && "border-destructive",
+                  validationErrors.includes("Billing first name is required") &&
+                    "border-destructive",
                 )}
                 placeholder="First name"
                 value={billingForm.firstName}
-                onChange={(e) =>
-                  updateBilling("firstName", e.target.value)
-                }
+                onChange={(e) => updateBilling("firstName", e.target.value)}
               />
             </div>
             <div>
@@ -169,15 +170,12 @@ export const BillingAddressForm = forwardRef<
                 )}
                 className={cn(
                   checkoutFieldHeight,
-                  validationErrors.includes(
-                    "Billing last name is required",
-                  ) && "border-destructive",
+                  validationErrors.includes("Billing last name is required") &&
+                    "border-destructive",
                 )}
                 placeholder="Last name"
                 value={billingForm.lastName}
-                onChange={(e) =>
-                  updateBilling("lastName", e.target.value)
-                }
+                onChange={(e) => updateBilling("lastName", e.target.value)}
               />
             </div>
             <div className="sm:col-span-2">
@@ -186,9 +184,7 @@ export const BillingAddressForm = forwardRef<
                 className={checkoutFieldHeight}
                 placeholder="Company (optional)"
                 value={billingForm.company}
-                onChange={(e) =>
-                  updateBilling("company", e.target.value)
-                }
+                onChange={(e) => updateBilling("company", e.target.value)}
               />
             </div>
             <div
@@ -204,15 +200,12 @@ export const BillingAddressForm = forwardRef<
                 )}
                 className={cn(
                   checkoutFieldHeight,
-                  validationErrors.includes(
-                    "Billing address is required",
-                  ) && "border-destructive",
+                  validationErrors.includes("Billing address is required") &&
+                    "border-destructive",
                 )}
                 placeholder="Address"
                 value={billingForm.street}
-                onChange={(e) =>
-                  updateBilling("street", e.target.value)
-                }
+                onChange={(e) => updateBilling("street", e.target.value)}
                 onFocus={() => {
                   billingLoqate.inputFocusedRef.current = true;
                   if (billingLoqate.suggestions.length > 0)
@@ -279,9 +272,7 @@ export const BillingAddressForm = forwardRef<
                 className={checkoutFieldHeight}
                 placeholder="Apartment, suite, etc (optional)"
                 value={billingForm.apartment}
-                onChange={(e) =>
-                  updateBilling("apartment", e.target.value)
-                }
+                onChange={(e) => updateBilling("apartment", e.target.value)}
               />
             </div>
             <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
@@ -291,9 +282,7 @@ export const BillingAddressForm = forwardRef<
                   className={checkoutFieldHeight}
                   placeholder="City"
                   value={billingForm.city}
-                  onChange={(e) =>
-                    updateBilling("city", e.target.value)
-                  }
+                  onChange={(e) => updateBilling("city", e.target.value)}
                 />
               </div>
               {isBillingUS ? (
@@ -301,16 +290,11 @@ export const BillingAddressForm = forwardRef<
                   <select
                     aria-label="State (billing)"
                     value={billingForm.state}
-                    onChange={(e) =>
-                      updateBilling("state", e.target.value)
-                    }
+                    onChange={(e) => updateBilling("state", e.target.value)}
                     className={selectInputClass}
                   >
                     {US_STATE_OPTIONS.map((opt) => (
-                      <option
-                        key={opt.value || "empty"}
-                        value={opt.value}
-                      >
+                      <option key={opt.value || "empty"} value={opt.value}>
                         {opt.label}
                       </option>
                     ))}
@@ -323,27 +307,19 @@ export const BillingAddressForm = forwardRef<
                     className={checkoutFieldHeight}
                     placeholder="State / Province"
                     value={billingForm.state}
-                    onChange={(e) =>
-                      updateBilling("state", e.target.value)
-                    }
+                    onChange={(e) => updateBilling("state", e.target.value)}
                   />
                 </div>
               )}
               <div>
                 <Input
                   aria-label={
-                    isBillingUS
-                      ? "Zip code (billing)"
-                      : "Postal code (billing)"
+                    isBillingUS ? "Zip code (billing)" : "Postal code (billing)"
                   }
                   className={checkoutFieldHeight}
-                  placeholder={
-                    isBillingUS ? "Zip code" : "Postal code"
-                  }
+                  placeholder={isBillingUS ? "Zip code" : "Postal code"}
                   value={billingForm.zip}
-                  onChange={(e) =>
-                    updateBilling("zip", e.target.value)
-                  }
+                  onChange={(e) => updateBilling("zip", e.target.value)}
                 />
               </div>
             </div>
@@ -354,9 +330,7 @@ export const BillingAddressForm = forwardRef<
                 placeholder="Phone (optional)"
                 type="tel"
                 value={billingForm.phone}
-                onChange={(e) =>
-                  updateBilling("phone", e.target.value)
-                }
+                onChange={(e) => updateBilling("phone", e.target.value)}
               />
             </div>
           </div>

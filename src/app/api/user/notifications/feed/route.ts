@@ -1,11 +1,16 @@
 import { desc, eq, and } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { userNotificationTable } from "~/db/schema";
 import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
 import { auth } from "~/lib/auth";
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 const DEFAULT_LIMIT = 50;
 
@@ -15,7 +20,10 @@ const DEFAULT_LIMIT = 50;
  */
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`user-notifications-feed:${ip}`, RATE_LIMITS.api);
+  const rl = await checkRateLimit(
+    `user-notifications-feed:${ip}`,
+    RATE_LIMITS.api,
+  );
   if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
@@ -64,7 +72,10 @@ export async function PATCH(request: NextRequest) {
   // [SECURITY] Verify Origin header to prevent CSRF attacks
   if (!verifyCsrfOrigin(request.headers)) return csrfFailureResponse();
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`user-notifications-feed:${ip}`, RATE_LIMITS.api);
+  const rl = await checkRateLimit(
+    `user-notifications-feed:${ip}`,
+    RATE_LIMITS.api,
+  );
   if (!rl.success) return rateLimitResponse(rl);
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session?.user?.id) {
@@ -73,7 +84,10 @@ export async function PATCH(request: NextRequest) {
 
   let body: { markAsRead?: string; markAllAsRead?: boolean };
   try {
-    body = (await request.json()) as { markAsRead?: string; markAllAsRead?: boolean };
+    body = (await request.json()) as {
+      markAsRead?: string;
+      markAllAsRead?: boolean;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }

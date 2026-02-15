@@ -21,17 +21,26 @@ async function main() {
       console.log("No shops found in your Printify account.");
       return;
     }
-    console.log("Printify shops (set PRINTIFY_SHOP_ID in .env to one of these):\n");
+    console.log(
+      "Printify shops (set PRINTIFY_SHOP_ID in .env to one of these):\n",
+    );
     for (const s of shops) {
-      console.log(`  ID: ${s.id}  Title: ${s.title}  Sales channel: ${s.sales_channel}`);
+      console.log(
+        `  ID: ${s.id}  Title: ${s.title}  Sales channel: ${s.sales_channel}`,
+      );
     }
     if (shops.length === 1) {
-      console.log(`\nOnly one shop. Add to .env:\n  PRINTIFY_SHOP_ID=${shops[0].id}`);
+      console.log(
+        `\nOnly one shop. Add to .env:\n  PRINTIFY_SHOP_ID=${shops[0].id}`,
+      );
     } else {
       console.log("\nAdd to .env:\n  PRINTIFY_SHOP_ID=<id>");
     }
   } catch (err) {
-    console.error("Failed to fetch Printify shops:", err instanceof Error ? err.message : err);
+    console.error(
+      "Failed to fetch Printify shops:",
+      err instanceof Error ? err.message : err,
+    );
     process.exit(1);
   }
 }

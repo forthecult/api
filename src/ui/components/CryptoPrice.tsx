@@ -21,7 +21,10 @@ export function CryptoPrice({ usdAmount, className }: CryptoPriceProps) {
   if (!mounted) {
     return (
       <span
-        className={cn("font-mono-crypto text-sm text-muted-foreground", className)}
+        className={cn(
+          "font-mono-crypto text-sm text-muted-foreground",
+          className,
+        )}
         data-crypto-price
         aria-hidden
         style={{ minWidth: "8ch" }}
@@ -35,7 +38,10 @@ export function CryptoPrice({ usdAmount, className }: CryptoPriceProps) {
   if (cryptoAmount == null) return null;
   return (
     <span
-      className={cn("font-mono-crypto text-sm text-muted-foreground", className)}
+      className={cn(
+        "font-mono-crypto text-sm text-muted-foreground",
+        className,
+      )}
       data-crypto-price
     >
       {formatCrypto(cryptoAmount)}

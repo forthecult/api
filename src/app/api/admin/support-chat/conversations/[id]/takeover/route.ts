@@ -40,7 +40,8 @@ export async function POST(
       );
     }
 
-    const adminUserId = authResult.method === "session" ? authResult.user.id : null;
+    const adminUserId =
+      authResult.method === "session" ? authResult.user.id : null;
     const now = new Date();
     await db
       .update(supportChatConversationTable)

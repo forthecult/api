@@ -6,7 +6,10 @@ export default function AffiliateLoading() {
       <Skeleton className="h-8 w-56" />
       <div className="grid gap-4 sm:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={`aff-skeleton-${i}`} className="rounded-lg border p-4 space-y-2">
+          <div
+            key={`aff-skeleton-${i}`}
+            className="rounded-lg border p-4 space-y-2"
+          >
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-8 w-full" />
           </div>

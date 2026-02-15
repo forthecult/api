@@ -9,10 +9,7 @@ import {
   couponRedemptionTable,
   couponsTable,
 } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const SORT_COLUMNS = [
   "code",

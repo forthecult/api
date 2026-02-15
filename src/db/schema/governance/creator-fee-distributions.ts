@@ -18,13 +18,18 @@ export const creatorFeeDistributionTable = pgTable(
     id: text("id").primaryKey(),
     createdAt: timestamp("created_at").notNull(),
     /** Total SOL (lamports) distributed in this run. */
-    totalSolLamports: bigint("total_sol_lamports", { mode: "number" }).notNull(),
+    totalSolLamports: bigint("total_sol_lamports", {
+      mode: "number",
+    }).notNull(),
     /** Number of Tier 1 stakers who received a payout. */
     recipientCount: integer("recipient_count").notNull(),
     /** "pending" | "completed" | "failed" */
     status: text("status").notNull().default("pending"),
     /** Array of transaction signatures from this distribution. */
-    txSignatures: jsonb("tx_signatures").$type<string[]>().notNull().default([]),
+    txSignatures: jsonb("tx_signatures")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
     /** Creator fee wallet balance (lamports) before distribution. */
     feeWalletBalance: bigint("fee_wallet_balance", { mode: "number" }),
     updatedAt: timestamp("updated_at").notNull(),
@@ -41,7 +46,9 @@ export const creatorFeePayoutTable = pgTable(
     id: text("id").primaryKey(),
     distributionId: text("distribution_id")
       .notNull()
-      .references(() => creatorFeeDistributionTable.id, { onDelete: "cascade" }),
+      .references(() => creatorFeeDistributionTable.id, {
+        onDelete: "cascade",
+      }),
     /** Solana wallet address that received SOL. */
     wallet: text("wallet").notNull(),
     /** SOL amount sent (lamports). */

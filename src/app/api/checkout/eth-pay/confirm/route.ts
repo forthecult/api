@@ -44,10 +44,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import {
-  fulfillEsimOrder,
-  hasEsimItems,
-} from "~/lib/esim-fulfillment";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 
 // Chain configurations for viem (typed as Chain to allow different block explorer names)
 const CHAINS: Record<number, Chain> = {
@@ -242,10 +239,7 @@ export async function POST(request: NextRequest) {
               break;
             }
           }
-        } catch {
-          // Not a Transfer event, skip
-          continue;
-        }
+        } catch {}
       }
 
       if (!verified) {
@@ -266,7 +260,10 @@ export async function POST(request: NextRequest) {
     } else {
       // ETH orders MUST have cryptoAmount stored at creation time
       return NextResponse.json(
-        { error: "Order missing expected payment amount. Please create a new order." },
+        {
+          error:
+            "Order missing expected payment amount. Please create a new order.",
+        },
         { status: 400 },
       );
     }

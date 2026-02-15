@@ -3,10 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { memberTierDiscountTable } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const SCOPES = ["shipping", "order", "category", "product"] as const;
 const DISCOUNT_TYPES = ["percent", "fixed"] as const;
@@ -103,10 +100,18 @@ export async function PATCH(
           ? body.label.trim()
           : null;
     }
-    if (body.scope !== undefined && SCOPES.includes(body.scope as (typeof SCOPES)[number])) {
+    if (
+      body.scope !== undefined &&
+      SCOPES.includes(body.scope as (typeof SCOPES)[number])
+    ) {
       updates.scope = body.scope;
     }
-    if (body.discountType !== undefined && DISCOUNT_TYPES.includes(body.discountType as (typeof DISCOUNT_TYPES)[number])) {
+    if (
+      body.discountType !== undefined &&
+      DISCOUNT_TYPES.includes(
+        body.discountType as (typeof DISCOUNT_TYPES)[number],
+      )
+    ) {
       updates.discountType = body.discountType;
     }
     if (typeof body.discountValue === "number" && body.discountValue >= 0) {

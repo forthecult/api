@@ -49,8 +49,7 @@ const valueCards = [
   },
   {
     title: "Voting",
-    description:
-      "Token holders will participate in our direction.",
+    description: "Token holders will participate in our direction.",
     icon: Users,
   },
   {
@@ -99,13 +98,63 @@ const SOLSCAN_BASE = "https://solscan.io/account";
 
 /** Creator fee allocation: value is numeric % for pie chart; chartLabel = short text on pie. subjectToChange = show * and note below table. */
 const creatorFeeAllocations = [
-  { value: 5, pct: "5%", label: "Buy back and burn", chartLabel: "5% Buy back & burn", wallet: "UvbzCHxWyJc5uFoQc44sFRDucLV3AuWLoB3nfPtBURN", subjectToChange: false },
-  { value: 5, pct: "5%", label: "Staked token holders", chartLabel: "5% Staked holders", wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT", subjectToChange: false },
-  { value: 5, pct: "5%", label: "Charity", chartLabel: "5% Charity", wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE", subjectToChange: false },
-  { value: 15, pct: "15%", label: "Marketing and advertising", chartLabel: "13.37% Marketing", wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd", subjectToChange: true },
-  { value: 20, pct: "20%", label: "Subsidize shipping and product prices", chartLabel: "20% Shipping & prices", chartLabelOutset: 14, wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ", subjectToChange: true },
-  { value: 20, pct: "20%", label: "Product inventory and development", chartLabel: "20% Product & inventory", wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm", subjectToChange: true },
-  { value: 30, pct: "30%", label: "Treasury and feature development", chartLabel: "30% Treasury", wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb", subjectToChange: true },
+  {
+    value: 5,
+    pct: "5%",
+    label: "Buy back and burn",
+    chartLabel: "5% Buy back & burn",
+    wallet: "UvbzCHxWyJc5uFoQc44sFRDucLV3AuWLoB3nfPtBURN",
+    subjectToChange: false,
+  },
+  {
+    value: 5,
+    pct: "5%",
+    label: "Staked token holders",
+    chartLabel: "5% Staked holders",
+    wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT",
+    subjectToChange: false,
+  },
+  {
+    value: 5,
+    pct: "5%",
+    label: "Charity",
+    chartLabel: "5% Charity",
+    wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE",
+    subjectToChange: false,
+  },
+  {
+    value: 15,
+    pct: "15%",
+    label: "Marketing and advertising",
+    chartLabel: "13.37% Marketing",
+    wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd",
+    subjectToChange: true,
+  },
+  {
+    value: 20,
+    pct: "20%",
+    label: "Subsidize shipping and product prices",
+    chartLabel: "20% Shipping & prices",
+    chartLabelOutset: 14,
+    wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ",
+    subjectToChange: true,
+  },
+  {
+    value: 20,
+    pct: "20%",
+    label: "Product inventory and development",
+    chartLabel: "20% Product & inventory",
+    wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm",
+    subjectToChange: true,
+  },
+  {
+    value: 30,
+    pct: "30%",
+    label: "Treasury and feature development",
+    chartLabel: "30% Treasury",
+    wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb",
+    subjectToChange: true,
+  },
 ];
 
 /** Conic-gradient colors. Last (30% Treasury) uses primary so the biggest slice stands out. */
@@ -165,8 +214,8 @@ export default function TokenPage() {
         {/* Web3 eCommerce lead */}
         <section className="border-b border-border py-8 md:py-10">
           <p className="mx-auto max-w-2xl text-center text-lg text-muted-foreground md:text-xl">
-            When you search &apos;web3 eCommerce&apos; you&apos;ll find dozens of
-            articles about the benefits, but no one is doing it the way it
+            When you search &apos;web3 eCommerce&apos; you&apos;ll find dozens
+            of articles about the benefits, but no one is doing it the way it
             should be. At least, not with physical products. We&apos;re here to
             change that.
           </p>
@@ -196,8 +245,8 @@ export default function TokenPage() {
             </h1>
             <p className="text-muted-foreground">
               Holding CULT gives free shipping. Spending CULT gives up to 20%
-              discount on eligible purchases. We kept 13.37% for the team. You get
-              the rest.
+              discount on eligible purchases. We kept 13.37% for the team. You
+              get the rest.
             </p>
           </div>
         </section>
@@ -261,8 +310,9 @@ export default function TokenPage() {
                 <strong className="text-foreground">Participation</strong> in
                 product offering decisions
               </li>
-                            <li>
-                <strong className="text-foreground">Future</strong> member perks and discounts as we grow
+              <li>
+                <strong className="text-foreground">Future</strong> member perks
+                and discounts as we grow
               </li>
             </ul>
           </div>
@@ -347,21 +397,25 @@ export default function TokenPage() {
                   aria-hidden
                 >
                   {(() => {
-                    const rPie = 42
-                    const rLineEnd = 58
-                    const rLabel = 70
-                    const outset = (a: (typeof creatorFeeAllocations)[number]) =>
-                      "chartLabelOutset" in a && typeof (a as { chartLabelOutset?: number }).chartLabelOutset === "number"
+                    const rPie = 42;
+                    const rLineEnd = 58;
+                    const rLabel = 70;
+                    const outset = (
+                      a: (typeof creatorFeeAllocations)[number],
+                    ) =>
+                      "chartLabelOutset" in a &&
+                      typeof (a as { chartLabelOutset?: number })
+                        .chartLabelOutset === "number"
                         ? (a as { chartLabelOutset: number }).chartLabelOutset
-                        : 0
-                    let cum = 0
+                        : 0;
+                    let cum = 0;
                     const points = creatorFeeAllocations.map((a) => {
-                      const midDeg = (cum + a.value / 2) * 3.6
-                      cum += a.value
-                      const rad = (midDeg * Math.PI) / 180
-                      const o = outset(a)
-                      const lineEnd = rLineEnd + o
-                      const labelR = rLabel + o
+                      const midDeg = (cum + a.value / 2) * 3.6;
+                      cum += a.value;
+                      const rad = (midDeg * Math.PI) / 180;
+                      const o = outset(a);
+                      const lineEnd = rLineEnd + o;
+                      const labelR = rLabel + o;
                       return {
                         key: a.label,
                         xEdge: 50 + rPie * Math.sin(rad),
@@ -374,8 +428,8 @@ export default function TokenPage() {
                           "chartLabel" in a && typeof a.chartLabel === "string"
                             ? a.chartLabel
                             : `${a.pct} ${a.label}`,
-                      }
-                    })
+                      };
+                    });
                     return (
                       <>
                         {/* Labels drawn first so lines render on top (words behind lines) */}
@@ -406,7 +460,7 @@ export default function TokenPage() {
                           />
                         ))}
                       </>
-                    )
+                    );
                   })()}
                 </svg>
               </div>
@@ -427,34 +481,39 @@ export default function TokenPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {creatorFeeAllocations.map(({ pct, label, wallet, subjectToChange }) => (
-                    <TableRow key={label}>
-                      <TableCell className="font-medium tabular-nums">
-                        {pct}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {subjectToChange ? `${label}*` : label}
-                      </TableCell>
-                      <TableCell className="max-w-[12rem] truncate font-mono text-sm text-muted-foreground" title={wallet ?? undefined}>
-                        {wallet ?? "—"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {wallet ? (
-                          <a
-                            href={`${SOLSCAN_BASE}/${wallet}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-primary hover:underline"
-                          >
-                            View on Solscan
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {creatorFeeAllocations.map(
+                    ({ pct, label, wallet, subjectToChange }) => (
+                      <TableRow key={label}>
+                        <TableCell className="font-medium tabular-nums">
+                          {pct}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {subjectToChange ? `${label}*` : label}
+                        </TableCell>
+                        <TableCell
+                          className="max-w-[12rem] truncate font-mono text-sm text-muted-foreground"
+                          title={wallet ?? undefined}
+                        >
+                          {wallet ?? "—"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {wallet ? (
+                            <a
+                              href={`${SOLSCAN_BASE}/${wallet}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              View on Solscan
+                              <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ),
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -541,7 +600,9 @@ export default function TokenPage() {
             </Card>
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="text-lg">Why a DAO in the future?</CardTitle>
+                <CardTitle className="text-lg">
+                  Why a DAO in the future?
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ul className="list-inside list-disc space-y-1 text-base text-muted-foreground">

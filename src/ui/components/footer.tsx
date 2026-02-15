@@ -52,7 +52,12 @@ function TelegramIcon({ className }: { className?: string }) {
 
 export function Footer({ className }: { className?: string }) {
   return (
-    <footer className={cn("relative border-t border-border bg-secondary dark:bg-[#0D0D0D] dark:border-[#2A2A2A]", className)}>
+    <footer
+      className={cn(
+        "relative border-t border-border bg-secondary dark:bg-[#0D0D0D] dark:border-[#2A2A2A]",
+        className,
+      )}
+    >
       <FooterDogePeek />
       <div
         className={`
@@ -69,14 +74,12 @@ export function Footer({ className }: { className?: string }) {
         >
           <div className="space-y-4">
             <Link className="flex items-center gap-2" href="/">
-              <span
-                className="font-heading text-lg font-bold tracking-[0.2em] uppercase text-foreground hover:text-primary transition-colors duration-300"
-              >
+              <span className="font-heading text-lg font-bold tracking-[0.2em] uppercase text-foreground hover:text-primary transition-colors duration-300">
                 {SEO_CONFIG.name}
               </span>
             </Link>
             <p className="text-base text-muted-foreground">
-            Health. Autonomy. Culture.
+              Health. Autonomy. Culture.
             </p>
             <div className="flex space-x-4">
               <Button
@@ -142,7 +145,9 @@ export function Footer({ className }: { className?: string }) {
             </div>
           </div>
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">Shop</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
+              Shop
+            </h3>
             <ul className="space-y-2.5 text-base" aria-label="Shop">
               <li>
                 <Link
@@ -187,7 +192,9 @@ export function Footer({ className }: { className?: string }) {
             </ul>
           </div>
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">Store Links</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
+              Store Links
+            </h3>
             <ul className="space-y-2.5 text-base">
               <li>
                 <Link
@@ -240,7 +247,9 @@ export function Footer({ className }: { className?: string }) {
             </ul>
           </div>
           <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">Support</h3>
+            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
+              Support
+            </h3>
             <ul className="space-y-2.5 text-base">
               <li>
                 <Link

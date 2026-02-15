@@ -7,7 +7,10 @@ import { useCallback, useState } from "react";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import { SizeChartDataEditor, type SizeChartData } from "~/ui/size-chart-editor";
+import {
+  SizeChartDataEditor,
+  type SizeChartData,
+} from "~/ui/size-chart-editor";
 
 const API_BASE = getMainAppUrl();
 const inputClass =
@@ -18,7 +21,9 @@ export default function AdminSizeChartsCreatePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<"printful" | "printify" | "manual">("manual");
+  const [provider, setProvider] = useState<"printful" | "printify" | "manual">(
+    "manual",
+  );
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -49,7 +54,9 @@ export default function AdminSizeChartsCreatePage() {
           }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to create size chart");
         }
         router.push("/products/size-charts");
@@ -70,7 +77,9 @@ export default function AdminSizeChartsCreatePage() {
             ← Size Charts
           </Button>
         </Link>
-        <h2 className="text-2xl font-semibold tracking-tight">Add Size Chart</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Add Size Chart
+        </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -85,7 +94,8 @@ export default function AdminSizeChartsCreatePage() {
           <CardHeader>
             <CardTitle>New size chart (Brand + Model)</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Use the same provider, brand and model as your products (e.g. Printful, Bella + Canvas, 3001).
+              Use the same provider, brand and model as your products (e.g.
+              Printful, Bella + Canvas, 3001).
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -97,7 +107,11 @@ export default function AdminSizeChartsCreatePage() {
                 <select
                   id="provider"
                   value={provider}
-                  onChange={(e) => setProvider(e.target.value as "printful" | "printify" | "manual")}
+                  onChange={(e) =>
+                    setProvider(
+                      e.target.value as "printful" | "printify" | "manual",
+                    )
+                  }
                   className={inputClass}
                 >
                   <option value="printful">Printful</option>
@@ -136,7 +150,8 @@ export default function AdminSizeChartsCreatePage() {
             </div>
             <div>
               <label htmlFor="displayName" className={labelClass}>
-                Display name (shown in accordion) <span className="text-destructive">*</span>
+                Display name (shown in accordion){" "}
+                <span className="text-destructive">*</span>
               </label>
               <input
                 id="displayName"

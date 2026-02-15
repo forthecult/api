@@ -168,7 +168,9 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       );
       return topCount > 0 || subCount > 0;
     });
-    const currency = withProducts.find((c) => c.name === "Currency (Potential)");
+    const currency = withProducts.find(
+      (c) => c.name === "Currency (Potential)",
+    );
     const network = withProducts.find(
       (c) => c.name === "Network (Artificial Organism)",
     );
@@ -187,7 +189,9 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   }, [shopCategories]);
 
   // Website notification prefs: show header widget only if transactional or marketing website is enabled
-  const [websiteNotificationsOn, setWebsiteNotificationsOn] = useState<boolean | null>(null);
+  const [websiteNotificationsOn, setWebsiteNotificationsOn] = useState<
+    boolean | null
+  >(null);
 
   const fetchNotificationPrefs = useCallback((): (() => void) | undefined => {
     if (!user?.id) {
@@ -203,10 +207,12 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
     })
       .then((res) => (res.ok ? res.json() : null))
       .then(
-        (data: {
-          transactional?: { website?: boolean };
-          marketing?: { website?: boolean };
-        } | null) => {
+        (
+          data: {
+            transactional?: { website?: boolean };
+            marketing?: { website?: boolean };
+          } | null,
+        ) => {
           if (!data) return;
           const transactional = data.transactional?.website ?? true;
           const marketing = data.marketing?.website ?? false;
@@ -233,7 +239,8 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       fetchNotificationPrefs();
     };
     window.addEventListener(NOTIFICATION_PREFS_UPDATED, handler);
-    return () => window.removeEventListener(NOTIFICATION_PREFS_UPDATED, handler);
+    return () =>
+      window.removeEventListener(NOTIFICATION_PREFS_UPDATED, handler);
   }, [fetchNotificationPrefs]);
 
   // Fetch categories with timeout to prevent blocking navigation
@@ -259,7 +266,9 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   }, []);
 
   const isDashboard = useAuthState && user && pathname.startsWith("/dashboard");
-  const isCheckout = pathname?.startsWith("/checkout") && !pathname?.startsWith("/checkout/success");
+  const isCheckout =
+    pathname?.startsWith("/checkout") &&
+    !pathname?.startsWith("/checkout/success");
 
   // On checkout: hide header when scrolling down, show when scrolling up or near top.
   // Use a large delta (hysteresis) and throttle to avoid flicker and reduce CPU usage.
@@ -383,7 +392,8 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                 <span
                   className={cn(
                     "font-heading text-lg font-bold tracking-[0.2em] uppercase text-[#1A1611] dark:text-[#F5F1EB]",
-                    !isDashboard && "hover:text-primary transition-colors duration-300",
+                    !isDashboard &&
+                      "hover:text-primary transition-colors duration-300",
                   )}
                 >
                   {SEO_CONFIG.name}
@@ -500,7 +510,10 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
             onSubmit={handleMobileSearchSubmit}
             className="flex items-center gap-2 border-t md:hidden"
           >
-            <Search className="ml-2 h-4 w-4 shrink-0 text-[#1A1611] dark:text-[#F5F1EB]" aria-hidden />
+            <Search
+              className="ml-2 h-4 w-4 shrink-0 text-[#1A1611] dark:text-[#F5F1EB]"
+              aria-hidden
+            />
             <Input
               type="search"
               placeholder="Search products..."

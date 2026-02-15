@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 /**
  * POST /api/solana-rpc
@@ -42,7 +47,12 @@ export async function POST(request: NextRequest) {
   const rl = await checkRateLimit(`solana-rpc:${ip}`, RATE_LIMITS.api);
   if (!rl.success) return rateLimitResponse(rl);
 
-  let body: { method?: string; params?: unknown; id?: unknown; jsonrpc?: string };
+  let body: {
+    method?: string;
+    params?: unknown;
+    id?: unknown;
+    jsonrpc?: string;
+  };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -72,9 +82,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(data);
   } catch (err) {
     console.error("[solana-rpc proxy] Error:", err);
-    return NextResponse.json(
-      { error: "RPC request failed" },
-      { status: 502 },
-    );
+    return NextResponse.json({ error: "RPC request failed" }, { status: 502 });
   }
 }

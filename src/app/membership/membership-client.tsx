@@ -24,11 +24,7 @@ import { toast } from "sonner";
 
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { cn } from "~/lib/cn";
-import {
-  formatMarketCap,
-  formatTokens,
-  formatUsd,
-} from "~/lib/format";
+import { formatMarketCap, formatTokens, formatUsd } from "~/lib/format";
 import {
   MEMBERSHIP_BENEFIT_ROWS,
   MEMBERSHIP_FAQ,
@@ -63,11 +59,20 @@ interface TokenPriceResponse {
   status: boolean;
   data?: {
     token: { symbol: string; mint: string; decimals: number; priceUsd: number };
-    market: { marketCapUsd: number; volume24hUsd: number; liquidityUsd: number };
+    market: {
+      marketCapUsd: number;
+      volume24hUsd: number;
+      liquidityUsd: number;
+    };
     staking: { stakerCount: number; programConfigured: boolean };
     pricing: {
       bracket: string;
-      tiers: { tierId: number; costUsd: number; tokensNeeded: number; tokensRaw: string }[];
+      tiers: {
+        tierId: number;
+        costUsd: number;
+        tokensNeeded: number;
+        tokensRaw: string;
+      }[];
     };
     fetchedAt: number;
   };
@@ -85,10 +90,13 @@ export function MembershipClient() {
   const [claimSuccess, setClaimSuccess] = useState(false);
 
   // Live pricing state
-  const [pricingData, setPricingData] = useState<TokenPriceResponse["data"] | null>(null);
+  const [pricingData, setPricingData] = useState<
+    TokenPriceResponse["data"] | null
+  >(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { wallet, openConnectModal, stake, stakePending } = useStakeTransaction();
+  const { wallet, openConnectModal, stake, stakePending } =
+    useStakeTransaction();
 
   // Fetch live pricing from the API (polls every 30s)
   useEffect(() => {
@@ -122,13 +130,21 @@ export function MembershipClient() {
       setClaimTier(null);
       return;
     }
-    fetch(`/api/esim/membership-claim/status?wallet=${encodeURIComponent(wallet)}`)
+    fetch(
+      `/api/esim/membership-claim/status?wallet=${encodeURIComponent(wallet)}`,
+    )
       .then((r) => r.json())
-      .then((data: { eligible?: boolean; claimed?: boolean; tier?: number | null }) => {
-        setClaimEligible(data.eligible ?? false);
-        setClaimAlreadyClaimed(data.claimed ?? false);
-        setClaimTier(data.tier ?? null);
-      })
+      .then(
+        (data: {
+          eligible?: boolean;
+          claimed?: boolean;
+          tier?: number | null;
+        }) => {
+          setClaimEligible(data.eligible ?? false);
+          setClaimAlreadyClaimed(data.claimed ?? false);
+          setClaimTier(data.tier ?? null);
+        },
+      )
       .catch(() => {
         setClaimEligible(false);
         setClaimAlreadyClaimed(false);
@@ -166,7 +182,9 @@ export function MembershipClient() {
   }, []);
 
   const scrollToCTA = useCallback(() => {
-    document.getElementById("stake-cta")?.scrollIntoView({ behavior: "smooth" });
+    document
+      .getElementById("stake-cta")
+      ?.scrollIntoView({ behavior: "smooth" });
   }, []);
 
   const handleStake = useCallback(async () => {
@@ -191,14 +209,21 @@ export function MembershipClient() {
           packageId: "esim-free-tier2-default",
         }),
       });
-      const data = (await res.json()) as { status: boolean; message?: string; data?: { message?: string } };
+      const data = (await res.json()) as {
+        status: boolean;
+        message?: string;
+        data?: { message?: string };
+      };
       if (!res.ok || !data.status) {
         toast.error(data.message ?? "Failed to claim eSIM");
         return;
       }
       setClaimSuccess(true);
       setClaimAlreadyClaimed(true);
-      toast.success(data.data?.message ?? "Free eSIM claimed! Check your email for activation.");
+      toast.success(
+        data.data?.message ??
+          "Free eSIM claimed! Check your email for activation.",
+      );
     } catch {
       toast.error("Network error — please try again");
     } finally {
@@ -236,26 +261,24 @@ export function MembershipClient() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-            Stake {tokenSymbol} to unlock exclusive membership benefits. Free eSIM cards,
-            free shipping, member-only discounts, and more. The longer you
-            stake, the more you save.
+            Stake {tokenSymbol} to unlock exclusive membership benefits. Free
+            eSIM cards, free shipping, member-only discounts, and more. The
+            longer you stake, the more you save.
           </p>
 
           {/* Live market data bar */}
           {pricingData && (
             <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
               <span>
-                <span className="font-medium text-foreground">{tokenSymbol}</span>{" "}
+                <span className="font-medium text-foreground">
+                  {tokenSymbol}
+                </span>{" "}
                 {formatUsd(tokenPrice)}
               </span>
               <span className="hidden sm:inline text-border">|</span>
-              <span>
-                MC {formatMarketCap(marketCap)}
-              </span>
+              <span>MC {formatMarketCap(marketCap)}</span>
               <span className="hidden sm:inline text-border">|</span>
-              <span className="text-sm">
-                {pricingBracket}
-              </span>
+              <span className="text-sm">{pricingBracket}</span>
             </div>
           )}
 
@@ -271,7 +294,6 @@ export function MembershipClient() {
               </Button>
             </Link>
           </div>
-
         </div>
       </section>
 
@@ -288,7 +310,8 @@ export function MembershipClient() {
                   Stake {tokenSymbol} &amp; Join
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Select your tier and duration, then connect your wallet to stake.
+                  Select your tier and duration, then connect your wallet to
+                  stake.
                 </p>
               </div>
 
@@ -367,7 +390,9 @@ export function MembershipClient() {
                 {/* Summary */}
                 <div className="space-y-2 rounded-xl bg-muted/30 p-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tokens to Stake</span>
+                    <span className="text-muted-foreground">
+                      Tokens to Stake
+                    </span>
                     <span className="font-semibold tabular-nums">
                       {formatTokens(stakeAmount)} {tokenSymbol}
                     </span>
@@ -380,30 +405,43 @@ export function MembershipClient() {
                   </div>
                 </div>
 
-                {selectedTier > 1 && (() => {
-                  const nextTierPrice = tierPriceMap[selectedTier - 1];
-                  const extraUsd = nextTierPrice
-                    ? nextTierPrice.costUsd - (selectedTierPrice?.costUsd ?? 0)
-                    : 0;
-                  const extraTokens = nextTierPrice
-                    ? nextTierPrice.tokensNeeded - stakeAmount
-                    : 0;
-                  return (
-                    <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                      <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                      <p className="text-sm font-medium text-foreground">
-                        {extraUsd > 0
-                          ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
-                          : "Upgrade to "}
-                        {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier - 1)?.name}
-                        {" — "}
-                        {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier - 1)?.benefits.esimDetail}
-                        {" and "}
-                        {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier - 1)?.benefits.shippingDetail.toLowerCase()}.
-                      </p>
-                    </div>
-                  );
-                })()}
+                {selectedTier > 1 &&
+                  (() => {
+                    const nextTierPrice = tierPriceMap[selectedTier - 1];
+                    const extraUsd = nextTierPrice
+                      ? nextTierPrice.costUsd -
+                        (selectedTierPrice?.costUsd ?? 0)
+                      : 0;
+                    const extraTokens = nextTierPrice
+                      ? nextTierPrice.tokensNeeded - stakeAmount
+                      : 0;
+                    return (
+                      <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+                        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                        <p className="text-sm font-medium text-foreground">
+                          {extraUsd > 0
+                            ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
+                            : "Upgrade to "}
+                          {
+                            MEMBERSHIP_TIERS.find(
+                              (t) => t.id === selectedTier - 1,
+                            )?.name
+                          }
+                          {" — "}
+                          {
+                            MEMBERSHIP_TIERS.find(
+                              (t) => t.id === selectedTier - 1,
+                            )?.benefits.esimDetail
+                          }
+                          {" and "}
+                          {MEMBERSHIP_TIERS.find(
+                            (t) => t.id === selectedTier - 1,
+                          )?.benefits.shippingDetail.toLowerCase()}
+                          .
+                        </p>
+                      </div>
+                    );
+                  })()}
 
                 <Button
                   size="lg"
@@ -472,13 +510,15 @@ export function MembershipClient() {
                   <li className="flex items-start gap-2">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>
-                      <strong>eSIM:</strong> {selectedTierData.benefits.esimDetail}
+                      <strong>eSIM:</strong>{" "}
+                      {selectedTierData.benefits.esimDetail}
                     </span>
                   </li>
                   <li className="flex items-start gap-2">
                     <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                     <span>
-                      <strong>Shipping:</strong> {selectedTierData.benefits.shippingDetail}
+                      <strong>Shipping:</strong>{" "}
+                      {selectedTierData.benefits.shippingDetail}
                     </span>
                   </li>
                   {selectedTierData.benefits.extras.map((extra) => (
@@ -527,14 +567,19 @@ export function MembershipClient() {
                 desc: "Instantly access your membership perks—eSIM discounts, shipping benefits, and more.",
               },
             ].map(({ step, icon: Icon, title, desc }) => (
-              <div key={step} className="relative flex flex-col items-center text-center">
+              <div
+                key={step}
+                className="relative flex flex-col items-center text-center"
+              >
                 <span className="mb-3 text-5xl font-black text-primary/10">
                   {step}
                 </span>
                 <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
                   <Icon className="h-7 w-7 text-primary" />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {title}
+                </h3>
                 <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
               </div>
             ))}
@@ -612,7 +657,8 @@ export function MembershipClient() {
                             {formatUsd(tierPrice.costUsd)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            ≈ {formatTokens(tierPrice.tokensNeeded)} {tokenSymbol} to stake
+                            ≈ {formatTokens(tierPrice.tokensNeeded)}{" "}
+                            {tokenSymbol} to stake
                           </p>
                         </>
                       ) : (
@@ -643,7 +689,10 @@ export function MembershipClient() {
                         />
                         <span className="text-sm text-foreground">
                           {tier.benefits.shipping}
-                          <span className="text-muted-foreground"> shipping</span>
+                          <span className="text-muted-foreground">
+                            {" "}
+                            shipping
+                          </span>
                         </span>
                       </div>
                       {tier.benefits.extras
@@ -813,9 +862,9 @@ export function MembershipClient() {
                   Stay connected everywhere
                 </h2>
                 <p className="mt-4 text-muted-foreground">
-                  Every membership tier includes eSIM benefits. From 10% off at Tier 4
-                  to a premium free eSIM card at Tier 1—stay connected in 200+
-                  countries without hunting for local SIM cards.
+                  Every membership tier includes eSIM benefits. From 10% off at
+                  Tier 4 to a premium free eSIM card at Tier 1—stay connected in
+                  200+ countries without hunting for local SIM cards.
                 </p>
                 <ul className="mt-6 space-y-3">
                   {[
@@ -826,7 +875,9 @@ export function MembershipClient() {
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-3">
                       <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-                      <span className="text-sm text-muted-foreground">{item}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {item}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -963,8 +1014,8 @@ export function MembershipClient() {
               Dynamic Staking Requirements
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Staking thresholds adjust automatically based on two factors, keeping
-              membership fair and accessible.
+              Staking thresholds adjust automatically based on two factors,
+              keeping membership fair and accessible.
             </p>
           </div>
 
@@ -978,9 +1029,9 @@ export function MembershipClient() {
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-muted-foreground">
-                  As the {tokenSymbol} token price (market cap) increases, the number
-                  of tokens required to stake decreases proportionally—so the
-                  dollar value of membership stays reasonable.
+                  As the {tokenSymbol} token price (market cap) increases, the
+                  number of tokens required to stake decreases proportionally—so
+                  the dollar value of membership stays reasonable.
                 </CardDescription>
               </CardContent>
             </Card>
@@ -1028,7 +1079,12 @@ export function MembershipClient() {
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4 pb-8">
                   {claimAlreadyClaimed ? (
-                    <Button asChild variant="outline" size="lg" className="gap-2">
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="lg"
+                      className="gap-2"
+                    >
                       <Link href="/dashboard/esim">
                         <Globe className="h-5 w-5" />
                         View My eSIMs
@@ -1044,9 +1100,7 @@ export function MembershipClient() {
                         disabled={claimPending}
                       >
                         <Smartphone className="h-5 w-5" />
-                        {claimPending
-                          ? "Claiming eSIM…"
-                          : "Claim Free eSIM"}
+                        {claimPending ? "Claiming eSIM…" : "Claim Free eSIM"}
                       </Button>
                       <p className="text-center text-sm text-muted-foreground">
                         Your free eSIM will be provisioned instantly and sent to

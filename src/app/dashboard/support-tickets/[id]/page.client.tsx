@@ -80,18 +80,33 @@ export function SupportTicketDetailClient() {
         body: JSON.stringify({ content }),
       })
         .then((res) => {
-          if (!res.ok) return res.json().then((b) => Promise.reject(new Error((b as { error?: string }).error ?? "Failed to send")));
+          if (!res.ok)
+            return res
+              .json()
+              .then((b) =>
+                Promise.reject(
+                  new Error(
+                    (b as { error?: string }).error ?? "Failed to send",
+                  ),
+                ),
+              );
           return res.json() as Promise<Message>;
         })
         .then((msg) => {
           setNewMessage("");
           setTicket((prev) =>
             prev
-              ? { ...prev, messages: [...prev.messages, msg], updatedAt: msg.createdAt }
+              ? {
+                  ...prev,
+                  messages: [...prev.messages, msg],
+                  updatedAt: msg.createdAt,
+                }
               : prev,
           );
         })
-        .catch((err) => setError(err instanceof Error ? err.message : "Failed to send"))
+        .catch((err) =>
+          setError(err instanceof Error ? err.message : "Failed to send"),
+        )
         .finally(() => setSending(false));
     },
     [id, newMessage, sending],
@@ -107,22 +122,36 @@ export function SupportTicketDetailClient() {
       body: JSON.stringify({ status: "closed" }),
     })
       .then((res) => {
-        if (!res.ok) return res.json().then((b) => Promise.reject(new Error((b as { error?: string }).error ?? "Failed to close")));
+        if (!res.ok)
+          return res
+            .json()
+            .then((b) =>
+              Promise.reject(
+                new Error((b as { error?: string }).error ?? "Failed to close"),
+              ),
+            );
         return res.json() as Promise<{ status: string; updatedAt: string }>;
       })
       .then((data) => {
         setTicket((prev) =>
-          prev ? { ...prev, status: data.status, updatedAt: data.updatedAt } : prev,
+          prev
+            ? { ...prev, status: data.status, updatedAt: data.updatedAt }
+            : prev,
         );
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to close"))
+      .catch((err) =>
+        setError(err instanceof Error ? err.message : "Failed to close"),
+      )
       .finally(() => setClosing(false));
   }, [id, closing]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+        <Loader2
+          className="h-8 w-8 animate-spin text-muted-foreground"
+          aria-hidden
+        />
       </div>
     );
   }
@@ -146,13 +175,20 @@ export function SupportTicketDetailClient() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="icon" aria-label="Back to tickets">
+        <Button
+          asChild
+          variant="ghost"
+          size="icon"
+          aria-label="Back to tickets"
+        >
           <Link href="/dashboard/support-tickets">
             <ChevronLeft className="h-5 w-5" />
           </Link>
         </Button>
         <Headphones className="h-7 w-7" />
-        <h1 className="text-2xl font-semibold tracking-tight">Support Ticket</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Support Ticket
+        </h1>
       </div>
 
       <Card>
@@ -174,8 +210,7 @@ export function SupportTicketDetailClient() {
                   "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
                 ticket.status === "pending" &&
                   "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-                ticket.status === "closed" &&
-                  "bg-muted text-muted-foreground",
+                ticket.status === "closed" && "bg-muted text-muted-foreground",
               )}
             >
               {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
@@ -194,7 +229,9 @@ export function SupportTicketDetailClient() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <h3 className="text-base font-medium text-muted-foreground">Conversation</h3>
+            <h3 className="text-base font-medium text-muted-foreground">
+              Conversation
+            </h3>
             <div className="max-h-[400px] space-y-3 overflow-y-auto rounded-md border bg-muted/20 p-3">
               {ticket.messages.map((msg) => (
                 <div
@@ -208,7 +245,9 @@ export function SupportTicketDetailClient() {
                 >
                   <span className="font-medium">
                     {msg.role === "staff" && msg.staffUser
-                      ? [msg.staffUser.firstName, msg.staffUser.lastName].filter(Boolean).join(" ") || "Support"
+                      ? [msg.staffUser.firstName, msg.staffUser.lastName]
+                          .filter(Boolean)
+                          .join(" ") || "Support"
                       : msg.role === "customer"
                         ? "You"
                         : "Support"}
@@ -242,13 +281,19 @@ export function SupportTicketDetailClient() {
                   rows={3}
                   disabled={sending}
                 />
-                <Button type="submit" disabled={sending || !newMessage.trim()} size="icon" className="shrink-0 self-end">
+                <Button
+                  type="submit"
+                  disabled={sending || !newMessage.trim()}
+                  size="icon"
+                  className="shrink-0 self-end"
+                >
                   <Send className="h-4 w-4" aria-hidden />
                   <span className="sr-only">Send</span>
                 </Button>
               </div>
               <p className="text-sm text-muted-foreground">
-                You can add more messages to this ticket. Support will reply here.
+                You can add more messages to this ticket. Support will reply
+                here.
               </p>
               <Button
                 type="button"

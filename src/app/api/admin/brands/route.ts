@@ -44,7 +44,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -154,10 +155,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     });
 
-    return NextResponse.json(
-      { id, name, slug },
-      { status: 201 },
-    );
+    return NextResponse.json({ id, name, slug }, { status: 201 });
   } catch (err) {
     console.error("Admin brand create error:", err);
     return NextResponse.json(

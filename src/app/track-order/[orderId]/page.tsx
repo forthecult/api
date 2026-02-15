@@ -11,7 +11,10 @@ type Props = {
   searchParams: Promise<{ t?: string }>;
 };
 
-export default async function TrackOrderDetailPage({ params, searchParams }: Props) {
+export default async function TrackOrderDetailPage({
+  params,
+  searchParams,
+}: Props) {
   const { orderId } = await params;
   const { t: token } = await searchParams;
 

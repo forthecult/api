@@ -360,7 +360,9 @@ export function SignInPageClient() {
                         placeholder="000000"
                         value={otpCode}
                         onChange={(e) =>
-                          setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+                          setOtpCode(
+                            e.target.value.replace(/\D/g, "").slice(0, 8),
+                          )
                         }
                       />
                       <p className="text-xs text-muted-foreground">
@@ -430,24 +432,24 @@ export function SignInPageClient() {
                   {passkeyLoading ? "Signing in…" : "Sign in with security key"}
                 </Button>
                 <div className="grid grid-cols-2 gap-4">
-                <Button
-                  className="flex items-center gap-2"
-                  disabled={loading}
-                  onClick={handleGitHubLogin}
-                  variant="outline"
-                >
-                  <GitHubIcon className="h-5 w-5" />
-                  GitHub
-                </Button>
-                <Button
-                  className="flex items-center gap-2"
-                  disabled={loading}
-                  onClick={handleGoogleLogin}
-                  variant="outline"
-                >
-                  <GoogleIcon className="h-5 w-5" />
-                  Google
-                </Button>
+                  <Button
+                    className="flex items-center gap-2"
+                    disabled={loading}
+                    onClick={handleGitHubLogin}
+                    variant="outline"
+                  >
+                    <GitHubIcon className="h-5 w-5" />
+                    GitHub
+                  </Button>
+                  <Button
+                    className="flex items-center gap-2"
+                    disabled={loading}
+                    onClick={handleGoogleLogin}
+                    variant="outline"
+                  >
+                    <GoogleIcon className="h-5 w-5" />
+                    Google
+                  </Button>
                 </div>
               </div>
               <div className="mt-6 text-center text-sm text-muted-foreground">

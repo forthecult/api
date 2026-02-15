@@ -48,11 +48,7 @@ const EditProfilePageClient = dynamic(
   },
 );
 
-export function ProfileLoader({
-  segment,
-}: {
-  segment?: string[];
-}) {
+export function ProfileLoader({ segment }: { segment?: string[] }) {
   const isEdit = segment?.[0] === "edit";
 
   if (isEdit) {

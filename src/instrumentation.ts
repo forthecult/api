@@ -15,7 +15,11 @@ export function register(): void {
   };
 
   // Node server only: stub indexedDB so code that expects it (e.g. idb-keyval, unstorage) doesn't throw
-  if (process.env.NEXT_RUNTIME === "nodejs" && typeof (globalThis as unknown as { indexedDB?: unknown }).indexedDB === "undefined") {
+  if (
+    process.env.NEXT_RUNTIME === "nodejs" &&
+    typeof (globalThis as unknown as { indexedDB?: unknown }).indexedDB ===
+      "undefined"
+  ) {
     const noop = (): void => {};
     const stubRequest = (result: unknown) => ({
       result,
@@ -40,12 +44,19 @@ export function register(): void {
       createObjectStore: noop,
       deleteObjectStore: noop,
     };
-    (globalThis as unknown as { indexedDB?: { open: (name?: string) => unknown } }).indexedDB = {
+    (
+      globalThis as unknown as {
+        indexedDB?: { open: (name?: string) => unknown };
+      }
+    ).indexedDB = {
       open: () => {
         const req = stubRequest(stubDb);
         queueMicrotask(() => {
-          const onsuccess = (req as { onsuccess?: ((e: { target: { result: unknown } }) => void) }).onsuccess;
-          if (typeof onsuccess === "function") onsuccess({ target: { result: stubDb } });
+          const onsuccess = (
+            req as { onsuccess?: (e: { target: { result: unknown } }) => void }
+          ).onsuccess;
+          if (typeof onsuccess === "function")
+            onsuccess({ target: { result: stubDb } });
         });
         return req;
       },

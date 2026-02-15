@@ -77,7 +77,8 @@ function formatRange(
   if (min == null && max == null) return "—";
   if (min != null && max == null) return `${formatter(min)}+`;
   if (min == null && max != null) return `≤ ${formatter(max)}`;
-  if (min != null && max != null) return `${formatter(min)} – ${formatter(max)}`;
+  if (min != null && max != null)
+    return `${formatter(min)} – ${formatter(max)}`;
   return "—";
 }
 
@@ -126,9 +127,7 @@ export default function AdminShippingOptionsPage() {
   useEffect(() => {
     fetch(`${API_BASE}/api/admin/brands?limit=500`, { credentials: "include" })
       .then((r) => (r.ok ? r.json() : { items: [] }))
-      .then((json: { items?: BrandOption[] }) =>
-        setBrands(json.items ?? []),
-      )
+      .then((json: { items?: BrandOption[] }) => setBrands(json.items ?? []))
       .catch(() => setBrands([]));
   }, []);
 
@@ -178,13 +177,7 @@ export default function AdminShippingOptionsPage() {
     setSortOrder((prev) => (prev === "asc" ? "desc" : "asc"));
   }, []);
 
-  const SortHeader = ({
-    column,
-    label,
-  }: {
-    column: SortBy;
-    label: string;
-  }) => (
+  const SortHeader = ({ column, label }: { column: SortBy; label: string }) => (
     <th className="whitespace-nowrap p-4 font-medium" scope="col">
       <button
         type="button"
@@ -323,9 +316,7 @@ export default function AdminShippingOptionsPage() {
                           {row.brandId ? "Standard Shipping" : row.name}
                         </Link>
                       </td>
-                      <td className="p-4">
-                        {row.brandName ?? "—"}
-                      </td>
+                      <td className="p-4">{row.brandName ?? "—"}</td>
                       <td className="p-4">
                         {row.countryCode
                           ? (COUNTRY_OPTIONS.find(

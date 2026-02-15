@@ -19,10 +19,14 @@
 
 import "dotenv/config";
 
-const MAIN_APP_URL = process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";
-const API_KEY = process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
+const MAIN_APP_URL =
+  process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";
+const API_KEY =
+  process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
 if (!API_KEY) {
-  console.error("Set ADMIN_AI_API_KEY (production) or ADMIN_API_KEY. Optionally MAIN_APP_URL.");
+  console.error(
+    "Set ADMIN_AI_API_KEY (production) or ADMIN_API_KEY. Optionally MAIN_APP_URL.",
+  );
   process.exit(1);
 }
 
@@ -36,7 +40,12 @@ const BRAND_NAME = "Bon Charge";
 const BONCHARGE_JSON = "https://boncharge.com/products";
 
 /** Shopify product JSON image entry */
-type ShopifyImage = { src: string; alt: string | null; position: number; variant_ids: unknown[] };
+type ShopifyImage = {
+  src: string;
+  alt: string | null;
+  position: number;
+  variant_ids: unknown[];
+};
 
 /** Fetch Bon Charge product JSON by Shopify handle. Returns images (exclude variant-only), max 5. */
 async function fetchBonChargeImages(
@@ -87,11 +96,20 @@ async function uploadToUploadThing(
   mimeType: string,
   filename: string,
 ): Promise<string | null> {
-  const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+  const ext =
+    mimeType === "image/png"
+      ? "png"
+      : mimeType === "image/webp"
+        ? "webp"
+        : "jpg";
   const name = filename.replace(/\.[^.]+$/, "") || "image";
-  const file = new File([buffer], name.endsWith(`.${ext}`) ? name : `${name}.${ext}`, {
-    type: mimeType,
-  });
+  const file = new File(
+    [buffer],
+    name.endsWith(`.${ext}`) ? name : `${name}.${ext}`,
+    {
+      type: mimeType,
+    },
+  );
   const formData = new FormData();
   formData.append("file", file);
 
@@ -101,7 +119,11 @@ async function uploadToUploadThing(
     body: formData,
   });
   if (!res.ok) {
-    console.warn("  Upload failed:", res.status, (await res.text()).slice(0, 150));
+    console.warn(
+      "  Upload failed:",
+      res.status,
+      (await res.text()).slice(0, 150),
+    );
     return null;
   }
   const data = (await res.json()) as { url?: string };
@@ -141,9 +163,14 @@ async function buildProductImages(
 }
 
 async function getOrCreateBrand(): Promise<string | null> {
-  const listRes = await fetch(`${API_BASE}/api/admin/brands?search=Bon%20Charge&limit=5`, { headers });
+  const listRes = await fetch(
+    `${API_BASE}/api/admin/brands?search=Bon%20Charge&limit=5`,
+    { headers },
+  );
   if (!listRes.ok) throw new Error(`Brands list: ${listRes.status}`);
-  const listData = (await listRes.json()) as { items?: Array<{ id: string; name: string }> };
+  const listData = (await listRes.json()) as {
+    items?: Array<{ id: string; name: string }>;
+  };
   const existing = listData.items?.[0];
   if (existing) {
     console.log("Using existing brand:", existing.name, existing.id);
@@ -163,8 +190,15 @@ async function getOrCreateBrand(): Promise<string | null> {
   });
   if (!createRes.ok) {
     const text = await createRes.text();
-    if (createRes.status === 409 || text.includes("unique") || text.includes("slug")) {
-      const list2 = await fetch(`${API_BASE}/api/admin/brands?search=Bon%20Charge&limit=5`, { headers });
+    if (
+      createRes.status === 409 ||
+      text.includes("unique") ||
+      text.includes("slug")
+    ) {
+      const list2 = await fetch(
+        `${API_BASE}/api/admin/brands?search=Bon%20Charge&limit=5`,
+        { headers },
+      );
       const data2 = (await list2.json()) as { items?: Array<{ id: string }> };
       return data2.items?.[0]?.id ?? null;
     }
@@ -176,12 +210,18 @@ async function getOrCreateBrand(): Promise<string | null> {
 }
 
 async function getOrCreateCategoryEmfProtection(): Promise<string | null> {
-  const listRes = await fetch(`${API_BASE}/api/admin/categories?limit=300`, { headers });
+  const listRes = await fetch(`${API_BASE}/api/admin/categories?limit=300`, {
+    headers,
+  });
   if (!listRes.ok) throw new Error(`Categories: ${listRes.status}`);
-  const data = (await listRes.json()) as { items?: Array<{ id: string; slug?: string; name: string }> };
+  const data = (await listRes.json()) as {
+    items?: Array<{ id: string; slug?: string; name: string }>;
+  };
   const items = data.items ?? [];
   const bySlug = new Map(items.map((c) => [c.slug ?? "", c]));
-  const emf = bySlug.get("emf-protection") ?? items.find((c) => /emf|protection/i.test(c.name));
+  const emf =
+    bySlug.get("emf-protection") ??
+    items.find((c) => /emf|protection/i.test(c.name));
   if (emf) {
     console.log("Using existing category:", emf.name, emf.id);
     return emf.id;
@@ -201,7 +241,10 @@ async function getOrCreateCategoryEmfProtection(): Promise<string | null> {
       visible: true,
     }),
   });
-  if (!createRes.ok) throw new Error(`Category create failed: ${createRes.status} ${await createRes.text()}`);
+  if (!createRes.ok)
+    throw new Error(
+      `Category create failed: ${createRes.status} ${await createRes.text()}`,
+    );
   const json = (await createRes.json()) as { id: string; name: string };
   console.log("Created category:", json.name, json.id);
   return json.id;
@@ -209,7 +252,7 @@ async function getOrCreateCategoryEmfProtection(): Promise<string | null> {
 
 // Base prices from boncharge.com; we add 10%.
 const LAPTOP_MAT_BASE = 9999; // $99.99
-const EARPHONES_BASE = 8999;  // $89.99
+const EARPHONES_BASE = 8999; // $89.99
 const PHONE_POUCH_BASE = 4999; // $49.99
 const markup = 1.1;
 
@@ -221,9 +264,12 @@ const PHONE_POUCH_PRICE = Math.round(PHONE_POUCH_BASE * markup);
 
 /** Our slug → Bon Charge Shopify handle (for .json) */
 const SLUG_TO_HANDLE: Record<string, string> = {
-  "bon-charge-emf-radiation-blocking-laptop-mat": "emf-radiation-blocking-laptop-mat",
-  "bon-charge-emf-radiation-free-air-tube-earphones": "emf-radiation-free-air-tube-headphones-earphones",
-  "bon-charge-emf-radiation-blocking-phone-pouch": "emf-radiation-blocking-phone-pouch",
+  "bon-charge-emf-radiation-blocking-laptop-mat":
+    "emf-radiation-blocking-laptop-mat",
+  "bon-charge-emf-radiation-free-air-tube-earphones":
+    "emf-radiation-free-air-tube-headphones-earphones",
+  "bon-charge-emf-radiation-blocking-phone-pouch":
+    "emf-radiation-blocking-phone-pouch",
 };
 
 const products: Array<{
@@ -236,7 +282,13 @@ const products: Array<{
   metaDescription: string;
   hasVariants: boolean;
   optionDefinitionsJson?: string;
-  variants?: Array<{ size?: string | null; color?: string | null; label?: string | null; priceCents: number; sku?: string }>;
+  variants?: Array<{
+    size?: string | null;
+    color?: string | null;
+    label?: string | null;
+    priceCents: number;
+    sku?: string;
+  }>;
 }> = [
   {
     name: "EMF Radiation Blocking Laptop Mat",
@@ -256,10 +308,26 @@ const products: Array<{
     metaDescription:
       "Bon Charge EMF laptop mat blocks 99% of EMF up to 20GHz and shields heat. Small & large sizes. Vegan leather, Faraday fabric. Reduce radiation from your laptop. Pay with crypto or card. Culture.",
     hasVariants: true,
-    optionDefinitionsJson: JSON.stringify([{ name: "Size", values: ["Small - 20cm (8 in) x 30cm (11.8 in)", "Large - 30.5cm (12 in) x 40cm (16 in)"] }]),
+    optionDefinitionsJson: JSON.stringify([
+      {
+        name: "Size",
+        values: [
+          "Small - 20cm (8 in) x 30cm (11.8 in)",
+          "Large - 30.5cm (12 in) x 40cm (16 in)",
+        ],
+      },
+    ]),
     variants: [
-      { size: "Small - 20cm (8 in) x 30cm (11.8 in)", priceCents: LAPTOP_MAT_PRICE_SMALL, sku: "BC-EMF-MAT-S" },
-      { size: "Large - 30.5cm (12 in) x 40cm (16 in)", priceCents: LAPTOP_MAT_PRICE_LARGE, sku: "BC-EMF-MAT-L" },
+      {
+        size: "Small - 20cm (8 in) x 30cm (11.8 in)",
+        priceCents: LAPTOP_MAT_PRICE_SMALL,
+        sku: "BC-EMF-MAT-S",
+      },
+      {
+        size: "Large - 30.5cm (12 in) x 40cm (16 in)",
+        priceCents: LAPTOP_MAT_PRICE_LARGE,
+        sku: "BC-EMF-MAT-L",
+      },
     ],
   },
   {
@@ -280,10 +348,22 @@ const products: Array<{
     metaDescription:
       "Bon Charge Air Tube earphones block 100% RF radiation. Air-filled acoustic design, quality stereo, 3 ear tip sizes. AUX & USB-C. Safer listening. Pay with crypto or card. Culture.",
     hasVariants: true,
-    optionDefinitionsJson: JSON.stringify([{ name: "Output", values: ["AUX", "USB-C"] }]),
+    optionDefinitionsJson: JSON.stringify([
+      { name: "Output", values: ["AUX", "USB-C"] },
+    ]),
     variants: [
-      { size: null, label: "AUX", priceCents: EARPHONES_AUX, sku: "BC-AIR-TUBE-AUX" },
-      { size: null, label: "USB-C", priceCents: EARPHONES_USBC, sku: "BC-AIR-TUBE-USBC" },
+      {
+        size: null,
+        label: "AUX",
+        priceCents: EARPHONES_AUX,
+        sku: "BC-AIR-TUBE-AUX",
+      },
+      {
+        size: null,
+        label: "USB-C",
+        priceCents: EARPHONES_USBC,
+        sku: "BC-AIR-TUBE-USBC",
+      },
     ],
   },
   {
@@ -361,7 +441,10 @@ async function createOrUpdateProduct(
         images: body.images,
       }),
     });
-    if (!res.ok) throw new Error(`${payload.name} PATCH: ${res.status} ${await res.text()}`);
+    if (!res.ok)
+      throw new Error(
+        `${payload.name} PATCH: ${res.status} ${await res.text()}`,
+      );
     console.log("Updated product:", payload.name, existingId);
     return existingId;
   }
@@ -371,7 +454,8 @@ async function createOrUpdateProduct(
     headers,
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`${payload.name}: ${res.status} ${await res.text()}`);
+  if (!res.ok)
+    throw new Error(`${payload.name}: ${res.status} ${await res.text()}`);
   const json = (await res.json()) as { id: string; name: string };
   console.log("Created product:", json.name, json.id);
   return json.id;
@@ -382,9 +466,16 @@ async function main() {
   await getOrCreateBrand();
   const categoryId = await getOrCreateCategoryEmfProtection();
 
-  const listRes = await fetch(`${API_BASE}/api/admin/products?search=Bon%20Charge&limit=20`, { headers });
-  const listData = (await listRes.json()) as { items?: Array<{ id: string; slug?: string }> };
-  const existingBySlug = new Map((listData.items ?? []).map((i) => [i.slug ?? "", i.id]));
+  const listRes = await fetch(
+    `${API_BASE}/api/admin/products?search=Bon%20Charge&limit=20`,
+    { headers },
+  );
+  const listData = (await listRes.json()) as {
+    items?: Array<{ id: string; slug?: string }>;
+  };
+  const existingBySlug = new Map(
+    (listData.items ?? []).map((i) => [i.slug ?? "", i.id]),
+  );
 
   for (const p of products) {
     const existingId = existingBySlug.get(p.slug) ?? null;
@@ -401,7 +492,9 @@ async function main() {
     await new Promise((r) => setTimeout(r, 500));
   }
 
-  console.log("Done. Bon Charge brand and 3 products added/updated with images on UploadThing and SEO. Run db:seed-shipping-by-brand to add US/International shipping.");
+  console.log(
+    "Done. Bon Charge brand and 3 products added/updated with images on UploadThing and SEO. Run db:seed-shipping-by-brand to add US/International shipping.",
+  );
 }
 
 main().catch((e) => {

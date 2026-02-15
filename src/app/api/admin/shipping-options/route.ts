@@ -35,8 +35,10 @@ export async function GET(request: NextRequest) {
       .get("sortOrder")
       ?.toLowerCase();
     const sortOrder = sortOrderParam === "asc" ? asc : desc;
-    const brandIdFilter = request.nextUrl.searchParams.get("brandId")?.trim() || null;
-    const countryCodeFilter = request.nextUrl.searchParams.get("countryCode")?.trim() || null;
+    const brandIdFilter =
+      request.nextUrl.searchParams.get("brandId")?.trim() || null;
+    const countryCodeFilter =
+      request.nextUrl.searchParams.get("countryCode")?.trim() || null;
 
     const orderColumn =
       sortBy === "name"
@@ -85,10 +87,14 @@ export async function GET(request: NextRequest) {
 
     const conditions = [
       brandIdFilter ? eq(shippingOptionsTable.brandId, brandIdFilter) : null,
-      countryCodeFilter ? eq(shippingOptionsTable.countryCode, countryCodeFilter) : null,
+      countryCodeFilter
+        ? eq(shippingOptionsTable.countryCode, countryCodeFilter)
+        : null,
     ].filter(Boolean) as ReturnType<typeof eq>[];
     const filteredQuery = conditions.length
-      ? baseQuery.where(conditions.length === 1 ? conditions[0]! : and(...conditions))
+      ? baseQuery.where(
+          conditions.length === 1 ? conditions[0]! : and(...conditions),
+        )
       : baseQuery;
     const rows = await filteredQuery.orderBy(
       sortOrder(orderColumn),
@@ -185,13 +191,22 @@ export async function POST(request: NextRequest) {
     if (body.type === "flat_plus_per_item") {
       if (typeof body.amountCents !== "number" || body.amountCents < 0) {
         return NextResponse.json(
-          { error: "amountCents (first item) is required and must be >= 0 for flat + per item" },
+          {
+            error:
+              "amountCents (first item) is required and must be >= 0 for flat + per item",
+          },
           { status: 400 },
         );
       }
-      if (typeof body.additionalItemCents !== "number" || body.additionalItemCents < 0) {
+      if (
+        typeof body.additionalItemCents !== "number" ||
+        body.additionalItemCents < 0
+      ) {
         return NextResponse.json(
-          { error: "additionalItemCents (each additional item) is required and must be >= 0 for flat + per item" },
+          {
+            error:
+              "additionalItemCents (each additional item) is required and must be >= 0 for flat + per item",
+          },
           { status: 400 },
         );
       }
@@ -230,8 +245,7 @@ export async function POST(request: NextRequest) {
         ? null
         : (body.estimatedDaysText ?? null);
 
-    const speed =
-      body.speed === "express" ? "express" : "standard";
+    const speed = body.speed === "express" ? "express" : "standard";
 
     await db.insert(shippingOptionsTable).values({
       id,

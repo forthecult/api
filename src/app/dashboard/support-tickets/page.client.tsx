@@ -8,7 +8,13 @@ import { formatDate } from "~/lib/format";
 import { useCurrentUser } from "~/lib/auth-client";
 import { DASHBOARD_COUNTS_INVALIDATE } from "~/ui/components/dashboard-sidebar";
 import { Button } from "~/ui/primitives/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/ui/primitives/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/primitives/card";
 import { cn } from "~/lib/cn";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
@@ -40,7 +46,9 @@ export function SupportTicketsPageClient() {
     if (!user) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/support-tickets", { credentials: "include" });
+      const res = await fetch("/api/support-tickets", {
+        credentials: "include",
+      });
       if (!res.ok) throw new Error("Failed to load tickets");
       const data = (await res.json()) as { tickets: Ticket[] };
       setTickets(data.tickets ?? []);
@@ -124,7 +132,9 @@ export function SupportTicketsPageClient() {
   if (!user) {
     return (
       <div className="flex items-center justify-center p-8">
-        <p className="text-muted-foreground">Please sign in to view support tickets.</p>
+        <p className="text-muted-foreground">
+          Please sign in to view support tickets.
+        </p>
       </div>
     );
   }
@@ -134,7 +144,9 @@ export function SupportTicketsPageClient() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <Headphones className="h-7 w-7" />
-          <h1 className="text-2xl font-semibold tracking-tight">Support Tickets</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Support Tickets
+          </h1>
         </div>
         <Button
           type="button"
@@ -178,7 +190,9 @@ export function SupportTicketsPageClient() {
                 <select
                   id="type"
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as "normal" | "urgent")}
+                  onChange={(e) =>
+                    setNewType(e.target.value as "normal" | "urgent")
+                  }
                   className={cn(
                     "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
                     "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
@@ -211,7 +225,10 @@ export function SupportTicketsPageClient() {
                 </p>
               )}
               {submitSuccess && (
-                <p className="text-sm text-green-600 dark:text-green-400" role="status">
+                <p
+                  className="text-sm text-green-600 dark:text-green-400"
+                  role="status"
+                >
                   {submitSuccess}
                 </p>
               )}
@@ -278,7 +295,8 @@ export function SupportTicketsPageClient() {
                           "bg-muted text-muted-foreground",
                       )}
                     >
-                      {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
+                      {ticket.status.charAt(0).toUpperCase() +
+                        ticket.status.slice(1)}
                     </span>
                     <Button
                       type="button"

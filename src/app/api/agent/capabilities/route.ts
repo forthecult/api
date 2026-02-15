@@ -27,7 +27,8 @@ export async function GET() {
   }
 
   const agentBase = getAgentBaseUrl();
-  const mainBase = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const mainBase =
+    process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
 
   return NextResponse.json(
     {
@@ -132,7 +133,12 @@ export async function GET() {
           description:
             "Optional paid data APIs: exchange rates and precious metals only. Product prices (fiat/crypto), shipping, tax, inventory, catalog/category trees, product search, browse, checkout, and images are always free. x402 is for index/large-data use cases, not shopping.",
           network: x402Network,
-          networksSupported: ["base", "base-sepolia", "solana", "solana-devnet"],
+          networksSupported: [
+            "base",
+            "base-sepolia",
+            "solana",
+            "solana-devnet",
+          ],
           pricePerRequest: "$0.01",
           paidEndpoints: [
             "GET /api/x402/rates/fiat?from=USD&to=EUR",

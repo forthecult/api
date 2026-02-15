@@ -41,43 +41,51 @@ export const ourFileRouter = {
       // Ensure userId is correctly passed
       return { userId: session.user.id };
     })
-    .onUploadComplete(async ({ file, metadata }: { file: { key: string; ufsUrl: string }; metadata: { userId: string } }) => {
-      // This code RUNS ON THE SERVER after upload
-      console.log("Upload complete for userId (image):", metadata.userId);
-      console.log("file url", file.ufsUrl); // Public CDN URL is useful info
-      console.log("file key", file.key);
+    .onUploadComplete(
+      async ({
+        file,
+        metadata,
+      }: {
+        file: { key: string; ufsUrl: string };
+        metadata: { userId: string };
+      }) => {
+        // This code RUNS ON THE SERVER after upload
+        console.log("Upload complete for userId (image):", metadata.userId);
+        console.log("file url", file.ufsUrl); // Public CDN URL is useful info
+        console.log("file key", file.key);
 
-      // Save the upload details to the database
-      try {
-        await db.insert(uploadsTable).values({
-          id: createId(),
-          key: file.key,
-          type: "image",
-          url: file.ufsUrl, // Store the public CDN URL
-          userId: metadata.userId,
-        });
-        console.log(
-          "Saved image upload details to database for userId:",
-          metadata.userId,
-        );
-      } catch (error) {
-        console.error(
-          "Failed to save image upload details to database:",
-          error,
-        );
-        // Optionally, you might want to delete the file from UploadThing if DB insert fails
-        // await utapi.deleteFiles(file.key);
-        throw new UploadThingError("Failed to process upload metadata.");
-      }
+        // Save the upload details to the database
+        try {
+          await db.insert(uploadsTable).values({
+            id: createId(),
+            key: file.key,
+            type: "image",
+            url: file.ufsUrl, // Store the public CDN URL
+            userId: metadata.userId,
+          });
+          console.log(
+            "Saved image upload details to database for userId:",
+            metadata.userId,
+          );
+        } catch (error) {
+          console.error(
+            "Failed to save image upload details to database:",
+            error,
+          );
+          // Optionally, you might want to delete the file from UploadThing if DB insert fails
+          // await utapi.deleteFiles(file.key);
+          throw new UploadThingError("Failed to process upload metadata.");
+        }
 
-      // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
-      // Return necessary info, like the file URL or key, if needed on the client
-      return {
-        fileKey: file.key,
-        fileUrl: file.ufsUrl,
-        uploadedBy: metadata.userId,
-      };
-    }),
+        // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
+        // Return necessary info, like the file URL or key, if needed on the client
+        return {
+          fileKey: file.key,
+          fileUrl: file.ufsUrl,
+          uploadedBy: metadata.userId,
+        };
+      },
+    ),
 
   // New route for video uploads
   videoUploader: f({
@@ -89,38 +97,46 @@ export const ourFileRouter = {
       if (!session?.user?.id) throw new UploadThingError("Unauthorized");
       return { userId: session.user.id };
     })
-    .onUploadComplete(async ({ file, metadata }: { file: { key: string; ufsUrl: string }; metadata: { userId: string } }) => {
-      console.log("Upload complete for userId (video):", metadata.userId);
-      console.log("file url", file.ufsUrl); // Public CDN URL is useful info
-      console.log("file key", file.key);
+    .onUploadComplete(
+      async ({
+        file,
+        metadata,
+      }: {
+        file: { key: string; ufsUrl: string };
+        metadata: { userId: string };
+      }) => {
+        console.log("Upload complete for userId (video):", metadata.userId);
+        console.log("file url", file.ufsUrl); // Public CDN URL is useful info
+        console.log("file key", file.key);
 
-      // Save the upload details to the database
-      try {
-        await db.insert(uploadsTable).values({
-          id: createId(),
-          key: file.key,
-          type: "video", // Explicitly set type to video
-          url: file.ufsUrl,
-          userId: metadata.userId,
-        });
-        console.log(
-          "Saved video upload details to database for userId:",
-          metadata.userId,
-        );
-      } catch (error) {
-        console.error(
-          "Failed to save video upload details to database:",
-          error,
-        );
-        throw new UploadThingError("Failed to process upload metadata.");
-      }
+        // Save the upload details to the database
+        try {
+          await db.insert(uploadsTable).values({
+            id: createId(),
+            key: file.key,
+            type: "video", // Explicitly set type to video
+            url: file.ufsUrl,
+            userId: metadata.userId,
+          });
+          console.log(
+            "Saved video upload details to database for userId:",
+            metadata.userId,
+          );
+        } catch (error) {
+          console.error(
+            "Failed to save video upload details to database:",
+            error,
+          );
+          throw new UploadThingError("Failed to process upload metadata.");
+        }
 
-      return {
-        fileKey: file.key,
-        fileUrl: file.ufsUrl,
-        uploadedBy: metadata.userId,
-      };
-    }),
+        return {
+          fileKey: file.key,
+          fileUrl: file.ufsUrl,
+          uploadedBy: metadata.userId,
+        };
+      },
+    ),
 } satisfies FileRouter;
 
 export type OurFileRouter = typeof ourFileRouter;

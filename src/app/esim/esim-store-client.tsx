@@ -55,21 +55,15 @@ type Package = {
 };
 
 type ValidityFilter = "all" | "7" | "14" | "30" | "30+";
-type DataFilter =
-  | "all"
-  | "1"
-  | "1-5"
-  | "5-10"
-  | "10-25"
-  | "25+"
-  | "unlimited";
+type DataFilter = "all" | "1" | "1-5" | "5-10" | "10-25" | "25+" | "unlimited";
 
 function matchesValidity(pkg: Package, filter: ValidityFilter): boolean {
   if (filter === "all") return true;
-  const days =
-    (pkg.package_validity_unit ?? "day").toLowerCase().startsWith("day")
-      ? pkg.package_validity
-      : pkg.package_validity;
+  const days = (pkg.package_validity_unit ?? "day")
+    .toLowerCase()
+    .startsWith("day")
+    ? pkg.package_validity
+    : pkg.package_validity;
   if (filter === "7") return days === 7;
   if (filter === "14") return days === 14;
   if (filter === "30") return days === 30;
@@ -117,11 +111,17 @@ function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
   const result: PlanItem[] = [];
   for (const [groupKey, pkgs] of unlimitedGroups) {
     if (pkgs.length > 1) {
-      pkgs.sort((a, b) => (a.package_validity ?? 0) - (b.package_validity ?? 0));
+      pkgs.sort(
+        (a, b) => (a.package_validity ?? 0) - (b.package_validity ?? 0),
+      );
       const parts = groupKey.split("|");
-      const base = parts[0]?.trim() || getUnlimitedPlanBaseName(pkgs[0]!.name) || "Unlimited";
+      const base =
+        parts[0]?.trim() ||
+        getUnlimitedPlanBaseName(pkgs[0]!.name) ||
+        "Unlimited";
       const variant = parts.length >= 3 ? parts[2]!.trim() : "";
-      const baseName = variant && variant !== "default" ? `${base} (${variant})` : base;
+      const baseName =
+        variant && variant !== "default" ? `${base} (${variant})` : base;
       result.push({ type: "unlimited", baseName, packages: pkgs });
     } else {
       singles.push(pkgs[0]!);
@@ -145,7 +145,9 @@ function PackageCard({
   /** Query string to append so Back from detail returns to same filters (e.g. tab=countries&country=5). */
   returnQuery?: string;
 }) {
-  const detailHref = returnQuery ? `/esim/${pkg.id}?${returnQuery}` : `/esim/${pkg.id}`;
+  const detailHref = returnQuery
+    ? `/esim/${pkg.id}?${returnQuery}`
+    : `/esim/${pkg.id}`;
   return (
     <Card className="group relative h-full transition-all hover:shadow-md hover:border-primary/30 flex flex-col">
       {pkg.has5g && (
@@ -177,20 +179,31 @@ function PackageCard({
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1">
               <Wifi className="h-3.5 w-3.5" />
-              {pkg.unlimited || pkg.data_quantity === 0 ? "∞" : `${pkg.data_quantity} ${pkg.data_unit}`}
+              {pkg.unlimited || pkg.data_quantity === 0
+                ? "∞"
+                : `${pkg.data_quantity} ${pkg.data_unit}`}
             </span>
             <span className="flex items-center gap-1">
               <Signal className="h-3.5 w-3.5" />
               {pkg.package_validity} {pkg.package_validity_unit}s
             </span>
           </div>
-          {(pkg.package_type === "DATA-VOICE-SMS" || (pkg.voice_quantity ?? 0) > 0 || (pkg.sms_quantity ?? 0) > 0) && (
+          {(pkg.package_type === "DATA-VOICE-SMS" ||
+            (pkg.voice_quantity ?? 0) > 0 ||
+            (pkg.sms_quantity ?? 0) > 0) && (
             <div className="text-xs text-muted-foreground">
               {(pkg.voice_quantity ?? 0) > 0 || (pkg.sms_quantity ?? 0) > 0 ? (
                 <>
-                  {(pkg.voice_quantity ?? 0) > 0 && <span>{pkg.voice_quantity} {pkg.voice_unit ?? "min"}</span>}
-                  {(pkg.voice_quantity ?? 0) > 0 && (pkg.sms_quantity ?? 0) > 0 && <span> &middot; </span>}
-                  {(pkg.sms_quantity ?? 0) > 0 && <span>{pkg.sms_quantity} SMS</span>}
+                  {(pkg.voice_quantity ?? 0) > 0 && (
+                    <span>
+                      {pkg.voice_quantity} {pkg.voice_unit ?? "min"}
+                    </span>
+                  )}
+                  {(pkg.voice_quantity ?? 0) > 0 &&
+                    (pkg.sms_quantity ?? 0) > 0 && <span> &middot; </span>}
+                  {(pkg.sms_quantity ?? 0) > 0 && (
+                    <span>{pkg.sms_quantity} SMS</span>
+                  )}
                 </>
               ) : (
                 <span>Voice &amp; SMS included</span>
@@ -199,7 +212,9 @@ function PackageCard({
           )}
           <div className="mt-auto pt-2 flex items-start justify-between gap-2 border-t">
             <div className="flex flex-col gap-0.5">
-              <span className="text-xl font-bold text-primary">${pkg.price}</span>
+              <span className="text-xl font-bold text-primary">
+                ${pkg.price}
+              </span>
               <CryptoPrice
                 usdAmount={Number(pkg.price)}
                 className="text-sm text-muted-foreground"
@@ -245,7 +260,9 @@ function UnlimitedPlanCard({
   const selected = groupPackages[selectedIndex] ?? groupPackages[0]!;
   const has5g = groupPackages.some((p) => p.has5g);
   const detailHref = selected
-    ? (returnQuery ? `/esim/${selected.id}?${returnQuery}` : `/esim/${selected.id}`)
+    ? returnQuery
+      ? `/esim/${selected.id}?${returnQuery}`
+      : `/esim/${selected.id}`
     : "#";
 
   return (
@@ -281,7 +298,9 @@ function UnlimitedPlanCard({
           />
         </div>
         {(groupPackages[0]?.package_type === "DATA-VOICE-SMS" ||
-          (groupPackages.some((p) => (p.voice_quantity ?? 0) > 0 || (p.sms_quantity ?? 0) > 0))) && (
+          groupPackages.some(
+            (p) => (p.voice_quantity ?? 0) > 0 || (p.sms_quantity ?? 0) > 0,
+          )) && (
           <div className="text-xs text-muted-foreground">
             {(() => {
               const p = groupPackages[0];
@@ -291,7 +310,11 @@ function UnlimitedPlanCard({
               if (v > 0 || s > 0)
                 return (
                   <>
-                    {v > 0 && <span>{v} {p.voice_unit ?? "min"}</span>}
+                    {v > 0 && (
+                      <span>
+                        {v} {p.voice_unit ?? "min"}
+                      </span>
+                    )}
                     {v > 0 && s > 0 && " · "}
                     {s > 0 && <span>{s} SMS</span>}
                   </>
@@ -325,9 +348,9 @@ function UnlimitedPlanCard({
               const inMatch = name.match(/\s+in\s+(.+)$/i);
               const region = inMatch
                 ? inMatch[1]
-                  .replace(/,?\s*(Throttled|Unthrottled|V2).*$/i, "")
-                  .replace(/\s*,\s*$/, "")
-                  .trim()
+                    .replace(/,?\s*(Throttled|Unthrottled|V2).*$/i, "")
+                    .replace(/\s*,\s*$/, "")
+                    .trim()
                 : "";
               return region || "—";
             })()}
@@ -462,8 +485,12 @@ function parseData(s: string | null): DataFilter {
 export function EsimStorePage() {
   const searchParams = useSearchParams();
   const { addItem, openCart } = useCart();
-  const [activeTab, setActiveTab] = useState<"countries" | "continents" | "global">(
-    () => (searchParams.get("tab") as "countries" | "continents" | "global") || "countries",
+  const [activeTab, setActiveTab] = useState<
+    "countries" | "continents" | "global"
+  >(
+    () =>
+      (searchParams.get("tab") as "countries" | "continents" | "global") ||
+      "countries",
   );
   const [countries, setCountries] = useState<Country[]>([]);
   const [countriesLoading, setCountriesLoading] = useState(true);
@@ -473,13 +500,18 @@ export function EsimStorePage() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
-  const [selectedContinent, setSelectedContinent] =
-    useState<Continent | null>(null);
+  const [selectedContinent, setSelectedContinent] = useState<Continent | null>(
+    null,
+  );
   const [packageType, setPackageType] = useState<
     "DATA-ONLY" | "DATA-VOICE-SMS"
-  >(() => (searchParams.get("packageType") as "DATA-ONLY" | "DATA-VOICE-SMS") || "DATA-ONLY");
-  const [filterValidity, setFilterValidity] = useState<ValidityFilter>(
-    () => parseValidity(searchParams.get("validity")),
+  >(
+    () =>
+      (searchParams.get("packageType") as "DATA-ONLY" | "DATA-VOICE-SMS") ||
+      "DATA-ONLY",
+  );
+  const [filterValidity, setFilterValidity] = useState<ValidityFilter>(() =>
+    parseValidity(searchParams.get("validity")),
   );
   const [filterData, setFilterData] = useState<DataFilter>(() =>
     parseData(searchParams.get("data")),
@@ -624,7 +656,10 @@ export function EsimStorePage() {
         }
       }
     }
-    if (activeTab === "global" || (!searchParams.get("country") && !searchParams.get("continent"))) {
+    if (
+      activeTab === "global" ||
+      (!searchParams.get("country") && !searchParams.get("continent"))
+    ) {
       restoredFromUrlRef.current = true;
     }
   }, [activeTab, countries, continents, packageType, searchParams]);
@@ -639,7 +674,14 @@ export function EsimStorePage() {
     if (selectedCountry) p.set("country", String(selectedCountry.id));
     if (selectedContinent) p.set("continent", String(selectedContinent.id));
     return p.toString();
-  }, [activeTab, filterValidity, filterData, packageType, selectedCountry, selectedContinent]);
+  }, [
+    activeTab,
+    filterValidity,
+    filterData,
+    packageType,
+    selectedCountry,
+    selectedContinent,
+  ]);
 
   // Sync tab, filters, and selection to URL so Back from detail returns to same state
   useEffect(() => {
@@ -652,7 +694,8 @@ export function EsimStorePage() {
     else params.set("data", filterData);
     if (selectedCountry) params.set("country", String(selectedCountry.id));
     else params.delete("country");
-    if (selectedContinent) params.set("continent", String(selectedContinent.id));
+    if (selectedContinent)
+      params.set("continent", String(selectedContinent.id));
     else params.delete("continent");
     const next = params.toString();
     const current = searchParams.toString();
@@ -669,7 +712,8 @@ export function EsimStorePage() {
   const filteredPackages = useMemo(
     () =>
       packages.filter(
-        (pkg) => matchesValidity(pkg, filterValidity) && matchesData(pkg, filterData),
+        (pkg) =>
+          matchesValidity(pkg, filterValidity) && matchesData(pkg, filterData),
       ),
     [packages, filterValidity, filterData],
   );
@@ -718,402 +762,421 @@ export function EsimStorePage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Hero */}
-      <div className="mb-10 text-center">
-        <div className="mb-4 flex justify-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <Wifi className="h-10 w-10 text-primary" />
+        {/* Hero */}
+        <div className="mb-10 text-center">
+          <div className="mb-4 flex justify-center">
+            <div className="rounded-full bg-primary/10 p-4">
+              <Wifi className="h-10 w-10 text-primary" />
+            </div>
           </div>
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            eSIM Data Plans
+          </h1>
+          <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
+            Get instant mobile data for 200+ countries. No physical SIM card
+            needed — activate in seconds right from your phone.
+          </p>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-          eSIM Data Plans
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
-          Get instant mobile data for 200+ countries. No physical SIM card
-          needed — activate in seconds right from your phone.
-        </p>
-      </div>
 
-      {/* Package type toggle */}
-      <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
-        <Button
-          variant={packageType === "DATA-ONLY" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setPackageType("DATA-ONLY")}
-        >
-          <Wifi className="mr-1 h-4 w-4" />
-          Data Only
-        </Button>
-        <Button
-          variant={packageType === "DATA-VOICE-SMS" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setPackageType("DATA-VOICE-SMS")}
-        >
-          <Signal className="mr-1 h-4 w-4" />
-          Data + Voice + SMS
-        </Button>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v as "countries" | "continents" | "global"); clearSelection(); }}>
-        <TabsList className="mx-auto mb-6">
-          <TabsTrigger value="countries">
-            <MapPin className="mr-1 h-4 w-4" />
-            By Country
-          </TabsTrigger>
-          <TabsTrigger value="continents">
-            <Globe className="mr-1 h-4 w-4" />
-            By Region
-          </TabsTrigger>
-          <TabsTrigger value="global">
+        {/* Package type toggle */}
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
+          <Button
+            variant={packageType === "DATA-ONLY" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPackageType("DATA-ONLY")}
+          >
             <Wifi className="mr-1 h-4 w-4" />
-            Global
-          </TabsTrigger>
-        </TabsList>
+            Data Only
+          </Button>
+          <Button
+            variant={packageType === "DATA-VOICE-SMS" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPackageType("DATA-VOICE-SMS")}
+          >
+            <Signal className="mr-1 h-4 w-4" />
+            Data + Voice + SMS
+          </Button>
+        </div>
 
-        {/* Countries Tab */}
-        <TabsContent value="countries">
-          {!selectedCountry ? (
-            <>
-              <div className="relative mb-6 max-w-md mx-auto">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search countries..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              {countriesLoading ? (
-                <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>Loading countries…</span>
-                </div>
-              ) : (
-                <>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-                    {filteredCountries.map((country) => (
-                      <CountryCard
-                        key={country.id}
-                        country={country}
-                        onClick={() => handleCountrySelect(country)}
-                      />
-                    ))}
-                  </div>
-                  {filteredCountries.length === 0 && (
-                    <p className="py-16 text-center text-muted-foreground">
-                      {searchQuery.trim()
-                        ? `No countries found matching "${searchQuery}"`
-                        : "No countries available."}
-                    </p>
-                  )}
-                </>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="mb-6 flex items-center gap-3">
-                <Button variant="outline" size="sm" onClick={clearSelection}>
-                  &larr; All Countries
-                </Button>
-                <div className="flex items-center gap-2">
-                  <Image
-                    src={selectedCountry.image_url}
-                    alt={selectedCountry.name}
-                    width={32}
-                    height={22}
-                    className="rounded-sm"
-                    unoptimized
+        {/* Tabs */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v as "countries" | "continents" | "global");
+            clearSelection();
+          }}
+        >
+          <TabsList className="mx-auto mb-6">
+            <TabsTrigger value="countries">
+              <MapPin className="mr-1 h-4 w-4" />
+              By Country
+            </TabsTrigger>
+            <TabsTrigger value="continents">
+              <Globe className="mr-1 h-4 w-4" />
+              By Region
+            </TabsTrigger>
+            <TabsTrigger value="global">
+              <Wifi className="mr-1 h-4 w-4" />
+              Global
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Countries Tab */}
+          <TabsContent value="countries">
+            {!selectedCountry ? (
+              <>
+                <div className="relative mb-6 max-w-md mx-auto">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search countries..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
                   />
+                </div>
+                {countriesLoading ? (
+                  <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Loading countries…</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                      {filteredCountries.map((country) => (
+                        <CountryCard
+                          key={country.id}
+                          country={country}
+                          onClick={() => handleCountrySelect(country)}
+                        />
+                      ))}
+                    </div>
+                    {filteredCountries.length === 0 && (
+                      <p className="py-16 text-center text-muted-foreground">
+                        {searchQuery.trim()
+                          ? `No countries found matching "${searchQuery}"`
+                          : "No countries available."}
+                      </p>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="mb-6 flex items-center gap-3">
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    &larr; All Countries
+                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Image
+                      src={selectedCountry.image_url}
+                      alt={selectedCountry.name}
+                      width={32}
+                      height={22}
+                      className="rounded-sm"
+                      unoptimized
+                    />
+                    <h2 className="text-lg font-semibold">
+                      {selectedCountry.name}
+                    </h2>
+                  </div>
+                </div>
+                {loading ? (
+                  <LoadingSpinner text="Loading packages..." />
+                ) : packages.length > 0 ? (
+                  <>
+                    <div className="mb-4 flex flex-wrap items-center gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        Filter:
+                      </span>
+                      <select
+                        value={filterValidity}
+                        onChange={(e) =>
+                          setFilterValidity(e.target.value as ValidityFilter)
+                        }
+                        className={cn(
+                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                        )}
+                        aria-label="Filter by validity"
+                      >
+                        {VALIDITY_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={filterData}
+                        onChange={(e) =>
+                          setFilterData(e.target.value as DataFilter)
+                        }
+                        className={cn(
+                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                        )}
+                        aria-label="Filter by data"
+                      >
+                        {DATA_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {displayItems.map((item) =>
+                        item.type === "single" ? (
+                          <PackageCard
+                            key={item.pkg.id}
+                            pkg={item.pkg}
+                            onAddToCart={handleAddToCart}
+                            returnQuery={returnQuery}
+                          />
+                        ) : (
+                          <UnlimitedPlanCard
+                            key={`unlimited-${item.baseName}`}
+                            baseName={item.baseName}
+                            packages={item.packages}
+                            onAddToCart={handleAddToCart}
+                            returnQuery={returnQuery}
+                          />
+                        ),
+                      )}
+                    </div>
+                    {displayItems.length === 0 && (
+                      <p className="py-8 text-center text-muted-foreground">
+                        No packages match the selected filters.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p className="py-16 text-center text-muted-foreground">
+                    No{" "}
+                    {packageType === "DATA-VOICE-SMS"
+                      ? "Data+Voice+SMS"
+                      : "data"}{" "}
+                    packages available for {selectedCountry.name}.
+                  </p>
+                )}
+              </>
+            )}
+          </TabsContent>
+
+          {/* Continents Tab */}
+          <TabsContent value="continents">
+            {!selectedContinent ? (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+                {continents.map((continent) => (
+                  <ContinentCard
+                    key={continent.id}
+                    continent={continent}
+                    onClick={() => handleContinentSelect(continent)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <>
+                <div className="mb-6 flex items-center gap-3">
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    &larr; All Regions
+                  </Button>
                   <h2 className="text-lg font-semibold">
-                    {selectedCountry.name}
+                    {selectedContinent.name}
                   </h2>
                 </div>
-              </div>
-              {loading ? (
-                <LoadingSpinner text="Loading packages..." />
-              ) : packages.length > 0 ? (
-                <>
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <span className="text-sm text-muted-foreground">Filter:</span>
-                    <select
-                      value={filterValidity}
-                      onChange={(e) =>
-                        setFilterValidity(e.target.value as ValidityFilter)
-                      }
-                      className={cn(
-                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                {loading ? (
+                  <LoadingSpinner text="Loading packages..." />
+                ) : packages.length > 0 ? (
+                  <>
+                    <div className="mb-4 flex flex-wrap items-center gap-3">
+                      <span className="text-sm text-muted-foreground">
+                        Filter:
+                      </span>
+                      <select
+                        value={filterValidity}
+                        onChange={(e) =>
+                          setFilterValidity(e.target.value as ValidityFilter)
+                        }
+                        className={cn(
+                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                        )}
+                        aria-label="Filter by validity"
+                      >
+                        {VALIDITY_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={filterData}
+                        onChange={(e) =>
+                          setFilterData(e.target.value as DataFilter)
+                        }
+                        className={cn(
+                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                        )}
+                        aria-label="Filter by data"
+                      >
+                        {DATA_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                      {displayItems.map((item) =>
+                        item.type === "single" ? (
+                          <PackageCard
+                            key={item.pkg.id}
+                            pkg={item.pkg}
+                            onAddToCart={handleAddToCart}
+                            returnQuery={returnQuery}
+                          />
+                        ) : (
+                          <UnlimitedPlanCard
+                            key={`unlimited-${item.baseName}`}
+                            baseName={item.baseName}
+                            packages={item.packages}
+                            onAddToCart={handleAddToCart}
+                            returnQuery={returnQuery}
+                          />
+                        ),
                       )}
-                      aria-label="Filter by validity"
-                    >
-                      {VALIDITY_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={filterData}
-                      onChange={(e) =>
-                        setFilterData(e.target.value as DataFilter)
-                      }
-                      className={cn(
-                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                      )}
-                      aria-label="Filter by data"
-                    >
-                      {DATA_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {displayItems.map((item) =>
-                      item.type === "single" ? (
-                        <PackageCard
-                          key={item.pkg.id}
-                          pkg={item.pkg}
-                          onAddToCart={handleAddToCart}
-                          returnQuery={returnQuery}
-                        />
-                      ) : (
-                        <UnlimitedPlanCard
-                          key={`unlimited-${item.baseName}`}
-                          baseName={item.baseName}
-                          packages={item.packages}
-                          onAddToCart={handleAddToCart}
-                          returnQuery={returnQuery}
-                        />
-                      ),
+                    </div>
+                    {displayItems.length === 0 && (
+                      <p className="py-8 text-center text-muted-foreground">
+                        No packages match the selected filters.
+                      </p>
                     )}
-                  </div>
-                  {displayItems.length === 0 && (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No packages match the selected filters.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="py-16 text-center text-muted-foreground">
-                  No {packageType === "DATA-VOICE-SMS" ? "Data+Voice+SMS" : "data"} packages available for{" "}
-                  {selectedCountry.name}.
-                </p>
-              )}
-            </>
-          )}
-        </TabsContent>
-
-        {/* Continents Tab */}
-        <TabsContent value="continents">
-          {!selectedContinent ? (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {continents.map((continent) => (
-                <ContinentCard
-                  key={continent.id}
-                  continent={continent}
-                  onClick={() => handleContinentSelect(continent)}
-                />
-              ))}
-            </div>
-          ) : (
-            <>
-              <div className="mb-6 flex items-center gap-3">
-                <Button variant="outline" size="sm" onClick={clearSelection}>
-                  &larr; All Regions
-                </Button>
-                <h2 className="text-lg font-semibold">
-                  {selectedContinent.name}
-                </h2>
-              </div>
-              {loading ? (
-                <LoadingSpinner text="Loading packages..." />
-              ) : packages.length > 0 ? (
-                <>
-                  <div className="mb-4 flex flex-wrap items-center gap-3">
-                    <span className="text-sm text-muted-foreground">Filter:</span>
-                    <select
-                      value={filterValidity}
-                      onChange={(e) =>
-                        setFilterValidity(e.target.value as ValidityFilter)
-                      }
-                      className={cn(
-                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                      )}
-                      aria-label="Filter by validity"
-                    >
-                      {VALIDITY_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                    <select
-                      value={filterData}
-                      onChange={(e) =>
-                        setFilterData(e.target.value as DataFilter)
-                      }
-                      className={cn(
-                        "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                      )}
-                      aria-label="Filter by data"
-                    >
-                      {DATA_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {displayItems.map((item) =>
-                      item.type === "single" ? (
-                        <PackageCard
-                          key={item.pkg.id}
-                          pkg={item.pkg}
-                          onAddToCart={handleAddToCart}
-                          returnQuery={returnQuery}
-                        />
-                      ) : (
-                        <UnlimitedPlanCard
-                          key={`unlimited-${item.baseName}`}
-                          baseName={item.baseName}
-                          packages={item.packages}
-                          onAddToCart={handleAddToCart}
-                          returnQuery={returnQuery}
-                        />
-                      ),
-                    )}
-                  </div>
-                  {displayItems.length === 0 && (
-                    <p className="py-8 text-center text-muted-foreground">
-                      No packages match the selected filters.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p className="py-16 text-center text-muted-foreground">
-                  No packages available for {selectedContinent.name}.
-                </p>
-              )}
-            </>
-          )}
-        </TabsContent>
-
-        {/* Global Tab */}
-        <TabsContent value="global">
-          {loading ? (
-            <LoadingSpinner text="Loading global packages..." />
-          ) : packages.length > 0 ? (
-            <>
-              <div className="mb-4 flex flex-wrap items-center gap-3">
-                <span className="text-sm text-muted-foreground">Filter:</span>
-                <select
-                  value={filterValidity}
-                  onChange={(e) =>
-                    setFilterValidity(e.target.value as ValidityFilter)
-                  }
-                  className={cn(
-                    "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                  )}
-                  aria-label="Filter by validity"
-                >
-                  {VALIDITY_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-                <select
-                  value={filterData}
-                  onChange={(e) =>
-                    setFilterData(e.target.value as DataFilter)
-                  }
-                  className={cn(
-                    "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                  )}
-                  aria-label="Filter by data"
-                >
-                  {DATA_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {displayItems.map((item) =>
-                  item.type === "single" ? (
-                    <PackageCard
-                      key={item.pkg.id}
-                      pkg={item.pkg}
-                      onAddToCart={handleAddToCart}
-                      returnQuery={returnQuery}
-                    />
-                  ) : (
-                    <UnlimitedPlanCard
-                      key={`unlimited-${item.baseName}`}
-                      baseName={item.baseName}
-                      packages={item.packages}
-                      onAddToCart={handleAddToCart}
-                      returnQuery={returnQuery}
-                    />
-                  ),
+                  </>
+                ) : (
+                  <p className="py-16 text-center text-muted-foreground">
+                    No packages available for {selectedContinent.name}.
+                  </p>
                 )}
-              </div>
-              {displayItems.length === 0 && (
-                <p className="py-8 text-center text-muted-foreground">
-                  No packages match the selected filters.
-                </p>
-              )}
-            </>
-          ) : (
-            <p className="py-16 text-center text-muted-foreground">
-              No global packages available.
-            </p>
-          )}
-        </TabsContent>
-      </Tabs>
+              </>
+            )}
+          </TabsContent>
 
-      {/* Info section */}
-      <section className="mt-16 border-t border-border pt-12">
-        <h2 className="text-center mb-10 text-3xl font-bold text-[#1A1611] dark:text-[#F5F1EB]">
-          How eSIM Works
-        </h2>
-        <div className="mx-auto grid max-w-3xl grid-cols-1 gap-8 sm:grid-cols-3">
-          <div className="text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-xl font-bold text-primary">1</span>
+          {/* Global Tab */}
+          <TabsContent value="global">
+            {loading ? (
+              <LoadingSpinner text="Loading global packages..." />
+            ) : packages.length > 0 ? (
+              <>
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <span className="text-sm text-muted-foreground">Filter:</span>
+                  <select
+                    value={filterValidity}
+                    onChange={(e) =>
+                      setFilterValidity(e.target.value as ValidityFilter)
+                    }
+                    className={cn(
+                      "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                    )}
+                    aria-label="Filter by validity"
+                  >
+                    {VALIDITY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterData}
+                    onChange={(e) =>
+                      setFilterData(e.target.value as DataFilter)
+                    }
+                    className={cn(
+                      "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                    )}
+                    aria-label="Filter by data"
+                  >
+                    {DATA_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {displayItems.map((item) =>
+                    item.type === "single" ? (
+                      <PackageCard
+                        key={item.pkg.id}
+                        pkg={item.pkg}
+                        onAddToCart={handleAddToCart}
+                        returnQuery={returnQuery}
+                      />
+                    ) : (
+                      <UnlimitedPlanCard
+                        key={`unlimited-${item.baseName}`}
+                        baseName={item.baseName}
+                        packages={item.packages}
+                        onAddToCart={handleAddToCart}
+                        returnQuery={returnQuery}
+                      />
+                    ),
+                  )}
+                </div>
+                {displayItems.length === 0 && (
+                  <p className="py-8 text-center text-muted-foreground">
+                    No packages match the selected filters.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="py-16 text-center text-muted-foreground">
+                No global packages available.
+              </p>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        {/* Info section */}
+        <section className="mt-16 border-t border-border pt-12">
+          <h2 className="text-center mb-10 text-3xl font-bold text-[#1A1611] dark:text-[#F5F1EB]">
+            How eSIM Works
+          </h2>
+          <div className="mx-auto grid max-w-3xl grid-cols-1 gap-8 sm:grid-cols-3">
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <span className="text-xl font-bold text-primary">1</span>
+              </div>
+              <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">
+                Choose a Plan
+              </h3>
+              <p className="mt-2 text-base text-muted-foreground">
+                Select a country or region and pick a data plan that fits your
+                needs.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">Choose a Plan</h3>
-            <p className="mt-2 text-base text-muted-foreground">
-              Select a country or region and pick a data plan that fits your
-              needs.
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-xl font-bold text-primary">2</span>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <span className="text-xl font-bold text-primary">2</span>
+              </div>
+              <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">
+                Purchase &amp; Install
+              </h3>
+              <p className="mt-2 text-base text-muted-foreground">
+                Complete your purchase and scan the QR code or tap the
+                activation link on your device.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">Purchase &amp; Install</h3>
-            <p className="mt-2 text-base text-muted-foreground">
-              Complete your purchase and scan the QR code or tap the activation
-              link on your device.
-            </p>
-          </div>
-          <div className="text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-xl font-bold text-primary">3</span>
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                <span className="text-xl font-bold text-primary">3</span>
+              </div>
+              <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">
+                Stay Connected
+              </h3>
+              <p className="mt-2 text-base text-muted-foreground">
+                Your eSIM activates instantly. Enjoy high-speed data wherever
+                you go.
+              </p>
             </div>
-            <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">Stay Connected</h3>
-            <p className="mt-2 text-base text-muted-foreground">
-              Your eSIM activates instantly. Enjoy high-speed data wherever you
-              go.
-            </p>
           </div>
-        </div>
-      </section>
+        </section>
       </div>
     </div>
   );

@@ -4,7 +4,14 @@ import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { ChevronLeft, ChevronRight, Home, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Home,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
@@ -204,7 +211,8 @@ export function ProductsClient({
           ...p,
           inStock: p.inStock ?? true,
           rating: p.rating ?? 0,
-          tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
+          tokenGatePassed:
+            (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
         }));
 
         if (append) {
@@ -252,7 +260,15 @@ export function ProductsClient({
     setPage(1);
     router.push(buildPath({ page: 1, q: searchQuery }), { scroll: false });
     fetchProducts(1, selectedCategory, sort, selectedSubcategory, searchQuery);
-  }, [searchQuery, buildPath, selectedCategory, sort, selectedSubcategory, fetchProducts, router]);
+  }, [
+    searchQuery,
+    buildPath,
+    selectedCategory,
+    sort,
+    selectedSubcategory,
+    fetchProducts,
+    router,
+  ]);
 
   const handleCategoryChange = React.useCallback(
     (categorySlug: string) => {
@@ -271,7 +287,13 @@ export function ProductsClient({
       setSort(newSort);
       setPage(1);
       router.push(buildPath({ page: 1, sort: newSort }), { scroll: false });
-      fetchProducts(1, selectedCategory, newSort, selectedSubcategory, searchQuery);
+      fetchProducts(
+        1,
+        selectedCategory,
+        newSort,
+        selectedSubcategory,
+        searchQuery,
+      );
     },
     [router, selectedCategory, selectedSubcategory, fetchProducts, buildPath],
   );
@@ -294,8 +316,24 @@ export function ProductsClient({
     skipNextSyncRef.current = true; // avoid overwriting accumulated list when server re-renders
     // Update URL to reflect page (crawlers can follow)
     router.push(buildPath({ page: nextPage }), { scroll: false });
-    fetchProducts(nextPage, selectedCategory, sort, selectedSubcategory, searchQuery, true);
-  }, [page, router, selectedCategory, sort, selectedSubcategory, searchQuery, fetchProducts, buildPath]);
+    fetchProducts(
+      nextPage,
+      selectedCategory,
+      sort,
+      selectedSubcategory,
+      searchQuery,
+      true,
+    );
+  }, [
+    page,
+    router,
+    selectedCategory,
+    sort,
+    selectedSubcategory,
+    searchQuery,
+    fetchProducts,
+    buildPath,
+  ]);
 
   const handlePreviousPage = React.useCallback(() => {
     if (page <= 1) return;
@@ -335,7 +373,10 @@ export function ProductsClient({
       if (result.ok) {
         toast.success("Added to wishlist");
       } else {
-        if (result.error === "Unauthorized" || result.error?.toLowerCase().includes("sign in")) {
+        if (
+          result.error === "Unauthorized" ||
+          result.error?.toLowerCase().includes("sign in")
+        ) {
           toast.error("Sign in to add to wishlist");
         } else {
           toast.error(result.error ?? "Could not add to wishlist");
@@ -391,12 +432,25 @@ export function ProductsClient({
               {breadcrumbItems.map((item, i) => {
                 const isLast = i === breadcrumbItems.length - 1;
                 return (
-                  <li key={`${item.href}-${i}`} className="flex items-center gap-1">
-                    {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0" aria-hidden />}
+                  <li
+                    key={`${item.href}-${i}`}
+                    className="flex items-center gap-1"
+                  >
+                    {i > 0 && (
+                      <ChevronRight
+                        className="h-3.5 w-3.5 shrink-0"
+                        aria-hidden
+                      />
+                    )}
                     {isLast ? (
-                      <span className="font-medium text-foreground">{item.name}</span>
+                      <span className="font-medium text-foreground">
+                        {item.name}
+                      </span>
                     ) : (
-                      <a href={item.href} className="hover:text-foreground transition-colors">
+                      <a
+                        href={item.href}
+                        className="hover:text-foreground transition-colors"
+                      >
                         {i === 0 ? <Home className="h-3.5 w-3.5" /> : item.name}
                       </a>
                     )}
@@ -408,7 +462,9 @@ export function ProductsClient({
 
           {/* Header */}
           <header className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">{title}</h1>
+            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+              {title}
+            </h1>
             {(categoryDescriptionFull?.trim() || description) && (
               <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 {categoryDescriptionFull?.trim() || description}
@@ -420,7 +476,10 @@ export function ProductsClient({
           <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent bg-background/95 px-4 py-2 backdrop-blur-md transition-shadow sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&:not(:first-child)]:border-border/50 [&:not(:first-child)]:shadow-sm">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-2">
-                <SlidersHorizontal className="hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden />
+                <SlidersHorizontal
+                  className="hidden h-4 w-4 text-muted-foreground sm:block"
+                  aria-hidden
+                />
                 <label htmlFor="sort-products" className="sr-only">
                   Sort by
                 </label>
@@ -469,7 +528,10 @@ export function ProductsClient({
                 )}
               </div>
               <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                <Search
+                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                  aria-hidden
+                />
                 <Input
                   type="search"
                   placeholder="Search products…"
@@ -484,34 +546,32 @@ export function ProductsClient({
 
           {/* Category pills */}
           <div className="mb-6 flex flex-wrap items-center gap-2">
-              {categories.map((cat) => (
-                <Button
-                  aria-pressed={cat.slug === selectedCategory}
-                  className="rounded-full gap-1.5 pl-1.5 pr-3"
-                  key={cat.slug}
-                  onClick={() => handleCategoryChange(cat.slug)}
-                  size="sm"
-                  title={`Filter by ${cat.name}`}
-                  variant={
-                    cat.slug === selectedCategory ? "default" : "outline"
-                  }
-                >
-                  {cat.image?.trim() ? (
-                    <span className="relative size-6 shrink-0 overflow-hidden rounded-full bg-white">
-                      <Image
-                        alt=""
-                        className="object-contain"
-                        fill
-                        sizes="24px"
-                        src={cat.image}
-                        unoptimized={/^https?:\/\//i.test(cat.image)}
-                      />
-                    </span>
-                  ) : null}
-                  {cat.name}
-                </Button>
-              ))}
-            </div>
+            {categories.map((cat) => (
+              <Button
+                aria-pressed={cat.slug === selectedCategory}
+                className="rounded-full gap-1.5 pl-1.5 pr-3"
+                key={cat.slug}
+                onClick={() => handleCategoryChange(cat.slug)}
+                size="sm"
+                title={`Filter by ${cat.name}`}
+                variant={cat.slug === selectedCategory ? "default" : "outline"}
+              >
+                {cat.image?.trim() ? (
+                  <span className="relative size-6 shrink-0 overflow-hidden rounded-full bg-white">
+                    <Image
+                      alt=""
+                      className="object-contain"
+                      fill
+                      sizes="24px"
+                      src={cat.image}
+                      unoptimized={/^https?:\/\//i.test(cat.image)}
+                    />
+                  </span>
+                ) : null}
+                {cat.name}
+              </Button>
+            ))}
+          </div>
 
           {subcategories.length > 0 && (
             <div className="mb-4 flex flex-wrap gap-2">
@@ -543,105 +603,112 @@ export function ProductsClient({
 
           {/* Products grid + pagination */}
           <section className="space-y-6" aria-label="Products in this category">
+            {loading ? (
+              <ProductGridSkeleton count={limit} />
+            ) : (
+              <>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  {products.map((product, index) => (
+                    <ProductCard
+                      key={product.id}
+                      isInWishlist={isInWishlist(product.id)}
+                      onAddToCart={handleAddToCart}
+                      onAddToWishlist={handleAddToWishlist}
+                      onRemoveFromWishlist={handleRemoveFromWishlist}
+                      onQuickView={handleQuickView}
+                      product={product}
+                      priority={index < 4}
+                    />
+                  ))}
+                </div>
 
-          {loading ? (
-            <ProductGridSkeleton count={limit} />
-          ) : (
-            <>
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {products.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    isInWishlist={isInWishlist(product.id)}
-                    onAddToCart={handleAddToCart}
-                    onAddToWishlist={handleAddToWishlist}
-                    onRemoveFromWishlist={handleRemoveFromWishlist}
-                    onQuickView={handleQuickView}
-                    product={product}
-                    priority={index < 4}
-                  />
-                ))}
-              </div>
-
-              {products.length === 0 && (
-                <div className="py-16 text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-                    <Search className="h-7 w-7 text-muted-foreground" />
+                {products.length === 0 && (
+                  <div className="py-16 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                      <Search className="h-7 w-7 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-lg font-medium">No products found</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {searchQuery
+                        ? `No products match "${searchQuery}". Try a different search term.`
+                        : "No products found in this category."}
+                    </p>
+                    {(searchQuery ||
+                      selectedSubcategory ||
+                      selectedCategory !== "all") && (
+                      <Button
+                        className="mt-4"
+                        variant="outline"
+                        onClick={() => {
+                          setSearchInput("");
+                          setSelectedSubcategory("");
+                          if (selectedCategory !== "all") {
+                            handleCategoryChange("all");
+                          } else {
+                            setPage(1);
+                            fetchProducts(1, selectedCategory, sort, "", "");
+                            router.push(
+                              buildPath({ page: 1, subcategory: "", q: "" }),
+                              { scroll: false },
+                            );
+                          }
+                        }}
+                      >
+                        Clear all filters
+                      </Button>
+                    )}
                   </div>
-                  <h3 className="text-lg font-medium">No products found</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {searchQuery
-                      ? `No products match "${searchQuery}". Try a different search term.`
-                      : "No products found in this category."}
-                  </p>
-                  {(searchQuery || selectedSubcategory || selectedCategory !== "all") && (
-                    <Button
-                      className="mt-4"
-                      variant="outline"
-                      onClick={() => {
-                        setSearchInput("");
-                        setSelectedSubcategory("");
-                        if (selectedCategory !== "all") {
-                          handleCategoryChange("all");
-                        } else {
-                          setPage(1);
-                          fetchProducts(1, selectedCategory, sort, "", "");
-                          router.push(buildPath({ page: 1, subcategory: "", q: "" }), { scroll: false });
-                        }
-                      }}
-                    >
-                      Clear all filters
-                    </Button>
+                )}
+
+                {/* Pagination: Previous + Load More */}
+                {(page > 1 || page < totalPages) && products.length > 0 && (
+                  <div className="mt-10 flex flex-col items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      {page > 1 && (
+                        <Button
+                          className="gap-2"
+                          onClick={handlePreviousPage}
+                          variant="outline"
+                          size="lg"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Previous
+                        </Button>
+                      )}
+                      {page < totalPages && (
+                        <Button
+                          className="min-w-[200px] gap-2"
+                          disabled={loadingMore}
+                          onClick={handleLoadMore}
+                          variant="outline"
+                          size="lg"
+                        >
+                          {loadingMore ? (
+                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                          ) : null}
+                          {loadingMore ? "Loading…" : "Load More Products"}
+                        </Button>
+                      )}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {page >= totalPages && total > limit
+                        ? `Showing all ${total} products`
+                        : `Showing ${products.length} of ${total} products`}
+                    </span>
+                  </div>
+                )}
+
+                {/* All loaded indicator (no pagination controls) */}
+                {page >= totalPages &&
+                  products.length > 0 &&
+                  total > limit &&
+                  products.length >= total && (
+                    <p className="mt-8 text-center text-sm text-muted-foreground">
+                      Showing all {total} products
+                    </p>
                   )}
-                </div>
-              )}
-
-              {/* Pagination: Previous + Load More */}
-              {(page > 1 || page < totalPages) && products.length > 0 && (
-                <div className="mt-10 flex flex-col items-center gap-3">
-                  <div className="flex flex-wrap items-center justify-center gap-3">
-                    {page > 1 && (
-                      <Button
-                        className="gap-2"
-                        onClick={handlePreviousPage}
-                        variant="outline"
-                        size="lg"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                        Previous
-                      </Button>
-                    )}
-                    {page < totalPages && (
-                      <Button
-                        className="min-w-[200px] gap-2"
-                        disabled={loadingMore}
-                        onClick={handleLoadMore}
-                        variant="outline"
-                        size="lg"
-                      >
-                        {loadingMore ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                        ) : null}
-                        {loadingMore ? "Loading…" : "Load More Products"}
-                      </Button>
-                    )}
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {page >= totalPages && total > limit
-                      ? `Showing all ${total} products`
-                      : `Showing ${products.length} of ${total} products`}
-                  </span>
-                </div>
-              )}
-
-              {/* All loaded indicator (no pagination controls) */}
-              {page >= totalPages && products.length > 0 && total > limit && products.length >= total && (
-                <p className="mt-8 text-center text-sm text-muted-foreground">
-                  Showing all {total} products
-                </p>
-              )}
-            </>
-          )}
+              </>
+            )}
           </section>
         </div>
       </main>

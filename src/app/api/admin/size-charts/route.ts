@@ -38,7 +38,10 @@ export async function GET(request: NextRequest) {
             .from(sizeChartsTable)
             .where(and(...conditions))
             .orderBy(desc(sizeChartsTable.updatedAt))
-        : await db.select().from(sizeChartsTable).orderBy(desc(sizeChartsTable.updatedAt));
+        : await db
+            .select()
+            .from(sizeChartsTable)
+            .orderBy(desc(sizeChartsTable.updatedAt));
 
     return NextResponse.json(rows);
   } catch (err) {
@@ -72,12 +75,30 @@ export async function POST(request: NextRequest) {
     const model = body.model?.trim();
     const displayName = body.displayName?.trim();
 
-    if (!provider || !PROVIDERS.includes(provider as (typeof PROVIDERS)[number])) {
-      return apiError("INVALID_REQUEST", { field: "provider", message: "Invalid or missing provider" });
+    if (
+      !provider ||
+      !PROVIDERS.includes(provider as (typeof PROVIDERS)[number])
+    ) {
+      return apiError("INVALID_REQUEST", {
+        field: "provider",
+        message: "Invalid or missing provider",
+      });
     }
-    if (!brand) return apiError("INVALID_REQUEST", { field: "brand", message: "Brand is required" });
-    if (!model) return apiError("INVALID_REQUEST", { field: "model", message: "Model is required" });
-    if (!displayName) return apiError("INVALID_REQUEST", { field: "displayName", message: "Display name is required" });
+    if (!brand)
+      return apiError("INVALID_REQUEST", {
+        field: "brand",
+        message: "Brand is required",
+      });
+    if (!model)
+      return apiError("INVALID_REQUEST", {
+        field: "model",
+        message: "Model is required",
+      });
+    if (!displayName)
+      return apiError("INVALID_REQUEST", {
+        field: "displayName",
+        message: "Display name is required",
+      });
 
     const id = nanoid();
     const now = new Date();
@@ -88,14 +109,22 @@ export async function POST(request: NextRequest) {
       brand,
       model,
       displayName,
-      dataImperial: body.dataImperial != null ? JSON.stringify(body.dataImperial) : null,
-      dataMetric: body.dataMetric != null ? JSON.stringify(body.dataMetric) : null,
+      dataImperial:
+        body.dataImperial != null ? JSON.stringify(body.dataImperial) : null,
+      dataMetric:
+        body.dataMetric != null ? JSON.stringify(body.dataMetric) : null,
       createdAt: now,
       updatedAt: now,
     });
 
-    const [created] = await db.select().from(sizeChartsTable).where(eq(sizeChartsTable.id, id)).limit(1);
-    return NextResponse.json(created ?? { id, provider, brand, model, displayName: body.displayName });
+    const [created] = await db
+      .select()
+      .from(sizeChartsTable)
+      .where(eq(sizeChartsTable.id, id))
+      .limit(1);
+    return NextResponse.json(
+      created ?? { id, provider, brand, model, displayName: body.displayName },
+    );
   } catch (err) {
     console.error("Admin size chart create error:", err);
     return apiError("INTERNAL_ERROR");

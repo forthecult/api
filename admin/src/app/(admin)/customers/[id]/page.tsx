@@ -175,7 +175,9 @@ export default function AdminCustomerDetailPage() {
   const [phone, setPhone] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
   // Notification preferences (single source of truth; synced from notificationPreferences)
-  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences | null>(null);
+  const [notifPrefs, setNotifPrefs] = useState<NotificationPreferences | null>(
+    null,
+  );
   const [notifSaveLoading, setNotifSaveLoading] = useState(false);
   const [notifSaveMessage, setNotifSaveMessage] = useState<{
     type: "success" | "error";
@@ -211,9 +213,8 @@ export default function AdminCustomerDetailPage() {
     zip: string;
     countryCode: string;
   };
-  const [editableAddress, setEditableAddress] = useState<EditableAddress | null>(
-    null,
-  );
+  const [editableAddress, setEditableAddress] =
+    useState<EditableAddress | null>(null);
   const addressFindDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
@@ -322,7 +323,9 @@ export default function AdminCustomerDetailPage() {
         >[0];
         const mapped = mapRetrieveToShipping(addr);
         setEditableAddress({
-          address1: [mapped.street, mapped.apartment].filter(Boolean).join(", "),
+          address1: [mapped.street, mapped.apartment]
+            .filter(Boolean)
+            .join(", "),
           address2: null,
           city: mapped.city,
           stateCode: mapped.state || null,
@@ -350,7 +353,9 @@ export default function AdminCustomerDetailPage() {
     const line = [
       editableAddress.address1,
       editableAddress.address2,
-      [editableAddress.city, editableAddress.stateCode].filter(Boolean).join(", "),
+      [editableAddress.city, editableAddress.stateCode]
+        .filter(Boolean)
+        .join(", "),
       editableAddress.zip,
       editableAddress.countryCode,
     ]
@@ -483,7 +488,13 @@ export default function AdminCustomerDetailPage() {
         setSaveLoading(false);
         return;
       }
-      if (addr && (addr.address1.trim() || addr.city.trim() || addr.zip.trim() || addr.countryCode.trim())) {
+      if (
+        addr &&
+        (addr.address1.trim() ||
+          addr.city.trim() ||
+          addr.zip.trim() ||
+          addr.countryCode.trim())
+      ) {
         setSaveMessage({
           type: "error",
           text: "Profile saved. To save the address, fill in address line 1, city, zip, and country.",
@@ -550,7 +561,10 @@ export default function AdminCustomerDetailPage() {
         });
         return;
       }
-      setDisable2faMessage({ type: "success", text: "Two-factor authentication disabled for this customer." });
+      setDisable2faMessage({
+        type: "success",
+        text: "Two-factor authentication disabled for this customer.",
+      });
       void fetchCustomer();
     } catch {
       setDisable2faMessage({ type: "error", text: "Failed to disable 2FA" });
@@ -560,7 +574,11 @@ export default function AdminCustomerDetailPage() {
   }, [id, fetchCustomer]);
 
   const updateNotifPref = useCallback(
-    (type: "transactional" | "marketing", channel: keyof ChannelPrefs, value: boolean) => {
+    (
+      type: "transactional" | "marketing",
+      channel: keyof ChannelPrefs,
+      value: boolean,
+    ) => {
       setNotifPrefs((prev) => {
         if (!prev) return null;
         return {
@@ -590,10 +608,16 @@ export default function AdminCustomerDetailPage() {
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
-        setNotifSaveMessage({ type: "error", text: json.error ?? "Failed to save" });
+        setNotifSaveMessage({
+          type: "error",
+          text: json.error ?? "Failed to save",
+        });
         return;
       }
-      setNotifSaveMessage({ type: "success", text: "Notification preferences saved." });
+      setNotifSaveMessage({
+        type: "success",
+        text: "Notification preferences saved.",
+      });
       void fetchCustomer();
     } catch {
       setNotifSaveMessage({ type: "error", text: "Failed to save" });
@@ -917,7 +941,7 @@ export default function AdminCustomerDetailPage() {
                           value={editableAddress.city}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
-                              prev ? { ...prev, city: e.target.value } : null
+                              prev ? { ...prev, city: e.target.value } : null,
                             )
                           }
                           placeholder="City"
@@ -950,7 +974,7 @@ export default function AdminCustomerDetailPage() {
                           value={editableAddress.zip}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
-                              prev ? { ...prev, zip: e.target.value } : null
+                              prev ? { ...prev, zip: e.target.value } : null,
                             )
                           }
                           placeholder="ZIP"
@@ -966,7 +990,7 @@ export default function AdminCustomerDetailPage() {
                             setEditableAddress((prev) =>
                               prev
                                 ? { ...prev, countryCode: e.target.value }
-                                : null
+                                : null,
                             )
                           }
                           placeholder="US, GB, …"
@@ -1137,7 +1161,8 @@ export default function AdminCustomerDetailPage() {
               Two-Factor Authentication
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              This customer has 2FA enabled. You can disable it so they can sign in without a code (e.g. if they lost their device).
+              This customer has 2FA enabled. You can disable it so they can sign
+              in without a code (e.g. if they lost their device).
             </p>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -1175,7 +1200,8 @@ export default function AdminCustomerDetailPage() {
             Affiliate
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Customer&apos;s affiliate code and status (if they are in the program).
+            Customer&apos;s affiliate code and status (if they are in the
+            program).
           </p>
         </CardHeader>
         <CardContent>
@@ -1198,7 +1224,9 @@ export default function AdminCustomerDetailPage() {
                 </p>
               </div>
               <Button asChild variant="outline" size="sm">
-                <Link href={`/affiliates?search=${encodeURIComponent(customer.affiliate.code)}`}>
+                <Link
+                  href={`/affiliates?search=${encodeURIComponent(customer.affiliate.code)}`}
+                >
                   View in Affiliates
                 </Link>
               </Button>
@@ -1212,125 +1240,157 @@ export default function AdminCustomerDetailPage() {
       </Card>
 
       {/* Notification preferences — single source of truth (replaces Email/SMS marketing checkboxes) */}
-      {customer.notificationPreferences && (notifPrefs ?? customer.notificationPreferences) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" aria-hidden />
-              Notification preferences
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Transactional and marketing preferences per channel. Same as
-              customer dashboard Settings → Notifications. Telegram applies only
-              when the customer has linked Telegram.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[140px]">Channel</TableHead>
-                    <TableHead className="text-center">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="font-semibold">Transactional</span>
-                        <span className="text-xs font-normal text-muted-foreground">
-                          Orders, shipping, account
-                        </span>
-                      </div>
-                    </TableHead>
-                    <TableHead className="text-center">
-                      <div className="flex flex-col items-center gap-0.5">
-                        <span className="font-semibold">Marketing</span>
-                        <span className="text-xs font-normal text-muted-foreground">
-                          Promotions, news, offers
-                        </span>
-                      </div>
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(
-                    [
-                      { id: "website" as const, label: "Website", disabled: false, note: null as string | null },
-                      { id: "email" as const, label: "Email", disabled: false, note: null as string | null },
-                      { id: "sms" as const, label: "SMS", disabled: false, note: null as string | null },
+      {customer.notificationPreferences &&
+        (notifPrefs ?? customer.notificationPreferences) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bell className="h-5 w-5" aria-hidden />
+                Notification preferences
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Transactional and marketing preferences per channel. Same as
+                customer dashboard Settings → Notifications. Telegram applies
+                only when the customer has linked Telegram.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto rounded-lg border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[140px]">Channel</TableHead>
+                      <TableHead className="text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="font-semibold">Transactional</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            Orders, shipping, account
+                          </span>
+                        </div>
+                      </TableHead>
+                      <TableHead className="text-center">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="font-semibold">Marketing</span>
+                          <span className="text-xs font-normal text-muted-foreground">
+                            Promotions, news, offers
+                          </span>
+                        </div>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[
+                      {
+                        id: "website" as const,
+                        label: "Website",
+                        disabled: false,
+                        note: null as string | null,
+                      },
+                      {
+                        id: "email" as const,
+                        label: "Email",
+                        disabled: false,
+                        note: null as string | null,
+                      },
+                      {
+                        id: "sms" as const,
+                        label: "SMS",
+                        disabled: false,
+                        note: null as string | null,
+                      },
                       {
                         id: "telegram" as const,
                         label: "Telegram",
-                        disabled: !customer.notificationPreferences.hasTelegramLinked,
-                        note: !customer.notificationPreferences.hasTelegramLinked
+                        disabled:
+                          !customer.notificationPreferences.hasTelegramLinked,
+                        note: !customer.notificationPreferences
+                          .hasTelegramLinked
                           ? " (not linked)"
                           : null,
                       },
-                      { id: "aiCompanion" as const, label: "AI Companion", disabled: false, note: null as string | null },
-                    ]
-                  ).map(({ id, label, note, disabled }) => {
-                    const prefs = notifPrefs ?? customer.notificationPreferences;
-                    return (
-                      <TableRow key={id}>
-                        <TableCell className="font-medium">
-                          {label}
-                          {note && (
-                            <span className="text-muted-foreground">{note}</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <input
-                            type="checkbox"
-                            checked={prefs?.transactional[id] ?? false}
-                            disabled={disabled}
-                            onChange={(e) =>
-                              updateNotifPref("transactional", id, e.target.checked)
-                            }
-                            className="h-4 w-4 rounded border-input"
-                            aria-label={`${label} transactional`}
-                          />
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <input
-                            type="checkbox"
-                            checked={prefs?.marketing[id] ?? false}
-                            disabled={disabled}
-                            onChange={(e) =>
-                              updateNotifPref("marketing", id, e.target.checked)
-                            }
-                            className="h-4 w-4 rounded border-input"
-                            aria-label={`${label} marketing`}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-            {notifSaveMessage && (
-              <p
-                className={cn(
-                  "mt-3 rounded-md border px-3 py-2 text-sm",
-                  notifSaveMessage.type === "success"
-                    ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                    : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
-                )}
+                      {
+                        id: "aiCompanion" as const,
+                        label: "AI Companion",
+                        disabled: false,
+                        note: null as string | null,
+                      },
+                    ].map(({ id, label, note, disabled }) => {
+                      const prefs =
+                        notifPrefs ?? customer.notificationPreferences;
+                      return (
+                        <TableRow key={id}>
+                          <TableCell className="font-medium">
+                            {label}
+                            {note && (
+                              <span className="text-muted-foreground">
+                                {note}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <input
+                              type="checkbox"
+                              checked={prefs?.transactional[id] ?? false}
+                              disabled={disabled}
+                              onChange={(e) =>
+                                updateNotifPref(
+                                  "transactional",
+                                  id,
+                                  e.target.checked,
+                                )
+                              }
+                              className="h-4 w-4 rounded border-input"
+                              aria-label={`${label} transactional`}
+                            />
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <input
+                              type="checkbox"
+                              checked={prefs?.marketing[id] ?? false}
+                              disabled={disabled}
+                              onChange={(e) =>
+                                updateNotifPref(
+                                  "marketing",
+                                  id,
+                                  e.target.checked,
+                                )
+                              }
+                              className="h-4 w-4 rounded border-input"
+                              aria-label={`${label} marketing`}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+              {notifSaveMessage && (
+                <p
+                  className={cn(
+                    "mt-3 rounded-md border px-3 py-2 text-sm",
+                    notifSaveMessage.type === "success"
+                      ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
+                      : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                  )}
+                >
+                  {notifSaveMessage.text}
+                </p>
+              )}
+              <Button
+                type="button"
+                variant="default"
+                size="sm"
+                className="mt-3"
+                disabled={notifSaveLoading}
+                onClick={() => void handleSaveNotificationPrefs()}
               >
-                {notifSaveMessage.text}
-              </p>
-            )}
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              className="mt-3"
-              disabled={notifSaveLoading}
-              onClick={() => void handleSaveNotificationPrefs()}
-            >
-              <Save className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
-              {notifSaveLoading ? "Saving…" : "Save notification preferences"}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+                <Save className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
+                {notifSaveLoading ? "Saving…" : "Save notification preferences"}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
       {/* Customer orders */}
       <Card>

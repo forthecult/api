@@ -7,10 +7,7 @@ import type { NextRequest } from "next/server";
  */
 export function getAdminAllowedOrigins(): string[] {
   if (process.env.NODE_ENV === "development") {
-    return [
-      "http://localhost:3001",
-      "http://127.0.0.1:3001",
-    ];
+    return ["http://localhost:3001", "http://127.0.0.1:3001"];
   }
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_APP_URL;
   if (!adminUrl?.trim()) return [];

@@ -68,11 +68,27 @@ function getFullErrorMessage(err: unknown): string {
 /** True if this error is a DB unique constraint on user email (duplicate signup). */
 function isDuplicateUserEmailError(err: unknown): boolean {
   const msg = getFullErrorMessage(err);
-  if (/user_email_unique/i.test(msg) && /duplicate key|unique constraint/i.test(msg)) return true;
-  const code = err && typeof err === "object" && "code" in err ? String((err as { code: string }).code) : "";
+  if (
+    /user_email_unique/i.test(msg) &&
+    /duplicate key|unique constraint/i.test(msg)
+  )
+    return true;
+  const code =
+    err && typeof err === "object" && "code" in err
+      ? String((err as { code: string }).code)
+      : "";
   if (code === "23505") return true; // PostgreSQL unique_violation
-  const cause = err && typeof err === "object" && "cause" in err ? (err as { cause: unknown }).cause : null;
-  if (cause && typeof cause === "object" && "code" in cause && String((cause as { code: string }).code) === "23505") return true;
+  const cause =
+    err && typeof err === "object" && "cause" in err
+      ? (err as { cause: unknown }).cause
+      : null;
+  if (
+    cause &&
+    typeof cause === "object" &&
+    "code" in cause &&
+    String((cause as { code: string }).code) === "23505"
+  )
+    return true;
   return false;
 }
 
@@ -206,7 +222,10 @@ export function solanaAuthPlugin() {
                 { field: "value", value: nonce },
               ],
             })) as VerificationRecord | null;
-            if (!verification || new Date(verification.expiresAt) < new Date()) {
+            if (
+              !verification ||
+              new Date(verification.expiresAt) < new Date()
+            ) {
               throw new APIError("BAD_REQUEST", {
                 message: "Challenge expired or invalid",
               });
@@ -226,7 +245,9 @@ export function solanaAuthPlugin() {
                     where: [{ field: "id", value: verification.id }],
                   });
                 } catch {
-                  console.warn("[solana-auth] Could not delete verification token");
+                  console.warn(
+                    "[solana-auth] Could not delete verification token",
+                  );
                 }
               }
             };
@@ -263,14 +284,24 @@ export function solanaAuthPlugin() {
                 });
               }
               if (existingAccount) {
-                if (existingAccount.userId === (session.user as { id: string }).id) {
+                if (
+                  existingAccount.userId === (session.user as { id: string }).id
+                ) {
                   return ctx.json({ linked: true, user: session.user });
                 }
                 throw new APIError("BAD_REQUEST", {
                   message: "This wallet is already linked to another account",
                 });
               }
-              await (ctx.context.internalAdapter as { linkAccount: (data: { userId: string; accountId: string; providerId: string }) => Promise<unknown> }).linkAccount({
+              await (
+                ctx.context.internalAdapter as {
+                  linkAccount: (data: {
+                    userId: string;
+                    accountId: string;
+                    providerId: string;
+                  }) => Promise<unknown>;
+                }
+              ).linkAccount({
                 userId: (session.user as { id: string }).id,
                 accountId: addressTrim,
                 providerId: SOLANA_PROVIDER_ID,
@@ -279,8 +310,22 @@ export function solanaAuthPlugin() {
             }
 
             const generateId =
-              typeof (ctx.context as { generateId?: (opts?: { model?: string; size?: number }) => string }).generateId === "function"
-                ? (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId
+              typeof (
+                ctx.context as {
+                  generateId?: (opts?: {
+                    model?: string;
+                    size?: number;
+                  }) => string;
+                }
+              ).generateId === "function"
+                ? (
+                    ctx.context as {
+                      generateId: (opts?: {
+                        model?: string;
+                        size?: number;
+                      }) => string;
+                    }
+                  ).generateId
                 : () => randomBytes(16).toString("hex");
 
             let user: UserRecord | null = null;
@@ -295,7 +340,14 @@ export function solanaAuthPlugin() {
               const email = `solana_${addressTrim.slice(0, 8)}@wallet.local`;
               const now = new Date();
               const userId = generateId({ model: "user" });
-              console.log("[solana-auth] No existing account for", addressTrim, "— creating new user", userId, "with email", email);
+              console.log(
+                "[solana-auth] No existing account for",
+                addressTrim,
+                "— creating new user",
+                userId,
+                "with email",
+                email,
+              );
               try {
                 await adapter.create({
                   model: "user",
@@ -327,9 +379,15 @@ export function solanaAuthPlugin() {
                   },
                 });
               } catch (createUserErr) {
-                console.error("[solana-auth] User creation failed:", createUserErr);
+                console.error(
+                  "[solana-auth] User creation failed:",
+                  createUserErr,
+                );
                 if (isDuplicateUserEmailError(createUserErr)) {
-                  console.log("[solana-auth] Duplicate email detected, looking up existing user for", email);
+                  console.log(
+                    "[solana-auth] Duplicate email detected, looking up existing user for",
+                    email,
+                  );
                   const existingUser = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "email", value: email }],
@@ -346,16 +404,18 @@ export function solanaAuthPlugin() {
                     if (!existingAccountForWallet) {
                       const accountId = generateId({ model: "account" });
                       try {
-                        await (ctx.context.internalAdapter as {
-                          createAccount: (data: {
-                            id: string;
-                            userId: string;
-                            accountId: string;
-                            providerId: string;
-                            createdAt: Date;
-                            updatedAt: Date;
-                          }) => Promise<unknown>;
-                        }).createAccount({
+                        await (
+                          ctx.context.internalAdapter as {
+                            createAccount: (data: {
+                              id: string;
+                              userId: string;
+                              accountId: string;
+                              providerId: string;
+                              createdAt: Date;
+                              updatedAt: Date;
+                            }) => Promise<unknown>;
+                          }
+                        ).createAccount({
                           id: accountId,
                           userId: existingUser.id,
                           accountId: addressTrim,
@@ -376,19 +436,24 @@ export function solanaAuthPlugin() {
                 if (!user) throw createUserErr;
               }
               if (!user) {
-                console.log("[solana-auth] Linking new Solana account for user", userId);
+                console.log(
+                  "[solana-auth] Linking new Solana account for user",
+                  userId,
+                );
                 const accountId = generateId({ model: "account" });
                 try {
-                  await (ctx.context.internalAdapter as {
-                    createAccount: (data: {
-                      id: string;
-                      userId: string;
-                      accountId: string;
-                      providerId: string;
-                      createdAt: Date;
-                      updatedAt: Date;
-                    }) => Promise<unknown>;
-                  }).createAccount({
+                  await (
+                    ctx.context.internalAdapter as {
+                      createAccount: (data: {
+                        id: string;
+                        userId: string;
+                        accountId: string;
+                        providerId: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                      }) => Promise<unknown>;
+                    }
+                  ).createAccount({
                     id: accountId,
                     userId,
                     accountId: addressTrim,
@@ -397,7 +462,10 @@ export function solanaAuthPlugin() {
                     updatedAt: now,
                   });
                 } catch (createAccountErr) {
-                  console.error("[solana-auth] createAccount failed:", createAccountErr);
+                  console.error(
+                    "[solana-auth] createAccount failed:",
+                    createAccountErr,
+                  );
                   throw createAccountErr;
                 }
                 user = (await adapter.findOne({
@@ -408,19 +476,30 @@ export function solanaAuthPlugin() {
             }
 
             if (!user) {
-              console.error("[solana-auth] User record not found after creation for address:", addressTrim);
+              console.error(
+                "[solana-auth] User record not found after creation for address:",
+                addressTrim,
+              );
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to get user",
               });
             }
-            console.log("[solana-auth] User ready:", user.id, "— creating session");
+            console.log(
+              "[solana-auth] User ready:",
+              user.id,
+              "— creating session",
+            );
 
             // createSession(userId, request, dontRememberMe) - false = remember me (longer expiry)
-            const session = await (ctx.context.internalAdapter as { createSession: (userId: string, request?: Request, dontRememberMe?: boolean) => Promise<{ id: string; userId: string } | null> }).createSession(
-              user.id,
-              ctx.request as Request | undefined,
-              false,
-            );
+            const session = await (
+              ctx.context.internalAdapter as {
+                createSession: (
+                  userId: string,
+                  request?: Request,
+                  dontRememberMe?: boolean,
+                ) => Promise<{ id: string; userId: string } | null>;
+              }
+            ).createSession(user.id, ctx.request as Request | undefined, false);
             if (!session) {
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to create session",
@@ -431,10 +510,17 @@ export function solanaAuthPlugin() {
             void linkOrdersToUserByWallet(user.id, addressTrim, {
               isEvm: false,
             }).catch((err) =>
-              console.warn("[solana-auth] linkOrdersToUserByWallet failed:", err),
+              console.warn(
+                "[solana-auth] linkOrdersToUserByWallet failed:",
+                err,
+              ),
             );
 
-            await setSessionCookie(ctx, { session, user } as Parameters<typeof setSessionCookie>[1], false as boolean | undefined);
+            await setSessionCookie(
+              ctx,
+              { session, user } as Parameters<typeof setSessionCookie>[1],
+              false as boolean | undefined,
+            );
             return ctx.json({
               user: {
                 id: user.id,
@@ -458,7 +544,8 @@ export function solanaAuthPlugin() {
               err instanceof Error ? err.message : "Verification failed";
             console.error("[wallet-auth] Verification error:", raw);
             throw new APIError("INTERNAL_SERVER_ERROR", {
-              message: "Something went wrong on our end. Please try again or contact support.",
+              message:
+                "Something went wrong on our end. Please try again or contact support.",
             });
           }
         },

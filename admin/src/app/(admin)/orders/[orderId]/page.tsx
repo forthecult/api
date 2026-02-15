@@ -94,15 +94,15 @@ function getBlockExplorerUrl(
   chainId: number | null,
 ): string | null {
   if (!txHash) return null;
-  
+
   // Normalize network name
   const net = (network ?? "").toLowerCase();
-  
+
   // Solana
   if (net === "solana" || net === "sol") {
     return `https://solscan.io/tx/${txHash}`;
   }
-  
+
   // EVM chains by chainId
   if (chainId) {
     switch (chainId) {
@@ -124,7 +124,7 @@ function getBlockExplorerUrl(
         break;
     }
   }
-  
+
   // Fallback by network name
   if (net === "ethereum" || net === "eth") {
     return `https://etherscan.io/tx/${txHash}`;
@@ -147,12 +147,12 @@ function getBlockExplorerUrl(
   if (net === "optimism" || net === "op") {
     return `https://optimistic.etherscan.io/tx/${txHash}`;
   }
-  
+
   // Bitcoin (BTCPay)
   if (net === "bitcoin" || net === "btc") {
     return `https://mempool.space/tx/${txHash}`;
   }
-  
+
   return null;
 }
 
@@ -329,7 +329,12 @@ export default function AdminOrderDetailsPage() {
           return;
         }
         const data = (await res.json()) as {
-          Items?: Array<{ Id: string; Type?: string; Text: string; Description?: string }>;
+          Items?: Array<{
+            Id: string;
+            Type?: string;
+            Text: string;
+            Description?: string;
+          }>;
         };
         const items = (data.Items ?? []).filter(
           (i) => !i.Type || i.Type === "Address",
@@ -349,33 +354,30 @@ export default function AdminOrderDetailsPage() {
     };
   }, [addressFindQuery]);
 
-  const selectAddressFromLoqate = useCallback(
-    async (id: string) => {
-      setAddressFindOpen(false);
-      setAddressFindQuery("");
-      setAddressFindResults([]);
-      try {
-        const res = await fetch(
-          `${API_BASE}/api/loqate/retrieve?id=${encodeURIComponent(id)}`,
-          { credentials: "include" },
-        );
-        if (!res.ok) return;
-        const addr = (await res.json()) as Parameters<
-          typeof mapRetrieveToShipping
-        >[0];
-        const mapped = mapRetrieveToShipping(addr);
-        setShippingAddress1(mapped.street);
-        setShippingAddress2(mapped.apartment);
-        setShippingCity(mapped.city);
-        setShippingStateCode(mapped.state);
-        setShippingZip(mapped.zip);
-        if (mapped.country) setShippingCountryCode(mapped.country);
-      } catch {
-        // ignore
-      }
-    },
-    [],
-  );
+  const selectAddressFromLoqate = useCallback(async (id: string) => {
+    setAddressFindOpen(false);
+    setAddressFindQuery("");
+    setAddressFindResults([]);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/loqate/retrieve?id=${encodeURIComponent(id)}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) return;
+      const addr = (await res.json()) as Parameters<
+        typeof mapRetrieveToShipping
+      >[0];
+      const mapped = mapRetrieveToShipping(addr);
+      setShippingAddress1(mapped.street);
+      setShippingAddress2(mapped.apartment);
+      setShippingCity(mapped.city);
+      setShippingStateCode(mapped.state);
+      setShippingZip(mapped.zip);
+      if (mapped.country) setShippingCountryCode(mapped.country);
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const updateItemQty = useCallback((itemId: string, qty: number) => {
     setItemQuantities((prev) => ({ ...prev, [itemId]: Math.max(0, qty) }));
@@ -578,8 +580,7 @@ export default function AdminOrderDetailsPage() {
   const isUS = shippingCountryCode === "US";
 
   const countryOptions =
-    order?.allowedCountryCodes &&
-    order.allowedCountryCodes.length > 0
+    order?.allowedCountryCodes && order.allowedCountryCodes.length > 0
       ? [
           { value: "", label: "Select country" },
           ...order.allowedCountryCodes
@@ -658,7 +659,8 @@ export default function AdminOrderDetailsPage() {
               ? "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
               : (paymentStatus ?? "pending").toLowerCase() === "paid"
                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
-                : (paymentStatus ?? "pending").toLowerCase() === "refund_pending"
+                : (paymentStatus ?? "pending").toLowerCase() ===
+                    "refund_pending"
                   ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
                   : (paymentStatus ?? "pending").toLowerCase() === "refunded" ||
                       (paymentStatus ?? "pending").toLowerCase() === "cancelled"
@@ -981,9 +983,7 @@ export default function AdminOrderDetailsPage() {
                 onFocus={() =>
                   addressFindResults.length > 0 && setAddressFindOpen(true)
                 }
-                onBlur={() =>
-                  setTimeout(() => setAddressFindOpen(false), 200)
-                }
+                onBlur={() => setTimeout(() => setAddressFindOpen(false), 200)}
                 className={inputClass}
                 autoComplete="off"
               />
@@ -1255,7 +1255,13 @@ export default function AdminOrderDetailsPage() {
           <div className="text-sm text-muted-foreground">
             Payment method: {order.paymentMethod}
             {order.cryptoPayment?.currency && (
-              <span> &middot; {order.cryptoPayment.currency}{order.cryptoPayment.network ? ` (${order.cryptoPayment.network})` : ""}</span>
+              <span>
+                {" "}
+                &middot; {order.cryptoPayment.currency}
+                {order.cryptoPayment.network
+                  ? ` (${order.cryptoPayment.network})`
+                  : ""}
+              </span>
             )}
           </div>
         </CardContent>
@@ -1285,14 +1291,16 @@ export default function AdminOrderDetailsPage() {
                       className="max-w-[280px] truncate font-mono text-blue-600 underline hover:text-blue-800"
                       title={order.cryptoPayment.txHash}
                     >
-                      {order.cryptoPayment.txHash.slice(0, 10)}…{order.cryptoPayment.txHash.slice(-8)}
+                      {order.cryptoPayment.txHash.slice(0, 10)}…
+                      {order.cryptoPayment.txHash.slice(-8)}
                     </a>
                   ) : (
                     <span
                       className="max-w-[280px] truncate font-mono"
                       title={order.cryptoPayment.txHash}
                     >
-                      {order.cryptoPayment.txHash.slice(0, 10)}…{order.cryptoPayment.txHash.slice(-8)}
+                      {order.cryptoPayment.txHash.slice(0, 10)}…
+                      {order.cryptoPayment.txHash.slice(-8)}
                     </span>
                   );
                 })()}
@@ -1321,7 +1329,8 @@ export default function AdminOrderDetailsPage() {
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Amount</span>
                 <span className="tabular-nums">
-                  {order.cryptoPayment.amount} {order.cryptoPayment.currency ?? ""}
+                  {order.cryptoPayment.amount}{" "}
+                  {order.cryptoPayment.currency ?? ""}
                 </span>
               </div>
             )}
@@ -1360,7 +1369,9 @@ export default function AdminOrderDetailsPage() {
                     {order.tracking.trackingNumber}
                   </a>
                 ) : (
-                  <span className="font-mono">{order.tracking.trackingNumber}</span>
+                  <span className="font-mono">
+                    {order.tracking.trackingNumber}
+                  </span>
                 )}
               </div>
               {order.tracking.carrier && (
@@ -1372,44 +1383,63 @@ export default function AdminOrderDetailsPage() {
               {order.tracking.shippedAt && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Shipped</span>
-                  <span>{new Date(order.tracking.shippedAt).toLocaleDateString()}</span>
+                  <span>
+                    {new Date(order.tracking.shippedAt).toLocaleDateString()}
+                  </span>
                 </div>
               )}
               {order.tracking.deliveredAt && (
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Delivered</span>
-                  <span>{new Date(order.tracking.deliveredAt).toLocaleDateString()}</span>
-                </div>
-              )}
-              {(order.tracking.estimatedDeliveryFrom || order.tracking.estimatedDeliveryTo) && (
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Est. delivery</span>
                   <span>
-                    {order.tracking.estimatedDeliveryFrom ?? "?"} – {order.tracking.estimatedDeliveryTo ?? "?"}
+                    {new Date(order.tracking.deliveredAt).toLocaleDateString()}
                   </span>
                 </div>
               )}
-              {order.tracking.events && Array.isArray(order.tracking.events) && order.tracking.events.length > 0 && (
-                <div className="mt-2 border-t pt-2">
-                  <p className="mb-1 text-xs font-medium text-muted-foreground">Tracking events</p>
-                  <ul className="space-y-1">
-                    {(order.tracking.events as Array<{ triggered_at: string; description: string }>).map((ev, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs">
-                        <span className="whitespace-nowrap text-muted-foreground">
-                          {new Date(ev.triggered_at).toLocaleDateString()}
-                        </span>
-                        <span>{ev.description}</span>
-                      </li>
-                    ))}
-                  </ul>
+              {(order.tracking.estimatedDeliveryFrom ||
+                order.tracking.estimatedDeliveryTo) && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Est. delivery</span>
+                  <span>
+                    {order.tracking.estimatedDeliveryFrom ?? "?"} –{" "}
+                    {order.tracking.estimatedDeliveryTo ?? "?"}
+                  </span>
                 </div>
               )}
+              {order.tracking.events &&
+                Array.isArray(order.tracking.events) &&
+                order.tracking.events.length > 0 && (
+                  <div className="mt-2 border-t pt-2">
+                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                      Tracking events
+                    </p>
+                    <ul className="space-y-1">
+                      {(
+                        order.tracking.events as Array<{
+                          triggered_at: string;
+                          description: string;
+                        }>
+                      ).map((ev, i) => (
+                        <li key={i} className="flex items-start gap-2 text-xs">
+                          <span className="whitespace-nowrap text-muted-foreground">
+                            {new Date(ev.triggered_at).toLocaleDateString()}
+                          </span>
+                          <span>{ev.description}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">No tracking information yet.</p>
+            <p className="text-sm text-muted-foreground">
+              No tracking information yet.
+            </p>
           )}
           <div className="border-t pt-3">
-            <p className="mb-2 text-xs font-medium text-muted-foreground">Manual tracking entry</p>
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              Manual tracking entry
+            </p>
             <div className="grid grid-cols-3 gap-2">
               <input
                 type="text"
@@ -1447,26 +1477,34 @@ export default function AdminOrderDetailsPage() {
             {order.printfulCosts.totalCents != null && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Printful Total</span>
-                <span className="tabular-nums">{formatCents(order.printfulCosts.totalCents)}</span>
+                <span className="tabular-nums">
+                  {formatCents(order.printfulCosts.totalCents)}
+                </span>
               </div>
             )}
             {order.printfulCosts.shippingCents != null && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Printful Shipping</span>
-                <span className="tabular-nums">{formatCents(order.printfulCosts.shippingCents)}</span>
+                <span className="tabular-nums">
+                  {formatCents(order.printfulCosts.shippingCents)}
+                </span>
               </div>
             )}
             {order.printfulCosts.taxCents != null && (
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Printful Tax/VAT</span>
-                <span className="tabular-nums">{formatCents(order.printfulCosts.taxCents)}</span>
+                <span className="tabular-nums">
+                  {formatCents(order.printfulCosts.taxCents)}
+                </span>
               </div>
             )}
             {order.printfulCosts.totalCents != null && (
               <div className="flex justify-between border-t border-border pt-2 text-sm font-medium">
                 <span>Your Margin</span>
                 <span className="tabular-nums">
-                  {formatCents(order.totalCents - order.printfulCosts.totalCents)}
+                  {formatCents(
+                    order.totalCents - order.printfulCosts.totalCents,
+                  )}
                 </span>
               </div>
             )}

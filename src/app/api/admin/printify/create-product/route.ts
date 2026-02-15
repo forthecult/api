@@ -121,9 +121,7 @@ export async function POST(request: NextRequest) {
     // Build print_areas: use provided or auto-generate from image_id
     let print_areas = body.print_areas;
     if (!print_areas && image_id) {
-      const allVariantIds = variants.map(
-        (v: { id: number }) => v.id,
-      );
+      const allVariantIds = variants.map((v: { id: number }) => v.id);
       print_areas = [
         {
           variant_ids: allVariantIds,

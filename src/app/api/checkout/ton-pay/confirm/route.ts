@@ -12,10 +12,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import {
-  fulfillEsimOrder,
-  hasEsimItems,
-} from "~/lib/esim-fulfillment";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   getClientIp,
   RATE_LIMITS,

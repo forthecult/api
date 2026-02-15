@@ -20,7 +20,9 @@ import {
  */
 export function AuthWalletModalProvider({
   children,
-}: { children: React.ReactNode }) {
+}: {
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
   const [solanaOnly, setSolanaOnly] = useState(false);
 

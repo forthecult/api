@@ -17,10 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
   const input = body as {
     provider?: string;
@@ -86,7 +83,14 @@ export async function POST(request: NextRequest) {
       },
       printAreas: input.printAreas.map((pa) => ({
         position: pa.position,
-        strategy: pa.strategy as "center" | "center-top" | "fill" | "fit" | "left-chest" | "pocket" | "custom",
+        strategy: pa.strategy as
+          | "center"
+          | "center-top"
+          | "fill"
+          | "fit"
+          | "left-chest"
+          | "pocket"
+          | "custom",
         customPosition: pa.customPosition,
       })),
       variants: input.variants,

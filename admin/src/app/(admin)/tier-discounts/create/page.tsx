@@ -34,8 +34,12 @@ export default function AdminTierDiscountCreatePage() {
 
   const [memberTier, setMemberTier] = useState(3);
   const [label, setLabel] = useState("");
-  const [scope, setScope] = useState<"shipping" | "order" | "category" | "product">("order");
-  const [discountType, setDiscountType] = useState<"percent" | "fixed">("percent");
+  const [scope, setScope] = useState<
+    "shipping" | "order" | "category" | "product"
+  >("order");
+  const [discountType, setDiscountType] = useState<"percent" | "fixed">(
+    "percent",
+  );
   const [discountValue, setDiscountValue] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [productId, setProductId] = useState("");
@@ -45,15 +49,21 @@ export default function AdminTierDiscountCreatePage() {
     setOptionsLoading(true);
     try {
       const [catRes, prodRes] = await Promise.all([
-        fetch(`${API_BASE}/api/admin/categories?limit=500`, { credentials: "include" }),
-        fetch(`${API_BASE}/api/admin/products?limit=500`, { credentials: "include" }),
+        fetch(`${API_BASE}/api/admin/categories?limit=500`, {
+          credentials: "include",
+        }),
+        fetch(`${API_BASE}/api/admin/products?limit=500`, {
+          credentials: "include",
+        }),
       ]);
       if (catRes.ok) {
         const j = (await catRes.json()) as { items: CategoryOption[] };
         setCategoryOptions(j.items ?? []);
       }
       if (prodRes.ok) {
-        const j = (await prodRes.json()) as { items: { id: string; name: string }[] };
+        const j = (await prodRes.json()) as {
+          items: { id: string; name: string }[];
+        };
         setProductOptions(j.items ?? []);
       }
     } catch {
@@ -88,7 +98,9 @@ export default function AdminTierDiscountCreatePage() {
         return;
       }
       if (scope === "product" && !productId.trim() && !appliesToEsim) {
-        setError("Select a product or check “Apply to all eSIMs” when scope is Product.");
+        setError(
+          "Select a product or check “Apply to all eSIMs” when scope is Product.",
+        );
         return;
       }
       setSaving(true);
@@ -100,7 +112,10 @@ export default function AdminTierDiscountCreatePage() {
           discountType,
           discountValue: val,
           categoryId: scope === "category" ? categoryId.trim() || null : null,
-          productId: scope === "product" && !appliesToEsim ? productId.trim() || null : null,
+          productId:
+            scope === "product" && !appliesToEsim
+              ? productId.trim() || null
+              : null,
           appliesToEsim: scope === "product" && appliesToEsim ? 1 : null,
         };
         const res = await fetch(`${API_BASE}/api/admin/tier-discounts`, {
@@ -110,7 +125,9 @@ export default function AdminTierDiscountCreatePage() {
           body: JSON.stringify(body),
         });
         if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? "Failed to create");
         }
         const data = (await res.json()) as { id: string };
@@ -136,8 +153,13 @@ export default function AdminTierDiscountCreatePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <h2 className="text-2xl font-semibold tracking-tight">New tier discount</h2>
-        <Link href="/tier-discounts" className="text-sm text-muted-foreground hover:text-foreground">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          New tier discount
+        </h2>
+        <Link
+          href="/tier-discounts"
+          className="text-sm text-muted-foreground hover:text-foreground"
+        >
           ← Back to tier discounts
         </Link>
       </div>
@@ -153,7 +175,8 @@ export default function AdminTierDiscountCreatePage() {
           <CardHeader>
             <CardTitle>Tier discount</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Discounts stack per tier (e.g. Tier 3 can have 20% off shipping and 15% off eSIMs).
+              Discounts stack per tier (e.g. Tier 3 can have 20% off shipping
+              and 15% off eSIMs).
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -243,7 +266,8 @@ export default function AdminTierDiscountCreatePage() {
                     <span className="text-sm">Apply to all eSIMs</span>
                   </label>
                   <p className="text-xs text-muted-foreground">
-                    When checked, discount applies to any cart item whose product ID starts with &quot;esim_&quot;.
+                    When checked, discount applies to any cart item whose
+                    product ID starts with &quot;esim_&quot;.
                   </p>
                 </div>
                 {!appliesToEsim && (
@@ -278,7 +302,9 @@ export default function AdminTierDiscountCreatePage() {
                 <select
                   id="discountType"
                   value={discountType}
-                  onChange={(e) => setDiscountType(e.target.value as "percent" | "fixed")}
+                  onChange={(e) =>
+                    setDiscountType(e.target.value as "percent" | "fixed")
+                  }
                   className={inputClass}
                 >
                   <option value="percent">Percent</option>
@@ -298,7 +324,9 @@ export default function AdminTierDiscountCreatePage() {
                   value={discountValue}
                   onChange={(e) => setDiscountValue(e.target.value)}
                   className={inputClass}
-                  placeholder={discountType === "percent" ? "e.g. 20" : "e.g. 5.00"}
+                  placeholder={
+                    discountType === "percent" ? "e.g. 20" : "e.g. 5.00"
+                  }
                   required
                 />
               </div>

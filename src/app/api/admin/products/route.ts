@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, ilike, inArray, isNotNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 
@@ -15,10 +25,7 @@ import {
 } from "~/db/schema";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { slugify } from "~/lib/slugify";
 
 /** Escape SQL LIKE/ILIKE special characters */
@@ -98,8 +105,10 @@ export async function GET(request: NextRequest) {
     );
     const offset = (page - 1) * limit;
     const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
-    const categoryIdParam = request.nextUrl.searchParams.get("categoryId")?.trim() ?? "";
-    const vendorParam = request.nextUrl.searchParams.get("vendor")?.trim() ?? "";
+    const categoryIdParam =
+      request.nextUrl.searchParams.get("categoryId")?.trim() ?? "";
+    const vendorParam =
+      request.nextUrl.searchParams.get("vendor")?.trim() ?? "";
     const sortByParam = request.nextUrl.searchParams.get("sortBy")?.trim();
     const sortBy: SortBy =
       sortByParam && SORT_COLUMNS.includes(sortByParam as SortBy)
@@ -127,14 +136,16 @@ export async function GET(request: NextRequest) {
         .from(productCategoriesTable)
         .where(eq(productCategoriesTable.categoryId, categoryIdParam));
       conditions.push(
-        inArray(productsTable.id, categoryProductIds.map((r) => r.productId)),
+        inArray(
+          productsTable.id,
+          categoryProductIds.map((r) => r.productId),
+        ),
       );
     }
     if (vendorParam) {
       conditions.push(eq(productsTable.vendor, vendorParam));
     }
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const orderBy =
       sortBy === "price"
@@ -163,7 +174,11 @@ export async function GET(request: NextRequest) {
       trackQuantity: boolean;
       hasVariants: boolean;
       quantity: number | null;
-      productCategories?: Array<{ isMain?: boolean; categoryId?: string; category?: { name?: string; slug?: string } }>;
+      productCategories?: Array<{
+        isMain?: boolean;
+        categoryId?: string;
+        category?: { name?: string; slug?: string };
+      }>;
       productVariants?: Array<{ stockQuantity?: number | null }>;
     };
     let products: ProductWithRelations[] = [];
@@ -186,7 +201,11 @@ export async function GET(request: NextRequest) {
             eq(categoriesTable.id, productCategoriesTable.categoryId),
           );
         if (whereClause !== undefined) {
-          orderedIdsQuery = (orderedIdsQuery as unknown as { where: (c: typeof whereClause) => typeof orderedIdsQuery }).where(whereClause);
+          orderedIdsQuery = (
+            orderedIdsQuery as unknown as {
+              where: (c: typeof whereClause) => typeof orderedIdsQuery;
+            }
+          ).where(whereClause);
         }
         const orderedIds = await orderedIdsQuery
           .orderBy(sortOrder(categoriesTable.name), asc(productsTable.id))
@@ -199,7 +218,9 @@ export async function GET(request: NextRequest) {
               .select({ count: sql<number>`count(*)::int` })
               .from(productsTable)
               .where(whereClause)
-          : db.select({ count: sql<number>`count(*)::int` }).from(productsTable));
+          : db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(productsTable));
 
         if (orderedIds.length === 0) {
           products = [];
@@ -248,16 +269,15 @@ export async function GET(request: NextRequest) {
 
     const runFallbackQuery = async (): Promise<void> => {
       // Products-only query when product_category or product_variant have schema issues
-      const fallbackWhere =
-        vendorParam
-          ? eq(productsTable.vendor, vendorParam)
-          : search.length > 0
-            ? or(
-                ilike(productsTable.name, term),
-                ilike(productsTable.id, term),
-                ilike(productsTable.brand, term),
-              )
-            : undefined;
+      const fallbackWhere = vendorParam
+        ? eq(productsTable.vendor, vendorParam)
+        : search.length > 0
+          ? or(
+              ilike(productsTable.name, term),
+              ilike(productsTable.id, term),
+              ilike(productsTable.brand, term),
+            )
+          : undefined;
       const fallbackOrder =
         sortBy === "name"
           ? [sortOrder(productsTable.name)]
@@ -282,7 +302,9 @@ export async function GET(request: NextRequest) {
         .orderBy(...fallbackOrder)
         .limit(limit)
         .offset(offset);
-      const selectWithWhere = fallbackWhere ? selectQuery.where(fallbackWhere) : selectQuery;
+      const selectWithWhere = fallbackWhere
+        ? selectQuery.where(fallbackWhere)
+        : selectQuery;
       const countQuery = fallbackWhere
         ? db
             .select({ count: sql<number>`count(*)::int` })
@@ -301,7 +323,8 @@ export async function GET(request: NextRequest) {
     try {
       await runFullQuery();
     } catch (queryErr) {
-      const msg = queryErr instanceof Error ? queryErr.message : String(queryErr);
+      const msg =
+        queryErr instanceof Error ? queryErr.message : String(queryErr);
       const mayBeSchemaError =
         msg.includes("does not exist") ||
         msg.includes("relation") ||
@@ -327,7 +350,8 @@ export async function GET(request: NextRequest) {
         inventory = "Not tracked";
       } else if (p.hasVariants && variants.length > 0) {
         const total = variants.reduce(
-          (sum: number, v: { stockQuantity?: number | null }) => sum + (v.stockQuantity ?? 0),
+          (sum: number, v: { stockQuantity?: number | null }) =>
+            sum + (v.stockQuantity ?? 0),
           0,
         );
         inventory = `${total} in stock for ${variants.length} variant${variants.length === 1 ? "" : "s"}`;
@@ -521,7 +545,9 @@ export async function POST(request: NextRequest) {
     if (Array.isArray(body.tokenGates) && body.tokenGates.length > 0) {
       const gateValues = body.tokenGates
         .map((gate) => {
-          const symbol = String(gate.tokenSymbol ?? "").trim().toUpperCase();
+          const symbol = String(gate.tokenSymbol ?? "")
+            .trim()
+            .toUpperCase();
           const qty = Number(gate.quantity);
           if (!symbol || !Number.isInteger(qty) || qty < 1) return null;
           return {
@@ -548,7 +574,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    if (Array.isArray(body.availableCountryCodes) && body.availableCountryCodes.length > 0) {
+    if (
+      Array.isArray(body.availableCountryCodes) &&
+      body.availableCountryCodes.length > 0
+    ) {
       const codes = [
         ...new Set(
           body.availableCountryCodes

@@ -83,9 +83,9 @@ const RETURNS_COPY = (
   <>
     <p className="mb-3">
       If your order hasn&apos;t shipped yet, you can get an instant refund.
-      Refunds are in stablecoin or the fiat currency you paid in. We stand by our
-      products 100% and want our customers to love them as much as we do. In the
-      event that you are unsatisfied with your purchase, please contact us
+      Refunds are in stablecoin or the fiat currency you paid in. We stand by
+      our products 100% and want our customers to love them as much as we do. In
+      the event that you are unsatisfied with your purchase, please contact us
       within 14 days of receiving your order for an exchange or refund.
     </p>
     <p className="mb-3">We are happy when you are happy.</p>
@@ -134,23 +134,30 @@ function renderSizeChartDescription(description: string | null | undefined) {
       />
     );
   }
-  return (
-    <p className="mb-3 text-sm text-muted-foreground">{trimmed}</p>
-  );
+  return <p className="mb-3 text-sm text-muted-foreground">{trimmed}</p>;
 }
 
-function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: string) {
+function renderSizeChartData(
+  data: SizeChartData | null | undefined,
+  unitLabel: string,
+) {
   if (!data?.sizeTables?.length) return null;
   return (
     <div className="mb-6">
-      <h4 className="mb-2 text-sm font-semibold text-foreground">{unitLabel}</h4>
+      <h4 className="mb-2 text-sm font-semibold text-foreground">
+        {unitLabel}
+      </h4>
       {data.sizeTables.map((table, idx) => {
         const measurements = table.measurements ?? [];
         const canCombine =
           measurements.length > 1 &&
-          measurements.every((m) => m.values.length === measurements[0]?.values.length) &&
+          measurements.every(
+            (m) => m.values.length === measurements[0]?.values.length,
+          ) &&
           measurements.every((m, i) =>
-            m.values.every((v, j) => v.size === measurements[0]?.values[j]?.size),
+            m.values.every(
+              (v, j) => v.size === measurements[0]?.values[j]?.size,
+            ),
           );
 
         if (canCombine && measurements.length > 0) {
@@ -158,7 +165,8 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
           const columns = ["Size", ...measurements.map((m) => m.type_label)];
           return (
             <div key={idx} className="mb-6">
-              {table.description != null && renderSizeChartDescription(table.description)}
+              {table.description != null &&
+                renderSizeChartDescription(table.description)}
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full min-w-[320px] border-collapse text-sm">
                   <thead>
@@ -182,7 +190,9 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
                           rowIdx % 2 === 1 && "bg-muted/30",
                         )}
                       >
-                        <td className="px-3 py-2 font-medium text-foreground">{size}</td>
+                        <td className="px-3 py-2 font-medium text-foreground">
+                          {size}
+                        </td>
                         {measurements.map((m, midx) => {
                           const v = m.values[rowIdx];
                           const cell =
@@ -211,14 +221,22 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
 
         return (
           <div key={idx} className="mb-4">
-            {table.description != null && renderSizeChartDescription(table.description)}
+            {table.description != null &&
+              renderSizeChartDescription(table.description)}
             {measurements.map((m, midx) => (
-              <div key={midx} className="mb-3 overflow-x-auto rounded-md border border-border">
+              <div
+                key={midx}
+                className="mb-3 overflow-x-auto rounded-md border border-border"
+              >
                 <table className="w-full min-w-[200px] border-collapse text-sm">
                   <thead>
                     <tr className="bg-muted/60">
-                      <th className="px-3 py-2 text-left font-semibold text-foreground">Size</th>
-                      <th className="px-3 py-2 text-left font-semibold text-foreground">{m.type_label}</th>
+                      <th className="px-3 py-2 text-left font-semibold text-foreground">
+                        Size
+                      </th>
+                      <th className="px-3 py-2 text-left font-semibold text-foreground">
+                        {m.type_label}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -232,7 +250,9 @@ function renderSizeChartData(data: SizeChartData | null | undefined, unitLabel: 
                       >
                         <td className="px-3 py-2 font-medium">{v.size}</td>
                         <td className="px-3 py-2 text-muted-foreground">
-                          {"value" in v ? v.value : `${v.min_value} – ${v.max_value}`}
+                          {"value" in v
+                            ? v.value
+                            : `${v.min_value} – ${v.max_value}`}
                         </td>
                       </tr>
                     ))}
@@ -303,7 +323,9 @@ export function ProductDetailAccordion({
           return (
             <div
               className="pb-4 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{ __html: sanitizeProductDescription(description) }}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeProductDescription(description),
+              }}
             />
           );
         }
@@ -352,9 +374,7 @@ export function ProductDetailAccordion({
             )}
             {hasStablecoins && (
               <div>
-                <p className="mb-1 font-medium text-foreground">
-                  Stablecoins
-                </p>
+                <p className="mb-1 font-medium text-foreground">Stablecoins</p>
                 <p>{paymentOptions.stablecoins.join(". ")}</p>
               </div>
             )}
@@ -399,10 +419,7 @@ export function ProductDetailAccordion({
       {items.map((item) => {
         const isOpen = isPanelOpen(item.id);
         return (
-          <div
-            key={item.id}
-            className="border-b border-border last:border-b-0"
-          >
+          <div key={item.id} className="border-b border-border last:border-b-0">
             <button
               type="button"
               onClick={() => toggleOpen(item.id)}

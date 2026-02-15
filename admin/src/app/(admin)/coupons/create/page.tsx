@@ -149,10 +149,7 @@ export default function AdminDiscountCreatePage() {
             ? Number.parseInt(discountValue, 10)
             : Math.round(Number.parseFloat(discountValue || "0") * 100)
           : 0;
-      if (
-        discountKind !== "buy_x_get_y" &&
-        (Number.isNaN(val) || val < 0)
-      ) {
+      if (discountKind !== "buy_x_get_y" && (Number.isNaN(val) || val < 0)) {
         setError("Discount value must be a non-negative number.");
         return;
       }
@@ -424,9 +421,9 @@ export default function AdminDiscountCreatePage() {
                 </select>
                 {discountKind === "amount_off_products" && (
                   <p className="text-xs text-muted-foreground">
-                    Discount is calculated on qualifying products only.
-                    Select products or categories below to restrict which
-                    items receive the discount.
+                    Discount is calculated on qualifying products only. Select
+                    products or categories below to restrict which items receive
+                    the discount.
                   </p>
                 )}
               </div>
@@ -508,13 +505,16 @@ export default function AdminDiscountCreatePage() {
                     onChange={(e) => setDiscountValue(e.target.value)}
                     className={inputClass}
                     placeholder={
-                      discountType === "percent" ? "e.g. 100 for free shipping" : "e.g. 10.00"
+                      discountType === "percent"
+                        ? "e.g. 100 for free shipping"
+                        : "e.g. 10.00"
                     }
                     required
                   />
                   {discountKind === "free_shipping" && (
                     <p className="text-xs text-muted-foreground">
-                      Set to 100% for free shipping, or a lower value for a partial shipping discount.
+                      Set to 100% for free shipping, or a lower value for a
+                      partial shipping discount.
                     </p>
                   )}
                 </div>
@@ -595,7 +595,6 @@ export default function AdminDiscountCreatePage() {
                 </div>
               </div>
             )}
-
           </CardContent>
         </Card>
 
@@ -614,14 +613,14 @@ export default function AdminDiscountCreatePage() {
                 <ul className="list-inside list-disc space-y-1">
                   <li>
                     <strong>Specific product:</strong> Select one or more
-                    products in the <strong>Products</strong> section below.
-                    The discount applies only when at least one is in the cart.
+                    products in the <strong>Products</strong> section below. The
+                    discount applies only when at least one is in the cart.
                   </li>
                   <li>
-                    <strong>Product from a category:</strong> Select one or
-                    more categories in the <strong>Categories</strong> section
-                    below. The discount applies only when the cart has at least
-                    one product from one of those categories.
+                    <strong>Product from a category:</strong> Select one or more
+                    categories in the <strong>Categories</strong> section below.
+                    The discount applies only when the cart has at least one
+                    product from one of those categories.
                   </li>
                 </ul>
               </div>

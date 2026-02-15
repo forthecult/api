@@ -28,7 +28,7 @@ type Brand = {
   featured: boolean;
   createdAt: string;
   updatedAt: string;
-  assets: Array< { id: string; url: string; type: string; sortOrder: number }>;
+  assets: Array<{ id: string; url: string; type: string; sortOrder: number }>;
 };
 
 export default function AdminBrandEditPage() {
@@ -101,11 +101,14 @@ export default function AdminBrandEditPage() {
     setAssets((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const updateAsset = useCallback((index: number, field: "url" | "type", value: string) => {
-    setAssets((prev) =>
-      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
-    );
-  }, []);
+  const updateAsset = useCallback(
+    (index: number, field: "url" | "type", value: string) => {
+      setAssets((prev) =>
+        prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
+      );
+    },
+    [],
+  );
 
   const uploadAssetInputRef = useRef<HTMLInputElement>(null);
   const uploadAssetTargetRef = useRef<number | null>(null);
@@ -127,7 +130,9 @@ export default function AdminBrandEditPage() {
           body: form,
         });
         if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? "Upload failed");
         }
         const data = (await res.json()) as { url: string };
@@ -185,9 +190,7 @@ export default function AdminBrandEditPage() {
         }
         void fetchBrand();
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to save brand",
-        );
+        setError(err instanceof Error ? err.message : "Failed to save brand");
       } finally {
         setSaving(false);
       }
@@ -207,7 +210,8 @@ export default function AdminBrandEditPage() {
 
   const handleDelete = useCallback(async () => {
     if (!id || !brand) return;
-    if (!window.confirm(`Delete brand "${brand.name}"? This cannot be undone.`)) return;
+    if (!window.confirm(`Delete brand "${brand.name}"? This cannot be undone.`))
+      return;
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/brands/${id}`, {
@@ -253,9 +257,7 @@ export default function AdminBrandEditPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Edit Brand
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight">Edit Brand</h2>
           <Link
             href="/brands"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -371,7 +373,9 @@ export default function AdminBrandEditPage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className={labelClass}>Brand assets (logos, banners)</label>
+                <label className={labelClass}>
+                  Brand assets (logos, banners)
+                </label>
                 <Button
                   type="button"
                   variant="outline"

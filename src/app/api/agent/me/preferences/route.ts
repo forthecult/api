@@ -19,14 +19,20 @@ import {
  */
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`agent:me/preferences:${ip}`, RATE_LIMITS.api);
+  const rl = await checkRateLimit(
+    `agent:me/preferences:${ip}`,
+    RATE_LIMITS.api,
+  );
   if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
 
   const result = await getMoltbookAgentFromRequest(request);
   if ("error" in result) return result.error;
 
   const rows = await db
-    .select({ key: agentPreferencesTable.key, value: agentPreferencesTable.value })
+    .select({
+      key: agentPreferencesTable.key,
+      value: agentPreferencesTable.value,
+    })
     .from(agentPreferencesTable)
     .where(eq(agentPreferencesTable.moltbookAgentId, result.agent.id));
 
@@ -53,7 +59,10 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`agent:me/preferences:${ip}`, RATE_LIMITS.api);
+  const rl = await checkRateLimit(
+    `agent:me/preferences:${ip}`,
+    RATE_LIMITS.api,
+  );
   if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
 
   const result = await getMoltbookAgentFromRequest(request);
@@ -82,7 +91,8 @@ export async function PATCH(request: NextRequest) {
 
   for (const [key, val] of Object.entries(raw)) {
     if (typeof key !== "string" || key.trim() === "") continue;
-    const value = typeof val === "string" ? val : val == null ? "" : String(val);
+    const value =
+      typeof val === "string" ? val : val == null ? "" : String(val);
     await db
       .insert(agentPreferencesTable)
       .values({
@@ -101,7 +111,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   const rows = await db
-    .select({ key: agentPreferencesTable.key, value: agentPreferencesTable.value })
+    .select({
+      key: agentPreferencesTable.key,
+      value: agentPreferencesTable.value,
+    })
     .from(agentPreferencesTable)
     .where(eq(agentPreferencesTable.moltbookAgentId, agentId));
 

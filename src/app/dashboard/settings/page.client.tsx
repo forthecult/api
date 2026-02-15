@@ -8,7 +8,13 @@ import * as React from "react";
 
 import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import { useCurrentUser } from "~/lib/auth-client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/ui/primitives/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/primitives/card";
 import { Checkbox } from "~/ui/primitives/checkbox";
 import {
   Table,
@@ -21,12 +27,34 @@ import {
 
 // Notification channels: Website, Email, SMS, Telegram, Discord, AI Companion
 const NOTIFICATION_CHANNELS = [
-  { id: "website", label: "Website", icon: Globe, description: "In-app notifications" },
+  {
+    id: "website",
+    label: "Website",
+    icon: Globe,
+    description: "In-app notifications",
+  },
   { id: "email", label: "Email", icon: Mail, description: "Receive via email" },
   { id: "sms", label: "SMS", icon: Phone, description: "Text messages" },
-  { id: "telegram", label: "Telegram", icon: MessageCircle, description: "Telegram messages", requiresTelegram: true },
-  { id: "discord", label: "Discord", icon: DiscordIcon, description: "Discord messages", requiresDiscord: true },
-  { id: "aiCompanion", label: "AI Companion", icon: Bot, description: "AI assistant notifications" },
+  {
+    id: "telegram",
+    label: "Telegram",
+    icon: MessageCircle,
+    description: "Telegram messages",
+    requiresTelegram: true,
+  },
+  {
+    id: "discord",
+    label: "Discord",
+    icon: DiscordIcon,
+    description: "Discord messages",
+    requiresDiscord: true,
+  },
+  {
+    id: "aiCompanion",
+    label: "AI Companion",
+    icon: Bot,
+    description: "AI assistant notifications",
+  },
 ] as const;
 
 type ChannelId = (typeof NOTIFICATION_CHANNELS)[number]["id"];
@@ -47,10 +75,12 @@ type NotificationPrefs = {
 
 export function SettingsPageClient() {
   const { user } = useCurrentUser();
-  const [notificationPrefs, setNotificationPrefs] = React.useState<NotificationPrefs | null>(null);
+  const [notificationPrefs, setNotificationPrefs] =
+    React.useState<NotificationPrefs | null>(null);
   const [notificationLoading, setNotificationLoading] = React.useState(true);
   const [notificationSaving, setNotificationSaving] = React.useState(false);
-  const [notificationLoadError, setNotificationLoadError] = React.useState(false);
+  const [notificationLoadError, setNotificationLoadError] =
+    React.useState(false);
 
   React.useEffect(() => {
     if (!user) return;
@@ -58,7 +88,9 @@ export function SettingsPageClient() {
     setNotificationLoadError(false);
     fetch("/api/user/notifications", { signal: ac.signal })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: NotificationPrefs | null) => data && setNotificationPrefs(data))
+      .then(
+        (data: NotificationPrefs | null) => data && setNotificationPrefs(data),
+      )
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setNotificationLoadError(true);
@@ -68,9 +100,13 @@ export function SettingsPageClient() {
   }, [user]);
 
   const updateNotificationPref = React.useCallback(
-    (type: "transactional" | "marketing", channel: ChannelId, value: boolean) => {
+    (
+      type: "transactional" | "marketing",
+      channel: ChannelId,
+      value: boolean,
+    ) => {
       if (!notificationPrefs) return;
-      
+
       // Optimistically update local state
       setNotificationPrefs((prev) => {
         if (!prev) return null;
@@ -82,7 +118,7 @@ export function SettingsPageClient() {
           },
         };
       });
-      
+
       setNotificationSaving(true);
       fetch("/api/user/notifications", {
         method: "PATCH",
@@ -114,10 +150,18 @@ export function SettingsPageClient() {
 
   const isChannelDisabled = React.useCallback(
     (channel: (typeof NOTIFICATION_CHANNELS)[number]) => {
-      if ("requiresTelegram" in channel && channel.requiresTelegram && !notificationPrefs?.hasTelegramLinked) {
+      if (
+        "requiresTelegram" in channel &&
+        channel.requiresTelegram &&
+        !notificationPrefs?.hasTelegramLinked
+      ) {
         return true;
       }
-      if ("requiresDiscord" in channel && channel.requiresDiscord && !notificationPrefs?.hasDiscordLinked) {
+      if (
+        "requiresDiscord" in channel &&
+        channel.requiresDiscord &&
+        !notificationPrefs?.hasDiscordLinked
+      ) {
         return true;
       }
       return false;
@@ -138,17 +182,23 @@ export function SettingsPageClient() {
         <CardHeader>
           <CardTitle>Notification Preferences</CardTitle>
           <CardDescription>
-            Choose how and where you want to receive notifications. Customize your preferences for each channel.
+            Choose how and where you want to receive notifications. Customize
+            your preferences for each channel.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {notificationLoading ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-muted-foreground">Loading preferences...</p>
+              <p className="text-sm text-muted-foreground">
+                Loading preferences...
+              </p>
             </div>
           ) : notificationLoadError ? (
             <div className="flex items-center justify-center py-8">
-              <p className="text-sm text-destructive">Failed to load notification preferences. Please refresh the page.</p>
+              <p className="text-sm text-destructive">
+                Failed to load notification preferences. Please refresh the
+                page.
+              </p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -211,7 +261,11 @@ export function SettingsPageClient() {
                           <TableCell className="text-center">
                             <div className="flex justify-center">
                               <Checkbox
-                                checked={notificationPrefs?.transactional[channel.id] ?? false}
+                                checked={
+                                  notificationPrefs?.transactional[
+                                    channel.id
+                                  ] ?? false
+                                }
                                 onCheckedChange={(checked) =>
                                   updateNotificationPref(
                                     "transactional",
@@ -227,7 +281,10 @@ export function SettingsPageClient() {
                           <TableCell className="text-center">
                             <div className="flex justify-center">
                               <Checkbox
-                                checked={notificationPrefs?.marketing[channel.id] ?? false}
+                                checked={
+                                  notificationPrefs?.marketing[channel.id] ??
+                                  false
+                                }
                                 onCheckedChange={(checked) =>
                                   updateNotificationPref(
                                     "marketing",
@@ -292,17 +349,21 @@ export function SettingsPageClient() {
               {/* Info about notification types */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-lg border bg-card p-4">
-                  <h4 className="mb-2 font-medium">Transactional Notifications</h4>
+                  <h4 className="mb-2 font-medium">
+                    Transactional Notifications
+                  </h4>
                   <p className="text-sm text-muted-foreground">
-                    Important updates about your orders, shipping status, account security, and
-                    other essential information. We recommend keeping at least one channel enabled.
+                    Important updates about your orders, shipping status,
+                    account security, and other essential information. We
+                    recommend keeping at least one channel enabled.
                   </p>
                 </div>
                 <div className="rounded-lg border bg-card p-4">
                   <h4 className="mb-2 font-medium">Marketing Notifications</h4>
                   <p className="text-sm text-muted-foreground">
-                    Stay updated with exclusive offers, new product launches, promotions, and news.
-                    You can opt out of marketing notifications at any time.
+                    Stay updated with exclusive offers, new product launches,
+                    promotions, and news. You can opt out of marketing
+                    notifications at any time.
                   </p>
                 </div>
               </div>

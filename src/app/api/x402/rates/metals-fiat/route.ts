@@ -38,7 +38,8 @@ async function getHandler(request: NextRequest) {
     fiat,
     rate,
     source: "coingecko",
-    _note: "XAU = USD per troy oz (PAX Gold); XAG = USD per troy oz (Kinesis Silver)",
+    _note:
+      "XAU = USD per troy oz (PAX Gold); XAG = USD per troy oz (Kinesis Silver)",
   });
 }
 

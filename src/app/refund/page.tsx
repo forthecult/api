@@ -47,8 +47,11 @@ export default function RefundPage() {
                 Crypto refunds
               </strong>{" "}
               take a bit longer because we manually review and transfer funds.
-              We’re working on automating this too. Onchain refunds are only made
-              in <strong className="font-medium text-foreground">stablecoin</strong>{" "}
+              We’re working on automating this too. Onchain refunds are only
+              made in{" "}
+              <strong className="font-medium text-foreground">
+                stablecoin
+              </strong>{" "}
               (e.g. USDC) to the wallet address you provide—we do not refund in
               the original coin, unless it was a stablecoin.
             </li>

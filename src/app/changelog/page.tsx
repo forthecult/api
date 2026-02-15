@@ -309,7 +309,10 @@ export default function ChangelogPage() {
         <div className="absolute left-[19px] top-2 bottom-2 w-px bg-border" />
 
         {changelog.map((release, idx) => (
-          <article key={release.version} className="relative pl-12 pb-10 last:pb-0">
+          <article
+            key={release.version}
+            className="relative pl-12 pb-10 last:pb-0"
+          >
             {/* Timeline dot */}
             <div
               className={`absolute left-[14px] top-1.5 h-[12px] w-[12px] rounded-full border-2 ${
@@ -360,9 +363,12 @@ export default function ChangelogPage() {
       {/* Footer note */}
       <div className="mt-12 rounded-lg border border-primary/30 bg-primary/5 px-5 py-5 text-center">
         <p className="text-sm font-medium text-foreground">
-          We ship fast and we ship often. This store was built from scratch
-          in 10 days for the{" "}
-          <Link href="/token" className="font-semibold text-primary hover:underline">
+          We ship fast and we ship often. This store was built from scratch in
+          10 days for the{" "}
+          <Link
+            href="/token"
+            className="font-semibold text-primary hover:underline"
+          >
             CULT
           </Link>{" "}
           community.

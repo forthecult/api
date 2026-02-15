@@ -3,10 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const MAIN_APP_BASE =
   process.env.NEXT_SERVER_APP_URL ||
@@ -69,7 +66,9 @@ export async function POST(
       );
     }
 
-    console.info(`[admin-audit] Password reset triggered for user ${id} via admin API`);
+    console.info(
+      `[admin-audit] Password reset triggered for user ${id} via admin API`,
+    );
 
     return NextResponse.json({ success: true });
   } catch (err) {

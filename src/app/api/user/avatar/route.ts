@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
   let formData: FormData;
   try {
-    formData = await request.formData() as unknown as FormData;
+    formData = (await request.formData()) as unknown as FormData;
   } catch {
     return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
   }
@@ -50,12 +50,23 @@ export async function POST(request: NextRequest) {
   // Verify actual content matches claimed type via magic bytes
   const fileBytes = await file.arrayBuffer();
   const magicBytes = Buffer.from(fileBytes).subarray(0, 12);
-  const isJpeg = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
-  const isPng = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
+  const isJpeg = magicBytes[0] === 0xff && magicBytes[1] === 0xd8;
+  const isPng =
+    magicBytes[0] === 0x89 &&
+    magicBytes[1] === 0x50 &&
+    magicBytes[2] === 0x4e &&
+    magicBytes[3] === 0x47;
   const isWebp =
-    magicBytes[0] === 0x52 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46 && magicBytes[3] === 0x46 &&
-    magicBytes[8] === 0x57 && magicBytes[9] === 0x45 && magicBytes[10] === 0x42 && magicBytes[11] === 0x50;
-  const isGif = magicBytes[0] === 0x47 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46;
+    magicBytes[0] === 0x52 &&
+    magicBytes[1] === 0x49 &&
+    magicBytes[2] === 0x46 &&
+    magicBytes[3] === 0x46 &&
+    magicBytes[8] === 0x57 &&
+    magicBytes[9] === 0x45 &&
+    magicBytes[10] === 0x42 &&
+    magicBytes[11] === 0x50;
+  const isGif =
+    magicBytes[0] === 0x47 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46;
   if (!isJpeg && !isPng && !isWebp && !isGif) {
     return NextResponse.json(
       { error: "File content does not match an allowed image type" },
@@ -85,7 +96,8 @@ export async function POST(request: NextRequest) {
 
     // Use only ufsUrl (file.url / file.appUrl are deprecated in uploadthing v9)
     const url =
-      "ufsUrl" in data && typeof (data as { ufsUrl?: string }).ufsUrl === "string"
+      "ufsUrl" in data &&
+      typeof (data as { ufsUrl?: string }).ufsUrl === "string"
         ? (data as { ufsUrl: string }).ufsUrl
         : null;
 
@@ -96,9 +108,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url });
   } catch (err) {
     console.error("Avatar upload error:", err);
-    return NextResponse.json(
-      { error: "Upload failed" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
   }
 }

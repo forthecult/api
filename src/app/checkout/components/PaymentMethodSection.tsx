@@ -1,20 +1,11 @@
 "use client";
 
-import {
-  createQR,
-  encodeURL,
-} from "@solana/pay";
+import { createQR, encodeURL } from "@solana/pay";
 import { PublicKey } from "@solana/web3-compat";
 import Image from "next/image";
 import { Loader2, Lock } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type BigNumber from "bignumber.js";
 
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
@@ -85,11 +76,7 @@ import {
 } from "../checkout-payment-constants";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
 
-type PaymentMethodTop =
-  | "credit-card"
-  | "crypto"
-  | "stablecoins"
-  | "paypal";
+type PaymentMethodTop = "credit-card" | "crypto" | "stablecoins" | "paypal";
 type CryptoSub =
   | "bitcoin"
   | "dogecoin"
@@ -152,7 +139,9 @@ export function PaymentMethodSection({
   const router = useRouter();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodTop | "">("");
-  const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">("usdc");
+  const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">(
+    "usdc",
+  );
   const [paymentSubOption, setPaymentSubOption] = useState<
     CryptoSub | UsdcSub | UsdtSub | ""
   >(INITIAL_CRYPTO_SUB);
@@ -196,7 +185,13 @@ export function PaymentMethodSection({
       else if (stablecoinToken === "usdt") key = "stablecoin_usdt";
     }
     onPaymentMethodKeyChange?.(key);
-  }, [paymentMethod, paymentSubOption, cryptoOtherSubOption, stablecoinToken, onPaymentMethodKeyChange]);
+  }, [
+    paymentMethod,
+    paymentSubOption,
+    cryptoOtherSubOption,
+    stablecoinToken,
+    onPaymentMethodKeyChange,
+  ]);
 
   const {
     open: solanaPayOpen,
@@ -225,9 +220,7 @@ export function PaymentMethodSection({
   const { visibility } = usePaymentMethodSettings();
   const hiddenOptions = useMemo(
     () =>
-      visibility
-        ? getHiddenFromVisibility(visibility)
-        : HIDDEN_PAYMENT_OPTIONS,
+      visibility ? getHiddenFromVisibility(visibility) : HIDDEN_PAYMENT_OPTIONS,
     [visibility],
   );
   const solanaPayConfigured = Boolean(getSolanaPayRecipient());
@@ -237,9 +230,18 @@ export function PaymentMethodSection({
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; TROLL?: number; SOLUNA?: number; SKR?: number }) => {
-        if (data && typeof data === "object") setCryptoPrices(data);
-      })
+      .then(
+        (data: {
+          SOL?: number;
+          CRUST?: number;
+          PUMP?: number;
+          TROLL?: number;
+          SOLUNA?: number;
+          SKR?: number;
+        }) => {
+          if (data && typeof data === "object") setCryptoPrices(data);
+        },
+      )
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         // Prices will use fallback values if fetch fails
@@ -251,12 +253,9 @@ export function PaymentMethodSection({
     const base = visibility
       ? visibleCryptoSubFromVisibility(visibility)
       : VISIBLE_CRYPTO_SUB_OPTIONS;
-    return base.filter(
-      (opt) => opt.value !== "solana" || solanaPayConfigured,
-    );
+    return base.filter((opt) => opt.value !== "solana" || solanaPayConfigured);
   }, [visibility, solanaPayConfigured]);
-  const showCryptoRow =
-    visibility === null || hasAnyCryptoEnabled(visibility);
+  const showCryptoRow = visibility === null || hasAnyCryptoEnabled(visibility);
   const showStablecoinsRow =
     visibility === null || hasAnyStablecoinEnabled(visibility);
 
@@ -267,18 +266,27 @@ export function PaymentMethodSection({
       // Fallback before API loads: show icons matching VISIBLE_CRYPTO_SUB_OPTIONS
       if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin)
         icons.push({ alt: "Bitcoin", src: "/crypto/bitcoin/bitcoin-logo.svg" });
-      icons.push({ alt: "Ethereum", src: "/crypto/ethereum/ethereum-logo.svg" });
+      icons.push({
+        alt: "Ethereum",
+        src: "/crypto/ethereum/ethereum-logo.svg",
+      });
       icons.push({ alt: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
       if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin)
         icons.push({ alt: "Dogecoin", src: "/payments/doge.svg" });
       if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero)
-        icons.push({ alt: "Monero", src: "/crypto/monero/monero-xmr-logo.svg" });
+        icons.push({
+          alt: "Monero",
+          src: "/crypto/monero/monero-xmr-logo.svg",
+        });
       return icons;
     }
     if (visibility.cryptoBitcoin)
       icons.push({ alt: "Bitcoin", src: "/crypto/bitcoin/bitcoin-logo.svg" });
     if (visibility.cryptoEthereum)
-      icons.push({ alt: "Ethereum", src: "/crypto/ethereum/ethereum-logo.svg" });
+      icons.push({
+        alt: "Ethereum",
+        src: "/crypto/ethereum/ethereum-logo.svg",
+      });
     if (visibility.cryptoSolana)
       icons.push({ alt: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
     if (visibility.cryptoDogecoin)
@@ -296,23 +304,20 @@ export function PaymentMethodSection({
     if (visibility.cryptoTon)
       icons.push({ alt: "TON", src: "/crypto/ton/ton_logo.svg" });
     if (visibility.cryptoSeeker)
-      icons.push({ alt: "Seeker (SKR)", src: "/crypto/seeker/S_Token_Circle_White.svg" });
+      icons.push({
+        alt: "Seeker (SKR)",
+        src: "/crypto/seeker/S_Token_Circle_White.svg",
+      });
     return icons;
   }, [visibility]);
   const visibleUsdcSubOptions = useMemo(() => {
     const base =
-      visibility !== null
-        ? visibleUsdcNetworks(visibility)
-        : USDC_SUB_OPTIONS;
-    return base.filter(
-      (opt) => opt.value !== "solana" || solanaPayConfigured,
-    );
+      visibility !== null ? visibleUsdcNetworks(visibility) : USDC_SUB_OPTIONS;
+    return base.filter((opt) => opt.value !== "solana" || solanaPayConfigured);
   }, [visibility, solanaPayConfigured]);
   const visibleUsdtSubOptions = useMemo(
     () =>
-      visibility !== null
-        ? visibleUsdtNetworks(visibility)
-        : USDT_SUB_OPTIONS,
+      visibility !== null ? visibleUsdtNetworks(visibility) : USDT_SUB_OPTIONS,
     [visibility],
   );
 
@@ -445,17 +450,20 @@ export function PaymentMethodSection({
     return all.length === 0;
   }, [shippingFormRef, billingFormRef, setValidationErrors]);
 
-  const setPaymentTop = useCallback((method: PaymentMethodTop) => {
-    setPaymentMethod(method);
-    setValidationErrors([]);
-    if (method === "crypto") {
-      setPaymentSubOption("");
-      setCryptoOtherSubOption("");
-    } else if (method === "stablecoins") {
-      setStablecoinToken("usdc");
-      setPaymentSubOption("solana" as UsdcSub);
-    }
-  }, [setValidationErrors]);
+  const setPaymentTop = useCallback(
+    (method: PaymentMethodTop) => {
+      setPaymentMethod(method);
+      setValidationErrors([]);
+      if (method === "crypto") {
+        setPaymentSubOption("");
+        setCryptoOtherSubOption("");
+      } else if (method === "stablecoins") {
+        setStablecoinToken("usdc");
+        setPaymentSubOption("solana" as UsdcSub);
+      }
+    },
+    [setValidationErrors],
+  );
 
   const handlePlaceOrder = useCallback(async () => {
     const shippingErr = shippingFormRef.current?.validate() ?? [];
@@ -503,21 +511,33 @@ export function PaymentMethodSection({
         return;
       }
 
-      const data = (await res.json()) as { url: string; confirmationToken?: string };
+      const data = (await res.json()) as {
+        url: string;
+        confirmationToken?: string;
+      };
       if (data.url) {
         // Store confirmation token before navigating to Stripe
         // (sessionStorage persists across same-tab navigation to external sites and back)
         if (data.confirmationToken) {
-          try { sessionStorage.setItem("checkout_stripe_ct", data.confirmationToken); } catch {}
+          try {
+            sessionStorage.setItem(
+              "checkout_stripe_ct",
+              data.confirmationToken,
+            );
+          } catch {}
         }
         window.location.href = data.url;
       } else {
         setNavigatingToPay(false);
-        setValidationErrors(["Could not redirect to payment. Please try again."]);
+        setValidationErrors([
+          "Could not redirect to payment. Please try again.",
+        ]);
       }
     } catch {
       setNavigatingToPay(false);
-      setValidationErrors(["Payment failed. Please try again or use another payment method."]);
+      setValidationErrors([
+        "Payment failed. Please try again or use another payment method.",
+      ]);
     }
   }, [
     paymentMethod,
@@ -538,8 +558,7 @@ export function PaymentMethodSection({
     if (!validateForPayment()) return;
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
-    const isSui =
-      paymentMethod === "crypto" && cryptoOtherSubOption === "sui";
+    const isSui = paymentMethod === "crypto" && cryptoOtherSubOption === "sui";
     if (isSui) {
       const invoiceId = crypto.randomUUID();
       const amount = total;
@@ -558,8 +577,8 @@ export function PaymentMethodSection({
             : paymentMethod === "crypto" && paymentSubOption === "soluna"
               ? "soluna"
               : paymentMethod === "stablecoins" &&
-                stablecoinToken === "usdc" &&
-                paymentSubOption === "solana"
+                  stablecoinToken === "usdc" &&
+                  paymentSubOption === "solana"
                 ? "usdc"
                 : "solana";
     try {
@@ -593,9 +612,17 @@ export function PaymentMethodSection({
         ]);
         return;
       }
-      const data = (await createRes.json()) as { orderId: string; confirmationToken?: string };
+      const data = (await createRes.json()) as {
+        orderId: string;
+        confirmationToken?: string;
+      };
       if (data.confirmationToken) {
-        try { sessionStorage.setItem(`checkout_ct_${data.orderId}`, data.confirmationToken); } catch {}
+        try {
+          sessionStorage.setItem(
+            `checkout_ct_${data.orderId}`,
+            data.confirmationToken,
+          );
+        } catch {}
       }
       router.push(`/checkout/${data.orderId}`);
     } catch {
@@ -662,9 +689,17 @@ export function PaymentMethodSection({
         ]);
         return;
       }
-      const data = (await createRes.json()) as { orderId: string; confirmationToken?: string };
+      const data = (await createRes.json()) as {
+        orderId: string;
+        confirmationToken?: string;
+      };
       if (data.confirmationToken) {
-        try { sessionStorage.setItem(`checkout_ct_${data.orderId}`, data.confirmationToken); } catch {}
+        try {
+          sessionStorage.setItem(
+            `checkout_ct_${data.orderId}`,
+            data.confirmationToken,
+          );
+        } catch {}
       }
       router.push(`/checkout/${data.orderId}`);
     } catch {
@@ -726,9 +761,14 @@ export function PaymentMethodSection({
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error ?? "Failed to create order");
       }
-      const { orderId, confirmationToken } = await res.json() as { orderId: string; confirmationToken?: string };
+      const { orderId, confirmationToken } = (await res.json()) as {
+        orderId: string;
+        confirmationToken?: string;
+      };
       if (confirmationToken) {
-        try { sessionStorage.setItem(`checkout_ct_${orderId}`, confirmationToken); } catch {}
+        try {
+          sessionStorage.setItem(`checkout_ct_${orderId}`, confirmationToken);
+        } catch {}
       }
       router.push(`/checkout/${orderId}`);
     } catch (err) {
@@ -788,9 +828,17 @@ export function PaymentMethodSection({
         ]);
         return;
       }
-      const data = (await createRes.json()) as { orderId: string; confirmationToken?: string };
+      const data = (await createRes.json()) as {
+        orderId: string;
+        confirmationToken?: string;
+      };
       if (data.confirmationToken) {
-        try { sessionStorage.setItem(`checkout_ct_${data.orderId}`, data.confirmationToken); } catch {}
+        try {
+          sessionStorage.setItem(
+            `checkout_ct_${data.orderId}`,
+            data.confirmationToken,
+          );
+        } catch {}
       }
       router.push(`/checkout/${data.orderId}`);
     } catch {
@@ -842,9 +890,7 @@ export function PaymentMethodSection({
                     onChange={() => setPaymentTop("credit-card")}
                     className="size-4 border-input text-primary focus:ring-primary"
                   />
-                  <span className="text-sm font-medium">
-                    Credit/debit card
-                  </span>
+                  <span className="text-sm font-medium">Credit/debit card</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Image
@@ -868,10 +914,7 @@ export function PaymentMethodSection({
                     src="/payments/amex.svg"
                     width={28}
                   />
-                  <Popover
-                    onOpenChange={setCardLogosOpen}
-                    open={cardLogosOpen}
-                  >
+                  <Popover onOpenChange={setCardLogosOpen} open={cardLogosOpen}>
                     <PopoverTrigger asChild>
                       <button
                         className="rounded px-1.5 py-0.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -989,7 +1032,9 @@ export function PaymentMethodSection({
                           className="size-4 border-input text-primary focus:ring-primary"
                         />
                         <span className="text-sm">{opt.label}</span>
-                        {CRYPTO_LOGO_SRC[opt.value as keyof typeof CRYPTO_LOGO_SRC] && (
+                        {CRYPTO_LOGO_SRC[
+                          opt.value as keyof typeof CRYPTO_LOGO_SRC
+                        ] && (
                           <Image
                             alt={opt.label}
                             className="ml-auto h-7 w-9 shrink-0 object-contain"
@@ -1020,9 +1065,7 @@ export function PaymentMethodSection({
                                 }}
                                 className="size-4 border-input text-primary focus:ring-primary"
                               />
-                              <span className="text-sm">
-                                {chainOpt.label}
-                              </span>
+                              <span className="text-sm">{chainOpt.label}</span>
                               <Image
                                 alt={chainOpt.label}
                                 className="ml-auto h-7 w-9 shrink-0 object-contain"
@@ -1088,7 +1131,13 @@ export function PaymentMethodSection({
                     className="size-4 border-input text-primary focus:ring-primary"
                   />
                   <span className="text-sm font-medium">
-                    Stablecoins ({showUsdcOption && showUsdtOption ? "USDC / USDT" : showUsdcOption ? "USDC" : "USDT"})
+                    Stablecoins (
+                    {showUsdcOption && showUsdtOption
+                      ? "USDC / USDT"
+                      : showUsdcOption
+                        ? "USDC"
+                        : "USDT"}
+                    )
                   </span>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
@@ -1180,7 +1229,11 @@ export function PaymentMethodSection({
                           alt={opt.label}
                           className="ml-auto h-7 w-9 shrink-0 object-contain"
                           height={28}
-                          src={STABLECOIN_CHAIN_LOGO[opt.value as keyof typeof STABLECOIN_CHAIN_LOGO]}
+                          src={
+                            STABLECOIN_CHAIN_LOGO[
+                              opt.value as keyof typeof STABLECOIN_CHAIN_LOGO
+                            ]
+                          }
                           width={36}
                         />
                       </label>
@@ -1205,7 +1258,11 @@ export function PaymentMethodSection({
                           alt={opt.label}
                           className="ml-auto h-7 w-9 shrink-0 object-contain"
                           height={28}
-                          src={STABLECOIN_CHAIN_LOGO[opt.value as keyof typeof STABLECOIN_CHAIN_LOGO]}
+                          src={
+                            STABLECOIN_CHAIN_LOGO[
+                              opt.value as keyof typeof STABLECOIN_CHAIN_LOGO
+                            ]
+                          }
                           width={36}
                         />
                       </label>
@@ -1238,10 +1295,7 @@ export function PaymentMethodSection({
                   />
                 </label>
               ) : (
-                <div
-                  className={paymentOptionRowClass}
-                  aria-disabled="true"
-                >
+                <div className={paymentOptionRowClass} aria-disabled="true">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-muted-foreground">
                       Pay with PayPal
@@ -1262,9 +1316,13 @@ export function PaymentMethodSection({
               {paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled && (
                 <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
                   <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5">
-                    <Lock className="size-4 shrink-0 text-[#C4873A]" aria-hidden />
+                    <Lock
+                      className="size-4 shrink-0 text-[#C4873A]"
+                      aria-hidden
+                    />
                     <p className="text-sm text-muted-foreground">
-                      You&apos;ll be securely redirected to complete your purchase with PayPal.
+                      You&apos;ll be securely redirected to complete your
+                      purchase with PayPal.
                     </p>
                   </div>
                   <BillingAddressForm
@@ -1353,11 +1411,13 @@ export function PaymentMethodSection({
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
                 Creating order…
               </>
-            ) : paymentSubOption === "bitcoin"
-                ? "Pay with Bitcoin"
-                : paymentSubOption === "dogecoin"
-                  ? "Pay with Dogecoin"
-                  : "Pay with Monero"}
+            ) : paymentSubOption === "bitcoin" ? (
+              "Pay with Bitcoin"
+            ) : paymentSubOption === "dogecoin" ? (
+              "Pay with Dogecoin"
+            ) : (
+              "Pay with Monero"
+            )}
           </Button>
         ) : isEvmPaySupported ? (
           <Button
@@ -1372,12 +1432,14 @@ export function PaymentMethodSection({
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
                 Creating order…
               </>
-            ) : paymentMethod === "crypto"
-                ? `Pay with ETH (${cryptoEthChain === "ethereum" ? "Ethereum" : cryptoEthChain === "arbitrum" ? "Arbitrum" : cryptoEthChain === "base" ? "Base" : "Polygon"})`
-                : paymentMethod === "stablecoins" &&
-                    stablecoinToken === "usdc"
-                  ? `Pay with USDC (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : "Polygon"})`
-                  : `Pay with USDT (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : paymentSubOption === "bnb" ? "BNB" : "Polygon"})`}
+            ) : paymentMethod === "crypto" ? (
+              `Pay with ETH (${cryptoEthChain === "ethereum" ? "Ethereum" : cryptoEthChain === "arbitrum" ? "Arbitrum" : cryptoEthChain === "base" ? "Base" : "Polygon"})`
+            ) : paymentMethod === "stablecoins" &&
+              stablecoinToken === "usdc" ? (
+              `Pay with USDC (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : "Polygon"})`
+            ) : (
+              `Pay with USDT (${paymentSubOption === "ethereum" ? "Ethereum" : paymentSubOption === "arbitrum" ? "Arbitrum" : paymentSubOption === "base" ? "Base" : paymentSubOption === "bnb" ? "BNB" : "Polygon"})`
+            )}
           </Button>
         ) : isSolanaPaySupported ? (
           <Button
@@ -1395,9 +1457,11 @@ export function PaymentMethodSection({
                   ? "Pay with Pump"
                   : paymentMethod === "crypto" && paymentSubOption === "troll"
                     ? "Pay with TROLL"
-                    : paymentMethod === "crypto" && paymentSubOption === "soluna"
+                    : paymentMethod === "crypto" &&
+                        paymentSubOption === "soluna"
                       ? "Pay with SOLUNA"
-                      : paymentMethod === "crypto" && paymentSubOption === "seeker"
+                      : paymentMethod === "crypto" &&
+                          paymentSubOption === "seeker"
                         ? "Pay with Seeker (SKR)"
                         : paymentMethod === "stablecoins" &&
                             stablecoinToken === "usdc" &&
@@ -1431,8 +1495,7 @@ export function PaymentMethodSection({
           </p>
         ) : paymentMethod === "crypto" && paymentSubOption === "" ? (
           <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
-            Select a crypto option above (e.g. Ethereum, Solana,
-            Crustafarian).
+            Select a crypto option above (e.g. Ethereum, Solana, Crustafarian).
           </p>
         ) : paymentMethod === "stablecoins" ? (
           <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
@@ -1447,15 +1510,43 @@ export function PaymentMethodSection({
         {/* Reassurance messaging */}
         <div className="flex flex-col gap-2.5 rounded-md border border-[#C4873A]/20 bg-[#C4873A]/5 px-4 py-3.5">
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
-            <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
+            <svg
+              className="size-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
             <span className="font-medium">30-day money-back guarantee</span>
           </div>
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
-            <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="m9 12 2 2 4-4" /></svg>
+            <svg
+              className="size-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
             <span>Secure, encrypted transactions</span>
           </div>
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
-            <svg className="size-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+            <svg
+              className="size-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden
+            >
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
             <span>Customer support available 7 days a week</span>
           </div>
         </div>
@@ -1466,24 +1557,59 @@ export function PaymentMethodSection({
               richContent={
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3 py-2">
-                    <svg className="size-4 shrink-0 text-[#C4873A]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>
-                    <span className="text-sm font-medium text-[#C4873A]">30-day money-back guarantee on all orders</span>
+                    <svg
+                      className="size-4 shrink-0 text-[#C4873A]"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                    </svg>
+                    <span className="text-sm font-medium text-[#C4873A]">
+                      30-day money-back guarantee on all orders
+                    </span>
                   </div>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Return any item within <strong>30 days of delivery</strong> for a full refund</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Items must be unworn/unused, with tags and original packaging</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Contact us first and we&apos;ll provide a <strong>free return label</strong></li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Refunds processed within <strong>10 business days</strong> after inspection</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />EU/UK customers: 14-day right to cancel for any reason</li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Return any item within{" "}
+                      <strong>30 days of delivery</strong> for a full refund
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Items must be unworn/unused, with tags and original
+                      packaging
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Contact us first and we&apos;ll provide a{" "}
+                      <strong>free return label</strong>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Refunds processed within <strong>10 business days</strong>{" "}
+                      after inspection
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      EU/UK customers: 14-day right to cancel for any reason
+                    </li>
                   </ul>
                   {hasEsimInCart ? (
                     <>
                       <div className="border-t border-border pt-3">
-                        <p className="mb-2 text-sm font-medium text-foreground">eSIM plans (in your cart)</p>
+                        <p className="mb-2 text-sm font-medium text-foreground">
+                          eSIM plans (in your cart)
+                        </p>
                         <ul className="space-y-1.5 text-sm text-muted-foreground">
                           {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
                             <li key={i} className="flex items-start gap-2">
-                              <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-amber-500/60" aria-hidden />
+                              <span
+                                className="mt-1 block size-1.5 shrink-0 rounded-full bg-amber-500/60"
+                                aria-hidden
+                              />
                               {item}
                             </li>
                           ))}
@@ -1491,7 +1617,10 @@ export function PaymentMethodSection({
                       </div>
                     </>
                   ) : null}
-                  <p className="text-sm text-muted-foreground">We want you to love your purchase. If something isn&apos;t right, we&apos;ll make it right.</p>
+                  <p className="text-sm text-muted-foreground">
+                    We want you to love your purchase. If something isn&apos;t
+                    right, we&apos;ll make it right.
+                  </p>
                 </div>
               }
               fullPolicyHref="/policies/refund"
@@ -1504,16 +1633,48 @@ export function PaymentMethodSection({
               richContent={
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
-                    <svg className="size-4 shrink-0 text-blue-600 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11" /><path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2" /><circle cx="7" cy="18" r="2" /><path d="M15 18H9" /><circle cx="17" cy="18" r="2" /></svg>
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-400">Most orders ship within 1 business day</span>
+                    <svg
+                      className="size-4 shrink-0 text-blue-600 dark:text-blue-400"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11" />
+                      <path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2" />
+                      <circle cx="7" cy="18" r="2" />
+                      <path d="M15 18H9" />
+                      <circle cx="17" cy="18" r="2" />
+                    </svg>
+                    <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                      Most orders ship within 1 business day
+                    </span>
                   </div>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>Domestic (US):</strong> 2–4 business days delivery</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>International:</strong> 5–14 business days delivery</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Tracking number sent via email once shipped</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Peak seasons may add up to 1 week</li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <strong>Domestic (US):</strong> 2–4 business days delivery
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <strong>International:</strong> 5–14 business days
+                      delivery
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Tracking number sent via email once shipped
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Peak seasons may add up to 1 week
+                    </li>
                   </ul>
-                  <p className="text-sm text-muted-foreground">We partner with multiple fulfillment centers to get your order to you as quickly as possible. P.O. Boxes are not supported.</p>
+                  <p className="text-sm text-muted-foreground">
+                    We partner with multiple fulfillment centers to get your
+                    order to you as quickly as possible. P.O. Boxes are not
+                    supported.
+                  </p>
                 </div>
               }
               fullPolicyHref="/policies/shipping"
@@ -1526,16 +1687,45 @@ export function PaymentMethodSection({
               richContent={
                 <div className="space-y-3">
                   <div className="flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2 dark:bg-purple-950/30">
-                    <svg className="size-4 shrink-0 text-purple-600 dark:text-purple-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                    <span className="text-sm font-medium text-purple-700 dark:text-purple-400">We never sell your data</span>
+                    <svg
+                      className="size-4 shrink-0 text-purple-600 dark:text-purple-400"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden
+                    >
+                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    </svg>
+                    <span className="text-sm font-medium text-purple-700 dark:text-purple-400">
+                      We never sell your data
+                    </span>
                   </div>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />We collect only what&apos;s needed to fulfill your order</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>No targeted advertising</strong> — your data stays between us</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Only essential cookies (sign-in, cart, security)</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />You can access, correct, delete, or export your data anytime</li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      We collect only what&apos;s needed to fulfill your order
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <strong>No targeted advertising</strong> — your data stays
+                      between us
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Only essential cookies (sign-in, cart, security)
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      You can access, correct, delete, or export your data
+                      anytime
+                    </li>
                   </ul>
-                  <p className="text-sm text-muted-foreground">Your privacy is a right, not a privilege. We protect it accordingly.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Your privacy is a right, not a privilege. We protect it
+                    accordingly.
+                  </p>
                 </div>
               }
               fullPolicyHref="/policies/privacy"
@@ -1547,12 +1737,28 @@ export function PaymentMethodSection({
               title="Terms of service"
               richContent={
                 <div className="space-y-3">
-                  <p className="text-sm">By completing your purchase you agree to these terms and our Privacy, Refund, and Shipping policies.</p>
+                  <p className="text-sm">
+                    By completing your purchase you agree to these terms and our
+                    Privacy, Refund, and Shipping policies.
+                  </p>
                   <ul className="space-y-2 text-sm">
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />You must be the age of majority in your jurisdiction</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />We may correct pricing errors or limit order quantities</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Questions? Contact us first — we&apos;re happy to help resolve any issue</li>
-                    <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Governing law: United States</li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      You must be the age of majority in your jurisdiction
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      We may correct pricing errors or limit order quantities
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Questions? Contact us first — we&apos;re happy to help
+                      resolve any issue
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      Governing law: United States
+                    </li>
                   </ul>
                 </div>
               }

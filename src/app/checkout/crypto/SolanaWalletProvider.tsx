@@ -32,7 +32,10 @@ const EXPECTED_GENESIS_HASH = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
 function NetworkValidator({
   children,
   rpcEndpoint,
-}: { children: React.ReactNode; rpcEndpoint: string }) {
+}: {
+  children: React.ReactNode;
+  rpcEndpoint: string;
+}) {
   const { connection } = useConnection();
   const { connected } = useWallet();
   const [isValidNetwork, setIsValidNetwork] = useState(true);
@@ -60,7 +63,9 @@ function NetworkValidator({
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [connection, connected, rpcEndpoint]);
 
   if (!isValidNetwork) {
@@ -87,7 +92,9 @@ function NetworkValidator({
  */
 export function SolanaWalletProvider({
   children,
-}: { children: React.ReactNode }) {
+}: {
+  children: React.ReactNode;
+}) {
   const isMobile = useIsMobile();
   // Get RPC endpoint from config (ANKR default; override via NEXT_PUBLIC_SOLANA_RPC_URL)
   const rpcEndpoint = useMemo(() => getSolanaRpcUrl(), []);
@@ -107,7 +114,8 @@ export function SolanaWalletProvider({
               uri: window.location.origin,
               icon: `${window.location.origin}/favicon.ico`,
             },
-            authorizationResultCache: mobile.createDefaultAuthorizationResultCache(),
+            authorizationResultCache:
+              mobile.createDefaultAuthorizationResultCache(),
             addressSelector: mobile.createDefaultAddressSelector(),
             chain: "solana:mainnet",
             onWalletNotFound: mobile.createDefaultWalletNotFoundHandler(),
@@ -121,7 +129,8 @@ export function SolanaWalletProvider({
       }
     }
     // WalletConnect for Solana: Trust, Rainbow, etc. can connect via WalletConnect
-    const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
+    const wcProjectId =
+      process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
     if (wcProjectId) {
       try {
         list.push(

@@ -25,7 +25,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -52,8 +53,7 @@ export async function GET(request: NextRequest) {
         )!,
       );
     }
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const affiliates = await db
       .select({

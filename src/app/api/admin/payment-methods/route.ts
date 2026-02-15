@@ -39,7 +39,9 @@ export async function GET(request: NextRequest) {
         methodKey: r.methodKey,
         label: r.label,
         enabled: r.enabled,
-        enabledNetworks: Array.isArray(r.enabledNetworks) ? r.enabledNetworks : null,
+        enabledNetworks: Array.isArray(r.enabledNetworks)
+          ? r.enabledNetworks
+          : null,
         displayOrder: r.displayOrder,
       },
     ]),
@@ -106,10 +108,7 @@ export async function PATCH(request: NextRequest) {
   try {
     body = (await request.json()) as typeof body;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const methodKey = body.methodKey?.trim();
@@ -144,7 +143,8 @@ export async function PATCH(request: NextRequest) {
     updatedAt: Date;
   } = { updatedAt: now };
   if (enabled !== undefined) updatePayload.enabled = enabled;
-  if (enabledNetworks !== undefined) updatePayload.enabledNetworks = enabledNetworks;
+  if (enabledNetworks !== undefined)
+    updatePayload.enabledNetworks = enabledNetworks;
 
   if (exists.length > 0) {
     await db

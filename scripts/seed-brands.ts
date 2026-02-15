@@ -37,8 +37,7 @@ const BRANDS: Array<{
     description:
       "Anti-theft travel gear: backpacks, daypacks, crossbody bags, slings, totes, and accessories. Secure, durable designs for travelers who value safety and style.",
     featured: true,
-    logoUrl:
-      "https://pacsafe.com/cdn/shop/files/pacsafe_logo_backup.png",
+    logoUrl: "https://pacsafe.com/cdn/shop/files/pacsafe_logo_backup.png",
   },
   {
     name: "Berkey",
@@ -176,7 +175,9 @@ async function main() {
     console.log(`Seeded brand: ${b.name} (${id})`);
     inserted++;
   }
-  console.log(`Done. Inserted ${inserted} brands (${BRANDS.length} total). Add logos/assets in Admin → Product Brands.`);
+  console.log(
+    `Done. Inserted ${inserted} brands (${BRANDS.length} total). Add logos/assets in Admin → Product Brands.`,
+  );
 }
 
 main()

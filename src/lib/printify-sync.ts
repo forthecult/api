@@ -239,7 +239,10 @@ async function getPrintifyShippingData(
   handlingDaysMax: number | null;
 }> {
   try {
-    const shipping = await fetchPrintifyShippingInfo(blueprintId, printProviderId);
+    const shipping = await fetchPrintifyShippingInfo(
+      blueprintId,
+      printProviderId,
+    );
     const allCountries = new Set<string>();
     let hasRestOfWorld = false;
     for (const profile of shipping.profiles ?? []) {
@@ -252,9 +255,7 @@ async function getPrintifyShippingData(
       }
     }
     const countryCodes =
-      hasRestOfWorld || allCountries.size === 0
-        ? null
-        : [...allCountries];
+      hasRestOfWorld || allCountries.size === 0 ? null : [...allCountries];
 
     const ht = shipping.handling_time;
     const handlingResult =
@@ -331,10 +332,14 @@ async function syncShippingDataOnly(
       handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
       handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
       printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
-      printifyExpressEligible: printifyProduct.is_printify_express_eligible ?? false,
-      printifyExpressEnabled: printifyProduct.is_printify_express_enabled ?? false,
-      printifyEconomyEligible: printifyProduct.is_economy_shipping_eligible ?? false,
-      printifyEconomyEnabled: printifyProduct.is_economy_shipping_enabled ?? false,
+      printifyExpressEligible:
+        printifyProduct.is_printify_express_eligible ?? false,
+      printifyExpressEnabled:
+        printifyProduct.is_printify_express_enabled ?? false,
+      printifyEconomyEligible:
+        printifyProduct.is_economy_shipping_eligible ?? false,
+      printifyEconomyEnabled:
+        printifyProduct.is_economy_shipping_enabled ?? false,
       lastSyncedAt: new Date(),
     })
     .where(eq(productsTable.id, productId));
@@ -421,13 +426,17 @@ async function createLocalProductFromPrintify(
       printifyProduct.print_provider_id,
     ),
     fetchPrintifyBlueprint(printifyProduct.blueprint_id).catch(() => null),
-    pf ? fetchPrintifyGpsr(pf.shopId, printifyProduct.id).catch(() => null) : null,
+    pf
+      ? fetchPrintifyGpsr(pf.shopId, printifyProduct.id).catch(() => null)
+      : null,
   ]);
 
   const brand = blueprint?.brand?.trim() ?? null;
   const model = blueprint?.model?.trim() ?? null;
 
-  const optionDefs = hasVariants ? buildOptionDefinitionsFromPrintify(printifyProduct) : [];
+  const optionDefs = hasVariants
+    ? buildOptionDefinitionsFromPrintify(printifyProduct)
+    : [];
   const optionDefinitionsJson =
     optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
 
@@ -442,10 +451,14 @@ async function createLocalProductFromPrintify(
     printifyProductId: printifyProduct.id,
     printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
     // Printify shipping eligibility flags
-    printifyExpressEligible: printifyProduct.is_printify_express_eligible ?? false,
-    printifyExpressEnabled: printifyProduct.is_printify_express_enabled ?? false,
-    printifyEconomyEligible: printifyProduct.is_economy_shipping_eligible ?? false,
-    printifyEconomyEnabled: printifyProduct.is_economy_shipping_enabled ?? false,
+    printifyExpressEligible:
+      printifyProduct.is_printify_express_eligible ?? false,
+    printifyExpressEnabled:
+      printifyProduct.is_printify_express_enabled ?? false,
+    printifyEconomyEligible:
+      printifyProduct.is_economy_shipping_eligible ?? false,
+    printifyEconomyEnabled:
+      printifyProduct.is_economy_shipping_enabled ?? false,
     // EU GPSR compliance data
     gpsrJson: gpsrData ?? undefined,
     priceCents,
@@ -550,7 +563,9 @@ async function updateLocalProductFromPrintify(
       printifyProduct.print_provider_id,
     ),
     fetchPrintifyBlueprint(printifyProduct.blueprint_id).catch(() => null),
-    pfConfig ? fetchPrintifyGpsr(pfConfig.shopId, printifyProduct.id).catch(() => null) : null,
+    pfConfig
+      ? fetchPrintifyGpsr(pfConfig.shopId, printifyProduct.id).catch(() => null)
+      : null,
   ]);
   const brand = blueprint?.brand?.trim() ?? null;
   const model = blueprint?.model?.trim() ?? null;
@@ -597,9 +612,10 @@ async function updateLocalProductFromPrintify(
   const defaultImage = printifyProduct.images.find((img) => img.is_default);
   const imageUrl = defaultImage?.src || printifyProduct.images[0]?.src || null;
 
-  const optionDefs = enabledVariants.length > 1
-    ? buildOptionDefinitionsFromPrintify(printifyProduct)
-    : [];
+  const optionDefs =
+    enabledVariants.length > 1
+      ? buildOptionDefinitionsFromPrintify(printifyProduct)
+      : [];
   const optionDefinitionsJson =
     optionDefs.length > 0 ? JSON.stringify(optionDefs) : null;
 
@@ -624,10 +640,14 @@ async function updateLocalProductFromPrintify(
       sku: productSku,
       printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
       // Printify shipping eligibility flags
-      printifyExpressEligible: printifyProduct.is_printify_express_eligible ?? false,
-      printifyExpressEnabled: printifyProduct.is_printify_express_enabled ?? false,
-      printifyEconomyEligible: printifyProduct.is_economy_shipping_eligible ?? false,
-      printifyEconomyEnabled: printifyProduct.is_economy_shipping_enabled ?? false,
+      printifyExpressEligible:
+        printifyProduct.is_printify_express_eligible ?? false,
+      printifyExpressEnabled:
+        printifyProduct.is_printify_express_enabled ?? false,
+      printifyEconomyEligible:
+        printifyProduct.is_economy_shipping_eligible ?? false,
+      printifyEconomyEnabled:
+        printifyProduct.is_economy_shipping_enabled ?? false,
       // EU GPSR compliance data
       gpsrJson: gpsrData ?? undefined,
       countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
@@ -869,8 +889,8 @@ function getVariantLabel(
     return title;
   }
   const opts = getVariantOptions(product, variant);
-  const parts = [opts.color, opts.size, opts.gender].filter(
-    (t): t is string => Boolean(t?.trim()),
+  const parts = [opts.color, opts.size, opts.gender].filter((t): t is string =>
+    Boolean(t?.trim()),
   );
   return parts.length > 0 ? parts.join(" / ") : title || null;
 }
@@ -958,8 +978,7 @@ export async function exportProductToPrintify(
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     const isDisabledForEditing =
-      message.includes("8252") ||
-      /disabled for editing/i.test(message);
+      message.includes("8252") || /disabled for editing/i.test(message);
     if (isDisabledForEditing) {
       return {
         success: false,
@@ -1057,7 +1076,9 @@ export async function handlePrintifyProductPublished(data: {
         .where(eq(productsTable.id, result.productId))
         .limit(1);
 
-      const handle = product?.slug ? `/products/${product.slug}` : `/products/${result.productId}`;
+      const handle = product?.slug
+        ? `/products/${product.slug}`
+        : `/products/${result.productId}`;
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
 
       const confirmResult = await confirmPrintifyPublishingSucceeded(

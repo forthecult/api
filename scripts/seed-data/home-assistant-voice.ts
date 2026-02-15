@@ -75,7 +75,8 @@ export const HOME_ASSISTANT_VOICE = {
   name: "Home Assistant Voice Preview Edition",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
-  mainImageAlt: "Home Assistant Voice Preview Edition - privacy-focused voice assistant for Home Assistant",
+  mainImageAlt:
+    "Home Assistant Voice Preview Edition - privacy-focused voice assistant for Home Assistant",
   mainImageTitle: "Home Assistant Voice Preview Edition | Seeed Studio",
   priceCents: PRICE_CENTS,
   costPerItemCents: PRICE_CENTS,

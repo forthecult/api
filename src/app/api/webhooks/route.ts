@@ -18,11 +18,18 @@ function isValidWebhookUrl(urlStr: string): boolean {
     if (url.protocol !== "https:") return false;
     // Block localhost and private IPs
     const hostname = url.hostname.toLowerCase();
-    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "0.0.0.0") return false;
-    if (hostname.startsWith("10.") || hostname.startsWith("192.168.")) return false;
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0"
+    )
+      return false;
+    if (hostname.startsWith("10.") || hostname.startsWith("192.168."))
+      return false;
     if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return false;
     if (hostname === "169.254.169.254") return false; // AWS metadata
-    if (hostname.endsWith(".local") || hostname.endsWith(".internal")) return false;
+    if (hostname.endsWith(".local") || hostname.endsWith(".internal"))
+      return false;
     return true;
   } catch {
     return false;
@@ -80,10 +87,7 @@ export async function POST(request: NextRequest) {
         .where(eq(ordersTable.id, scopedOrderId))
         .limit(1);
       if (!order) {
-        return NextResponse.json(
-          { error: "Order not found" },
-          { status: 404 },
-        );
+        return NextResponse.json({ error: "Order not found" }, { status: 404 });
       }
     }
 
@@ -95,7 +99,9 @@ export async function POST(request: NextRequest) {
 
     if (!isValidWebhookUrl(url)) {
       return NextResponse.json(
-        { error: "url must be a valid HTTPS URL pointing to a public endpoint" },
+        {
+          error: "url must be a valid HTTPS URL pointing to a public endpoint",
+        },
         { status: 400 },
       );
     }

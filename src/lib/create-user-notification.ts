@@ -18,7 +18,10 @@ import { createId } from "@paralleldrive/cuid2";
 import { sendOrderConfirmationEmail } from "~/lib/send-order-confirmation-email";
 import { sendOrderShippedEmail } from "~/lib/send-order-shipped-email";
 import { sendRefundRequestSubmittedEmail } from "~/lib/send-refund-request-submitted-email";
-import { notifyOrderUpdate, notifyTransactionalTelegram } from "~/lib/telegram-notify";
+import {
+  notifyOrderUpdate,
+  notifyTransactionalTelegram,
+} from "~/lib/telegram-notify";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface CreateUserNotificationOptions {
@@ -273,10 +276,7 @@ export async function onRefundRequestSubmitted(orderId: string): Promise<void> {
     }
   }
 
-  if (
-    order.email.trim() &&
-    (await userWantsTransactionalEmail(userId))
-  ) {
+  if (order.email.trim() && (await userWantsTransactionalEmail(userId))) {
     void sendRefundRequestSubmittedEmail({
       to: order.email.trim(),
       orderId,

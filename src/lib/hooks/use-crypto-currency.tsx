@@ -138,7 +138,20 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
         }
         const next: Rates = { ...FALLBACK_RATES };
         (
-          ["BTC", "ETH", "SOL", "DOGE", "CRUST", "PUMP", "TROLL", "TON", "XMR", "XAU", "XAG", "SKR"] as const
+          [
+            "BTC",
+            "ETH",
+            "SOL",
+            "DOGE",
+            "CRUST",
+            "PUMP",
+            "TROLL",
+            "TON",
+            "XMR",
+            "XAU",
+            "XAG",
+            "SKR",
+          ] as const
         ).forEach((code) => {
           const v = data[code];
           if (typeof v === "number" && v > 0) next[code] = v;
@@ -218,7 +231,9 @@ export function useCryptoCurrency(): CryptoCurrencyContextType {
   const ctx = React.useContext(CryptoCurrencyContext);
   if (!ctx) {
     if (typeof window === "undefined") return CRYPTO_FALLBACK;
-    console.warn("useCryptoCurrency: CryptoCurrencyProvider not found, using fallback");
+    console.warn(
+      "useCryptoCurrency: CryptoCurrencyProvider not found, using fallback",
+    );
     return CRYPTO_FALLBACK;
   }
   return ctx;

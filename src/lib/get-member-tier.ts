@@ -43,8 +43,7 @@ export async function getMemberTierForWallet(
     if (!stakeData || stakeData.amount === 0n) return null;
     if (!market || market.priceUsd <= 0) return null;
 
-    const stakedHuman =
-      Number(stakeData.amount) / Math.pow(10, token.decimals);
+    const stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
     const pricing = computeTierPricing(
       token,
       market.priceUsd,

@@ -2,7 +2,10 @@ import type { NextRequest } from "next/server";
 
 import { NextResponse } from "next/server";
 
-import { checkPackageAvailability, getEsimContinentPackages } from "~/lib/esim-api";
+import {
+  checkPackageAvailability,
+  getEsimContinentPackages,
+} from "~/lib/esim-api";
 
 export async function GET(
   request: NextRequest,

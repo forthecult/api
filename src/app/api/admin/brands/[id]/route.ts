@@ -24,10 +24,7 @@ export async function GET(
       .limit(1);
 
     if (!brand) {
-      return NextResponse.json(
-        { error: "Brand not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     const assets = await db
@@ -95,10 +92,7 @@ export async function PATCH(
       .limit(1);
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Brand not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     const name =
@@ -174,10 +168,7 @@ export async function DELETE(
       .limit(1);
 
     if (!existing) {
-      return NextResponse.json(
-        { error: "Brand not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Brand not found" }, { status: 404 });
     }
 
     await db.delete(brandTable).where(eq(brandTable.id, id));

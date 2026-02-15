@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { runSolanaSweep } from "~/lib/solana-sweep";
 
 const VALID_SCOPES = ["paid", "pending", "all"] as const;
@@ -27,10 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const dryRun = Boolean(body.dryRun);

@@ -61,35 +61,40 @@ export const x402RouteConfigs = {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
-      description: "Fiat-to-fiat exchange rates — GET /api/x402/rates/fiat?from=USD&to=EUR",
+      description:
+        "Fiat-to-fiat exchange rates — GET /api/x402/rates/fiat?from=USD&to=EUR",
     },
   },
   "x402/rates/crypto-fiat": {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
-      description: "Crypto-to-fiat rates — GET /api/x402/rates/crypto-fiat?crypto=ETH&fiat=USD",
+      description:
+        "Crypto-to-fiat rates — GET /api/x402/rates/crypto-fiat?crypto=ETH&fiat=USD",
     },
   },
   "x402/rates/crypto": {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
-      description: "Crypto-to-crypto rates — GET /api/x402/rates/crypto?from=ETH&to=BTC",
+      description:
+        "Crypto-to-crypto rates — GET /api/x402/rates/crypto?from=ETH&to=BTC",
     },
   },
   "x402/rates/metals-fiat": {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
-      description: "Precious metals to fiat (XAU, XAG) — GET /api/x402/rates/metals-fiat?metal=XAU&fiat=USD",
+      description:
+        "Precious metals to fiat (XAU, XAG) — GET /api/x402/rates/metals-fiat?metal=XAU&fiat=USD",
     },
   },
   "x402/rates/metals-crypto": {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
-      description: "Precious metals to crypto — GET /api/x402/rates/metals-crypto?metal=XAU&crypto=ETH",
+      description:
+        "Precious metals to crypto — GET /api/x402/rates/metals-crypto?metal=XAU&crypto=ETH",
     },
   },
 } as const;
@@ -117,6 +122,10 @@ export function withOptionalX402<T extends RouteHandler>(
   const routeConfig = x402RouteConfigs[routeKey];
   return ((request: NextRequest, context?: RouteContext) => {
     const boundHandler = (req: NextRequest) => handler(req, context);
-    return withX402(boundHandler, x402PayTo as `0x${string}`, routeConfig)(request);
+    return withX402(
+      boundHandler,
+      x402PayTo as `0x${string}`,
+      routeConfig,
+    )(request);
   }) as T;
 }

@@ -41,7 +41,9 @@ export function ProductImageGallery({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [zoomPos, setZoomPos] = React.useState({ x: 50, y: 50 });
   /** URLs that failed to load (400, 404, etc.) so we show placeholder instead of breaking the page. */
-  const [failedUrls, setFailedUrls] = React.useState<Set<string>>(() => new Set());
+  const [failedUrls, setFailedUrls] = React.useState<Set<string>>(
+    () => new Set(),
+  );
 
   const baseList = React.useMemo(
     () =>
@@ -92,7 +94,10 @@ export function ProductImageGallery({
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomPos({ x: Math.max(0, Math.min(100, x)), y: Math.max(0, Math.min(100, y)) });
+    setZoomPos({
+      x: Math.max(0, Math.min(100, x)),
+      y: Math.max(0, Math.min(100, y)),
+    });
   };
 
   return (

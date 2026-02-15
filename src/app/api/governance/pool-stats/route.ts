@@ -37,7 +37,7 @@ export async function GET() {
       });
     }
 
-    const human = Number(pool.totalStaked) / Math.pow(10, token.decimals);
+    const human = Number(pool.totalStaked) / 10 ** token.decimals;
     return NextResponse.json({
       totalStakers: pool.totalStakers,
       totalStaked: human.toFixed(token.decimals),

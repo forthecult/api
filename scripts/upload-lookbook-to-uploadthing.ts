@@ -17,7 +17,10 @@ import { UTApi } from "uploadthing/server";
 
 import type { LookbookImage } from "../src/lib/lookbook-data";
 import { LOOKBOOK_IMAGES } from "../src/lib/lookbook-data";
-import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
+import {
+  getUploadThingToken,
+  validateUploadThingToken,
+} from "../src/lib/uploadthing-token";
 
 const PUBLIC_LOOKBOOK = join(process.cwd(), "public", "lookbook");
 const DATA_DIR = join(process.cwd(), "data");
@@ -26,7 +29,11 @@ const OUTPUT_PATH = join(DATA_DIR, "lookbook-images.json");
 function isUploadThingUrl(url: string): boolean {
   try {
     const host = new URL(url).hostname.toLowerCase();
-    return host.includes("utfs.io") || host.includes("ufs.sh") || host.includes("uploadthing");
+    return (
+      host.includes("utfs.io") ||
+      host.includes("ufs.sh") ||
+      host.includes("uploadthing")
+    );
   } catch {
     return false;
   }
@@ -138,7 +145,9 @@ async function main() {
   }
 
   if (skipped > 0) {
-    console.log(`Reused ${skipped} existing UploadThing URL(s) (no re-upload).`);
+    console.log(
+      `Reused ${skipped} existing UploadThing URL(s) (no re-upload).`,
+    );
   }
 
   if (!existsSync(DATA_DIR)) {

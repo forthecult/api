@@ -70,7 +70,8 @@ At Culture, we curate apparel that resonates with the communities we serve. This
       "Bold Lamborghini-inspired graphic — internet culture meets performance",
       "Youth sizes XS–XL",
     ],
-    pageTitle: "Lambo Kids Fleece Hoodie — Performance Culture for Kids | Culture",
+    pageTitle:
+      "Lambo Kids Fleece Hoodie — Performance Culture for Kids | Culture",
     metaDescription:
       "Lambo Kids Fleece Hoodie. Cotton Heritage 65/35 fleece with brushed interior, ribbed cuffs, and bold Lambo-inspired graphic. Premium quality youth hoodie from Culture.",
     mainImageAlt:
@@ -150,8 +151,7 @@ At Culture, we partner with brands whose values align with ours: transparency, o
       "Official CoinGecko green gecko branding on front",
       "Unisex fit, sizes XXS–5XL",
     ],
-    pageTitle:
-      "CoinGecko Sweatshirt — Official Organic Crewneck | Culture",
+    pageTitle: "CoinGecko Sweatshirt — Official Organic Crewneck | Culture",
     metaDescription:
       "CoinGecko Sweatshirt. Stanley/Stella 350 gsm organic cotton crewneck with official CoinGecko branding. GOTS & Oeko-Tex certified. Premium crypto merchandise from Culture.",
     mainImageAlt:
@@ -230,7 +230,8 @@ Culture carries a curated selection of statement and novelty pieces alongside ou
       "Seam-to-seam print coverage for full graphic impact",
       "Women's sizes S–2XL",
     ],
-    pageTitle: "Cat One-Piece Swimsuit — All-Over Print Statement Swimwear | Culture",
+    pageTitle:
+      "Cat One-Piece Swimsuit — All-Over Print Statement Swimwear | Culture",
     metaDescription:
       "Cat One-Piece Swimsuit. All-over sublimation print with photorealistic cat face, polyester-spandex four-way stretch, fade-resistant. Statement swimwear from Culture.",
     mainImageAlt:
@@ -347,9 +348,7 @@ async function main() {
   // 2. Filter to the products we have SEO for
   const toUpdate = allProducts
     .map((p) => ({ ...p, seo: matchProduct(p.name) }))
-    .filter(
-      (p): p is typeof p & { seo: ProductSeo } => p.seo !== null,
-    );
+    .filter((p): p is typeof p & { seo: ProductSeo } => p.seo !== null);
 
   if (toUpdate.length === 0) {
     console.log(
@@ -416,7 +415,9 @@ async function main() {
       console.warn("  PATCH failed:", patchRes.status, errText);
       continue;
     }
-    console.log("  ✓ Updated: title, slug, description, features, meta, image SEO. Marked Optimized.");
+    console.log(
+      "  ✓ Updated: title, slug, description, features, meta, image SEO. Marked Optimized.",
+    );
 
     // 6. Export (sync store → Printful)
     const exportRes = await fetch(`${API_BASE}/api/admin/printful/sync`, {
@@ -447,7 +448,9 @@ async function main() {
     console.log("");
   }
 
-  console.log("Done. All matched products updated with comprehensive SEO and synced to Printful.");
+  console.log(
+    "Done. All matched products updated with comprehensive SEO and synced to Printful.",
+  );
 }
 
 main().catch((err) => {

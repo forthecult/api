@@ -7,17 +7,22 @@ import { userTable } from "../users/tables";
  * - userId set when customer is authenticated; guestId when anonymous (rate-limited).
  * - takenOverBy: when set, AI does not reply; staff replies instead.
  */
-export const supportChatConversationTable = pgTable("support_chat_conversation", {
-  id: text("id").primaryKey(),
-  userId: text("user_id").references(() => userTable.id, { onDelete: "cascade" }),
-  guestId: text("guest_id"), // anonymous visitor id (client-generated, rate-limited)
-  status: text("status").notNull().default("open"), // "open" | "closed"
-  takenOverBy: text("taken_over_by").references(() => userTable.id, {
-    onDelete: "set null",
-  }), // admin user id; null = AI is replying
-  createdAt: timestamp("created_at").notNull(),
-  updatedAt: timestamp("updated_at").notNull(),
-});
+export const supportChatConversationTable = pgTable(
+  "support_chat_conversation",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").references(() => userTable.id, {
+      onDelete: "cascade",
+    }),
+    guestId: text("guest_id"), // anonymous visitor id (client-generated, rate-limited)
+    status: text("status").notNull().default("open"), // "open" | "closed"
+    takenOverBy: text("taken_over_by").references(() => userTable.id, {
+      onDelete: "set null",
+    }), // admin user id; null = AI is replying
+    createdAt: timestamp("created_at").notNull(),
+    updatedAt: timestamp("updated_at").notNull(),
+  },
+);
 
 /**
  * Single message in a support chat.
@@ -30,7 +35,9 @@ export const supportChatMessageTable = pgTable("support_chat_message", {
     .notNull()
     .references(() => supportChatConversationTable.id, { onDelete: "cascade" }),
   role: text("role").notNull(), // "customer" | "ai" | "staff"
-  userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }), // staff sender
+  userId: text("user_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }), // staff sender
   content: text("content").notNull(),
   createdAt: timestamp("created_at").notNull(),
 });

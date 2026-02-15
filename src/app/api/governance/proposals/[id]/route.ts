@@ -7,10 +7,7 @@ import { eq, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  governanceProposalTable,
-  governanceVoteTable,
-} from "~/db/schema";
+import { governanceProposalTable, governanceVoteTable } from "~/db/schema";
 
 export async function GET(
   request: Request,
@@ -32,7 +29,10 @@ export async function GET(
       .limit(1);
 
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Proposal not found" },
+        { status: 404 },
+      );
     }
 
     const totals = await db

@@ -24,12 +24,16 @@ export async function GET(
   try {
     const { slug: slugParam } = await params;
     if (!slugParam?.trim()) {
-      return withPublicApiCors(apiError("MISSING_REQUIRED_FIELD", { field: "slug" }));
+      return withPublicApiCors(
+        apiError("MISSING_REQUIRED_FIELD", { field: "slug" }),
+      );
     }
 
     const data = await getProductBySlugOrId(slugParam.trim());
     if (!data) {
-      return withPublicApiCors(apiError("PRODUCT_NOT_FOUND", { slug: slugParam.trim() }));
+      return withPublicApiCors(
+        apiError("PRODUCT_NOT_FOUND", { slug: slugParam.trim() }),
+      );
     }
 
     const productSlug = data.slug ?? data.id;

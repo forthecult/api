@@ -31,12 +31,16 @@ const suffix = values["ends-with"] ?? "";
 const outfile = values.outfile ?? "vanity-keypair.json";
 
 if (!prefix && !suffix) {
-  console.error("Usage: bun run scripts/solana-vanity-grind.ts --starts-with <prefix> --ends-with <suffix>");
+  console.error(
+    "Usage: bun run scripts/solana-vanity-grind.ts --starts-with <prefix> --ends-with <suffix>",
+  );
   console.error("  At least one of --starts-with or --ends-with is required.");
   process.exit(1);
 }
 
-console.log(`Grinding for 1 pubkey that starts with '${prefix}' and ends with '${suffix}'...`);
+console.log(
+  `Grinding for 1 pubkey that starts with '${prefix}' and ends with '${suffix}'...`,
+);
 const start = Date.now();
 let checked = 0;
 

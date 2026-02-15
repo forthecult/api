@@ -78,7 +78,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!body.imageBase64 || !Array.isArray(body.products) || body.products.length === 0) {
+  if (
+    !body.imageBase64 ||
+    !Array.isArray(body.products) ||
+    body.products.length === 0
+  ) {
     return NextResponse.json(
       { error: "imageBase64 and products[] are required" },
       { status: 400 },
@@ -90,7 +94,9 @@ export async function POST(request: NextRequest) {
   try {
     const buffer = Buffer.from(body.imageBase64, "base64");
     const filename = body.imageName ?? "design.png";
-    const file = new File([new Uint8Array(buffer)], filename, { type: "image/png" });
+    const file = new File([new Uint8Array(buffer)], filename, {
+      type: "image/png",
+    });
     const utapi = new UTApi({ token: utToken });
     const result = await utapi.uploadFiles(file);
     const payload = Array.isArray(result) ? result[0] : result;
@@ -101,23 +107,33 @@ export async function POST(request: NextRequest) {
     if (err) throw new Error("UploadThing upload failed");
 
     const data =
-      payload && typeof payload === "object" && (payload as { data?: unknown }).data != null
+      payload &&
+      typeof payload === "object" &&
+      (payload as { data?: unknown }).data != null
         ? (payload as { data: Record<string, unknown> }).data
         : (payload as Record<string, unknown> | null);
     const fromData =
       data && typeof data === "object"
-        ? ((data as { ufsUrl?: string }).ufsUrl ?? (data as { url?: string }).url ?? null)
+        ? ((data as { ufsUrl?: string }).ufsUrl ??
+          (data as { url?: string }).url ??
+          null)
         : null;
     const fromPayload =
       payload && typeof payload === "object"
-        ? ((payload as { ufsUrl?: string }).ufsUrl ?? (payload as { url?: string }).url ?? null)
+        ? ((payload as { ufsUrl?: string }).ufsUrl ??
+          (payload as { url?: string }).url ??
+          null)
         : null;
-    const url = (typeof fromData === "string" ? fromData : null) ??
+    const url =
+      (typeof fromData === "string" ? fromData : null) ??
       (typeof fromPayload === "string" ? fromPayload : null);
 
     if (!url) throw new Error("UploadThing returned no URL");
     imageUrl = url;
-    console.log("Printful create-products: image uploaded to UploadThing:", imageUrl);
+    console.log(
+      "Printful create-products: image uploaded to UploadThing:",
+      imageUrl,
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
@@ -169,8 +185,8 @@ export async function POST(request: NextRequest) {
       );
       if (filtered.length === 0) {
         // Try partial match
-        filtered = allVariants.filter(
-          (v) => v.color?.toLowerCase().includes(colorLower),
+        filtered = allVariants.filter((v) =>
+          v.color?.toLowerCase().includes(colorLower),
         );
       }
 
@@ -209,7 +225,10 @@ export async function POST(request: NextRequest) {
         retail_price: (priceCents / 100).toFixed(2),
         files: [
           {
-            type: (position ?? "front") === "front" ? "default" : (position ?? "front"),
+            type:
+              (position ?? "front") === "front"
+                ? "default"
+                : (position ?? "front"),
             url: imageUrl,
           },
         ],
@@ -231,7 +250,10 @@ export async function POST(request: NextRequest) {
       // Import to local DB
       let localProductId: string | undefined;
       try {
-        const imported = await importSinglePrintfulProduct(syncProduct.id, false);
+        const imported = await importSinglePrintfulProduct(
+          syncProduct.id,
+          false,
+        );
         localProductId = imported?.productId;
         console.log(
           `Printful create-products: imported to local DB: ${localProductId}`,
@@ -271,7 +293,9 @@ export async function POST(request: NextRequest) {
   }
 
   // 3. Wait for Printful to generate mockups, then upload to UploadThing
-  const successfulProducts = results.filter((r) => r.success && r.localProductId);
+  const successfulProducts = results.filter(
+    (r) => r.success && r.localProductId,
+  );
   if (successfulProducts.length > 0) {
     console.log(
       `Printful create-products: waiting 90s for Printful mockup generation...`,

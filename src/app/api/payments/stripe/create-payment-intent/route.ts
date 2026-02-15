@@ -160,13 +160,23 @@ export async function POST(request: NextRequest) {
       fulfillmentStatus: "unfulfilled",
       totalCents,
       paymentMethod: "stripe",
-      ...(body.shipping?.address1 && { shippingAddress1: body.shipping.address1.trim() }),
-      ...(body.shipping?.address2 && { shippingAddress2: body.shipping.address2.trim() }),
+      ...(body.shipping?.address1 && {
+        shippingAddress1: body.shipping.address1.trim(),
+      }),
+      ...(body.shipping?.address2 && {
+        shippingAddress2: body.shipping.address2.trim(),
+      }),
       ...(body.shipping?.city && { shippingCity: body.shipping.city.trim() }),
-      ...(body.shipping?.stateCode && { shippingStateCode: body.shipping.stateCode.trim() }),
-      ...(body.shipping?.countryCode && { shippingCountryCode: body.shipping.countryCode.trim() }),
+      ...(body.shipping?.stateCode && {
+        shippingStateCode: body.shipping.stateCode.trim(),
+      }),
+      ...(body.shipping?.countryCode && {
+        shippingCountryCode: body.shipping.countryCode.trim(),
+      }),
       ...(body.shipping?.zip && { shippingZip: body.shipping.zip.trim() }),
-      ...(body.shipping?.phone && { shippingPhone: body.shipping.phone.trim() }),
+      ...(body.shipping?.phone && {
+        shippingPhone: body.shipping.phone.trim(),
+      }),
       ...(shippingName && { shippingName }),
       ...(affiliateResult && {
         affiliateId: affiliateResult.affiliate.affiliateId,

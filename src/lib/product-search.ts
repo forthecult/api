@@ -115,10 +115,7 @@ export async function runProductSearch(
       return ilike(productsTable.brand, `%${escapeLike(slug)}%`);
     });
     conditions.push(
-      and(
-        sql`${productsTable.brand} is not null`,
-        or(...brandConditions)!,
-      )!,
+      and(sql`${productsTable.brand} is not null`, or(...brandConditions)!)!,
     );
   }
 

@@ -58,6 +58,15 @@ async function main() {
     );
   }
 
+  // Remove generated relations block so we don't duplicate users/relations.ts
+  // and so we don't reference undefined table names (user vs userTable).
+  const str = s.toString();
+  const relationsStart = str.indexOf("\nexport const userRelations = relations(");
+  if (relationsStart !== -1) {
+    s.remove(relationsStart, str.length);
+  }
+  s.replace(/\nimport \{ relations \} from "drizzle-orm";\n/, "\n");
+
   // Inject business-only user columns (managed by admin/checkout, not auth).
   // These are not in auth.ts additionalFields so they stay out of auth config.
   const userTableClose =

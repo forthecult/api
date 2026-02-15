@@ -44,7 +44,16 @@ export const createOrderSchema = z.object({
   wallet: z.string().trim().max(64).optional(),
   // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna | seeker)
   token: z
-    .enum(["solana", "usdc", "whitewhale", "crust", "pump", "troll", "soluna", "seeker"])
+    .enum([
+      "solana",
+      "usdc",
+      "whitewhale",
+      "crust",
+      "pump",
+      "troll",
+      "soluna",
+      "seeker",
+    ])
     .optional(),
   // Shipping address (optional). Only required for physical goods; digital-only orders often omit it.
   shipping: z

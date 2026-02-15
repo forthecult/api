@@ -34,7 +34,11 @@ async function getSolanaTokenBalance(
   mintAddress: string,
   walletAddress: string,
 ): Promise<bigint> {
-  const result = await getTokenBalanceAnyProgram(connection, mintAddress, walletAddress);
+  const result = await getTokenBalanceAnyProgram(
+    connection,
+    mintAddress,
+    walletAddress,
+  );
   return result?.amount ?? 0n;
 }
 
@@ -47,8 +51,7 @@ async function getEvmTokenBalance(
   walletAddress: `0x${string}`,
 ): Promise<bigint> {
   try {
-    const rpcUrl =
-      process.env.ETHEREUM_RPC_URL ?? "https://rpc.ankr.com/eth";
+    const rpcUrl = process.env.ETHEREUM_RPC_URL ?? "https://rpc.ankr.com/eth";
     const client = createPublicClient({
       chain: mainnet, // could map chainId to chain
       transport: http(rpcUrl),

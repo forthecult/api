@@ -4,8 +4,16 @@
     "mainImageAlt": "Minirig 4 Bluetooth Speaker - portable wireless speaker, Bristol UK",
     "mainImageTitle": "Minirig 4 Bluetooth Speaker | Portable Bluetooth Speaker",
     "images": [
-      { "url": "https://utfs.io/f/xxxx-minirig-4-black", "alt": "Minirig 4 Bluetooth Speaker Black", "title": "Minirig 4 Bluetooth Speaker - Black" },
-      { "url": "https://utfs.io/f/xxxx-minirig-4-grille", "alt": "Minirig 4 Black grille and top cap", "title": "Minirig 4 - Grille" }
+      {
+        "url": "https://utfs.io/f/xxxx-minirig-4-black",
+        "alt": "Minirig 4 Bluetooth Speaker Black",
+        "title": "Minirig 4 Bluetooth Speaker - Black"
+      },
+      {
+        "url": "https://utfs.io/f/xxxx-minirig-4-grille",
+        "alt": "Minirig 4 Black grille and top cap",
+        "title": "Minirig 4 - Grille"
+      }
     ],
     "variantImageUrls": {
       "Black": "https://utfs.io/f/xxxx-minirig-4-black",

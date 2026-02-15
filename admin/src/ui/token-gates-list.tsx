@@ -92,97 +92,98 @@ export function TokenGatesList({
       <CardContent className="space-y-4">
         {showGatesList ? (
           <>
-        {gates.map((gate, index) => (
-          <div
-            key={gate.id ?? index}
-            className={cn(
-              "rounded-lg border border-border bg-muted/30 p-4 space-y-3",
-            )}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Gate {index + 1}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeGate(index)}
-                className="text-destructive hover:text-destructive"
+            {gates.map((gate, index) => (
+              <div
+                key={gate.id ?? index}
+                className={cn(
+                  "rounded-lg border border-border bg-muted/30 p-4 space-y-3",
+                )}
               >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className={labelClass}>Token symbol</label>
-                <input
-                  type="text"
-                  value={gate.tokenSymbol}
-                  onChange={(e) =>
-                    updateGate(index, {
-                      tokenSymbol: e.target.value.trim().toUpperCase() || "",
-                    })
-                  }
-                  className={inputClass}
-                  placeholder="e.g. CULT, WHALE"
-                />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Gate {index + 1}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeGate(index)}
+                    className="text-destructive hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1">
+                    <label className={labelClass}>Token symbol</label>
+                    <input
+                      type="text"
+                      value={gate.tokenSymbol}
+                      onChange={(e) =>
+                        updateGate(index, {
+                          tokenSymbol:
+                            e.target.value.trim().toUpperCase() || "",
+                        })
+                      }
+                      className={inputClass}
+                      placeholder="e.g. CULT, WHALE"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className={labelClass}>Min quantity</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={gate.quantity}
+                      onChange={(e) => {
+                        const v = Number.parseInt(e.target.value, 10);
+                        updateGate(index, {
+                          quantity: Number.isNaN(v) || v < 1 ? 1 : v,
+                        });
+                      }}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className={labelClass}>Network</label>
+                    <select
+                      value={gate.network ?? ""}
+                      onChange={(e) =>
+                        updateGate(index, {
+                          network: e.target.value ? e.target.value : null,
+                        })
+                      }
+                      className={inputClass}
+                    >
+                      <option value="">Any / Solana default</option>
+                      {TOKEN_GATE_NETWORKS.map((n) => (
+                        <option key={n.value} value={n.value}>
+                          {n.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-1 sm:col-span-2">
+                    <label className={labelClass}>
+                      Contract / mint address (optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={gate.contractAddress ?? ""}
+                      onChange={(e) =>
+                        updateGate(index, {
+                          contractAddress: e.target.value.trim() || null,
+                        })
+                      }
+                      className={cn(inputClass, "font-mono text-xs")}
+                      placeholder="0x… or base58 mint"
+                    />
+                  </div>
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className={labelClass}>Min quantity</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={gate.quantity}
-                  onChange={(e) => {
-                    const v = Number.parseInt(e.target.value, 10);
-                    updateGate(index, {
-                      quantity: Number.isNaN(v) || v < 1 ? 1 : v,
-                    });
-                  }}
-                  className={inputClass}
-                />
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <label className={labelClass}>Network</label>
-                <select
-                  value={gate.network ?? ""}
-                  onChange={(e) =>
-                    updateGate(index, {
-                      network: e.target.value ? e.target.value : null,
-                    })
-                  }
-                  className={inputClass}
-                >
-                  <option value="">Any / Solana default</option>
-                  {TOKEN_GATE_NETWORKS.map((n) => (
-                    <option key={n.value} value={n.value}>
-                      {n.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <label className={labelClass}>
-                  Contract / mint address (optional)
-                </label>
-                <input
-                  type="text"
-                  value={gate.contractAddress ?? ""}
-                  onChange={(e) =>
-                    updateGate(index, {
-                      contractAddress: e.target.value.trim() || null,
-                    })
-                  }
-                  className={cn(inputClass, "font-mono text-xs")}
-                  placeholder="0x… or base58 mint"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-        <Button type="button" variant="outline" size="sm" onClick={addGate}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add token gate
-        </Button>
+            ))}
+            <Button type="button" variant="outline" size="sm" onClick={addGate}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add token gate
+            </Button>
           </>
         ) : null}
       </CardContent>

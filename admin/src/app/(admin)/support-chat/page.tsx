@@ -52,9 +52,12 @@ export default function AdminSupportChatPage() {
 
   const fetchWidgetVisible = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/admin/support-chat/widget-visible`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${API_BASE}/api/admin/support-chat/widget-visible`,
+        {
+          credentials: "include",
+        },
+      );
       if (res.ok) {
         const json = (await res.json()) as { visible?: boolean };
         setWidgetVisible(json.visible !== false);
@@ -67,12 +70,15 @@ export default function AdminSupportChatPage() {
   const setWidgetVisibleToggle = useCallback(async (visible: boolean) => {
     setWidgetToggleLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/support-chat/widget-visible`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ visible }),
-      });
+      const res = await fetch(
+        `${API_BASE}/api/admin/support-chat/widget-visible`,
+        {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ visible }),
+        },
+      );
       if (res.ok) {
         setWidgetVisible(visible);
       }
@@ -118,7 +124,11 @@ export default function AdminSupportChatPage() {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
         {error}
-        <Button className="mt-2" onClick={() => void fetchConversations()} type="button">
+        <Button
+          className="mt-2"
+          onClick={() => void fetchConversations()}
+          type="button"
+        >
           Retry
         </Button>
       </div>
@@ -130,7 +140,9 @@ export default function AdminSupportChatPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <MessageCircle className="h-7 w-7" />
-          <h2 className="text-2xl font-semibold tracking-tight">Support Chat</h2>
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Support Chat
+          </h2>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
@@ -166,19 +178,34 @@ export default function AdminSupportChatPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Customer
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Status
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Mode
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Updated
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium text-right"
+                      >
                         Action
                       </th>
                     </tr>
@@ -212,7 +239,10 @@ export default function AdminSupportChatPage() {
                                 </>
                               ) : (
                                 <span className="text-muted-foreground">
-                                  Guest {row.guestId ? `(${row.guestId.slice(0, 8)}…)` : ""}
+                                  Guest{" "}
+                                  {row.guestId
+                                    ? `(${row.guestId.slice(0, 8)}…)`
+                                    : ""}
                                 </span>
                               )}
                             </div>

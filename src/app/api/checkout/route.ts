@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
     if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       return withPublicApiCors(
         NextResponse.json(
-          { error: { code: "INVALID_REQUEST", message: "Valid email required" } },
+          {
+            error: { code: "INVALID_REQUEST", message: "Valid email required" },
+          },
           { status: 400 },
         ),
       );
@@ -146,10 +148,19 @@ export async function POST(request: NextRequest) {
         item.quantity < 1 ||
         item.quantity > 9999
       ) {
-        if (typeof item?.productId === "string" && typeof item?.quantity === "number" && (item.quantity < 1 || item.quantity > 9999)) {
+        if (
+          typeof item?.productId === "string" &&
+          typeof item?.quantity === "number" &&
+          (item.quantity < 1 || item.quantity > 9999)
+        ) {
           return withPublicApiCors(
             NextResponse.json(
-              { error: { code: "INVALID_REQUEST", message: `Invalid quantity for product ${item.productId}` } },
+              {
+                error: {
+                  code: "INVALID_REQUEST",
+                  message: `Invalid quantity for product ${item.productId}`,
+                },
+              },
               { status: 400 },
             ),
           );
@@ -191,7 +202,8 @@ export async function POST(request: NextRequest) {
     const depositAddress = deriveDepositAddress(orderId);
     const expiresAt = new Date(now.getTime() + PAYMENT_WINDOW_MS).toISOString();
 
-    const { agent: moltbookAgent } = await getOptionalMoltbookAgentFromRequest(request);
+    const { agent: moltbookAgent } =
+      await getOptionalMoltbookAgentFromRequest(request);
 
     const shipping = body.shipping;
     if (shipping?.countryCode?.trim()) {
@@ -303,7 +315,10 @@ export async function POST(request: NextRequest) {
     return withPublicApiCors(
       NextResponse.json(
         {
-          error: { code: "INTERNAL_ERROR", message: "Failed to create checkout" },
+          error: {
+            code: "INTERNAL_ERROR",
+            message: "Failed to create checkout",
+          },
         },
         { status: 500 },
       ),

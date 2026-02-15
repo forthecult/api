@@ -62,7 +62,8 @@ export async function uploadToPrintify(
   return {
     provider: "printify",
     imageId: result.id,
-    imageUrl: result.preview_url ?? `https://api.printify.com/uploads/${result.id}`,
+    imageUrl:
+      result.preview_url ?? `https://api.printify.com/uploads/${result.id}`,
     width: result.width ?? 0,
     height: result.height ?? 0,
   };
@@ -83,7 +84,8 @@ export async function uploadToPrintful(
     Authorization: `Bearer ${token}`,
     "Content-Type": "application/json",
   };
-  if (options?.storeId != null) headers["X-PF-Store-Id"] = String(options.storeId);
+  if (options?.storeId != null)
+    headers["X-PF-Store-Id"] = String(options.storeId);
   const res = await fetch(`${PRINTFUL_V1_BASE}/files`, {
     method: "POST",
     headers,

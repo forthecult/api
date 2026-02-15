@@ -47,10 +47,7 @@ export async function PATCH(request: NextRequest) {
     try {
       body = (await request.json()) as { visible?: boolean };
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
     const visible = body.visible !== false;
     const valueStr = visible ? "true" : "false";

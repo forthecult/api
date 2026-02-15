@@ -3,7 +3,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 /**
  * GET ?orderId=

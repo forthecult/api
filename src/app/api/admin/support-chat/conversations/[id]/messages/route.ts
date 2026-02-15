@@ -66,7 +66,9 @@ export async function POST(
     const now = new Date();
     const messageId = crypto.randomUUID();
     const staffUserId =
-      authResult.ok && authResult.method === "session" ? authResult.user.id : null;
+      authResult.ok && authResult.method === "session"
+        ? authResult.user.id
+        : null;
 
     await db.insert(supportChatMessageTable).values({
       id: messageId,

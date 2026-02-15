@@ -134,7 +134,8 @@ export const openApiSpec = {
         operationId: "getAgentSummary",
         responses: {
           "200": {
-            description: "API summary with startUrl, openApiSpec, and endpoints list",
+            description:
+              "API summary with startUrl, openApiSpec, and endpoints list",
             content: {
               "application/json": {
                 schema: {
@@ -651,7 +652,8 @@ export const openApiSpec = {
         },
         responses: {
           "200": {
-            description: "Cart estimate with subtotal, shipping, tax, total, and crypto amounts",
+            description:
+              "Cart estimate with subtotal, shipping, tax, total, and crypto amounts",
             content: {
               "application/json": {
                 schema: {
@@ -802,7 +804,8 @@ export const openApiSpec = {
                       },
                       phone: {
                         type: "string",
-                        description: "Required for accurate shipping from some fulfillment providers",
+                        description:
+                          "Required for accurate shipping from some fulfillment providers",
                       },
                     },
                   },
@@ -943,7 +946,9 @@ export const openApiSpec = {
               },
             },
           },
-          "401": { description: "Not authorized (must be order owner or admin)" },
+          "401": {
+            description: "Not authorized (must be order owner or admin)",
+          },
           "404": { description: "Order not found" },
         },
       },

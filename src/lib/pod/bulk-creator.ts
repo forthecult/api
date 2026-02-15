@@ -23,7 +23,9 @@ function delay(ms: number): Promise<void> {
  * Create products across all targets. One image applied to multiple blueprints.
  * Rate limits: delays between requests per provider.
  */
-export async function bulkCreate(input: BulkCreateInput): Promise<BulkCreateResult> {
+export async function bulkCreate(
+  input: BulkCreateInput,
+): Promise<BulkCreateResult> {
   const results: CreateProductResult[] = [];
   const errors: { blueprintId: string; error: string }[] = [];
   let imageBuffer: Buffer | null = null;
@@ -59,7 +61,8 @@ export async function bulkCreate(input: BulkCreateInput): Promise<BulkCreateResu
       if (provider === "printful" && imageBuffer != null) {
         errors.push({
           blueprintId: target.blueprintId,
-          error: "Printful bulk create requires image as public URL string, not buffer",
+          error:
+            "Printful bulk create requires image as public URL string, not buffer",
         });
         continue;
       }
@@ -86,9 +89,17 @@ export async function bulkCreate(input: BulkCreateInput): Promise<BulkCreateResu
       const variantIds = target.variantFilter
         ? enabledVariants
             .filter((v) => {
-              if (target.variantFilter!.colors?.length && v.color && !target.variantFilter!.colors!.includes(v.color))
+              if (
+                target.variantFilter!.colors?.length &&
+                v.color &&
+                !target.variantFilter!.colors!.includes(v.color)
+              )
                 return false;
-              if (target.variantFilter!.sizes?.length && v.size && !target.variantFilter!.sizes!.includes(v.size))
+              if (
+                target.variantFilter!.sizes?.length &&
+                v.size &&
+                !target.variantFilter!.sizes!.includes(v.size)
+              )
                 return false;
               return true;
             })

@@ -41,7 +41,10 @@ const headers: Record<string, string> = {
 
 const SOLUNA_IMAGE_PATH =
   process.env.SOLUNA_IMAGE_PATH?.trim() ||
-  resolve(process.cwd(), "assets/soluna_300dpi-b2ae2c87-5ed6-46dd-8481-adb428fad8a5.png");
+  resolve(
+    process.cwd(),
+    "assets/soluna_300dpi-b2ae2c87-5ed6-46dd-8481-adb428fad8a5.png",
+  );
 
 // Printify product IDs from the creation run
 const PRINTIFY_IDS = {
@@ -100,16 +103,23 @@ async function makeTransparentPng(inputPath: string): Promise<Buffer> {
     .toBuffer();
 }
 
-async function uploadImage(buffer: Buffer): Promise<{ imageId: string; imageUrl: string }> {
+async function uploadImage(
+  buffer: Buffer,
+): Promise<{ imageId: string; imageUrl: string }> {
   const formData = new FormData();
-  const file = new File([buffer], "soluna-transparent.png", { type: "image/png" });
+  const file = new File([buffer], "soluna-transparent.png", {
+    type: "image/png",
+  });
   formData.append("file", file);
 
-  const res = await fetch(`${API_BASE}/api/admin/pod/upload?provider=printify`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${API_KEY}` },
-    body: formData,
-  });
+  const res = await fetch(
+    `${API_BASE}/api/admin/pod/upload?provider=printify`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${API_KEY}` },
+      body: formData,
+    },
+  );
   if (!res.ok) {
     const text = await res.text();
     throw new Error(`Upload failed: ${res.status} ${text}`);
@@ -118,7 +128,8 @@ async function uploadImage(buffer: Buffer): Promise<{ imageId: string; imageUrl:
   if (!data.imageId) throw new Error("Upload response missing imageId");
   return {
     imageId: data.imageId,
-    imageUrl: data.imageUrl ?? `https://api.printify.com/uploads/${data.imageId}`,
+    imageUrl:
+      data.imageUrl ?? `https://api.printify.com/uploads/${data.imageId}`,
   };
 }
 
@@ -138,7 +149,10 @@ async function deleteInPrintify(printifyProductId: string): Promise<void> {
   console.log("  Deleted:", printifyProductId);
 }
 
-async function updateDesign(printifyProductId: string, imageId: string): Promise<void> {
+async function updateDesign(
+  printifyProductId: string,
+  imageId: string,
+): Promise<void> {
   const res = await fetch(
     `${API_BASE}/api/admin/printify/products/${printifyProductId}/update-design`,
     {
@@ -154,9 +168,7 @@ async function updateDesign(printifyProductId: string, imageId: string): Promise
   console.log("  Updated design:", printifyProductId);
 }
 
-async function getBlueprintAndVariants(
-  search: string,
-): Promise<{
+async function getBlueprintAndVariants(search: string): Promise<{
   blueprintId: string;
   printProviderId: number;
   variants: Array<{ id: number; priceCents: number }>;
@@ -214,9 +226,12 @@ async function createProduct(
   const bp = await getBlueprintAndVariants(search);
   if (!bp) throw new Error(`No blueprint for: ${search}`);
 
-  const priceCents = Math.max(999, Math.round(
-    bp.variants.reduce((s, v) => s + v.priceCents, 0) / bp.variants.length,
-  ));
+  const priceCents = Math.max(
+    999,
+    Math.round(
+      bp.variants.reduce((s, v) => s + v.priceCents, 0) / bp.variants.length,
+    ),
+  );
   const sellPrice = Math.max(100, priceCents + Math.round(priceCents * 0.4));
 
   const res = await fetch(`${API_BASE}/api/admin/pod/products`, {
@@ -300,7 +315,9 @@ async function main() {
   );
   console.log("   Created Poker Playing Cards:", pokerId);
 
-  console.log("\nDone. SOLUNA Printify lineup: Shot Glass, Ping Pong Paddle, Sticker, Phone Case, Wireless Charger, Poker Cards (6 products, transparent logo).");
+  console.log(
+    "\nDone. SOLUNA Printify lineup: Shot Glass, Ping Pong Paddle, Sticker, Phone Case, Wireless Charger, Poker Cards (6 products, transparent logo).",
+  );
 }
 
 main().catch((err) => {

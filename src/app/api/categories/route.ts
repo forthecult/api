@@ -77,10 +77,7 @@ export async function GET() {
         eq(productCategoriesTable.productId, productsTable.id),
       )
       .where(
-        and(
-          eq(productsTable.published, true),
-          eq(productsTable.hidden, false),
-        ),
+        and(eq(productsTable.published, true), eq(productsTable.hidden, false)),
       )
       .groupBy(productCategoriesTable.categoryId);
 
@@ -129,8 +126,7 @@ export async function GET() {
         { categories: [] },
         {
           headers: {
-            "Cache-Control":
-              "public, s-maxage=60, stale-while-revalidate=120",
+            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
           },
         },
       );

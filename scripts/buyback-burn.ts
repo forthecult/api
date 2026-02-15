@@ -51,7 +51,8 @@ function parseNumEnv(name: string, defaultVal: number): number {
 
 async function main() {
   const dryRun = process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1";
-  const rpc = process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
+  const rpc =
+    process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
   const mintStr = process.env.CULT_TOKEN_MINT_SOLANA?.trim();
   if (!mintStr) {
     throw new Error("Missing CULT_TOKEN_MINT_SOLANA");
@@ -68,7 +69,9 @@ async function main() {
 
   const balance = await connection.getBalance(wallet.publicKey);
   const balanceSol = balance / LAMPORTS_PER_SOL;
-  console.log(`Wallet ${wallet.publicKey.toBase58()} SOL balance: ${balanceSol.toFixed(4)}`);
+  console.log(
+    `Wallet ${wallet.publicKey.toBase58()} SOL balance: ${balanceSol.toFixed(4)}`,
+  );
 
   const reserveLamports = Math.ceil(reserveSol * LAMPORTS_PER_SOL);
   const minLamports = Math.ceil(minSol * LAMPORTS_PER_SOL);
@@ -83,7 +86,9 @@ async function main() {
     return;
   }
   const quoteBn = new BN(quoteLamports);
-  console.log(`Will swap ~${(quoteLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL (reserving ${reserveSol} SOL)`);
+  console.log(
+    `Will swap ~${(quoteLamports / LAMPORTS_PER_SOL).toFixed(4)} SOL (reserving ${reserveSol} SOL)`,
+  );
 
   const sdk = new OnlinePumpAmmSdk(connection);
   const poolKey = canonicalPumpPoolPda(cultMint);
@@ -135,12 +140,19 @@ async function main() {
   const tx = new Transaction();
   tx.add(...swapIxs, burnIx);
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("finalized");
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash("finalized");
   tx.recentBlockhash = blockhash;
   tx.feePayer = wallet.publicKey;
 
   if (dryRun) {
-    console.log("[DRY RUN] Would send tx: swap", quoteLamports, "lamports -> CULT, then burn", baseAmount.toString(), "base units.");
+    console.log(
+      "[DRY RUN] Would send tx: swap",
+      quoteLamports,
+      "lamports -> CULT, then burn",
+      baseAmount.toString(),
+      "base units.",
+    );
     return;
   }
 

@@ -21,20 +21,14 @@ export async function GET(request: NextRequest) {
     RATE_LIMITS.loqate,
   );
   if (!rateLimitResult.success) {
-    return addCorsIfAdminOrigin(
-      request,
-      rateLimitResponse(rateLimitResult),
-    );
+    return addCorsIfAdminOrigin(request, rateLimitResponse(rateLimitResult));
   }
 
   const key = process.env.LOQATE_API_KEY;
   if (!key?.trim()) {
     return addCorsIfAdminOrigin(
       request,
-      NextResponse.json(
-        { error: "Loqate is not configured" },
-        { status: 503 },
-      ),
+      NextResponse.json({ error: "Loqate is not configured" }, { status: 503 }),
     );
   }
 
@@ -42,10 +36,7 @@ export async function GET(request: NextRequest) {
   if (!id) {
     return addCorsIfAdminOrigin(
       request,
-      NextResponse.json(
-        { error: "Address id is required" },
-        { status: 400 },
-      ),
+      NextResponse.json({ error: "Address id is required" }, { status: 400 }),
     );
   }
 
@@ -111,10 +102,7 @@ export async function GET(request: NextRequest) {
     console.error("Loqate Retrieve error:", err);
     return addCorsIfAdminOrigin(
       request,
-      NextResponse.json(
-        { error: "Address retrieve failed" },
-        { status: 502 },
-      ),
+      NextResponse.json({ error: "Address retrieve failed" }, { status: 502 }),
     );
   }
 }

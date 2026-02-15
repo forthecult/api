@@ -4,7 +4,10 @@
  */
 
 import type { CatalogBlueprint, PodProvider } from "./types";
-import { fetchPrintfulBlueprintWithSpecs, fetchPrintfulCatalogList } from "./catalog-printful";
+import {
+  fetchPrintfulBlueprintWithSpecs,
+  fetchPrintfulCatalogList,
+} from "./catalog-printful";
 import {
   fetchPrintifyBlueprintWithSpecs,
   fetchPrintifyBlueprintsList,
@@ -51,8 +54,7 @@ export async function fetchBlueprints(
     const q = search.trim().toLowerCase();
     filtered = results.filter(
       (b) =>
-        b.title.toLowerCase().includes(q) ||
-        b.brand.toLowerCase().includes(q),
+        b.title.toLowerCase().includes(q) || b.brand.toLowerCase().includes(q),
     );
   }
 

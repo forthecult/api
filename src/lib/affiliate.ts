@@ -54,22 +54,33 @@ export async function resolveAffiliateForOrder(
   ) {
     if (affiliate.customerDiscountType === "percent") {
       discountCents = Math.round(
-        totalBeforeDiscountCents * (Math.min(100, affiliate.customerDiscountValue) / 100),
+        totalBeforeDiscountCents *
+          (Math.min(100, affiliate.customerDiscountValue) / 100),
       );
     } else {
-      discountCents = Math.min(affiliate.customerDiscountValue, totalBeforeDiscountCents);
+      discountCents = Math.min(
+        affiliate.customerDiscountValue,
+        totalBeforeDiscountCents,
+      );
     }
   }
 
-  const totalAfterDiscountCents = Math.max(0, totalBeforeDiscountCents - discountCents);
+  const totalAfterDiscountCents = Math.max(
+    0,
+    totalBeforeDiscountCents - discountCents,
+  );
 
   let commissionCents: number;
   if (affiliate.commissionType === "percent") {
     commissionCents = Math.round(
-      totalAfterDiscountCents * (Math.min(100, affiliate.commissionValue) / 100),
+      totalAfterDiscountCents *
+        (Math.min(100, affiliate.commissionValue) / 100),
     );
   } else {
-    commissionCents = Math.min(affiliate.commissionValue, totalAfterDiscountCents);
+    commissionCents = Math.min(
+      affiliate.commissionValue,
+      totalAfterDiscountCents,
+    );
   }
 
   return {

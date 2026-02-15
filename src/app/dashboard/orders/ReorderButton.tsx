@@ -10,7 +10,13 @@ import { Button } from "~/ui/primitives/button";
 
 interface ReorderButtonProps {
   orderId: string;
-  variant?: "default" | "outline" | "ghost" | "link" | "destructive" | "secondary";
+  variant?:
+    | "default"
+    | "outline"
+    | "ghost"
+    | "link"
+    | "destructive"
+    | "secondary";
   size?: "default" | "sm" | "lg" | "icon";
   className?: string;
   children?: React.ReactNode;
@@ -30,9 +36,12 @@ export function ReorderButton({
   const handleReorder = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/orders/${encodeURIComponent(orderId)}/reorder`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `/api/orders/${encodeURIComponent(orderId)}/reorder`,
+        {
+          credentials: "include",
+        },
+      );
 
       if (!res.ok) {
         const data = (await res.json()) as { error?: { message?: string } };

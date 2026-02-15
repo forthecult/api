@@ -13,10 +13,7 @@ import {
   productTagsTable,
   productVariantsTable,
 } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { syncProductCategoriesWithAutoRules } from "~/lib/category-auto-assign";
 import { exportProductToPrintful } from "~/lib/printful-sync";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
@@ -54,47 +51,50 @@ export async function GET(
     }
     const productId = product.id;
 
-    const [productCategoriesRows, images, tags, variants, availableCountries, tokenGatesRows] =
-      await Promise.all([
-        db
-          .select({
-            categoryId: productCategoriesTable.categoryId,
-            isMain: productCategoriesTable.isMain,
-          })
-          .from(productCategoriesTable)
-          .where(eq(productCategoriesTable.productId, productId)),
-        db
-          .select()
-          .from(productImagesTable)
-          .where(eq(productImagesTable.productId, productId))
-          .orderBy(
-            asc(productImagesTable.sortOrder),
-            asc(productImagesTable.id),
-          ),
-        db
-          .select({ tag: productTagsTable.tag })
-          .from(productTagsTable)
-          .where(eq(productTagsTable.productId, productId)),
-        db
-          .select()
-          .from(productVariantsTable)
-          .where(eq(productVariantsTable.productId, productId)),
-        db
-          .select({ countryCode: productAvailableCountryTable.countryCode })
-          .from(productAvailableCountryTable)
-          .where(eq(productAvailableCountryTable.productId, productId))
-          .catch(() => [] as { countryCode: string }[]),
-        db
-          .select({
-            id: productTokenGateTable.id,
-            tokenSymbol: productTokenGateTable.tokenSymbol,
-            quantity: productTokenGateTable.quantity,
-            network: productTokenGateTable.network,
-            contractAddress: productTokenGateTable.contractAddress,
-          })
-          .from(productTokenGateTable)
-          .where(eq(productTokenGateTable.productId, productId)),
-      ]);
+    const [
+      productCategoriesRows,
+      images,
+      tags,
+      variants,
+      availableCountries,
+      tokenGatesRows,
+    ] = await Promise.all([
+      db
+        .select({
+          categoryId: productCategoriesTable.categoryId,
+          isMain: productCategoriesTable.isMain,
+        })
+        .from(productCategoriesTable)
+        .where(eq(productCategoriesTable.productId, productId)),
+      db
+        .select()
+        .from(productImagesTable)
+        .where(eq(productImagesTable.productId, productId))
+        .orderBy(asc(productImagesTable.sortOrder), asc(productImagesTable.id)),
+      db
+        .select({ tag: productTagsTable.tag })
+        .from(productTagsTable)
+        .where(eq(productTagsTable.productId, productId)),
+      db
+        .select()
+        .from(productVariantsTable)
+        .where(eq(productVariantsTable.productId, productId)),
+      db
+        .select({ countryCode: productAvailableCountryTable.countryCode })
+        .from(productAvailableCountryTable)
+        .where(eq(productAvailableCountryTable.productId, productId))
+        .catch(() => [] as { countryCode: string }[]),
+      db
+        .select({
+          id: productTokenGateTable.id,
+          tokenSymbol: productTokenGateTable.tokenSymbol,
+          quantity: productTokenGateTable.quantity,
+          network: productTokenGateTable.network,
+          contractAddress: productTokenGateTable.contractAddress,
+        })
+        .from(productTokenGateTable)
+        .where(eq(productTokenGateTable.productId, productId)),
+    ]);
 
     const slug = product.slug?.trim() || slugify(product.name) || null;
 
@@ -164,9 +164,13 @@ export async function GET(
       tokenGateNetwork: product.tokenGateNetwork,
       tokenGateContractAddress: product.tokenGateContractAddress,
       tokenGates,
-      categoryId: productCategoriesRows.find((r) => r.isMain)?.categoryId ?? productCategoriesRows[0]?.categoryId ?? null,
+      categoryId:
+        productCategoriesRows.find((r) => r.isMain)?.categoryId ??
+        productCategoriesRows[0]?.categoryId ??
+        null,
       categoryIds: productCategoriesRows.map((r) => r.categoryId),
-      mainCategoryId: productCategoriesRows.find((r) => r.isMain)?.categoryId ?? null,
+      mainCategoryId:
+        productCategoriesRows.find((r) => r.isMain)?.categoryId ?? null,
       availableCountryCodes: availableCountries
         .map((r) => r.countryCode)
         .filter((c) => !isShippingExcluded(c)),
@@ -315,8 +319,7 @@ export async function PATCH(
             (x): x is string => typeof x === "string" && x.trim() !== "",
           )
         : [];
-      updates.featuresJson =
-        arr.length > 0 ? JSON.stringify(arr) : null;
+      updates.featuresJson = arr.length > 0 ? JSON.stringify(arr) : null;
     }
     if (body.imageUrl !== undefined) updates.imageUrl = body.imageUrl ?? null;
     if (body.mainImageAlt !== undefined)
@@ -331,7 +334,10 @@ export async function PATCH(
       updates.seoOptimized = body.seoOptimized;
     if (typeof body.priceCents === "number") {
       if (body.priceCents < 0) {
-        return NextResponse.json({ error: "Price cannot be negative" }, { status: 400 });
+        return NextResponse.json(
+          { error: "Price cannot be negative" },
+          { status: 400 },
+        );
       }
       updates.priceCents = body.priceCents;
     }
@@ -412,13 +418,16 @@ export async function PATCH(
     let savedCategoryIds: string[] | undefined;
     if (body.categoryIds !== undefined || body.categoryId !== undefined) {
       const categoryIds = Array.isArray(body.categoryIds)
-        ? body.categoryIds.filter((c): c is string => typeof c === "string" && c.trim() !== "")
+        ? body.categoryIds.filter(
+            (c): c is string => typeof c === "string" && c.trim() !== "",
+          )
         : body.categoryId !== undefined && body.categoryId?.trim()
           ? [body.categoryId.trim()]
           : [];
-      const mainCategoryId = typeof body.mainCategoryId === "string" && body.mainCategoryId.trim()
-        ? body.mainCategoryId.trim()
-        : categoryIds[0] ?? null;
+      const mainCategoryId =
+        typeof body.mainCategoryId === "string" && body.mainCategoryId.trim()
+          ? body.mainCategoryId.trim()
+          : (categoryIds[0] ?? null);
       if (categoryIds.length > 0) {
         const existingCategories = await db
           .select({ id: categoriesTable.id })
@@ -429,7 +438,8 @@ export async function PATCH(
         if (invalidIds.length > 0) {
           return NextResponse.json(
             {
-              error: "Invalid category ID(s). Categories may have been deleted or the list is stale. Refresh the page and try again.",
+              error:
+                "Invalid category ID(s). Categories may have been deleted or the list is stale. Refresh the page and try again.",
               invalidCategoryIds: invalidIds,
             },
             { status: 400 },
@@ -495,9 +505,9 @@ export async function PATCH(
         ...new Set(body.tags.map((t) => t.trim()).filter(Boolean)),
       ];
       if (uniqueTags.length > 0) {
-        await db.insert(productTagsTable).values(
-          uniqueTags.map((tag) => ({ productId: id, tag })),
-        );
+        await db
+          .insert(productTagsTable)
+          .values(uniqueTags.map((tag) => ({ productId: id, tag })));
       }
     }
 
@@ -595,9 +605,13 @@ export async function PATCH(
       await db
         .delete(productTokenGateTable)
         .where(eq(productTokenGateTable.productId, id));
-      const gatesToInsert = (Array.isArray(body.tokenGates) ? body.tokenGates : [])
+      const gatesToInsert = (
+        Array.isArray(body.tokenGates) ? body.tokenGates : []
+      )
         .map((gate) => {
-          const symbol = String(gate.tokenSymbol ?? "").trim().toUpperCase();
+          const symbol = String(gate.tokenSymbol ?? "")
+            .trim()
+            .toUpperCase();
           const qty = Number(gate.quantity);
           if (!symbol || !Number.isInteger(qty) || qty < 1) return null;
           return {
@@ -632,10 +646,7 @@ export async function PATCH(
 
     // Push product changes to Printify when product is a Printify product
     let printifyExportError: string | null = null;
-    if (
-      updated.source === "printify" &&
-      updated.printifyProductId != null
-    ) {
+    if (updated.source === "printify" && updated.printifyProductId != null) {
       const exportResult = await exportProductToPrintify(id);
       if (!exportResult.success) {
         printifyExportError = exportResult.error ?? "Printify export failed";
@@ -717,15 +728,10 @@ export async function DELETE(
     const { id } = await params;
     const product = await getProductByParam(id);
     if (!product) {
-      return NextResponse.json(
-        { error: "Product not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    await db
-      .delete(productsTable)
-      .where(eq(productsTable.id, product.id));
+    await db.delete(productsTable).where(eq(productsTable.id, product.id));
 
     return NextResponse.json({ ok: true });
   } catch (err) {

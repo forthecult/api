@@ -57,10 +57,16 @@ async function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function buildSyncVariantsFromTemplate(tpl: PrintfulProductTemplateItem): Array<{
+function buildSyncVariantsFromTemplate(
+  tpl: PrintfulProductTemplateItem,
+): Array<{
   variant_id: number;
   retail_price?: string;
-  files: Array<{ type: string; url: string; options?: Array<{ id: string; value: string | boolean }> }>;
+  files: Array<{
+    type: string;
+    url: string;
+    options?: Array<{ id: string; value: string | boolean }>;
+  }>;
   options?: Array<{ id: string; value: string }>;
 }> {
   const placement = tpl.placements?.[0]?.placement ?? "front";
@@ -72,7 +78,7 @@ function buildSyncVariantsFromTemplate(tpl: PrintfulProductTemplateItem): Array<
   const variantOptions =
     tpl.option_data?.map((o) => ({
       id: o.id,
-      value: Array.isArray(o.value) ? o.value[0] ?? "" : o.value,
+      value: Array.isArray(o.value) ? (o.value[0] ?? "") : o.value,
     })) ?? undefined;
 
   return tpl.available_variant_ids.map((variant_id) => ({
@@ -98,11 +104,18 @@ async function main() {
     if (res.paging && offset >= res.paging.total) break;
   } while (true);
 
-  console.log(`Found ${allTemplates.length} product template(s). Creating products with Culture branding...\n`);
+  console.log(
+    `Found ${allTemplates.length} product template(s). Creating products with Culture branding...\n`,
+  );
 
   const rateLimitMs = 6_000;
   let created = 0;
-  const suggestedSeo: Array<{ templateId: number; title: string; metaDescription: string; pageTitle: string }> = [];
+  const suggestedSeo: Array<{
+    templateId: number;
+    title: string;
+    metaDescription: string;
+    pageTitle: string;
+  }> = [];
 
   for (let i = 0; i < allTemplates.length; i++) {
     const tpl = allTemplates[i]!;
@@ -123,12 +136,16 @@ async function main() {
     try {
       sync_variants = buildSyncVariantsFromTemplate(tpl, designFile);
     } catch (e) {
-      console.error(`  [${i + 1}/${allTemplates.length}] Skip template ${tpl.id}: ${(e as Error).message}`);
+      console.error(
+        `  [${i + 1}/${allTemplates.length}] Skip template ${tpl.id}: ${(e as Error).message}`,
+      );
       continue;
     }
 
     if (sync_variants.length === 0) {
-      console.log(`  [${i + 1}/${allTemplates.length}] Skip template ${tpl.id} (no variants)`);
+      console.log(
+        `  [${i + 1}/${allTemplates.length}] Skip template ${tpl.id} (no variants)`,
+      );
       continue;
     }
 
@@ -145,16 +162,22 @@ async function main() {
       );
       created++;
       const metaDesc =
-        description.length <= 155 ? description : description.slice(0, 152) + "...";
+        description.length <= 155
+          ? description
+          : description.slice(0, 152) + "...";
       suggestedSeo.push({
         templateId: tpl.id,
         title: cultureTitle,
         metaDescription: metaDesc,
         pageTitle: `${cultureTitle} | Culture`,
       });
-      console.log(`  [${i + 1}/${allTemplates.length}] Created: "${cultureTitle}"`);
+      console.log(
+        `  [${i + 1}/${allTemplates.length}] Created: "${cultureTitle}"`,
+      );
     } catch (e) {
-      console.error(`  [${i + 1}/${allTemplates.length}] Create failed for template ${tpl.id}: ${(e as Error).message}`);
+      console.error(
+        `  [${i + 1}/${allTemplates.length}] Create failed for template ${tpl.id}: ${(e as Error).message}`,
+      );
     }
 
     if (i < allTemplates.length - 1) {

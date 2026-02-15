@@ -68,7 +68,10 @@ const STATUS_OPTIONS = [
   { value: "rejected", label: "Rejected" },
 ] as const;
 
-const NEXT_STATUS_OPTIONS: Record<string, Array<{ value: string; label: string }>> = {
+const NEXT_STATUS_OPTIONS: Record<
+  string,
+  Array<{ value: string; label: string }>
+> = {
   requested: [
     { value: "approved", label: "Approve" },
     { value: "refunded", label: "Mark refunded" },
@@ -94,8 +97,7 @@ function StatusPill({ status }: { status: string }) {
           : normalized === "rejected"
             ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
             : "bg-muted text-muted-foreground";
-  const label =
-    status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+  const label = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
   return (
     <span
       className={cn(
@@ -160,7 +162,9 @@ export default function AdminRefundsPage() {
           body: JSON.stringify({ status }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
         await fetchRefunds();
@@ -257,9 +261,7 @@ export default function AdminRefundsPage() {
               disabled={loading}
               aria-label="Refresh list"
             >
-              <RefreshCw
-                className={cn("h-4 w-4", loading && "animate-spin")}
-              />
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </Button>
           </div>
         </CardHeader>
@@ -274,25 +276,46 @@ export default function AdminRefundsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Request date
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Order
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Customer
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Amount
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Refund status
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Crypto address
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium text-right"
+                      >
                         Actions
                       </th>
                     </tr>
@@ -346,7 +369,10 @@ export default function AdminRefundsPage() {
                                 </span>
                               )}
                             </td>
-                            <td className="max-w-[180px] truncate p-4 font-mono text-xs text-muted-foreground" title={row.refundAddress ?? undefined}>
+                            <td
+                              className="max-w-[180px] truncate p-4 font-mono text-xs text-muted-foreground"
+                              title={row.refundAddress ?? undefined}
+                            >
                               {row.refundAddress ?? "—"}
                             </td>
                             <td className="p-4 text-right">
@@ -364,9 +390,7 @@ export default function AdminRefundsPage() {
                                         updateStatus(row.id, opt.value)
                                       }
                                     >
-                                      {updatingId === row.id
-                                        ? "…"
-                                        : opt.label}
+                                      {updatingId === row.id ? "…" : opt.label}
                                     </Button>
                                   ))}
                                 </span>

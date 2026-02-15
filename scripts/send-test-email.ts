@@ -20,7 +20,9 @@ if (!to) {
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 if (!RESEND_API_KEY) {
-  console.error("RESEND_API_KEY is not set in .env. Add it to send real emails.");
+  console.error(
+    "RESEND_API_KEY is not set in .env. Add it to send real emails.",
+  );
   process.exit(1);
 }
 

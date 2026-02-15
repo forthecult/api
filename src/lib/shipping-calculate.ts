@@ -119,16 +119,54 @@ function estimateTaxCents(
     const state = (stateCode ?? "").trim().toUpperCase().slice(0, 2);
     // Approximate combined state + local rates (0 = no state sales tax)
     const US_STATE_TAX_RATE: Record<string, number> = {
-      AL: 0.09, AZ: 0.08, AR: 0.095, CA: 0.0725, CO: 0.076, CT: 0.0635,
-      DC: 0.06, FL: 0.06, GA: 0.07, HI: 0.04, ID: 0.06, IL: 0.0625, IN: 0.07,
-      IA: 0.06, KS: 0.065, KY: 0.06, LA: 0.0445, ME: 0.055, MD: 0.06,
-      MA: 0.0625, MI: 0.06, MN: 0.065, MS: 0.07, MO: 0.04225, NE: 0.055,
-      NV: 0.0685, NJ: 0.06625, NM: 0.05125, NY: 0.08, NC: 0.0475, ND: 0.05,
-      OH: 0.0575, OK: 0.045, PA: 0.06, RI: 0.07, SC: 0.06, SD: 0.045,
-      TN: 0.07, TX: 0.0625, UT: 0.061, VT: 0.06, VA: 0.053, WA: 0.065,
-      WV: 0.06, WI: 0.05, WY: 0.04,
+      AL: 0.09,
+      AZ: 0.08,
+      AR: 0.095,
+      CA: 0.0725,
+      CO: 0.076,
+      CT: 0.0635,
+      DC: 0.06,
+      FL: 0.06,
+      GA: 0.07,
+      HI: 0.04,
+      ID: 0.06,
+      IL: 0.0625,
+      IN: 0.07,
+      IA: 0.06,
+      KS: 0.065,
+      KY: 0.06,
+      LA: 0.0445,
+      ME: 0.055,
+      MD: 0.06,
+      MA: 0.0625,
+      MI: 0.06,
+      MN: 0.065,
+      MS: 0.07,
+      MO: 0.04225,
+      NE: 0.055,
+      NV: 0.0685,
+      NJ: 0.06625,
+      NM: 0.05125,
+      NY: 0.08,
+      NC: 0.0475,
+      ND: 0.05,
+      OH: 0.0575,
+      OK: 0.045,
+      PA: 0.06,
+      RI: 0.07,
+      SC: 0.06,
+      SD: 0.045,
+      TN: 0.07,
+      TX: 0.0625,
+      UT: 0.061,
+      VT: 0.06,
+      VA: 0.053,
+      WA: 0.065,
+      WV: 0.06,
+      WI: 0.05,
+      WY: 0.04,
     };
-    const rate = state ? US_STATE_TAX_RATE[state] ?? 0.06 : 0.06;
+    const rate = state ? (US_STATE_TAX_RATE[state] ?? 0.06) : 0.06;
     if (rate <= 0) return { taxCents: 0, note: null };
     const taxBase = subtotalCents + shippingCents;
     const taxCents = Math.round(taxBase * rate);
@@ -141,9 +179,37 @@ function estimateTaxCents(
   if (
     country === "GB" ||
     country === "NO" ||
-    ["AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"].includes(country)
+    [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CY",
+      "CZ",
+      "DK",
+      "EE",
+      "FI",
+      "FR",
+      "DE",
+      "GR",
+      "HU",
+      "IE",
+      "IT",
+      "LV",
+      "LT",
+      "LU",
+      "MT",
+      "NL",
+      "PL",
+      "PT",
+      "RO",
+      "SK",
+      "SI",
+      "ES",
+      "SE",
+    ].includes(country)
   ) {
-    const vatRate = country === "GB" ? 0.20 : country === "NO" ? 0.25 : 0.20;
+    const vatRate = country === "GB" ? 0.2 : country === "NO" ? 0.25 : 0.2;
     const taxCents = Math.round((subtotalCents + shippingCents) * vatRate);
     return {
       taxCents,
@@ -420,7 +486,11 @@ async function calculatePrintfulShipping(
  */
 /** Normalize cart items: cart line id is often "productId__variantId"; if productId looks like that, split so lookups succeed. */
 function normalizeShippingItems(
-  items: Array<{ productId: string; productVariantId?: string; quantity: number }>,
+  items: Array<{
+    productId: string;
+    productVariantId?: string;
+    quantity: number;
+  }>,
 ): Array<{ productId: string; productVariantId?: string; quantity: number }> {
   return items.map((i) => {
     const pid = i.productId?.trim();
@@ -642,10 +712,7 @@ export async function runShippingCalculate(
             })
             .from(productVariantsTable)
             .where(
-              inArray(
-                productVariantsTable.productId,
-                productIdsWithoutVariant,
-              ),
+              inArray(productVariantsTable.productId, productIdsWithoutVariant),
             )
             .orderBy(
               asc(productVariantsTable.productId),
@@ -682,7 +749,11 @@ export async function runShippingCalculate(
     printifyDefaultVariantByProductId = new Map<string, string>();
     if (defaultVariantsForPrintifyResult.length > 0) {
       for (const row of defaultVariantsForPrintifyResult) {
-        if (row.productId && row.externalId && !printifyDefaultVariantByProductId.has(row.productId)) {
+        if (
+          row.productId &&
+          row.externalId &&
+          !printifyDefaultVariantByProductId.has(row.productId)
+        ) {
           printifyDefaultVariantByProductId.set(row.productId, row.externalId);
         }
       }
@@ -691,19 +762,20 @@ export async function runShippingCalculate(
     firstVariantExternalIdByProductId = new Map<string, string>();
     if (firstVariantPerProductResult.length > 0) {
       for (const row of firstVariantPerProductResult) {
-        if (row.productId && row.externalId && !firstVariantExternalIdByProductId.has(row.productId)) {
+        if (
+          row.productId &&
+          row.externalId &&
+          !firstVariantExternalIdByProductId.has(row.productId)
+        ) {
           firstVariantExternalIdByProductId.set(row.productId, row.externalId);
         }
       }
     }
     allOptions = optionsResult;
     brandNameToId = new Map<string, string>(
-      (
-        brandsResult as Array<{ id: string; name: string | null }>
-      ).filter((b) => (b.name ?? "").trim().length > 0).map((b) => [
-        (b.name ?? "").trim().toLowerCase(),
-        b.id,
-      ]),
+      (brandsResult as Array<{ id: string; name: string | null }>)
+        .filter((b) => (b.name ?? "").trim().length > 0)
+        .map((b) => [(b.name ?? "").trim().toLowerCase(), b.id]),
     );
   } catch (dbErr) {
     console.warn("Shipping calculate: DB read failed", dbErr);
@@ -764,7 +836,7 @@ export async function runShippingCalculate(
     }
     const itemValueCents = itemPriceCents * qty;
     const brandId = product.brand?.trim()
-      ? brandNameToId.get(product.brand.trim().toLowerCase()) ?? null
+      ? (brandNameToId.get(product.brand.trim().toLowerCase()) ?? null)
       : null;
 
     totalQuantity += qty;
@@ -815,9 +887,7 @@ export async function runShippingCalculate(
           : NaN;
       const printProviderId = product.printifyPrintProviderId ?? NaN;
       const hasBlueprintAndProvider =
-        !isNaN(blueprintId) &&
-        !isNaN(printProviderId) &&
-        printProviderId > 0;
+        !isNaN(blueprintId) && !isNaN(printProviderId) && printProviderId > 0;
 
       let variantId: number | null = null;
       if (item.productVariantId != null) {
@@ -831,8 +901,9 @@ export async function runShippingCalculate(
         if (variantId !== null && isNaN(variantId)) variantId = null;
       } else {
         // Single-variant or simple product: use first variant for this product
-        const defaultExternalId =
-          printifyDefaultVariantByProductId.get(item.productId);
+        const defaultExternalId = printifyDefaultVariantByProductId.get(
+          item.productId,
+        );
         if (defaultExternalId != null) {
           const parsed = Number.parseInt(String(defaultExternalId), 10);
           if (!isNaN(parsed)) variantId = parsed;
@@ -847,7 +918,9 @@ export async function runShippingCalculate(
           quantity: qty,
         });
         // Also collect for direct order shipping API (more accurate)
-        const printifyProductId = productById.get(item.productId)?.printifyProductId;
+        const printifyProductId = productById.get(
+          item.productId,
+        )?.printifyProductId;
         if (printifyProductId && variantId != null) {
           printifyOrderShippingItems.push({
             printifyProductId,
@@ -870,10 +943,16 @@ export async function runShippingCalculate(
     }
   }
 
-  const hasPrintfulProductsInCart = products.some((p) => p.source === "printful");
+  const hasPrintfulProductsInCart = products.some(
+    (p) => p.source === "printful",
+  );
   if (printfulMissingCatalogVariantIds.size > 0) {
-    const logged = (globalThis as unknown as { __printfulMissingLogged?: Set<string> }).__printfulMissingLogged ?? new Set<string>();
-    (globalThis as unknown as { __printfulMissingLogged: Set<string> }).__printfulMissingLogged = logged;
+    const logged =
+      (globalThis as unknown as { __printfulMissingLogged?: Set<string> })
+        .__printfulMissingLogged ?? new Set<string>();
+    (
+      globalThis as unknown as { __printfulMissingLogged: Set<string> }
+    ).__printfulMissingLogged = logged;
     const toLog = [...printfulMissingCatalogVariantIds].filter((id) => {
       if (logged.has(id)) return false;
       logged.add(id);
@@ -922,12 +1001,18 @@ export async function runShippingCalculate(
           },
         );
         // Use standard rate by default
-        if (typeof directResult.standard === "number" && directResult.standard >= 0) {
+        if (
+          typeof directResult.standard === "number" &&
+          directResult.standard >= 0
+        ) {
           printifyShippingCents = directResult.standard;
           usedDirectApi = true;
         }
       } catch (err) {
-        console.warn("Printify direct shipping calc failed, falling back to catalog:", err instanceof Error ? err.message : err);
+        console.warn(
+          "Printify direct shipping calc failed, falling back to catalog:",
+          err instanceof Error ? err.message : err,
+        );
       }
     }
 
@@ -993,7 +1078,8 @@ export async function runShippingCalculate(
         )
           continue;
 
-        const isExpress = (opt as { speed?: string | null }).speed === "express";
+        const isExpress =
+          (opt as { speed?: string | null }).speed === "express";
         if (isExpress) {
           adminShippingSpeed = "express";
         }
@@ -1019,7 +1105,8 @@ export async function runShippingCalculate(
           break;
         }
         if (opt.type === "flat_plus_per_item" && opt.amountCents != null) {
-          const additional = (opt.additionalItemCents ?? 0) * Math.max(0, stats.qty - 1);
+          const additional =
+            (opt.additionalItemCents ?? 0) * Math.max(0, stats.qty - 1);
           adminShippingCents += opt.amountCents + additional;
           adminLabels.push(displayLabel);
           break;
@@ -1060,11 +1147,7 @@ export async function runShippingCalculate(
     labels.push(adminLabel);
   }
   const finalLabel =
-    labels.length > 1
-      ? "Standard"
-      : labels.length > 0
-        ? labels[0]
-        : null;
+    labels.length > 1 ? "Standard" : labels.length > 0 ? labels[0] : null;
 
   // Check for free shipping (only if entire order qualifies)
   const isFreeShipping =

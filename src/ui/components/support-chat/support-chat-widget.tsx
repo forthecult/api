@@ -22,7 +22,12 @@ const API_BASE = "";
 function getGuestId(): string | null {
   if (typeof window === "undefined") return null;
   let id = sessionStorage.getItem(GUEST_ID_KEY);
-  if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) {
+  if (
+    !id ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id,
+    )
+  ) {
     id = crypto.randomUUID();
     sessionStorage.setItem(GUEST_ID_KEY, id);
   }
@@ -54,7 +59,9 @@ export function SupportChatWidget() {
   const pathname = usePathname();
   const isCheckout = pathname?.startsWith("/checkout") ?? false;
   const [open, setOpen] = React.useState(false);
-  const [conversationId, setConversationId] = React.useState<string | null>(null);
+  const [conversationId, setConversationId] = React.useState<string | null>(
+    null,
+  );
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -67,9 +74,17 @@ export function SupportChatWidget() {
   const messagesScrollRef = React.useRef<HTMLDivElement>(null);
 
   // ── Drag-to-move state ──────────────────────────────────────────────
-  const [position, setPosition] = React.useState<{ bottom: number; right: number }>({ bottom: 16, right: 16 });
+  const [position, setPosition] = React.useState<{
+    bottom: number;
+    right: number;
+  }>({ bottom: 16, right: 16 });
   const isDraggingRef = React.useRef(false);
-  const dragStartRef = React.useRef({ mouseX: 0, mouseY: 0, bottom: 16, right: 16 });
+  const dragStartRef = React.useRef({
+    mouseX: 0,
+    mouseY: 0,
+    bottom: 16,
+    right: 16,
+  });
   const hasDraggedRef = React.useRef(false);
   const latestPosRef = React.useRef({ bottom: 16, right: 16 });
 
@@ -93,37 +108,52 @@ export function SupportChatWidget() {
     }
   }, []);
 
-  const handleDragStart = React.useCallback((clientX: number, clientY: number) => {
-    isDraggingRef.current = true;
-    hasDraggedRef.current = false;
-    dragStartRef.current = {
-      mouseX: clientX,
-      mouseY: clientY,
-      bottom: latestPosRef.current.bottom,
-      right: latestPosRef.current.right,
-    };
-  }, []);
+  const handleDragStart = React.useCallback(
+    (clientX: number, clientY: number) => {
+      isDraggingRef.current = true;
+      hasDraggedRef.current = false;
+      dragStartRef.current = {
+        mouseX: clientX,
+        mouseY: clientY,
+        bottom: latestPosRef.current.bottom,
+        right: latestPosRef.current.right,
+      };
+    },
+    [],
+  );
 
-  const handleDragMove = React.useCallback((clientX: number, clientY: number) => {
-    if (!isDraggingRef.current) return;
-    const dx = clientX - dragStartRef.current.mouseX;
-    const dy = clientY - dragStartRef.current.mouseY;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-      hasDraggedRef.current = true;
-    }
-    const next = {
-      right: Math.max(16, Math.min(window.innerWidth - 64, dragStartRef.current.right - dx)),
-      bottom: Math.max(16, Math.min(window.innerHeight - 64, dragStartRef.current.bottom - dy)),
-    };
-    latestPosRef.current = next;
-    setPosition(next);
-  }, []);
+  const handleDragMove = React.useCallback(
+    (clientX: number, clientY: number) => {
+      if (!isDraggingRef.current) return;
+      const dx = clientX - dragStartRef.current.mouseX;
+      const dy = clientY - dragStartRef.current.mouseY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasDraggedRef.current = true;
+      }
+      const next = {
+        right: Math.max(
+          16,
+          Math.min(window.innerWidth - 64, dragStartRef.current.right - dx),
+        ),
+        bottom: Math.max(
+          16,
+          Math.min(window.innerHeight - 64, dragStartRef.current.bottom - dy),
+        ),
+      };
+      latestPosRef.current = next;
+      setPosition(next);
+    },
+    [],
+  );
 
   const handleDragEnd = React.useCallback(() => {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     try {
-      localStorage.setItem("support-chat-pos", JSON.stringify(latestPosRef.current));
+      localStorage.setItem(
+        "support-chat-pos",
+        JSON.stringify(latestPosRef.current),
+      );
     } catch {
       /* ignore */
     }
@@ -321,14 +351,11 @@ export function SupportChatWidget() {
     try {
       if (cid) {
         const guestId = getGuestId();
-        await fetch(
-          `${API_BASE}/api/support-chat/conversations/${cid}`,
-          {
-            method: "PATCH",
-            credentials: "include",
-            headers: getHeaders(guestId),
-          },
-        );
+        await fetch(`${API_BASE}/api/support-chat/conversations/${cid}`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: getHeaders(guestId),
+        });
       }
       setConversationId(null);
       setMessages([]);
@@ -402,7 +429,9 @@ export function SupportChatWidget() {
                 {takenOverBy ? "Live Support Agent" : "Alice AI Support Agent"}
               </span>
               <span className="text-muted-foreground text-sm">
-                {takenOverBy ? "A team member is helping you" : "Online · Typically replies instantly"}
+                {takenOverBy
+                  ? "A team member is helping you"
+                  : "Online · Typically replies instantly"}
               </span>
             </div>
             <Button
@@ -418,10 +447,7 @@ export function SupportChatWidget() {
           </div>
 
           {/* Messages area */}
-          <div
-            ref={messagesScrollRef}
-            className="flex-1 overflow-y-auto p-3"
-          >
+          <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-3">
             {messages.length === 0 && !loading && !error && (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md">
@@ -440,15 +466,15 @@ export function SupportChatWidget() {
                     <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
-                <p className="text-base font-medium">Hi there! I&apos;m Alice</p>
+                <p className="text-base font-medium">
+                  Hi there! I&apos;m Alice
+                </p>
                 <p className="text-muted-foreground text-sm max-w-[240px]">
                   Your AI support assistant. How can I help you today?
                 </p>
               </div>
             )}
-            {error && (
-              <p className="text-destructive text-sm">{error}</p>
-            )}
+            {error && <p className="text-destructive text-sm">{error}</p>}
             <ul className="space-y-2">
               {messages.map((m) => {
                 const date = m.createdAt ? new Date(m.createdAt) : null;
@@ -469,7 +495,9 @@ export function SupportChatWidget() {
                         : "mr-8 bg-muted",
                     )}
                   >
-                    <span className="font-medium capitalize">{m.role === "customer" ? "You" : "Alice"}: </span>
+                    <span className="font-medium capitalize">
+                      {m.role === "customer" ? "You" : "Alice"}:{" "}
+                    </span>
                     {m.content}
                     {timeStr && (
                       <div

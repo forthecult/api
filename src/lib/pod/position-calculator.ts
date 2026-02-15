@@ -130,7 +130,10 @@ export function calculatePosition(
 /**
  * Normalize position result to Printify format (0-1 relative coordinates).
  */
-export function toPrintifyPosition(pos: PositionResult, printSpec: PrintSpec): {
+export function toPrintifyPosition(
+  pos: PositionResult,
+  printSpec: PrintSpec,
+): {
   x: number;
   y: number;
   scale: number;
@@ -147,7 +150,10 @@ export function toPrintifyPosition(pos: PositionResult, printSpec: PrintSpec): {
 /**
  * Normalize position result to Printful format (pixel position for order API).
  */
-export function toPrintfulPosition(pos: PositionResult, printSpec: PrintSpec): {
+export function toPrintfulPosition(
+  pos: PositionResult,
+  printSpec: PrintSpec,
+): {
   area_width: number;
   area_height: number;
   width: number;
@@ -177,12 +183,20 @@ export function suggestStrategy(
   const position = printPosition.toLowerCase();
   const type = productType.toLowerCase();
 
-  if (position.includes("left") && position.includes("chest")) return "left-chest";
+  if (position.includes("left") && position.includes("chest"))
+    return "left-chest";
   if (position.includes("pocket")) return "pocket";
-  if (position.includes("back") && (type.includes("shirt") || type.includes("hoodie")))
+  if (
+    position.includes("back") &&
+    (type.includes("shirt") || type.includes("hoodie"))
+  )
     return "center";
   if (position.includes("front")) {
-    if (type.includes("shirt") || type.includes("tee") || type.includes("hoodie"))
+    if (
+      type.includes("shirt") ||
+      type.includes("tee") ||
+      type.includes("hoodie")
+    )
       return imageAspectRatio > 1.2 ? "center-top" : "center";
     if (type.includes("mug")) return imageAspectRatio > 2 ? "fit" : "fill";
   }

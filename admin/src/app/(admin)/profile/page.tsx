@@ -28,7 +28,10 @@ export default function AdminProfilePage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [saveMessage, setSaveMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +40,9 @@ export default function AdminProfilePage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/user/profile`, { credentials: "include" });
+      const res = await fetch(`${API_BASE}/api/user/profile`, {
+        credentials: "include",
+      });
       if (!res.ok) {
         if (res.status === 401) {
           setError("Please sign in.");
@@ -70,7 +75,10 @@ export default function AdminProfilePage() {
       return;
     }
     if (!file.type.startsWith("image/")) {
-      setSaveMessage({ type: "error", text: "Please select an image (JPEG, PNG, WebP, or GIF)." });
+      setSaveMessage({
+        type: "error",
+        text: "Please select an image (JPEG, PNG, WebP, or GIF).",
+      });
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
@@ -86,7 +94,7 @@ export default function AdminProfilePage() {
     setSaveMessage(null);
     setSaveLoading(true);
     try {
-      let imageUrl: string | null | undefined = undefined;
+      let imageUrl: string | null | undefined;
 
       if (avatarFile) {
         const formData = new FormData();
@@ -97,7 +105,9 @@ export default function AdminProfilePage() {
           body: formData,
         });
         if (!uploadRes.ok) {
-          const err = (await uploadRes.json().catch(() => ({}))) as { error?: string };
+          const err = (await uploadRes.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(err.error ?? "Upload failed");
         }
         const uploadData = (await uploadRes.json()) as { url: string };
@@ -120,7 +130,10 @@ export default function AdminProfilePage() {
         throw new Error(err.error ?? "Failed to save");
       }
 
-      setSaveMessage({ type: "success", text: "Profile saved. Your name and photo will appear when you reply in chat and support tickets." });
+      setSaveMessage({
+        type: "success",
+        text: "Profile saved. Your name and photo will appear when you reply in chat and support tickets.",
+      });
       setAvatarFile(null);
       void fetchProfile();
     } catch (err) {
@@ -170,7 +183,8 @@ export default function AdminProfilePage() {
         <CardHeader>
           <CardTitle>Name & photo</CardTitle>
           <p className="text-sm text-muted-foreground">
-            This name and photo are shown when you reply in Support Chat and Support Tickets, so customers see who they’re talking to.
+            This name and photo are shown when you reply in Support Chat and
+            Support Tickets, so customers see who they’re talking to.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -223,7 +237,10 @@ export default function AdminProfilePage() {
 
             <div className="flex-1 space-y-4">
               <div>
-                <label htmlFor="first-name" className="mb-1.5 block text-sm font-medium">
+                <label
+                  htmlFor="first-name"
+                  className="mb-1.5 block text-sm font-medium"
+                >
                   First name
                 </label>
                 <input
@@ -236,7 +253,10 @@ export default function AdminProfilePage() {
                 />
               </div>
               <div>
-                <label htmlFor="last-name" className="mb-1.5 block text-sm font-medium">
+                <label
+                  htmlFor="last-name"
+                  className="mb-1.5 block text-sm font-medium"
+                >
                   Last name
                 </label>
                 <input

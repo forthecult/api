@@ -43,7 +43,9 @@ export function TopBanner() {
         className="flex w-full flex-1 items-center justify-center gap-1.5 py-0 md:pointer-events-none md:gap-0"
         onClick={() => setMobileCollapsed((c) => !c)}
         aria-expanded={!mobileCollapsed}
-        aria-label={mobileCollapsed ? "Expand announcement" : "Collapse announcement"}
+        aria-label={
+          mobileCollapsed ? "Expand announcement" : "Collapse announcement"
+        }
       >
         <p
           key={index}

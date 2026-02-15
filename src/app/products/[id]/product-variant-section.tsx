@@ -36,13 +36,13 @@ function PhoneModelDropdowns({
 }) {
   const currentBrand = selectedValue
     ? getPhoneBrand(selectedValue)
-    : groups[0]?.brand ?? null;
+    : (groups[0]?.brand ?? null);
   const currentGroup = groups.find((g) => g.brand === currentBrand);
   const models = currentGroup?.models ?? [];
   const displayModel =
     selectedValue && currentGroup?.models.includes(selectedValue)
       ? selectedValue
-      : models[0] ?? "";
+      : (models[0] ?? "");
 
   // Keep parent selection in sync when we're showing a fallback model (e.g. after brand switch or initial load)
   React.useEffect(() => {
@@ -91,11 +91,7 @@ function PhoneModelDropdowns({
               variant != null &&
               (variant.stockQuantity ?? 0) <= 0;
             return (
-              <option
-                key={model}
-                value={model}
-                disabled={outOfStock}
-              >
+              <option key={model} value={model} disabled={outOfStock}>
                 {model}
                 {outOfStock ? " (out of stock)" : ""}
               </option>
@@ -110,7 +106,9 @@ function PhoneModelDropdowns({
 /** Build a single display label for a variant (e.g. "Black / M" or "iPhone 16 Pro"). */
 function getVariantDisplayLabel(v: ProductVariantOption): string {
   if (v.label?.trim()) return v.label.trim();
-  const parts = [v.color, v.size, v.gender].filter(Boolean).map((s) => s!.trim());
+  const parts = [v.color, v.size, v.gender]
+    .filter(Boolean)
+    .map((s) => s!.trim());
   return parts.join(" / ") || "";
 }
 
@@ -146,7 +144,7 @@ function findVariant(
   );
   if (selectedSet.size === 0) return null;
   // Exact match: variant's values exactly equal selected
-  let match = variants.find((v) => {
+  const match = variants.find((v) => {
     const variantSet = getVariantValueSet(v);
     if (variantSet.size !== selectedSet.size) return false;
     for (const s of selectedSet) {
@@ -295,7 +293,10 @@ export function ProductVariantSection({
   React.useEffect(() => {
     setSelectedVariant(
       selectedVariantId
-        ? { id: selectedVariantId, imageUrl: selectedVariantImageUrl ?? undefined }
+        ? {
+            id: selectedVariantId,
+            imageUrl: selectedVariantImageUrl ?? undefined,
+          }
         : null,
     );
   }, [selectedVariantId, selectedVariantImageUrl, setSelectedVariant]);
@@ -348,9 +349,7 @@ export function ProductVariantSection({
               Not available in your country
             </p>
           ) : product.inStock ? (
-            <p className="text-sm font-medium text-[#C4873A]">
-              In Stock
-            </p>
+            <p className="text-sm font-medium text-[#C4873A]">In Stock</p>
           ) : (
             <p className="text-sm font-medium text-[#B5594E]">Out of Stock</p>
           )}
@@ -378,9 +377,7 @@ export function ProductVariantSection({
       <div className="mb-4 space-y-4">
         {optionDefinitions
           .map((opt, optionIndex) => ({ opt, optionIndex }))
-          .filter(
-            ({ opt }) => (opt.values ?? []).filter(Boolean).length > 1,
-          )
+          .filter(({ opt }) => (opt.values ?? []).filter(Boolean).length > 1)
           .map(({ opt, optionIndex }) => {
             const values = (opt.values ?? []).filter(Boolean);
             const isPhoneModels = isPhoneModelsOption(opt.name, values);
@@ -498,7 +495,9 @@ export function ProductVariantSection({
               : undefined
           }
           variantLabel={
-            selectedVariant ? getVariantDisplayLabel(selectedVariant) : undefined
+            selectedVariant
+              ? getVariantDisplayLabel(selectedVariant)
+              : undefined
           }
           variantRequired
         />

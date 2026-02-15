@@ -73,7 +73,9 @@ export function AuthFormHeader({ title, subtitle }: AuthFormHeaderProps) {
   return (
     <div className="space-y-1 text-center md:text-left">
       <h2 className="text-2xl font-bold sm:text-3xl">{title}</h2>
-      <p className="min-h-[1.25rem] text-sm text-muted-foreground">{subtitle}</p>
+      <p className="min-h-[1.25rem] text-sm text-muted-foreground">
+        {subtitle}
+      </p>
     </div>
   );
 }
@@ -98,7 +100,11 @@ export function AuthFormDivider({
 }
 
 /** Shared skeleton for login/signup dynamic loaders. Keeps layout identical to AuthFormLayout. */
-export function AuthPageSkeleton({ formHeight = "h-64" }: { formHeight?: "h-64" | "h-80" }) {
+export function AuthPageSkeleton({
+  formHeight = "h-64",
+}: {
+  formHeight?: "h-64" | "h-80";
+}) {
   return (
     <div className="grid h-screen w-full max-w-[100vw] overflow-x-hidden md:grid-cols-2">
       <Skeleton className="hidden h-full min-w-0 md:block" />

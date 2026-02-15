@@ -1,13 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
@@ -76,10 +70,7 @@ export function BrandSelect({
     return options.filter((b) => b.name.toLowerCase().includes(q));
   }, [options, searchQuery]);
 
-  const visible = useMemo(
-    () => filtered.slice(0, MAX_VISIBLE),
-    [filtered],
-  );
+  const visible = useMemo(() => filtered.slice(0, MAX_VISIBLE), [filtered]);
 
   const isOther = value !== "" && !selectedOption;
 

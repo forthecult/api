@@ -56,7 +56,12 @@ type ProductVariant = {
   optionValues?: Record<string, string>;
 };
 type OptionDef = { name: string; values: string[]; isExpanded?: boolean };
-type CategoryOption = { id: string; name: string; parentName?: string | null; slug?: string | null };
+type CategoryOption = {
+  id: string;
+  name: string;
+  parentName?: string | null;
+  slug?: string | null;
+};
 
 function slugFromName(name: string): string {
   return name
@@ -320,7 +325,9 @@ export default function AdminProductsCreatePage() {
           body: form,
         });
         if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? "Upload failed");
         }
         const data = (await res.json()) as { url: string };
@@ -335,13 +342,10 @@ export default function AdminProductsCreatePage() {
     },
     [updateImage],
   );
-  const triggerUploadImage = useCallback(
-    (target: "primary" | number) => {
-      uploadImageTargetRef.current = target;
-      uploadImageInputRef.current?.click();
-    },
-    [],
-  );
+  const triggerUploadImage = useCallback((target: "primary" | number) => {
+    uploadImageTargetRef.current = target;
+    uploadImageInputRef.current?.click();
+  }, []);
 
   // Option definitions handlers
   const addOption = useCallback(() => {
@@ -660,7 +664,11 @@ export default function AdminProductsCreatePage() {
                 />
               </div>
               <div className="space-y-2">
-                <label id="categoryId-label" htmlFor="categoryId" className={labelClass}>
+                <label
+                  id="categoryId-label"
+                  htmlFor="categoryId"
+                  className={labelClass}
+                >
                   Category
                 </label>
                 <CategorySelect
@@ -1488,7 +1496,9 @@ export default function AdminProductsCreatePage() {
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          setExpandedImageUrl(v.imageUrl ?? null)
+                                          setExpandedImageUrl(
+                                            v.imageUrl ?? null,
+                                          )
                                         }
                                         className="flex h-full w-full items-center justify-center transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
                                         title="Click to expand"

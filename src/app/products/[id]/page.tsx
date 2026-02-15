@@ -225,121 +225,130 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
                 {/* Product info */}
                 <div className="flex flex-col">
-                {/* Title & rating (only when there are reviews) */}
-                <div className="mb-6">
-                  <h1 className="text-3xl font-bold">{product.name}</h1>
+                  {/* Title & rating (only when there are reviews) */}
+                  <div className="mb-6">
+                    <h1 className="text-3xl font-bold">{product.name}</h1>
 
-                  {product.rating > 0 && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <div
-                        aria-label={`Rating ${product.rating} out of 5`}
-                        className="flex items-center"
-                      >
-                        {range(5).map((i) => (
-                          <Star
-                            className={`h-5 w-5 ${
-                              i < Math.floor(product.rating)
-                                ? "fill-primary text-primary"
-                                : i < product.rating
-                                  ? "fill-primary/50 text-primary"
-                                  : "text-muted-foreground"
-                            }`}
-                            key={`star-${i}`}
-                          />
-                        ))}
+                    {product.rating > 0 && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <div
+                          aria-label={`Rating ${product.rating} out of 5`}
+                          className="flex items-center"
+                        >
+                          {range(5).map((i) => (
+                            <Star
+                              className={`h-5 w-5 ${
+                                i < Math.floor(product.rating)
+                                  ? "fill-primary text-primary"
+                                  : i < product.rating
+                                    ? "fill-primary/50 text-primary"
+                                    : "text-muted-foreground"
+                              }`}
+                              key={`star-${i}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          ({product.rating.toFixed(1)})
+                        </span>
                       </div>
-                      <span className="text-sm text-muted-foreground">
-                        ({product.rating.toFixed(1)})
-                      </span>
-                    </div>
+                    )}
+                  </div>
+
+                  {/* Category */}
+                  <div className="mb-2">
+                    <p className="text-lg font-medium text-muted-foreground">
+                      {product.category}
+                    </p>
+                  </div>
+
+                  {/* Brand & model: show only when brand is not the fulfillment provider placeholder */}
+                  {(() => {
+                    const b = product.brand?.trim();
+                    const m = product.model?.trim();
+                    const isProviderBrand =
+                      b?.toLowerCase() === "printful" ||
+                      b?.toLowerCase() === "printify" ||
+                      b?.toLowerCase() === "generic brand";
+                    if (!b && !m) return null;
+                    if (isProviderBrand) return null;
+                    return (
+                      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        {b && (
+                          <span>
+                            <span className="font-medium text-foreground">
+                              Brand:
+                            </span>{" "}
+                            {b}
+                          </span>
+                        )}
+                        {m && (
+                          <span>
+                            <span className="font-medium text-foreground">
+                              Model:
+                            </span>{" "}
+                            {m}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Features only at top (bullet points); description is in accordion below */}
+                  {product.features.length > 0 && (
+                    <ul className="mb-6 space-y-2 text-muted-foreground">
+                      {product.features.map((feature) => (
+                        <li
+                          key={`feature-${product.id}-${slugify(feature)}`}
+                          className="flex items-start"
+                        >
+                          <span className="mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </div>
 
-                {/* Category */}
-                <div className="mb-2">
-                  <p className="text-lg font-medium text-muted-foreground">
-                    {product.category}
-                  </p>
-                </div>
-
-                {/* Brand & model: show only when brand is not the fulfillment provider placeholder */}
-                {(() => {
-                  const b = product.brand?.trim();
-                  const m = product.model?.trim();
-                  const isProviderBrand =
-                    b?.toLowerCase() === "printful" ||
-                    b?.toLowerCase() === "printify" ||
-                    b?.toLowerCase() === "generic brand";
-                  if (!b && !m) return null;
-                  if (isProviderBrand) return null;
-                  return (
-                    <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                      {b && (
-                        <span>
-                          <span className="font-medium text-foreground">Brand:</span> {b}
-                        </span>
-                      )}
-                      {m && (
-                        <span>
-                          <span className="font-medium text-foreground">Model:</span> {m}
-                        </span>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* Features only at top (bullet points); description is in accordion below */}
-                {product.features.length > 0 && (
-                  <ul className="mb-6 space-y-2 text-muted-foreground">
-                    {product.features.map((feature) => (
-                      <li
-                        key={`feature-${product.id}-${slugify(feature)}`}
-                        className="flex items-start"
-                      >
-                        <span className="mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {/* Variant options (when present), price, stock, add to cart */}
-                <ProductVariantSection
-                  product={{
-                    id: product.id,
-                    name: product.name,
-                    category: product.category,
-                    image: product.image,
-                    price: product.price,
-                    originalPrice: product.originalPrice,
-                    inStock: product.inStock,
-                    continueSellingWhenOutOfStock: product.continueSellingWhenOutOfStock,
-                    availableCountryCodes: product.availableCountryCodes,
-                  }}
-                  hasVariants={product.hasVariants ?? false}
-                  optionDefinitions={product.optionDefinitions ?? []}
-                  variants={product.variants ?? []}
-                  handlingDaysMin={product.handlingDaysMin}
-                  handlingDaysMax={product.handlingDaysMax}
-                />
-                <EstimatedDeliveryTimeline
-                  handlingDaysMin={product.handlingDaysMin}
-                  handlingDaysMax={product.handlingDaysMax}
-                  transitDaysMin={product.transitDaysMin}
-                  transitDaysMax={product.transitDaysMax}
-                  className="mb-6"
-                />
-                <ProductDetailAccordion
-                  category={product.category}
-                  description={sanitizeProductDescription(product.description)}
-                  descriptionIsHtml
-                  sizeChart={product.sizeChart ?? undefined}
-                />
-                <ProductShare
-                  title={product.name}
-                  url={`${siteUrl}/products/${product.id}`}
-                  className="mt-6"
-                />
+                  {/* Variant options (when present), price, stock, add to cart */}
+                  <ProductVariantSection
+                    product={{
+                      id: product.id,
+                      name: product.name,
+                      category: product.category,
+                      image: product.image,
+                      price: product.price,
+                      originalPrice: product.originalPrice,
+                      inStock: product.inStock,
+                      continueSellingWhenOutOfStock:
+                        product.continueSellingWhenOutOfStock,
+                      availableCountryCodes: product.availableCountryCodes,
+                    }}
+                    hasVariants={product.hasVariants ?? false}
+                    optionDefinitions={product.optionDefinitions ?? []}
+                    variants={product.variants ?? []}
+                    handlingDaysMin={product.handlingDaysMin}
+                    handlingDaysMax={product.handlingDaysMax}
+                  />
+                  <EstimatedDeliveryTimeline
+                    handlingDaysMin={product.handlingDaysMin}
+                    handlingDaysMax={product.handlingDaysMax}
+                    transitDaysMin={product.transitDaysMin}
+                    transitDaysMax={product.transitDaysMax}
+                    className="mb-6"
+                  />
+                  <ProductDetailAccordion
+                    category={product.category}
+                    description={sanitizeProductDescription(
+                      product.description,
+                    )}
+                    descriptionIsHtml
+                    sizeChart={product.sizeChart ?? undefined}
+                  />
+                  <ProductShare
+                    title={product.name}
+                    url={`${siteUrl}/products/${product.id}`}
+                    className="mt-6"
+                  />
                 </div>
               </div>
             </ProductVariantImageProvider>

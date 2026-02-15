@@ -85,15 +85,17 @@ export async function GET(
     };
     const solanaPayToken =
       isSolanaPay && order.cryptoCurrency
-        ? SOLANA_CURRENCY_TO_TOKEN[order.cryptoCurrency.toUpperCase()] ??
-          order.cryptoCurrency.toLowerCase()
+        ? (SOLANA_CURRENCY_TO_TOKEN[order.cryptoCurrency.toUpperCase()] ??
+          order.cryptoCurrency.toLowerCase())
         : undefined;
 
     return NextResponse.json({
       orderId: order.id,
       depositAddress: order.solanaPayDepositAddress ?? undefined,
       totalCents: order.totalCents,
-      email: order.email ? order.email.replace(/^(.{2})(.*)(@.*)$/, '$1***$3') : undefined,
+      email: order.email
+        ? order.email.replace(/^(.{2})(.*)(@.*)$/, "$1***$3")
+        : undefined,
       expiresAt,
       // Solana Pay: routing and balance check (paymentType when URL has no hash)
       ...(isSolanaPay && { paymentType: "solana" as const }),

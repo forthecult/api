@@ -52,7 +52,9 @@ const REGION_TO_COUNTRY: Record<string, string> = {
 
 function normalizeRegion(s: string): string | null {
   const t = s.trim().toLowerCase().replace(/\s+/g, " ");
-  return REGION_TO_COUNTRY[t] ?? REGION_TO_COUNTRY[t.replace(/&/g, " and ")] ?? null;
+  return (
+    REGION_TO_COUNTRY[t] ?? REGION_TO_COUNTRY[t.replace(/&/g, " and ")] ?? null
+  );
 }
 
 function parseDollars(s: string): number | null {
@@ -126,9 +128,7 @@ function parseShippingTable(
     );
     const colOrderValue = headerCells.findIndex(
       (h) =>
-        h.includes("order") ||
-        h.includes("value") ||
-        h.includes("order value"),
+        h.includes("order") || h.includes("value") || h.includes("order value"),
     );
     const colCost = headerCells.findIndex(
       (h) => h.includes("cost") || h.includes("price") || h.includes("rate"),
@@ -172,9 +172,7 @@ function parseShippingTable(
             ? cells[1]
             : "";
       const estimatedText =
-        !isShortRow &&
-        colEstimated >= 0 &&
-        cells[colEstimated] !== undefined
+        !isShortRow && colEstimated >= 0 && cells[colEstimated] !== undefined
           ? cells[colEstimated]
           : "";
 
@@ -206,7 +204,8 @@ function parseShippingTable(
           : maxOrderCents
             ? `Under $${(maxOrderCents / 100).toFixed(0)}`
             : "");
-      const name = `${brandName} ${regionLabel} ${orderLabel} ${free ? "Free" : costText}`.trim();
+      const name =
+        `${brandName} ${regionLabel} ${orderLabel} ${free ? "Free" : costText}`.trim();
       options.push({
         name: name.slice(0, 255),
         countryCode:
@@ -249,7 +248,11 @@ async function main() {
     ? eq(brandTable.id, BRAND_ID_FILTER)
     : undefined;
   const brands = await db
-    .select({ id: brandTable.id, name: brandTable.name, websiteUrl: brandTable.websiteUrl })
+    .select({
+      id: brandTable.id,
+      name: brandTable.name,
+      websiteUrl: brandTable.websiteUrl,
+    })
     .from(brandTable)
     .where(brandCondition);
 
@@ -307,9 +310,13 @@ async function main() {
         amountCents: null,
         estimatedDaysText: null,
       });
-      console.log(`[${brand.name}] No shipping table; added Worldwide fallback.`);
+      console.log(
+        `[${brand.name}] No shipping table; added Worldwide fallback.`,
+      );
     } else {
-      console.log(`[${brand.name}] ${resolvedUrl} → ${options.length} option(s)`);
+      console.log(
+        `[${brand.name}] ${resolvedUrl} → ${options.length} option(s)`,
+      );
     }
 
     const now = new Date();
@@ -335,7 +342,14 @@ async function main() {
         updatedAt: now,
       };
       if (DRY_RUN) {
-        console.log("  Would create:", row.name, opt.type, opt.amountCents != null ? `$${(opt.amountCents / 100).toFixed(2)}` : "Free");
+        console.log(
+          "  Would create:",
+          row.name,
+          opt.type,
+          opt.amountCents != null
+            ? `$${(opt.amountCents / 100).toFixed(2)}`
+            : "Free",
+        );
       } else {
         await db.insert(shippingOptionsTable).values(row);
         console.log("  Created:", row.name);

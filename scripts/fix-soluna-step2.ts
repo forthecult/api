@@ -33,7 +33,9 @@ async function main() {
   console.log("API base:", API_BASE);
   console.log("Using imageId:", IMAGE_ID);
 
-  console.log("\nRunning update-products-design (design, sync, mockups, categories/SEO)...");
+  console.log(
+    "\nRunning update-products-design (design, sync, mockups, categories/SEO)...",
+  );
   console.log("(This may take 5+ minutes, please wait...)\n");
 
   const controller = new AbortController();
@@ -75,7 +77,9 @@ async function main() {
     if (updateData.errors?.length) {
       console.warn("Errors:", updateData.errors);
     }
-    console.log("\nDone. All SOLUNA products updated with correct print file (black border intact).");
+    console.log(
+      "\nDone. All SOLUNA products updated with correct print file (black border intact).",
+    );
   } catch (e: any) {
     clearTimeout(timeout);
     if (e.name === "AbortError") {

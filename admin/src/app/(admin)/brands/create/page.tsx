@@ -39,11 +39,14 @@ export default function AdminBrandsCreatePage() {
     setAssets((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
-  const updateAsset = useCallback((index: number, field: "url" | "type", value: string) => {
-    setAssets((prev) =>
-      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
-    );
-  }, []);
+  const updateAsset = useCallback(
+    (index: number, field: "url" | "type", value: string) => {
+      setAssets((prev) =>
+        prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
+      );
+    },
+    [],
+  );
 
   const uploadAssetInputRef = useRef<HTMLInputElement>(null);
   const uploadAssetTargetRef = useRef<number | null>(null);
@@ -65,7 +68,9 @@ export default function AdminBrandsCreatePage() {
           body: form,
         });
         if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? "Upload failed");
         }
         const data = (await res.json()) as { url: string };
@@ -131,23 +136,12 @@ export default function AdminBrandsCreatePage() {
         }
         router.push("/brands");
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to create brand",
-        );
+        setError(err instanceof Error ? err.message : "Failed to create brand");
       } finally {
         setSaving(false);
       }
     },
-    [
-      name,
-      slug,
-      websiteUrl,
-      description,
-      featured,
-      logoUrl,
-      assets,
-      router,
-    ],
+    [name, slug, websiteUrl, description, featured, logoUrl, assets, router],
   );
 
   return (
@@ -263,7 +257,9 @@ export default function AdminBrandsCreatePage() {
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className={labelClass}>Brand assets (logos, banners)</label>
+                <label className={labelClass}>
+                  Brand assets (logos, banners)
+                </label>
                 <Button
                   type="button"
                   variant="outline"

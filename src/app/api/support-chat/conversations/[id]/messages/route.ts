@@ -11,7 +11,8 @@ import { checkRateLimit } from "~/lib/rate-limit";
 import { generateSupportChatReply } from "~/lib/support-chat-ai";
 
 const GUEST_ID_HEADER = "x-support-guest-id";
-const GUEST_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const GUEST_ID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_CONTENT_LENGTH = 4_000;
 
 async function getConversationAndCheckAccess(
@@ -52,7 +53,10 @@ export async function GET(
 ) {
   const { id: conversationId } = await params;
   if (!conversationId) {
-    return NextResponse.json({ error: "Missing conversation id" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing conversation id" },
+      { status: 400 },
+    );
   }
 
   const { conv, error } = await getConversationAndCheckAccess(
@@ -60,7 +64,10 @@ export async function GET(
     conversationId,
   );
   if (error === 404) {
-    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Conversation not found" },
+      { status: 404 },
+    );
   }
   if (error === 403) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -101,7 +108,10 @@ export async function POST(
 ) {
   const { id: conversationId } = await params;
   if (!conversationId) {
-    return NextResponse.json({ error: "Missing conversation id" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing conversation id" },
+      { status: 400 },
+    );
   }
 
   const { conv, error } = await getConversationAndCheckAccess(
@@ -109,7 +119,10 @@ export async function POST(
     conversationId,
   );
   if (error === 404) {
-    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Conversation not found" },
+      { status: 404 },
+    );
   }
   if (error === 403) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -153,7 +166,10 @@ export async function POST(
     // If not taken over, return immediately with user message; generate AI reply in background.
     // Client sees instant response and typing indicator until poll returns the AI message.
     if (!conv!.takenOverBy) {
-      const msgRl = await checkRateLimit(`chat-msg:${conversationId}`, { limit: 10, windowSeconds: 60 });
+      const msgRl = await checkRateLimit(`chat-msg:${conversationId}`, {
+        limit: 10,
+        windowSeconds: 60,
+      });
       if (!msgRl.success) {
         // Don't generate AI reply if rate limited, but still save the user message
         const messagesRateLimited = await db
@@ -186,7 +202,10 @@ export async function POST(
       const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
 
       const context = {
-        recentMessages: recentRows.map((r) => ({ role: r.role, content: r.content })),
+        recentMessages: recentRows.map((r) => ({
+          role: r.role,
+          content: r.content,
+        })),
         storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Cult",
         conversationId,
         userId: session?.user?.id ?? guestId ?? undefined,

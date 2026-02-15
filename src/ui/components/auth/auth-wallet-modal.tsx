@@ -16,17 +16,34 @@ import { cn } from "~/lib/cn";
 
 /** Ethereum / WalletConnect options shown in the wallet list (wallets-first flow). */
 const ETHEREUM_WALLET_OPTIONS = [
-  { id: "walletconnect" as const, name: "WalletConnect", icon: "https://avatars.githubusercontent.com/u/37784886?s=200&v=4" },
-  { id: "injected" as const, name: "MetaMask", icon: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" },
-  { id: "injected" as const, name: "Coinbase Wallet", icon: "https://www.coinbase.com/img/favicon/favicon-256.png" },
+  {
+    id: "walletconnect" as const,
+    name: "WalletConnect",
+    icon: "https://avatars.githubusercontent.com/u/37784886?s=200&v=4",
+  },
+  {
+    id: "injected" as const,
+    name: "MetaMask",
+    icon: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg",
+  },
+  {
+    id: "injected" as const,
+    name: "Coinbase Wallet",
+    icon: "https://www.coinbase.com/img/favicon/favicon-256.png",
+  },
 ] as const;
 
-/** 
+/**
  * Names of wallets that appear in both Solana adapters and Ethereum options.
  * These are filtered out from ETHEREUM_WALLET_OPTIONS to avoid duplicates.
  * They will only show once from the Solana wallet adapters list.
  */
-const SOLANA_WALLET_NAMES_TO_SKIP = ["Ctrl Wallet", "Ctrl", "Brave Wallet", "Brave"];
+const SOLANA_WALLET_NAMES_TO_SKIP = [
+  "Ctrl Wallet",
+  "Ctrl",
+  "Brave Wallet",
+  "Brave",
+];
 
 /** Wallets that support both Solana and EVM; after selecting one we show "Choose network" step. */
 const MULTI_CHAIN_WALLET_NAMES = [
@@ -186,9 +203,9 @@ export function AuthWalletModal({
   const signFlowStarted = useRef(false);
   /** Prevent duplicate connect() when effect re-runs before adapter state updates. */
   const solanaConnectStartedRef = useRef(false);
-  const [step, setStep] = useState<
-    "wallet" | "network" | "signing" | "error"
-  >("wallet");
+  const [step, setStep] = useState<"wallet" | "network" | "signing" | "error">(
+    "wallet",
+  );
   const [error, setError] = useState("");
   const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
   const [selectedChain, setSelectedChain] = useState<
@@ -210,7 +227,12 @@ export function AuthWalletModal({
   const [isMetaMaskDetected, setIsMetaMaskDetected] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setIsMetaMaskDetected(Boolean((window as unknown as { ethereum?: { isMetaMask?: boolean } }).ethereum?.isMetaMask));
+    setIsMetaMaskDetected(
+      Boolean(
+        (window as unknown as { ethereum?: { isMetaMask?: boolean } }).ethereum
+          ?.isMetaMask,
+      ),
+    );
   }, []);
 
   const connectors = useConnectors();
@@ -343,7 +365,15 @@ export function AuthWalletModal({
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [pendingSolanaConnect, open, currentWallet, connected, connecting, publicKey, connect]);
+  }, [
+    pendingSolanaConnect,
+    open,
+    currentWallet,
+    connected,
+    connecting,
+    publicKey,
+    connect,
+  ]);
 
   // If Solana wallet disconnects while we're on "Sign the message", show error so user isn't stuck
   useEffect(() => {
@@ -355,22 +385,34 @@ export function AuthWalletModal({
     )
       return;
     signFlowStarted.current = false;
-    setError("Wallet disconnected. Please try again and sign the message in your wallet.");
+    setError(
+      "Wallet disconnected. Please try again and sign the message in your wallet.",
+    );
     setStep("error");
   }, [open, selectedChain, step, connected, publicKey]);
 
   // Solana: run sign flow when wallet is connected and step is signing
   useEffect(() => {
     if (!open || selectedChain !== "solana") return;
-    
+
     // If we're in signing step but signMessage is not available after connection, show error
-    if (step === "signing" && connected && publicKey && !signMessage && !signFlowStarted.current) {
-      console.error("[auth] Solana: signMessage not available from wallet adapter");
-      setError("This wallet doesn't support message signing. Please try another wallet.");
+    if (
+      step === "signing" &&
+      connected &&
+      publicKey &&
+      !signMessage &&
+      !signFlowStarted.current
+    ) {
+      console.error(
+        "[auth] Solana: signMessage not available from wallet adapter",
+      );
+      setError(
+        "This wallet doesn't support message signing. Please try another wallet.",
+      );
       setStep("error");
       return;
     }
-    
+
     if (
       step === "signing" &&
       connected &&
@@ -406,7 +448,9 @@ export function AuthWalletModal({
         } catch (err) {
           if (!cancelled) {
             console.error("[auth] Solana challenge error:", err);
-            setError(err instanceof Error ? err.message : "Failed to get challenge");
+            setError(
+              err instanceof Error ? err.message : "Failed to get challenge",
+            );
             setStep("error");
             signFlowStarted.current = false;
           }
@@ -431,8 +475,7 @@ export function AuthWalletModal({
     setSolanaSigning(true);
     setError("");
     const isDev =
-      typeof process !== "undefined" &&
-      process.env.NODE_ENV === "development";
+      typeof process !== "undefined" && process.env.NODE_ENV === "development";
     try {
       const rawResult = await signMessage(solanaChallengePending.messageBytes);
 
@@ -456,7 +499,11 @@ export function AuthWalletModal({
             : sig instanceof Uint8Array
               ? sig
               : ArrayBuffer.isView(sig)
-                ? new Uint8Array((sig as Uint8Array).buffer, (sig as Uint8Array).byteOffset, (sig as Uint8Array).byteLength)
+                ? new Uint8Array(
+                    (sig as Uint8Array).buffer,
+                    (sig as Uint8Array).byteOffset,
+                    (sig as Uint8Array).byteLength,
+                  )
                 : null;
       const signatureBase64 =
         bytes != null
@@ -554,7 +601,9 @@ export function AuthWalletModal({
       (c) => (c as { type?: string }).type === "walletConnect",
     );
     if (!wcConnector) {
-      setError("WalletConnect is not available. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID.");
+      setError(
+        "WalletConnect is not available. Set NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID.",
+      );
       setStep("error");
       return;
     }
@@ -653,9 +702,7 @@ export function AuthWalletModal({
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Something went wrong",
-          );
+          setError(err instanceof Error ? err.message : "Something went wrong");
           setStep("error");
           signFlowStarted.current = false;
         }
@@ -700,7 +747,7 @@ export function AuthWalletModal({
               })
             : null;
         const raw = win?.ethereum;
-        let eth: typeof raw = undefined;
+        let eth: typeof raw;
         if (raw) {
           if (Array.isArray(raw.providers) && raw.providers.length > 0) {
             const providers = raw.providers as Array<{ isMetaMask?: boolean }>;
@@ -815,7 +862,10 @@ export function AuthWalletModal({
     wcSignDoneRef.current = false;
     setSolanaChallengePending(null);
     setSolanaSigning(false);
-    if (selectedWallet && isMultiChainWallet(selectedWallet.adapter.name ?? "")) {
+    if (
+      selectedWallet &&
+      isMultiChainWallet(selectedWallet.adapter.name ?? "")
+    ) {
       setStep("network");
     } else {
       setStep(selectedChain === "ethereum" ? "signing" : "wallet");
@@ -847,7 +897,8 @@ export function AuthWalletModal({
           {step === "network" && selectedWallet && (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                {selectedWallet.adapter.name} supports multiple networks. Choose one to sign in with:
+                {selectedWallet.adapter.name} supports multiple networks. Choose
+                one to sign in with:
               </p>
               <div className="flex flex-col gap-2">
                 <button
@@ -900,7 +951,10 @@ export function AuthWalletModal({
                   .filter(
                     (w, i, self) =>
                       SUGGESTED_SOLANA_NAMES.includes(w.adapter.name) &&
-                      i === self.findIndex((x) => x.adapter.name === w.adapter.name),
+                      i ===
+                        self.findIndex(
+                          (x) => x.adapter.name === w.adapter.name,
+                        ),
                   )
                   .map((wallet, index) => (
                     <WalletOption
@@ -947,23 +1001,26 @@ export function AuthWalletModal({
                       }
                     />
                   ))}
-                {!solanaOnly && ETHEREUM_WALLET_OPTIONS.filter(
-                  (o) =>
-                    o.name !== "MetaMask" &&
-                    !SOLANA_WALLET_NAMES_TO_SKIP.includes(o.name),
-                ).map((opt) => (
-                  <EthereumOptionButton
-                    key={opt.name}
-                    name={opt.name}
-                    icon={opt.icon}
-                    onClick={() =>
-                      handleSelectEthereumOption(
-                        opt.id === "walletconnect" ? "walletconnect" : "injected",
-                      )
-                    }
-                    disabled={connecting}
-                  />
-                ))}
+                {!solanaOnly &&
+                  ETHEREUM_WALLET_OPTIONS.filter(
+                    (o) =>
+                      o.name !== "MetaMask" &&
+                      !SOLANA_WALLET_NAMES_TO_SKIP.includes(o.name),
+                  ).map((opt) => (
+                    <EthereumOptionButton
+                      key={opt.name}
+                      name={opt.name}
+                      icon={opt.icon}
+                      onClick={() =>
+                        handleSelectEthereumOption(
+                          opt.id === "walletconnect"
+                            ? "walletconnect"
+                            : "injected",
+                        )
+                      }
+                      disabled={connecting}
+                    />
+                  ))}
               </div>
             </div>
           )}
@@ -984,16 +1041,19 @@ export function AuthWalletModal({
                           ? "Preparing message…"
                           : `Open ${selectedWallet?.adapter.name ?? "your wallet"} to sign and complete sign-in.`}
                   </p>
-                  {selectedChain === "solana" && solanaChallengePending != null && (
-                    <Button
-                      type="button"
-                      className="mt-4"
-                      disabled={solanaSigning}
-                      onClick={handleSolanaSignClick}
-                    >
-                      {solanaSigning ? "Signing…" : "Sign message in your wallet"}
-                    </Button>
-                  )}
+                  {selectedChain === "solana" &&
+                    solanaChallengePending != null && (
+                      <Button
+                        type="button"
+                        className="mt-4"
+                        disabled={solanaSigning}
+                        onClick={handleSolanaSignClick}
+                      >
+                        {solanaSigning
+                          ? "Signing…"
+                          : "Sign message in your wallet"}
+                      </Button>
+                    )}
                 </>
               )}
               {step === "error" && (

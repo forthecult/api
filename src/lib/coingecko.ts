@@ -60,7 +60,9 @@ export async function getCoinGeckoSimplePrice(
   if (apiKey) url.searchParams.set("x_cg_demo_api_key", apiKey);
 
   try {
-    const res = await fetch(url.toString(), { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(5000),
+    });
     const data = (await res.json()) as Record<string, { usd?: number }>;
     recordRequest(Date.now());
     cache.set(key, { data, fetchedAt: Date.now() });

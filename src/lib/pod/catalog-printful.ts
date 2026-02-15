@@ -13,7 +13,12 @@ import {
   type PrintfulCatalogVariant,
 } from "@/lib/printful";
 
-import type { CatalogBlueprint, CatalogVariant, PodProvider, PrintSpec } from "./types";
+import type {
+  CatalogBlueprint,
+  CatalogVariant,
+  PodProvider,
+  PrintSpec,
+} from "./types";
 
 const PROVIDER: PodProvider = "printful";
 
@@ -39,7 +44,8 @@ const DEFAULT_PRINT_SPECS_BY_TYPE: Record<string, PrintSpec[]> = {
 function productTypeKey(type: string | null): string {
   if (!type) return "default";
   const t = type.toLowerCase();
-  if (t.includes("t-shirt") || t.includes("tee") || t.includes("shirt")) return "t-shirt";
+  if (t.includes("t-shirt") || t.includes("tee") || t.includes("shirt"))
+    return "t-shirt";
   if (t.includes("hoodie") || t.includes("sweatshirt")) return "hoodie";
   if (t.includes("poster")) return "poster";
   if (t.includes("mug")) return "mug";
@@ -48,7 +54,9 @@ function productTypeKey(type: string | null): string {
 
 function getPrintSpecsForProduct(product: PrintfulCatalogProduct): PrintSpec[] {
   const key = productTypeKey(product.type);
-  return DEFAULT_PRINT_SPECS_BY_TYPE[key] ?? DEFAULT_PRINT_SPECS_BY_TYPE.default;
+  return (
+    DEFAULT_PRINT_SPECS_BY_TYPE[key] ?? DEFAULT_PRINT_SPECS_BY_TYPE.default
+  );
 }
 
 /**

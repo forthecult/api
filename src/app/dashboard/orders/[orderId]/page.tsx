@@ -33,8 +33,7 @@ function getOrderStatusLabel(order: {
   paymentStatus?: string | null;
   status?: string | null;
 }): string {
-  const paymentPending =
-    order.paymentStatus?.toLowerCase() === "pending";
+  const paymentPending = order.paymentStatus?.toLowerCase() === "pending";
   const paidWithPendingOrder =
     order.paymentStatus?.toLowerCase() === "paid" &&
     order.status?.toLowerCase() === "pending";
@@ -176,7 +175,8 @@ export default async function OrderDetailPage({
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Est. delivery</span>
                 <span>
-                  {order.estimatedDeliveryFrom ?? "?"} – {order.estimatedDeliveryTo ?? "?"}
+                  {order.estimatedDeliveryFrom ?? "?"} –{" "}
+                  {order.estimatedDeliveryTo ?? "?"}
                 </span>
               </div>
             )}

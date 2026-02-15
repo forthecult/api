@@ -2,7 +2,10 @@ import { eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { userTable } from "~/db/schema";
-import { createUserNotification, userWantsTransactionalWebsite } from "~/lib/create-user-notification";
+import {
+  createUserNotification,
+  userWantsTransactionalWebsite,
+} from "~/lib/create-user-notification";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 import { notifyTransactionalTelegram } from "~/lib/telegram-notify";
 

@@ -105,7 +105,11 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
         productIds,
         paymentMethodKey: "crypto_ton",
-        items: validatedItems.map(i => ({ productId: i.productId, priceCents: i.priceCents, quantity: i.quantity })),
+        items: validatedItems.map((i) => ({
+          productId: i.productId,
+          priceCents: i.priceCents,
+          quantity: i.quantity,
+        })),
         wallet: wallet ?? undefined,
       });
 
@@ -143,9 +147,7 @@ export async function POST(request: NextRequest) {
         ? session.user.id
         : null;
     const now = new Date();
-    const expiresAt = new Date(
-      now.getTime() + PAYMENT_WINDOW_MS,
-    ).toISOString();
+    const expiresAt = new Date(now.getTime() + PAYMENT_WINDOW_MS).toISOString();
 
     // ── Insert order ───────────────────────────────────────────────────
     await insertOrder(

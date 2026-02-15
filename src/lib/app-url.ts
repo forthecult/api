@@ -21,8 +21,7 @@ export function getServerBaseUrl(): string {
  * Must be https when used in production.
  */
 export function getPublicSiteUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || DEFAULT_PUBLIC_SITE;
+  const raw = process.env.NEXT_PUBLIC_APP_URL?.trim() || DEFAULT_PUBLIC_SITE;
   if (/^https?:\/\//i.test(raw)) return raw;
   return `https://${raw.replace(/^\/+/, "")}`;
 }
@@ -76,7 +75,6 @@ export function isAgentSubdomain(host: string | null | undefined): boolean {
 export function getRequestBaseUrl(host: string | null | undefined): string {
   const h = (host ?? "").trim();
   if (!h) return getPublicSiteUrl();
-  const protocol =
-    process.env.NODE_ENV === "development" ? "http" : "https";
+  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
   return `${protocol}://${h}`;
 }

@@ -246,9 +246,7 @@ export async function getEsimPackages(
   meta: PaginationMeta;
   data: EsimPackage[];
 }> {
-  return esimFetch(
-    `/packages?package_type=${packageType}&page=${page}`,
-  );
+  return esimFetch(`/packages?package_type=${packageType}&page=${page}`);
 }
 
 /** Get detailed info for a specific package */
@@ -414,9 +412,7 @@ export async function purchaseEsimAsync(
 }
 
 /** Get list of purchased eSIMs */
-export async function getMyEsims(
-  page = 1,
-): Promise<{
+export async function getMyEsims(page = 1): Promise<{
   status: boolean;
   meta: PaginationMeta;
   data: PurchasedEsim[];
@@ -439,9 +435,7 @@ export async function getEsimUsage(
 }
 
 /** Get purchased bundles */
-export async function getMyBundles(
-  page = 1,
-): Promise<{
+export async function getMyBundles(page = 1): Promise<{
   status: boolean;
   meta: PaginationMeta;
   data: PurchasedBundle[];

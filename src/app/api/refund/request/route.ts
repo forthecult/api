@@ -144,8 +144,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: "UNAUTHORIZED",
-            message:
-              "Order not found or the details you entered don't match",
+            message: "Order not found or the details you entered don't match",
           },
         },
         { status: 404 },
@@ -198,7 +197,9 @@ export async function POST(request: NextRequest) {
     const replyTo = order.email?.trim() || undefined;
     const safeOrderId = orderId.replace(/</g, "&lt;").replace(/>/g, "&gt;");
     const safeLookup = lookupValue.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-    const safeRefundAddr = refundAddress.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const safeRefundAddr = refundAddress
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
 
     const htmlParts = [
       "<p><strong>Refund request</strong></p>",

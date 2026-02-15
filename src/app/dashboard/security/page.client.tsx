@@ -1,6 +1,13 @@
 "use client";
 
-import { ChevronLeft, KeyRound, Link2, Shield, Trash2, Wallet } from "lucide-react";
+import {
+  ChevronLeft,
+  KeyRound,
+  Link2,
+  Shield,
+  Trash2,
+  Wallet,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -52,15 +59,27 @@ export function SecurityPageClient() {
     verifyLoading: false,
   });
   // Shorthand setters for MFA fields
-  const setShowQrCode = (v: boolean) => setMfa((p) => ({ ...p, showQrCode: v }));
+  const setShowQrCode = (v: boolean) =>
+    setMfa((p) => ({ ...p, showQrCode: v }));
   const setQrCodeData = (v: string) => setMfa((p) => ({ ...p, qrCodeData: v }));
-  const setQrCodeImageUrl = (v: string | null) => setMfa((p) => ({ ...p, qrCodeImageUrl: v }));
-  const setQrCodeError = (v: string | null) => setMfa((p) => ({ ...p, qrCodeError: v }));
+  const setQrCodeImageUrl = (v: string | null) =>
+    setMfa((p) => ({ ...p, qrCodeImageUrl: v }));
+  const setQrCodeError = (v: string | null) =>
+    setMfa((p) => ({ ...p, qrCodeError: v }));
   const setSecret = (v: string) => setMfa((p) => ({ ...p, secret: v }));
   const setOtpCode = (v: string) => setMfa((p) => ({ ...p, otpCode: v }));
-  const setVerifyLoading = (v: boolean) => setMfa((p) => ({ ...p, verifyLoading: v }));
+  const setVerifyLoading = (v: boolean) =>
+    setMfa((p) => ({ ...p, verifyLoading: v }));
   // Aliases for reading MFA state
-  const { showQrCode, qrCodeData, qrCodeImageUrl, qrCodeError, secret, otpCode, verifyLoading } = mfa;
+  const {
+    showQrCode,
+    qrCodeData,
+    qrCodeImageUrl,
+    qrCodeError,
+    secret,
+    otpCode,
+    verifyLoading,
+  } = mfa;
 
   // Password reset state
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -84,16 +103,31 @@ export function SecurityPageClient() {
     error: "",
   });
   // Shorthand setters for add-email fields (preserves existing call sites)
-  const setAddEmailPassword = (v: React.SetStateAction<{ email: string; password: string; confirm: string }>) =>
-    setAddEmail((p) => ({ ...p, password: typeof v === "function" ? v(p.password) : v }));
+  const setAddEmailPassword = (
+    v: React.SetStateAction<{
+      email: string;
+      password: string;
+      confirm: string;
+    }>,
+  ) =>
+    setAddEmail((p) => ({
+      ...p,
+      password: typeof v === "function" ? v(p.password) : v,
+    }));
   const setAddEmailStep = (v: "email" | "code" | "choice" | "password") =>
     setAddEmail((p) => ({ ...p, step: v }));
-  const setAddEmailCode = (v: string) => setAddEmail((p) => ({ ...p, code: v }));
-  const setAddEmailLoading = (v: boolean) => setAddEmail((p) => ({ ...p, loading: v }));
-  const setAddEmailSendCodeLoading = (v: boolean) => setAddEmail((p) => ({ ...p, sendCodeLoading: v }));
-  const setAddEmailVerifyLoading = (v: boolean) => setAddEmail((p) => ({ ...p, verifyLoading: v }));
-  const setAddEmailCodeOnlyLoading = (v: boolean) => setAddEmail((p) => ({ ...p, codeOnlyLoading: v }));
-  const setAddEmailError = (v: string) => setAddEmail((p) => ({ ...p, error: v }));
+  const setAddEmailCode = (v: string) =>
+    setAddEmail((p) => ({ ...p, code: v }));
+  const setAddEmailLoading = (v: boolean) =>
+    setAddEmail((p) => ({ ...p, loading: v }));
+  const setAddEmailSendCodeLoading = (v: boolean) =>
+    setAddEmail((p) => ({ ...p, sendCodeLoading: v }));
+  const setAddEmailVerifyLoading = (v: boolean) =>
+    setAddEmail((p) => ({ ...p, verifyLoading: v }));
+  const setAddEmailCodeOnlyLoading = (v: boolean) =>
+    setAddEmail((p) => ({ ...p, codeOnlyLoading: v }));
+  const setAddEmailError = (v: string) =>
+    setAddEmail((p) => ({ ...p, error: v }));
   // Aliases for reading add-email state
   const addEmailPassword = addEmail.password;
   const addEmailStep = addEmail.step;
@@ -105,7 +139,9 @@ export function SecurityPageClient() {
   const addEmailError = addEmail.error;
 
   // Passkey state
-  const [passkeys, setPasskeys] = useState<{ id: string; name?: string | null }[]>([]);
+  const [passkeys, setPasskeys] = useState<
+    { id: string; name?: string | null }[]
+  >([]);
   const [passkeysLoading, setPasskeysLoading] = useState(true);
   const [passkeyAddLoading, setPasskeyAddLoading] = useState(false);
   const [passkeyDeleteId, setPasskeyDeleteId] = useState<string | null>(null);
@@ -190,7 +226,9 @@ export function SecurityPageClient() {
         if (!cancelled) {
           setQrCodeImageUrl(null);
           setQrCodeError(
-            err instanceof Error ? err.message : "QR failed. Use manual code below.",
+            err instanceof Error
+              ? err.message
+              : "QR failed. Use manual code below.",
           );
         }
       });
@@ -335,7 +373,13 @@ export function SecurityPageClient() {
     setAddEmailLoading(true);
     try {
       // Email was already set when they verified the OTP (add-email/verify). Only set password.
-      const setPassRes = await (authClient as { setPassword?: (opts: { newPassword: string }) => Promise<{ error?: { message?: string } }> }).setPassword?.({
+      const setPassRes = await (
+        authClient as {
+          setPassword?: (opts: {
+            newPassword: string;
+          }) => Promise<{ error?: { message?: string } }>;
+        }
+      ).setPassword?.({
         newPassword: password,
       });
       if (setPassRes === undefined) {
@@ -485,7 +529,9 @@ export function SecurityPageClient() {
         );
         return;
       }
-      setMessage("Security key added. You can sign in with it from the sign-in page.");
+      setMessage(
+        "Security key added. You can sign in with it from the sign-in page.",
+      );
       void fetchPasskeys();
     } catch (err) {
       setError(
@@ -577,7 +623,7 @@ export function SecurityPageClient() {
 
       {(() => {
         const hasCredentialAccount = accounts.some(
-          (a) => a.providerId === "credential"
+          (a) => a.providerId === "credential",
         );
         const showChangePassword =
           hasCredentialAccount && isRealEmail(user?.email ?? "");
@@ -686,9 +732,13 @@ export function SecurityPageClient() {
                         Telegram
                       </>
                     )}
-                    {!["credential", "solana", "ethereum", "discord", "telegram"].includes(
-                      acc.providerId,
-                    ) && (
+                    {![
+                      "credential",
+                      "solana",
+                      "ethereum",
+                      "discord",
+                      "telegram",
+                    ].includes(acc.providerId) && (
                       <span className="font-mono text-muted-foreground">
                         {acc.providerId}
                       </span>
@@ -765,10 +815,10 @@ export function SecurityPageClient() {
               Add email & password
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Add an email to your account. We’ll send a
-              verification code to confirm it’s yours. Choose to sign in
-              with a <strong>password</strong> or with an <strong>email code</strong> (no
-              password).
+              Add an email to your account. We’ll send a verification code to
+              confirm it’s yours. Choose to sign in with a{" "}
+              <strong>password</strong> or with an <strong>email code</strong>{" "}
+              (no password).
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -799,7 +849,9 @@ export function SecurityPageClient() {
                   disabled={addEmailSendCodeLoading}
                   onClick={handleSendAddEmailCode}
                 >
-                  {addEmailSendCodeLoading ? "Sending…" : "Send verification code"}
+                  {addEmailSendCodeLoading
+                    ? "Sending…"
+                    : "Send verification code"}
                 </Button>
               </>
             )}
@@ -820,7 +872,9 @@ export function SecurityPageClient() {
                     placeholder="000000"
                     value={addEmailCode}
                     onChange={(e) =>
-                      setAddEmailCode(e.target.value.replace(/\D/g, "").slice(0, 8))
+                      setAddEmailCode(
+                        e.target.value.replace(/\D/g, "").slice(0, 8),
+                      )
                     }
                   />
                 </div>
@@ -868,9 +922,9 @@ export function SecurityPageClient() {
                     your email and password each time you sign in.
                   </li>
                   <li>
-                    <strong className="text-foreground">Email code:</strong> Enter
-                    your email, receive a one-time code, and sign in with no
-                    password.
+                    <strong className="text-foreground">Email code:</strong>{" "}
+                    Enter your email, receive a one-time code, and sign in with
+                    no password.
                   </li>
                 </ul>
                 <div className="flex flex-wrap gap-2">
@@ -887,7 +941,9 @@ export function SecurityPageClient() {
                     disabled={addEmailCodeOnlyLoading}
                     onClick={handleAddEmailCodeOnly}
                   >
-                    {addEmailCodeOnlyLoading ? "Adding…" : "Use email code (no password)"}
+                    {addEmailCodeOnlyLoading
+                      ? "Adding…"
+                      : "Use email code (no password)"}
                   </Button>
                   <Button
                     variant="ghost"
@@ -939,7 +995,10 @@ export function SecurityPageClient() {
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Button disabled={addEmailLoading} onClick={handleAddEmailPassword}>
+                  <Button
+                    disabled={addEmailLoading}
+                    onClick={handleAddEmailPassword}
+                  >
                     {addEmailLoading ? "Adding…" : "Add email & password"}
                   </Button>
                   <Button
@@ -1044,18 +1103,26 @@ export function SecurityPageClient() {
             Two-Factor Authentication
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Add a second factor when signing in. Choose <strong>authenticator app (OTP)</strong> for 6-digit codes, or <strong>security key (U2F)</strong> to use a hardware key or device passkey.
+            Add a second factor when signing in. Choose{" "}
+            <strong>authenticator app (OTP)</strong> for 6-digit codes, or{" "}
+            <strong>security key (U2F)</strong> to use a hardware key or device
+            passkey.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h3 className="mb-2 text-sm font-medium">Authenticator app (OTP)</h3>
+            <h3 className="mb-2 text-sm font-medium">
+              Authenticator app (OTP)
+            </h3>
             <p className="mb-3 text-sm text-muted-foreground">
-              Use an app like Google Authenticator or Authy to get 6-digit codes when you sign in.
+              Use an app like Google Authenticator or Authy to get 6-digit codes
+              when you sign in.
             </p>
             {!accounts.some((a) => a.providerId === "credential") ? (
               <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
-                To use authenticator app (OTP) 2FA, add an email and password to your account first (in the section above). You can use security key (U2F) below without a password.
+                To use authenticator app (OTP) 2FA, add an email and password to
+                your account first (in the section above). You can use security
+                key (U2F) below without a password.
               </p>
             ) : (
               <>
@@ -1074,7 +1141,9 @@ export function SecurityPageClient() {
                 </div>
                 <div className="mt-3 flex flex-wrap gap-4">
                   <Button disabled={loading} onClick={handleEnableTwoFactor}>
-                    {loading ? "Processing..." : "Enable with authenticator app"}
+                    {loading
+                      ? "Processing..."
+                      : "Enable with authenticator app"}
                   </Button>
                   <Button
                     disabled={loading}
@@ -1089,9 +1158,14 @@ export function SecurityPageClient() {
           </div>
 
           <div className="border-t pt-6">
-            <h3 className="mb-2 text-sm font-medium">Security key (U2F / passkey)</h3>
+            <h3 className="mb-2 text-sm font-medium">
+              Security key (U2F / passkey)
+            </h3>
             <p className="mb-3 text-sm text-muted-foreground">
-              Register a hardware security key or device passkey. You can then sign in with it from the sign-in page (no password or OTP needed). Works even if you signed up with a wallet and don&apos;t have a password.
+              Register a hardware security key or device passkey. You can then
+              sign in with it from the sign-in page (no password or OTP needed).
+              Works even if you signed up with a wallet and don&apos;t have a
+              password.
             </p>
             {passkeysLoading ? (
               <p className="text-sm text-muted-foreground">Loading…</p>
@@ -1112,7 +1186,11 @@ export function SecurityPageClient() {
                           disabled={passkeyDeleteId === p.id}
                           onClick={() => handleDeletePasskey(p.id)}
                         >
-                          {passkeyDeleteId === p.id ? "Removing…" : <Trash2 className="h-4 w-4" />}
+                          {passkeyDeleteId === p.id ? (
+                            "Removing…"
+                          ) : (
+                            <Trash2 className="h-4 w-4" />
+                          )}
                         </Button>
                       </li>
                     ))}

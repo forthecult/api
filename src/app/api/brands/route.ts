@@ -2,11 +2,7 @@ import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  brandTable,
-  productCategoriesTable,
-  productsTable,
-} from "~/db/schema";
+import { brandTable, productCategoriesTable, productsTable } from "~/db/schema";
 
 /** Cache for 5 minutes (public data) */
 export const revalidate = 300;
@@ -27,15 +23,17 @@ function isMissingTableError(err: unknown): boolean {
 export async function GET() {
   try {
     const [curatedBrands, brandCounts, brandCategories] = await Promise.all([
-      db.select({
-        id: brandTable.id,
-        name: brandTable.name,
-        slug: brandTable.slug,
-        logoUrl: brandTable.logoUrl,
-        websiteUrl: brandTable.websiteUrl,
-        description: brandTable.description,
-        featured: brandTable.featured,
-      }).from(brandTable),
+      db
+        .select({
+          id: brandTable.id,
+          name: brandTable.name,
+          slug: brandTable.slug,
+          logoUrl: brandTable.logoUrl,
+          websiteUrl: brandTable.websiteUrl,
+          description: brandTable.description,
+          featured: brandTable.featured,
+        })
+        .from(brandTable),
       db
         .select({
           brand: productsTable.brand,
@@ -89,9 +87,7 @@ export async function GET() {
       curatedBrands.map((b) => [b.name.trim().toLowerCase(), b]),
     );
 
-    const productOnlyNames = new Set(
-      countByBrand.keys(),
-    );
+    const productOnlyNames = new Set(countByBrand.keys());
     for (const b of curatedBrands) {
       productOnlyNames.delete(b.name.trim());
     }
@@ -157,8 +153,7 @@ export async function GET() {
         { brands: [] },
         {
           headers: {
-            "Cache-Control":
-              "public, s-maxage=60, stale-while-revalidate=120",
+            "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
           },
         },
       );

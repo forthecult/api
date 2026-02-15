@@ -62,7 +62,9 @@ export function TestimonialCard({
           />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col items-start">
-          <h3 className="text-md leading-none font-semibold text-[#F5F1EB]">{author.name}</h3>
+          <h3 className="text-md leading-none font-semibold text-[#F5F1EB]">
+            {author.name}
+          </h3>
           {rating != null && rating > 0 && (
             <div
               className="mt-1.5 flex items-center gap-0.5"

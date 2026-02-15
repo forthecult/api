@@ -62,8 +62,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ eligible: false, claimed: false, tier: null });
     }
 
-    const stakedHuman =
-      Number(stakeData.amount) / Math.pow(10, token.decimals);
+    const stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
     const pricing = computeTierPricing(
       token,
       market.priceUsd,

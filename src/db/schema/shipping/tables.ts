@@ -8,7 +8,9 @@ export const shippingOptionsTable = pgTable("shipping_option", {
   /** For type flat_plus_per_item: fee per additional item (first item uses amountCents). */
   additionalItemCents: integer("additional_item_cents"),
   /** When set, this option applies only to orders/items for this brand. */
-  brandId: text("brand_id").references(() => brandTable.id, { onDelete: "set null" }),
+  brandId: text("brand_id").references(() => brandTable.id, {
+    onDelete: "set null",
+  }),
   countryCode: text("country_code"),
   createdAt: timestamp("created_at").notNull(),
   /** Human-readable estimate from brand site, e.g. "2-7 business days". */

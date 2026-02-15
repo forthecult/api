@@ -56,12 +56,7 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     const body = (await request.json()) as CryptoCheckoutBody;
-    const {
-      orderId,
-      paymentMethod,
-      chain = "ethereum",
-      token = "ETH",
-    } = body;
+    const { orderId, paymentMethod, chain = "ethereum", token = "ETH" } = body;
 
     if (!orderId || !paymentMethod) {
       return NextResponse.json(
@@ -123,11 +118,15 @@ export async function POST(request: Request) {
       // Map token name to cryptoCurrency for the checkout page (USDC, CRUST, PUMP, TROLL, SOL)
       const solToken = (token ?? "solana").toLowerCase();
       const cryptoCurrency =
-        solToken === "usdc" ? "USDC"
-        : solToken === "crust" ? "CRUST"
-        : solToken === "pump" ? "PUMP"
-        : solToken === "troll" ? "TROLL"
-        : "SOL";
+        solToken === "usdc"
+          ? "USDC"
+          : solToken === "crust"
+            ? "CRUST"
+            : solToken === "pump"
+              ? "PUMP"
+              : solToken === "troll"
+                ? "TROLL"
+                : "SOL";
       await db
         .update(ordersTable)
         .set({

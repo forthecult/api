@@ -101,8 +101,7 @@ export default function AdminNotificationsPage() {
 }
 
 function TemplateCard({ template }: { template: Template }) {
-  const hasEmail =
-    template.emailSubject != null || template.emailBody != null;
+  const hasEmail = template.emailSubject != null || template.emailBody != null;
   return (
     <li className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
       <div className="flex items-center justify-between">

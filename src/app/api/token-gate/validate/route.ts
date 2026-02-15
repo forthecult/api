@@ -84,11 +84,7 @@ function verifySolanaSignature(params: {
     const publicKey = new PublicKey(params.address);
     const publicKeyBytes = publicKey.toBytes();
     const messageBytes = new TextEncoder().encode(params.message);
-    return nacl.sign.detached.verify(
-      messageBytes,
-      signature,
-      publicKeyBytes,
-    );
+    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
   } catch {
     return false;
   }
@@ -116,7 +112,8 @@ export async function POST(request: Request) {
     const resourceType = (body.resourceType ?? "").toLowerCase() as
       | TokenGateResourceType
       | "";
-    const resourceId = typeof body.resourceId === "string" ? body.resourceId.trim() : "";
+    const resourceId =
+      typeof body.resourceId === "string" ? body.resourceId.trim() : "";
 
     if (!address || !message) {
       return NextResponse.json(
@@ -161,7 +158,10 @@ export async function POST(request: Request) {
       const bodyType = resourceType.toLowerCase();
       if (msgType !== bodyType || payload.resourceId !== resourceId) {
         return NextResponse.json(
-          { error: "Challenge was for a different resource. Sign again for this page." },
+          {
+            error:
+              "Challenge was for a different resource. Sign again for this page.",
+          },
           { status: 400 },
         );
       }
@@ -198,7 +198,9 @@ export async function POST(request: Request) {
     );
 
     if (!valid) {
-      const splGates = config.gates.filter((g) => g.gateType === "spl" && g.mintOrContract);
+      const splGates = config.gates.filter(
+        (g) => g.gateType === "spl" && g.mintOrContract,
+      );
       const checkedMints = splGates.map((g) => g.mintOrContract);
       if (process.env.NODE_ENV === "development" && checkedMints.length > 0) {
         console.info(
@@ -221,7 +223,9 @@ export async function POST(request: Request) {
       .map((s) => s.trim())
       .find((s) => s.startsWith(`${TOKEN_GATE_COOKIE_NAME}=`));
     const currentValue = cookieMatch
-      ? decodeURIComponent(cookieMatch.slice(TOKEN_GATE_COOKIE_NAME.length + 1).trim())
+      ? decodeURIComponent(
+          cookieMatch.slice(TOKEN_GATE_COOKIE_NAME.length + 1).trim(),
+        )
       : undefined;
 
     const setCookie = buildTokenGateSetCookie(

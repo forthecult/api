@@ -299,7 +299,10 @@ export default function DashboardPage() {
                     </thead>
                     <tbody>
                       {stats.recentOrders.map((order) => (
-                        <tr key={order.id} className="border-b hover:bg-muted/50">
+                        <tr
+                          key={order.id}
+                          className="border-b hover:bg-muted/50"
+                        >
                           <td className="p-2 font-mono text-xs">
                             <Link
                               href={`/orders/${order.id}`}

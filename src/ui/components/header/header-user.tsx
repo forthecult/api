@@ -1,6 +1,14 @@
 "use client";
 
-import { Heart, LogOut, Moon, Package, Shield, Sun, UserIcon } from "lucide-react";
+import {
+  Heart,
+  LogOut,
+  Moon,
+  Package,
+  Shield,
+  Sun,
+  UserIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -157,7 +165,7 @@ export function HeaderUserDropdown({
               Dark
             </DropdownMenuItem>
             <DropdownMenuItem
-              className={`cursor-pointer ${(theme === "system" || !theme) ? "font-medium text-primary" : ""}`}
+              className={`cursor-pointer ${theme === "system" || !theme ? "font-medium text-primary" : ""}`}
               onClick={() => setTheme("system")}
             >
               <svg

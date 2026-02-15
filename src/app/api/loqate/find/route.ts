@@ -53,20 +53,14 @@ export async function GET(request: NextRequest) {
     RATE_LIMITS.loqate,
   );
   if (!rateLimitResult.success) {
-    return addCorsIfAdminOrigin(
-      request,
-      rateLimitResponse(rateLimitResult),
-    );
+    return addCorsIfAdminOrigin(request, rateLimitResponse(rateLimitResult));
   }
 
   const apiKey = process.env.LOQATE_API_KEY;
   if (!apiKey?.trim()) {
     return addCorsIfAdminOrigin(
       request,
-      NextResponse.json(
-        { error: "Loqate is not configured" },
-        { status: 503 },
-      ),
+      NextResponse.json({ error: "Loqate is not configured" }, { status: 503 }),
     );
   }
 
@@ -82,10 +76,7 @@ export async function GET(request: NextRequest) {
   const cacheKey = getCacheKey(text, countries, limit);
   const cached = getCached(cacheKey);
   if (cached !== null) {
-    return addCorsIfAdminOrigin(
-      request,
-      NextResponse.json({ Items: cached }),
-    );
+    return addCorsIfAdminOrigin(request, NextResponse.json({ Items: cached }));
   }
 
   const params = new URLSearchParams({
@@ -109,10 +100,7 @@ export async function GET(request: NextRequest) {
       );
       return addCorsIfAdminOrigin(
         request,
-        NextResponse.json(
-          { error: "Address lookup failed" },
-          { status: 502 },
-        ),
+        NextResponse.json({ error: "Address lookup failed" }, { status: 502 }),
       );
     }
     const data = (await res.json()) as { Items?: unknown[]; Error?: string };
@@ -127,18 +115,12 @@ export async function GET(request: NextRequest) {
     }
     const items = data.Items ?? [];
     setCache(cacheKey, items);
-    return addCorsIfAdminOrigin(
-      request,
-      NextResponse.json({ Items: items }),
-    );
+    return addCorsIfAdminOrigin(request, NextResponse.json({ Items: items }));
   } catch (err) {
     console.error("Loqate Find error:", err);
     return addCorsIfAdminOrigin(
       request,
-      NextResponse.json(
-        { error: "Address lookup failed" },
-        { status: 502 },
-      ),
+      NextResponse.json({ error: "Address lookup failed" }, { status: 502 }),
     );
   }
 }

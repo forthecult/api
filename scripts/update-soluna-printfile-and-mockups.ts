@@ -220,10 +220,9 @@ async function getSolunaPrintifyProducts(): Promise<
   const items = searchData.items ?? [];
   const out: { id: string; printifyProductId: string; name: string }[] = [];
   for (const item of items) {
-    const fullRes = await fetch(
-      `${API_BASE}/api/admin/products/${item.id}`,
-      { headers: { Authorization: `Bearer ${API_KEY}` } },
-    );
+    const fullRes = await fetch(`${API_BASE}/api/admin/products/${item.id}`, {
+      headers: { Authorization: `Bearer ${API_KEY}` },
+    });
     if (!fullRes.ok) continue;
     const full = (await fullRes.json()) as {
       source?: string;
@@ -252,10 +251,9 @@ type CategoryIds = {
 };
 
 async function getCategoryIds(): Promise<CategoryIds> {
-  const res = await fetch(
-    `${API_BASE}/api/admin/categories?limit=500`,
-    { headers: { Authorization: `Bearer ${API_KEY}` } },
-  );
+  const res = await fetch(`${API_BASE}/api/admin/categories?limit=500`, {
+    headers: { Authorization: `Bearer ${API_KEY}` },
+  });
   if (!res.ok) {
     throw new Error(`Categories list failed: ${res.status}`);
   }
@@ -272,8 +270,7 @@ async function getCategoryIds(): Promise<CategoryIds> {
   return {
     soluna: bySlug.get("soluna") ?? byNameLower.get("soluna") ?? null,
     solana: bySlug.get("solana") ?? byNameLower.get("solana") ?? null,
-    glassware:
-      bySlug.get("glassware") ?? byNameLower.get("glassware") ?? null,
+    glassware: bySlug.get("glassware") ?? byNameLower.get("glassware") ?? null,
     stickers: bySlug.get("stickers") ?? byNameLower.get("stickers") ?? null,
   };
 }
@@ -314,7 +311,8 @@ async function patchProductCategoriesFeaturesSeo(
   if (categoryIds.soluna) ids.push(categoryIds.soluna);
   if (categoryIds.solana) ids.push(categoryIds.solana);
   if (
-    (label.toLowerCase().includes("shot") && label.toLowerCase().includes("glass")) &&
+    label.toLowerCase().includes("shot") &&
+    label.toLowerCase().includes("glass") &&
     categoryIds.glassware
   ) {
     ids.push(categoryIds.glassware);
@@ -402,7 +400,9 @@ async function main() {
   );
   await new Promise((r) => setTimeout(r, MOCKUP_WAIT_MS));
 
-  console.log("\n5. Re-syncing each product from Printify (refresh image URLs)...");
+  console.log(
+    "\n5. Re-syncing each product from Printify (refresh image URLs)...",
+  );
   for (const p of products) {
     try {
       await syncProduct(p.printifyProductId);
@@ -417,11 +417,7 @@ async function main() {
     try {
       await uploadMockupsToUploadThing(p.id);
     } catch (e) {
-      console.warn(
-        "   Skip upload-mockups",
-        p.id,
-        (e as Error).message,
-      );
+      console.warn("   Skip upload-mockups", p.id, (e as Error).message);
     }
     await new Promise((r) => setTimeout(r, 300));
   }

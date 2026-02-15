@@ -3,10 +3,7 @@ import { and, eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
-import {
-  getBtcpayInvoiceStatus,
-  isInvoiceSettled,
-} from "~/lib/btcpay";
+import { getBtcpayInvoiceStatus, isInvoiceSettled } from "~/lib/btcpay";
 import {
   getClientIp,
   RATE_LIMITS,
@@ -22,10 +19,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import {
-  fulfillEsimOrder,
-  hasEsimItems,
-} from "~/lib/esim-fulfillment";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 
 /** Mark order as paid only after BTCPay invoice is verified settled (prevents spoofing). */
 export async function POST(request: NextRequest) {
@@ -48,10 +42,7 @@ export async function POST(request: NextRequest) {
         : undefined;
 
     if (!orderId) {
-      return NextResponse.json(
-        { error: "orderId required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "orderId required" }, { status: 400 });
     }
 
     const [order] = await db

@@ -81,24 +81,23 @@ async function main() {
   console.log("\nCreating SOLUNA Printful products...");
   console.log("  - SOLUNA White T-Shirt (Bella+Canvas 3001)");
   console.log("  - SOLUNA Black Hoodie (Gildan 18500)");
-  console.log("(This may take 2-3 minutes for product creation + mockup generation...)\n");
+  console.log(
+    "(This may take 2-3 minutes for product creation + mockup generation...)\n",
+  );
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 600_000); // 10 minutes
 
   try {
-    const res = await fetch(
-      `${API_BASE}/api/admin/printful/create-products`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
+    const res = await fetch(`${API_BASE}/api/admin/printful/create-products`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${API_KEY}`,
       },
-    );
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
     clearTimeout(timeout);
 
     if (!res.ok) {

@@ -11,7 +11,9 @@ const SOL_USD_FALLBACK = 200;
  */
 export function useCryptoPrices({
   enabled = true,
-}: { enabled?: boolean } = {}): {
+}: {
+  enabled?: boolean;
+} = {}): {
   solUsdRate: number | null;
   suiUsdRate: number | null;
   crustPriceUsd: number | null;
@@ -30,18 +32,26 @@ export function useCryptoPrices({
     const ac = new AbortController();
     fetch("/api/crypto/prices", { signal: ac.signal })
       .then((res) => res.json())
-      .then((data: { SOL?: number; CRUST?: number; PUMP?: number; SOLUNA?: number; SKR?: number }) => {
-        if (typeof data?.SOL === "number" && data.SOL > 0)
-          setSolUsdRate(data.SOL);
-        if (typeof data?.CRUST === "number" && data.CRUST > 0)
-          setCrustPriceUsd(data.CRUST);
-        if (typeof data?.PUMP === "number" && data.PUMP > 0)
-          setPumpPriceUsd(data.PUMP);
-        if (typeof data?.SOLUNA === "number" && data.SOLUNA > 0)
-          setSolunaPriceUsd(data.SOLUNA);
-        if (typeof data?.SKR === "number" && data.SKR > 0)
-          setSeekerPriceUsd(data.SKR);
-      })
+      .then(
+        (data: {
+          SOL?: number;
+          CRUST?: number;
+          PUMP?: number;
+          SOLUNA?: number;
+          SKR?: number;
+        }) => {
+          if (typeof data?.SOL === "number" && data.SOL > 0)
+            setSolUsdRate(data.SOL);
+          if (typeof data?.CRUST === "number" && data.CRUST > 0)
+            setCrustPriceUsd(data.CRUST);
+          if (typeof data?.PUMP === "number" && data.PUMP > 0)
+            setPumpPriceUsd(data.PUMP);
+          if (typeof data?.SOLUNA === "number" && data.SOLUNA > 0)
+            setSolunaPriceUsd(data.SOLUNA);
+          if (typeof data?.SKR === "number" && data.SKR > 0)
+            setSeekerPriceUsd(data.SKR);
+        },
+      )
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setSolUsdRate(SOL_USD_FALLBACK);
@@ -54,5 +64,12 @@ export function useCryptoPrices({
   }, [enabled]);
 
   // suiUsdRate: not currently provided by the prices API
-  return { solUsdRate, suiUsdRate: null, crustPriceUsd, pumpPriceUsd, solunaPriceUsd, seekerPriceUsd };
+  return {
+    solUsdRate,
+    suiUsdRate: null,
+    crustPriceUsd,
+    pumpPriceUsd,
+    solunaPriceUsd,
+    seekerPriceUsd,
+  };
 }

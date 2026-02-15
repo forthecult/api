@@ -5,10 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /** Escape SQL LIKE/ILIKE special characters */
 function escapeLike(s: string): string {

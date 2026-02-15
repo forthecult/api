@@ -5,7 +5,7 @@
  */
 
 import sharp from "sharp";
-import { UTApi } from "uploadthing/server";
+import type { UTApi } from "uploadthing/server";
 
 import { slugify } from "~/lib/slugify";
 
@@ -199,7 +199,10 @@ export async function uploadMockupToUploadThing(
 
   let metadata: { width?: number; height?: number };
   try {
-    metadata = (await sharp(buffer).metadata()) as { width?: number; height?: number };
+    metadata = (await sharp(buffer).metadata()) as {
+      width?: number;
+      height?: number;
+    };
   } catch (err) {
     console.warn(`Invalid image data for ${sourceUrl}:`, err);
     return null;
@@ -222,11 +225,9 @@ export async function uploadMockupToUploadThing(
     return null;
   }
 
-  const file = new File(
-    [new Uint8Array(webpBuffer)],
-    filename,
-    { type: "image/webp" },
-  );
+  const file = new File([new Uint8Array(webpBuffer)], filename, {
+    type: "image/webp",
+  });
 
   try {
     const result = await utapi.uploadFiles(file);

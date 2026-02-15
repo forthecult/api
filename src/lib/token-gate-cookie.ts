@@ -3,7 +3,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import type { TokenGateResourceType } from "~/lib/token-gate";
 
 const SECRET =
-  typeof process.env.AUTH_SECRET === "string" && process.env.AUTH_SECRET.length > 0
+  typeof process.env.AUTH_SECRET === "string" &&
+  process.env.AUTH_SECRET.length > 0
     ? process.env.AUTH_SECRET
     : "token-gate-cookie-fallback-dev";
 

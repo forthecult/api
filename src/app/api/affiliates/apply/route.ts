@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { affiliateTable } from "~/db/schema";
@@ -66,15 +66,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const rawCode =
-    typeof body.code === "string" ? body.code.trim() : "";
+  const rawCode = typeof body.code === "string" ? body.code.trim() : "";
   let code: string;
 
   if (rawCode.length > 0) {
     const normalized = normalizeCode(rawCode);
-    if (normalized.length < CODE_MIN_LENGTH || normalized.length > CODE_MAX_LENGTH) {
+    if (
+      normalized.length < CODE_MIN_LENGTH ||
+      normalized.length > CODE_MAX_LENGTH
+    ) {
       return NextResponse.json(
-        { error: `Code must be ${CODE_MIN_LENGTH}–${CODE_MAX_LENGTH} characters.` },
+        {
+          error: `Code must be ${CODE_MIN_LENGTH}–${CODE_MAX_LENGTH} characters.`,
+        },
         { status: 400 },
       );
     }
@@ -115,12 +119,16 @@ export async function POST(request: NextRequest) {
       ? body.applicationNote.trim().slice(0, 2000)
       : null;
   const rawPayoutMethod =
-    typeof body.payoutMethod === "string" ? body.payoutMethod.trim().toLowerCase() : "";
+    typeof body.payoutMethod === "string"
+      ? body.payoutMethod.trim().toLowerCase()
+      : "";
   const allowedPayout = ["paypal", "bitcoin", "usdt", "cult"] as const;
   const payoutMethod =
     rawPayoutMethod === ""
       ? null
-      : allowedPayout.includes(rawPayoutMethod as (typeof allowedPayout)[number])
+      : allowedPayout.includes(
+            rawPayoutMethod as (typeof allowedPayout)[number],
+          )
         ? rawPayoutMethod
         : null;
   const payoutAddress =
@@ -158,7 +166,9 @@ export async function POST(request: NextRequest) {
       (insertErr as { code: string }).code === "23505";
     if (code23505) {
       return NextResponse.json(
-        { error: "This code is already taken. Please choose another or retry." },
+        {
+          error: "This code is already taken. Please choose another or retry.",
+        },
         { status: 409 },
       );
     }

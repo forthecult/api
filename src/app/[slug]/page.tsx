@@ -100,7 +100,9 @@ type RelatedProduct = {
 const baseUrl = () => getServerBaseUrl();
 
 /** Resolve product by slug from DB; uses shared mapper (single source of truth). */
-async function getProductForPageBySlug(slug: string): Promise<PageProduct | null> {
+async function getProductForPageBySlug(
+  slug: string,
+): Promise<PageProduct | null> {
   const data = await getProductBySlugOrId(slug);
   if (!data) return null;
   return mapProductBySlugResultToPageProduct(data);
@@ -177,9 +179,10 @@ export async function generateMetadata({
     const metaDesc =
       product.metaDescription?.trim()?.slice(0, 160) ??
       stripHtmlForMeta(product.description).slice(0, 160);
-    const pageTitle =
-      product.pageTitle?.trim() || product.name;
-    const ogTitle = pageTitle.includes(SEO_CONFIG.name) ? pageTitle : `${pageTitle} | ${SEO_CONFIG.name}`;
+    const pageTitle = product.pageTitle?.trim() || product.name;
+    const ogTitle = pageTitle.includes(SEO_CONFIG.name)
+      ? pageTitle
+      : `${pageTitle} | ${SEO_CONFIG.name}`;
     const canonicalUrl = `${siteUrl}/${canonicalSlug}`;
     const imageUrl =
       product.image && product.image.startsWith("http")
@@ -219,8 +222,7 @@ export async function generateMetadata({
   }
   const category = await getCategoryBySlug(slug);
   const categoryName = category?.name ?? slug;
-  const title =
-    category?.title ?? `${categoryName} | ${SEO_CONFIG.name}`;
+  const title = category?.title ?? `${categoryName} | ${SEO_CONFIG.name}`;
   const description =
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
@@ -290,10 +292,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
 
     if (tokenGateConfig.tokenGated && !passed) {
       return (
-        <TokenGateGuard
-          resourceType="product"
-          resourceId={canonicalSlug}
-        />
+        <TokenGateGuard resourceType="product" resourceId={canonicalSlug} />
       );
     }
 
@@ -301,14 +300,18 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       .getAll()
       .map((c) => `${c.name}=${c.value}`)
       .join("; ");
-    const relatedProducts = await fetchRelatedProducts(slug, productCookieHeader);
+    const relatedProducts = await fetchRelatedProducts(
+      slug,
+      productCookieHeader,
+    );
     const discountPercentage = product.originalPrice
       ? Math.round(
           ((product.originalPrice - product.price) / product.originalPrice) *
             100,
         )
       : 0;
-    const siteUrl = process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+    const siteUrl =
+      process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
     const breadcrumbTrail = await getProductBreadcrumbTrail(
       product.id,
       product.name,
@@ -391,114 +394,123 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                     mainImageAlt={product.mainImageAlt}
                   />
                   <div className="flex flex-col">
-                  <div className="mb-6">
-                    <h1 className="text-3xl font-bold">{product.name}</h1>
-                    {product.rating > 0 && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <div
-                          aria-label={`Rating ${product.rating} out of 5`}
-                          className="flex items-center"
-                        >
-                          {range(5).map((i) => (
-                            <Star
-                              className={`h-5 w-5 ${
-                                i < Math.floor(product.rating)
-                                  ? "fill-primary text-primary"
-                                  : i < product.rating
-                                    ? "fill-primary/50 text-primary"
-                                    : "text-muted-foreground"
-                              }`}
-                              key={`star-${i}`}
-                            />
-                          ))}
+                    <div className="mb-6">
+                      <h1 className="text-3xl font-bold">{product.name}</h1>
+                      {product.rating > 0 && (
+                        <div className="mt-2 flex items-center gap-2">
+                          <div
+                            aria-label={`Rating ${product.rating} out of 5`}
+                            className="flex items-center"
+                          >
+                            {range(5).map((i) => (
+                              <Star
+                                className={`h-5 w-5 ${
+                                  i < Math.floor(product.rating)
+                                    ? "fill-primary text-primary"
+                                    : i < product.rating
+                                      ? "fill-primary/50 text-primary"
+                                      : "text-muted-foreground"
+                                }`}
+                                key={`star-${i}`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-sm text-muted-foreground">
+                            ({product.rating.toFixed(1)})
+                          </span>
                         </div>
-                        <span className="text-sm text-muted-foreground">
-                          ({product.rating.toFixed(1)})
-                        </span>
-                      </div>
+                      )}
+                    </div>
+                    <div className="mb-2">
+                      <p className="text-lg font-medium text-muted-foreground">
+                        {product.category}
+                      </p>
+                    </div>
+                    {(() => {
+                      const b = product.brand?.trim();
+                      const m = product.model?.trim();
+                      const isProviderBrand =
+                        b?.toLowerCase() === "printful" ||
+                        b?.toLowerCase() === "printify" ||
+                        b?.toLowerCase() === "generic brand";
+                      if (!b && !m) return null;
+                      if (isProviderBrand) return null;
+                      return (
+                        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                          {b && (
+                            <span>
+                              <span className="font-medium text-foreground">
+                                Brand:
+                              </span>{" "}
+                              {b}
+                            </span>
+                          )}
+                          {m && (
+                            <span>
+                              <span className="font-medium text-foreground">
+                                Model:
+                              </span>{" "}
+                              {m}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    {/* Features only at top; description is in accordion below */}
+                    {product.features.length > 0 && (
+                      <ul className="mb-6 space-y-2 text-muted-foreground">
+                        {product.features.map((feature) => (
+                          <li
+                            key={`feature-${product.id}-${slugify(feature)}`}
+                            className="flex items-start"
+                          >
+                            <span className="mr-2 mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                            <span>{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
+                    <ProductVariantSection
+                      product={{
+                        id: product.id,
+                        name: product.name,
+                        category: product.category,
+                        image: product.image,
+                        price: product.price,
+                        originalPrice: product.originalPrice,
+                        inStock: product.inStock,
+                        continueSellingWhenOutOfStock:
+                          product.continueSellingWhenOutOfStock,
+                        availableCountryCodes: product.availableCountryCodes,
+                        ...(product.slug && { slug: product.slug }),
+                      }}
+                      hasVariants={product.hasVariants ?? false}
+                      optionDefinitions={product.optionDefinitions ?? []}
+                      variants={product.variants ?? []}
+                      handlingDaysMin={product.handlingDaysMin}
+                      handlingDaysMax={product.handlingDaysMax}
+                    />
+                    <EstimatedDeliveryTimeline
+                      handlingDaysMin={product.handlingDaysMin}
+                      handlingDaysMax={product.handlingDaysMax}
+                      transitDaysMin={product.transitDaysMin}
+                      transitDaysMax={product.transitDaysMax}
+                      className="mb-6"
+                    />
+                    <ProductDetailAccordion
+                      category={product.category}
+                      description={sanitizeProductDescription(
+                        product.description,
+                      )}
+                      descriptionIsHtml
+                      sizeChart={product.sizeChart ?? undefined}
+                    />
+                    <ProductShare
+                      title={product.name}
+                      url={`${siteUrl}/${canonicalSlug}`}
+                      className="mt-6"
+                    />
                   </div>
-                  <div className="mb-2">
-                    <p className="text-lg font-medium text-muted-foreground">
-                      {product.category}
-                    </p>
-                  </div>
-                  {(() => {
-                    const b = product.brand?.trim();
-                    const m = product.model?.trim();
-                    const isProviderBrand =
-                      b?.toLowerCase() === "printful" ||
-                      b?.toLowerCase() === "printify" ||
-                      b?.toLowerCase() === "generic brand";
-                    if (!b && !m) return null;
-                    if (isProviderBrand) return null;
-                    return (
-                      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                        {b && (
-                          <span>
-                            <span className="font-medium text-foreground">Brand:</span> {b}
-                          </span>
-                        )}
-                        {m && (
-                          <span>
-                            <span className="font-medium text-foreground">Model:</span> {m}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  {/* Features only at top; description is in accordion below */}
-                  {product.features.length > 0 && (
-                    <ul className="mb-6 space-y-2 text-muted-foreground">
-                      {product.features.map((feature) => (
-                        <li
-                          key={`feature-${product.id}-${slugify(feature)}`}
-                          className="flex items-start"
-                        >
-                          <span className="mr-2 mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  <ProductVariantSection
-                    product={{
-                      id: product.id,
-                      name: product.name,
-                      category: product.category,
-                      image: product.image,
-                      price: product.price,
-                      originalPrice: product.originalPrice,
-                      inStock: product.inStock,
-                      continueSellingWhenOutOfStock: product.continueSellingWhenOutOfStock,
-                      availableCountryCodes: product.availableCountryCodes,
-                      ...(product.slug && { slug: product.slug }),
-                    }}
-                    hasVariants={product.hasVariants ?? false}
-                    optionDefinitions={product.optionDefinitions ?? []}
-                    variants={product.variants ?? []}
-                    handlingDaysMin={product.handlingDaysMin}
-                    handlingDaysMax={product.handlingDaysMax}
-                  />
-                  <EstimatedDeliveryTimeline
-                    handlingDaysMin={product.handlingDaysMin}
-                    handlingDaysMax={product.handlingDaysMax}
-                    transitDaysMin={product.transitDaysMin}
-                    transitDaysMax={product.transitDaysMax}
-                    className="mb-6"
-                  />
-                  <ProductDetailAccordion
-                    category={product.category}
-                    description={sanitizeProductDescription(product.description)}
-                    descriptionIsHtml
-                    sizeChart={product.sizeChart ?? undefined}
-                  />
-                  <ProductShare
-                    title={product.name}
-                    url={`${siteUrl}/${canonicalSlug}`}
-                    className="mt-6"
-                  />
-                </div>
                 </div>
               </ProductVariantImageProvider>
               <Separator className="my-8" />
@@ -548,10 +560,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     const passed = hasValidTokenGateCookie(tgCookie, "category", category.id);
     if (!passed) {
       return (
-        <TokenGateGuard
-          resourceType="category"
-          resourceId={category.id}
-        />
+        <TokenGateGuard resourceType="category" resourceId={category.id} />
       );
     }
   }
@@ -572,12 +581,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     Number.parseInt(resolvedSearchParams.page ?? "1", 10),
   );
   const sortParam = resolvedSearchParams.sort?.trim() || "manual";
-  const sort =
-    ["newest", "price_asc", "price_desc", "best_selling", "rating", "manual"].includes(
-      sortParam,
-    )
-      ? sortParam
-      : "manual";
+  const sort = [
+    "newest",
+    "price_asc",
+    "price_desc",
+    "best_selling",
+    "rating",
+    "manual",
+  ].includes(sortParam)
+    ? sortParam
+    : "manual";
   const subcategoryParam = resolvedSearchParams.subcategory?.trim() || "";
   const searchQuery = resolvedSearchParams.q?.trim() ?? "";
   const limit = 12;
@@ -599,7 +612,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       cookieHeader,
     ),
     getSubcategories(category.id),
-    category.parentId ? getCategoryParent(category.parentId) : Promise.resolve(null),
+    category.parentId
+      ? getCategoryParent(category.parentId)
+      : Promise.resolve(null),
   ]);
 
   const products = (data.items ?? []).map((p) => ({
@@ -607,7 +622,8 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
     tokenGated: p.tokenGated ?? false,
-    tokenGatePassed: (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
+    tokenGatePassed:
+      (p as { tokenGatePassed?: boolean }).tokenGatePassed ?? false,
   }));
   // First row: All + current category (no subcategory pills to avoid duplicating the second row).
   const categories: CategoryOption[] = [
@@ -630,29 +646,37 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         url={`${baseUrl()}/${slug}`}
         numberOfItems={data.total ?? 0}
       />
-    <Suspense fallback={<PageLoadingFallback />}>
-      <ProductsClient
-        initialProducts={products}
-        initialCategories={categories}
-        initialPage={page}
-        initialTotalPages={data.totalPages ?? 1}
-        initialTotal={data.total ?? 0}
-        initialCategory={slug}
-        title={category.name}
-        description={categoryDescription}
-        categoryDescriptionFull={category.description ?? undefined}
-        subcategories={subcategories}
-        initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating" | "manual"}
-        initialSubcategory={subcategoryParam || undefined}
-        initialSearch={searchQuery}
-        breadcrumbs={[
-          { name: "Home", href: "/" },
-          { name: "Products", href: "/products" },
-          ...(parent ? [{ name: parent.name, href: `/${parent.slug}` }] : []),
-          { name: category.name, href: `/${slug}` },
-        ]}
-      />
-    </Suspense>
+      <Suspense fallback={<PageLoadingFallback />}>
+        <ProductsClient
+          initialProducts={products}
+          initialCategories={categories}
+          initialPage={page}
+          initialTotalPages={data.totalPages ?? 1}
+          initialTotal={data.total ?? 0}
+          initialCategory={slug}
+          title={category.name}
+          description={categoryDescription}
+          categoryDescriptionFull={category.description ?? undefined}
+          subcategories={subcategories}
+          initialSort={
+            sort as
+              | "newest"
+              | "price_asc"
+              | "price_desc"
+              | "best_selling"
+              | "rating"
+              | "manual"
+          }
+          initialSubcategory={subcategoryParam || undefined}
+          initialSearch={searchQuery}
+          breadcrumbs={[
+            { name: "Home", href: "/" },
+            { name: "Products", href: "/products" },
+            ...(parent ? [{ name: parent.name, href: `/${parent.slug}` }] : []),
+            { name: category.name, href: `/${slug}` },
+          ]}
+        />
+      </Suspense>
     </>
   );
 }

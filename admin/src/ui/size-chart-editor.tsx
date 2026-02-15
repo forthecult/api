@@ -36,14 +36,19 @@ export type SizeChartData = {
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
-function isRange(v: MeasurementValue): v is { size: string; min_value: string; max_value: string } {
+function isRange(
+  v: MeasurementValue,
+): v is { size: string; min_value: string; max_value: string } {
   return "min_value" in v;
 }
 
 /** Get the display value for a cell */
 function cellDisplay(v: MeasurementValue | undefined): string {
   if (!v) return "";
-  if (isRange(v)) return v.min_value && v.max_value ? `${v.min_value} - ${v.max_value}` : v.min_value || v.max_value || "";
+  if (isRange(v))
+    return v.min_value && v.max_value
+      ? `${v.min_value} - ${v.max_value}`
+      : v.min_value || v.max_value || "";
   return v.value ?? "";
 }
 
@@ -63,7 +68,10 @@ function extractSizes(table: SizeTable): string[] {
 }
 
 /** Get value for a specific size from a measurement */
-function getValueForSize(m: Measurement, size: string): MeasurementValue | undefined {
+function getValueForSize(
+  m: Measurement,
+  size: string,
+): MeasurementValue | undefined {
   return m.values.find((v) => v.size === size);
 }
 
@@ -124,7 +132,9 @@ function CellEditor({
     <input
       type="text"
       value={single}
-      onChange={(e) => onChange({ size: value?.size ?? "", value: e.target.value })}
+      onChange={(e) =>
+        onChange({ size: value?.size ?? "", value: e.target.value })
+      }
       className={cellInputClass}
       placeholder="—"
     />
@@ -164,7 +174,10 @@ function SingleTableEditor({
   const updateMeasurementValue = useCallback(
     (mIdx: number, size: string, newVal: MeasurementValue | null) => {
       const updated = { ...table, measurements: [...measurements] };
-      const m = { ...measurements[mIdx]!, values: [...measurements[mIdx]!.values] };
+      const m = {
+        ...measurements[mIdx]!,
+        values: [...measurements[mIdx]!.values],
+      };
       const vIdx = m.values.findIndex((v) => v.size === size);
       if (newVal === null) {
         if (vIdx >= 0) m.values.splice(vIdx, 1);
@@ -182,7 +195,10 @@ function SingleTableEditor({
   const updateMeasurementLabel = useCallback(
     (mIdx: number, label: string) => {
       const updated = { ...table, measurements: [...measurements] };
-      updated.measurements![mIdx] = { ...measurements[mIdx]!, type_label: label };
+      updated.measurements![mIdx] = {
+        ...measurements[mIdx]!,
+        type_label: label,
+      };
       onUpdate(updated);
     },
     [table, measurements, onUpdate],
@@ -190,7 +206,10 @@ function SingleTableEditor({
 
   const removeMeasurement = useCallback(
     (mIdx: number) => {
-      const updated = { ...table, measurements: measurements.filter((_, i) => i !== mIdx) };
+      const updated = {
+        ...table,
+        measurements: measurements.filter((_, i) => i !== mIdx),
+      };
       onUpdate(updated);
     },
     [table, measurements, onUpdate],
@@ -202,7 +221,9 @@ function SingleTableEditor({
     const newM: Measurement = {
       type_label: label,
       values: sizes.map((s) =>
-        showRanges ? { size: s, min_value: "", max_value: "" } : { size: s, value: "" },
+        showRanges
+          ? { size: s, min_value: "", max_value: "" }
+          : { size: s, value: "" },
       ),
     };
     const updated = { ...table, measurements: [...measurements, newM] };
@@ -259,7 +280,9 @@ function SingleTableEditor({
             return { size: v.size, min_value: val, max_value: val };
           }
           // range → single (use min or combined)
-          const display = isRange(v) ? (v.min_value || v.max_value || "") : v.value;
+          const display = isRange(v)
+            ? v.min_value || v.max_value || ""
+            : v.value;
           return { size: v.size, value: display ?? "" };
         }),
       })),
@@ -273,7 +296,9 @@ function SingleTableEditor({
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex-1 space-y-1">
           <div className="flex items-center gap-2">
-            <label className="text-xs font-medium text-muted-foreground">Type</label>
+            <label className="text-xs font-medium text-muted-foreground">
+              Type
+            </label>
             <input
               type="text"
               value={table.type}
@@ -281,7 +306,9 @@ function SingleTableEditor({
               className="rounded border border-input bg-background px-2 py-1 text-xs"
               placeholder="e.g. measure_yourself"
             />
-            <label className="ml-2 text-xs font-medium text-muted-foreground">Unit</label>
+            <label className="ml-2 text-xs font-medium text-muted-foreground">
+              Unit
+            </label>
             <input
               type="text"
               value={table.unit}
@@ -291,7 +318,9 @@ function SingleTableEditor({
             />
           </div>
           {table.description && (
-            <p className="text-xs text-muted-foreground line-clamp-1">{table.description}</p>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {table.description}
+            </p>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -347,7 +376,12 @@ function SingleTableEditor({
                     type="text"
                     value={newSizeInput}
                     onChange={(e) => setNewSizeInput(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addSize(); } }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addSize();
+                      }
+                    }}
                     className="w-16 rounded border border-dashed border-input bg-background px-1.5 py-0.5 text-xs text-center"
                     placeholder="+ size"
                   />
@@ -371,7 +405,9 @@ function SingleTableEditor({
                     <input
                       type="text"
                       value={m.type_label}
-                      onChange={(e) => updateMeasurementLabel(mIdx, e.target.value)}
+                      onChange={(e) =>
+                        updateMeasurementLabel(mIdx, e.target.value)
+                      }
                       className="flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-xs font-medium hover:border-input focus:border-input focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <button
@@ -406,11 +442,22 @@ function SingleTableEditor({
           type="text"
           value={newMeasurementInput}
           onChange={(e) => setNewMeasurementInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addMeasurement(); } }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              addMeasurement();
+            }
+          }}
           className="max-w-[200px] rounded border border-dashed border-input bg-background px-2 py-1 text-xs"
           placeholder="e.g. Chest Width"
         />
-        <Button type="button" variant="outline" size="sm" onClick={addMeasurement} className="gap-1 text-xs">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={addMeasurement}
+          className="gap-1 text-xs"
+        >
           <Plus className="size-3" /> Add measurement
         </Button>
       </div>
@@ -569,7 +616,13 @@ export function SizeChartDataEditor({
               />
             ))
           )}
-          <Button type="button" variant="outline" size="sm" onClick={addTable} className="gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={addTable}
+            className="gap-1"
+          >
             <Plus className="size-3" /> Add size table
           </Button>
         </div>
@@ -578,13 +631,14 @@ export function SizeChartDataEditor({
           <textarea
             rows={12}
             value={jsonRaw}
-            onChange={(e) => { setJsonRaw(e.target.value); setJsonError(null); }}
+            onChange={(e) => {
+              setJsonRaw(e.target.value);
+              setJsonError(null);
+            }}
             className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             placeholder='{ "availableSizes": ["S","M","L"], "sizeTables": [...] }'
           />
-          {jsonError && (
-            <p className="text-xs text-destructive">{jsonError}</p>
-          )}
+          {jsonError && <p className="text-xs text-destructive">{jsonError}</p>}
           <Button type="button" variant="outline" size="sm" onClick={applyJson}>
             Apply JSON
           </Button>

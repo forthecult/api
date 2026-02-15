@@ -56,10 +56,13 @@ export async function sendOrderConfirmationEmail(
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.log("[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:", {
-      to,
-      subject,
-      body: body.slice(0, 200),
-    });
+    console.log(
+      "[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:",
+      {
+        to,
+        subject,
+        body: body.slice(0, 200),
+      },
+    );
   }
 }

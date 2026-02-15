@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { supportTicketTable } from "~/db/schema";
@@ -24,7 +24,11 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
   const limit = Math.min(
     MAX_LIMIT,
-    Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT),
+    Math.max(
+      1,
+      parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
+        DEFAULT_LIMIT,
+    ),
   );
   const offset = (page - 1) * limit;
 
@@ -62,7 +66,8 @@ export async function GET(request: NextRequest) {
     console.error("Support tickets GET error:", err);
     const message =
       err instanceof Error &&
-      (err.message?.includes("relation") || err.message?.includes("does not exist"))
+      (err.message?.includes("relation") ||
+        err.message?.includes("does not exist"))
         ? "Database table missing. Run: bun run db:push"
         : "Failed to load tickets.";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -110,7 +115,8 @@ export async function POST(request: NextRequest) {
   }
 
   const type =
-    typeof body.type === "string" && TYPE_VALUES.includes(body.type as (typeof TYPE_VALUES)[number])
+    typeof body.type === "string" &&
+    TYPE_VALUES.includes(body.type as (typeof TYPE_VALUES)[number])
       ? (body.type as (typeof TYPE_VALUES)[number])
       : "normal";
 
@@ -130,7 +136,8 @@ export async function POST(request: NextRequest) {
       .limit(1);
 
     if (latestOpenOrPending) {
-      const elapsed = Date.now() - new Date(latestOpenOrPending.createdAt).getTime();
+      const elapsed =
+        Date.now() - new Date(latestOpenOrPending.createdAt).getTime();
       if (elapsed < ONE_HOUR_MS) {
         const retryAfterSeconds = Math.ceil((ONE_HOUR_MS - elapsed) / 1000);
         return NextResponse.json(
@@ -174,7 +181,8 @@ export async function POST(request: NextRequest) {
     console.error("Support ticket create error:", err);
     const message =
       err instanceof Error &&
-      (err.message?.includes("relation") || err.message?.includes("does not exist"))
+      (err.message?.includes("relation") ||
+        err.message?.includes("does not exist"))
         ? "Database table missing. Run: bun run db:push"
         : "Failed to create ticket.";
     return NextResponse.json({ error: message }, { status: 500 });

@@ -50,7 +50,7 @@ export default function TelegramCartPage() {
                   className="flex gap-3 rounded-lg border border-[var(--tg-theme-hint-color,#999)]/20 bg-[var(--tg-theme-secondary-bg-color,#f5f5f5)] p-3"
                 >
                   <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded bg-white">
-                    {failedImageIds.has(item.id) || !(item.image?.trim()) ? (
+                    {failedImageIds.has(item.id) || !item.image?.trim() ? (
                       <Image
                         alt={item.name}
                         className="object-contain"
@@ -67,7 +67,9 @@ export default function TelegramCartPage() {
                         src={item.image.trim()}
                         unoptimized={/^https?:\/\//i.test(item.image)}
                         onError={() =>
-                          setFailedImageIds((prev) => new Set(prev).add(item.id))
+                          setFailedImageIds((prev) =>
+                            new Set(prev).add(item.id),
+                          )
                         }
                       />
                     )}

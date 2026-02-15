@@ -30,7 +30,9 @@ export function TrackOrderForm() {
         return;
       }
       if (!value) {
-        setErrorMessage("Please enter your billing email, payment address, or postal code.");
+        setErrorMessage(
+          "Please enter your billing email, payment address, or postal code.",
+        );
         setStatus("error");
         return;
       }
@@ -53,7 +55,8 @@ export function TrackOrderForm() {
         if (!res.ok) {
           setStatus("error");
           setErrorMessage(
-            data.error?.message ?? "Order not found or details don't match. Please try again.",
+            data.error?.message ??
+              "Order not found or details don't match. Please try again.",
           );
           return;
         }
@@ -122,7 +125,11 @@ export function TrackOrderForm() {
               {errorMessage}
             </p>
           )}
-          <Button type="submit" disabled={status === "loading"} className="w-full sm:w-auto">
+          <Button
+            type="submit"
+            disabled={status === "loading"}
+            className="w-full sm:w-auto"
+          >
             {status === "loading" ? "Looking up…" : "Track"}
           </Button>
         </form>

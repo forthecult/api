@@ -31,7 +31,8 @@ export async function GET(
         {
           error: {
             code: "INVALID_OR_EXPIRED",
-            message: "This link is invalid or has expired. Please look up your order again.",
+            message:
+              "This link is invalid or has expired. Please look up your order again.",
           },
         },
         { status: 401 },

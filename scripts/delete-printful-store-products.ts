@@ -30,7 +30,9 @@ function getStoreId(): number {
 
 async function main() {
   const storeId = getStoreId();
-  console.log(`Listing and deleting all sync products in store ${storeId}...\n`);
+  console.log(
+    `Listing and deleting all sync products in store ${storeId}...\n`,
+  );
 
   const ids: number[] = [];
   let offset = 0;
@@ -59,7 +61,10 @@ async function main() {
       await deleteSyncProduct(id, storeId);
       console.log(`  [${i + 1}/${ids.length}] Deleted product ${id}`);
     } catch (e) {
-      console.error(`  [${i + 1}/${ids.length}] Failed to delete ${id}:`, (e as Error).message);
+      console.error(
+        `  [${i + 1}/${ids.length}] Failed to delete ${id}:`,
+        (e as Error).message,
+      );
     }
     if (i < ids.length - 1) {
       await new Promise((r) => setTimeout(r, 2000));

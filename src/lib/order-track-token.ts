@@ -1,7 +1,9 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 const ORDER_TRACK_SECRET =
-  process.env.ORDER_TRACK_SECRET ?? process.env.NEXTAUTH_SECRET ?? "order-track-fallback";
+  process.env.ORDER_TRACK_SECRET ??
+  process.env.NEXTAUTH_SECRET ??
+  "order-track-fallback";
 const TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 function base64UrlEncode(buf: Buffer): string {
@@ -23,9 +25,7 @@ function base64UrlDecode(str: string): Buffer | null {
 export function createOrderTrackToken(orderId: string): string {
   const expiry = String(Date.now() + TOKEN_TTL_MS);
   const payload = `${orderId}:${expiry}`;
-  const sig = createHmac("sha256", ORDER_TRACK_SECRET)
-    .update(payload)
-    .digest();
+  const sig = createHmac("sha256", ORDER_TRACK_SECRET).update(payload).digest();
   return `${base64UrlEncode(Buffer.from(expiry))}.${base64UrlEncode(sig)}`;
 }
 

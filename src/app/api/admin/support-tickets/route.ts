@@ -2,10 +2,7 @@ import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  supportTicketTable,
-  userTable,
-} from "~/db/schema";
+import { supportTicketTable, userTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
 const DEFAULT_PAGE_SIZE = 10;
@@ -33,25 +30,35 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
     );
     const offset = (page - 1) * limit;
-    const statusParam = request.nextUrl.searchParams.get("status")?.trim().toLowerCase() ?? "";
-    const statusFilter: StatusFilter | "" = STATUS_VALUES.includes(statusParam as StatusFilter)
+    const statusParam =
+      request.nextUrl.searchParams.get("status")?.trim().toLowerCase() ?? "";
+    const statusFilter: StatusFilter | "" = STATUS_VALUES.includes(
+      statusParam as StatusFilter,
+    )
       ? (statusParam as StatusFilter)
       : "";
-    const typeParam = request.nextUrl.searchParams.get("type")?.trim().toLowerCase() ?? "";
-    const typeFilter: TypeFilter | "" = TYPE_VALUES.includes(typeParam as TypeFilter)
+    const typeParam =
+      request.nextUrl.searchParams.get("type")?.trim().toLowerCase() ?? "";
+    const typeFilter: TypeFilter | "" = TYPE_VALUES.includes(
+      typeParam as TypeFilter,
+    )
       ? (typeParam as TypeFilter)
       : "";
-    const fromDateParam = request.nextUrl.searchParams.get("fromDate")?.trim() ?? "";
-    const toDateParam = request.nextUrl.searchParams.get("toDate")?.trim() ?? "";
+    const fromDateParam =
+      request.nextUrl.searchParams.get("fromDate")?.trim() ?? "";
+    const toDateParam =
+      request.nextUrl.searchParams.get("toDate")?.trim() ?? "";
 
     const conditions: ReturnType<typeof eq>[] = [];
-    if (statusFilter) conditions.push(eq(supportTicketTable.status, statusFilter));
+    if (statusFilter)
+      conditions.push(eq(supportTicketTable.status, statusFilter));
     if (typeFilter) conditions.push(eq(supportTicketTable.type, typeFilter));
     if (fromDateParam) {
       const from = new Date(fromDateParam);

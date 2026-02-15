@@ -877,7 +877,9 @@ export function useCountryCurrency(): CountryCurrencyContextType {
     if (typeof window === "undefined") return COUNTRY_CURRENCY_FALLBACK;
     // On the client, return fallback instead of throwing to survive provider
     // tree failures (e.g. wallet extension crashes above this provider).
-    console.warn("useCountryCurrency: CountryCurrencyProvider not found, using fallback");
+    console.warn(
+      "useCountryCurrency: CountryCurrencyProvider not found, using fallback",
+    );
     return COUNTRY_CURRENCY_FALLBACK;
   }
   return ctx;

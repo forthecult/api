@@ -7,22 +7,38 @@ export const PAYMENT_METHOD_DEFAULTS: Array<{
   label: string;
   displayOrder: number;
 }> = [
-  { methodKey: "stripe", label: "Stripe (Credit / Debit card)", displayOrder: 0 },
+  {
+    methodKey: "stripe",
+    label: "Stripe (Credit / Debit card)",
+    displayOrder: 0,
+  },
   { methodKey: "paypal", label: "PayPal", displayOrder: 1 },
   { methodKey: "crypto_bitcoin", label: "Bitcoin (BTC)", displayOrder: 10 },
   { methodKey: "crypto_dogecoin", label: "Dogecoin (DOGE)", displayOrder: 11 },
   { methodKey: "crypto_ethereum", label: "Ethereum (ETH)", displayOrder: 12 },
   { methodKey: "crypto_solana", label: "Solana (SOL)", displayOrder: 13 },
   { methodKey: "crypto_monero", label: "Monero (XMR)", displayOrder: 14 },
-  { methodKey: "crypto_crust", label: "Crustafarian (CRUST)", displayOrder: 15 },
+  {
+    methodKey: "crypto_crust",
+    label: "Crustafarian (CRUST)",
+    displayOrder: 15,
+  },
   { methodKey: "crypto_pump", label: "Pump (PUMP)", displayOrder: 16 },
   { methodKey: "crypto_troll", label: "Troll (TROLL)", displayOrder: 17 },
   { methodKey: "crypto_soluna", label: "SOLUNA (SOLUNA)", displayOrder: 18 },
   { methodKey: "crypto_seeker", label: "Seeker (SKR)", displayOrder: 19 },
   { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 20 },
   { methodKey: "crypto_ton", label: "TON", displayOrder: 21 },
-  { methodKey: "stablecoin_usdc", label: "USDC (Stablecoin)", displayOrder: 22 },
-  { methodKey: "stablecoin_usdt", label: "USDT (Stablecoin)", displayOrder: 23 },
+  {
+    methodKey: "stablecoin_usdc",
+    label: "USDC (Stablecoin)",
+    displayOrder: 22,
+  },
+  {
+    methodKey: "stablecoin_usdt",
+    label: "USDT (Stablecoin)",
+    displayOrder: 23,
+  },
 ];
 
 /** Network options for payment methods that support multiple networks. Used by admin and checkout. */

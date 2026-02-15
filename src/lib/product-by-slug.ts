@@ -31,7 +31,8 @@ async function createVariantRowsFromOptionDefinitions(
   optionDefinitions: OptionDefinition[],
 ): Promise<boolean> {
   const valid = optionDefinitions.filter(
-    (o) => o.name?.trim() && o.values?.length && o.values.some((v) => v?.trim()),
+    (o) =>
+      o.name?.trim() && o.values?.length && o.values.some((v) => v?.trim()),
   );
   if (valid.length === 0) return false;
 
@@ -174,7 +175,8 @@ export async function getProductBySlugOrId(
       source: productsTable.source,
       // Stock management fields
       trackQuantity: productsTable.trackQuantity,
-      continueSellingWhenOutOfStock: productsTable.continueSellingWhenOutOfStock,
+      continueSellingWhenOutOfStock:
+        productsTable.continueSellingWhenOutOfStock,
       quantity: productsTable.quantity,
     })
     .from(productsTable)
@@ -346,7 +348,8 @@ export async function getProductBySlugOrId(
     // Simple product - check product quantity
     const qty = product.quantity ?? 0;
     inStock = qty > 0;
-    stockStatus = qty === 0 ? "out_of_stock" : qty < 5 ? "low_stock" : "in_stock";
+    stockStatus =
+      qty === 0 ? "out_of_stock" : qty < 5 ? "low_stock" : "in_stock";
   }
 
   const imageUrls = imagesRows
@@ -354,9 +357,16 @@ export async function getProductBySlugOrId(
     .filter((u): u is string => Boolean(u));
 
   // Size chart for accordion when product has brand+model (printful, printify, or manual)
-  let sizeChart: { displayName: string; dataImperial: unknown; dataMetric: unknown } | null = null;
+  let sizeChart: {
+    displayName: string;
+    dataImperial: unknown;
+    dataMetric: unknown;
+  } | null = null;
   if (product.brand?.trim() && product.model?.trim()) {
-    const provider = product.source === "printful" || product.source === "printify" ? product.source : "manual";
+    const provider =
+      product.source === "printful" || product.source === "printify"
+        ? product.source
+        : "manual";
     const brandTrim = product.brand.trim();
     const modelTrim = product.model.trim();
     let [chartRow] = await db
@@ -392,7 +402,10 @@ export async function getProductBySlugOrId(
         )
         .limit(1);
     }
-    if (chartRow && (chartRow.dataImperial != null || chartRow.dataMetric != null)) {
+    if (
+      chartRow &&
+      (chartRow.dataImperial != null || chartRow.dataMetric != null)
+    ) {
       sizeChart = {
         displayName: chartRow.displayName,
         dataImperial: chartRow.dataImperial as unknown,
@@ -402,7 +415,8 @@ export async function getProductBySlugOrId(
   }
 
   const shipsFrom = (() => {
-    if (product.shipsFromDisplay?.trim()) return product.shipsFromDisplay.trim();
+    if (product.shipsFromDisplay?.trim())
+      return product.shipsFromDisplay.trim();
     const parts = [
       product.shipsFromCity?.trim(),
       product.shipsFromRegion?.trim(),

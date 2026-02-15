@@ -67,8 +67,12 @@ async function ensurePrintfulColumns(): Promise<void> {
     }
     // Best-effort: upgrade product table too
     try {
-      await conn.unsafe(`ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`);
-    } catch { /* non-blocking */ }
+      await conn.unsafe(
+        `ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`,
+      );
+    } catch {
+      /* non-blocking */
+    }
   })();
   return ensureColumnsPromise;
 }
@@ -227,7 +231,9 @@ export async function importSizeChartsForAllPrintfulProducts(): Promise<{
         upserted++;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
-        errors.push(`Catalog ${catalogProductId} (${brand} / ${model}): ${message}`);
+        errors.push(
+          `Catalog ${catalogProductId} (${brand} / ${model}): ${message}`,
+        );
       }
     }
 
@@ -253,7 +259,10 @@ export async function fixSizeChartDisplayNames(): Promise<{
   total: number;
 }> {
   const allCharts = await db
-    .select({ id: sizeChartsTable.id, displayName: sizeChartsTable.displayName })
+    .select({
+      id: sizeChartsTable.id,
+      displayName: sizeChartsTable.displayName,
+    })
     .from(sizeChartsTable);
 
   let fixed = 0;
@@ -316,10 +325,17 @@ export async function importSizeChartForPrintfulProduct(
     String(catalogProductId);
 
   try {
-    const upserted = await upsertPrintfulSizeChart(catalogProductId, brand, model);
+    const upserted = await upsertPrintfulSizeChart(
+      catalogProductId,
+      brand,
+      model,
+    );
     return upserted
       ? { success: true }
-      : { success: false, error: "Printful returned no size guide for this catalog product" };
+      : {
+          success: false,
+          error: "Printful returned no size guide for this catalog product",
+        };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return { success: false, error: message };
@@ -367,7 +383,7 @@ export async function importSinglePrintfulProduct(
     isDiscontinued: boolean;
   } | null = null;
   /** Map of catalog_variant_id → catalog variant details (for colorCode, weight). */
-  let catalogVariantMap = new Map<number, PrintfulCatalogVariant>();
+  const catalogVariantMap = new Map<number, PrintfulCatalogVariant>();
   const catalogProductId = syncVariants[0]?.product?.product_id;
   if (catalogProductId != null) {
     try {
@@ -379,7 +395,9 @@ export async function importSinglePrintfulProduct(
       if (catalog?.data) {
         // Fallback so we always have brand/model for size_chart and product (Printful may omit for some catalog items)
         const brand = (catalog.data.brand ?? "Printful").trim() || "Printful";
-        const model = (catalog.data.model ?? String(catalogProductId)).trim() || String(catalogProductId);
+        const model =
+          (catalog.data.model ?? String(catalogProductId)).trim() ||
+          String(catalogProductId);
         catalogProduct = {
           brand,
           model,
@@ -407,7 +425,11 @@ export async function importSinglePrintfulProduct(
         }
       }
     } catch (err) {
-      console.warn("Printful catalog fetch failed for product", catalogProductId, err);
+      console.warn(
+        "Printful catalog fetch failed for product",
+        catalogProductId,
+        err,
+      );
       catalogProduct = {
         brand: "Printful",
         model: String(catalogProductId),
@@ -455,7 +477,11 @@ export async function importSinglePrintfulProduct(
       catalogVariantMap,
     );
     if (catalogProductId != null && catalogProduct) {
-      await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
+      await upsertPrintfulSizeChart(
+        catalogProductId,
+        catalogProduct.brand,
+        catalogProduct.model,
+      );
     }
     return { action: "updated", productId: existingProduct.id };
   }
@@ -468,7 +494,11 @@ export async function importSinglePrintfulProduct(
     catalogVariantMap,
   );
   if (catalogProductId != null && catalogProduct) {
-    await upsertPrintfulSizeChart(catalogProductId, catalogProduct.brand, catalogProduct.model);
+    await upsertPrintfulSizeChart(
+      catalogProductId,
+      catalogProduct.brand,
+      catalogProduct.model,
+    );
   }
   return { action: "imported", productId };
 }
@@ -539,7 +569,9 @@ function buildOptionDefinitionsFromVariants(
  * Get variant image URL: prefer product mockup (product-with-design) over print file (design-only).
  * Order: mockup > preview > default. Avoid using the "default" file when it's the print/design file.
  */
-function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | null {
+function getPrintfulVariantImageUrl(
+  syncVariant: PrintfulSyncVariant,
+): string | null {
   const files = syncVariant.files ?? [];
   const mockupOrPreview =
     files.find((f) => f.type === "mockup" || f.type === "preview") ??
@@ -556,39 +588,46 @@ function getPrintfulVariantImageUrl(syncVariant: PrintfulSyncVariant): string | 
  * Supports: res.data (v2), res.result (v1), or direct payload (size_tables at top level).
  */
 function normalizeSizeGuideData(
-  res:
-    | {
-        data?: {
-          available_sizes?: string[];
-          size_tables?: Array<{
-            type: string;
-            unit: string;
-            description?: string;
-            image_url?: string;
-            measurements?: unknown;
-          }>;
-        };
-        result?: {
-          available_sizes?: string[];
-          size_tables?: Array<{
-            type: string;
-            unit: string;
-            description?: string;
-            image_url?: string;
-            measurements?: unknown;
-          }>;
-        };
-        available_sizes?: string[];
-        size_tables?: Array<{
-          type: string;
-          unit: string;
-          description?: string;
-          image_url?: string;
-          measurements?: unknown;
-        }>;
-      }
-    | null,
-): { availableSizes: string[]; sizeTables: Array<{ type: string; unit: string; description?: string; image_url?: string; measurements?: unknown }> } | null {
+  res: {
+    data?: {
+      available_sizes?: string[];
+      size_tables?: Array<{
+        type: string;
+        unit: string;
+        description?: string;
+        image_url?: string;
+        measurements?: unknown;
+      }>;
+    };
+    result?: {
+      available_sizes?: string[];
+      size_tables?: Array<{
+        type: string;
+        unit: string;
+        description?: string;
+        image_url?: string;
+        measurements?: unknown;
+      }>;
+    };
+    available_sizes?: string[];
+    size_tables?: Array<{
+      type: string;
+      unit: string;
+      description?: string;
+      image_url?: string;
+      measurements?: unknown;
+    }>;
+  } | null,
+): {
+  availableSizes: string[];
+  sizeTables: Array<{
+    type: string;
+    unit: string;
+    description?: string;
+    image_url?: string;
+    measurements?: unknown;
+  }>;
+} | null {
   type Payload = {
     available_sizes?: string[];
     size_tables?: Array<{
@@ -602,9 +641,9 @@ function normalizeSizeGuideData(
   const raw =
     res == null
       ? null
-      : (res as { data?: Payload; result?: Payload }).data ??
+      : ((res as { data?: Payload; result?: Payload }).data ??
         (res as { result?: Payload }).result ??
-        (res as Payload);
+        (res as Payload));
   const payload: Payload | null = raw;
   if (!payload?.size_tables?.length) return null;
   return {
@@ -706,8 +745,12 @@ async function upsertPrintfulSizeChart(
     // Try without unit first (some catalog products only return one format)
     const noUnitRes = await fetchProductSizeGuideSafe(catalogProductId, {});
     const fromNoUnit = normalizeSizeGuideData(noUnitRes);
-    const hasImperial = fromNoUnit?.sizeTables.some((t) => t.unit !== "cm" && t.unit !== "metric");
-    const hasMetric = fromNoUnit?.sizeTables.some((t) => t.unit === "cm" || t.unit === "metric");
+    const hasImperial = fromNoUnit?.sizeTables.some(
+      (t) => t.unit !== "cm" && t.unit !== "metric",
+    );
+    const hasMetric = fromNoUnit?.sizeTables.some(
+      (t) => t.unit === "cm" || t.unit === "metric",
+    );
     let dataImperial = fromNoUnit && hasImperial ? fromNoUnit : null;
     let dataMetric = fromNoUnit && hasMetric ? fromNoUnit : null;
     // If we don't have both, try explicit units in parallel
@@ -716,7 +759,8 @@ async function upsertPrintfulSizeChart(
         fetchProductSizeGuideSafe(catalogProductId, { unit: "inches" }),
         fetchProductSizeGuideSafe(catalogProductId, { unit: "cm" }),
       ]);
-      if (dataImperial == null) dataImperial = normalizeSizeGuideData(imperialRes);
+      if (dataImperial == null)
+        dataImperial = normalizeSizeGuideData(imperialRes);
       if (dataMetric == null) dataMetric = normalizeSizeGuideData(metricRes);
     }
 
@@ -749,7 +793,11 @@ async function upsertPrintfulSizeChart(
         updatedAt: now,
       })
       .onConflictDoUpdate({
-        target: [sizeChartsTable.provider, sizeChartsTable.brand, sizeChartsTable.model],
+        target: [
+          sizeChartsTable.provider,
+          sizeChartsTable.brand,
+          sizeChartsTable.model,
+        ],
         set: {
           dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
           dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
@@ -760,7 +808,11 @@ async function upsertPrintfulSizeChart(
       });
     return true;
   } catch (err) {
-    console.warn("Printful size chart import failed for catalog product", catalogProductId, err);
+    console.warn(
+      "Printful size chart import failed for catalog product",
+      catalogProductId,
+      err,
+    );
     return false;
   }
 }
@@ -847,7 +899,8 @@ async function createLocalProductFromPrintful(
         firstTechnique?.discounted_price ?? firstTechnique?.price;
       if (priceStr != null) {
         const costDollars = Number.parseFloat(priceStr);
-        if (!Number.isNaN(costDollars)) costPerItemCents = Math.round(costDollars * 100);
+        if (!Number.isNaN(costDollars))
+          costPerItemCents = Math.round(costDollars * 100);
       }
     } catch {
       // Optional: continue without cost
@@ -857,9 +910,8 @@ async function createLocalProductFromPrintful(
   // Shipping countries from Printful API when available; else comprehensive fallback so Markets are populated.
   let marketCountryCodes: string[] = [];
   if (catalogProductId != null) {
-    const apiCountries = await fetchCatalogProductShippingCountries(
-      catalogProductId,
-    );
+    const apiCountries =
+      await fetchCatalogProductShippingCountries(catalogProductId);
     if (apiCountries && apiCountries.length > 0) {
       marketCountryCodes = apiCountries;
     }
@@ -924,7 +976,11 @@ async function createLocalProductFromPrintful(
 
   // Create variants (with variant images and size/color)
   for (const syncVariant of syncVariants) {
-    await createLocalVariantFromPrintful(productId, syncVariant, catalogVariantMap);
+    await createLocalVariantFromPrintful(
+      productId,
+      syncVariant,
+      catalogVariantMap,
+    );
   }
 
   // Product media: prefer mockups first (variant preview/mockup), then thumbnail (raw product)
@@ -1004,9 +1060,7 @@ async function updateLocalProductFromPrintful(
 
   // Product-level SKU when single variant
   const productSku =
-    hasVariantsFromApi &&
-    syncVariants.length === 1 &&
-    syncVariants[0]!.sku
+    hasVariantsFromApi && syncVariants.length === 1 && syncVariants[0]!.sku
       ? syncVariants[0]!.sku
       : null;
 
@@ -1034,7 +1088,7 @@ async function updateLocalProductFromPrintful(
       : undefined) ?? syncProduct.thumbnail_url;
 
   // Cost per item from first variant's catalog price (optional update)
-  let costPerItemCents: number | null | undefined = undefined;
+  let costPerItemCents: number | null | undefined;
   const firstVariant = syncVariants[0];
   const catalogVariantId = firstVariant?.product?.variant_id;
   if (catalogVariantId != null) {
@@ -1117,9 +1171,8 @@ async function updateLocalProductFromPrintful(
   const catalogProductId = syncVariants[0]?.product?.product_id;
   let marketCountryCodes: string[] = [];
   if (catalogProductId != null) {
-    const apiCountries = await fetchCatalogProductShippingCountries(
-      catalogProductId,
-    );
+    const apiCountries =
+      await fetchCatalogProductShippingCountries(catalogProductId);
     if (apiCountries && apiCountries.length > 0) {
       marketCountryCodes = apiCountries;
     }
@@ -1149,7 +1202,9 @@ async function updateLocalProductFromPrintful(
   if (hasVariantsFromApi) {
     const incomingVariantIds = new Set(syncVariants.map((v) => v.id));
 
-    const runVariantSync = async (existingVariants: typeof productVariantsTable.$inferSelect[]) => {
+    const runVariantSync = async (
+      existingVariants: (typeof productVariantsTable.$inferSelect)[],
+    ) => {
       type VariantRow = (typeof existingVariants)[number];
       const existingVariantMap = new Map<number | null, VariantRow[]>();
       for (const v of existingVariants) {
@@ -1165,7 +1220,11 @@ async function updateLocalProductFromPrintful(
         const existing = bySyncId?.[0];
         if (existing) {
           matchedLocalIds.add(existing.id);
-          await updateLocalVariantFromPrintful(existing.id, syncVariant, catalogVariantMap);
+          await updateLocalVariantFromPrintful(
+            existing.id,
+            syncVariant,
+            catalogVariantMap,
+          );
           continue;
         }
         // Backfill: match by size/color/label when variants have no printfulSyncVariantId
@@ -1182,9 +1241,17 @@ async function updateLocalProductFromPrintful(
         const toUpdate = unmatched[0];
         if (toUpdate) {
           matchedLocalIds.add(toUpdate.id);
-          await updateLocalVariantFromPrintful(toUpdate.id, syncVariant, catalogVariantMap);
+          await updateLocalVariantFromPrintful(
+            toUpdate.id,
+            syncVariant,
+            catalogVariantMap,
+          );
         } else {
-          await createLocalVariantFromPrintful(productId, syncVariant, catalogVariantMap);
+          await createLocalVariantFromPrintful(
+            productId,
+            syncVariant,
+            catalogVariantMap,
+          );
         }
       }
 
@@ -1217,7 +1284,9 @@ async function updateLocalProductFromPrintful(
         // Replace unreferenced variants then retry (fixes stuck rows that find/update missed)
         const deleted = await deleteUnreferencedPrintfulVariants(productId);
         if (deleted > 0) {
-          console.log(`[Printful sync] Replaced ${deleted} unreferenced variant(s) for product ${productId}, retrying sync`);
+          console.log(
+            `[Printful sync] Replaced ${deleted} unreferenced variant(s) for product ${productId}, retrying sync`,
+          );
           existingVariants = await db
             .select()
             .from(productVariantsTable)
@@ -1242,7 +1311,9 @@ async function updateLocalProductFromPrintful(
  * Used when find/update repeatedly fails so we can replace with fresh rows from Printful.
  * Returns number of variants deleted.
  */
-async function deleteUnreferencedPrintfulVariants(productId: string): Promise<number> {
+async function deleteUnreferencedPrintfulVariants(
+  productId: string,
+): Promise<number> {
   const rows = await conn`
     DELETE FROM product_variant
     WHERE product_id = ${productId}
@@ -1271,7 +1342,8 @@ async function createLocalVariantFromPrintful(
   const size = getVariantSize(syncVariant);
   const color = getVariantColor(syncVariant);
   const labelRaw = (syncVariant.name ?? "").trim();
-  const label = labelRaw || [size, color].filter(Boolean).join(" / ") || "Variant";
+  const label =
+    labelRaw || [size, color].filter(Boolean).join(" / ") || "Variant";
   const externalId = String(syncVariant.variant_id);
   const printfulSyncVariantId = syncVariant.id;
 
@@ -1333,7 +1405,10 @@ async function createLocalVariantFromPrintful(
         .where(
           and(
             eq(productVariantsTable.productId, productId),
-            eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
+            eq(
+              productVariantsTable.printfulSyncVariantId,
+              printfulSyncVariantId,
+            ),
           ),
         )
         .limit(1);
@@ -1624,7 +1699,6 @@ export async function handleProductDeleted(data: {
 // ============================================================================
 // Utilities
 // ============================================================================
-
 
 /**
  * Get sync status for a product.

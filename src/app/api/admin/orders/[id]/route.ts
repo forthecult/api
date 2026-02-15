@@ -10,10 +10,7 @@ import {
   productsTable,
 } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import {
   onOrderCreated,
   onOrderStatusUpdate,
@@ -227,9 +224,7 @@ export async function GET(
 
     // Build crypto payment info if applicable
     const cryptoPayment =
-      order.cryptoTxHash ||
-      order.cryptoCurrency ||
-      order.payerWalletAddress
+      order.cryptoTxHash || order.cryptoCurrency || order.payerWalletAddress
         ? {
             txHash: order.cryptoTxHash ?? null,
             network: order.cryptoCurrencyNetwork ?? null,
@@ -363,20 +358,26 @@ export async function PATCH(
       return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
-    if (typeof body.shippingFeeCents === "number" && body.shippingFeeCents < 0) {
-      return NextResponse.json({ error: "Shipping fee cannot be negative" }, { status: 400 });
+    if (
+      typeof body.shippingFeeCents === "number" &&
+      body.shippingFeeCents < 0
+    ) {
+      return NextResponse.json(
+        { error: "Shipping fee cannot be negative" },
+        { status: 400 },
+      );
     }
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
     if (typeof body.status === "string" && body.status.trim()) {
       const allowed = [
-      "pending",
-      "paid",
-      "fulfilled",
-      "cancelled",
-      "refunded",
-      "refund_pending",
-    ];
+        "pending",
+        "paid",
+        "fulfilled",
+        "cancelled",
+        "refunded",
+        "refund_pending",
+      ];
       if (allowed.includes(body.status)) updates.status = body.status;
     }
     const paymentAllowed = [
@@ -470,12 +471,22 @@ export async function PATCH(
             if (row.quantity <= 0) {
               await tx
                 .delete(orderItemsTable)
-                .where(and(eq(orderItemsTable.id, row.id), eq(orderItemsTable.orderId, id)));
+                .where(
+                  and(
+                    eq(orderItemsTable.id, row.id),
+                    eq(orderItemsTable.orderId, id),
+                  ),
+                );
             } else {
               await tx
                 .update(orderItemsTable)
                 .set({ quantity: row.quantity })
-                .where(and(eq(orderItemsTable.id, row.id), eq(orderItemsTable.orderId, id)));
+                .where(
+                  and(
+                    eq(orderItemsTable.id, row.id),
+                    eq(orderItemsTable.orderId, id),
+                  ),
+                );
             }
           }
         }
@@ -562,7 +573,8 @@ export async function PATCH(
       (updates.paymentStatus as string | undefined) === "paid" ||
       updated.paymentStatus === "paid";
     const wasNotPaid =
-      existing.paymentStatus !== "paid" && existing.paymentStatus !== "confirmed";
+      existing.paymentStatus !== "paid" &&
+      existing.paymentStatus !== "confirmed";
     if (nowPaid && wasNotPaid) {
       void onOrderCreated(updated.id);
     }
@@ -571,7 +583,9 @@ export async function PATCH(
       void onOrderStatusUpdate(updated.id, "order_shipped");
     }
 
-    console.info(`[admin-audit] Order ${id} updated by admin. Status: ${body.status ?? 'unchanged'}, Items modified: ${body.items?.length ?? 0}`);
+    console.info(
+      `[admin-audit] Order ${id} updated by admin. Status: ${body.status ?? "unchanged"}, Items modified: ${body.items?.length ?? 0}`,
+    );
 
     const paymentStatus =
       updated.paymentStatus ??

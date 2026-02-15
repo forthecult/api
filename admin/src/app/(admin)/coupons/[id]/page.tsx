@@ -604,13 +604,16 @@ export default function AdminDiscountDetailPage() {
                     onChange={(e) => setDiscountValue(e.target.value)}
                     className={inputClass}
                     placeholder={
-                      discountType === "percent" ? "e.g. 100 for free shipping" : "e.g. 10.00"
+                      discountType === "percent"
+                        ? "e.g. 100 for free shipping"
+                        : "e.g. 10.00"
                     }
                     required
                   />
                   {discountKind === "free_shipping" && (
                     <p className="text-xs text-muted-foreground">
-                      Set to 100% for free shipping, or a lower value for a partial shipping discount.
+                      Set to 100% for free shipping, or a lower value for a
+                      partial shipping discount.
                     </p>
                   )}
                 </div>
@@ -688,7 +691,6 @@ export default function AdminDiscountDetailPage() {
                 </div>
               </div>
             )}
-
           </CardContent>
         </Card>
 
@@ -707,14 +709,14 @@ export default function AdminDiscountDetailPage() {
                 <ul className="list-inside list-disc space-y-1">
                   <li>
                     <strong>Specific product:</strong> Select one or more
-                    products in the <strong>Products</strong> section below.
-                    The discount applies only when at least one is in the cart.
+                    products in the <strong>Products</strong> section below. The
+                    discount applies only when at least one is in the cart.
                   </li>
                   <li>
-                    <strong>Product from a category:</strong> Select one or
-                    more categories in the <strong>Categories</strong> section
-                    below. The discount applies only when the cart has at least
-                    one product from one of those categories.
+                    <strong>Product from a category:</strong> Select one or more
+                    categories in the <strong>Categories</strong> section below.
+                    The discount applies only when the cart has at least one
+                    product from one of those categories.
                   </li>
                 </ul>
               </div>
@@ -954,8 +956,8 @@ export default function AdminDiscountDetailPage() {
             <CardTitle>Token holder restriction</CardTitle>
             <p className="text-sm text-muted-foreground">
               Optional: only apply this discount when the customer has a linked
-              wallet with at least the given token balance (e.g. free shipping or
-              discount for CULT Members). Leave empty for no restriction.
+              wallet with at least the given token balance (e.g. free shipping
+              or discount for CULT Members). Leave empty for no restriction.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">

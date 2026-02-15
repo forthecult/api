@@ -68,7 +68,12 @@ export function SignupPageClient() {
         ...(lastName && { lastName }),
       })
       .then((result) => {
-        if (result && typeof result === "object" && "error" in result && result.error) {
+        if (
+          result &&
+          typeof result === "object" &&
+          "error" in result &&
+          result.error
+        ) {
           const errObj = result.error as { message?: string };
           setError(errObj.message ?? "Registration failed. Please try again.");
           return;
@@ -78,7 +83,10 @@ export function SignupPageClient() {
       })
       .catch((err: unknown) => {
         const message =
-          err && typeof err === "object" && "message" in err && typeof (err as { message: unknown }).message === "string"
+          err &&
+          typeof err === "object" &&
+          "message" in err &&
+          typeof (err as { message: unknown }).message === "string"
             ? (err as { message: string }).message
             : "Registration failed. Please try again.";
         setError(message);

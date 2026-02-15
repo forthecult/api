@@ -95,17 +95,20 @@ export async function GET(
     if (accessLevel === "public") {
       const session = await auth.api.getSession({ headers: request.headers });
       if (session?.user) {
-        const emailVerified = (session.user as { emailVerified?: boolean })?.emailVerified;
+        const emailVerified = (session.user as { emailVerified?: boolean })
+          ?.emailVerified;
         const isOwnerByUserId = order.userId === session.user.id;
         const isOwnerByEmail =
           emailVerified &&
           normalizeEmail(order.email) === normalizeEmail(session.user.email);
         // Check wallet address match (user may have linked wallet)
-        const userWalletAddress = (session.user as { walletAddress?: string })?.walletAddress;
+        const userWalletAddress = (session.user as { walletAddress?: string })
+          ?.walletAddress;
         const isOwnerByWallet =
           userWalletAddress &&
           order.payerWalletAddress &&
-          userWalletAddress.toLowerCase() === order.payerWalletAddress.toLowerCase();
+          userWalletAddress.toLowerCase() ===
+            order.payerWalletAddress.toLowerCase();
 
         if (isOwnerByUserId || isOwnerByEmail || isOwnerByWallet) {
           accessLevel = "owner";
@@ -124,7 +127,12 @@ export async function GET(
     // For public access to non-recent orders, deny entirely
     if (accessLevel === "public" && !isRecentOrder) {
       return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: "Not authorized to view this order" } },
+        {
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Not authorized to view this order",
+          },
+        },
         { status: 401 },
       );
     }
@@ -167,7 +175,10 @@ export async function GET(
 
     // Build shipping object — full or redacted
     const hasShipping =
-      order.shippingName || order.shippingAddress1 || order.shippingCity || order.shippingCountryCode;
+      order.shippingName ||
+      order.shippingAddress1 ||
+      order.shippingCity ||
+      order.shippingCountryCode;
     const shipping = hasShipping
       ? canSeePII
         ? {

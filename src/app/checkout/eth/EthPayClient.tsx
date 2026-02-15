@@ -286,7 +286,8 @@ export function EthPayClient() {
   } = useEthPay({
     order: ethPayOrderForHook ?? {
       orderId: "",
-      depositAddress: "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      depositAddress:
+        "0x0000000000000000000000000000000000000000" as `0x${string}`,
       chainId: 1,
       token: "ETH",
       totalCents: 0,

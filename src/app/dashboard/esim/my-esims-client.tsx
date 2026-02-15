@@ -110,16 +110,11 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
     setLoadingUsage(true);
     fetch(`/api/esim/my-esims/${order.id}/usage`)
       .then((res) => res.json())
-      .then(
-        (data: {
-          status: boolean;
-          data?: UsageData;
-        }) => {
-          if (data.status && data.data) {
-            setUsage(data.data);
-          }
-        },
-      )
+      .then((data: { status: boolean; data?: UsageData }) => {
+        if (data.status && data.data) {
+          setUsage(data.data);
+        }
+      })
       .catch(console.error)
       .finally(() => setLoadingUsage(false));
   };
@@ -320,16 +315,16 @@ export function MyEsimsClient() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>
-            <strong>iPhone:</strong> Go to Settings &gt; Cellular &gt; Add
-            eSIM &gt; Use QR Code. Scan the QR code or tap the activation link.
+            <strong>iPhone:</strong> Go to Settings &gt; Cellular &gt; Add eSIM
+            &gt; Use QR Code. Scan the QR code or tap the activation link.
           </p>
           <p>
-            <strong>Android:</strong> Go to Settings &gt; Network &gt; SIMs
-            &gt; Add eSIM. Scan the QR code provided.
+            <strong>Android:</strong> Go to Settings &gt; Network &gt; SIMs &gt;
+            Add eSIM. Scan the QR code provided.
           </p>
           <p>
-            <strong>Note:</strong> Make sure your device is eSIM compatible
-            and connected to Wi-Fi before installing.
+            <strong>Note:</strong> Make sure your device is eSIM compatible and
+            connected to Wi-Fi before installing.
           </p>
         </CardContent>
       </Card>

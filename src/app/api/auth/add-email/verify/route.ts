@@ -3,11 +3,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  accountTable,
-  userTable,
-  verificationTable,
-} from "~/db/schema";
+import { accountTable, userTable, verificationTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 
 const ADD_EMAIL_PREFIX = "add-email:";
@@ -32,15 +28,13 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const email =
     typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-  const code = typeof body.code === "string" ? body.code.replace(/\D/g, "") : "";
+  const code =
+    typeof body.code === "string" ? body.code.replace(/\D/g, "") : "";
 
   if (!email || !code) {
     return NextResponse.json(
@@ -73,9 +67,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await db
-    .delete(verificationTable)
-    .where(eq(verificationTable.id, row.id));
+  await db.delete(verificationTable).where(eq(verificationTable.id, row.id));
 
   // Ensure email is not already used by another user
   const [existingByEmail] = await db

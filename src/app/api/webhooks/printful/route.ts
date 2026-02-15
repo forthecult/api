@@ -40,7 +40,9 @@ export async function POST(request: NextRequest) {
 
     // In production, require secret to be set so we never accept unverified webhooks
     if (isProduction && !secretKey) {
-      console.warn("Printful webhook: PRINTFUL_WEBHOOK_SECRET required in production");
+      console.warn(
+        "Printful webhook: PRINTFUL_WEBHOOK_SECRET required in production",
+      );
       return NextResponse.json(
         { error: "Webhook not configured" },
         { status: 503 },
@@ -65,7 +67,10 @@ export async function POST(request: NextRequest) {
 
       const sigBuf = Buffer.from(signature, "utf8");
       const expBuf = Buffer.from(expectedSignature, "utf8");
-      if (sigBuf.length !== expBuf.length || !crypto.timingSafeEqual(sigBuf, expBuf)) {
+      if (
+        sigBuf.length !== expBuf.length ||
+        !crypto.timingSafeEqual(sigBuf, expBuf)
+      ) {
         console.warn("Printful webhook: invalid signature");
         return NextResponse.json(
           { error: "Invalid signature" },
@@ -113,7 +118,10 @@ export async function POST(request: NextRequest) {
           shipped_at?: string;
           delivered_at?: string;
           delivery_status?: string;
-          tracking_events?: Array<{ triggered_at: string; description: string }>;
+          tracking_events?: Array<{
+            triggered_at: string;
+            description: string;
+          }>;
           estimated_delivery?: {
             from_date?: string;
             to_date?: string;
@@ -206,7 +214,8 @@ export async function POST(request: NextRequest) {
           if (variants.length > 0) {
             const ids = variants.map((v) => v.id);
             // Map Printful stock status to our availability status
-            const availability = stockStatus === "in_stock" ? "in_stock" : "out_of_stock";
+            const availability =
+              stockStatus === "in_stock" ? "in_stock" : "out_of_stock";
             await db
               .update(productVariantsTable)
               .set({
@@ -254,7 +263,9 @@ export async function POST(request: NextRequest) {
     if (eventType === "mockup_task_finished") {
       const taskId = payload.data.task_id;
       const status = payload.data.status;
-      console.log(`Printful mockup_task_finished: task=${taskId}, status=${status}`);
+      console.log(
+        `Printful mockup_task_finished: task=${taskId}, status=${status}`,
+      );
       // Mockup task results can be retrieved via GET /v2/mockup-tasks/{id}
       // Implementation depends on how mockups are used in the product flow
       return NextResponse.json({ received: true });

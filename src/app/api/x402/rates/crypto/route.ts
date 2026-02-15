@@ -3,7 +3,16 @@ import { type NextRequest, NextResponse } from "next/server";
 import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 import { withOptionalX402 } from "~/lib/x402-config";
 
-const CRYPTO_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "TON", "XMR", "XAU", "XAG"];
+const CRYPTO_SYMBOLS = [
+  "BTC",
+  "ETH",
+  "SOL",
+  "DOGE",
+  "TON",
+  "XMR",
+  "XAU",
+  "XAG",
+];
 
 /**
  * GET /api/x402/rates/crypto?from=ETH&to=BTC

@@ -22,7 +22,10 @@ export default function ProductsLoading() {
           {/* Product grid skeleton */}
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="flex flex-col overflow-hidden rounded-lg border">
+              <div
+                key={i}
+                className="flex flex-col overflow-hidden rounded-lg border"
+              >
                 <div className="aspect-square animate-pulse bg-muted" />
                 <div className="space-y-2 p-4">
                   <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />

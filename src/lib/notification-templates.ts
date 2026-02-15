@@ -51,14 +51,18 @@ export interface NotificationTemplate {
 }
 
 /** All templates keyed by type. Use for admin copy view and for sending. */
-export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTemplate> = {
+export const NOTIFICATION_TEMPLATES: Record<
+  NotificationType,
+  NotificationTemplate
+> = {
   // ---- Transactional ----
   password_reset: {
     id: "password_reset",
     title: "Password reset",
     body: "We received a request to reset your password. Use the link in this email to set a new password. If you didn't request this, you can ignore this email.",
     emailSubject: "Reset your password",
-    emailBody: "We received a request to reset your password. Click the link below to set a new password. If you didn't request this, you can ignore this email.",
+    emailBody:
+      "We received a request to reset your password. Click the link below to set a new password. If you didn't request this, you can ignore this email.",
     transactional: true,
   },
   order_placed: {
@@ -74,7 +78,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Order in production",
     body: "Your order is being produced. We'll notify you when it ships.",
     emailSubject: "Your order is being made",
-    emailBody: "Your order is now in production. We'll send another email when it ships.",
+    emailBody:
+      "Your order is now in production. We'll send another email when it ships.",
     transactional: true,
   },
   order_shipped: {
@@ -82,7 +87,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Order shipped",
     body: "Your order has shipped. Track your package with the link below.",
     emailSubject: "Your order has shipped",
-    emailBody: "Your order has shipped. You can track it using the tracking link in this email.",
+    emailBody:
+      "Your order has shipped. You can track it using the tracking link in this email.",
     transactional: true,
   },
   order_on_hold: {
@@ -90,7 +96,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Order on hold",
     body: "Your order is on hold. We'll update you when it's moving again.",
     emailSubject: "Order on hold",
-    emailBody: "Your order is temporarily on hold. We'll update you when it's moving again.",
+    emailBody:
+      "Your order is temporarily on hold. We'll update you when it's moving again.",
     transactional: true,
   },
   order_cancelled: {
@@ -98,7 +105,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Order cancelled",
     body: "Your order was cancelled. If you didn't request this, please contact support.",
     emailSubject: "Order cancelled",
-    emailBody: "Your order was cancelled. If you didn't request this, please contact support.",
+    emailBody:
+      "Your order was cancelled. If you didn't request this, please contact support.",
     transactional: true,
   },
   refund: {
@@ -106,7 +114,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Refund processed",
     body: "Your refund has been processed. It may take a few days to appear on your statement.",
     emailSubject: "Refund processed",
-    emailBody: "Your refund has been processed. It may take a few business days to appear on your statement.",
+    emailBody:
+      "Your refund has been processed. It may take a few business days to appear on your statement.",
     transactional: true,
   },
   refund_request_submitted: {
@@ -114,7 +123,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Refund request received",
     body: "Your refund request has been submitted. We'll process it and notify you when it's complete.",
     emailSubject: "Refund request received",
-    emailBody: "We've received your refund request. We'll process it and notify you on your chosen channels when it's complete.",
+    emailBody:
+      "We've received your refund request. We'll process it and notify you on your chosen channels when it's complete.",
     transactional: true,
   },
   support_ticket_reply: {
@@ -122,7 +132,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Support ticket update",
     body: "You have a new reply on your support ticket.",
     emailSubject: "New reply on your support ticket",
-    emailBody: "Our support team has replied to your ticket. Log in to view the response.",
+    emailBody:
+      "Our support team has replied to your ticket. Log in to view the response.",
     transactional: true,
   },
   // ---- Marketing ----
@@ -131,7 +142,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "Welcome",
     body: "Thanks for signing up. Explore our store and find something you'll love.",
     emailSubject: "Welcome!",
-    emailBody: "Thanks for signing up. We're glad to have you. Explore our store and find something you'll love.",
+    emailBody:
+      "Thanks for signing up. We're glad to have you. Explore our store and find something you'll love.",
     transactional: false,
   },
   abandon_cart_series: {
@@ -139,7 +151,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "You left something behind",
     body: "Your cart is waiting. Complete your purchase and we'll get it to you.",
     emailSubject: "You left something in your cart",
-    emailBody: "You left items in your cart. Complete your purchase and we'll get them to you.",
+    emailBody:
+      "You left items in your cart. Complete your purchase and we'll get them to you.",
     transactional: false,
   },
   order_review_request: {
@@ -147,7 +160,8 @@ export const NOTIFICATION_TEMPLATES: Record<NotificationType, NotificationTempla
     title: "How was your order?",
     body: "We'd love to hear what you think. Leave a quick review to help other shoppers.",
     emailSubject: "How was your order?",
-    emailBody: "Your order was delivered. We'd love to hear what you think—leave a quick review to help other shoppers.",
+    emailBody:
+      "Your order was delivered. We'd love to hear what you think—leave a quick review to help other shoppers.",
     transactional: false,
   },
 };
@@ -166,7 +180,12 @@ export function getAllNotificationTemplates(): NotificationTemplate[] {
 
 /** Templates for order-related Telegram/widget (orderId + optional tracking). */
 export function buildOrderNotificationCopy(
-  type: "order_placed" | "order_processing" | "order_shipped" | "order_on_hold" | "order_cancelled",
+  type:
+    | "order_placed"
+    | "order_processing"
+    | "order_shipped"
+    | "order_on_hold"
+    | "order_cancelled",
   orderId: string,
   options?: { trackingNumber?: string; trackingUrl?: string },
 ): { title: string; body: string } {

@@ -69,9 +69,8 @@ export function formatMarketCap(n: number): string {
 
 /** Raw token amount with decimals (e.g. voting power): 1.5M, 2.3K, 1.00 */
 export function formatPower(raw: number, decimals: number = 6): string {
-  const human = raw / Math.pow(10, decimals);
+  const human = raw / 10 ** decimals;
   if (human >= 1e6) return (human / 1e6).toFixed(2) + "M";
   if (human >= 1e3) return (human / 1e3).toFixed(2) + "K";
   return human.toFixed(2);
 }
-

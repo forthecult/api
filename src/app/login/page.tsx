@@ -17,7 +17,13 @@ export const metadata = {
  */
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">
+          Loading…
+        </div>
+      }
+    >
       <LoginLoader />
     </Suspense>
   );

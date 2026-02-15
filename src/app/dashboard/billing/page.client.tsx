@@ -44,7 +44,9 @@ export function BillingPageClient({ user }: BillingPageClientProps) {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold tracking-tight">Billing & payments</h1>
+      <h1 className="text-2xl font-semibold tracking-tight">
+        Billing & payments
+      </h1>
 
       <Card>
         <CardHeader>

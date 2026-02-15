@@ -46,8 +46,15 @@ type PaymentMethodTop = "card" | "crypto" | "stablecoins" | "paypal";
 
 /** Crypto sub-option key (matches checkout page). */
 type CryptoSub =
-  | "bitcoin" | "dogecoin" | "eth" | "solana" | "monero"
-  | "crust" | "pump" | "troll" | "other";
+  | "bitcoin"
+  | "dogecoin"
+  | "eth"
+  | "solana"
+  | "monero"
+  | "crust"
+  | "pump"
+  | "troll"
+  | "other";
 
 // ---------- Types ----------
 
@@ -86,17 +93,15 @@ type PackageDetail = {
 
 // ---------- Component ----------
 
-export function EsimPackageDetailClient({
-  packageId,
-}: {
-  packageId: string;
-}) {
+export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const searchParams = useSearchParams();
   const { user } = useCurrentUser();
   const { addItem, openCart } = useCart();
   const { visibility: paymentVisibility } = usePaymentMethodSettings();
   const backToStoreQuery = searchParams.toString();
-  const backToStoreHref = backToStoreQuery ? `/esim?${backToStoreQuery}` : "/esim";
+  const backToStoreHref = backToStoreQuery
+    ? `/esim?${backToStoreQuery}`
+    : "/esim";
 
   const [pkg, setPkg] = useState<PackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -107,9 +112,7 @@ export function EsimPackageDetailClient({
   const showCard = paymentVisibility?.creditCard !== false;
   const showPaypal = paymentVisibility?.paypal !== false;
   const showCrypto =
-    paymentVisibility === null
-      ? true
-      : hasAnyCryptoEnabled(paymentVisibility);
+    paymentVisibility === null ? true : hasAnyCryptoEnabled(paymentVisibility);
   const showStablecoins =
     paymentVisibility === null
       ? true
@@ -131,7 +134,9 @@ export function EsimPackageDetailClient({
   const [cryptoSub, setCryptoSub] = useState<CryptoSub>("solana");
   const [cryptoOtherSub, setCryptoOtherSub] = useState<"sui" | "ton">("ton");
   const [ethChain, setEthChain] = useState<string>("ethereum");
-  const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">("usdc");
+  const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">(
+    "usdc",
+  );
   const [stablecoinChain, setStablecoinChain] = useState<string>("solana");
 
   // Chain options for the selected stablecoin token — filtered by admin settings
@@ -162,7 +167,15 @@ export function EsimPackageDetailClient({
     if (paymentVisibility !== null && !hasAppliedVisibilityRef.current) {
       hasAppliedVisibilityRef.current = true;
       // Default top-level payment method
-      setPaymentMethod(showCard ? "card" : showCrypto ? "crypto" : showStablecoins ? "stablecoins" : "paypal");
+      setPaymentMethod(
+        showCard
+          ? "card"
+          : showCrypto
+            ? "crypto"
+            : showStablecoins
+              ? "stablecoins"
+              : "paypal",
+      );
       // Default crypto sub
       const firstCrypto = visibleCryptoSubs[0]?.value as CryptoSub | undefined;
       if (firstCrypto) setCryptoSub(firstCrypto);
@@ -175,7 +188,13 @@ export function EsimPackageDetailClient({
           : visibleUsdcNetworks(paymentVisibility);
       setStablecoinChain(chainOpts[0]?.value ?? "solana");
     }
-  }, [paymentVisibility, showCard, showCrypto, showStablecoins, visibleCryptoSubs]);
+  }, [
+    paymentVisibility,
+    showCard,
+    showCrypto,
+    showStablecoins,
+    visibleCryptoSubs,
+  ]);
 
   useEffect(() => {
     setLoading(true);
@@ -195,31 +214,69 @@ export function EsimPackageDetailClient({
    * Also compute the crypto-checkout payload and redirect hash.
    */
   const resolvedPayment = useMemo(() => {
-    if (paymentMethod === "card") return { method: "stripe", hash: "" } as const;
-    if (paymentMethod === "paypal") return { method: "paypal", hash: "" } as const;
+    if (paymentMethod === "card")
+      return { method: "stripe", hash: "" } as const;
+    if (paymentMethod === "paypal")
+      return { method: "paypal", hash: "" } as const;
 
     if (paymentMethod === "stablecoins") {
       if (stablecoinChain === "solana") {
         // USDC/USDT on Solana → solana_pay
-        return { method: "solana_pay" as const, hash: "#solana", token: stablecoinToken, chain: "solana" };
+        return {
+          method: "solana_pay" as const,
+          hash: "#solana",
+          token: stablecoinToken,
+          chain: "solana",
+        };
       }
       // EVM stablecoins
-      return { method: "eth_pay" as const, hash: "#eth", token: stablecoinToken.toUpperCase(), chain: stablecoinChain };
+      return {
+        method: "eth_pay" as const,
+        hash: "#eth",
+        token: stablecoinToken.toUpperCase(),
+        chain: stablecoinChain,
+      };
     }
 
     // Crypto sub-options
-    if (cryptoSub === "bitcoin") return { method: "btcpay" as const, hash: "#bitcoin" };
-    if (cryptoSub === "dogecoin") return { method: "btcpay" as const, hash: "#dogecoin" };
-    if (cryptoSub === "monero") return { method: "btcpay" as const, hash: "#monero" };
-    if (cryptoSub === "eth") return { method: "eth_pay" as const, hash: "#eth", token: "ETH", chain: ethChain };
-    if (cryptoSub === "solana") return { method: "solana_pay" as const, hash: "#solana", token: "solana" };
-    if (cryptoSub === "crust") return { method: "solana_pay" as const, hash: "#solana", token: "crust" };
-    if (cryptoSub === "pump") return { method: "solana_pay" as const, hash: "#solana", token: "pump" };
-    if (cryptoSub === "troll") return { method: "solana_pay" as const, hash: "#solana", token: "troll" };
-    if (cryptoSub === "other" && cryptoOtherSub === "ton") return { method: "ton_pay" as const, hash: "#ton" };
-    if (cryptoSub === "other" && cryptoOtherSub === "sui") return { method: "sui" as const, hash: "#sui" };
+    if (cryptoSub === "bitcoin")
+      return { method: "btcpay" as const, hash: "#bitcoin" };
+    if (cryptoSub === "dogecoin")
+      return { method: "btcpay" as const, hash: "#dogecoin" };
+    if (cryptoSub === "monero")
+      return { method: "btcpay" as const, hash: "#monero" };
+    if (cryptoSub === "eth")
+      return {
+        method: "eth_pay" as const,
+        hash: "#eth",
+        token: "ETH",
+        chain: ethChain,
+      };
+    if (cryptoSub === "solana")
+      return {
+        method: "solana_pay" as const,
+        hash: "#solana",
+        token: "solana",
+      };
+    if (cryptoSub === "crust")
+      return { method: "solana_pay" as const, hash: "#solana", token: "crust" };
+    if (cryptoSub === "pump")
+      return { method: "solana_pay" as const, hash: "#solana", token: "pump" };
+    if (cryptoSub === "troll")
+      return { method: "solana_pay" as const, hash: "#solana", token: "troll" };
+    if (cryptoSub === "other" && cryptoOtherSub === "ton")
+      return { method: "ton_pay" as const, hash: "#ton" };
+    if (cryptoSub === "other" && cryptoOtherSub === "sui")
+      return { method: "sui" as const, hash: "#sui" };
     return { method: "solana_pay" as const, hash: "#solana", token: "solana" };
-  }, [paymentMethod, cryptoSub, cryptoOtherSub, ethChain, stablecoinToken, stablecoinChain]);
+  }, [
+    paymentMethod,
+    cryptoSub,
+    cryptoOtherSub,
+    ethChain,
+    stablecoinToken,
+    stablecoinChain,
+  ]);
 
   const handlePurchase = useCallback(async () => {
     if (!pkg) return;
@@ -242,7 +299,10 @@ export function EsimPackageDetailClient({
         body: JSON.stringify({
           packageId,
           packageType: pkg.package_type ?? "DATA-ONLY",
-          paymentMethod: resolvedPayment.method === "sui" ? "solana_pay" : resolvedPayment.method,
+          paymentMethod:
+            resolvedPayment.method === "sui"
+              ? "solana_pay"
+              : resolvedPayment.method,
           ...(user ? {} : { email: guestEmail.trim() }),
         }),
       });
@@ -253,7 +313,8 @@ export function EsimPackageDetailClient({
       }
 
       const orderId = orderData.data.orderId as string;
-      const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+      const baseUrl =
+        typeof window !== "undefined" ? window.location.origin : "";
 
       // 2. Card / PayPal → Stripe checkout
       if (paymentMethod === "card" || paymentMethod === "paypal") {
@@ -267,7 +328,9 @@ export function EsimPackageDetailClient({
         });
         const checkoutData = await checkoutRes.json();
         if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
-          toast.error(checkoutData.message ?? "Failed to create checkout session.");
+          toast.error(
+            checkoutData.message ?? "Failed to create checkout session.",
+          );
           return;
         }
         window.location.href = checkoutData.data.checkoutUrl;
@@ -331,9 +394,8 @@ export function EsimPackageDetailClient({
 
   const coverageCountries = pkg?.countries ?? pkg?.romaing_countries ?? [];
   const has5g =
-    coverageCountries.some((c) =>
-      c.network_coverage?.some((n) => n.five_G),
-    ) ?? false;
+    coverageCountries.some((c) => c.network_coverage?.some((n) => n.five_G)) ??
+    false;
   const displayName = pkg ? formatEsimPackageName(pkg.name) : "";
 
   if (loading) {
@@ -380,9 +442,7 @@ export function EsimPackageDetailClient({
         {/* Package Info - Left */}
         <div className="lg:col-span-3 space-y-6">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {displayName}
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
             <div className="mt-2 flex flex-wrap gap-2 items-center">
               {pkg.package_type && (
                 <Badge variant="secondary">{pkg.package_type}</Badge>
@@ -544,8 +604,7 @@ export function EsimPackageDetailClient({
                     ${pkg.price}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    $
-                    {(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
+                    ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
                   </p>
                 </div>
 
@@ -613,7 +672,9 @@ export function EsimPackageDetailClient({
                     {showCard && (
                       <Button
                         type="button"
-                        variant={paymentMethod === "card" ? "default" : "outline"}
+                        variant={
+                          paymentMethod === "card" ? "default" : "outline"
+                        }
                         size="sm"
                         onClick={() => setPaymentMethod("card")}
                       >
@@ -624,7 +685,9 @@ export function EsimPackageDetailClient({
                     {showCrypto && (
                       <Button
                         type="button"
-                        variant={paymentMethod === "crypto" ? "default" : "outline"}
+                        variant={
+                          paymentMethod === "crypto" ? "default" : "outline"
+                        }
                         size="sm"
                         onClick={() => setPaymentMethod("crypto")}
                       >
@@ -635,7 +698,11 @@ export function EsimPackageDetailClient({
                     {showStablecoins && (
                       <Button
                         type="button"
-                        variant={paymentMethod === "stablecoins" ? "default" : "outline"}
+                        variant={
+                          paymentMethod === "stablecoins"
+                            ? "default"
+                            : "outline"
+                        }
                         size="sm"
                         onClick={() => setPaymentMethod("stablecoins")}
                       >
@@ -645,7 +712,9 @@ export function EsimPackageDetailClient({
                     {showPaypal && (
                       <Button
                         type="button"
-                        variant={paymentMethod === "paypal" ? "default" : "outline"}
+                        variant={
+                          paymentMethod === "paypal" ? "default" : "outline"
+                        }
                         size="sm"
                         onClick={() => setPaymentMethod("paypal")}
                       >
@@ -655,90 +724,125 @@ export function EsimPackageDetailClient({
                   </div>
 
                   {/* Crypto sub-options */}
-                  {paymentMethod === "crypto" && visibleCryptoSubs.length > 0 && (
-                    <div className="space-y-3 pt-2">
-                      <div className="flex flex-wrap gap-2">
-                        {visibleCryptoSubs.map((opt) => {
-                          const logo = CRYPTO_LOGO_SRC[opt.value as keyof typeof CRYPTO_LOGO_SRC];
-                          return (
-                            <Button
-                              key={opt.value}
-                              type="button"
-                              variant={cryptoSub === opt.value ? "default" : "outline"}
-                              size="sm"
-                              onClick={() => setCryptoSub(opt.value as CryptoSub)}
-                              className="gap-1.5"
-                            >
-                              {logo && (
-                                <img src={logo} alt="" className="h-4 w-4" />
-                              )}
-                              {opt.label}
-                            </Button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Ethereum chain picker */}
-                      {cryptoSub === "eth" && (
-                        <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3">
-                          <p className="text-xs font-medium text-muted-foreground">Network</p>
-                          <div className="flex flex-wrap gap-2">
-                            {ETH_CHAIN_OPTIONS.map((opt) => (
+                  {paymentMethod === "crypto" &&
+                    visibleCryptoSubs.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <div className="flex flex-wrap gap-2">
+                          {visibleCryptoSubs.map((opt) => {
+                            const logo =
+                              CRYPTO_LOGO_SRC[
+                                opt.value as keyof typeof CRYPTO_LOGO_SRC
+                              ];
+                            return (
                               <Button
                                 key={opt.value}
                                 type="button"
-                                variant={ethChain === opt.value ? "default" : "outline"}
+                                variant={
+                                  cryptoSub === opt.value
+                                    ? "default"
+                                    : "outline"
+                                }
                                 size="sm"
-                                onClick={() => setEthChain(opt.value)}
+                                onClick={() =>
+                                  setCryptoSub(opt.value as CryptoSub)
+                                }
+                                className="gap-1.5"
                               >
+                                {logo && (
+                                  <img src={logo} alt="" className="h-4 w-4" />
+                                )}
                                 {opt.label}
                               </Button>
-                            ))}
-                          </div>
+                            );
+                          })}
                         </div>
-                      )}
 
-                      {/* Other sub-options (Sui, TON) */}
-                      {cryptoSub === "other" && (
-                        <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3">
-                          <div className="flex flex-wrap gap-2">
-                            {OTHER_SUB_OPTIONS.map((opt) => {
-                              const logo = CRYPTO_LOGO_SRC[opt.value as keyof typeof CRYPTO_LOGO_SRC];
-                              return (
+                        {/* Ethereum chain picker */}
+                        {cryptoSub === "eth" && (
+                          <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3">
+                            <p className="text-xs font-medium text-muted-foreground">
+                              Network
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {ETH_CHAIN_OPTIONS.map((opt) => (
                                 <Button
                                   key={opt.value}
                                   type="button"
-                                  variant={cryptoOtherSub === opt.value ? "default" : "outline"}
+                                  variant={
+                                    ethChain === opt.value
+                                      ? "default"
+                                      : "outline"
+                                  }
                                   size="sm"
-                                  onClick={() => setCryptoOtherSub(opt.value)}
-                                  className="gap-1.5"
+                                  onClick={() => setEthChain(opt.value)}
                                 >
-                                  {logo && (
-                                    <img src={logo} alt="" className="h-4 w-4" />
-                                  )}
                                   {opt.label}
                                 </Button>
-                              );
-                            })}
+                              ))}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                        )}
+
+                        {/* Other sub-options (Sui, TON) */}
+                        {cryptoSub === "other" && (
+                          <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3">
+                            <div className="flex flex-wrap gap-2">
+                              {OTHER_SUB_OPTIONS.map((opt) => {
+                                const logo =
+                                  CRYPTO_LOGO_SRC[
+                                    opt.value as keyof typeof CRYPTO_LOGO_SRC
+                                  ];
+                                return (
+                                  <Button
+                                    key={opt.value}
+                                    type="button"
+                                    variant={
+                                      cryptoOtherSub === opt.value
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    size="sm"
+                                    onClick={() => setCryptoOtherSub(opt.value)}
+                                    className="gap-1.5"
+                                  >
+                                    {logo && (
+                                      <img
+                                        src={logo}
+                                        alt=""
+                                        className="h-4 w-4"
+                                      />
+                                    )}
+                                    {opt.label}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   {/* Stablecoins sub-options */}
                   {paymentMethod === "stablecoins" && (
                     <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 mt-2">
                       {/* Token: USDC or USDT */}
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">Token</p>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Token
+                        </p>
                         <div className="flex gap-2">
                           {showUsdc && (
                             <Button
                               type="button"
-                              variant={stablecoinToken === "usdc" ? "default" : "outline"}
+                              variant={
+                                stablecoinToken === "usdc"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
-                              onClick={() => handleStablecoinTokenChange("usdc")}
+                              onClick={() =>
+                                handleStablecoinTokenChange("usdc")
+                              }
                             >
                               USDC
                             </Button>
@@ -746,9 +850,15 @@ export function EsimPackageDetailClient({
                           {showUsdt && (
                             <Button
                               type="button"
-                              variant={stablecoinToken === "usdt" ? "default" : "outline"}
+                              variant={
+                                stablecoinToken === "usdt"
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
-                              onClick={() => handleStablecoinTokenChange("usdt")}
+                              onClick={() =>
+                                handleStablecoinTokenChange("usdt")
+                              }
                             >
                               USDT
                             </Button>
@@ -757,13 +867,19 @@ export function EsimPackageDetailClient({
                       </div>
                       {/* Chain / network */}
                       <div className="space-y-1">
-                        <p className="text-xs font-medium text-muted-foreground">Network</p>
+                        <p className="text-xs font-medium text-muted-foreground">
+                          Network
+                        </p>
                         <div className="flex flex-wrap gap-2">
                           {stablecoinChainOptions.map((opt) => (
                             <Button
                               key={opt.value}
                               type="button"
-                              variant={stablecoinChain === opt.value ? "default" : "outline"}
+                              variant={
+                                stablecoinChain === opt.value
+                                  ? "default"
+                                  : "outline"
+                              }
                               size="sm"
                               onClick={() => setStablecoinChain(opt.value)}
                             >
@@ -806,8 +922,9 @@ export function EsimPackageDetailClient({
                     Instant Digital Delivery
                   </p>
                   <p>
-                    After payment, your eSIM will be provisioned and available in
-                    your dashboard. Scan the QR code on your device to activate.
+                    After payment, your eSIM will be provisioned and available
+                    in your dashboard. Scan the QR code on your device to
+                    activate.
                   </p>
                 </div>
               </CardContent>
@@ -821,32 +938,55 @@ export function EsimPackageDetailClient({
             eSIM refund eligibility
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
-            eSIM plans have different refund rules. Please review before purchasing.
+            eSIM plans have different refund rules. Please review before
+            purchasing.
           </p>
           <ul className="text-sm text-muted-foreground space-y-3 list-disc list-outside pl-5 break-words">
             <li className="leading-relaxed">
               <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
-              If not activated, you may submit a refund request within <strong>30 days</strong> of purchase. Requests after 30 days will not be approved.
+              If not activated, you may submit a refund request within{" "}
+              <strong>30 days</strong> of purchase. Requests after 30 days will
+              not be approved.
             </li>
             <li className="leading-relaxed">
-              <span className="font-medium text-foreground">Instant refund:</span>{" "}
-              Only when there is a verified technical or install failure, or a supported carrier&apos;s network signal failure, and the eSIM has not been activated and has no data consumption.
+              <span className="font-medium text-foreground">
+                Instant refund:
+              </span>{" "}
+              Only when there is a verified technical or install failure, or a
+              supported carrier&apos;s network signal failure, and the eSIM has
+              not been activated and has no data consumption.
             </li>
             <li className="leading-relaxed">
-              <span className="font-medium text-foreground">Activated or used:</span>{" "}
-              Any eSIM that has been activated, partially used, or has data consumption is <strong>non-refundable</strong>. Once an eSIM connects to a network, it is considered delivered and consumed.
+              <span className="font-medium text-foreground">
+                Activated or used:
+              </span>{" "}
+              Any eSIM that has been activated, partially used, or has data
+              consumption is <strong>non-refundable</strong>. Once an eSIM
+              connects to a network, it is considered delivered and consumed.
             </li>
             <li className="leading-relaxed">
-              <span className="font-medium text-foreground">Carrier &amp; network:</span>{" "}
-              No refund for country-wide shutdowns, temporary carrier outages, or local regulations affecting connectivity; service resumes when the network is available again.
+              <span className="font-medium text-foreground">
+                Carrier &amp; network:
+              </span>{" "}
+              No refund for country-wide shutdowns, temporary carrier outages,
+              or local regulations affecting connectivity; service resumes when
+              the network is available again.
             </li>
             <li className="leading-relaxed">
-              <span className="font-medium text-foreground">Vodafone &amp; O2:</span>{" "}
-              Validity is only in officially supported countries. Using the eSIM outside those regions will disable the eSIM and no refund will be issued.
+              <span className="font-medium text-foreground">
+                Vodafone &amp; O2:
+              </span>{" "}
+              Validity is only in officially supported countries. Using the eSIM
+              outside those regions will disable the eSIM and no refund will be
+              issued.
             </li>
             <li className="leading-relaxed">
-              <span className="font-medium text-foreground">Voice &amp; SMS plans:</span>{" "}
-              All eSIM plans that include Voice and/or SMS are <strong>non-refundable</strong>, regardless of activation or usage.
+              <span className="font-medium text-foreground">
+                Voice &amp; SMS plans:
+              </span>{" "}
+              All eSIM plans that include Voice and/or SMS are{" "}
+              <strong>non-refundable</strong>, regardless of activation or
+              usage.
             </li>
           </ul>
         </section>

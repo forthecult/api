@@ -8,7 +8,13 @@ import { formatCents } from "~/lib/format";
 import { SEO_CONFIG } from "~/app";
 import { useCurrentUser } from "~/lib/auth-client";
 import { Button } from "~/ui/primitives/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/ui/primitives/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/primitives/card";
 import { cn } from "~/lib/cn";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
@@ -38,9 +44,17 @@ function SnippetBlock({ label, text }: { label: string; text: string }) {
   };
   return (
     <div className="rounded-md border bg-muted/30 p-3">
-      <p className="mb-1.5 text-sm font-medium text-muted-foreground">{label}</p>
+      <p className="mb-1.5 text-sm font-medium text-muted-foreground">
+        {label}
+      </p>
       <p className="mb-2 break-all text-sm">{text}</p>
-      <Button type="button" variant="ghost" size="sm" onClick={copy} className="h-8 text-xs">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={copy}
+        className="h-8 text-xs"
+      >
         {copied ? "Copied!" : "Copy"}
       </Button>
     </div>
@@ -65,7 +79,9 @@ type AffiliateMe = {
 
 export function AffiliatePageClient() {
   const { user } = useCurrentUser();
-  const [data, setData] = React.useState<{ affiliate: AffiliateMe | null } | null>(null);
+  const [data, setData] = React.useState<{
+    affiliate: AffiliateMe | null;
+  } | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState(false);
   const [applying, setApplying] = React.useState(false);
@@ -114,7 +130,12 @@ export function AffiliatePageClient() {
       setPayoutAddress(aff.payoutAddress ?? "");
       setCodeEdit(aff.code ?? "");
     }
-  }, [data?.affiliate?.id, data?.affiliate?.payoutMethod, data?.affiliate?.payoutAddress, data?.affiliate?.code]);
+  }, [
+    data?.affiliate?.id,
+    data?.affiliate?.payoutMethod,
+    data?.affiliate?.payoutAddress,
+    data?.affiliate?.code,
+  ]);
 
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,10 +202,16 @@ export function AffiliatePageClient() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setCodeMessage({ type: "error", text: json.error ?? "Failed to update code." });
+        setCodeMessage({
+          type: "error",
+          text: json.error ?? "Failed to update code.",
+        });
         return;
       }
-      setCodeMessage({ type: "success", text: json.message ?? "Code updated." });
+      setCodeMessage({
+        type: "success",
+        text: json.message ?? "Code updated.",
+      });
       const baseUrl =
         typeof process.env.NEXT_PUBLIC_APP_URL === "string"
           ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
@@ -226,7 +253,10 @@ export function AffiliatePageClient() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setPayoutMessage({ type: "error", text: json.error ?? "Failed to save." });
+        setPayoutMessage({
+          type: "error",
+          text: json.error ?? "Failed to save.",
+        });
         return;
       }
       setPayoutMessage({ type: "success", text: "Payout settings saved." });
@@ -255,7 +285,10 @@ export function AffiliatePageClient() {
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+        <Loader2
+          className="h-8 w-8 animate-spin text-muted-foreground"
+          aria-hidden
+        />
       </div>
     );
   }
@@ -263,7 +296,9 @@ export function AffiliatePageClient() {
   if (loadError) {
     return (
       <div className="flex flex-col items-center justify-center gap-2 p-8">
-        <p className="text-sm text-destructive">Failed to load affiliate data. Please try again.</p>
+        <p className="text-sm text-destructive">
+          Failed to load affiliate data. Please try again.
+        </p>
         <button
           type="button"
           className="text-sm text-primary underline"
@@ -284,7 +319,9 @@ export function AffiliatePageClient() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Link2 className="h-7 w-7" />
-        <h1 className="text-2xl font-semibold tracking-tight">Affiliate Program</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Affiliate Program
+        </h1>
       </div>
 
       {!affiliate ? (
@@ -292,15 +329,17 @@ export function AffiliatePageClient() {
           <CardHeader>
             <CardTitle>Become an affiliate</CardTitle>
             <CardDescription>
-              Apply to join our affiliate program. We&apos;ll review your application and get back
-              to you. Once approved, you&apos;ll get a unique referral link and earn commission on
-              sales.
+              Apply to join our affiliate program. We&apos;ll review your
+              application and get back to you. Once approved, you&apos;ll get a
+              unique referral link and earn commission on sales.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleApply} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="applyCode">Your affiliate code (optional)</Label>
+                <Label htmlFor="applyCode">
+                  Your affiliate code (optional)
+                </Label>
                 <Input
                   id="applyCode"
                   placeholder="e.g. MYCODE"
@@ -311,12 +350,15 @@ export function AffiliatePageClient() {
                   aria-describedby="applyCodeHint"
                 />
                 <p id="applyCodeHint" className="text-sm text-muted-foreground">
-                  Letters and numbers only, 4–24 characters. Leave blank for a random code.
+                  Letters and numbers only, 4–24 characters. Leave blank for a
+                  random code.
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="applyPayoutMethod">Payout method (optional)</Label>
+                  <Label htmlFor="applyPayoutMethod">
+                    Payout method (optional)
+                  </Label>
                   <select
                     id="applyPayoutMethod"
                     value={applyPayoutMethod}
@@ -334,7 +376,9 @@ export function AffiliatePageClient() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="applyPayoutAddress">PayPal email or payout address (optional)</Label>
+                  <Label htmlFor="applyPayoutAddress">
+                    PayPal email or payout address (optional)
+                  </Label>
                   <Input
                     id="applyPayoutAddress"
                     placeholder={
@@ -349,7 +393,9 @@ export function AffiliatePageClient() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="applicationNote">Why do you want to be an affiliate? (optional)</Label>
+                <Label htmlFor="applicationNote">
+                  Why do you want to be an affiliate? (optional)
+                </Label>
                 <textarea
                   id="applicationNote"
                   placeholder="Tell us a bit about yourself and how you plan to promote us."
@@ -369,7 +415,10 @@ export function AffiliatePageClient() {
                 </p>
               )}
               {applySuccess && (
-                <p className="text-sm text-green-600 dark:text-green-400" role="status">
+                <p
+                  className="text-sm text-green-600 dark:text-green-400"
+                  role="status"
+                >
                   {applySuccess}
                 </p>
               )}
@@ -396,7 +445,8 @@ export function AffiliatePageClient() {
                     Your application is under review.
                   </p>
                   <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
-                    We&apos;ll notify you once it&apos;s approved; you&apos;ll get your referral link after approval.
+                    We&apos;ll notify you once it&apos;s approved; you&apos;ll
+                    get your referral link after approval.
                   </p>
                 </CardContent>
               </Card>
@@ -404,7 +454,8 @@ export function AffiliatePageClient() {
                 <CardHeader>
                   <CardTitle>Your referral code</CardTitle>
                   <CardDescription>
-                    You can change your code before approval. Changing it invalidates the previous one.
+                    You can change your code before approval. Changing it
+                    invalidates the previous one.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -414,20 +465,27 @@ export function AffiliatePageClient() {
                         id="codeEditPending"
                         type="text"
                         value={codeEdit}
-                        onChange={(e) => setCodeEdit(e.target.value.toUpperCase().replace(/[^A-Za-z0-9]/g, ""))}
+                        onChange={(e) =>
+                          setCodeEdit(
+                            e.target.value
+                              .toUpperCase()
+                              .replace(/[^A-Za-z0-9]/g, ""),
+                          )
+                        }
                         placeholder="e.g. MYCODE"
                         maxLength={24}
                         className="font-mono uppercase max-w-[180px]"
                         aria-describedby="codeEditPendingHint"
                       />
                       <Button
-                      type="submit"
-                      disabled={
-                        codeSaving ||
-                        codeEdit.trim().toUpperCase().replace(/\s/g, "") === affiliate.code ||
-                        codeEdit.trim().length < 4
-                      }
-                    >
+                        type="submit"
+                        disabled={
+                          codeSaving ||
+                          codeEdit.trim().toUpperCase().replace(/\s/g, "") ===
+                            affiliate.code ||
+                          codeEdit.trim().length < 4
+                        }
+                      >
                         {codeSaving ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -438,7 +496,10 @@ export function AffiliatePageClient() {
                         )}
                       </Button>
                     </div>
-                    <p id="codeEditPendingHint" className="text-sm text-muted-foreground">
+                    <p
+                      id="codeEditPendingHint"
+                      className="text-sm text-muted-foreground"
+                    >
                       Letters and numbers only, 4–24 characters.
                     </p>
                     {codeMessage && (
@@ -477,7 +538,8 @@ export function AffiliatePageClient() {
               <CardHeader>
                 <CardTitle>Your referral link</CardTitle>
                 <CardDescription>
-                  Share this link. When customers purchase after clicking it, you earn commission.
+                  Share this link. When customers purchase after clicking it,
+                  you earn commission.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -487,7 +549,11 @@ export function AffiliatePageClient() {
                     value={affiliate.referralUrl ?? ""}
                     className="font-mono text-sm"
                   />
-                  <Button type="button" variant="outline" onClick={copyReferralUrl}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={copyReferralUrl}
+                  >
                     Copy
                   </Button>
                 </div>
@@ -498,7 +564,13 @@ export function AffiliatePageClient() {
                       id="codeEdit"
                       type="text"
                       value={codeEdit}
-                      onChange={(e) => setCodeEdit(e.target.value.toUpperCase().replace(/[^A-Za-z0-9]/g, ""))}
+                      onChange={(e) =>
+                        setCodeEdit(
+                          e.target.value
+                            .toUpperCase()
+                            .replace(/[^A-Za-z0-9]/g, ""),
+                        )
+                      }
                       placeholder="e.g. MYCODE"
                       maxLength={24}
                       className="font-mono uppercase max-w-[180px]"
@@ -508,7 +580,8 @@ export function AffiliatePageClient() {
                       type="submit"
                       disabled={
                         codeSaving ||
-                        codeEdit.trim().toUpperCase().replace(/\s/g, "") === affiliate.code ||
+                        codeEdit.trim().toUpperCase().replace(/\s/g, "") ===
+                          affiliate.code ||
                         codeEdit.trim().length < 4
                       }
                     >
@@ -522,8 +595,12 @@ export function AffiliatePageClient() {
                       )}
                     </Button>
                   </div>
-                  <p id="codeEditHint" className="text-sm text-muted-foreground">
-                    Letters and numbers only, 4–24 characters. Changing your code invalidates your previous referral link.
+                  <p
+                    id="codeEditHint"
+                    className="text-sm text-muted-foreground"
+                  >
+                    Letters and numbers only, 4–24 characters. Changing your
+                    code invalidates your previous referral link.
                   </p>
                   {codeMessage && (
                     <p
@@ -546,7 +623,9 @@ export function AffiliatePageClient() {
             <Card>
               <CardHeader>
                 <CardTitle>Stats</CardTitle>
-                <CardDescription>Earnings and conversions (approved affiliates only).</CardDescription>
+                <CardDescription>
+                  Earnings and conversions (approved affiliates only).
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -580,7 +659,10 @@ export function AffiliatePageClient() {
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
                       {formatCents(
-                        Math.max(0, affiliate.totalEarnedCents - affiliate.totalPaidCents),
+                        Math.max(
+                          0,
+                          affiliate.totalEarnedCents - affiliate.totalPaidCents,
+                        ),
                       )}
                     </dd>
                   </div>
@@ -609,7 +691,8 @@ export function AffiliatePageClient() {
               <CardHeader>
                 <CardTitle>Payout settings</CardTitle>
                 <CardDescription>
-                  Choose how you want to receive payouts. This is visible to admins when processing payments.
+                  Choose how you want to receive payouts. This is visible to
+                  admins when processing payments.
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -635,7 +718,9 @@ export function AffiliatePageClient() {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="payoutAddress">
-                        {payoutMethod === "paypal" ? "PayPal email" : "Payout address"}
+                        {payoutMethod === "paypal"
+                          ? "PayPal email"
+                          : "Payout address"}
                       </Label>
                       <Input
                         id="payoutAddress"
@@ -683,7 +768,8 @@ export function AffiliatePageClient() {
               <CardHeader>
                 <CardTitle>Share & resources</CardTitle>
                 <CardDescription>
-                  Share your link and use these snippets for social posts, bios, or emails.
+                  Share your link and use these snippets for social posts, bios,
+                  or emails.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -696,10 +782,12 @@ export function AffiliatePageClient() {
                     asChild
                   >
                     <a
-                      href={`https://twitter.com/intent/tweet?${new URLSearchParams({
-                        text: `Shop ${SEO_CONFIG.name} — quality apparel & essentials. Use my link:`,
-                        url: affiliate.referralUrl,
-                      }).toString()}`}
+                      href={`https://twitter.com/intent/tweet?${new URLSearchParams(
+                        {
+                          text: `Shop ${SEO_CONFIG.name} — quality apparel & essentials. Use my link:`,
+                          url: affiliate.referralUrl,
+                        },
+                      ).toString()}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label="Share on X (Twitter)"

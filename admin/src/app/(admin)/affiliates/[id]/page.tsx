@@ -8,7 +8,13 @@ import { useCallback, useEffect, useState } from "react";
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
@@ -70,7 +76,8 @@ export default function AdminAffiliateDetailPage() {
   const [commissionType, setCommissionType] = useState("percent");
   const [commissionValue, setCommissionValue] = useState(10);
   const [customerDiscountType, setCustomerDiscountType] = useState<string>("");
-  const [customerDiscountValue, setCustomerDiscountValue] = useState<string>("");
+  const [customerDiscountValue, setCustomerDiscountValue] =
+    useState<string>("");
   const [adminNote, setAdminNote] = useState("");
   const [payoutMethod, setPayoutMethod] = useState("");
   const [payoutAddress, setPayoutAddress] = useState("");
@@ -100,7 +107,9 @@ export default function AdminAffiliateDetailPage() {
       setCommissionValue(data.commissionValue);
       setCustomerDiscountType(data.customerDiscountType ?? "");
       setCustomerDiscountValue(
-        data.customerDiscountValue != null ? String(data.customerDiscountValue) : "",
+        data.customerDiscountValue != null
+          ? String(data.customerDiscountValue)
+          : "",
       );
       setAdminNote(data.adminNote ?? "");
       setPayoutMethod(data.payoutMethod ?? "");
@@ -145,9 +154,15 @@ export default function AdminAffiliateDetailPage() {
         body: JSON.stringify(body),
         credentials: "include",
       });
-      const json = (await res.json().catch(() => ({}))) as { updated?: boolean; error?: string };
+      const json = (await res.json().catch(() => ({}))) as {
+        updated?: boolean;
+        error?: string;
+      };
       if (!res.ok) {
-        setSaveMessage({ type: "error", text: json.error ?? "Failed to update" });
+        setSaveMessage({
+          type: "error",
+          text: json.error ?? "Failed to update",
+        });
         return;
       }
       setSaveMessage({ type: "success", text: "Saved." });
@@ -200,47 +215,49 @@ export default function AdminAffiliateDetailPage() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent>
-            <dl className="grid gap-2 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="text-muted-foreground">User</dt>
-                <dd className="font-medium">
-                  {affiliate.userName ?? affiliate.userEmail ?? "—"}
-                  {affiliate.userEmail && (
-                    <span className="block font-normal text-muted-foreground">
-                      {affiliate.userEmail}
-                    </span>
-                  )}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Conversions</dt>
-                <dd className="font-medium tabular-nums">{affiliate.conversionCount}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Total earned</dt>
-                <dd className="font-medium tabular-nums">
-                  {formatCents(affiliate.totalEarnedCents)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Total paid</dt>
-                <dd className="font-medium tabular-nums">
-                  {formatCents(affiliate.totalPaidCents)}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Applied</dt>
-                <dd className="font-medium">{formatDate(affiliate.createdAt)}</dd>
-              </div>
-            </dl>
-            {affiliate.applicationNote && (
-              <div className="mt-4">
-                <dt className={labelClass}>Application note</dt>
-                <dd className="rounded-md border bg-muted/30 p-3 text-sm">
-                  {affiliate.applicationNote}
-                </dd>
-              </div>
-            )}
+          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-muted-foreground">User</dt>
+              <dd className="font-medium">
+                {affiliate.userName ?? affiliate.userEmail ?? "—"}
+                {affiliate.userEmail && (
+                  <span className="block font-normal text-muted-foreground">
+                    {affiliate.userEmail}
+                  </span>
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Conversions</dt>
+              <dd className="font-medium tabular-nums">
+                {affiliate.conversionCount}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Total earned</dt>
+              <dd className="font-medium tabular-nums">
+                {formatCents(affiliate.totalEarnedCents)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Total paid</dt>
+              <dd className="font-medium tabular-nums">
+                {formatCents(affiliate.totalPaidCents)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">Applied</dt>
+              <dd className="font-medium">{formatDate(affiliate.createdAt)}</dd>
+            </div>
+          </dl>
+          {affiliate.applicationNote && (
+            <div className="mt-4">
+              <dt className={labelClass}>Application note</dt>
+              <dd className="rounded-md border bg-muted/30 p-3 text-sm">
+                {affiliate.applicationNote}
+              </dd>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -248,7 +265,8 @@ export default function AdminAffiliateDetailPage() {
         <CardHeader>
           <CardTitle>Edit affiliate</CardTitle>
           <CardDescription>
-            Change status (e.g. approve or reject), commission, customer discount, and payout info.
+            Change status (e.g. approve or reject), commission, customer
+            discount, and payout info.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -304,7 +322,8 @@ export default function AdminAffiliateDetailPage() {
               </div>
               <div>
                 <label className={labelClass} htmlFor="commissionValue">
-                  Commission value ({commissionType === "percent" ? "0–100" : "cents"})
+                  Commission value (
+                  {commissionType === "percent" ? "0–100" : "cents"})
                 </label>
                 <input
                   id="commissionValue"
@@ -313,7 +332,9 @@ export default function AdminAffiliateDetailPage() {
                   max={commissionType === "percent" ? 100 : undefined}
                   className={inputClass}
                   value={commissionValue}
-                  onChange={(e) => setCommissionValue(Number(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setCommissionValue(Number(e.target.value) || 0)
+                  }
                 />
               </div>
             </div>
@@ -346,7 +367,9 @@ export default function AdminAffiliateDetailPage() {
                     className={inputClass}
                     value={customerDiscountValue}
                     onChange={(e) => setCustomerDiscountValue(e.target.value)}
-                    placeholder={customerDiscountType === "percent" ? "10" : "500"}
+                    placeholder={
+                      customerDiscountType === "percent" ? "10" : "500"
+                    }
                   />
                 </div>
               )}

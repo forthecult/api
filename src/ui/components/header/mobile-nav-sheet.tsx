@@ -27,11 +27,7 @@ import {
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import {
-  Sheet,
-  SheetClose,
-  SheetContent,
-} from "~/ui/primitives/sheet";
+import { Sheet, SheetClose, SheetContent } from "~/ui/primitives/sheet";
 
 // Lazy load FooterPreferencesModal - only needed when user opens preferences
 const FooterPreferencesModal = dynamic(
@@ -55,7 +51,10 @@ interface MobileNavSheetProps {
   onOpenChange: (open: boolean) => void;
   categories: CategoryItem[];
   pathname: string;
-  user: { email: string; image?: string | null; name: string } | null | undefined;
+  user:
+    | { email: string; image?: string | null; name: string }
+    | null
+    | undefined;
   authPending: boolean;
   isAdmin: boolean;
   showAuth: boolean;
@@ -205,7 +204,10 @@ export function MobileNavSheet({
               >
                 Shop
                 <ChevronRight
-                  className={cn("h-4 w-4 transition-transform", shopExpanded && "rotate-90")}
+                  className={cn(
+                    "h-4 w-4 transition-transform",
+                    shopExpanded && "rotate-90",
+                  )}
                   aria-hidden
                 />
               </button>
@@ -364,7 +366,9 @@ export function MobileNavSheet({
                   </Button>
                   <Button
                     size="sm"
-                    variant={theme === "system" || !theme ? "secondary" : "ghost"}
+                    variant={
+                      theme === "system" || !theme ? "secondary" : "ghost"
+                    }
                     className="flex-1 min-w-0"
                     onClick={() => setTheme("system")}
                   >

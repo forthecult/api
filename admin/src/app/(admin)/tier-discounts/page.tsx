@@ -50,9 +50,12 @@ export default function AdminTierDiscountsPage() {
     setError(null);
     try {
       const params = new URLSearchParams({ sortBy, sortOrder });
-      const res = await fetch(`${API_BASE}/api/admin/tier-discounts?${params}`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${API_BASE}/api/admin/tier-discounts?${params}`,
+        {
+          credentials: "include",
+        },
+      );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? `HTTP ${res.status}`);
@@ -60,7 +63,9 @@ export default function AdminTierDiscountsPage() {
       const json = (await res.json()) as ListResponse;
       setData(json);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load tier discounts");
+      setError(
+        err instanceof Error ? err.message : "Failed to load tier discounts",
+      );
       setData(null);
     } finally {
       setLoading(false);
@@ -75,7 +80,13 @@ export default function AdminTierDiscountsPage() {
     (column: SortBy) => {
       setSortBy(column);
       setSortOrder((prev) =>
-        column !== sortBy ? (column === "memberTier" ? "asc" : "desc") : prev === "asc" ? "desc" : "asc",
+        column !== sortBy
+          ? column === "memberTier"
+            ? "asc"
+            : "desc"
+          : prev === "asc"
+            ? "desc"
+            : "asc",
       );
     },
     [sortBy],
@@ -102,7 +113,8 @@ export default function AdminTierDiscountsPage() {
 
   const handleDelete = useCallback(
     async (id: string) => {
-      if (!window.confirm("Delete this tier discount? This cannot be undone.")) return;
+      if (!window.confirm("Delete this tier discount? This cannot be undone."))
+        return;
       setDeletingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/tier-discounts/${id}`, {
@@ -110,11 +122,15 @@ export default function AdminTierDiscountsPage() {
           credentials: "include",
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to delete");
         }
         setData((prev) =>
-          prev ? { ...prev, items: prev.items.filter((r) => r.id !== id) } : null,
+          prev
+            ? { ...prev, items: prev.items.filter((r) => r.id !== id) }
+            : null,
         );
       } catch {
         void fetchList();
@@ -126,7 +142,9 @@ export default function AdminTierDiscountsPage() {
   );
 
   const formatDiscount = (row: TierDiscountRow) =>
-    row.discountType === "percent" ? `${row.discountValue}%` : `$${(row.discountValue / 100).toFixed(2)}`;
+    row.discountType === "percent"
+      ? `${row.discountValue}%`
+      : `$${(row.discountValue / 100).toFixed(2)}`;
 
   if (error) {
     return (
@@ -142,7 +160,9 @@ export default function AdminTierDiscountsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-semibold tracking-tight">Member tier discounts</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Member tier discounts
+        </h2>
         <Link href="/tier-discounts/create">
           <Button type="button" className="gap-2">
             <Plus className="size-4" />
@@ -155,8 +175,8 @@ export default function AdminTierDiscountsPage() {
         <CardHeader>
           <CardTitle className="sr-only">Tier discounts</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Discounts that apply by CULT member tier (1–4). Multiple discounts per tier stack (e.g. 20% off
-            shipping + 15% off eSIMs for Tier 3).
+            Discounts that apply by CULT member tier (1–4). Multiple discounts
+            per tier stack (e.g. 20% off shipping + 15% off eSIMs for Tier 3).
           </p>
         </CardHeader>
         <CardContent className="p-0">
@@ -183,14 +203,22 @@ export default function AdminTierDiscountsPage() {
                     <th className="whitespace-nowrap p-4 font-medium">Label</th>
                     <th className="whitespace-nowrap p-4 font-medium">Scope</th>
                     <SortHeader column="discountValue" label="Value" />
-                    <th className="whitespace-nowrap p-4 font-medium">Action</th>
+                    <th className="whitespace-nowrap p-4 font-medium">
+                      Action
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((row) => (
-                    <tr key={row.id} className="border-b transition-colors hover:bg-muted/30">
+                    <tr
+                      key={row.id}
+                      className="border-b transition-colors hover:bg-muted/30"
+                    >
                       <td className="p-4 font-medium">Tier {row.memberTier}</td>
-                      <td className="max-w-[200px] truncate p-4 text-muted-foreground" title={row.label ?? ""}>
+                      <td
+                        className="max-w-[200px] truncate p-4 text-muted-foreground"
+                        title={row.label ?? ""}
+                      >
                         {row.label || "—"}
                       </td>
                       <td className="p-4 text-muted-foreground">

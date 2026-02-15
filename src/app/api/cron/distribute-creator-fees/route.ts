@@ -22,8 +22,9 @@ function getCronSecret(): string | null {
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
-  const token =
-    authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : null;
   const secret = getCronSecret();
 
   if (!secret) {
@@ -34,7 +35,10 @@ export async function GET(request: Request) {
   }
 
   if (token !== secret) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      { ok: false, error: "Unauthorized" },
+      { status: 401 },
+    );
   }
 
   try {

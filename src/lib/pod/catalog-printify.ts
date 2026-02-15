@@ -12,11 +12,20 @@ import {
   type PrintifyVariant,
 } from "@/lib/printify";
 
-import type { CatalogBlueprint, CatalogVariant, PodProvider, PrintSpec } from "./types";
+import type {
+  CatalogBlueprint,
+  CatalogVariant,
+  PodProvider,
+  PrintSpec,
+} from "./types";
 
 const PROVIDER: PodProvider = "printify";
 
-function placeholderToPrintSpec(placeholder: { position: string; width: number; height: number }): PrintSpec {
+function placeholderToPrintSpec(placeholder: {
+  position: string;
+  width: number;
+  height: number;
+}): PrintSpec {
   return {
     position: placeholder.position,
     width: placeholder.width,
@@ -25,7 +34,10 @@ function placeholderToPrintSpec(placeholder: { position: string; width: number; 
   };
 }
 
-function variantToCatalogVariant(v: PrintifyVariant, costCents: number): CatalogVariant {
+function variantToCatalogVariant(
+  v: PrintifyVariant,
+  costCents: number,
+): CatalogVariant {
   const printSpecs = v.placeholders.map(placeholderToPrintSpec);
   const color = v.options?.color;
   const size = v.options?.size;
@@ -39,7 +51,9 @@ function variantToCatalogVariant(v: PrintifyVariant, costCents: number): Catalog
   };
 }
 
-function blueprintToCatalogBlueprint(b: PrintifyBlueprint): Omit<CatalogBlueprint, "variants" | "printSpecs"> {
+function blueprintToCatalogBlueprint(
+  b: PrintifyBlueprint,
+): Omit<CatalogBlueprint, "variants" | "printSpecs"> {
   return {
     provider: PROVIDER,
     id: String(b.id),
@@ -53,7 +67,9 @@ function blueprintToCatalogBlueprint(b: PrintifyBlueprint): Omit<CatalogBlueprin
 /**
  * Fetch all Printify blueprints (list only, no variants/specs).
  */
-export async function fetchPrintifyBlueprintsList(): Promise<CatalogBlueprint[]> {
+export async function fetchPrintifyBlueprintsList(): Promise<
+  CatalogBlueprint[]
+> {
   const raw = await fetchPrintifyBlueprints();
   return raw.map((b) => ({
     ...blueprintToCatalogBlueprint(b),
@@ -80,11 +96,13 @@ export async function fetchPrintifyBlueprintWithSpecs(
 
   const base = blueprintToCatalogBlueprint(blueprint);
   const printSpecsSet = new Map<string, PrintSpec>();
-  const catalogVariants: CatalogVariant[] = variantsResponse.variants.map((v) => {
-    const cv = variantToCatalogVariant(v, 0);
-    cv.printSpecs.forEach((ps) => printSpecsSet.set(ps.position, ps));
-    return cv;
-  });
+  const catalogVariants: CatalogVariant[] = variantsResponse.variants.map(
+    (v) => {
+      const cv = variantToCatalogVariant(v, 0);
+      cv.printSpecs.forEach((ps) => printSpecsSet.set(ps.position, ps));
+      return cv;
+    },
+  );
 
   const printSpecs = Array.from(printSpecsSet.values());
   return {

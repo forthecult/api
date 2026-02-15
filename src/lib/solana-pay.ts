@@ -27,8 +27,7 @@ export const CRUST_MINT_MAINNET =
   "HkBWJJiaUW5Kod4HpHWZiGD9PQVipmMiPDgiRPcNpump";
 
 /** Pump (PUMP) SPL token on Solana. CA: pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn */
-export const PUMP_MINT_MAINNET =
-  "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn";
+export const PUMP_MINT_MAINNET = "pumpCmXqMfrsAkQ5r49WcJnRayYRqmXz6ae8H7H9Dfn";
 
 /** $TROLL SPL token on Solana. CA: 5UUH9RTDiSpq6HKS6bp4NdU9PNJpXRXuiw6ShBTBhgH2 */
 export const TROLL_MINT_MAINNET =
@@ -39,8 +38,7 @@ export const SOLUNA_MINT_MAINNET =
   "2qT8JVotQ2C1gKbqpuqNatkpSBWxiKHbXkCyTqH9pump";
 
 /** Seeker (SKR) SPL token on Solana. CA: SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3 */
-export const SKR_MINT_MAINNET =
-  "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3";
+export const SKR_MINT_MAINNET = "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3";
 
 export function getSolanaPayRecipient(): string | undefined {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"

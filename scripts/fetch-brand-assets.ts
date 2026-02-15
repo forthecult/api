@@ -34,7 +34,10 @@ const BRANDS: Array<{ name: string; websiteUrl: string }> = [
   { name: "GrapheneOS", websiteUrl: "https://grapheneos.org/" },
   { name: "Home Assistant", websiteUrl: "https://www.home-assistant.io/" },
   { name: "SONOFF", websiteUrl: "https://sonoff.tech" },
-  { name: "Everything Smart Technology", websiteUrl: "https://shop.everythingsmart.io/" },
+  {
+    name: "Everything Smart Technology",
+    websiteUrl: "https://shop.everythingsmart.io/",
+  },
   { name: "Seeed Studio", websiteUrl: "https://www.seeedstudio.com" },
   { name: "DFRobot", websiteUrl: "https://www.dfrobot.com/" },
 ];
@@ -74,7 +77,9 @@ async function fetchHtml(url: string): Promise<string> {
   return res.text();
 }
 
-async function downloadImage(url: string): Promise<{ buffer: ArrayBuffer; ext: string } | null> {
+async function downloadImage(
+  url: string,
+): Promise<{ buffer: ArrayBuffer; ext: string } | null> {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT },
@@ -191,7 +196,10 @@ async function main() {
         candidates = await tryCommonPaths(new URL(brand.websiteUrl).origin);
       }
     } catch (err) {
-      console.warn(`[${brand.name}] Failed to fetch HTML:`, err instanceof Error ? err.message : err);
+      console.warn(
+        `[${brand.name}] Failed to fetch HTML:`,
+        err instanceof Error ? err.message : err,
+      );
       candidates = await tryCommonPaths(new URL(brand.websiteUrl).origin);
     }
 
@@ -202,13 +210,17 @@ async function main() {
         const ext = result.ext;
         const path = join(dir, `logo${ext}`);
         writeFileSync(path, Buffer.from(result.buffer));
-        console.log(`[${brand.name}] Saved logo${ext} from ${url.slice(0, 50)}...`);
+        console.log(
+          `[${brand.name}] Saved logo${ext} from ${url.slice(0, 50)}...`,
+        );
         saved = true;
         break;
       }
     }
     if (!saved) {
-      console.warn(`[${brand.name}] No suitable image found (tried ${candidates.length} URLs).`);
+      console.warn(
+        `[${brand.name}] No suitable image found (tried ${candidates.length} URLs).`,
+      );
     }
   }
 

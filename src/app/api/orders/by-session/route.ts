@@ -35,10 +35,7 @@ type AccessLevel = "owner" | "first_visit" | "public";
 export async function GET(request: NextRequest) {
   const sessionId = request.nextUrl.searchParams.get("session_id")?.trim();
   if (!sessionId) {
-    return NextResponse.json(
-      { error: "session_id required" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "session_id required" }, { status: 400 });
   }
 
   const [order] = await db
@@ -76,7 +73,8 @@ export async function GET(request: NextRequest) {
   // Owner check
   const session = await auth.api.getSession({ headers: request.headers });
   if (session?.user) {
-    const emailVerified = (session.user as { emailVerified?: boolean })?.emailVerified;
+    const emailVerified = (session.user as { emailVerified?: boolean })
+      ?.emailVerified;
     const isOwnerByUserId = order.userId === session.user.id;
     const isOwnerByEmail =
       emailVerified &&
@@ -107,7 +105,10 @@ export async function GET(request: NextRequest) {
 
   // Build shipping — full or redacted
   const hasShipping =
-    order.shippingName || order.shippingAddress1 || order.shippingCity || order.shippingCountryCode;
+    order.shippingName ||
+    order.shippingAddress1 ||
+    order.shippingCity ||
+    order.shippingCountryCode;
   const shipping = hasShipping
     ? canSeePII
       ? {

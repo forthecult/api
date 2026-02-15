@@ -61,9 +61,7 @@ export function computeCategoryIdAndDescendantIds(
   categorySlug: string,
 ): Set<string> {
   const slugNorm = categorySlug.trim().toLowerCase();
-  const root = rows.find(
-    (r) => r.slug?.trim().toLowerCase() === slugNorm,
-  );
+  const root = rows.find((r) => r.slug?.trim().toLowerCase() === slugNorm);
   if (!root) return new Set<string>();
   const ids = new Set<string>([root.id]);
   let added = true;

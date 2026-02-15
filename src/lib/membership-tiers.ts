@@ -64,11 +64,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
       esimDetail: "15% discount on all eSIM data plans",
       shipping: "20% off",
       shippingDetail: "20% off all shipping costs",
-      extras: [
-        "Community access",
-        "Governance voting",
-        "Early product access",
-      ],
+      extras: ["Community access", "Governance voting", "Early product access"],
     },
   },
   {
@@ -103,8 +99,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     icon: Crown,
     benefits: {
       esim: "Premium eSIM",
-      esimDetail:
-        "Premium free eSIM card with higher data allowance included",
+      esimDetail: "Premium free eSIM card with higher data allowance included",
       shipping: "Free",
       shippingDetail: "Free shipping on every order, worldwide",
       extras: [

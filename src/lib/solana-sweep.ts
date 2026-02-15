@@ -97,9 +97,7 @@ type TokenAccountInfo = {
 
 function getRpcUrl(): string {
   const url =
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-    process.env.SOLANA_RPC_URL ||
-    "";
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.SOLANA_RPC_URL || "";
   return url.trim() || "https://rpc.ankr.com/solana";
 }
 
@@ -345,8 +343,7 @@ export async function runSolanaSweep(
       }
 
       tx.feePayer = feePayer!.publicKey;
-      const { blockhash } =
-        await connection.getLatestBlockhash("confirmed");
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const sig = await sendAndConfirmTransaction(

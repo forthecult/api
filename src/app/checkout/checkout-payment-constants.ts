@@ -14,7 +14,18 @@ export const HIDDEN_PAYMENT_OPTIONS = {
 
 /** Top-level crypto options; "eth" = nested chain choices, "other" = Sui, TON, etc. */
 export const CRYPTO_SUB_OPTIONS: {
-  value: "bitcoin" | "dogecoin" | "eth" | "solana" | "monero" | "crust" | "pump" | "troll" | "soluna" | "seeker" | "other";
+  value:
+    | "bitcoin"
+    | "dogecoin"
+    | "eth"
+    | "solana"
+    | "monero"
+    | "crust"
+    | "pump"
+    | "troll"
+    | "soluna"
+    | "seeker"
+    | "other";
   label: string;
 }[] = [
   { value: "bitcoin", label: "Bitcoin (BTC)" },
@@ -41,7 +52,8 @@ export const VISIBLE_CRYPTO_SUB_OPTIONS = CRYPTO_SUB_OPTIONS.filter((opt) => {
   return true;
 });
 
-export const INITIAL_CRYPTO_SUB = (VISIBLE_CRYPTO_SUB_OPTIONS[0]?.value ?? "eth") as
+export const INITIAL_CRYPTO_SUB = (VISIBLE_CRYPTO_SUB_OPTIONS[0]?.value ??
+  "eth") as
   | "bitcoin"
   | "dogecoin"
   | "eth"
@@ -143,4 +155,3 @@ export const STABLECOIN_TOKEN_LOGO = {
   usdc: "/crypto/usdc/usdc-logo.svg",
   usdt: "/crypto/usdt/tether-usdt-logo.svg",
 } as const;
-

@@ -5,7 +5,13 @@ import { useCallback, useState } from "react";
 
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
@@ -41,9 +47,13 @@ type SolanaSweepResult = {
 };
 
 export default function AdminSolanaPayPage() {
-  const [loading, setLoading] = useState<`${SweepScope}-dry` | `${SweepScope}-sweep` | null>(null);
+  const [loading, setLoading] = useState<
+    `${SweepScope}-dry` | `${SweepScope}-sweep` | null
+  >(null);
   const [paidResult, setPaidResult] = useState<SolanaSweepResult | null>(null);
-  const [pendingResult, setPendingResult] = useState<SolanaSweepResult | null>(null);
+  const [pendingResult, setPendingResult] = useState<SolanaSweepResult | null>(
+    null,
+  );
   const [paidError, setPaidError] = useState<string | null>(null);
   const [pendingError, setPendingError] = useState<string | null>(null);
 
@@ -132,9 +142,7 @@ export default function AdminSolanaPayPage() {
               {paidError}
             </div>
           )}
-          {paidResult && (
-            <AdminSweepResultBlock result={paidResult} />
-          )}
+          {paidResult && <AdminSweepResultBlock result={paidResult} />}
         </CardContent>
       </Card>
 
@@ -177,9 +185,7 @@ export default function AdminSolanaPayPage() {
               {pendingError}
             </div>
           )}
-          {pendingResult && (
-            <AdminSweepResultBlock result={pendingResult} />
-          )}
+          {pendingResult && <AdminSweepResultBlock result={pendingResult} />}
         </CardContent>
       </Card>
     </>
@@ -199,7 +205,8 @@ function AdminSweepResultBlock({ result }: { result: SolanaSweepResult }) {
       )}
       {result.ok && result.recipient && (
         <p className="text-sm text-muted-foreground">
-          Recipient: <code className="rounded bg-muted px-1">{result.recipient}</code>
+          Recipient:{" "}
+          <code className="rounded bg-muted px-1">{result.recipient}</code>
           {result.ordersCount > 0 && <> · {result.ordersCount} order(s)</>}
         </p>
       )}
@@ -211,7 +218,9 @@ function AdminSweepResultBlock({ result }: { result: SolanaSweepResult }) {
         </ul>
       )}
       {result.ok && result.results.length === 0 && result.ordersCount === 0 && (
-        <p className="text-sm text-muted-foreground">No orders with deposit addresses found.</p>
+        <p className="text-sm text-muted-foreground">
+          No orders with deposit addresses found.
+        </p>
       )}
     </div>
   );
@@ -253,12 +262,11 @@ function SweepResultRow({
           ))}
           {row.txSignature && (
             <div className="text-muted-foreground">
-              Tx: <code className="text-xs">{row.txSignature.slice(0, 16)}…</code>
+              Tx:{" "}
+              <code className="text-xs">{row.txSignature.slice(0, 16)}…</code>
             </div>
           )}
-          {row.error && (
-            <div className="text-destructive">{row.error}</div>
-          )}
+          {row.error && <div className="text-destructive">{row.error}</div>}
         </div>
       )}
     </li>

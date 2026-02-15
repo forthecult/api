@@ -145,7 +145,9 @@ export function ActiveFilters<TData>({ table }: { table: Table<TData> }) {
 
 export function ActiveFiltersMobileContainer({
   children,
-}: { children: React.ReactNode }) {
+}: {
+  children: React.ReactNode;
+}) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftBlur, setShowLeftBlur] = useState(false);
   const [showRightBlur, setShowRightBlur] = useState(true);
@@ -215,7 +217,9 @@ export function ActiveFiltersMobileContainer({
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function DataTableFilter<TData, TValue>({
   table,
-}: { table: Table<TData> }) {
+}: {
+  table: Table<TData>;
+}) {
   const isMobile = useIsMobile();
 
   if (isMobile) {
@@ -880,7 +884,7 @@ export function FilterValueMultiOptionController<
 
   const optionsCount: Record<ColumnOption["value"], number> = columnVals.reduce(
     (acc, curr) => {
-      let optionValue: string | undefined = undefined;
+      let optionValue: string | undefined;
       const rawColumnValue = curr as unknown; // Using unknown for safer type checks
 
       if (columnMeta.options) {
@@ -1366,7 +1370,7 @@ export function FilterValueOptionController<TData, TValue>({
 
   const optionsCount: Record<ColumnOption["value"], number> = columnVals.reduce(
     (acc, curr) => {
-      let optionValue: string | undefined = undefined;
+      let optionValue: string | undefined;
       const rawColumnValue = curr as unknown; // Using unknown for safer type checks
 
       if (columnMeta.options) {

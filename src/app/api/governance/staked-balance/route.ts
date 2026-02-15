@@ -50,7 +50,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const human = Number(stake.amount) / Math.pow(10, token.decimals);
+    const human = Number(stake.amount) / 10 ** token.decimals;
     const lockStatus = getLockStatus(stake);
 
     return NextResponse.json({

@@ -305,11 +305,15 @@ export async function createAndConfirmPrintfulOrder(
     for (let i = 0; i < MAX_POLLS; i++) {
       const orderCheck = await getPrintfulOrder(printfulOrderId, storeId);
       if (orderCheck.data.costs?.calculation_status === "completed") {
-        console.log(`Printful order ${printfulOrderId} cost calculation completed`);
+        console.log(
+          `Printful order ${printfulOrderId} cost calculation completed`,
+        );
         break;
       }
       if (orderCheck.data.costs?.calculation_status === "failed") {
-        console.warn(`Printful order ${printfulOrderId} cost calculation failed, confirming anyway`);
+        console.warn(
+          `Printful order ${printfulOrderId} cost calculation failed, confirming anyway`,
+        );
         break;
       }
       await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
@@ -317,7 +321,10 @@ export async function createAndConfirmPrintfulOrder(
 
     // Confirm the order (submit for fulfillment)
     console.log(`Confirming Printful order ${printfulOrderId}...`);
-    const confirmResponse = await confirmPrintfulOrder(printfulOrderId, storeId);
+    const confirmResponse = await confirmPrintfulOrder(
+      printfulOrderId,
+      storeId,
+    );
 
     console.log(
       `Printful order ${printfulOrderId} confirmed, status: ${confirmResponse.data.status}`,
@@ -487,11 +494,13 @@ export async function updateOrderFromPrintfulWebhook(
   // Persist shipment tracking data whenever present
   const shipment = event.data.shipment;
   if (shipment) {
-    if (shipment.tracking_number) updates.trackingNumber = shipment.tracking_number;
+    if (shipment.tracking_number)
+      updates.trackingNumber = shipment.tracking_number;
     if (shipment.tracking_url) updates.trackingUrl = shipment.tracking_url;
     if (shipment.carrier) updates.trackingCarrier = shipment.carrier;
     if (shipment.shipped_at) updates.shippedAt = new Date(shipment.shipped_at);
-    if (shipment.delivered_at) updates.deliveredAt = new Date(shipment.delivered_at);
+    if (shipment.delivered_at)
+      updates.deliveredAt = new Date(shipment.delivered_at);
     if (shipment.estimated_delivery?.from_date) {
       updates.estimatedDeliveryFrom = shipment.estimated_delivery.from_date;
     }
@@ -507,14 +516,20 @@ export async function updateOrderFromPrintfulWebhook(
   const orderCosts = event.data.order?.costs;
   if (orderCosts) {
     if (orderCosts.total != null) {
-      updates.printfulCostTotalCents = Math.round(Number.parseFloat(orderCosts.total) * 100);
+      updates.printfulCostTotalCents = Math.round(
+        Number.parseFloat(orderCosts.total) * 100,
+      );
     }
     if (orderCosts.shipping != null) {
-      updates.printfulCostShippingCents = Math.round(Number.parseFloat(orderCosts.shipping) * 100);
+      updates.printfulCostShippingCents = Math.round(
+        Number.parseFloat(orderCosts.shipping) * 100,
+      );
     }
     const taxVal = orderCosts.tax ?? orderCosts.vat;
     if (taxVal != null) {
-      updates.printfulCostTaxCents = Math.round(Number.parseFloat(taxVal) * 100);
+      updates.printfulCostTaxCents = Math.round(
+        Number.parseFloat(taxVal) * 100,
+      );
     }
   }
 
@@ -589,7 +604,9 @@ export async function updateOrderFromPrintfulWebhook(
     case "shipment_out_of_stock":
       // Shipment out of stock - alert admin, set on hold
       updates.fulfillmentStatus = "on_hold";
-      console.warn(`[Printful] Shipment out of stock for order ${order.id} (Printful order ${printfulOrderId})`);
+      console.warn(
+        `[Printful] Shipment out of stock for order ${order.id} (Printful order ${printfulOrderId})`,
+      );
       break;
 
     case "shipment_canceled":
@@ -606,7 +623,9 @@ export async function updateOrderFromPrintfulWebhook(
     case "shipment_put_hold":
     case "shipment_put_hold_approval":
       // Shipment put on hold - alert admin but DO NOT change store fulfillment status
-      console.warn(`[Printful] Shipment hold for order ${order.id} (Printful order ${printfulOrderId}): ${event.type}`);
+      console.warn(
+        `[Printful] Shipment hold for order ${order.id} (Printful order ${printfulOrderId}): ${event.type}`,
+      );
       // Only persist tracking/cost updates, no status change
       break;
 
@@ -675,9 +694,11 @@ export async function updateOrderFromPrintfulWebhook(
  * Call this on-demand (e.g. admin viewing order details) to backfill tracking
  * info that may have been missed by webhooks.
  */
-export async function syncPrintfulShipmentTracking(
-  orderId: string,
-): Promise<{ success: boolean; shipments?: PrintfulShipment[]; error?: string }> {
+export async function syncPrintfulShipmentTracking(orderId: string): Promise<{
+  success: boolean;
+  shipments?: PrintfulShipment[];
+  error?: string;
+}> {
   const pf = getPrintfulIfConfigured();
   if (!pf) return { success: false, error: "Printful not configured" };
 
@@ -721,7 +742,8 @@ export async function syncPrintfulShipmentTracking(
     if (latest.tracking_url) updates.trackingUrl = latest.tracking_url;
     if (latest.carrier) updates.trackingCarrier = latest.carrier;
     if (latest.shipped_at) updates.shippedAt = new Date(latest.shipped_at);
-    if (latest.delivered_at) updates.deliveredAt = new Date(latest.delivered_at);
+    if (latest.delivered_at)
+      updates.deliveredAt = new Date(latest.delivered_at);
     if (latest.estimated_delivery?.from_date) {
       updates.estimatedDeliveryFrom = latest.estimated_delivery.from_date;
     }

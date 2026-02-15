@@ -140,13 +140,16 @@ export function RefundRequestForm() {
         </CardTitle>
         <p className="text-sm text-muted-foreground">
           Enter your Order ID and one of: your billing email, the payment
-          (wallet) address used at checkout, or your shipping postal code. If you paid with crypto, we’ll ask
-          for the address where you’d like to receive your refund (in
-          stablecoin).
+          (wallet) address used at checkout, or your shipping postal code. If
+          you paid with crypto, we’ll ask for the address where you’d like to
+          receive your refund (in stablecoin).
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form onSubmit={lookupStatus !== "success" ? handleLookup : handleSubmit} className="space-y-4">
+        <form
+          onSubmit={lookupStatus !== "success" ? handleLookup : handleSubmit}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="refund-order-id">Order ID</Label>
             <Input
@@ -160,7 +163,9 @@ export function RefundRequestForm() {
                 if (lookupStatus !== "idle") setLookupStatus("idle");
               }}
               autoComplete="off"
-              disabled={submitStatus === "loading" || submitStatus === "success"}
+              disabled={
+                submitStatus === "loading" || submitStatus === "success"
+              }
             />
           </div>
           <div className="space-y-2">
@@ -178,7 +183,9 @@ export function RefundRequestForm() {
                 if (lookupStatus !== "idle") setLookupStatus("idle");
               }}
               autoComplete="off"
-              disabled={submitStatus === "loading" || submitStatus === "success"}
+              disabled={
+                submitStatus === "loading" || submitStatus === "success"
+              }
             />
             <p className="text-xs text-muted-foreground">
               Enter any one of these so we can verify your order.
@@ -216,7 +223,9 @@ export function RefundRequestForm() {
                   value={refundAddress}
                   onChange={(e) => setRefundAddress(e.target.value)}
                   autoComplete="off"
-                  disabled={submitStatus === "loading" || submitStatus === "success"}
+                  disabled={
+                    submitStatus === "loading" || submitStatus === "success"
+                  }
                 />
               </div>
             </div>

@@ -99,7 +99,13 @@ async function fetchProducts(
 }
 
 interface PageProps {
-  searchParams: Promise<{ page?: string; category?: string; sort?: string; q?: string; search?: string }>;
+  searchParams: Promise<{
+    page?: string;
+    category?: string;
+    sort?: string;
+    q?: string;
+    search?: string;
+  }>;
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
@@ -114,15 +120,25 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const page = Math.max(1, Number.parseInt(params.page || "1", 10));
   const limit = 12;
   const sortParam = params.sort?.trim() || "newest";
-  const sort =
-    ["newest", "price_asc", "price_desc", "best_selling", "rating", "manual"].includes(
-      sortParam,
-    )
-      ? sortParam
-      : "newest";
+  const sort = [
+    "newest",
+    "price_asc",
+    "price_desc",
+    "best_selling",
+    "rating",
+    "manual",
+  ].includes(sortParam)
+    ? sortParam
+    : "newest";
   const searchQuery = (params.q ?? params.search ?? "").trim().slice(0, 100);
 
-  const data = await fetchProducts(page, limit, undefined, sort, searchQuery || undefined);
+  const data = await fetchProducts(
+    page,
+    limit,
+    undefined,
+    sort,
+    searchQuery || undefined,
+  );
 
   const products = (data.items ?? []).map((p) => ({
     ...p,
@@ -151,7 +167,15 @@ export default async function ProductsPage({ searchParams }: PageProps) {
           initialTotalPages={data.totalPages ?? 1}
           initialTotal={data.total ?? 0}
           initialCategory="all"
-          initialSort={sort as "newest" | "price_asc" | "price_desc" | "best_selling" | "rating" | "manual"}
+          initialSort={
+            sort as
+              | "newest"
+              | "price_asc"
+              | "price_desc"
+              | "best_selling"
+              | "rating"
+              | "manual"
+          }
           initialSearch={searchQuery}
         />
       </Suspense>

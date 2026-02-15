@@ -100,7 +100,5 @@ export const categoryAutoAssignRuleTable = pgTable(
     createdAt: timestamp("created_at").notNull(),
     updatedAt: timestamp("updated_at").notNull(),
   },
-  (t) => [
-    index("category_auto_assign_rule_category_id_idx").on(t.categoryId),
-  ],
+  (t) => [index("category_auto_assign_rule_category_id_idx").on(t.categoryId)],
 );

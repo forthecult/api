@@ -76,28 +76,30 @@ export function RelatedProductsSection({
         >
           Related Products
         </h2>
-      {products.length === 0 ? (
-        <p className="text-muted-foreground">No related products at the moment.</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-x-10 lg:gap-x-12">
-        {products.map((product) => (
-          <ProductCard
-            key={product.id}
-            imageAspect="wide"
-            isInWishlist={isInWishlist(product.id)}
-            onAddToCart={handleAddToCart}
-            onAddToWishlist={addToWishlist}
-            onRemoveFromWishlist={removeFromWishlist}
-            onQuickView={handleQuickView}
-            product={{
-              ...product,
-              inStock: product.inStock ?? true,
-              rating: product.rating ?? 0,
-            }}
-          />
-        ))}
-        </div>
-      )}
+        {products.length === 0 ? (
+          <p className="text-muted-foreground">
+            No related products at the moment.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-x-10 lg:gap-x-12">
+            {products.map((product) => (
+              <ProductCard
+                key={product.id}
+                imageAspect="wide"
+                isInWishlist={isInWishlist(product.id)}
+                onAddToCart={handleAddToCart}
+                onAddToWishlist={addToWishlist}
+                onRemoveFromWishlist={removeFromWishlist}
+                onQuickView={handleQuickView}
+                product={{
+                  ...product,
+                  inStock: product.inStock ?? true,
+                  rating: product.rating ?? 0,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       <ProductQuickView

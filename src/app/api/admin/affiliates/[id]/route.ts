@@ -45,7 +45,10 @@ export async function GET(
       .limit(1);
 
     if (!affiliate) {
-      return NextResponse.json({ error: "Affiliate not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Affiliate not found" },
+        { status: 404 },
+      );
     }
 
     const [conversion] = await db
@@ -87,7 +90,10 @@ export async function PATCH(
       .limit(1);
 
     if (!existing) {
-      return NextResponse.json({ error: "Affiliate not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Affiliate not found" },
+        { status: 404 },
+      );
     }
 
     let body: {
@@ -127,7 +133,10 @@ export async function PATCH(
     if (typeof body.commissionValue === "number" && body.commissionValue >= 0) {
       updates.commissionValue = body.commissionValue;
     }
-    if (body.customerDiscountType === null || body.customerDiscountType === undefined) {
+    if (
+      body.customerDiscountType === null ||
+      body.customerDiscountType === undefined
+    ) {
       updates.customerDiscountType = null;
       updates.customerDiscountValue = null;
     } else if (
@@ -135,21 +144,30 @@ export async function PATCH(
       ["percent", "fixed"].includes(body.customerDiscountType)
     ) {
       updates.customerDiscountType = body.customerDiscountType;
-      if (typeof body.customerDiscountValue === "number" && body.customerDiscountValue >= 0) {
+      if (
+        typeof body.customerDiscountValue === "number" &&
+        body.customerDiscountValue >= 0
+      ) {
         updates.customerDiscountValue = body.customerDiscountValue;
       }
     }
     if (body.adminNote !== undefined) {
       updates.adminNote =
-        typeof body.adminNote === "string" ? body.adminNote.trim().slice(0, 2000) : null;
+        typeof body.adminNote === "string"
+          ? body.adminNote.trim().slice(0, 2000)
+          : null;
     }
     if (body.payoutMethod !== undefined) {
       updates.payoutMethod =
-        typeof body.payoutMethod === "string" ? body.payoutMethod.trim().slice(0, 64) : null;
+        typeof body.payoutMethod === "string"
+          ? body.payoutMethod.trim().slice(0, 64)
+          : null;
     }
     if (body.payoutAddress !== undefined) {
       updates.payoutAddress =
-        typeof body.payoutAddress === "string" ? body.payoutAddress.trim().slice(0, 500) : null;
+        typeof body.payoutAddress === "string"
+          ? body.payoutAddress.trim().slice(0, 500)
+          : null;
     }
 
     if (Object.keys(updates).length <= 1) {

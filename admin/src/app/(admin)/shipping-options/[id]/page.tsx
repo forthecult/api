@@ -144,8 +144,13 @@ export default function AdminShippingOptionEditPage() {
       setError("Amount is required for flat and per-item options.");
       return;
     }
-    if (type === "flat_plus_per_item" && (!amountCents.trim() || !additionalItemCents.trim())) {
-      setError("First item and each additional item amounts are required for Flat + per item.");
+    if (
+      type === "flat_plus_per_item" &&
+      (!amountCents.trim() || !additionalItemCents.trim())
+    ) {
+      setError(
+        "First item and each additional item amounts are required for Flat + per item.",
+      );
       return;
     }
     setSubmitting(true);
@@ -172,7 +177,9 @@ export default function AdminShippingOptionEditPage() {
             ? null
             : type === "flat_plus_per_item"
               ? (parseDollars(amountCents) ?? 0)
-              : (type === "flat" || type === "per_item" ? (parseDollars(amountCents) ?? 0) : null),
+              : type === "flat" || type === "per_item"
+                ? (parseDollars(amountCents) ?? 0)
+                : null,
         additionalItemCents:
           type === "flat_plus_per_item"
             ? (parseDollars(additionalItemCents) ?? 0)

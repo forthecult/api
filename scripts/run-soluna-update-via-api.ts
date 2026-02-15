@@ -46,11 +46,9 @@ async function main() {
 
   console.log("\n1. Uploading print file (makeTransparent=true)...");
   const formData = new FormData();
-  const file = new File(
-    [readFileSync(PRINT_FILE)],
-    "soluna-print.png",
-    { type: "image/png" },
-  );
+  const file = new File([readFileSync(PRINT_FILE)], "soluna-print.png", {
+    type: "image/png",
+  });
   formData.append("file", file);
   const uploadRes = await fetch(
     `${API_BASE}/api/admin/pod/upload?provider=printify&makeTransparent=true`,
@@ -69,7 +67,9 @@ async function main() {
   if (!imageId) throw new Error("Upload response missing imageId");
   console.log("   imageId:", imageId);
 
-  console.log("\n2. Running update-products-design (design, sync, mockups, categories/SEO)...");
+  console.log(
+    "\n2. Running update-products-design (design, sync, mockups, categories/SEO)...",
+  );
   const updateRes = await fetch(
     `${API_BASE}/api/admin/printify/update-products-design`,
     {

@@ -13,7 +13,13 @@ export const metadata = {
 
 export default function CheckoutSuccessPage() {
   return (
-    <Suspense fallback={<div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
+          Loading…
+        </div>
+      }
+    >
       <SuccessPageClient />
     </Suspense>
   );

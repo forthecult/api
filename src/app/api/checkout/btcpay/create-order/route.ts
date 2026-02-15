@@ -1,5 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
 import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
@@ -37,7 +37,10 @@ const TOKEN_TO_CURRENCY: Record<string, string> = {
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
-  const rateLimitResult = await checkRateLimit(`checkout:${ip}`, RATE_LIMITS.checkout);
+  const rateLimitResult = await checkRateLimit(
+    `checkout:${ip}`,
+    RATE_LIMITS.checkout,
+  );
   if (!rateLimitResult.success) {
     return rateLimitResponse(rateLimitResult);
   }
@@ -69,13 +72,17 @@ export async function POST(request: NextRequest) {
       shipping,
     } = validation.data;
 
-    const token = (rawBody as { token?: string }).token?.toLowerCase() ?? "bitcoin";
+    const token =
+      (rawBody as { token?: string }).token?.toLowerCase() ?? "bitcoin";
     const cryptoCurrency = TOKEN_TO_CURRENCY[token] ?? "BTC";
 
     // ── Validate products & compute subtotal ───────────────────────────
     const productResult = await validateAndFetchProducts(rawItems);
     if (!productResult) {
-      return NextResponse.json({ error: "No valid order items" }, { status: 400 });
+      return NextResponse.json(
+        { error: "No valid order items" },
+        { status: 400 },
+      );
     }
     const { validatedItems, productIds, subtotalCents } = productResult;
 
@@ -89,7 +96,11 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
         productIds,
         paymentMethodKey: "crypto_bitcoin",
-        items: validatedItems.map(i => ({ productId: i.productId, priceCents: i.priceCents, quantity: i.quantity })),
+        items: validatedItems.map((i) => ({
+          productId: i.productId,
+          priceCents: i.priceCents,
+          quantity: i.quantity,
+        })),
         wallet: wallet ?? undefined,
       });
 
@@ -116,7 +127,8 @@ export async function POST(request: NextRequest) {
         ? session.user.id
         : null;
 
-    const origin = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://forthecult.store";
+    const origin =
+      process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://forthecult.store";
 
     let btcpayInvoiceId: string | null = null;
     let btcpayInvoiceUrl: string | null = null;
@@ -125,9 +137,10 @@ export async function POST(request: NextRequest) {
     if (configured) {
       try {
         const priceUsd = totalCheck.expectedTotal / 100;
-        const itemDesc = validatedItems.length === 1
-          ? validatedItems[0].name
-          : `Order ${orderId} (${validatedItems.length} items)`;
+        const itemDesc =
+          validatedItems.length === 1
+            ? validatedItems[0].name
+            : `Order ${orderId} (${validatedItems.length} items)`;
         const invoice = await createBtcpayInvoice({
           price: priceUsd,
           currency: "USD",
@@ -143,7 +156,10 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         console.error("BTCPay create invoice error:", err);
         return NextResponse.json(
-          { error: "Payment provider temporarily unavailable. Please try again or use another method." },
+          {
+            error:
+              "Payment provider temporarily unavailable. Please try again or use another method.",
+          },
           { status: 502 },
         );
       }

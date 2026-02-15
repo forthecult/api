@@ -25,7 +25,8 @@ function buildApiLinks(base: string): AgentApiEndpoint[] {
       title: "Products (agent-optimized)",
       href: `${base}/api/agent/products`,
       method: "GET",
-      description: "Minimal product list for bots. Optional ?q=... and ?limit=...",
+      description:
+        "Minimal product list for bots. Optional ?q=... and ?limit=...",
     },
     {
       title: "Me (Moltbook identity)",
@@ -38,7 +39,8 @@ function buildApiLinks(base: string): AgentApiEndpoint[] {
       title: "My orders",
       href: `${base}/api/agent/me/orders`,
       method: "GET",
-      description: "Requires Moltbook auth. Lists orders placed with your agent identity.",
+      description:
+        "Requires Moltbook auth. Lists orders placed with your agent identity.",
     },
     {
       title: "My preferences",
@@ -78,8 +80,7 @@ export type AgentApiSummary = {
  * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
 export function getAgentApiSummary(baseUrl?: string): AgentApiSummary {
-  const base =
-    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const base = baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
   const links = buildApiLinks(base);
   return {
     name: "For the Cult",
@@ -101,7 +102,6 @@ export function getAgentApiSummary(baseUrl?: string): AgentApiSummary {
  * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
 export function getAgentApiLinks(baseUrl?: string): AgentApiEndpoint[] {
-  const base =
-    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const base = baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
   return buildApiLinks(base);
 }

@@ -1,4 +1,14 @@
-import { and, asc, desc, eq, ilike, inArray, isNull, notInArray, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNull,
+  notInArray,
+  sql,
+} from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
@@ -75,14 +85,21 @@ export async function GET(request: NextRequest) {
     const forStorefront =
       searchParams.get("forStorefront") === "1" ||
       searchParams.get("forStorefront") === "true";
-    const q = (searchParams.get("q") ?? searchParams.get("search") ?? "").trim().slice(0, 100);
-    const sortParam = (searchParams.get("sort")?.trim() || "newest") as ProductsSort;
-    const sort: ProductsSort =
-      ["newest", "price_asc", "price_desc", "best_selling", "rating", "manual"].includes(
-        sortParam,
-      )
-        ? sortParam
-        : "newest";
+    const q = (searchParams.get("q") ?? searchParams.get("search") ?? "")
+      .trim()
+      .slice(0, 100);
+    const sortParam = (searchParams.get("sort")?.trim() ||
+      "newest") as ProductsSort;
+    const sort: ProductsSort = [
+      "newest",
+      "price_asc",
+      "price_desc",
+      "best_selling",
+      "rating",
+      "manual",
+    ].includes(sortParam)
+      ? sortParam
+      : "newest";
     const offset = (page - 1) * limit;
 
     const categorySlugToFilter = subcategory || category;
@@ -130,7 +147,9 @@ export async function GET(request: NextRequest) {
             page: 1,
             limit,
             totalPages: 0,
-            categories: await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+            categories: await getCategoriesWithProductsAndDisplayImage({
+              topLevelOnly: true,
+            }),
           }),
         );
       }
@@ -138,10 +157,9 @@ export async function GET(request: NextRequest) {
         .select({ productId: productCategoriesTable.productId })
         .from(productCategoriesTable)
         .where(
-          inArray(
-            productCategoriesTable.categoryId,
-            [...categoryIdsIncludingDescendants],
-          ),
+          inArray(productCategoriesTable.categoryId, [
+            ...categoryIdsIncludingDescendants,
+          ]),
         );
       productIdsFilter = [...new Set(rows.map((r) => r.productId))];
       if (productIdsFilter.length === 0) {
@@ -152,7 +170,9 @@ export async function GET(request: NextRequest) {
             page: 1,
             limit,
             totalPages: 0,
-            categories: await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+            categories: await getCategoriesWithProductsAndDisplayImage({
+              topLevelOnly: true,
+            }),
           }),
         );
       }
@@ -168,19 +188,17 @@ export async function GET(request: NextRequest) {
             parentId: categoriesTable.parentId,
           })
           .from(categoriesTable);
-        const cryptoCategoryIds = computeCryptoCategoryIdsIncludingDescendants(
-          categoryRows,
-        );
+        const cryptoCategoryIds =
+          computeCryptoCategoryIdsIncludingDescendants(categoryRows);
         const productIdsInCrypto =
           cryptoCategoryIds.size > 0
             ? await db
                 .selectDistinct({ productId: productCategoriesTable.productId })
                 .from(productCategoriesTable)
                 .where(
-                  inArray(
-                    productCategoriesTable.categoryId,
-                    [...cryptoCategoryIds],
-                  ),
+                  inArray(productCategoriesTable.categoryId, [
+                    ...cryptoCategoryIds,
+                  ]),
                 )
             : [];
         const productIdsInShowInAll = await db
@@ -250,7 +268,10 @@ export async function GET(request: NextRequest) {
 
     let whereClause =
       productIdsFilter === null
-        ? and(eq(productsTable.published, true), eq(productsTable.hidden, false))
+        ? and(
+            eq(productsTable.published, true),
+            eq(productsTable.hidden, false),
+          )
         : and(
             eq(productsTable.published, true),
             eq(productsTable.hidden, false),
@@ -258,7 +279,10 @@ export async function GET(request: NextRequest) {
           );
     if (q.length > 0) {
       const escapedQ = q.replace(/[%_\\]/g, "\\$&");
-      whereClause = and(whereClause, ilike(productsTable.name, `%${escapedQ}%`));
+      whereClause = and(
+        whereClause,
+        ilike(productsTable.name, `%${escapedQ}%`),
+      );
     }
 
     const orderBy =
@@ -273,9 +297,7 @@ export async function GET(request: NextRequest) {
       .from(productsTable)
       .where(whereClause);
 
-    let rows: Awaited<
-      ReturnType<typeof db.query.productsTable.findMany>
-    >;
+    let rows: Awaited<ReturnType<typeof db.query.productsTable.findMany>>;
     if (sort === "manual" && manualSortMap) {
       // Manual sort: use the sortOrder from the product_category junction table.
       // Fetch all matching IDs, sort in JS, then paginate.
@@ -361,7 +383,9 @@ export async function GET(request: NextRequest) {
       } as Parameters<typeof db.query.productsTable.findMany>[0]);
     }
 
-    const categoriesWithImage = await getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true });
+    const categoriesWithImage = await getCategoriesWithProductsAndDisplayImage({
+      topLevelOnly: true,
+    });
     const total = countResult[0]?.count ?? 0;
     const totalPages = Math.ceil(total / limit) || 1;
 
@@ -386,8 +410,19 @@ export async function GET(request: NextRequest) {
               network: productTokenGateTable.network,
             })
             .from(productTokenGateTable)
-            .where(inArray(productTokenGateTable.productId, [...productIdsWithTokenGates]));
-          const gatesByProduct = new Map<string, Array<{ tokenSymbol: string; quantity: number; network: string | null }>>();
+            .where(
+              inArray(productTokenGateTable.productId, [
+                ...productIdsWithTokenGates,
+              ]),
+            );
+          const gatesByProduct = new Map<
+            string,
+            Array<{
+              tokenSymbol: string;
+              quantity: number;
+              network: string | null;
+            }>
+          >();
           for (const g of gateRows) {
             const list = gatesByProduct.get(g.productId) ?? [];
             list.push({
@@ -410,14 +445,18 @@ export async function GET(request: NextRequest) {
     }
 
     type ProductWithRelations = (typeof rows)[number] & {
-      productCategories?: Array<{ isMain?: boolean; category?: { name?: string; slug?: string } }>;
+      productCategories?: Array<{
+        isMain?: boolean;
+        category?: { name?: string; slug?: string };
+      }>;
       productVariants?: Array<{ stockQuantity?: number | null }>;
     };
     const rawItems = rows.map((p: ProductWithRelations) => {
       const mainPc =
         p.productCategories?.find((pc: { isMain?: boolean }) => pc.isMain) ??
         p.productCategories?.[0];
-      const tokenGated = (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id);
+      const tokenGated =
+        (p.tokenGated ?? false) || productIdsWithTokenGates.has(p.id);
       const inStock = (() => {
         if (p.continueSellingWhenOutOfStock) return true;
         if (p.hasVariants) {
@@ -432,7 +471,9 @@ export async function GET(request: NextRequest) {
         slug: p.slug ?? undefined,
         name: p.name,
         image: p.imageUrl ?? "/placeholder.svg",
-        createdAt: p.createdAt ? new Date(p.createdAt).toISOString() : undefined,
+        createdAt: p.createdAt
+          ? new Date(p.createdAt).toISOString()
+          : undefined,
         category: mainPc?.category?.name ?? "Uncategorized",
         categorySlug: mainPc?.category?.slug ?? undefined,
         price: p.priceCents / 100,
@@ -456,7 +497,9 @@ export async function GET(request: NextRequest) {
       .map((s) => s.trim())
       .find((s) => s.toLowerCase().startsWith("tg="));
     const tgCookieValue = tgCookieMatch
-      ? decodeURIComponent(tgCookieMatch.slice(tgCookieMatch.indexOf("=") + 1).trim())
+      ? decodeURIComponent(
+          tgCookieMatch.slice(tgCookieMatch.indexOf("=") + 1).trim(),
+        )
       : undefined;
 
     const items = rawItems.map((item) => {
@@ -521,10 +564,7 @@ export async function GET(request: NextRequest) {
       );
     }
     return withPublicApiCors(
-      NextResponse.json(
-        { error: "Failed to load products" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to load products" }, { status: 500 }),
     );
   }
 }

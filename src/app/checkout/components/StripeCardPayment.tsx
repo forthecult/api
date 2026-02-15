@@ -94,46 +94,40 @@ const StripeCardPaymentInner = forwardRef<StripeCardPaymentRef, InnerProps>(
           return;
         }
 
-        const res = await fetch(
-          "/api/payments/stripe/create-payment-intent",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              lineItems: payload.orderItems.map((item) => ({
-                productId: item.productId,
-                productVariantId: item.productVariantId,
-                quantity: item.quantity,
-              })),
-              email: form.email.trim(),
-              userId:
-                (payload.commonBody?.userId as string) ?? undefined,
-              affiliateCode:
-                typeof payload.commonBody?.affiliateCode === "string"
-                  ? payload.commonBody.affiliateCode
-                  : undefined,
-              shipping: form?.street?.trim()
-                ? {
-                    firstName: form.firstName?.trim() || undefined,
-                    lastName: form.lastName?.trim() || undefined,
-                    address1: form.street?.trim() || undefined,
-                    address2: form.apartment?.trim() || undefined,
-                    city: form.city?.trim() || undefined,
-                    stateCode: form.state?.trim() || undefined,
-                    countryCode: form.country?.trim() || undefined,
-                    zip: form.zip?.trim() || undefined,
-                    phone: form.phone?.trim() || undefined,
-                  }
+        const res = await fetch("/api/payments/stripe/create-payment-intent", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            lineItems: payload.orderItems.map((item) => ({
+              productId: item.productId,
+              productVariantId: item.productVariantId,
+              quantity: item.quantity,
+            })),
+            email: form.email.trim(),
+            userId: (payload.commonBody?.userId as string) ?? undefined,
+            affiliateCode:
+              typeof payload.commonBody?.affiliateCode === "string"
+                ? payload.commonBody.affiliateCode
                 : undefined,
-            }),
-          },
-        );
+            shipping: form?.street?.trim()
+              ? {
+                  firstName: form.firstName?.trim() || undefined,
+                  lastName: form.lastName?.trim() || undefined,
+                  address1: form.street?.trim() || undefined,
+                  address2: form.apartment?.trim() || undefined,
+                  city: form.city?.trim() || undefined,
+                  stateCode: form.state?.trim() || undefined,
+                  countryCode: form.country?.trim() || undefined,
+                  zip: form.zip?.trim() || undefined,
+                  phone: form.phone?.trim() || undefined,
+                }
+              : undefined,
+          }),
+        });
 
         if (!res.ok) {
           const data = (await res.json()) as { error?: string };
-          setValidationErrors([
-            data.error ?? "Could not start payment.",
-          ]);
+          setValidationErrors([data.error ?? "Could not start payment."]);
           setNavigatingToPay(false);
           return;
         }
@@ -166,15 +160,10 @@ const StripeCardPaymentInner = forwardRef<StripeCardPaymentRef, InnerProps>(
         };
         if (billingSource) {
           const firstName =
-            "firstName" in billingSource
-              ? billingSource.firstName
-              : "";
+            "firstName" in billingSource ? billingSource.firstName : "";
           const lastName =
-            "lastName" in billingSource
-              ? billingSource.lastName
-              : "";
-          const fullName =
-            `${firstName ?? ""} ${lastName ?? ""}`.trim();
+            "lastName" in billingSource ? billingSource.lastName : "";
+          const fullName = `${firstName ?? ""} ${lastName ?? ""}`.trim();
           if (fullName) billingDetails.name = fullName;
           if (billingSource.phone?.trim())
             billingDetails.phone = billingSource.phone.trim();
@@ -190,9 +179,7 @@ const StripeCardPaymentInner = forwardRef<StripeCardPaymentRef, InnerProps>(
 
         /* 5. Confirm payment with Stripe */
         const baseUrl =
-          typeof window !== "undefined"
-            ? window.location.origin
-            : "";
+          typeof window !== "undefined" ? window.location.origin : "";
         const { error } = await stripe.confirmPayment({
           elements,
           clientSecret: data.clientSecret,
@@ -224,9 +211,7 @@ const StripeCardPaymentInner = forwardRef<StripeCardPaymentRef, InnerProps>(
       setNavigatingToPay,
     ]);
 
-    useImperativeHandle(ref, () => ({ submit: handleSubmit }), [
-      handleSubmit,
-    ]);
+    useImperativeHandle(ref, () => ({ submit: handleSubmit }), [handleSubmit]);
 
     return (
       <PaymentElement

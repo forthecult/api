@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
       minOrderUsd: o.minOrderCents != null ? o.minOrderCents / 100 : null,
     })),
     total: forCountry.length,
-    _note: "For exact shipping cost use POST /api/shipping/calculate with cart.",
+    _note:
+      "For exact shipping cost use POST /api/shipping/calculate with cart.",
   });
 }
-

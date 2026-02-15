@@ -6,12 +6,7 @@ import { getAdminAuth } from "~/lib/admin-api-auth";
 import { getUploadThingToken } from "~/lib/uploadthing-token";
 
 const MAX_SIZE = 4 * 1024 * 1024; // 4MB
-const ALLOWED_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-];
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const WEBP_QUALITY = 85;
 const MAX_WIDTH = 1600;
@@ -47,12 +42,9 @@ export async function POST(request: NextRequest) {
 
   let formData: FormData;
   try {
-    formData = await request.formData() as unknown as FormData;
+    formData = (await request.formData()) as unknown as FormData;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid form data" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
   }
 
   const file = formData.get("file");
@@ -80,12 +72,23 @@ export async function POST(request: NextRequest) {
   // Verify actual content matches claimed type via magic bytes
   const fileBytes = await file.arrayBuffer();
   const magicBytes = Buffer.from(fileBytes).subarray(0, 12);
-  const isJpeg = magicBytes[0] === 0xFF && magicBytes[1] === 0xD8;
-  const isPng = magicBytes[0] === 0x89 && magicBytes[1] === 0x50 && magicBytes[2] === 0x4E && magicBytes[3] === 0x47;
+  const isJpeg = magicBytes[0] === 0xff && magicBytes[1] === 0xd8;
+  const isPng =
+    magicBytes[0] === 0x89 &&
+    magicBytes[1] === 0x50 &&
+    magicBytes[2] === 0x4e &&
+    magicBytes[3] === 0x47;
   const isWebp =
-    magicBytes[0] === 0x52 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46 && magicBytes[3] === 0x46 &&
-    magicBytes[8] === 0x57 && magicBytes[9] === 0x45 && magicBytes[10] === 0x42 && magicBytes[11] === 0x50;
-  const isGif = magicBytes[0] === 0x47 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46;
+    magicBytes[0] === 0x52 &&
+    magicBytes[1] === 0x49 &&
+    magicBytes[2] === 0x46 &&
+    magicBytes[3] === 0x46 &&
+    magicBytes[8] === 0x57 &&
+    magicBytes[9] === 0x45 &&
+    magicBytes[10] === 0x42 &&
+    magicBytes[11] === 0x50;
+  const isGif =
+    magicBytes[0] === 0x47 && magicBytes[1] === 0x49 && magicBytes[2] === 0x46;
   if (!isJpeg && !isPng && !isWebp && !isGif) {
     return NextResponse.json(
       { error: "File content does not match an allowed image type" },
@@ -99,7 +102,10 @@ export async function POST(request: NextRequest) {
   const token = getUploadThingToken();
   if (!token) {
     return NextResponse.json(
-      { error: "UPLOADTHING_TOKEN not set. Add it in .env (no quotes around the value)." },
+      {
+        error:
+          "UPLOADTHING_TOKEN not set. Add it in .env (no quotes around the value).",
+      },
       { status: 503 },
     );
   }
@@ -118,37 +124,61 @@ export async function POST(request: NextRequest) {
     // UTApi returns { data: { ufsUrl, key, ... }, error: null } on success, or { data: null, error } on failure.
     // Some runtimes may return the file object at top level; accept both shapes.
     const payload = Array.isArray(result) ? result[0] : result;
-    const err = payload && typeof payload === "object" && (payload as { error?: unknown }).error;
+    const err =
+      payload &&
+      typeof payload === "object" &&
+      (payload as { error?: unknown }).error;
     if (err) {
       const message =
-        typeof err === "object" && err !== null && "message" in err && typeof (err as { message: unknown }).message === "string"
+        typeof err === "object" &&
+        err !== null &&
+        "message" in err &&
+        typeof (err as { message: unknown }).message === "string"
           ? (err as { message: string }).message
           : "Upload failed";
       console.error("Admin upload: UploadThing error", err);
       return NextResponse.json({ error: message }, { status: 500 });
     }
 
-    const data = payload && typeof payload === "object" && (payload as { data?: unknown }).data != null
-      ? (payload as { data: Record<string, unknown> }).data
-      : (payload as Record<string, unknown> | null);
+    const data =
+      payload &&
+      typeof payload === "object" &&
+      (payload as { data?: unknown }).data != null
+        ? (payload as { data: Record<string, unknown> }).data
+        : (payload as Record<string, unknown> | null);
 
     // Resolve URL: prefer nested data.ufsUrl/data.url, then top-level payload.ufsUrl/payload.url
     const fromData =
       data && typeof data === "object"
-        ? (typeof (data as { ufsUrl?: string }).ufsUrl === "string" ? (data as { ufsUrl: string }).ufsUrl : null) ??
-          (typeof (data as { url?: string }).url === "string" ? (data as { url: string }).url : null)
+        ? ((typeof (data as { ufsUrl?: string }).ufsUrl === "string"
+            ? (data as { ufsUrl: string }).ufsUrl
+            : null) ??
+          (typeof (data as { url?: string }).url === "string"
+            ? (data as { url: string }).url
+            : null))
         : null;
     const fromPayload =
       payload && typeof payload === "object"
-        ? (typeof (payload as { ufsUrl?: string }).ufsUrl === "string" ? (payload as { ufsUrl: string }).ufsUrl : null) ??
-          (typeof (payload as { url?: string }).url === "string" ? (payload as { url: string }).url : null)
+        ? ((typeof (payload as { ufsUrl?: string }).ufsUrl === "string"
+            ? (payload as { ufsUrl: string }).ufsUrl
+            : null) ??
+          (typeof (payload as { url?: string }).url === "string"
+            ? (payload as { url: string }).url
+            : null))
         : null;
     const url = fromData ?? fromPayload;
 
     if (!url) {
-      console.error("Admin upload: no url in result", { data, payload: payload && typeof payload === "object" ? { ...payload } : payload });
+      console.error("Admin upload: no url in result", {
+        data,
+        payload:
+          payload && typeof payload === "object" ? { ...payload } : payload,
+      });
       return NextResponse.json(
-        { error: "Upload failed: no URL in UploadThing response. Ensure latest upload route is deployed and UPLOADTHING_TOKEN is valid." },
+        {
+          error:
+            "Upload failed: no URL in UploadThing response. Ensure latest upload route is deployed and UPLOADTHING_TOKEN is valid.",
+        },
         { status: 500 },
       );
     }
@@ -158,8 +188,7 @@ export async function POST(request: NextRequest) {
     console.error("Admin upload error:", err);
     return NextResponse.json(
       {
-        error:
-          err instanceof Error ? err.message : "Upload failed",
+        error: err instanceof Error ? err.message : "Upload failed",
       },
       { status: 500 },
     );

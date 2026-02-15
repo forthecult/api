@@ -3,10 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 type Range = "daily" | "monthly" | "yearly";
 
@@ -58,10 +55,13 @@ export async function GET(request: NextRequest) {
           soldItems: sql<number>`COALESCE(SUM(${orderItemsTable.quantity}), 0)::bigint`,
         })
         .from(orderItemsTable)
-        .innerJoin(ordersTable, and(
-          sql`${orderItemsTable.orderId} = ${ordersTable.id}`,
-          rangeCondition,
-        )),
+        .innerJoin(
+          ordersTable,
+          and(
+            sql`${orderItemsTable.orderId} = ${ordersTable.id}`,
+            rangeCondition,
+          ),
+        ),
     ]);
 
     const totalSalesCents = Number(statsResult[0]?.totalSalesCents ?? 0);

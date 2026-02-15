@@ -5,8 +5,13 @@
  */
 import { spawnSync } from "child_process";
 
-if (process.env.SKIP_NEXT_BUILD === "true" || process.env.SKIP_NEXT_BUILD === "1") {
-  console.log("Skipping Next.js build (SKIP_NEXT_BUILD set). Deploy is deps-only (e.g. buyback cron).");
+if (
+  process.env.SKIP_NEXT_BUILD === "true" ||
+  process.env.SKIP_NEXT_BUILD === "1"
+) {
+  console.log(
+    "Skipping Next.js build (SKIP_NEXT_BUILD set). Deploy is deps-only (e.g. buyback cron).",
+  );
   process.exit(0);
 }
 

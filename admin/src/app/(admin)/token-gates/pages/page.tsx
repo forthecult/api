@@ -67,10 +67,15 @@ export default function AdminPageTokenGatesPage() {
             setLoadedSlug(raw);
             return;
           }
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
-        const data = (await res.json()) as { pageSlug: string; gates: TokenGateRow[] };
+        const data = (await res.json()) as {
+          pageSlug: string;
+          gates: TokenGateRow[];
+        };
         setGates(data.gates ?? []);
         setLoadedSlug(data.pageSlug);
       } catch (err) {
@@ -111,7 +116,10 @@ export default function AdminPageTokenGatesPage() {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(body.error ?? "Failed to save");
       }
-      const data = (await res.json()) as { pageSlug: string; gates: TokenGateRow[] };
+      const data = (await res.json()) as {
+        pageSlug: string;
+        gates: TokenGateRow[];
+      };
       setGates(data.gates ?? []);
       setLoadedSlug(data.pageSlug);
       void fetchExistingSlugs();
@@ -137,8 +145,7 @@ export default function AdminPageTokenGatesPage() {
         <CardHeader>
           <CardTitle>Select or enter page slug</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Use the URL path without leading slash (e.g. about, token,
-            faq).
+            Use the URL path without leading slash (e.g. about, token, faq).
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -190,7 +197,9 @@ export default function AdminPageTokenGatesPage() {
           <TokenGatesList
             gates={gates}
             onChange={setGates}
-            title={loadedSlug ? `Token gates for /${loadedSlug}` : "Token gates"}
+            title={
+              loadedSlug ? `Token gates for /${loadedSlug}` : "Token gates"
+            }
             description="User must hold ≥ quantity of ANY token to view this page."
             inputClass={inputClass}
             labelClass={labelClass}

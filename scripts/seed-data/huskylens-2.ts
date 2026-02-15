@@ -100,7 +100,7 @@ const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
 const FEATURES: string[] = [
   "6 TOPS on-device AI; 20+ built-in models (face, object, gesture, OCR, barcode, etc.)",
   "Built-in MCP server gives LLMs structured context, not raw pixels",
-  "Deploy custom YOLO models on-device; 2.4\" touchscreen, 2 MP replaceable camera",
+  'Deploy custom YOLO models on-device; 2.4" touchscreen, 2 MP replaceable camera',
   "Gravity (UART/I2C) for Arduino, Raspberry Pi, ESP32, micro:bit, UNIHIKER",
   "USB-C or optional Wi-Fi; 70×58×19 mm, 90 g",
 ];

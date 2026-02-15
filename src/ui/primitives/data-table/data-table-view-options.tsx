@@ -14,7 +14,9 @@ import {
 
 export function DataTableViewOptions<TData>({
   table,
-}: { table: Table<TData> }) {
+}: {
+  table: Table<TData>;
+}) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

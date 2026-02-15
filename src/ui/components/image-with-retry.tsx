@@ -28,11 +28,5 @@ export function ImageWithRetry(props: ImageProps) {
     if (retryKey > 0) setErrored(false);
   }, [retryKey]);
 
-  return (
-    <Image
-      {...props}
-      key={retryKey}
-      onError={handleError}
-    />
-  );
+  return <Image {...props} key={retryKey} onError={handleError} />;
 }

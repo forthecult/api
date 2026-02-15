@@ -1,6 +1,9 @@
 import { relations } from "drizzle-orm";
 
-import { supportChatConversationTable, supportChatMessageTable } from "./tables";
+import {
+  supportChatConversationTable,
+  supportChatMessageTable,
+} from "./tables";
 import { userTable } from "../users/tables";
 
 export const supportChatConversationRelations = relations(

@@ -1,13 +1,24 @@
 "use client";
 
-import { Check, Link2, Loader2, Mail, Package, ShoppingBag } from "lucide-react";
+import {
+  Check,
+  Link2,
+  Loader2,
+  Mail,
+  Package,
+  ShoppingBag,
+} from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { SEO_CONFIG } from "~/app";
-import { requestPasswordReset, signUp, useCurrentUser } from "~/lib/auth-client";
+import {
+  requestPasswordReset,
+  signUp,
+  useCurrentUser,
+} from "~/lib/auth-client";
 import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
 import { Checkbox } from "~/ui/primitives/checkbox";
@@ -26,7 +37,10 @@ const X_ICON = (
   </svg>
 );
 
-function paymentMethodLabel(method: string | undefined, cryptoCurrency?: string): string {
+function paymentMethodLabel(
+  method: string | undefined,
+  cryptoCurrency?: string,
+): string {
   const m = (method ?? "").toLowerCase();
   if (m === "stripe") return "Credit / Debit card";
   if (m === "solana_pay") {
@@ -221,7 +235,8 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
         <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
           <Check className="size-4 shrink-0" aria-hidden />
           <span className="font-medium">
-            Check your email! We&apos;ve sent a link to <strong>{email}</strong> to set up your account.
+            Check your email! We&apos;ve sent a link to <strong>{email}</strong>{" "}
+            to set up your account.
           </span>
         </div>
       </div>
@@ -235,8 +250,9 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
         <p className="text-sm font-medium">Save your info for next time</p>
       </div>
       <p className="text-xs text-muted-foreground">
-        We&apos;ll send a link to <strong>{email}</strong> so you can set a password and track your orders.
-        Your shipping details are already saved with this order.
+        We&apos;ll send a link to <strong>{email}</strong> so you can set a
+        password and track your orders. Your shipping details are already saved
+        with this order.
       </p>
       <Button
         size="sm"
@@ -284,11 +300,10 @@ function CreateAccountViaEmail({ email }: { email?: string }) {
           </>
         )}
       </Button>
-      {error && (
-        <p className="text-xs text-destructive">{error}</p>
-      )}
+      {error && <p className="text-xs text-destructive">{error}</p>}
       <p className="text-[11px] text-muted-foreground/70">
-        By creating an account you agree to our Terms of Service and Privacy Policy.
+        By creating an account you agree to our Terms of Service and Privacy
+        Policy.
       </p>
     </div>
   );
@@ -326,9 +341,19 @@ export function SuccessPageClient() {
   /** If user opted to save address at checkout, save it now. */
   useEffect(() => {
     if (loading || !order?.shipping || !user?.id) return;
-    if (typeof window === "undefined" || sessionStorage.getItem("checkout_save_address") !== "1") return;
+    if (
+      typeof window === "undefined" ||
+      sessionStorage.getItem("checkout_save_address") !== "1"
+    )
+      return;
     const s = order.shipping;
-    if (!s.address1?.trim() || !s.city?.trim() || !s.countryCode?.trim() || !s.zip?.trim()) return;
+    if (
+      !s.address1?.trim() ||
+      !s.city?.trim() ||
+      !s.countryCode?.trim() ||
+      !s.zip?.trim()
+    )
+      return;
 
     sessionStorage.removeItem("checkout_save_address");
     fetch("/api/user/addresses", {
@@ -370,9 +395,12 @@ export function SuccessPageClient() {
         // Crypto/direct flow: use orderId, pass confirmation token if available
         const ct = consumeConfirmationToken(`checkout_ct_${orderIdParam}`);
         const ctParam = ct ? `?ct=${encodeURIComponent(ct)}` : "";
-        const res = await fetch(`/api/orders/${encodeURIComponent(orderIdParam)}${ctParam}`, {
-          credentials: "include",
-        });
+        const res = await fetch(
+          `/api/orders/${encodeURIComponent(orderIdParam)}${ctParam}`,
+          {
+            credentials: "include",
+          },
+        );
         if (!cancelled && res.ok) {
           const data = (await res.json()) as {
             orderId: string;
@@ -457,7 +485,9 @@ export function SuccessPageClient() {
         <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-green-500/15 sm:size-20">
           <Check className="size-8 text-green-600 dark:text-green-400 sm:size-10" />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Order confirmed!</h1>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+          Order confirmed!
+        </h1>
         <p className="mt-2 max-w-md text-muted-foreground">
           Thank you for your purchase. We&apos;re preparing your order.
         </p>
@@ -471,8 +501,8 @@ export function SuccessPageClient() {
                 <p className="font-medium">Confirmation email sent</p>
                 <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
                   We&apos;ve sent order details and tracking info to{" "}
-                  <span className="font-medium">{order.email}</span>
-                  . Most orders ship within 1 business day.
+                  <span className="font-medium">{order.email}</span>. Most
+                  orders ship within 1 business day.
                 </p>
               </div>
             </div>
@@ -483,8 +513,8 @@ export function SuccessPageClient() {
         {!canSeePII && (
           <div className="mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50 px-4 py-3 text-left">
             <p className="text-sm text-muted-foreground">
-              Order details have been sent to the buyer&apos;s email.
-              Sign in to view full order information.
+              Order details have been sent to the buyer&apos;s email. Sign in to
+              view full order information.
             </p>
           </div>
         )}
@@ -511,17 +541,24 @@ export function SuccessPageClient() {
               >
                 <div className="flex items-center gap-3">
                   <div className="flex size-10 items-center justify-center rounded-md bg-muted">
-                    <Package className="size-4 text-muted-foreground" aria-hidden />
+                    <Package
+                      className="size-4 text-muted-foreground"
+                      aria-hidden
+                    />
                   </div>
                   <div>
                     <p className="text-sm font-medium">{item.name}</p>
                     {item.quantity > 1 && (
-                      <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Qty: {item.quantity}
+                      </p>
                     )}
                   </div>
                 </div>
                 {item.subtotalUsd != null && (
-                  <span className="text-sm font-medium">${item.subtotalUsd.toFixed(2)}</span>
+                  <span className="text-sm font-medium">
+                    ${item.subtotalUsd.toFixed(2)}
+                  </span>
                 )}
               </div>
             ))}
@@ -539,13 +576,22 @@ export function SuccessPageClient() {
           <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {order.paymentMethod && (
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Payment</p>
-                <p className="mt-0.5 text-sm">{paymentMethodLabel(order.paymentMethod, order.cryptoCurrency)}</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Payment
+                </p>
+                <p className="mt-0.5 text-sm">
+                  {paymentMethodLabel(
+                    order.paymentMethod,
+                    order.cryptoCurrency,
+                  )}
+                </p>
               </div>
             )}
             {order.createdAt && (
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</p>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Date
+                </p>
                 <p className="mt-0.5 text-sm">
                   {new Date(order.createdAt).toLocaleString(undefined, {
                     dateStyle: "medium",
@@ -555,7 +601,9 @@ export function SuccessPageClient() {
               </div>
             )}
             <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Estimated delivery</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Estimated delivery
+              </p>
               <p className="mt-0.5 text-sm">
                 {order.shipping?.countryCode === "US"
                   ? "2–4 business days"
@@ -567,7 +615,9 @@ export function SuccessPageClient() {
           {/* Shipping address — full when authorized, hidden for public */}
           {hasFullShipping && order.shipping && (
             <div className="mt-5 border-t border-border pt-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shipping to</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Shipping to
+              </p>
               <div className="mt-1 text-sm">
                 {formatShippingAddress(order.shipping).map((line, i) => (
                   <p key={i}>{line}</p>
@@ -577,7 +627,9 @@ export function SuccessPageClient() {
           )}
           {!hasFullShipping && order.shipping?.countryCode && !canSeePII && (
             <div className="mt-5 border-t border-border pt-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Shipping to</p>
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Shipping to
+              </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 Shipping address on file
               </p>
@@ -591,8 +643,8 @@ export function SuccessPageClient() {
         <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a confirmation to your email
-            with full order details and tracking information.
+            Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a confirmation
+            to your email with full order details and tracking information.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
             You&apos;ll receive another email when your order ships.
@@ -604,7 +656,8 @@ export function SuccessPageClient() {
         <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your payment was successful. We&apos;ll send a confirmation email with your order details.
+            Your payment was successful. We&apos;ll send a confirmation email
+            with your order details.
           </p>
         </div>
       )}
@@ -636,14 +689,21 @@ export function SuccessPageClient() {
             Continue shopping
           </Link>
         </Button>
-        <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+        <Button
+          asChild
+          variant="outline"
+          size="lg"
+          className="w-full sm:w-auto"
+        >
           <Link href="/">Back to home</Link>
         </Button>
       </div>
 
       {/* ───── Share & referral ───── */}
       <div className="mt-10 flex flex-col items-center border-t border-border pt-8">
-        <p className="text-sm font-medium text-muted-foreground">Share your purchase</p>
+        <p className="text-sm font-medium text-muted-foreground">
+          Share your purchase
+        </p>
         <div className="mt-3 flex items-center gap-2">
           <a
             href={xShareUrl}

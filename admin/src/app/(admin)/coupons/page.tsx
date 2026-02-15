@@ -123,13 +123,7 @@ export default function AdminCouponsPage() {
     [sortBy],
   );
 
-  const SortHeader = ({
-    column,
-    label,
-  }: {
-    column: SortBy;
-    label: string;
-  }) => (
+  const SortHeader = ({ column, label }: { column: SortBy; label: string }) => (
     <th className="whitespace-nowrap p-4 font-medium" scope="col">
       <button
         type="button"
@@ -274,7 +268,10 @@ export default function AdminCouponsPage() {
                       className="border-b transition-colors hover:bg-muted/30"
                     >
                       <td className="p-4 capitalize">{row.method}</td>
-                      <td className="max-w-[200px] truncate p-4 text-muted-foreground" title={row.label ?? ""}>
+                      <td
+                        className="max-w-[200px] truncate p-4 text-muted-foreground"
+                        title={row.label ?? ""}
+                      >
                         {row.label || "—"}
                       </td>
                       <td className="p-4 font-medium">

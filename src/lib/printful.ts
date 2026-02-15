@@ -205,7 +205,9 @@ export async function fetchCatalogProductShippingCountries(
     if (!Array.isArray(arr)) return null;
     const codes = arr
       .map((x) =>
-        typeof x === "string" ? x : (x as { country_code?: string }).country_code,
+        typeof x === "string"
+          ? x
+          : (x as { country_code?: string }).country_code,
       )
       .filter((c): c is string => typeof c === "string" && c.length === 2);
     return codes.length > 0 ? codes.map((c) => c.toUpperCase()) : null;
@@ -473,7 +475,11 @@ export function patchPrintfulOrder(
   body: PrintfulPatchOrderRequest,
   storeId?: number,
 ): Promise<PrintfulOrderResponse> {
-  return pfFetch(`/orders/${printfulOrderId}`, { method: "PATCH", body, storeId });
+  return pfFetch(`/orders/${printfulOrderId}`, {
+    method: "PATCH",
+    body,
+    storeId,
+  });
 }
 
 // --- Order Estimation Tasks ---
@@ -647,7 +653,9 @@ export async function getWebhookConfigV2(
   storeId?: number,
 ): Promise<PrintfulWebhookV2Config | null> {
   try {
-    const res = await pfFetch<PrintfulWebhookV2Response>("/webhooks", { storeId });
+    const res = await pfFetch<PrintfulWebhookV2Response>("/webhooks", {
+      storeId,
+    });
     return res.data;
   } catch {
     return null;
@@ -675,7 +683,9 @@ export async function getWebhookEventConfig(
   eventType: string,
   storeId?: number,
 ): Promise<unknown> {
-  return pfFetch(`/webhooks/events/${encodeURIComponent(eventType)}`, { storeId });
+  return pfFetch(`/webhooks/events/${encodeURIComponent(eventType)}`, {
+    storeId,
+  });
 }
 
 /** POST /v2/webhooks/events/{type} – set up event-specific configuration. */
@@ -796,10 +806,9 @@ export type PrintfulStoreInfo = {
  * Requires an account-level private token.
  */
 export async function fetchStores(): Promise<PrintfulStoreInfo[]> {
-  const list = await pfFetchV1<PrintfulStoreInfo[] | { store: PrintfulStoreInfo[] }>(
-    "/stores",
-    {},
-  );
+  const list = await pfFetchV1<
+    PrintfulStoreInfo[] | { store: PrintfulStoreInfo[] }
+  >("/stores", {});
   if (Array.isArray(list)) return list;
   if (list?.store && Array.isArray(list.store)) return list.store;
   return [];
@@ -1158,7 +1167,10 @@ export async function fetchProductTemplates(
   if (params.offset != null) search.set("offset", String(params.offset));
   if (params.limit != null) search.set("limit", String(params.limit));
   const qs = search.toString() ? `?${search.toString()}` : "";
-  return pfFetchV1<PrintfulProductTemplatesResponse>(`/product-templates${qs}`, { storeId });
+  return pfFetchV1<PrintfulProductTemplatesResponse>(
+    `/product-templates${qs}`,
+    { storeId },
+  );
 }
 
 /**
@@ -1168,7 +1180,10 @@ export async function fetchProductTemplate(
   id: string | number,
   storeId?: number,
 ): Promise<PrintfulProductTemplateItem> {
-  const path = typeof id === "string" && id.startsWith("@") ? `/product-templates/${id}` : `/product-templates/${id}`;
+  const path =
+    typeof id === "string" && id.startsWith("@")
+      ? `/product-templates/${id}`
+      : `/product-templates/${id}`;
   return pfFetchV1(path, { storeId }) as Promise<PrintfulProductTemplateItem>;
 }
 
@@ -1176,7 +1191,11 @@ export async function fetchProductTemplate(
 
 /** Response shape for printfiles endpoint (placement → file URL). */
 export type PrintfulTemplatePrintfilesResult = {
-  [placement: string]: Array<{ url?: string; type?: string; [key: string]: unknown }>;
+  [placement: string]: Array<{
+    url?: string;
+    type?: string;
+    [key: string]: unknown;
+  }>;
 };
 
 /**

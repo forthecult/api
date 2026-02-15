@@ -61,7 +61,9 @@ export async function GET(request: NextRequest) {
       categoryId: category ?? undefined,
       subcategoryId: subcategory ?? undefined,
       filters,
-      sort: ["price_asc", "price_desc", "rating", "popular", "newest"].includes(sort)
+      sort: ["price_asc", "price_desc", "rating", "popular", "newest"].includes(
+        sort,
+      )
         ? sort
         : "newest",
       limit,
@@ -72,7 +74,10 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error("Products search GET error:", err);
     return withPublicApiCors(
-      NextResponse.json({ error: "Failed to search products" }, { status: 500 }),
+      NextResponse.json(
+        { error: "Failed to search products" },
+        { status: 500 },
+      ),
     );
   }
 }

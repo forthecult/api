@@ -35,7 +35,12 @@ interface SyncState {
   loading: boolean;
   result?: {
     success: boolean;
-    summary?: { imported?: number; updated?: number; skipped?: number; errors?: number };
+    summary?: {
+      imported?: number;
+      updated?: number;
+      skipped?: number;
+      errors?: number;
+    };
     errors?: string[];
     error?: string;
   };
@@ -117,7 +122,9 @@ export default function AdminProductsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [syncState, setSyncState] = useState<SyncState | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [bulkAction, setBulkAction] = useState<"publish" | "unpublish" | "delete" | null>(null);
+  const [bulkAction, setBulkAction] = useState<
+    "publish" | "unpublish" | "delete" | null
+  >(null);
   const selectAllRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -158,7 +165,8 @@ export default function AdminProductsPage() {
         sortOrder,
       });
       if (search.trim()) params.set("search", search.trim());
-      if (filterCategoryId.trim()) params.set("categoryId", filterCategoryId.trim());
+      if (filterCategoryId.trim())
+        params.set("categoryId", filterCategoryId.trim());
       if (filterVendor.trim()) params.set("vendor", filterVendor.trim());
       const res = await fetch(
         `${API_BASE}/api/admin/products?${params.toString()}`,
@@ -199,12 +207,16 @@ export default function AdminProductsPage() {
           { method: "DELETE", credentials: "include" },
         );
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to delete");
         }
         await fetchProducts();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to delete product");
+        setError(
+          err instanceof Error ? err.message : "Failed to delete product",
+        );
       } finally {
         setDeletingId(null);
       }
@@ -228,15 +240,32 @@ export default function AdminProductsPage() {
               overwrite: true,
             }),
           });
-          const json = (await res.json().catch(() => ({}))) as SyncState["result"] & { error?: string };
+          const json = (await res
+            .json()
+            .catch(() => ({}))) as SyncState["result"] & { error?: string };
           if (!res.ok) {
             setSyncState((s) =>
-              s ? { ...s, loading: false, result: { success: false, error: json.error ?? "Sync failed" } } : null,
+              s
+                ? {
+                    ...s,
+                    loading: false,
+                    result: {
+                      success: false,
+                      error: json.error ?? "Sync failed",
+                    },
+                  }
+                : null,
             );
             return;
           }
           setSyncState((s) =>
-            s ? { ...s, loading: false, result: { ...json, success: json.success !== false } } : null,
+            s
+              ? {
+                  ...s,
+                  loading: false,
+                  result: { ...json, success: json.success !== false },
+                }
+              : null,
           );
         } else {
           // Store → Vendor: tags, SEO, descriptions, titles (and prices/SKU per backend)
@@ -246,15 +275,32 @@ export default function AdminProductsPage() {
             credentials: "include",
             body: JSON.stringify({ action: "export_all" }),
           });
-          const json = (await res.json().catch(() => ({}))) as SyncState["result"] & { error?: string };
+          const json = (await res
+            .json()
+            .catch(() => ({}))) as SyncState["result"] & { error?: string };
           if (!res.ok) {
             setSyncState((s) =>
-              s ? { ...s, loading: false, result: { success: false, error: json.error ?? "Sync failed" } } : null,
+              s
+                ? {
+                    ...s,
+                    loading: false,
+                    result: {
+                      success: false,
+                      error: json.error ?? "Sync failed",
+                    },
+                  }
+                : null,
             );
             return;
           }
           setSyncState((s) =>
-            s ? { ...s, loading: false, result: { ...json, success: json.success !== false } } : null,
+            s
+              ? {
+                  ...s,
+                  loading: false,
+                  result: { ...json, success: json.success !== false },
+                }
+              : null,
           );
         }
         void fetchProducts();
@@ -313,8 +359,7 @@ export default function AdminProductsPage() {
 
   const visibleIds = data?.items.map((p) => p.id) ?? [];
   const allSelected =
-    visibleIds.length > 0 &&
-    visibleIds.every((id) => selectedIds.includes(id));
+    visibleIds.length > 0 && visibleIds.every((id) => selectedIds.includes(id));
   const someSelected = selectedIds.length > 0;
   const isIndeterminate = someSelected && !allSelected;
 
@@ -350,7 +395,12 @@ export default function AdminProductsPage() {
             }),
           ),
         );
-        const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !(r as PromiseFulfilledResult<Response>).value.ok));
+        const failed = results.filter(
+          (r) =>
+            r.status === "rejected" ||
+            (r.status === "fulfilled" &&
+              !(r as PromiseFulfilledResult<Response>).value.ok),
+        );
         if (failed.length > 0) {
           setError(`Failed to update ${failed.length} product(s).`);
         }
@@ -365,40 +415,42 @@ export default function AdminProductsPage() {
     [selectedIds, fetchProducts],
   );
 
-  const handleBulkDelete = useCallback(
-    async () => {
-      if (selectedIds.length === 0) return;
-      if (
-        !window.confirm(
-          `Delete ${selectedIds.length} selected product(s)? This will remove the products and their variants, images, and tags.`,
-        )
-      ) {
-        return;
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.length === 0) return;
+    if (
+      !window.confirm(
+        `Delete ${selectedIds.length} selected product(s)? This will remove the products and their variants, images, and tags.`,
+      )
+    ) {
+      return;
+    }
+    setBulkAction("delete");
+    try {
+      const results = await Promise.allSettled(
+        selectedIds.map((id) =>
+          fetch(`${API_BASE}/api/admin/products/${id}`, {
+            method: "DELETE",
+            credentials: "include",
+          }),
+        ),
+      );
+      const failed = results.filter(
+        (r) =>
+          r.status === "rejected" ||
+          (r.status === "fulfilled" &&
+            !(r as PromiseFulfilledResult<Response>).value.ok),
+      );
+      if (failed.length > 0) {
+        setError(`Failed to delete ${failed.length} product(s).`);
       }
-      setBulkAction("delete");
-      try {
-        const results = await Promise.allSettled(
-          selectedIds.map((id) =>
-            fetch(`${API_BASE}/api/admin/products/${id}`, {
-              method: "DELETE",
-              credentials: "include",
-            }),
-          ),
-        );
-        const failed = results.filter((r) => r.status === "rejected" || (r.status === "fulfilled" && !(r as PromiseFulfilledResult<Response>).value.ok));
-        if (failed.length > 0) {
-          setError(`Failed to delete ${failed.length} product(s).`);
-        }
-        setSelectedIds([]);
-        await fetchProducts();
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Bulk delete failed");
-      } finally {
-        setBulkAction(null);
-      }
-    },
-    [selectedIds, fetchProducts],
-  );
+      setSelectedIds([]);
+      await fetchProducts();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Bulk delete failed");
+    } finally {
+      setBulkAction(null);
+    }
+  }, [selectedIds, fetchProducts]);
 
   if (error) {
     return (
@@ -416,7 +468,8 @@ export default function AdminProductsPage() {
   }
 
   const isSyncing = syncState?.loading;
-  const syncVendorLabel = (v: SyncVendor) => (v === "printful" ? "Printful" : "Printify");
+  const syncVendorLabel = (v: SyncVendor) =>
+    v === "printful" ? "Printful" : "Printify";
 
   return (
     <div className="space-y-6">
@@ -434,12 +487,15 @@ export default function AdminProductsPage() {
         <CardHeader className="pb-2">
           <CardTitle className="text-base">Printful & Printify sync</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Pull catalog/inventory from your POD store, or push store changes (titles, descriptions, prices) to the vendor.
+            Pull catalog/inventory from your POD store, or push store changes
+            (titles, descriptions, prices) to the vendor.
           </p>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center gap-4 pt-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">Printful</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              Printful
+            </span>
             <Button
               type="button"
               variant="outline"
@@ -466,7 +522,9 @@ export default function AdminProductsPage() {
             </Button>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">Printify</span>
+            <span className="text-sm font-medium text-muted-foreground">
+              Printify
+            </span>
             <Button
               type="button"
               variant="outline"
@@ -502,7 +560,9 @@ export default function AdminProductsPage() {
             <span
               className={cn(
                 "text-sm",
-                syncState.result.success ? "text-green-600 dark:text-green-400" : "text-destructive",
+                syncState.result.success
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-destructive",
               )}
             >
               {syncState.result.error
@@ -631,7 +691,9 @@ export default function AdminProductsPage() {
                     disabled={!!bulkAction}
                     onClick={() => handleBulkPublish(false)}
                   >
-                    {bulkAction === "unpublish" ? "Unpublishing…" : "Bulk unpublish"}
+                    {bulkAction === "unpublish"
+                      ? "Unpublishing…"
+                      : "Bulk unpublish"}
                   </Button>
                   <Button
                     type="button"
@@ -811,7 +873,7 @@ export default function AdminProductsPage() {
                                 {product.categoryName}
                               </Link>
                             ) : (
-                              product.categoryName ?? "—"
+                              (product.categoryName ?? "—")
                             )}
                           </td>
                           <td className="p-4 text-muted-foreground">

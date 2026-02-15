@@ -1,7 +1,15 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { ArrowRight, ChevronRight, Crown, Shield, Signal, Star, UserIcon } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronRight,
+  Crown,
+  Shield,
+  Signal,
+  Star,
+  UserIcon,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -14,7 +22,11 @@ import { Card, CardContent } from "~/ui/primitives/card";
 function showRealEmail(email: string | null | undefined): string {
   if (!email || typeof email !== "string") return "—";
   const t = email.trim();
-  if (!t || t.endsWith("@wallet.local") || /^(solana_|ethereum_)[^@]+@/i.test(t))
+  if (
+    !t ||
+    t.endsWith("@wallet.local") ||
+    /^(solana_|ethereum_)[^@]+@/i.test(t)
+  )
     return "—";
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? email : "—";
 }
@@ -44,7 +56,10 @@ function formatBalance(cents: number | null | undefined): string {
 }
 
 // Tier visual config (icons / accent colors)
-const TIER_VISUALS: Record<number, { name: string; icon: typeof Crown; accent: string }> = {
+const TIER_VISUALS: Record<
+  number,
+  { name: string; icon: typeof Crown; accent: string }
+> = {
   1: { name: "Tier 1", icon: Crown, accent: "text-chart-1" },
   2: { name: "Tier 2", icon: Star, accent: "text-chart-4" },
   3: { name: "Tier 3", icon: Shield, accent: "text-chart-2" },
@@ -115,23 +130,42 @@ export function ProfileViewClient() {
     }
     setMembershipLoading(true);
     Promise.all([
-      fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
+      fetch(
+        `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
+      ).then((r) => r.json()),
       fetch("/api/governance/token-price").then((r) => r.json()),
     ])
-      .then(([balanceData, priceData]: [
-        { stakedBalance?: string; lock?: { isLocked?: boolean; unlocksAt?: string } | null },
-        { status?: boolean; data?: { token: { priceUsd: number }; pricing: { tiers: { tierId: number; costUsd: number; tokensNeeded: number }[] } } },
-      ]) => {
-        const staked = Number.parseFloat(balanceData.stakedBalance ?? "0");
-        const priceTiers = priceData.data?.pricing.tiers ?? [];
-        const tokenPrice = priceData.data?.token.priceUsd ?? 0;
-        const tier = detectTierFromPricing(staked, tokenPrice, priceTiers);
-        if (tier && balanceData.lock) {
-          tier.isLocked = balanceData.lock.isLocked ?? false;
-          tier.unlocksAt = balanceData.lock.unlocksAt ?? null;
-        }
-        setMembership(tier);
-      })
+      .then(
+        ([balanceData, priceData]: [
+          {
+            stakedBalance?: string;
+            lock?: { isLocked?: boolean; unlocksAt?: string } | null;
+          },
+          {
+            status?: boolean;
+            data?: {
+              token: { priceUsd: number };
+              pricing: {
+                tiers: {
+                  tierId: number;
+                  costUsd: number;
+                  tokensNeeded: number;
+                }[];
+              };
+            };
+          },
+        ]) => {
+          const staked = Number.parseFloat(balanceData.stakedBalance ?? "0");
+          const priceTiers = priceData.data?.pricing.tiers ?? [];
+          const tokenPrice = priceData.data?.token.priceUsd ?? 0;
+          const tier = detectTierFromPricing(staked, tokenPrice, priceTiers);
+          if (tier && balanceData.lock) {
+            tier.isLocked = balanceData.lock.isLocked ?? false;
+            tier.unlocksAt = balanceData.lock.unlocksAt ?? null;
+          }
+          setMembership(tier);
+        },
+      )
       .catch(() => setMembership(null))
       .finally(() => setMembershipLoading(false));
   }, [wallet]);
@@ -155,7 +189,10 @@ export function ProfileViewClient() {
         setProfile({
           firstName: data.firstName ?? "",
           lastName: data.lastName ?? "",
-          name: data.name ?? ([data.firstName, data.lastName].filter(Boolean).join(" ") || "User"),
+          name:
+            data.name ??
+            ([data.firstName, data.lastName].filter(Boolean).join(" ") ||
+              "User"),
           email: data.email ?? user.email ?? "",
           phone: data.phone ?? "",
           image: data.image ?? null,
@@ -229,12 +266,19 @@ export function ProfileViewClient() {
                 />
               ) : (
                 <span className="flex size-full items-center justify-center text-lg font-semibold text-muted-foreground">
-                  {(profile?.firstName?.[0] ?? profile?.lastName?.[0] ?? displayName[0] ?? "?").toUpperCase()}
+                  {(
+                    profile?.firstName?.[0] ??
+                    profile?.lastName?.[0] ??
+                    displayName[0] ??
+                    "?"
+                  ).toUpperCase()}
                 </span>
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-foreground truncate">{displayName}</p>
+              <p className="font-medium text-foreground truncate">
+                {displayName}
+              </p>
               <p className="text-sm text-muted-foreground">
                 CULT Balance: {formatBalance(cultBalanceCents)}
               </p>
@@ -244,7 +288,9 @@ export function ProfileViewClient() {
                 <span className="text-xs text-muted-foreground">Loading…</span>
               ) : membership ? (
                 <Badge variant="outline" className="gap-1.5">
-                  <membership.icon className={`h-3.5 w-3.5 ${membership.accent}`} />
+                  <membership.icon
+                    className={`h-3.5 w-3.5 ${membership.accent}`}
+                  />
                   {membership.tierName} Member
                 </Badge>
               ) : (

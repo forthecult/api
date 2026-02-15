@@ -63,7 +63,8 @@ export async function GET(request: NextRequest) {
         total: result.total,
         limit: result.limit,
         offset: result.offset,
-        _hint: "Use id or slug with GET /api/products/{slug} for full details and variants.",
+        _hint:
+          "Use id or slug with GET /api/products/{slug} for full details and variants.",
       },
       {
         headers: {

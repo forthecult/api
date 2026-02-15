@@ -20,13 +20,41 @@ const CATEGORY_ID = "home-kitchen";
 export const AVAILABLE_COUNTRY_CODES = ["US"] as const;
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
-  { url: `${CDN}/DSCF4188.jpg?v=1762970741`, alt: "Spout Monolith atmospheric water generator - white countertop unit", title: "Spout Monolith - Main" },
-  { url: `${CDN}/DSCF1984.jpg?v=1762970741`, alt: "Spout Monolith water from air - pure alkaline water", title: "Spout Monolith" },
-  { url: `${CDN}/DSCF4228.jpg?v=1762970741`, alt: "Spout Monolith and Always Fresh Pitcher", title: "Spout Monolith with pitcher" },
-  { url: `${CDN}/DSCF2227.jpg?v=1762970741`, alt: "Spout atmospheric water generator - no plumbing needed", title: "Spout Monolith - No plumbing" },
-  { url: `${CDN}/DSCF4330_1.jpg?v=1762970741`, alt: "Spout Monolith air purification and water generation", title: "Spout Monolith - Dual function" },
-  { url: `${CDN}/DSCF2839.jpg?v=1762970741`, alt: "Spout Monolith compact design", title: "Spout Monolith - Design" },
-  { url: `${CDN}/DSCF4267.jpg?v=1762970741`, alt: "Spout Monolith countertop water from air", title: "Spout Monolith - Countertop" },
+  {
+    url: `${CDN}/DSCF4188.jpg?v=1762970741`,
+    alt: "Spout Monolith atmospheric water generator - white countertop unit",
+    title: "Spout Monolith - Main",
+  },
+  {
+    url: `${CDN}/DSCF1984.jpg?v=1762970741`,
+    alt: "Spout Monolith water from air - pure alkaline water",
+    title: "Spout Monolith",
+  },
+  {
+    url: `${CDN}/DSCF4228.jpg?v=1762970741`,
+    alt: "Spout Monolith and Always Fresh Pitcher",
+    title: "Spout Monolith with pitcher",
+  },
+  {
+    url: `${CDN}/DSCF2227.jpg?v=1762970741`,
+    alt: "Spout atmospheric water generator - no plumbing needed",
+    title: "Spout Monolith - No plumbing",
+  },
+  {
+    url: `${CDN}/DSCF4330_1.jpg?v=1762970741`,
+    alt: "Spout Monolith air purification and water generation",
+    title: "Spout Monolith - Dual function",
+  },
+  {
+    url: `${CDN}/DSCF2839.jpg?v=1762970741`,
+    alt: "Spout Monolith compact design",
+    title: "Spout Monolith - Design",
+  },
+  {
+    url: `${CDN}/DSCF4267.jpg?v=1762970741`,
+    alt: "Spout Monolith countertop water from air",
+    title: "Spout Monolith - Countertop",
+  },
 ];
 
 const FEATURES: string[] = [
@@ -56,7 +84,8 @@ export const SPOUT_MONOLITH = {
   name: "Spout Monolith Water Filter",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
-  mainImageAlt: "Spout Monolith Water Filter atmospheric water generator - pure water from air, white",
+  mainImageAlt:
+    "Spout Monolith Water Filter atmospheric water generator - pure water from air, white",
   mainImageTitle: "Spout Monolith Water Filter — Atmospheric Water Generator",
   priceCents: PRICE_CENTS,
   costPerItemCents: COST_CENTS,
@@ -64,8 +93,10 @@ export const SPOUT_MONOLITH = {
   brand: "Spout",
   description: DESCRIPTION,
   features: FEATURES,
-  metaDescription: "Spout Monolith Water Filter — pure alkaline water from air. No plumbing. PFAS, microplastics, lead removed. Air purifier built in. US shipping. Culture.",
-  pageTitle: "Spout Monolith Water Filter | Atmospheric Water Generator | Culture",
+  metaDescription:
+    "Spout Monolith Water Filter — pure alkaline water from air. No plumbing. PFAS, microplastics, lead removed. Air purifier built in. US shipping. Culture.",
+  pageTitle:
+    "Spout Monolith Water Filter | Atmospheric Water Generator | Culture",
   sku: "SPOUT-MONOLITH",
   weightGrams: 9979,
   weightUnit: "lb" as const,

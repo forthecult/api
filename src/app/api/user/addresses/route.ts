@@ -77,9 +77,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const address1 = typeof body.address1 === "string" ? body.address1.trim() : "";
+  const address1 =
+    typeof body.address1 === "string" ? body.address1.trim() : "";
   const city = typeof body.city === "string" ? body.city.trim() : "";
-  const countryCode = typeof body.countryCode === "string" ? body.countryCode.trim() : "";
+  const countryCode =
+    typeof body.countryCode === "string" ? body.countryCode.trim() : "";
   const zip = typeof body.zip === "string" ? body.zip.trim() : "";
   if (!address1 || !city || !countryCode || !zip) {
     return NextResponse.json(
@@ -100,9 +102,11 @@ export async function POST(request: NextRequest) {
     id,
     userId: session.user.id,
     address1,
-    address2: typeof body.address2 === "string" ? body.address2.trim() || null : null,
+    address2:
+      typeof body.address2 === "string" ? body.address2.trim() || null : null,
     city,
-    stateCode: typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
+    stateCode:
+      typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
     countryCode,
     zip,
     phone: typeof body.phone === "string" ? body.phone.trim() || null : null,

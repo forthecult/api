@@ -14,10 +14,7 @@ const { GET: authGet, POST: authPost } = toNextJsHandler(auth);
 /** Allowed origins for CORS (admin app calling main app auth API). Must match trustedOrigins in auth config. */
 function getAllowedAuthOrigins(): string[] {
   if (process.env.NODE_ENV === "development") {
-    return [
-      "http://localhost:3001",
-      "http://127.0.0.1:3001",
-    ];
+    return ["http://localhost:3001", "http://127.0.0.1:3001"];
   }
   const adminUrl = process.env.NEXT_PUBLIC_ADMIN_APP_URL;
   return adminUrl ? [adminUrl] : [];
@@ -87,7 +84,8 @@ async function handleAuth(
       JSON.stringify({
         error: "Authentication error",
         message,
-        ...(process.env.EXPOSE_DEV_ERRORS === "true" && stack && { _devStack: stack }),
+        ...(process.env.EXPOSE_DEV_ERRORS === "true" &&
+          stack && { _devStack: stack }),
       }),
       {
         status: 500,

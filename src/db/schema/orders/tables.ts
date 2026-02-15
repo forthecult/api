@@ -15,105 +15,119 @@ import { affiliateTable } from "../affiliates/tables";
 import { shippingOptionsTable } from "../shipping/tables";
 import { userTable } from "../users/tables";
 
-export const productsTable = pgTable("product", {
-  barcode: text("barcode"),
-  brand: text("brand"),
-  /** Blank product model (e.g. "3001") for size chart lookup. */
-  model: text("model"),
-  compareAtPriceCents: integer("compare_at_price_cents"),
-  continueSellingWhenOutOfStock: boolean("continue_selling_when_out_of_stock")
-    .notNull()
-    .default(false),
-  costPerItemCents: integer("cost_per_item_cents"),
-  countryOfOrigin: text("country_of_origin"),
-  createdAt: timestamp("created_at").notNull(),
-  description: text("description"),
-  /** Bullet-point features (JSON array of strings). Shown on product page; details go in description. */
-  featuresJson: text("features_json"),
-  externalId: text("external_id"), // printful: catalog_product_id / printify: blueprint_id
-  hasVariants: boolean("has_variants").notNull().default(false),
-  hsCode: text("hs_code"),
-  id: text("id").primaryKey(),
-  imageUrl: text("image_url"),
-  /** SEO: alt text for main product image */
-  mainImageAlt: text("main_image_alt"),
-  /** SEO: title for main product image */
-  mainImageTitle: text("main_image_title"),
-  metaDescription: text("meta_description"),
-  name: text("name").notNull(),
-  optionDefinitionsJson: text("option_definitions_json"), // [{ name, values: string[] }]
-  pageTitle: text("page_title"),
-  /** Product page layout: "default" (standard PDP) or "long-form" (hero, sections, specs, FAQ). */
-  pageLayout: text("page_layout").default("default"),
-  physicalProduct: boolean("physical_product").notNull().default(true),
-  priceCents: integer("price_cents").notNull(),
-  published: boolean("published").notNull().default(true),
-  /** When true, product is still published but only reachable by direct slug URL; excluded from category and product listings. */
-  hidden: boolean("hidden").notNull().default(false),
-  // Ships from: full address (when set) or composed from city/region/postal/country for display and shipping-time estimates
-  shipsFromDisplay: text("ships_from_display"), // optional freeform full address
-  shipsFromCountry: text("ships_from_country"), // ISO 2-letter or country name
-  shipsFromRegion: text("ships_from_region"), // state / province / region
-  shipsFromCity: text("ships_from_city"),
-  shipsFromPostalCode: text("ships_from_postal_code"),
-  // Estimated delivery: fulfillment (handling) and transit days from vendor or manual
-  handlingDaysMin: integer("handling_days_min"), // e.g. from Printify shipping.json
-  handlingDaysMax: integer("handling_days_max"),
-  transitDaysMin: integer("transit_days_min"), // optional; fallback in UI if null
-  transitDaysMax: integer("transit_days_max"),
-  quantity: integer("quantity"), // simple product inventory when trackQuantity
-  sizeGuideJson: text("size_guide_json"),
-  sku: text("sku"),
-  slug: text("slug").unique(),
-  source: text("source").notNull(), // "manual" | "printful" | "printify"
-  stripePriceId: text("stripe_price_id"),
-  tokenGated: boolean("token_gated").notNull().default(false),
-  tokenGateType: text("token_gate_type"), // "cult_default" | "cult_custom" | "other"
-  tokenGateQuantity: integer("token_gate_quantity"),
-  tokenGateNetwork: text("token_gate_network"), // solana | ethereum | base | arbitrum | bnb | polygon | avalanche
-  tokenGateContractAddress: text("token_gate_contract_address"),
-  trackQuantity: boolean("track_quantity").notNull().default(false),
-  updatedAt: timestamp("updated_at").notNull(),
-  vendor: text("vendor"),
-  weightGrams: integer("weight_grams"),
-  weightUnit: text("weight_unit"), // "kg" | "lb"
-  /** Product type from POD catalog (e.g. T-SHIRT, HOODIE, MUG). Useful for filtering and SEO. */
-  productType: text("product_type"),
-  /** True when the underlying catalog product is discontinued by the manufacturer. Product should be hidden from storefront. */
-  isDiscontinued: boolean("is_discontinued").notNull().default(false),
-  /** Admin-only: product has been optimized for SEO / content / copy. */
-  seoOptimized: boolean("seo_optimized").notNull().default(false),
+export const productsTable = pgTable(
+  "product",
+  {
+    barcode: text("barcode"),
+    brand: text("brand"),
+    /** Blank product model (e.g. "3001") for size chart lookup. */
+    model: text("model"),
+    compareAtPriceCents: integer("compare_at_price_cents"),
+    continueSellingWhenOutOfStock: boolean("continue_selling_when_out_of_stock")
+      .notNull()
+      .default(false),
+    costPerItemCents: integer("cost_per_item_cents"),
+    countryOfOrigin: text("country_of_origin"),
+    createdAt: timestamp("created_at").notNull(),
+    description: text("description"),
+    /** Bullet-point features (JSON array of strings). Shown on product page; details go in description. */
+    featuresJson: text("features_json"),
+    externalId: text("external_id"), // printful: catalog_product_id / printify: blueprint_id
+    hasVariants: boolean("has_variants").notNull().default(false),
+    hsCode: text("hs_code"),
+    id: text("id").primaryKey(),
+    imageUrl: text("image_url"),
+    /** SEO: alt text for main product image */
+    mainImageAlt: text("main_image_alt"),
+    /** SEO: title for main product image */
+    mainImageTitle: text("main_image_title"),
+    metaDescription: text("meta_description"),
+    name: text("name").notNull(),
+    optionDefinitionsJson: text("option_definitions_json"), // [{ name, values: string[] }]
+    pageTitle: text("page_title"),
+    /** Product page layout: "default" (standard PDP) or "long-form" (hero, sections, specs, FAQ). */
+    pageLayout: text("page_layout").default("default"),
+    physicalProduct: boolean("physical_product").notNull().default(true),
+    priceCents: integer("price_cents").notNull(),
+    published: boolean("published").notNull().default(true),
+    /** When true, product is still published but only reachable by direct slug URL; excluded from category and product listings. */
+    hidden: boolean("hidden").notNull().default(false),
+    // Ships from: full address (when set) or composed from city/region/postal/country for display and shipping-time estimates
+    shipsFromDisplay: text("ships_from_display"), // optional freeform full address
+    shipsFromCountry: text("ships_from_country"), // ISO 2-letter or country name
+    shipsFromRegion: text("ships_from_region"), // state / province / region
+    shipsFromCity: text("ships_from_city"),
+    shipsFromPostalCode: text("ships_from_postal_code"),
+    // Estimated delivery: fulfillment (handling) and transit days from vendor or manual
+    handlingDaysMin: integer("handling_days_min"), // e.g. from Printify shipping.json
+    handlingDaysMax: integer("handling_days_max"),
+    transitDaysMin: integer("transit_days_min"), // optional; fallback in UI if null
+    transitDaysMax: integer("transit_days_max"),
+    quantity: integer("quantity"), // simple product inventory when trackQuantity
+    sizeGuideJson: text("size_guide_json"),
+    sku: text("sku"),
+    slug: text("slug").unique(),
+    source: text("source").notNull(), // "manual" | "printful" | "printify"
+    stripePriceId: text("stripe_price_id"),
+    tokenGated: boolean("token_gated").notNull().default(false),
+    tokenGateType: text("token_gate_type"), // "cult_default" | "cult_custom" | "other"
+    tokenGateQuantity: integer("token_gate_quantity"),
+    tokenGateNetwork: text("token_gate_network"), // solana | ethereum | base | arbitrum | bnb | polygon | avalanche
+    tokenGateContractAddress: text("token_gate_contract_address"),
+    trackQuantity: boolean("track_quantity").notNull().default(false),
+    updatedAt: timestamp("updated_at").notNull(),
+    vendor: text("vendor"),
+    weightGrams: integer("weight_grams"),
+    weightUnit: text("weight_unit"), // "kg" | "lb"
+    /** Product type from POD catalog (e.g. T-SHIRT, HOODIE, MUG). Useful for filtering and SEO. */
+    productType: text("product_type"),
+    /** True when the underlying catalog product is discontinued by the manufacturer. Product should be hidden from storefront. */
+    isDiscontinued: boolean("is_discontinued").notNull().default(false),
+    /** Admin-only: product has been optimized for SEO / content / copy. */
+    seoOptimized: boolean("seo_optimized").notNull().default(false),
 
-  // Printful Sync Product – stores the sync_product_id from Printful for bidirectional sync
-  // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
-  printfulSyncProductId: bigint("printful_sync_product_id", { mode: "number" }).unique(),
-  // Printify Product ID – stores the product ID from Printify for bidirectional sync
-  printifyProductId: text("printify_product_id").unique(),
-  // Printify print provider ID – required for Printify shipping calculation (catalog shipping profiles)
-  printifyPrintProviderId: integer("printify_print_provider_id"),
-  // Printify shipping eligibility flags — synced from Printify product data
-  /** Whether the product is eligible for Printify Express shipping. */
-  printifyExpressEligible: boolean("printify_express_eligible").notNull().default(false),
-  /** Whether Printify Express is enabled for this product. */
-  printifyExpressEnabled: boolean("printify_express_enabled").notNull().default(false),
-  /** Whether the product is eligible for economy shipping. */
-  printifyEconomyEligible: boolean("printify_economy_eligible").notNull().default(false),
-  /** Whether economy shipping is enabled for this product. */
-  printifyEconomyEnabled: boolean("printify_economy_enabled").notNull().default(false),
-  /** GPSR (EU General Product Safety Regulation) compliance data — JSON from Printify /gpsr.json. */
-  gpsrJson: jsonb("gpsr_json"),
-  // Last sync timestamp – when the product was last synced with the vendor
-  lastSyncedAt: timestamp("last_synced_at"),
-  // POD AI/creator: product created via POD bulk or AI flow
-  aiGenerated: boolean("ai_generated").default(false),
-  // Original design image URL (for POD-created products)
-  sourceImageUrl: text("source_image_url"),
-}, (t) => [
-  // M3: Composite index for filtering published & non-hidden products
-  index("product_published_hidden_idx").on(t.published, t.hidden),
-  // M4: Index for product name search (btree helps prefix ILIKE; for full trigram support use a GIN index via raw migration)
-  index("product_name_idx").on(t.name),
-]);
+    // Printful Sync Product – stores the sync_product_id from Printful for bidirectional sync
+    // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
+    printfulSyncProductId: bigint("printful_sync_product_id", {
+      mode: "number",
+    }).unique(),
+    // Printify Product ID – stores the product ID from Printify for bidirectional sync
+    printifyProductId: text("printify_product_id").unique(),
+    // Printify print provider ID – required for Printify shipping calculation (catalog shipping profiles)
+    printifyPrintProviderId: integer("printify_print_provider_id"),
+    // Printify shipping eligibility flags — synced from Printify product data
+    /** Whether the product is eligible for Printify Express shipping. */
+    printifyExpressEligible: boolean("printify_express_eligible")
+      .notNull()
+      .default(false),
+    /** Whether Printify Express is enabled for this product. */
+    printifyExpressEnabled: boolean("printify_express_enabled")
+      .notNull()
+      .default(false),
+    /** Whether the product is eligible for economy shipping. */
+    printifyEconomyEligible: boolean("printify_economy_eligible")
+      .notNull()
+      .default(false),
+    /** Whether economy shipping is enabled for this product. */
+    printifyEconomyEnabled: boolean("printify_economy_enabled")
+      .notNull()
+      .default(false),
+    /** GPSR (EU General Product Safety Regulation) compliance data — JSON from Printify /gpsr.json. */
+    gpsrJson: jsonb("gpsr_json"),
+    // Last sync timestamp – when the product was last synced with the vendor
+    lastSyncedAt: timestamp("last_synced_at"),
+    // POD AI/creator: product created via POD bulk or AI flow
+    aiGenerated: boolean("ai_generated").default(false),
+    // Original design image URL (for POD-created products)
+    sourceImageUrl: text("source_image_url"),
+  },
+  (t) => [
+    // M3: Composite index for filtering published & non-hidden products
+    index("product_published_hidden_idx").on(t.published, t.hidden),
+    // M4: Index for product name search (btree helps prefix ILIKE; for full trigram support use a GIN index via raw migration)
+    index("product_name_idx").on(t.name),
+  ],
+);
 
 export const productVariantsTable = pgTable(
   "product_variant",
@@ -148,7 +162,9 @@ export const productVariantsTable = pgTable(
 
     // Printful Sync Variant ID – stores the sync_variant_id from Printful for bidirectional sync
     // BIGINT: Printful IDs can exceed 32-bit INTEGER max (2,147,483,647)
-    printfulSyncVariantId: bigint("printful_sync_variant_id", { mode: "number" }),
+    printfulSyncVariantId: bigint("printful_sync_variant_id", {
+      mode: "number",
+    }),
     // Printify Variant ID – stores the variant ID from Printify for bidirectional sync
     printifyVariantId: text("printify_variant_id"),
   },
@@ -303,19 +319,23 @@ export const orderItemsTable = pgTable("order_item", {
 });
 
 /** Product media: multiple images per product with SEO (alt, title). */
-export const productImagesTable = pgTable("product_image", {
-  id: text("id").primaryKey(),
-  productId: text("product_id")
-    .notNull()
-    .references(() => productsTable.id, { onDelete: "cascade" }),
-  url: text("url").notNull(),
-  alt: text("alt"),
-  title: text("title"),
-  sortOrder: integer("sort_order").notNull().default(0),
-}, (t) => [
-  // M7: Index for looking up images by product
-  index("product_image_product_id_idx").on(t.productId),
-]);
+export const productImagesTable = pgTable(
+  "product_image",
+  {
+    id: text("id").primaryKey(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => productsTable.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    alt: text("alt"),
+    title: text("title"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [
+    // M7: Index for looking up images by product
+    index("product_image_product_id_idx").on(t.productId),
+  ],
+);
 
 /** Product tags (additional categorization). */
 export const productTagsTable = pgTable(
@@ -342,19 +362,23 @@ export const productAvailableCountryTable = pgTable(
 );
 
 /** Multiple token gates per product: access if user holds >= quantity of ANY token (OR). */
-export const productTokenGateTable = pgTable("product_token_gate", {
-  id: text("id").primaryKey(),
-  productId: text("product_id")
-    .notNull()
-    .references(() => productsTable.id, { onDelete: "cascade" }),
-  tokenSymbol: text("token_symbol").notNull(), // e.g. CULT, PUMP, WHALE
-  quantity: integer("quantity").notNull(),
-  network: text("network"),
-  contractAddress: text("contract_address"),
-}, (t) => [
-  // M7: Index for looking up token gates by product
-  index("product_token_gate_product_id_idx").on(t.productId),
-]);
+export const productTokenGateTable = pgTable(
+  "product_token_gate",
+  {
+    id: text("id").primaryKey(),
+    productId: text("product_id")
+      .notNull()
+      .references(() => productsTable.id, { onDelete: "cascade" }),
+    tokenSymbol: text("token_symbol").notNull(), // e.g. CULT, PUMP, WHALE
+    quantity: integer("quantity").notNull(),
+    network: text("network"),
+    contractAddress: text("contract_address"),
+  },
+  (t) => [
+    // M7: Index for looking up token gates by product
+    index("product_token_gate_product_id_idx").on(t.productId),
+  ],
+);
 
 /** One-off custom prints (not synced to store). Tracked for ordering only. */
 export const customPrintsTable = pgTable("custom_print", {
@@ -364,7 +388,9 @@ export const customPrintsTable = pgTable("custom_print", {
   blueprintId: text("blueprint_id"),
   blueprintTitle: text("blueprint_title"),
   imageUrl: text("image_url"),
-  userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }),
+  userId: text("user_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
   // TODO (L17): migrate status to pgEnum for type safety
   status: text("status").notNull(), // "created" | "ordered" | "fulfilled"
   orderId: text("order_id").references(() => ordersTable.id, {

@@ -1,5 +1,5 @@
 import { and, eq, ne, sql } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { affiliateTable, ordersTable } from "~/db/schema";
@@ -122,9 +122,14 @@ export async function PATCH(request: NextRequest) {
       );
     }
     const normalized = normalizeCode(rawCode);
-    if (normalized.length < CODE_MIN_LENGTH || normalized.length > CODE_MAX_LENGTH) {
+    if (
+      normalized.length < CODE_MIN_LENGTH ||
+      normalized.length > CODE_MAX_LENGTH
+    ) {
       return NextResponse.json(
-        { error: `Code must be ${CODE_MIN_LENGTH}–${CODE_MAX_LENGTH} characters.` },
+        {
+          error: `Code must be ${CODE_MIN_LENGTH}–${CODE_MAX_LENGTH} characters.`,
+        },
         { status: 400 },
       );
     }
@@ -152,11 +157,15 @@ export async function PATCH(request: NextRequest) {
 
   if ("payoutMethod" in body) {
     const raw =
-      typeof body.payoutMethod === "string" ? body.payoutMethod.trim().toLowerCase() : "";
+      typeof body.payoutMethod === "string"
+        ? body.payoutMethod.trim().toLowerCase()
+        : "";
     if (raw === "") {
       updates.payoutMethod = null;
     } else if (
-      ALLOWED_PAYOUT_METHODS.includes(raw as (typeof ALLOWED_PAYOUT_METHODS)[number])
+      ALLOWED_PAYOUT_METHODS.includes(
+        raw as (typeof ALLOWED_PAYOUT_METHODS)[number],
+      )
     ) {
       updates.payoutMethod = raw;
     } else {

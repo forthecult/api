@@ -21,14 +21,20 @@ async function main() {
     const cause = err instanceof Error ? err.cause : undefined;
     const causeStr = cause ? String(cause) : "";
 
-    if (full.includes("does not exist") || causeStr.includes("does not exist")) {
+    if (
+      full.includes("does not exist") ||
+      causeStr.includes("does not exist")
+    ) {
       console.error(
         "✗ User role column is MISSING. Run the migration:\n" +
           "  bun run db:migrate-user-role\n\n" +
           "Or:\n" +
           "  psql $DATABASE_URL -f scripts/migrate-add-user-role.sql",
       );
-    } else if (full.includes("ECONNREFUSED") || causeStr.includes("ECONNREFUSED")) {
+    } else if (
+      full.includes("ECONNREFUSED") ||
+      causeStr.includes("ECONNREFUSED")
+    ) {
       console.error(
         "✗ Cannot connect to database. Ensure DATABASE_URL is set and the DB is reachable.",
       );

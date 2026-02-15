@@ -16,10 +16,7 @@ import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardFooter } from "~/ui/primitives/card";
-import {
-  Dialog,
-  DialogContent,
-} from "~/ui/primitives/dialog";
+import { Dialog, DialogContent } from "~/ui/primitives/dialog";
 
 type ProductCardProps = Omit<
   React.HTMLAttributes<HTMLDivElement>,
@@ -158,9 +155,7 @@ function ProductCardInner({
   const isExternalImage =
     typeof product.image === "string" && /^https?:\/\//i.test(product.image);
   const imageSrc =
-    imageError || !product.image
-      ? "/placeholder.svg"
-      : product.image;
+    imageError || !product.image ? "/placeholder.svg" : product.image;
 
   const handleAddToCart = React.useCallback(
     (e: React.MouseEvent) => {
@@ -214,7 +209,7 @@ function ProductCardInner({
         className="flex h-full flex-col"
         href={`/${product.slug ?? product.id}`}
       >
-          <Card
+        <Card
           className={cn(
             `
               relative flex h-full flex-col overflow-hidden rounded-lg py-0
@@ -355,9 +350,7 @@ function ProductCardInner({
 
             {/* Top-right badges: discount */}
             {!isGated && discount > 0 && (
-              <Badge
-                className="absolute top-2 right-2 z-[5] bg-destructive text-destructive-foreground"
-              >
+              <Badge className="absolute top-2 right-2 z-[5] bg-destructive text-destructive-foreground">
                 {discount}% OFF
               </Badge>
             )}
@@ -411,46 +404,46 @@ function ProductCardInner({
           </div>
 
           {!isGated && (
-          <CardContent className="flex flex-1 flex-col p-4 pt-4 min-h-0">
-            {/* Product name with line clamp */}
-            <h3
-              className={`
+            <CardContent className="flex flex-1 flex-col p-4 pt-4 min-h-0">
+              {/* Product name with line clamp */}
+              <h3
+                className={`
                 line-clamp-2 text-base font-medium text-[#F5F1EB] transition-colors
                 group-hover:text-[#C4873A]
               `}
-            >
-              {product.name}
-            </h3>
+              >
+                {product.name}
+              </h3>
 
-            {variant === "default" && (
-              <>
-                {(product.rating ?? 0) > 0 && (
-                  <div className="mt-1.5">
-                    <StarRating
-                      rating={product.rating ?? 0}
-                      productId={product.id}
-                    />
-                  </div>
-                )}
-                <div className="mt-2 flex items-center gap-1.5">
-                  <FiatPrice
-                    usdAmount={product.price}
-                    className="font-medium text-[#F5F1EB]"
-                  />
-                  {product.originalPrice ? (
+              {variant === "default" && (
+                <>
+                  {(product.rating ?? 0) > 0 && (
+                    <div className="mt-1.5">
+                      <StarRating
+                        rating={product.rating ?? 0}
+                        productId={product.id}
+                      />
+                    </div>
+                  )}
+                  <div className="mt-2 flex items-center gap-1.5">
                     <FiatPrice
-                      usdAmount={product.originalPrice}
-                      className="text-sm text-[#F5F1EB]/70 line-through"
+                      usdAmount={product.price}
+                      className="font-medium text-[#F5F1EB]"
                     />
-                  ) : null}
-                </div>
-                <CryptoPrice
-                  usdAmount={product.price}
-                  className="mt-0.5 text-sm text-[#F5F1EB]/80"
-                />
-              </>
-            )}
-          </CardContent>
+                    {product.originalPrice ? (
+                      <FiatPrice
+                        usdAmount={product.originalPrice}
+                        className="text-sm text-[#F5F1EB]/70 line-through"
+                      />
+                    ) : null}
+                  </div>
+                  <CryptoPrice
+                    usdAmount={product.price}
+                    className="mt-0.5 text-sm text-[#F5F1EB]/80"
+                  />
+                </>
+              )}
+            </CardContent>
           )}
 
           {!isGated && variant === "default" && (
@@ -488,7 +481,7 @@ function ProductCardInner({
           {!isGated && variant === "compact" && (
             <CardFooter className="p-4 pt-0">
               <div className="flex w-full items-center justify-between">
-                  <div className="flex flex-col gap-0.5">
+                <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
                     <FiatPrice
                       usdAmount={product.price}

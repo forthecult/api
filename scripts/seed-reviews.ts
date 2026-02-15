@@ -236,9 +236,7 @@ async function seedFromJson(): Promise<boolean> {
 
   console.log("Seeding product reviews from data/reviews-seed.json (JSON)…");
 
-  const raw = JSON.parse(
-    fs.readFileSync(SEED_JSON_PATH, "utf-8"),
-  ) as Array<{
+  const raw = JSON.parse(fs.readFileSync(SEED_JSON_PATH, "utf-8")) as Array<{
     id: string;
     productId: null;
     productSlug: string;
@@ -287,8 +285,7 @@ async function seedFromJson(): Promise<boolean> {
     };
   });
 
-  const { inserted, linked, unlinked, skipped } =
-    await insertReviewRows(rows);
+  const { inserted, linked, unlinked, skipped } = await insertReviewRows(rows);
 
   console.log("\n--- Seed Results (from JSON) ---");
   console.log(`Inserted: ${inserted} reviews`);
@@ -412,15 +409,20 @@ async function seed() {
     });
   }
 
-  const { inserted, linked, unlinked, skipped: insertSkipped } =
-    await insertReviewRows(rows);
+  const {
+    inserted,
+    linked,
+    unlinked,
+    skipped: insertSkipped,
+  } = await insertReviewRows(rows);
 
   console.log("\n--- Seed Results ---");
   console.log(`Inserted: ${inserted} reviews`);
   console.log(`  - Linked to products: ${linked}`);
   console.log(`  - Unlinked (standalone): ${unlinked}`);
   console.log(`Skipped (invalid rating): ${skipped} reviews`);
-  if (insertSkipped > 0) console.log(`Skipped (insert error): ${insertSkipped}`);
+  if (insertSkipped > 0)
+    console.log(`Skipped (insert error): ${insertSkipped}`);
 
   if (unlinked > 0) {
     console.log(

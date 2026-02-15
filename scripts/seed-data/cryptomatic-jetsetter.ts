@@ -15,7 +15,8 @@ const PRODUCT_SLUG = "cryptomatic-the-jetsetter";
 const CATEGORY_ID = "accessories-cryptomatic-watches";
 
 /** Product images from Cryptomatic Squarespace CDN (https://cryptomatic.io). */
-const SQSP = "https://images.squarespace-cdn.com/content/v1/6346c0b861def74f44593142";
+const SQSP =
+  "https://images.squarespace-cdn.com/content/v1/6346c0b861def74f44593142";
 
 const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
   {

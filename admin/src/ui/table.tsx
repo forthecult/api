@@ -16,7 +16,9 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
-  return <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />;
+  return (
+    <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />
+  );
 }
 
 function TableCell({ className, ...props }: React.ComponentProps<"td">) {
@@ -53,11 +55,4 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   );
 }
 
-export {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-};
+export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };

@@ -94,7 +94,8 @@ export function EstimatedDeliveryTimeline({
       <div
         className="grid gap-3"
         style={{
-          gridTemplateColumns: "1fr minmax(1.5rem, 2fr) 1fr minmax(1.5rem, 2fr) 1fr",
+          gridTemplateColumns:
+            "1fr minmax(1.5rem, 2fr) 1fr minmax(1.5rem, 2fr) 1fr",
         }}
       >
         {/* Ordered */}

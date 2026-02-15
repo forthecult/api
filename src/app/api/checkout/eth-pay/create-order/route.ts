@@ -123,7 +123,10 @@ export async function POST(request: NextRequest) {
     // Validate required fields (custom validation, not createOrderSchema)
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
-      return NextResponse.json({ error: "Valid email required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Valid email required" },
+        { status: 400 },
+      );
     }
     if (!Array.isArray(rawItems) || rawItems.length === 0) {
       return NextResponse.json(
@@ -207,7 +210,11 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
         productIds,
         paymentMethodKey,
-        items: validatedItems.map(i => ({ productId: i.productId, priceCents: i.priceCents, quantity: i.quantity })),
+        items: validatedItems.map((i) => ({
+          productId: i.productId,
+          priceCents: i.priceCents,
+          quantity: i.quantity,
+        })),
       });
 
     // ── Validate client total ($5 tolerance for crypto price drift) ───

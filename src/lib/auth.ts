@@ -73,11 +73,7 @@ interface SocialProviderConfig {
   clientId: string;
   clientSecret: string;
   mapProfileToUser: (
-    profile:
-      | GitHubProfile
-      | GoogleProfile
-      | DiscordProfile
-      | TwitterProfile,
+    profile: GitHubProfile | GoogleProfile | DiscordProfile | TwitterProfile,
   ) => Record<string, unknown>;
   redirectURI?: string;
   scope: string[];
@@ -195,8 +191,7 @@ export const auth = betterAuth({
   // Links in emails (e.g. password reset) must use the public URL users can open, not the internal server URL.
   // Prefer NEXT_PUBLIC_APP_URL so Railway (NEXT_SERVER_APP_URL=http://localhost:PORT) still gets correct links.
   baseURL: (() => {
-    if (process.env.NODE_ENV === "development")
-      return "http://localhost:3000";
+    if (process.env.NODE_ENV === "development") return "http://localhost:3000";
     const publicUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL);
     if (publicUrl) return publicUrl;
     if (typeof process.env.VERCEL_URL === "string" && process.env.VERCEL_URL)
@@ -222,7 +217,8 @@ export const auth = betterAuth({
       const appUrl = ensureAbsoluteUrl(process.env.NEXT_PUBLIC_APP_URL) ?? "";
       const adminUrl =
         ensureAbsoluteUrl(process.env.NEXT_PUBLIC_ADMIN_APP_URL) ?? "";
-      const serverUrl = ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL) ?? "";
+      const serverUrl =
+        ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL) ?? "";
       if (appUrl) origins.push(appUrl);
       if (adminUrl) origins.push(adminUrl);
       if (serverUrl && serverUrl !== appUrl) origins.push(serverUrl);
@@ -318,7 +314,11 @@ export const auth = betterAuth({
           sendOnSignUp: true,
           sendVerificationEmail: async ({ user, url }) => {
             // Production/staging: send verification email via configured provider
-            void sendVerificationOTPEmail({ to: user.email, otp: url, type: "email-verification" });
+            void sendVerificationOTPEmail({
+              to: user.email,
+              otp: url,
+              type: "email-verification",
+            });
           },
         },
 
@@ -360,7 +360,9 @@ export const auth = betterAuth({
     const secret = process.env.AUTH_SECRET;
     if (secret) return secret;
     if (process.env.NODE_ENV === "production") {
-      throw new Error("AUTH_SECRET environment variable is required in production");
+      throw new Error(
+        "AUTH_SECRET environment variable is required in production",
+      );
     }
     console.warn("⚠️  Using hardcoded dev secret — never use in production");
     return "dev-secret-min-32-chars-for-better-auth-local";
@@ -528,7 +530,8 @@ export const auth = betterAuth({
               marketingAiCompanion: user.marketingAiCompanion ?? false,
               receiveMarketing: user.receiveMarketing ?? false,
               receiveSmsMarketing: user.receiveSmsMarketing ?? false,
-              receiveOrderNotificationsViaTelegram: user.receiveOrderNotificationsViaTelegram ?? false,
+              receiveOrderNotificationsViaTelegram:
+                user.receiveOrderNotificationsViaTelegram ?? false,
             },
           };
         },
@@ -606,11 +609,14 @@ const ADMIN_EMAILS = new Set(
  * env var for backwards compatibility during migration.
  * Admin check only affects access to /admin routes after login; it does not block sign-in.
  */
-export function isAdminUser(user: { email?: string; role?: string | null } | null): boolean {
+export function isAdminUser(
+  user: { email?: string; role?: string | null } | null,
+): boolean {
   if (!user) return false;
   // Primary: database-backed role column
   if (user.role === "admin") return true;
   // Fallback: email-based detection (for backward compat until all admins have role set in DB)
-  if (user.email && ADMIN_EMAILS.has(user.email.trim().toLowerCase())) return true;
+  if (user.email && ADMIN_EMAILS.has(user.email.trim().toLowerCase()))
+    return true;
   return false;
 }

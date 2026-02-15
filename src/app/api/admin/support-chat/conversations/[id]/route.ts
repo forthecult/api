@@ -110,7 +110,10 @@ export async function GET(
       role: m.role,
       content: m.content,
       createdAt: m.createdAt,
-      ...(m.role === "staff" && (m.staffFirstName != null || m.staffLastName != null || m.staffImage != null)
+      ...(m.role === "staff" &&
+      (m.staffFirstName != null ||
+        m.staffLastName != null ||
+        m.staffImage != null)
         ? {
             staffUser: {
               firstName: m.staffFirstName ?? "",
@@ -176,14 +179,13 @@ export async function PATCH(
     try {
       body = (await request.json()) as { status?: string };
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
     const status =
       typeof body.status === "string" &&
-      ALLOWED_STATUSES.includes(body.status as (typeof ALLOWED_STATUSES)[number])
+      ALLOWED_STATUSES.includes(
+        body.status as (typeof ALLOWED_STATUSES)[number],
+      )
         ? (body.status as (typeof ALLOWED_STATUSES)[number])
         : null;
     if (!status) {

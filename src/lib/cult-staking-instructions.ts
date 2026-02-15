@@ -5,7 +5,7 @@
 
 import { createHash } from "node:crypto";
 import {
-  PublicKey as PublicKeyClass,
+  type PublicKey as PublicKeyClass,
   SystemProgram,
   Transaction,
   TransactionInstruction,

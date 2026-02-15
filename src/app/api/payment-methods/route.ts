@@ -19,68 +19,70 @@ const now = new Date();
 export async function GET() {
   try {
     const rows = await db
-    .select({
-      methodKey: paymentMethodSettingTable.methodKey,
-      label: paymentMethodSettingTable.label,
-      enabled: paymentMethodSettingTable.enabled,
-      enabledNetworks: paymentMethodSettingTable.enabledNetworks,
-      displayOrder: paymentMethodSettingTable.displayOrder,
-    })
-    .from(paymentMethodSettingTable)
-    .orderBy(paymentMethodSettingTable.displayOrder);
+      .select({
+        methodKey: paymentMethodSettingTable.methodKey,
+        label: paymentMethodSettingTable.label,
+        enabled: paymentMethodSettingTable.enabled,
+        enabledNetworks: paymentMethodSettingTable.enabledNetworks,
+        displayOrder: paymentMethodSettingTable.displayOrder,
+      })
+      .from(paymentMethodSettingTable)
+      .orderBy(paymentMethodSettingTable.displayOrder);
 
-  const byKey = new Map(
-    rows.map((r) => [
-      r.methodKey,
-      {
-        methodKey: r.methodKey,
-        label: r.label,
-        enabled: r.enabled,
-        enabledNetworks: Array.isArray(r.enabledNetworks) ? r.enabledNetworks : null,
-        displayOrder: r.displayOrder,
-      },
-    ]),
-  );
+    const byKey = new Map(
+      rows.map((r) => [
+        r.methodKey,
+        {
+          methodKey: r.methodKey,
+          label: r.label,
+          enabled: r.enabled,
+          enabledNetworks: Array.isArray(r.enabledNetworks)
+            ? r.enabledNetworks
+            : null,
+          displayOrder: r.displayOrder,
+        },
+      ]),
+    );
 
-  // Merge PAYMENT_METHOD_DEFAULTS so new methods appear (default enabled); seed DB if missing
-  const list: PaymentMethodSetting[] = [];
-  const toInsert: (typeof PAYMENT_METHOD_DEFAULTS)[number][] = [];
-  for (const d of PAYMENT_METHOD_DEFAULTS) {
-    const existing = byKey.get(d.methodKey);
-    if (existing) {
-      list.push({
-        methodKey: existing.methodKey,
-        label: existing.label,
-        enabled: existing.enabled,
-        enabledNetworks: existing.enabledNetworks,
-        displayOrder: existing.displayOrder,
-      });
-    } else {
-      toInsert.push(d);
-      list.push({
-        methodKey: d.methodKey,
-        label: d.label,
-        enabled: true,
-        displayOrder: d.displayOrder,
-      });
+    // Merge PAYMENT_METHOD_DEFAULTS so new methods appear (default enabled); seed DB if missing
+    const list: PaymentMethodSetting[] = [];
+    const toInsert: (typeof PAYMENT_METHOD_DEFAULTS)[number][] = [];
+    for (const d of PAYMENT_METHOD_DEFAULTS) {
+      const existing = byKey.get(d.methodKey);
+      if (existing) {
+        list.push({
+          methodKey: existing.methodKey,
+          label: existing.label,
+          enabled: existing.enabled,
+          enabledNetworks: existing.enabledNetworks,
+          displayOrder: existing.displayOrder,
+        });
+      } else {
+        toInsert.push(d);
+        list.push({
+          methodKey: d.methodKey,
+          label: d.label,
+          enabled: true,
+          displayOrder: d.displayOrder,
+        });
+      }
     }
-  }
-  list.sort((a, b) => a.displayOrder - b.displayOrder);
+    list.sort((a, b) => a.displayOrder - b.displayOrder);
 
-  if (toInsert.length > 0) {
-    for (const d of toInsert) {
-      await db.insert(paymentMethodSettingTable).values({
-        methodKey: d.methodKey,
-        label: d.label,
-        enabled: true,
-        displayOrder: d.displayOrder,
-        createdAt: now,
-        updatedAt: now,
-      });
+    if (toInsert.length > 0) {
+      for (const d of toInsert) {
+        await db.insert(paymentMethodSettingTable).values({
+          methodKey: d.methodKey,
+          label: d.label,
+          enabled: true,
+          displayOrder: d.displayOrder,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
     }
-  }
 
-  return NextResponse.json({ data: list });
+    return NextResponse.json({ data: list });
   } catch (err) {
     console.error("Payment methods GET error:", err);
     // Return empty list on DB error so the frontend can distinguish "no data"

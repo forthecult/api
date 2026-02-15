@@ -6,7 +6,8 @@ import { supportChatConversationTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 
 const GUEST_ID_HEADER = "x-support-guest-id";
-const GUEST_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const GUEST_ID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * GET /api/support-chat/conversations/[id]
@@ -18,7 +19,10 @@ export async function GET(
 ) {
   const { id: conversationId } = await params;
   if (!conversationId) {
-    return NextResponse.json({ error: "Missing conversation id" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Missing conversation id" },
+      { status: 400 },
+    );
   }
 
   const session = await auth.api.getSession({ headers: request.headers });
@@ -37,7 +41,10 @@ export async function GET(
     .limit(1);
 
   if (!conv) {
-    return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Conversation not found" },
+      { status: 404 },
+    );
   }
 
   const [full] = await db

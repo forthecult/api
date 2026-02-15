@@ -1,12 +1,18 @@
 "use client";
 
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, ExpressCheckoutElement, useElements, useStripe } from "@stripe/react-stripe-js";
+import {
+  Elements,
+  ExpressCheckoutElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 import { useCallback, useMemo, useState } from "react";
 import type { OrderPayload } from "../checkout-shared";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
 
-const STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+const STRIPE_PUBLISHABLE_KEY =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 export interface ExpressCheckoutProps {
   stripeEnabled: boolean;
@@ -47,7 +53,9 @@ function ExpressCheckoutInner({
       const { error: submitError } = await elements.submit();
       if (submitError) {
         setNavigatingToPay(false);
-        setValidationErrors([submitError.message ?? "Please check your details."]);
+        setValidationErrors([
+          submitError.message ?? "Please check your details.",
+        ]);
         return;
       }
 
@@ -71,7 +79,10 @@ function ExpressCheckoutInner({
             })),
             email: form.email.trim(),
             userId: (payload.commonBody?.userId as string) ?? undefined,
-            affiliateCode: typeof payload.commonBody?.affiliateCode === "string" ? payload.commonBody.affiliateCode : undefined,
+            affiliateCode:
+              typeof payload.commonBody?.affiliateCode === "string"
+                ? payload.commonBody.affiliateCode
+                : undefined,
             shipping: form?.street?.trim()
               ? {
                   firstName: form.firstName?.trim() || undefined,
@@ -95,7 +106,11 @@ function ExpressCheckoutInner({
           return;
         }
 
-        const data = (await res.json()) as { clientSecret: string; orderId: string; confirmationToken?: string };
+        const data = (await res.json()) as {
+          clientSecret: string;
+          orderId: string;
+          confirmationToken?: string;
+        };
         const { clientSecret, orderId, confirmationToken } = data;
         if (!clientSecret) {
           setValidationErrors(["Could not start payment."]);
@@ -104,10 +119,13 @@ function ExpressCheckoutInner({
         }
 
         if (confirmationToken) {
-          try { sessionStorage.setItem(`checkout_ct_${orderId}`, confirmationToken); } catch {}
+          try {
+            sessionStorage.setItem(`checkout_ct_${orderId}`, confirmationToken);
+          } catch {}
         }
 
-        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        const baseUrl =
+          typeof window !== "undefined" ? window.location.origin : "";
         const { error } = await stripe.confirmPayment({
           elements,
           clientSecret,
@@ -162,7 +180,12 @@ export function ExpressCheckout({
     [totalCents],
   );
 
-  if (!stripeEnabled || !STRIPE_PUBLISHABLE_KEY || !stripePromise || !elementsOptions) {
+  if (
+    !stripeEnabled ||
+    !STRIPE_PUBLISHABLE_KEY ||
+    !stripePromise ||
+    !elementsOptions
+  ) {
     return null;
   }
 

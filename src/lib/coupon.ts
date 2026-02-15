@@ -346,9 +346,7 @@ function computeDiscountFromCoupon(
     // Use qualifying product subtotal when available, otherwise full subtotal
     const basis = qualifyingSubtotalCents ?? subtotalCents;
     if (discountType === "percent") {
-      discountCents = Math.round(
-        basis * (Math.min(100, discountValue) / 100),
-      );
+      discountCents = Math.round(basis * (Math.min(100, discountValue) / 100));
     } else {
       discountCents = Math.min(discountValue, basis);
     }
@@ -547,10 +545,7 @@ export async function resolveAutomaticCouponForCheckout(
       totalAfterDiscountCents,
       paymentMethodKey: coupon.rulePaymentMethodKey ?? null,
     };
-    if (
-      !best ||
-      candidate.discountCents > best.discountCents
-    ) {
+    if (!best || candidate.discountCents > best.discountCents) {
       best = candidate;
     }
   }

@@ -19,7 +19,10 @@ import { UTApi } from "uploadthing/server";
 
 import { db } from "../src/db";
 import { brandAssetTable, brandTable } from "../src/db/schema";
-import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
+import {
+  getUploadThingToken,
+  validateUploadThingToken,
+} from "../src/lib/uploadthing-token";
 
 const ASSETS_DIR = join(process.cwd(), "scripts", "brand-assets");
 const ALLOWED_EXT = [".png", ".jpg", ".jpeg", ".webp", ".gif"];
@@ -66,14 +69,26 @@ async function main() {
   }
 
   if (!existsSync(ASSETS_DIR)) {
-    console.log("No scripts/brand-assets directory found. Create it and add brand slug folders with logo.* / banner.* images.");
+    console.log(
+      "No scripts/brand-assets directory found. Create it and add brand slug folders with logo.* / banner.* images.",
+    );
     process.exit(0);
   }
 
-  const brands = await db.select({ id: brandTable.id, slug: brandTable.slug, logoUrl: brandTable.logoUrl }).from(brandTable);
-  const brandsWithAssets = brands.filter((b) => existsSync(join(ASSETS_DIR, b.slug)));
+  const brands = await db
+    .select({
+      id: brandTable.id,
+      slug: brandTable.slug,
+      logoUrl: brandTable.logoUrl,
+    })
+    .from(brandTable);
+  const brandsWithAssets = brands.filter((b) =>
+    existsSync(join(ASSETS_DIR, b.slug)),
+  );
   if (brandsWithAssets.length === 0) {
-    console.log("No brand-assets folders match seeded brand slugs. Add e.g. scripts/brand-assets/<slug>/logo.png for brands you want logos uploaded.");
+    console.log(
+      "No brand-assets folders match seeded brand slugs. Add e.g. scripts/brand-assets/<slug>/logo.png for brands you want logos uploaded.",
+    );
     process.exit(0);
   }
 
@@ -82,15 +97,20 @@ async function main() {
   for (const brand of brandsWithAssets) {
     if (!force && brand.logoUrl) continue;
     const slugDir = join(ASSETS_DIR, brand.slug);
-    const entries = readdirSync(slugDir, { withFileTypes: true })
-      .filter((e) => e.isFile() && ALLOWED_EXT.includes(ext(e.name)));
+    const entries = readdirSync(slugDir, { withFileTypes: true }).filter(
+      (e) => e.isFile() && ALLOWED_EXT.includes(ext(e.name)),
+    );
     if (entries.length > 0) brandsNeedingUpload.push(brand);
   }
   if (brandsNeedingUpload.length === 0) {
-    console.log("All brands already have logos (or no images in asset folders). Nothing to upload.");
+    console.log(
+      "All brands already have logos (or no images in asset folders). Nothing to upload.",
+    );
     process.exit(0);
   }
-  console.log(`Found ${brandsNeedingUpload.length} brand(s) to upload (${brandsNeedingUpload.map((b) => b.slug).join(", ")})`);
+  console.log(
+    `Found ${brandsNeedingUpload.length} brand(s) to upload (${brandsNeedingUpload.map((b) => b.slug).join(", ")})`,
+  );
 
   const utapi = new UTApi({ token });
   let uploaded = 0;
@@ -121,11 +141,19 @@ async function main() {
         continue;
       }
 
-      const res = data as { url?: string; ufsUrl?: string; data?: { url?: string; ufsUrl?: string }; error?: { code?: string; message?: string } };
+      const res = data as {
+        url?: string;
+        ufsUrl?: string;
+        data?: { url?: string; ufsUrl?: string };
+        error?: { code?: string; message?: string };
+      };
       if (res.error) {
         const code = res.error?.code;
         const message = res.error?.message ?? String(res.error);
-        if (code === "INVALID_SERVER_CONFIG" || message.includes("Invalid token")) {
+        if (
+          code === "INVALID_SERVER_CONFIG" ||
+          message.includes("Invalid token")
+        ) {
           console.warn(
             "UPLOADTHING_TOKEN is invalid. It must be a base64-encoded JSON object with apiKey, appId, and regions from UploadThing Dashboard → API Keys → V7. Update the token in .env or in GitHub Settings → Secrets (UPLOADTHING_TOKEN). Skipping remaining uploads.",
           );
@@ -156,7 +184,10 @@ async function main() {
     }
 
     if (firstLogoUrl) {
-      await db.update(brandTable).set({ logoUrl: firstLogoUrl, updatedAt: new Date() }).where(eq(brandTable.id, brand.id));
+      await db
+        .update(brandTable)
+        .set({ logoUrl: firstLogoUrl, updatedAt: new Date() })
+        .where(eq(brandTable.id, brand.id));
       console.log(`  Set logoUrl for ${brand.slug}`);
     }
   }

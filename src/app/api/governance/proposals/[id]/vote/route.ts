@@ -10,10 +10,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { db } from "~/db";
-import {
-  governanceProposalTable,
-  governanceVoteTable,
-} from "~/db/schema";
+import { governanceProposalTable, governanceVoteTable } from "~/db/schema";
 import { Connection, PublicKey } from "@solana/web3.js";
 import nacl from "tweetnacl";
 
@@ -91,7 +88,10 @@ export async function POST(
       .limit(1);
 
     if (!proposal) {
-      return NextResponse.json({ error: "Proposal not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Proposal not found" },
+        { status: 404 },
+      );
     }
     if (proposal.status !== "active") {
       return NextResponse.json(
@@ -141,9 +141,10 @@ export async function POST(
       proposalId,
       walletAddress: wallet,
       choice,
-      votingPower: votingPower > BigInt(Number.MAX_SAFE_INTEGER)
-        ? Number.MAX_SAFE_INTEGER
-        : Number(votingPower),
+      votingPower:
+        votingPower > BigInt(Number.MAX_SAFE_INTEGER)
+          ? Number.MAX_SAFE_INTEGER
+          : Number(votingPower),
       createdAt: now,
     });
 

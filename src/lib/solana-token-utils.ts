@@ -1,11 +1,11 @@
 /**
  * Solana Token Utilities
- * 
+ *
  * Provides utilities for working with both standard SPL tokens (Token Program)
  * and Token-2022 tokens (Token Extensions Program).
  */
 
-import { Connection, PublicKey } from "@solana/web3.js";
+import { type Connection, PublicKey } from "@solana/web3.js";
 import {
   getAssociatedTokenAddressSync,
   getMint,
@@ -25,8 +25,12 @@ export async function getTokenBalanceAnyProgram(
   mintAddress: string | PublicKey,
   walletAddress: string | PublicKey,
 ): Promise<{ amount: bigint; decimals: number; programId: PublicKey } | null> {
-  const mint = typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
-  const wallet = typeof walletAddress === "string" ? new PublicKey(walletAddress) : walletAddress;
+  const mint =
+    typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
+  const wallet =
+    typeof walletAddress === "string"
+      ? new PublicKey(walletAddress)
+      : walletAddress;
 
   const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
 
@@ -55,7 +59,8 @@ export async function getMintAnyProgram(
   connection: Connection,
   mintAddress: string | PublicKey,
 ): Promise<{ mint: Mint; programId: PublicKey } | null> {
-  const mintPubkey = typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
+  const mintPubkey =
+    typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
 
   const programIds = [TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID];
 
@@ -84,9 +89,18 @@ export async function getATAForMint(
   const mintResult = await getMintAnyProgram(connection, mintAddress);
   if (!mintResult) return null;
 
-  const mint = typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
-  const wallet = typeof walletAddress === "string" ? new PublicKey(walletAddress) : walletAddress;
-  const ata = getAssociatedTokenAddressSync(mint, wallet, allowOwnerOffCurve, mintResult.programId);
+  const mint =
+    typeof mintAddress === "string" ? new PublicKey(mintAddress) : mintAddress;
+  const wallet =
+    typeof walletAddress === "string"
+      ? new PublicKey(walletAddress)
+      : walletAddress;
+  const ata = getAssociatedTokenAddressSync(
+    mint,
+    wallet,
+    allowOwnerOffCurve,
+    mintResult.programId,
+  );
 
   return { ata, programId: mintResult.programId };
 }

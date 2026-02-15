@@ -41,11 +41,9 @@ async function main() {
   // 1) Upload the PNG AS-IS — no makeTransparent (it already has transparent bg)
   console.log("\n1. Uploading print file (raw, no makeTransparent)...");
   const formData = new FormData();
-  const file = new File(
-    [readFileSync(PRINT_FILE)],
-    "soluna-print.png",
-    { type: "image/png" },
-  );
+  const file = new File([readFileSync(PRINT_FILE)], "soluna-print.png", {
+    type: "image/png",
+  });
   formData.append("file", file);
   const uploadRes = await fetch(
     `${API_BASE}/api/admin/pod/upload?provider=printify`,
@@ -65,7 +63,9 @@ async function main() {
   console.log("   imageId:", imageId);
 
   // 2) Run the full update (design + sync + mockups + categories/SEO)
-  console.log("\n2. Running update-products-design (design, sync, mockups, categories/SEO)...");
+  console.log(
+    "\n2. Running update-products-design (design, sync, mockups, categories/SEO)...",
+  );
   const updateRes = await fetch(
     `${API_BASE}/api/admin/printify/update-products-design`,
     {
@@ -98,7 +98,9 @@ async function main() {
   if (updateData.errors?.length) {
     console.warn("   Errors:", updateData.errors);
   }
-  console.log("\nDone. Print file uploaded raw (black border intact), all products updated.");
+  console.log(
+    "\nDone. Print file uploaded raw (black border intact), all products updated.",
+  );
 }
 
 main().catch((e) => {

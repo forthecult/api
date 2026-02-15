@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { Button } from "~/ui/primitives/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "~/ui/primitives/dialog";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import { Input } from "~/ui/primitives/input";
 
 export function HeaderSearch() {
@@ -50,7 +46,10 @@ export function HeaderSearch() {
           <DialogTitle className="sr-only">Search products</DialogTitle>
           <form onSubmit={handleSubmit} className="flex flex-col">
             <div className="flex items-center gap-2 border-b px-3 py-2">
-              <Search className="h-5 w-5 shrink-0 text-muted-foreground" aria-hidden />
+              <Search
+                className="h-5 w-5 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
               <Input
                 type="text"
                 placeholder="Search products..."

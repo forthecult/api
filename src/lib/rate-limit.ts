@@ -145,8 +145,8 @@ export async function checkRateLimit(
     _prodWarningEmitted = true;
     console.warn(
       "⚠️  [SECURITY] Rate limiting is in-memory only — ineffective in serverless/multi-instance deployments. " +
-      "Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production. " +
-      "Without Redis, each instance has its own counter and rate limits are effectively bypassed."
+        "Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN for production. " +
+        "Without Redis, each instance has its own counter and rate limits are effectively bypassed.",
     );
   }
   return Promise.resolve(checkRateLimitMemory(identifier, config));
@@ -159,8 +159,8 @@ export async function checkRateLimit(
  */
 export function getClientIp(headers: Headers): string {
   return (
-    headers.get("cf-connecting-ip") ||     // Cloudflare (set by edge, not spoofable)
-    headers.get("x-real-ip") ||             // Nginx / Vercel
+    headers.get("cf-connecting-ip") || // Cloudflare (set by edge, not spoofable)
+    headers.get("x-real-ip") || // Nginx / Vercel
     headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     "unknown"
   );

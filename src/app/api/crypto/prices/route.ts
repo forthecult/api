@@ -112,45 +112,52 @@ export async function GET() {
     if (typeof solUsd === "number" && solUsd > 0) {
       try {
         const connection = new Connection(getSolanaRpcUrlServer());
-        const [crustSolPerToken, pumpSolPerToken, trollSolPerToken, solunaSolPerToken] =
-          await Promise.all([
-            Promise.race([
-              getPumpTokenPriceInSol(connection, new PublicKey(CRUST_MINT_MAINNET)),
-              new Promise<number>((resolve) =>
-                setTimeout(() => resolve(0), FETCH_TIMEOUT),
-              ),
-            ]),
-            // Only fetch PUMP from pump.fun if CoinGecko didn't return it
-            prices.PUMP != null && prices.PUMP > 0
-              ? Promise.resolve(0)
-              : Promise.race([
-                  getPumpTokenPriceInSol(
-                    connection,
-                    new PublicKey(PUMP_MINT_MAINNET),
-                  ),
-                  new Promise<number>((resolve) =>
-                    setTimeout(() => resolve(0), FETCH_TIMEOUT),
-                  ),
-                ]),
-            Promise.race([
-              getPumpTokenPriceInSol(
-                connection,
-                new PublicKey(TROLL_MINT_MAINNET),
-              ),
-              new Promise<number>((resolve) =>
-                setTimeout(() => resolve(0), FETCH_TIMEOUT),
-              ),
-            ]),
-            Promise.race([
-              getPumpTokenPriceInSol(
-                connection,
-                new PublicKey(SOLUNA_MINT_MAINNET),
-              ),
-              new Promise<number>((resolve) =>
-                setTimeout(() => resolve(0), FETCH_TIMEOUT),
-              ),
-            ]),
-          ]);
+        const [
+          crustSolPerToken,
+          pumpSolPerToken,
+          trollSolPerToken,
+          solunaSolPerToken,
+        ] = await Promise.all([
+          Promise.race([
+            getPumpTokenPriceInSol(
+              connection,
+              new PublicKey(CRUST_MINT_MAINNET),
+            ),
+            new Promise<number>((resolve) =>
+              setTimeout(() => resolve(0), FETCH_TIMEOUT),
+            ),
+          ]),
+          // Only fetch PUMP from pump.fun if CoinGecko didn't return it
+          prices.PUMP != null && prices.PUMP > 0
+            ? Promise.resolve(0)
+            : Promise.race([
+                getPumpTokenPriceInSol(
+                  connection,
+                  new PublicKey(PUMP_MINT_MAINNET),
+                ),
+                new Promise<number>((resolve) =>
+                  setTimeout(() => resolve(0), FETCH_TIMEOUT),
+                ),
+              ]),
+          Promise.race([
+            getPumpTokenPriceInSol(
+              connection,
+              new PublicKey(TROLL_MINT_MAINNET),
+            ),
+            new Promise<number>((resolve) =>
+              setTimeout(() => resolve(0), FETCH_TIMEOUT),
+            ),
+          ]),
+          Promise.race([
+            getPumpTokenPriceInSol(
+              connection,
+              new PublicKey(SOLUNA_MINT_MAINNET),
+            ),
+            new Promise<number>((resolve) =>
+              setTimeout(() => resolve(0), FETCH_TIMEOUT),
+            ),
+          ]),
+        ]);
         if (crustSolPerToken > 0) prices.CRUST = crustSolPerToken * solUsd;
         if (pumpSolPerToken > 0 && (prices.PUMP == null || prices.PUMP <= 0)) {
           prices.PUMP = pumpSolPerToken * solUsd;

@@ -44,7 +44,11 @@ export type TokenGateConfig = {
  * e.g. "≥ 1000 CULT on the Solana network" or "≥ 500 PUMP on Solana, or ≥ 100 WHALE on the Ethereum network"
  */
 export function formatTokenGateSummaryToDisplay(
-  gates: Array<{ tokenSymbol: string; quantity: number; network: string | null }>,
+  gates: Array<{
+    tokenSymbol: string;
+    quantity: number;
+    network: string | null;
+  }>,
 ): string {
   if (gates.length === 0) return "required tokens";
   function networkLabel(network: string | null): string {
@@ -124,8 +128,7 @@ export async function getProductTokenGates(
     .from(productTokenGateTable)
     .where(eq(productTokenGateTable.productId, product.id));
 
-  const tokenGated =
-    product.tokenGated || gateRows.length > 0;
+  const tokenGated = product.tokenGated || gateRows.length > 0;
   const gates: TokenGateRule[] = gateRows.map((g) => {
     const mintOrContract = resolveMintOrContract(
       g.tokenSymbol,
@@ -271,11 +274,17 @@ export async function getSolanaTokenBalance(
   );
   const connection = new Connection(getSolanaRpcUrlServer());
 
-  const result = await getTokenBalanceAnyProgram(connection, mintAddress, walletAddress);
-  
+  const result = await getTokenBalanceAnyProgram(
+    connection,
+    mintAddress,
+    walletAddress,
+  );
+
   if (result) {
     if (process.env.NODE_ENV === "development") {
-      const programName = result.programId.equals(TOKEN_2022_PROGRAM_ID) ? "Token-2022" : "Token";
+      const programName = result.programId.equals(TOKEN_2022_PROGRAM_ID)
+        ? "Token-2022"
+        : "Token";
       console.info(
         "[token-gate] Found balance via",
         programName,

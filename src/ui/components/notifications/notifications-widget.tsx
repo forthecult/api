@@ -60,20 +60,17 @@ export function NotificationsWidget() {
     fetchFeed();
   }, [fetchFeed]);
 
-  const handleMarkAsRead = React.useCallback(
-    async (id: string) => {
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-      );
-      await fetch("/api/user/notifications/feed", {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ markAsRead: id }),
-      });
-    },
-    [],
-  );
+  const handleMarkAsRead = React.useCallback(async (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+    );
+    await fetch("/api/user/notifications/feed", {
+      method: "PATCH",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ markAsRead: id }),
+    });
+  }, []);
 
   const handleMarkAllAsRead = React.useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));

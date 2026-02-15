@@ -43,7 +43,10 @@ async function main() {
     try {
       await conn.unsafe(sql);
     } catch (e) {
-      console.error("ensure-printful-printify-columns (critical failed):", (e as Error).message);
+      console.error(
+        "ensure-printful-printify-columns (critical failed):",
+        (e as Error).message,
+      );
       process.exit(1);
     }
   }
@@ -51,7 +54,10 @@ async function main() {
     try {
       await conn.unsafe(sql);
     } catch (e) {
-      console.warn("ensure-printful-printify-columns (optional):", (e as Error).message);
+      console.warn(
+        "ensure-printful-printify-columns (optional):",
+        (e as Error).message,
+      );
     }
   }
   console.log("ensure-printful-printify-columns: done");

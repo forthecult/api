@@ -143,17 +143,24 @@ export default function AdminSupportChatDetailPage() {
           },
         );
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
-        const data = (await res.json()) as { status: string; updatedAt: string };
+        const data = (await res.json()) as {
+          status: string;
+          updatedAt: string;
+        };
         setConv((prev) =>
           prev
             ? { ...prev, status: data.status, updatedAt: data.updatedAt }
             : prev,
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to update status");
+        setError(
+          err instanceof Error ? err.message : "Failed to update status",
+        );
       } finally {
         setUpdatingStatus(false);
       }
@@ -204,11 +211,18 @@ export default function AdminSupportChatDetailPage() {
       <div className="space-y-4">
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:bg-red-800 dark:bg-red-950/30 dark:text-red-200">
           {error}
-          <Button className="mt-2" onClick={() => void fetchConversation()} type="button">
+          <Button
+            className="mt-2"
+            onClick={() => void fetchConversation()}
+            type="button"
+          >
             Retry
           </Button>
         </div>
-        <Link className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground" href="/support-chat">
+        <Link
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          href="/support-chat"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to Support Chat
         </Link>
       </div>
@@ -247,8 +261,7 @@ export default function AdminSupportChatDetailPage() {
                 "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
                 conv.status === "open" &&
                   "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
-                conv.status === "closed" &&
-                  "bg-muted text-muted-foreground",
+                conv.status === "closed" && "bg-muted text-muted-foreground",
               )}
             >
               {conv.status}
@@ -305,7 +318,9 @@ export default function AdminSupportChatDetailPage() {
             <CardContent className="space-y-4">
               <div className="max-h-[400px] overflow-y-auto space-y-3 rounded-md border bg-muted/30 p-3">
                 {conv.messages.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No messages yet.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No messages yet.
+                  </p>
                 ) : (
                   conv.messages.map((m) => (
                     <div
@@ -322,7 +337,9 @@ export default function AdminSupportChatDetailPage() {
                     >
                       <span className="font-medium">
                         {m.role === "staff" && m.staffUser
-                          ? [m.staffUser.firstName, m.staffUser.lastName].filter(Boolean).join(" ") || "Staff"
+                          ? [m.staffUser.firstName, m.staffUser.lastName]
+                              .filter(Boolean)
+                              .join(" ") || "Staff"
                           : m.role.charAt(0).toUpperCase() + m.role.slice(1)}
                         :{" "}
                       </span>
@@ -396,7 +413,10 @@ export default function AdminSupportChatDetailPage() {
               <CardContent>
                 <ul className="space-y-2 text-sm">
                   {conv.orders.map((o) => (
-                    <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 border-b pb-2 last:border-0">
+                    <li
+                      key={o.id}
+                      className="flex flex-wrap items-center justify-between gap-2 border-b pb-2 last:border-0"
+                    >
                       <Link
                         href={`/orders/${o.id}`}
                         className="font-medium text-primary underline-offset-2 hover:underline"
@@ -407,7 +427,8 @@ export default function AdminSupportChatDetailPage() {
                         {formatCents(o.totalCents)}
                       </span>
                       <span className="w-full text-xs text-muted-foreground">
-                        {o.paymentStatus ?? o.status} · {formatDate(o.createdAt)}
+                        {o.paymentStatus ?? o.status} ·{" "}
+                        {formatDate(o.createdAt)}
                       </span>
                     </li>
                   ))}

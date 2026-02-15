@@ -27,8 +27,7 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-const NOTE =
-  "\n\n*Note. Not to be confused with the shitcoin Solana (SOL)";
+const NOTE = "\n\n*Note. Not to be confused with the shitcoin Solana (SOL)";
 
 type ProductUpdate = {
   id: string;
@@ -41,15 +40,14 @@ const products: ProductUpdate[] = [
   {
     id: "ve0RZitdCZF0lgddCW1H9",
     name: "Soluna Poker Playing Cards",
-    description:
-      `Deal in style with the Soluna Poker Playing Cards. Printed on smooth, 300gsm premium-coated cardstock, these cards are built for the perfect shuffle and deal every time. The Soluna logo is printed on the back of each card with a semi-glossy finish that looks sharp under any light.
+    description: `Deal in style with the Soluna Poker Playing Cards. Printed on smooth, 300gsm premium-coated cardstock, these cards are built for the perfect shuffle and deal every time. The Soluna logo is printed on the back of each card with a semi-glossy finish that looks sharp under any light.
 
 Each deck includes 52 standard playing cards plus 2 Joker cards, sized at 2.5" x 3.5" (6.4cm x 8.9cm) — the regulation poker size. Packaged in a clear acrylic case for display or storage.
 
 Whether you're hosting poker night, running a tournament, or just collecting crypto merch, this deck brings the Solana meme energy to the table.${NOTE}`,
     features: [
       "Smooth 300 gsm premium-coated cardstock paper",
-      "Standard size: 2.5\" x 3.5\" (6.4cm x 8.9cm)",
+      'Standard size: 2.5" x 3.5" (6.4cm x 8.9cm)',
       "52 playing cards + 2 Joker cards per deck",
       "Soluna logo printed on the back of each card",
       "Semi-glossy finish for easy dealing and shuffling",
@@ -59,14 +57,13 @@ Whether you're hosting poker night, running a tournament, or just collecting cry
   {
     id: "Na9TdAc0AVlVijxfo9QFC",
     name: "Soluna Sticker",
-    description:
-      `Rep Soluna anywhere with these square vinyl stickers. Made with durable 100% vinyl and a strong 3M glue backing, they stick clean and hold strong on laptops, water bottles, notebooks, phone cases — you name it.
+    description: `Rep Soluna anywhere with these square vinyl stickers. Made with durable 100% vinyl and a strong 3M glue backing, they stick clean and hold strong on laptops, water bottles, notebooks, phone cases — you name it.
 
 Available in four sizes (2" × 2", 3" × 3", 4" × 4", and 6" × 6") with a glossy finish that makes the gradient Soluna logo pop. Perfect for indoor use — stick them on your setup, your gear, or trade them with the community.${NOTE}`,
     features: [
       "Made with 100% vinyl and 3M glue backing",
       "Glossy finish for vibrant color reproduction",
-      "Four sizes: 2\"×2\", 3\"×3\", 4\"×4\", 6\"×6\"",
+      'Four sizes: 2"×2", 3"×3", 4"×4", 6"×6"',
       "Grey adhesive backing for clean application",
       "Designed for indoor use",
     ],
@@ -74,13 +71,12 @@ Available in four sizes (2" × 2", 3" × 3", 4" × 4", and 6" × 6") with a glos
   {
     id: "1SEgE_nNHTZivtjqgwHZs",
     name: "Soluna Ping Pong Paddle",
-    description:
-      `Take game night to the next level with Soluna Ping Pong Balls. This set of 6 standard-size balls features the Soluna logo printed directly on each ball — perfect for beer pong, table tennis, or just flexing your crypto cred at the party.
+    description: `Take game night to the next level with Soluna Ping Pong Balls. This set of 6 standard-size balls features the Soluna logo printed directly on each ball — perfect for beer pong, table tennis, or just flexing your crypto cred at the party.
 
 Each ball measures 1.57" (4cm) in diameter, made from durable 100% plastic. Available in white or orange so you can match your vibe. Whether it's a tournament or a casual round, these balls are built for fun.${NOTE}`,
     features: [
       "Set of 6 custom-printed ping pong balls",
-      "Standard size: 1.57\" (4cm) diameter",
+      'Standard size: 1.57" (4cm) diameter',
       "Material: 100% durable plastic",
       "Available in white or orange",
       "Soluna logo printed on each ball",
@@ -90,8 +86,7 @@ Each ball measures 1.57" (4cm) in diameter, made from durable 100% plastic. Avai
   {
     id: "jHzB7kExmjJ2uCmF-fva8",
     name: "Soluna Shot Glass",
-    description:
-      `Raise a glass to the Solana meme that keeps on giving. This Soluna Shot Glass is made from white ceramic with the Soluna logo printed in vivid detail. Available with a white or black interior, it's the perfect addition to your barware collection or a standout gift.
+    description: `Raise a glass to the Solana meme that keeps on giving. This Soluna Shot Glass is made from white ceramic with the Soluna logo printed in vivid detail. Available with a white or black interior, it's the perfect addition to your barware collection or a standout gift.
 
 Each glass holds 1.9oz (0.056L) — just the right pour for toasting wins, milestones, or another green candle. Solid build, clean design, and compact enough to display or actually use.${NOTE}`,
     features: [
@@ -105,8 +100,7 @@ Each glass holds 1.9oz (0.056L) — just the right pour for toasting wins, miles
   {
     id: "19bQjZjjfuvxTvlLHRC4d",
     name: "Soluna Phone Case",
-    description:
-      `Keep your phone looking sharp with the Soluna Slim Phone Case. Made from Lexan polycarbonate plastic, this case delivers a super slim profile with serious durability. The glossy premium finish shows off the Soluna gradient logo while the impact-resistant material handles everyday drops and bumps.
+    description: `Keep your phone looking sharp with the Soluna Slim Phone Case. Made from Lexan polycarbonate plastic, this case delivers a super slim profile with serious durability. The glossy premium finish shows off the Soluna gradient logo while the impact-resistant material handles everyday drops and bumps.
 
 Lightweight construction that doesn't add bulk. Supports wireless charging so you don't have to remove the case. Available for a wide range of iPhone models (7 through 17 series) and select Samsung Galaxy devices — check the size options for your model.${NOTE}`,
     features: [
@@ -122,17 +116,16 @@ Lightweight construction that doesn't add bulk. Supports wireless charging so yo
   {
     id: "RjOnxUn6BnSAArv8l-tQ9",
     name: "Soluna Wireless Charger",
-    description:
-      `Charge up in style with the Soluna Wireless Charger. This 10W charging pad features the Soluna logo printed via high-fidelity sublimation on a 100% acrylic face plate, housed in a sleek aluminum casing. Compatible with all Qi-enabled iPhone and Android devices.
+    description: `Charge up in style with the Soluna Wireless Charger. This 10W charging pad features the Soluna logo printed via high-fidelity sublimation on a 100% acrylic face plate, housed in a sleek aluminum casing. Compatible with all Qi-enabled iPhone and Android devices.
 
 The round design measures 3.93" (10cm) in diameter and just 0.3" (0.8cm) tall — low profile enough for any desk, nightstand, or setup. Ships with a 47" (120cm) micro USB cable so you're ready to charge right out of the box. Clean design meets everyday utility.${NOTE}`,
     features: [
       "10W wireless charging power",
       "Compatible with Qi-enabled iPhone and Android devices",
       "Materials: 100% aluminum casing, 100% acrylic face plate",
-      "Round design: 3.93\" (10cm) diameter, 0.3\" (0.8cm) tall",
+      'Round design: 3.93" (10cm) diameter, 0.3" (0.8cm) tall',
       "High-fidelity sublimation print",
-      "Includes 47\" (120cm) micro USB cable",
+      'Includes 47" (120cm) micro USB cable',
       "Black base color with Soluna gradient logo",
     ],
   },
@@ -148,20 +141,17 @@ async function main() {
     process.stdout.write(`  Updating "${product.name}"... `);
 
     try {
-      const res = await fetch(
-        `${API_BASE}/api/admin/products/${product.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${API_KEY}`,
-          },
-          body: JSON.stringify({
-            description: product.description,
-            features: product.features,
-          }),
+      const res = await fetch(`${API_BASE}/api/admin/products/${product.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
         },
-      );
+        body: JSON.stringify({
+          description: product.description,
+          features: product.features,
+        }),
+      });
 
       if (!res.ok) {
         const text = await res.text();

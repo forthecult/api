@@ -279,7 +279,16 @@ export function ConnectWalletModal({
         }
       }
     },
-    [selectedWallet, select, connect, suiWallets, connectSui, onOpenChange, isMobile, wallets],
+    [
+      selectedWallet,
+      select,
+      connect,
+      suiWallets,
+      connectSui,
+      onOpenChange,
+      isMobile,
+      wallets,
+    ],
   );
 
   const handleBack = useCallback(() => {

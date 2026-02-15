@@ -1,7 +1,11 @@
 import type { MetadataRoute } from "next";
 import { headers } from "next/headers";
 
-import { getAgentBaseUrl, getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
+import {
+  getAgentBaseUrl,
+  getPublicSiteUrl,
+  isAgentSubdomain,
+} from "~/lib/app-url";
 
 /** Staging: Vercel preview deploys or explicit STAGING=1 (e.g. Railway). Production allows crawlers. */
 const isStaging =

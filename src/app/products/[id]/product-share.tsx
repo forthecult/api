@@ -32,7 +32,9 @@ export function ProductShare({ url, title, className }: ProductShareProps) {
 
   return (
     <div className={className}>
-      <span className="mr-2 text-sm font-medium text-muted-foreground">Share:</span>
+      <span className="mr-2 text-sm font-medium text-muted-foreground">
+        Share:
+      </span>
       <div className="inline-flex items-center gap-2">
         <a
           href={xUrl}

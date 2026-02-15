@@ -49,8 +49,14 @@ const OPENCLAW_RETRY_DELAY_MS = 2_000;
 function extractTextFromOpenResponsesOutput(output: unknown): string | null {
   if (!Array.isArray(output)) return null;
   for (const item of output) {
-    if (item && typeof item === "object" && (item as { type?: string }).type === "message") {
-      const content = (item as { content?: Array<{ type?: string; text?: string }> }).content;
+    if (
+      item &&
+      typeof item === "object" &&
+      (item as { type?: string }).type === "message"
+    ) {
+      const content = (
+        item as { content?: Array<{ type?: string; text?: string }> }
+      ).content;
       if (Array.isArray(content)) {
         for (const part of content) {
           if (part?.type === "output_text" && typeof part.text === "string") {
@@ -100,7 +106,10 @@ async function generateViaOpenClawResponses(
 
   const doFetch = async (): Promise<Response> => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), OPENCLAW_FETCH_TIMEOUT_MS);
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      OPENCLAW_FETCH_TIMEOUT_MS,
+    );
     try {
       return await fetch(`${gatewayUrl}/v1/responses`, {
         method: "POST",
@@ -179,9 +188,7 @@ async function generateViaOpenClaw(
 
   const body: Record<string, unknown> = {
     model: `openclaw:${agentId}`,
-    messages: [
-      { role: "user", content: truncated || "Hello" },
-    ],
+    messages: [{ role: "user", content: truncated || "Hello" }],
     max_tokens: 500,
     ...(context.userId ? { user: context.userId } : {}),
   };
@@ -348,6 +355,8 @@ export async function generateSupportChatReply(
   if (directReply) return directReply;
 
   // 3. Safe fallback
-  console.warn("[SupportChat] All AI providers failed — returning fallback reply.");
+  console.warn(
+    "[SupportChat] All AI providers failed — returning fallback reply.",
+  );
   return FALLBACK_REPLY;
 }

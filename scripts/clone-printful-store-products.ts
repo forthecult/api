@@ -38,7 +38,8 @@ function getTargetStoreId(): number {
     );
   }
   const n = parseInt(id, 10);
-  if (Number.isNaN(n)) throw new Error("PRINTFUL_TARGET_STORE_ID must be a number");
+  if (Number.isNaN(n))
+    throw new Error("PRINTFUL_TARGET_STORE_ID must be a number");
   return n;
 }
 
@@ -81,9 +82,13 @@ async function main() {
     const stores = await fetchStores();
     console.log("Your Printful stores (use ID as target for clone):\n");
     for (const s of stores) {
-      console.log(`  ID: ${s.id}  Name: ${s.name ?? "(no name)"}  Type: ${s.type ?? ""}`);
+      console.log(
+        `  ID: ${s.id}  Name: ${s.name ?? "(no name)"}  Type: ${s.type ?? ""}`,
+      );
     }
-    console.log(`\nSource for clone is store ${SOURCE_STORE_ID}. Use another store's ID as target.`);
+    console.log(
+      `\nSource for clone is store ${SOURCE_STORE_ID}. Use another store's ID as target.`,
+    );
     return;
   }
 
@@ -106,7 +111,9 @@ async function main() {
     if (offset >= paging.total) break;
   } while (true);
 
-  console.log(`Found ${allProducts.length} synced products. Cloning in-stock only...\n`);
+  console.log(
+    `Found ${allProducts.length} synced products. Cloning in-stock only...\n`,
+  );
 
   const rateLimitMs = 6_000;
   let created = 0;
@@ -123,13 +130,17 @@ async function main() {
     try {
       full = await fetchSyncProduct(sourceId, SOURCE_STORE_ID);
     } catch (e) {
-      console.error(`  [${i + 1}/${allProducts.length}] Skip product ${sourceId}: ${(e as Error).message}`);
+      console.error(
+        `  [${i + 1}/${allProducts.length}] Skip product ${sourceId}: ${(e as Error).message}`,
+      );
       continue;
     }
 
     const inStockVariants = full.sync_variants.filter(isInStock);
     if (inStockVariants.length === 0) {
-      console.log(`  [${i + 1}/${allProducts.length}] Skip ${sourceId} (no in-stock variants)`);
+      console.log(
+        `  [${i + 1}/${allProducts.length}] Skip ${sourceId} (no in-stock variants)`,
+      );
       continue;
     }
 
@@ -174,12 +185,17 @@ async function main() {
       suggestedSeo.push({
         sourceId,
         newTitle,
-        metaDescription: suggestedMetaDescription(newTitle, inStockVariants.length),
+        metaDescription: suggestedMetaDescription(
+          newTitle,
+          inStockVariants.length,
+        ),
         pageTitle: suggestedPageTitle(newTitle),
       });
       console.log(`  [${i + 1}/${allProducts.length}] Created: "${newTitle}"`);
     } catch (e) {
-      console.error(`  [${i + 1}/${allProducts.length}] Create failed for ${sourceId}: ${(e as Error).message}`);
+      console.error(
+        `  [${i + 1}/${allProducts.length}] Create failed for ${sourceId}: ${(e as Error).message}`,
+      );
     }
 
     if (i < allProducts.length - 1) {

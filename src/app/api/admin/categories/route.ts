@@ -7,10 +7,7 @@ import {
   categoryTokenGateTable,
   productCategoriesTable,
 } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /** Escape SQL LIKE/ILIKE special characters */
 function escapeLike(s: string): string {
@@ -134,7 +131,9 @@ export async function GET(request: NextRequest) {
       productCounts.map((r) => [r.categoryId, r.count]),
     );
 
-    const parentIds = [...new Set(categories.map((c) => c.parentId).filter(Boolean))] as string[];
+    const parentIds = [
+      ...new Set(categories.map((c) => c.parentId).filter(Boolean)),
+    ] as string[];
     const parentNames = new Map<string, string>();
     if (parentIds.length > 0) {
       const parents = await db
@@ -148,7 +147,9 @@ export async function GET(request: NextRequest) {
 
     const items = categories.map((c) => {
       // When category has a parent, expose parent name so dropdowns can show "Parent → Child"
-      const parentName = c.parentId ? parentNames.get(c.parentId) ?? null : null;
+      const parentName = c.parentId
+        ? (parentNames.get(c.parentId) ?? null)
+        : null;
       return {
         id: c.id,
         name: c.name,

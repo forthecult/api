@@ -37,14 +37,19 @@ export async function POST(
     }
 
     const { id: userId } = await params;
-    const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
+    const body = (await request.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
 
     const address1 =
       typeof body.address1 === "string" ? body.address1.trim() : "";
     const city = typeof body.city === "string" ? body.city.trim() : "";
     const zip = typeof body.zip === "string" ? body.zip.trim() : "";
     const countryCode =
-      typeof body.countryCode === "string" ? body.countryCode.trim().toUpperCase().slice(0, 2) : "";
+      typeof body.countryCode === "string"
+        ? body.countryCode.trim().toUpperCase().slice(0, 2)
+        : "";
 
     if (!address1 || !city || !zip || !countryCode) {
       return addCorsIfAdminOrigin(
@@ -73,13 +78,13 @@ export async function POST(
         typeof body.address2 === "string" ? body.address2.trim() || null : null,
       city,
       stateCode:
-        typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
+        typeof body.stateCode === "string"
+          ? body.stateCode.trim() || null
+          : null,
       countryCode,
       zip,
-      phone:
-        typeof body.phone === "string" ? body.phone.trim() || null : null,
-      label:
-        typeof body.label === "string" ? body.label.trim() || null : null,
+      phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
+      label: typeof body.label === "string" ? body.label.trim() || null : null,
       isDefault,
       createdAt: now,
       updatedAt: now,
@@ -92,7 +97,9 @@ export async function POST(
         address1,
         city,
         stateCode:
-          typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
+          typeof body.stateCode === "string"
+            ? body.stateCode.trim() || null
+            : null,
         countryCode,
         zip,
         isDefault,
@@ -102,10 +109,7 @@ export async function POST(
     console.error("Admin customer address create error:", err);
     return addCorsIfAdminOrigin(
       request,
-      NextResponse.json(
-        { error: "Failed to create address" },
-        { status: 500 },
-      ),
+      NextResponse.json({ error: "Failed to create address" }, { status: 500 }),
     );
   }
 }

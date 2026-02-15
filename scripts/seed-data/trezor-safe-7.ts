@@ -14,7 +14,11 @@ const CATEGORY_ID = "hardware-wallets";
 const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
 const TREZOR_NEXT = "https://trezor.io/_next/static/media";
 
-export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+export const PRODUCT_IMAGES: Array<{
+  url: string;
+  alt: string;
+  title: string;
+}> = [
   {
     url: `${TREZOR_NEXT}/hero-desktop.31065358.jpg`,
     alt: "Trezor Safe 7 hardware wallet - hero",
@@ -55,7 +59,7 @@ export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> 
 const FEATURES: string[] = [
   "TROPIC01 + EAL6+ dual Secure Elements; first auditable secure element",
   "Quantum-ready: post-quantum crypto for firmware and boot",
-  "2.5\" color touchscreen, 700 nits; Bluetooth 5.0+ and Qi2 wireless charging",
+  '2.5" color touchscreen, 700 nits; Bluetooth 5.0+ and Qi2 wireless charging',
   "LiFePO₄ battery, IP67, aluminum unibody; 1000s of coins, 70k+ dApps",
   "12–24 word backup, Multi-share option; FIDO2 passkey support",
 ];
@@ -78,7 +82,8 @@ export const TREZOR_SAFE_7 = {
   name: "Trezor Safe 7",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url, // hero; upload script will replace with UploadThing
-  mainImageAlt: "Trezor Safe 7 hardware wallet - quantum-ready, dual Secure Element",
+  mainImageAlt:
+    "Trezor Safe 7 hardware wallet - quantum-ready, dual Secure Element",
   mainImageTitle: "Trezor Safe 7 | Hardware Wallet",
   priceCents: PRICE_CENTS,
   categoryId: CATEGORY_ID,
@@ -87,7 +92,7 @@ export const TREZOR_SAFE_7 = {
   description: DESCRIPTION,
   features: FEATURES,
   metaDescription:
-    "Trezor Safe 7: quantum-ready hardware wallet with TROPIC01 Secure Element, 2.5\" touchscreen, Bluetooth & Qi2 charging. Open-source. Buy at Culture.",
+    'Trezor Safe 7: quantum-ready hardware wallet with TROPIC01 Secure Element, 2.5" touchscreen, Bluetooth & Qi2 charging. Open-source. Buy at Culture.',
   pageTitle: "Trezor Safe 7 | Hardware Wallet with TROPIC01 | Culture",
   sku: "trezor-safe-7",
   hasVariants: false,

@@ -19,8 +19,14 @@ import {
   productVariantsTable,
   productsTable,
 } from "../src/db/schema";
-import { isUploadThingUrl, uploadMockupToUploadThing } from "../src/lib/product-mockup-upload";
-import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
+import {
+  isUploadThingUrl,
+  uploadMockupToUploadThing,
+} from "../src/lib/product-mockup-upload";
+import {
+  getUploadThingToken,
+  validateUploadThingToken,
+} from "../src/lib/uploadthing-token";
 
 import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
 import { EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
@@ -135,7 +141,9 @@ function collectImageSpecs(urlsNeedingUpload: Set<string>): ImageSpec[] {
       });
     }
 
-    const images = (p as { images?: Array<{ url: string; alt?: string; title?: string }> }).images ?? [];
+    const images =
+      (p as { images?: Array<{ url: string; alt?: string; title?: string }> })
+        .images ?? [];
     images.forEach((img, i) => {
       const url = img.url;
       if (!url || !urlsNeedingUpload.has(url) || seen.has(url)) return;
@@ -150,7 +158,17 @@ function collectImageSpecs(urlsNeedingUpload: Set<string>): ImageSpec[] {
       });
     });
 
-    const variants = (p as { variants?: Array<{ imageUrl: string; imageAlt?: string; color?: string; size?: string }> }).variants ?? [];
+    const variants =
+      (
+        p as {
+          variants?: Array<{
+            imageUrl: string;
+            imageAlt?: string;
+            color?: string;
+            size?: string;
+          }>;
+        }
+      ).variants ?? [];
     variants.forEach((v, i) => {
       const url = v.imageUrl;
       if (!url || !urlsNeedingUpload.has(url) || seen.has(url)) return;
@@ -192,15 +210,21 @@ async function main() {
   const urlsNeedingUpload = await getDbUrlsNeedingUpload();
   const specs = collectImageSpecs(urlsNeedingUpload);
   if (specs.length === 0) {
-    console.log("No curated product image URLs to upload (all may already be on UploadThing).");
+    console.log(
+      "No curated product image URLs to upload (all may already be on UploadThing).",
+    );
     process.exit(0);
   }
 
-  console.log(`Found ${specs.length} image(s) to upload (${urlsNeedingUpload.size} non-UT URL(s) in DB).`);
+  console.log(
+    `Found ${specs.length} image(s) to upload (${urlsNeedingUpload.size} non-UT URL(s) in DB).`,
+  );
 
   if (dryRun) {
     for (const s of specs) {
-      console.log(`  [dry-run] ${s.productId}: ${s.sourceUrl.slice(0, 60)}... → ${s.alt || "(no alt)"}`);
+      console.log(
+        `  [dry-run] ${s.productId}: ${s.sourceUrl.slice(0, 60)}... → ${s.alt || "(no alt)"}`,
+      );
     }
     console.log("Dry run done. Run without --dry-run to upload and update DB.");
     process.exit(0);
@@ -223,7 +247,9 @@ async function main() {
       console.log(`  Uploaded: ${result.filename} → ${result.url}`);
     } else {
       skippedUrls.add(s.sourceUrl);
-      console.log(`  Skipped (fetch failed or placeholder): ${s.sourceUrl.slice(0, 80)}...`);
+      console.log(
+        `  Skipped (fetch failed or placeholder): ${s.sourceUrl.slice(0, 80)}...`,
+      );
     }
   }
 
@@ -231,7 +257,9 @@ async function main() {
   if (skippedUrls.size > 0) {
     const now = new Date();
     for (const url of skippedUrls) {
-      await db.delete(productImagesTable).where(eq(productImagesTable.url, url));
+      await db
+        .delete(productImagesTable)
+        .where(eq(productImagesTable.url, url));
       await db
         .update(productsTable)
         .set({ imageUrl: null, updatedAt: now })
@@ -241,11 +269,15 @@ async function main() {
         .set({ imageUrl: null, updatedAt: now })
         .where(eq(productVariantsTable.imageUrl, url));
     }
-    console.log(`Removed ${skippedUrls.size} placeholder/failed image URL(s) from DB.`);
+    console.log(
+      `Removed ${skippedUrls.size} placeholder/failed image URL(s) from DB.`,
+    );
   }
 
   if (urlToNew.size === 0 && skippedUrls.size === 0) {
-    console.log("No images were successfully uploaded. Check source URLs and token.");
+    console.log(
+      "No images were successfully uploaded. Check source URLs and token.",
+    );
     process.exit(1);
   }
 
@@ -258,7 +290,10 @@ async function main() {
       .update(productImagesTable)
       .set({ url: newUrl, alt })
       .where(eq(productImagesTable.url, oldUrl))
-      .returning({ id: productImagesTable.id, productId: productImagesTable.productId });
+      .returning({
+        id: productImagesTable.id,
+        productId: productImagesTable.productId,
+      });
     updatedImages += imageRows.length;
 
     // Update product.imageUrl where it matched oldUrl (primary image)
@@ -271,7 +306,9 @@ async function main() {
 
     // Sync primary image from gallery for products whose imageUrl didn't match oldUrl (e.g. stale or null)
     const alreadyUpdatedIds = new Set(productRows.map((r) => r.id));
-    const productIdsFromGallery = [...new Set(imageRows.map((r) => r.productId).filter(Boolean))];
+    const productIdsFromGallery = [
+      ...new Set(imageRows.map((r) => r.productId).filter(Boolean)),
+    ];
     for (const pid of productIdsFromGallery) {
       if (alreadyUpdatedIds.has(pid!)) continue;
       const r = await db
@@ -332,7 +369,9 @@ async function main() {
     }
   }
   if (backfillCount > 0) {
-    console.log(`Backfill: set primary image from gallery for ${backfillCount} product(s).`);
+    console.log(
+      `Backfill: set primary image from gallery for ${backfillCount} product(s).`,
+    );
   }
 
   console.log(

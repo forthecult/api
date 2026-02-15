@@ -12,10 +12,8 @@
 import "dotenv/config";
 
 const ADMIN_EMAIL =
-  (process.env.ADMIN_EMAILS ?? "")
-    .split(",")[0]
-    ?.trim()
-    .toLowerCase() || "admin@test.com";
+  (process.env.ADMIN_EMAILS ?? "").split(",")[0]?.trim().toLowerCase() ||
+  "admin@test.com";
 
 const BASE =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -53,7 +51,9 @@ async function main() {
   }
 
   if (res.ok) {
-    console.log("Admin user created. Log in with that email and the password you set.");
+    console.log(
+      "Admin user created. Log in with that email and the password you set.",
+    );
     console.log("  Email:", ADMIN_EMAIL);
     console.log("  Change the password in the app after first login.");
     return;

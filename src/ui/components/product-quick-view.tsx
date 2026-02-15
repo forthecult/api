@@ -1,6 +1,13 @@
 "use client";
 
-import { Eye, ExternalLink, Heart, Minus, Plus, ShoppingCart } from "lucide-react";
+import {
+  Eye,
+  ExternalLink,
+  Heart,
+  Minus,
+  Plus,
+  ShoppingCart,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
@@ -22,11 +29,7 @@ import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from "~/ui/primitives/dialog";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
 /* -------------------------------------------------------------------------- */
@@ -112,16 +115,16 @@ function MiniGallery({
           src={mainSrc}
           unoptimized={isExternal}
           onError={() =>
-            setFailedUrls((prev) => new Set(prev).add(list[selectedIndex] ?? ""))
+            setFailedUrls((prev) =>
+              new Set(prev).add(list[selectedIndex] ?? ""),
+            )
           }
         />
       </div>
       {list.length > 1 && (
         <div className="flex gap-1.5 overflow-x-auto pb-1">
           {list.slice(0, 6).map((src, i) => {
-            const thumbSrc = failedUrls.has(src)
-              ? "/placeholder.svg"
-              : src;
+            const thumbSrc = failedUrls.has(src) ? "/placeholder.svg" : src;
             return (
               <button
                 key={i}
@@ -186,7 +189,7 @@ function findVariant(
       .map((s) => String(s).trim()),
   );
   if (selectedSet.size === 0) return null;
-  let match = variants.find((v) => {
+  const match = variants.find((v) => {
     const variantSet = getVariantValueSet(v);
     if (variantSet.size !== selectedSet.size) return false;
     for (const s of selectedSet) {
@@ -250,9 +253,7 @@ function VariantSelector({
 
   // When selections change, find matching variant by value set (option names not tied to columns)
   React.useEffect(() => {
-    if (
-      Object.keys(selectedByIndex).length < optionDefinitions.length
-    ) {
+    if (Object.keys(selectedByIndex).length < optionDefinitions.length) {
       onSelectVariant(null);
       return;
     }
@@ -267,11 +268,17 @@ function VariantSelector({
       if (values.length <= 1 || !isPhoneModelsOption(opt.name, values)) return;
       const groups = groupPhoneModelsByBrand(values);
       const currentVal = selectedByIndex[idx];
-      const currentBrand = currentVal ? getPhoneBrand(currentVal) : groups[0]?.brand;
+      const currentBrand = currentVal
+        ? getPhoneBrand(currentVal)
+        : groups[0]?.brand;
       const currentGroup = groups.find((g) => g.brand === currentBrand);
       const models = currentGroup?.models ?? [];
       const fallback = models[0];
-      if (fallback && currentVal !== fallback && !currentGroup?.models.includes(currentVal ?? "")) {
+      if (
+        fallback &&
+        currentVal !== fallback &&
+        !currentGroup?.models.includes(currentVal ?? "")
+      ) {
         setSelectedByIndex((prev) => ({ ...prev, [idx]: fallback }));
       }
     });
@@ -293,13 +300,13 @@ function VariantSelector({
           const selectedValue = selectedByIndex[idx];
           const currentBrand = selectedValue
             ? getPhoneBrand(selectedValue)
-            : groups[0]?.brand ?? null;
+            : (groups[0]?.brand ?? null);
           const currentGroup = groups.find((g) => g.brand === currentBrand);
           const models = currentGroup?.models ?? [];
           const displayModel =
             selectedValue && currentGroup?.models.includes(selectedValue)
               ? selectedValue
-              : models[0] ?? "";
+              : (models[0] ?? "");
 
           return (
             <div key={opt.name} className="space-y-2">
@@ -380,9 +387,7 @@ function VariantSelector({
               {sortedValues.map((val) => (
                 <Button
                   key={val}
-                  variant={
-                    selectedByIndex[idx] === val ? "default" : "outline"
-                  }
+                  variant={selectedByIndex[idx] === val ? "default" : "outline"}
                   size="sm"
                   className="min-w-[2.5rem]"
                   onClick={() =>
@@ -518,8 +523,7 @@ export function ProductQuickView({
       : 0;
 
   const variantRequired =
-    product?.hasVariants &&
-    (product.optionDefinitions?.length ?? 0) > 0;
+    product?.hasVariants && (product.optionDefinitions?.length ?? 0) > 0;
 
   const handleAddToCart = React.useCallback(() => {
     if (!product) return;
@@ -557,7 +561,14 @@ export function ProductQuickView({
     toast.success(`${product.name} added to cart`);
     setQuantity(1);
     setTimeout(() => setIsAdding(false), 300);
-  }, [product, selectedVariant, variantRequired, addItem, currentPrice, quantity]);
+  }, [
+    product,
+    selectedVariant,
+    variantRequired,
+    addItem,
+    currentPrice,
+    quantity,
+  ]);
 
   const handleWishlistToggle = React.useCallback(async () => {
     if (!product) return;
@@ -576,9 +587,7 @@ export function ProductQuickView({
     }
   }, [product, inWishlist, addToWishlist, removeFromWishlist]);
 
-  const productUrl = product
-    ? `/${product.slug ?? product.id}`
-    : "#";
+  const productUrl = product ? `/${product.slug ?? product.id}` : "#";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -600,193 +609,206 @@ export function ProductQuickView({
         {error && (
           <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center">
             <p className="text-sm text-muted-foreground">{error}</p>
-            <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenChange(false)}
+            >
               Close
             </Button>
           </div>
         )}
 
-        {product && !loading && (() => {
-          const baseImages = (product.images ?? (product.imageUrl ? [product.imageUrl] : [])).filter(Boolean) as string[];
-          const variantImage = selectedVariant?.imageUrl?.trim();
-          const galleryImages = variantImage
-            ? [variantImage, ...baseImages.filter((u) => u?.trim() !== variantImage)]
-            : baseImages.length > 0
-              ? baseImages
-              : ["/placeholder.svg"];
-          return (
-          <div className="flex max-h-[90vh] flex-col md:flex-row">
-            {/* Left: image gallery — show selected variant image when it has one */}
-            <div className="w-full shrink-0 md:w-[48%] md:max-h-[90vh] bg-muted/30">
-              <div className="sticky top-0 p-4 md:p-5">
-                <MiniGallery
-                  images={galleryImages}
-                  productName={product.name}
-                />
-              </div>
-            </div>
-
-            {/* Right: details — scrollable (pr/pt leave room for dialog close button) */}
-            <div className="flex flex-1 flex-col overflow-y-auto pr-14 pt-14 md:max-h-[90vh]">
-              <div className="flex flex-col gap-4 px-6 pb-6 md:gap-5 md:px-8 md:pb-8">
-                {/* Category + badges */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="secondary" className="font-medium">
-                    {product.category}
-                  </Badge>
-                  {discount > 0 && (
-                    <Badge variant="destructive">{discount}% OFF</Badge>
-                  )}
-                  {!product.inStock && (
-                    <Badge variant="destructive">Out of Stock</Badge>
-                  )}
+        {product &&
+          !loading &&
+          (() => {
+            const baseImages = (
+              product.images ?? (product.imageUrl ? [product.imageUrl] : [])
+            ).filter(Boolean) as string[];
+            const variantImage = selectedVariant?.imageUrl?.trim();
+            const galleryImages = variantImage
+              ? [
+                  variantImage,
+                  ...baseImages.filter((u) => u?.trim() !== variantImage),
+                ]
+              : baseImages.length > 0
+                ? baseImages
+                : ["/placeholder.svg"];
+            return (
+              <div className="flex max-h-[90vh] flex-col md:flex-row">
+                {/* Left: image gallery — show selected variant image when it has one */}
+                <div className="w-full shrink-0 md:w-[48%] md:max-h-[90vh] bg-muted/30">
+                  <div className="sticky top-0 p-4 md:p-5">
+                    <MiniGallery
+                      images={galleryImages}
+                      productName={product.name}
+                    />
+                  </div>
                 </div>
 
-                {/* Product title */}
-                <h2 className="text-xl font-semibold leading-tight tracking-tight md:text-2xl">
-                  {product.name}
-                </h2>
-
-                {/* Price */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <FiatPrice
-                      usdAmount={currentPrice}
-                      className="text-2xl font-bold md:text-3xl"
-                    />
-                    {originalPrice && originalPrice > currentPrice && (
-                      <FiatPrice
-                        usdAmount={originalPrice}
-                        className="text-base text-muted-foreground line-through"
-                      />
-                    )}
-                  </div>
-                  <CryptoPrice
-                    className="text-sm text-muted-foreground"
-                    usdAmount={currentPrice}
-                  />
-                </div>
-
-                {/* Country availability */}
-                {unavailableInCountry && (
-                  <p className="text-sm font-medium text-[#B5594E]">
-                    Not available in your country
-                  </p>
-                )}
-
-                {/* Description */}
-                {product.description && (
-                  <p className="text-sm leading-relaxed text-muted-foreground line-clamp-4">
-                    {product.description}
-                  </p>
-                )}
-
-                {/* Features */}
-                {product.features && product.features.length > 0 && (
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    {product.features.slice(0, 4).map((f, i) => (
-                      <li key={i} className="flex items-start gap-2">
-                        <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                {/* Variant selector */}
-                {variantRequired &&
-                  product.optionDefinitions &&
-                  product.variants && (
-                    <VariantSelector
-                      optionDefinitions={product.optionDefinitions}
-                      variants={product.variants}
-                      selectedVariant={selectedVariant}
-                      onSelectVariant={setSelectedVariant}
-                    />
-                  )}
-
-                {/* Quantity + Add to Cart row */}
-                <div className="flex flex-wrap items-center gap-3 pt-1">
-                  <div className="flex items-center rounded-lg border border-input">
-                    <Button
-                      aria-label="Decrease quantity"
-                      disabled={quantity <= 1}
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      size="icon"
-                      variant="ghost"
-                      className="h-10 w-10 rounded-r-none"
-                    >
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <span className="min-w-[2.5rem] text-center text-sm font-medium tabular-nums">
-                      {quantity}
-                    </span>
-                    <Button
-                      aria-label="Increase quantity"
-                      onClick={() => setQuantity((q) => q + 1)}
-                      size="icon"
-                      variant="ghost"
-                      className="h-10 w-10 rounded-l-none"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <Button
-                    className="min-w-[140px] flex-1 gap-2"
-                    disabled={
-                      !product.inStock ||
-                      isAdding ||
-                      unavailableInCountry ||
-                      (variantRequired && !selectedVariant)
-                    }
-                    onClick={handleAddToCart}
-                    size="lg"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    {unavailableInCountry
-                      ? "Unavailable"
-                      : isAdding
-                        ? "Adding…"
-                        : variantRequired && !selectedVariant
-                          ? "Select options"
-                          : "Add to Cart"}
-                  </Button>
-
-                  <Button
-                    aria-label={
-                      inWishlist ? "Remove from wishlist" : "Add to wishlist"
-                    }
-                    variant="outline"
-                    size="icon"
-                    className="h-10 w-10 shrink-0"
-                    onClick={handleWishlistToggle}
-                  >
-                    <Heart
-                      className={cn(
-                        "h-4 w-4",
-                        inWishlist
-                          ? "fill-destructive text-destructive"
-                          : "text-muted-foreground",
+                {/* Right: details — scrollable (pr/pt leave room for dialog close button) */}
+                <div className="flex flex-1 flex-col overflow-y-auto pr-14 pt-14 md:max-h-[90vh]">
+                  <div className="flex flex-col gap-4 px-6 pb-6 md:gap-5 md:px-8 md:pb-8">
+                    {/* Category + badges */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="font-medium">
+                        {product.category}
+                      </Badge>
+                      {discount > 0 && (
+                        <Badge variant="destructive">{discount}% OFF</Badge>
                       )}
-                    />
-                  </Button>
-                </div>
+                      {!product.inStock && (
+                        <Badge variant="destructive">Out of Stock</Badge>
+                      )}
+                    </div>
 
-                {/* View full details */}
-                <Link
-                  href={productUrl}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
-                  onClick={() => onOpenChange(false)}
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View full product page
-                </Link>
+                    {/* Product title */}
+                    <h2 className="text-xl font-semibold leading-tight tracking-tight md:text-2xl">
+                      {product.name}
+                    </h2>
+
+                    {/* Price */}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <FiatPrice
+                          usdAmount={currentPrice}
+                          className="text-2xl font-bold md:text-3xl"
+                        />
+                        {originalPrice && originalPrice > currentPrice && (
+                          <FiatPrice
+                            usdAmount={originalPrice}
+                            className="text-base text-muted-foreground line-through"
+                          />
+                        )}
+                      </div>
+                      <CryptoPrice
+                        className="text-sm text-muted-foreground"
+                        usdAmount={currentPrice}
+                      />
+                    </div>
+
+                    {/* Country availability */}
+                    {unavailableInCountry && (
+                      <p className="text-sm font-medium text-[#B5594E]">
+                        Not available in your country
+                      </p>
+                    )}
+
+                    {/* Description */}
+                    {product.description && (
+                      <p className="text-sm leading-relaxed text-muted-foreground line-clamp-4">
+                        {product.description}
+                      </p>
+                    )}
+
+                    {/* Features */}
+                    {product.features && product.features.length > 0 && (
+                      <ul className="space-y-1.5 text-sm text-muted-foreground">
+                        {product.features.slice(0, 4).map((f, i) => (
+                          <li key={i} className="flex items-start gap-2">
+                            <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    {/* Variant selector */}
+                    {variantRequired &&
+                      product.optionDefinitions &&
+                      product.variants && (
+                        <VariantSelector
+                          optionDefinitions={product.optionDefinitions}
+                          variants={product.variants}
+                          selectedVariant={selectedVariant}
+                          onSelectVariant={setSelectedVariant}
+                        />
+                      )}
+
+                    {/* Quantity + Add to Cart row */}
+                    <div className="flex flex-wrap items-center gap-3 pt-1">
+                      <div className="flex items-center rounded-lg border border-input">
+                        <Button
+                          aria-label="Decrease quantity"
+                          disabled={quantity <= 1}
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          size="icon"
+                          variant="ghost"
+                          className="h-10 w-10 rounded-r-none"
+                        >
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <span className="min-w-[2.5rem] text-center text-sm font-medium tabular-nums">
+                          {quantity}
+                        </span>
+                        <Button
+                          aria-label="Increase quantity"
+                          onClick={() => setQuantity((q) => q + 1)}
+                          size="icon"
+                          variant="ghost"
+                          className="h-10 w-10 rounded-l-none"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <Button
+                        className="min-w-[140px] flex-1 gap-2"
+                        disabled={
+                          !product.inStock ||
+                          isAdding ||
+                          unavailableInCountry ||
+                          (variantRequired && !selectedVariant)
+                        }
+                        onClick={handleAddToCart}
+                        size="lg"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {unavailableInCountry
+                          ? "Unavailable"
+                          : isAdding
+                            ? "Adding…"
+                            : variantRequired && !selectedVariant
+                              ? "Select options"
+                              : "Add to Cart"}
+                      </Button>
+
+                      <Button
+                        aria-label={
+                          inWishlist
+                            ? "Remove from wishlist"
+                            : "Add to wishlist"
+                        }
+                        variant="outline"
+                        size="icon"
+                        className="h-10 w-10 shrink-0"
+                        onClick={handleWishlistToggle}
+                      >
+                        <Heart
+                          className={cn(
+                            "h-4 w-4",
+                            inWishlist
+                              ? "fill-destructive text-destructive"
+                              : "text-muted-foreground",
+                          )}
+                        />
+                      </Button>
+                    </div>
+
+                    {/* View full details */}
+                    <Link
+                      href={productUrl}
+                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                      onClick={() => onOpenChange(false)}
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      View full product page
+                    </Link>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          );
-        })()}
+            );
+          })()}
       </DialogContent>
     </Dialog>
   );

@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
     `[Printify webhook] POST received (body length: ${rawBody?.length ?? 0}, has secret: ${!!request.nextUrl.searchParams.get("secret")})`,
   );
   try {
-
     // Validation-style request (empty or non-webhook payload): return 200 before checking secret.
     // Printify may validate the URL without the secret query param, which would otherwise cause 401 and 9004.
     if (!rawBody?.trim()) {
@@ -71,7 +70,9 @@ export async function POST(request: NextRequest) {
 
     // In production, require secret so we never accept unverified webhooks
     if (isProduction && !expectedSecret) {
-      console.warn("Printify webhook: PRINTIFY_WEBHOOK_SECRET required in production");
+      console.warn(
+        "Printify webhook: PRINTIFY_WEBHOOK_SECRET required in production",
+      );
       return NextResponse.json(
         { error: "Webhook not configured" },
         { status: 503 },
@@ -92,9 +93,7 @@ export async function POST(request: NextRequest) {
     const resourceType = payload.resource?.type;
     // Printify may send id as string or number; normalize to string for API calls
     const resourceId =
-      payload.resource?.id != null
-        ? String(payload.resource.id)
-        : undefined;
+      payload.resource?.id != null ? String(payload.resource.id) : undefined;
 
     console.log(
       `Printify webhook received: ${eventType} for ${resourceType} ${resourceId}`,

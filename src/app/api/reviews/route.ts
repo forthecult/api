@@ -25,7 +25,8 @@ export async function GET(request: Request) {
         ) || HOMEPAGE_LIMIT,
       ),
     );
-    const includeProductName = url.searchParams.get("includeProductName") === "true";
+    const includeProductName =
+      url.searchParams.get("includeProductName") === "true";
 
     const rows = await db.query.productReviewsTable.findMany({
       columns: {
@@ -52,7 +53,9 @@ export async function GET(request: Request) {
         showName: r.showName,
         author: r.author ?? undefined,
       }),
-      ...(includeProductName && { productName: (r as { productName?: string | null }).productName ?? null }),
+      ...(includeProductName && {
+        productName: (r as { productName?: string | null }).productName ?? null,
+      }),
     }));
 
     return NextResponse.json({ items });

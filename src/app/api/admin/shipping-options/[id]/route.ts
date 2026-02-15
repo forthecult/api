@@ -124,7 +124,11 @@ export async function PATCH(
         body.amountCents >= 0
       ) {
         updates.amountCents = body.amountCents;
-        if (body.type === "flat_plus_per_item" && typeof body.additionalItemCents === "number" && body.additionalItemCents >= 0) {
+        if (
+          body.type === "flat_plus_per_item" &&
+          typeof body.additionalItemCents === "number" &&
+          body.additionalItemCents >= 0
+        ) {
           updates.additionalItemCents = body.additionalItemCents;
         } else if (body.type !== "flat_plus_per_item") {
           updates.additionalItemCents = null;
@@ -133,14 +137,14 @@ export async function PATCH(
     } else if (body.amountCents !== undefined) {
       updates.amountCents = body.amountCents ?? null;
     }
-    if (body.additionalItemCents !== undefined && body.type === "flat_plus_per_item") {
+    if (
+      body.additionalItemCents !== undefined &&
+      body.type === "flat_plus_per_item"
+    ) {
       updates.additionalItemCents = body.additionalItemCents ?? null;
     }
     if (typeof body.priority === "number") updates.priority = body.priority;
-    if (
-      body.speed === "standard" ||
-      body.speed === "express"
-    ) {
+    if (body.speed === "standard" || body.speed === "express") {
       updates.speed = body.speed;
     }
     if (body.brandId !== undefined) {

@@ -36,10 +36,7 @@ export async function requireAuth(request: NextRequest): Promise<AuthResult> {
     if (!session?.user) {
       return {
         ok: false,
-        response: NextResponse.json(
-          { error: "Unauthorized" },
-          { status: 401 },
-        ),
+        response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
       };
     }
     return { ok: true, user: session.user };

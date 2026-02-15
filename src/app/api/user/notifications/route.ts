@@ -1,11 +1,16 @@
 import { and, eq } from "drizzle-orm";
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { accountTable, userTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 import type {
   ChannelPreferences,
   NotificationPreferences,
@@ -46,7 +51,8 @@ export async function GET(request: NextRequest) {
       marketingDiscord: userTable.marketingDiscord,
       marketingAiCompanion: userTable.marketingAiCompanion,
       // Legacy fields
-      receiveOrderNotificationsViaTelegram: userTable.receiveOrderNotificationsViaTelegram,
+      receiveOrderNotificationsViaTelegram:
+        userTable.receiveOrderNotificationsViaTelegram,
       receiveMarketing: userTable.receiveMarketing,
     })
     .from(userTable)
@@ -97,7 +103,8 @@ export async function GET(request: NextRequest) {
       aiCompanion: user?.marketingAiCompanion ?? false,
     },
     // Legacy fields
-    receiveOrderNotificationsViaTelegram: user?.receiveOrderNotificationsViaTelegram ?? false,
+    receiveOrderNotificationsViaTelegram:
+      user?.receiveOrderNotificationsViaTelegram ?? false,
     receiveMarketing: user?.receiveMarketing ?? false,
   } satisfies NotificationPreferences);
 }
@@ -113,11 +120,11 @@ type NotificationUpdateBody = {
 
 /**
  * PATCH /api/user/notifications
- * Body: { 
+ * Body: {
  *   transactional?: { email?: boolean, website?: boolean, sms?: boolean, telegram?: boolean, aiCompanion?: boolean },
  *   marketing?: { email?: boolean, website?: boolean, sms?: boolean, telegram?: boolean, aiCompanion?: boolean },
- *   receiveOrderNotificationsViaTelegram?: boolean, 
- *   receiveMarketing?: boolean 
+ *   receiveOrderNotificationsViaTelegram?: boolean,
+ *   receiveMarketing?: boolean
  * }
  * Telegram preferences are only applied when user has Telegram linked.
  */
@@ -219,8 +226,12 @@ export async function PATCH(request: NextRequest) {
     updates.receiveMarketing = body.receiveMarketing;
     updates.marketingEmail = body.receiveMarketing;
   }
-  if (typeof body.receiveOrderNotificationsViaTelegram === "boolean" && hasTelegramLinked) {
-    updates.receiveOrderNotificationsViaTelegram = body.receiveOrderNotificationsViaTelegram;
+  if (
+    typeof body.receiveOrderNotificationsViaTelegram === "boolean" &&
+    hasTelegramLinked
+  ) {
+    updates.receiveOrderNotificationsViaTelegram =
+      body.receiveOrderNotificationsViaTelegram;
     updates.transactionalTelegram = body.receiveOrderNotificationsViaTelegram;
   }
 

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { getMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
 import {
@@ -31,19 +31,19 @@ export async function GET(request: NextRequest) {
     {
       success: true,
       agent: {
-      id: agent.id,
-      name: agent.name,
-      karma: agent.karma,
-      avatar_url: agent.avatar_url,
-      is_claimed: agent.is_claimed,
-      owner: agent.owner
-        ? {
-            x_handle: agent.owner.x_handle,
-            x_verified: agent.owner.x_verified,
-          }
-        : undefined,
+        id: agent.id,
+        name: agent.name,
+        karma: agent.karma,
+        avatar_url: agent.avatar_url,
+        is_claimed: agent.is_claimed,
+        owner: agent.owner
+          ? {
+              x_handle: agent.owner.x_handle,
+              x_verified: agent.owner.x_verified,
+            }
+          : undefined,
+      },
     },
-  },
     { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
   );
 }

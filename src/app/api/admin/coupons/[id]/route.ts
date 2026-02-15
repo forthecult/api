@@ -8,10 +8,7 @@ import {
   couponRedemptionTable,
   couponsTable,
 } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(
   _request: NextRequest,

@@ -2,12 +2,20 @@
  * Create POD products in Printify or Printful with image and positioning.
  */
 
-import { createPrintifyProduct, getPrintifyShopId, publishPrintifyProduct } from "@/lib/printify";
+import {
+  createPrintifyProduct,
+  getPrintifyShopId,
+  publishPrintifyProduct,
+} from "@/lib/printify";
 import { createSyncProduct } from "@/lib/printful";
 import { importSinglePrintifyProduct } from "@/lib/printify-sync";
 import { importSinglePrintfulProduct } from "@/lib/printful-sync";
 import { fetchBlueprintWithSpecs } from "./catalog";
-import { calculatePosition, toPrintifyPosition, toPrintfulPosition } from "./position-calculator";
+import {
+  calculatePosition,
+  toPrintifyPosition,
+  toPrintfulPosition,
+} from "./position-calculator";
 import { uploadToPrintify, uploadToPrintful } from "./upload";
 import type {
   CreateProductInput,
@@ -40,10 +48,15 @@ async function resolveImage(
     const result = await uploadToPrintful(image.url);
     return { imageId: result.imageId, imageUrl: result.imageUrl };
   }
-  throw new Error("Product image must provide id, url, or buffer (Printify only for buffer).");
+  throw new Error(
+    "Product image must provide id, url, or buffer (Printify only for buffer).",
+  );
 }
 
-function findPrintSpec(printSpecs: PrintSpec[], position: string): PrintSpec | undefined {
+function findPrintSpec(
+  printSpecs: PrintSpec[],
+  position: string,
+): PrintSpec | undefined {
   return printSpecs.find(
     (p) => p.position.toLowerCase() === position.toLowerCase(),
   );
@@ -178,9 +191,11 @@ export async function createProduct(
       const files = input.printAreas.map((pa) => {
         const spec = findPrintSpec(blueprint.printSpecs, pa.position);
         const specForVariant =
-          blueprint.variants.find((bv) => bv.id === v.id)?.printSpecs?.find(
-            (p) => p.position.toLowerCase() === pa.position.toLowerCase(),
-          ) ?? spec;
+          blueprint.variants
+            .find((bv) => bv.id === v.id)
+            ?.printSpecs?.find(
+              (p) => p.position.toLowerCase() === pa.position.toLowerCase(),
+            ) ?? spec;
         const type = pa.position === "front" ? "default" : pa.position;
         if (!specForVariant) {
           return { type, url: imageUrl };
@@ -214,15 +229,13 @@ export async function createProduct(
     });
 
     try {
-      const syncProduct = await createSyncProduct(
-        {
-          sync_product: {
-            name: input.title,
-            thumbnail: imageUrl,
-          },
-          sync_variants: syncVariants,
+      const syncProduct = await createSyncProduct({
+        sync_product: {
+          name: input.title,
+          thumbnail: imageUrl,
         },
-      );
+        sync_variants: syncVariants,
+      });
       let localProductId: string | undefined;
       if (input.syncToStore) {
         try {

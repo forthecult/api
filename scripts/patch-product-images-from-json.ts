@@ -19,8 +19,10 @@
  *   PRODUCT_IMAGES_JSON=./minirig-urls.json bun run scripts/patch-product-images-from-json.ts
  */
 
-const MAIN_APP_URL = process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";
-const API_KEY = process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
+const MAIN_APP_URL =
+  process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";
+const API_KEY =
+  process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
 const JSON_PATH = process.env.PRODUCT_IMAGES_JSON?.trim();
 
 if (!API_KEY) {
@@ -28,7 +30,9 @@ if (!API_KEY) {
   process.exit(1);
 }
 if (!JSON_PATH) {
-  console.error("Set PRODUCT_IMAGES_JSON to the path of your JSON file (e.g. ./minirig-urls.json).");
+  console.error(
+    "Set PRODUCT_IMAGES_JSON to the path of your JSON file (e.g. ./minirig-urls.json).",
+  );
   process.exit(1);
 }
 
@@ -65,9 +69,13 @@ async function main() {
     process.exit(1);
   }
 
-  const listRes = await fetch(`${API_BASE}/api/admin/products?limit=200`, { headers });
+  const listRes = await fetch(`${API_BASE}/api/admin/products?limit=200`, {
+    headers,
+  });
   if (!listRes.ok) throw new Error(`Products: ${listRes.status}`);
-  const listData = (await listRes.json()) as { items?: Array<{ id: string; slug?: string; name: string }> };
+  const listData = (await listRes.json()) as {
+    items?: Array<{ id: string; slug?: string; name: string }>;
+  };
   const products = listData.items ?? [];
   const bySlug = new Map(products.map((p) => [(p.slug ?? "").trim(), p]));
 
@@ -78,7 +86,9 @@ async function main() {
       console.warn("Product not found for slug:", slug);
       continue;
     }
-    const getRes = await fetch(`${API_BASE}/api/admin/products/${product.id}`, { headers });
+    const getRes = await fetch(`${API_BASE}/api/admin/products/${product.id}`, {
+      headers,
+    });
     if (!getRes.ok) {
       console.error("GET", product.name, getRes.status);
       continue;
@@ -132,13 +142,21 @@ async function main() {
       ...(variantBodies && { variants: variantBodies }),
     };
 
-    const patchRes = await fetch(`${API_BASE}/api/admin/products/${product.id}`, {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify(body),
-    });
+    const patchRes = await fetch(
+      `${API_BASE}/api/admin/products/${product.id}`,
+      {
+        method: "PATCH",
+        headers,
+        body: JSON.stringify(body),
+      },
+    );
     if (!patchRes.ok) {
-      console.error("PATCH", product.name, patchRes.status, await patchRes.text());
+      console.error(
+        "PATCH",
+        product.name,
+        patchRes.status,
+        await patchRes.text(),
+      );
       continue;
     }
     updated += 1;

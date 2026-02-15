@@ -55,7 +55,9 @@ async function getOrCreateSessionKey(): Promise<CryptoKey> {
   }
 
   // Generate new key material (cast for BufferSource - Uint8Array may use ArrayBufferLike in types)
-  const keyMaterialBytes = new TextEncoder().encode(APP_ENTROPY + navigator.userAgent);
+  const keyMaterialBytes = new TextEncoder().encode(
+    APP_ENTROPY + navigator.userAgent,
+  );
   const keyMaterial = await window.crypto.subtle.importKey(
     "raw",
     keyMaterialBytes as unknown as BufferSource,
@@ -158,7 +160,10 @@ export const secureStorage = {
       const encrypted = await encrypt(value);
       localStorage.setItem(ENCRYPTED_PREFIX + key, encrypted);
     } catch (error) {
-      console.error("[SecureStorage] Failed to encrypt — data NOT stored to avoid plaintext leak:", error);
+      console.error(
+        "[SecureStorage] Failed to encrypt — data NOT stored to avoid plaintext leak:",
+        error,
+      );
       // [SECURITY] Do NOT fallback to unencrypted storage; sensitive data must not be stored in plaintext.
       // Callers should handle the async rejection or missing data gracefully.
     }
@@ -267,18 +272,24 @@ export const secureStorageSync = {
     if (unencrypted) {
       decryptionCache.set(key, unencrypted);
       // Migrate in background
-      secureStorage.setItem(key, unencrypted).then(() => {
-        localStorage.removeItem(key);
-      }).catch(() => {});
+      secureStorage
+        .setItem(key, unencrypted)
+        .then(() => {
+          localStorage.removeItem(key);
+        })
+        .catch(() => {});
       return unencrypted;
     }
 
     // Trigger async decryption for next access
     const encrypted = localStorage.getItem(ENCRYPTED_PREFIX + key);
     if (encrypted) {
-      secureStorage.getItem(key).then((value) => {
-        if (value) decryptionCache.set(key, value);
-      }).catch(() => {});
+      secureStorage
+        .getItem(key)
+        .then((value) => {
+          if (value) decryptionCache.set(key, value);
+        })
+        .catch(() => {});
       // Return null for first access - caller should handle loading state
       return null;
     }

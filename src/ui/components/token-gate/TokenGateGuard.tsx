@@ -22,7 +22,12 @@ export type TokenGateResourceType = "product" | "category" | "page";
 
 type TokenGateConfig = {
   tokenGated: boolean;
-  gates: Array<{ tokenSymbol: string; quantity: number; network: string | null; gateType: string }>;
+  gates: Array<{
+    tokenSymbol: string;
+    quantity: number;
+    network: string | null;
+    gateType: string;
+  }>;
 };
 
 type TokenGateGuardProps = {
@@ -60,7 +65,13 @@ function WalletOption({
     >
       {icon && (
         <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
-          <img src={icon} alt="" className="object-contain" width={32} height={32} />
+          <img
+            src={icon}
+            alt=""
+            className="object-contain"
+            width={32}
+            height={32}
+          />
         </div>
       )}
       <span className="flex-1 font-medium">{wallet.adapter.name}</span>
@@ -89,14 +100,8 @@ export function TokenGateGuard({
   const signFlowStarted = useRef(false);
   const hasChildren = React.Children.count(children) > 0;
 
-  const {
-    wallets,
-    select,
-    connect,
-    publicKey,
-    connected,
-    signMessage,
-  } = useWallet();
+  const { wallets, select, connect, publicKey, connected, signMessage } =
+    useWallet();
 
   const solanaWallets = wallets.filter(
     (w) =>
@@ -142,7 +147,14 @@ export function TokenGateGuard({
   );
 
   useEffect(() => {
-    if (!config?.tokenGated || step !== "signing" || !connected || !publicKey || !signMessage) return;
+    if (
+      !config?.tokenGated ||
+      step !== "signing" ||
+      !connected ||
+      !publicKey ||
+      !signMessage
+    )
+      return;
     if (signFlowStarted.current) return;
     signFlowStarted.current = true;
     let cancelled = false;
@@ -151,15 +163,18 @@ export function TokenGateGuard({
       try {
         const address = publicKey.toBase58();
 
-        const challengeRes = await fetch(`${API_BASE}/api/token-gate/challenge`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            address,
-            resourceType,
-            resourceId,
-          }),
-        });
+        const challengeRes = await fetch(
+          `${API_BASE}/api/token-gate/challenge`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              address,
+              resourceType,
+              resourceId,
+            }),
+          },
+        );
         if (!challengeRes.ok) throw new Error("Failed to get challenge");
         const { message } = (await challengeRes.json()) as { message: string };
         if (cancelled) return;
@@ -187,7 +202,13 @@ export function TokenGateGuard({
               : sig instanceof Uint8Array
                 ? sig
                 : ArrayBuffer.isView(sig)
-                  ? new Uint8Array((sig as Uint8Array).buffer.slice((sig as Uint8Array).byteOffset, (sig as Uint8Array).byteOffset + (sig as Uint8Array).byteLength))
+                  ? new Uint8Array(
+                      (sig as Uint8Array).buffer.slice(
+                        (sig as Uint8Array).byteOffset,
+                        (sig as Uint8Array).byteOffset +
+                          (sig as Uint8Array).byteLength,
+                      ),
+                    )
                   : null;
         const signatureBase64 =
           bytes != null
@@ -195,7 +216,8 @@ export function TokenGateGuard({
               ? Buffer.from(bytes).toString("base64")
               : btoa(String.fromCharCode.apply(null, Array.from(bytes)))
             : undefined;
-        const signatureBase58 = isBase58 && typeof sig === "string" ? sig : undefined;
+        const signatureBase58 =
+          isBase58 && typeof sig === "string" ? sig : undefined;
         if (!signatureBase64 && !signatureBase58) {
           throw new Error("Could not read signature from wallet.");
         }
@@ -239,7 +261,15 @@ export function TokenGateGuard({
     return () => {
       cancelled = true;
     };
-  }, [config?.tokenGated, step, connected, publicKey, signMessage, resourceType, resourceId]);
+  }, [
+    config?.tokenGated,
+    step,
+    connected,
+    publicKey,
+    signMessage,
+    resourceType,
+    resourceId,
+  ]);
 
   // When we were rendered without children (server sent gate shell only), after validation refresh or notify parent.
   useEffect(() => {
@@ -254,7 +284,12 @@ export function TokenGateGuard({
 
   if (loading) {
     return (
-      <div className={cn("flex min-h-[280px] items-center justify-center", className)}>
+      <div
+        className={cn(
+          "flex min-h-[280px] items-center justify-center",
+          className,
+        )}
+      >
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
     );
@@ -302,7 +337,8 @@ export function TokenGateGuard({
     config.gates.length > 0
       ? (() => {
           const parts = config.gates.map(
-            (g) => `≥ ${g.quantity} ${g.tokenSymbol} on ${formatNetwork(g.network)}`,
+            (g) =>
+              `≥ ${g.quantity} ${g.tokenSymbol} on ${formatNetwork(g.network)}`,
           );
           if (parts.length === 1) return parts[0];
           return parts.join(", or ");

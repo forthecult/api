@@ -25,10 +25,7 @@ export async function GET(
 
     const { id } = await params;
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing ticket id" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
     }
 
     const [row] = await db
@@ -50,10 +47,7 @@ export async function GET(
       .limit(1);
 
     if (!row) {
-      return NextResponse.json(
-        { error: "Ticket not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
     const followUps = await db
@@ -84,7 +78,10 @@ export async function GET(
         role: m.role as "customer" | "staff",
         content: m.content,
         createdAt: m.createdAt,
-        ...(m.role === "staff" && (m.staffFirstName != null || m.staffLastName != null || m.staffImage != null)
+        ...(m.role === "staff" &&
+        (m.staffFirstName != null ||
+          m.staffLastName != null ||
+          m.staffImage != null)
           ? {
               staffUser: {
                 firstName: m.staffFirstName ?? "",
@@ -140,10 +137,7 @@ export async function PATCH(
 
     const { id } = await params;
     if (!id) {
-      return NextResponse.json(
-        { error: "Missing ticket id" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
     }
 
     let body: { status?: string; type?: string; priority?: string };
@@ -154,23 +148,27 @@ export async function PATCH(
         priority?: string;
       };
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
     const status =
-      typeof body.status === "string" && ALLOWED_STATUSES.includes(body.status as (typeof ALLOWED_STATUSES)[number])
+      typeof body.status === "string" &&
+      ALLOWED_STATUSES.includes(
+        body.status as (typeof ALLOWED_STATUSES)[number],
+      )
         ? (body.status as (typeof ALLOWED_STATUSES)[number])
         : undefined;
     const typeRaw = body.type ?? body.priority;
     const type =
-      typeof typeRaw === "string" && ALLOWED_TYPES.includes(typeRaw as (typeof ALLOWED_TYPES)[number])
+      typeof typeRaw === "string" &&
+      ALLOWED_TYPES.includes(typeRaw as (typeof ALLOWED_TYPES)[number])
         ? (typeRaw as (typeof ALLOWED_TYPES)[number])
         : undefined;
     if (!status && type === undefined) {
       return NextResponse.json(
-        { error: "Provide status and/or type (priority): status one of open,pending,closed; type one of normal,urgent" },
+        {
+          error:
+            "Provide status and/or type (priority): status one of open,pending,closed; type one of normal,urgent",
+        },
         { status: 400 },
       );
     }
@@ -182,14 +180,15 @@ export async function PATCH(
       .limit(1);
 
     if (!ticket) {
-      return NextResponse.json(
-        { error: "Ticket not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
     const now = new Date();
-    const updates: { status?: (typeof ALLOWED_STATUSES)[number]; type?: (typeof ALLOWED_TYPES)[number]; updatedAt: Date } = {
+    const updates: {
+      status?: (typeof ALLOWED_STATUSES)[number];
+      type?: (typeof ALLOWED_TYPES)[number];
+      updatedAt: Date;
+    } = {
       updatedAt: now,
     };
     if (status !== undefined) updates.status = status;

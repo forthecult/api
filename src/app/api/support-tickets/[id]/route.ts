@@ -78,7 +78,10 @@ export async function GET(
       role: m.role as "customer" | "staff",
       content: m.content,
       createdAt: m.createdAt,
-      ...(m.role === "staff" && (m.staffFirstName != null || m.staffLastName != null || m.staffImage != null)
+      ...(m.role === "staff" &&
+      (m.staffFirstName != null ||
+        m.staffLastName != null ||
+        m.staffImage != null)
         ? {
             staffUser: {
               firstName: m.staffFirstName ?? "",
@@ -190,9 +193,7 @@ export async function DELETE(
   }
 
   try {
-    await db
-      .delete(supportTicketTable)
-      .where(eq(supportTicketTable.id, id));
+    await db.delete(supportTicketTable).where(eq(supportTicketTable.id, id));
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Support ticket DELETE:", err);

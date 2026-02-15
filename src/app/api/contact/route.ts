@@ -65,10 +65,22 @@ export async function POST(request: NextRequest) {
           process.env.RESEND_FROM_EMAIL.length > 0
             ? process.env.RESEND_FROM_EMAIL.trim()
             : "onboarding@resend.dev";
-        const safeMessage = message.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const safeName = name.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const safeEmail = email.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        const safeSubject = subject.trim().replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const safeMessage = message
+          .trim()
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        const safeName = name
+          .trim()
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        const safeEmail = email
+          .trim()
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+        const safeSubject = subject
+          .trim()
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
         const { error } = await resend.emails.send({
           from,
           to,

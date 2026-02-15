@@ -6,10 +6,7 @@
 import { Connection } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
-import {
-  fetchStakedBalance,
-  getStakingProgramId,
-} from "~/lib/cult-staking";
+import { fetchStakedBalance, getStakingProgramId } from "~/lib/cult-staking";
 import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
@@ -35,7 +32,7 @@ export async function GET(request: Request) {
     const walletRaw = walletResult?.amount ?? 0n;
     const decimals = walletResult?.decimals ?? CULT_DECIMALS;
     const totalRaw = walletRaw + stakedRaw;
-    const human = Number(totalRaw) / Math.pow(10, decimals);
+    const human = Number(totalRaw) / 10 ** decimals;
     return NextResponse.json({
       votingPower: human.toFixed(decimals),
       votingPowerRaw: totalRaw.toString(),

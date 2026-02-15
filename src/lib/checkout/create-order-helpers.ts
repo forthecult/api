@@ -56,7 +56,10 @@ export interface ProductValidationResult {
   /** Product lookup map keyed by product ID. */
   productMap: Map<string, { id: string; name: string; priceCents: number }>;
   /** Variant lookup map keyed by variant ID. */
-  variantMap: Map<string, { id: string; productId: string; priceCents: number }>;
+  variantMap: Map<
+    string,
+    { id: string; productId: string; priceCents: number }
+  >;
   /** De-duplicated product IDs present in the validated items. */
   productIds: string[];
   /** Server-computed subtotal in cents (sum of priceCents * quantity). */
@@ -178,7 +181,10 @@ export async function validateAndFetchProducts(
 
     // eSIM items: pass through without DB lookup (client sends priceCents and name)
     if (item.productId.startsWith("esim_")) {
-      const name = typeof item.name === "string" && item.name.trim() ? item.name.trim() : null;
+      const name =
+        typeof item.name === "string" && item.name.trim()
+          ? item.name.trim()
+          : null;
       const priceCents =
         typeof item.priceCents === "number" && item.priceCents >= 0
           ? item.priceCents
@@ -276,12 +282,17 @@ export async function resolveDiscounts(params: {
   );
 
   const couponResult = couponCode
-    ? await resolveCouponForCheckout(couponCode, subtotalCents, shippingFeeCents, {
-        userId: userId ?? undefined,
-        productIds,
-        paymentMethodKey: paymentMethodKey ?? undefined,
-        items,
-      })
+    ? await resolveCouponForCheckout(
+        couponCode,
+        subtotalCents,
+        shippingFeeCents,
+        {
+          userId: userId ?? undefined,
+          productIds,
+          paymentMethodKey: paymentMethodKey ?? undefined,
+          items,
+        },
+      )
     : null;
 
   const baseTotal = subtotalCents + shippingFeeCents;
@@ -292,7 +303,10 @@ export async function resolveDiscounts(params: {
   let expectedTotal: number;
 
   if (couponResult && affiliateResult) {
-    if (couponResult.totalAfterDiscountCents <= affiliateResult.totalAfterDiscountCents) {
+    if (
+      couponResult.totalAfterDiscountCents <=
+      affiliateResult.totalAfterDiscountCents
+    ) {
       expectedTotal = couponResult.totalAfterDiscountCents;
       effectiveAffiliate = null;
     } else {
@@ -384,15 +398,16 @@ export async function insertOrder(
     ...(base.telegramUserId
       ? { telegramUserId: String(base.telegramUserId) }
       : {}),
-    ...(base.telegramUsername ? { telegramUsername: base.telegramUsername } : {}),
+    ...(base.telegramUsername
+      ? { telegramUsername: base.telegramUsername }
+      : {}),
     ...(base.telegramFirstName
       ? { telegramFirstName: base.telegramFirstName }
       : {}),
     ...(base.affiliateResult && {
       affiliateId: base.affiliateResult.affiliate.affiliateId,
       affiliateCode: base.affiliateResult.affiliate.affiliateCode,
-      affiliateCommissionCents:
-        base.affiliateResult.affiliate.commissionCents,
+      affiliateCommissionCents: base.affiliateResult.affiliate.commissionCents,
       affiliateDiscountCents: base.affiliateResult.affiliate.discountCents,
     }),
     ...extraFields,
@@ -532,7 +547,9 @@ export async function createEsimOrderRecordsForOrder(params: {
     const dataQuantity = Number(pkg.data_quantity);
     const validityDays = Number(pkg.package_validity) || 1;
     const dataUnit =
-      pkg.data_unit && String(pkg.data_unit).toUpperCase() === "MB" ? "MB" : "GB";
+      pkg.data_unit && String(pkg.data_unit).toUpperCase() === "MB"
+        ? "MB"
+        : "GB";
     const packageTypeVal =
       pkg.package_type === "DATA-VOICE-SMS" ? "DATA-VOICE-SMS" : "DATA-ONLY";
 
@@ -630,7 +647,14 @@ export async function createOrderTransaction(params: {
     }
 
     // Post-order bookkeeping (within the same tx)
-    const { orderId, userId, affiliateResult, couponResult, emailMarketingConsent, smsMarketingConsent } = params.bookkeeping;
+    const {
+      orderId,
+      userId,
+      affiliateResult,
+      couponResult,
+      emailMarketingConsent,
+      smsMarketingConsent,
+    } = params.bookkeeping;
 
     if (
       userId &&

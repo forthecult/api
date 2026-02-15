@@ -49,7 +49,9 @@ async function linkOrphanReviews() {
       ),
     );
 
-  console.log(`Found ${orphanedReviews.length} reviews without linked products`);
+  console.log(
+    `Found ${orphanedReviews.length} reviews without linked products`,
+  );
 
   let linked = 0;
   let notFound = 0;

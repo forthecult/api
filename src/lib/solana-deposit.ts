@@ -15,7 +15,9 @@ import { createHash } from "node:crypto";
 export function deriveDepositKeypair(orderId: string): Keypair {
   const secret = process.env.SOLANA_DEPOSIT_SECRET;
   if (!secret) {
-    throw new Error("SOLANA_DEPOSIT_SECRET environment variable is required for Solana payment processing");
+    throw new Error(
+      "SOLANA_DEPOSIT_SECRET environment variable is required for Solana payment processing",
+    );
   }
   const seed = createHash("sha256")
     .update(orderId + secret)

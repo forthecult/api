@@ -16,7 +16,10 @@ function getCached(): string | null {
   try {
     const raw = sessionStorage.getItem(CACHE_KEY);
     if (!raw) return null;
-    const { country, at } = JSON.parse(raw) as { country: string | null; at: number };
+    const { country, at } = JSON.parse(raw) as {
+      country: string | null;
+      at: number;
+    };
     if (at && Date.now() - at < CACHE_TTL_MS && country) return country;
     return null;
   } catch {
@@ -27,7 +30,10 @@ function getCached(): string | null {
 function setCached(country: string | null) {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify({ country, at: Date.now() }));
+    sessionStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({ country, at: Date.now() }),
+    );
   } catch {
     // ignore
   }

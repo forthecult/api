@@ -30,8 +30,8 @@ export default function SlugError({ error, reset }: ErrorPageProps) {
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">Something went wrong</h1>
           <p className="max-w-md text-muted-foreground">
-            We couldn’t load this page. This can happen when an image or resource
-            fails to load. Please try again or browse from the shop.
+            We couldn’t load this page. This can happen when an image or
+            resource fails to load. Please try again or browse from the shop.
           </p>
         </div>
 

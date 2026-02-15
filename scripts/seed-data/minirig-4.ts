@@ -12,10 +12,15 @@ const PRODUCT_ID = "minirig-4";
 const PRODUCT_SLUG = "minirig-4-bluetooth-speaker";
 const CATEGORY_ID = "accessories-speakers";
 
-const SITES_LARGE = "https://minirigs.co.uk/sites/default/files/styles/large/public/2026-01";
+const SITES_LARGE =
+  "https://minirigs.co.uk/sites/default/files/styles/large/public/2026-01";
 
 /** Product photos from minirigs.co.uk (not logos). One per angle / accessory. */
-export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+export const PRODUCT_IMAGES: Array<{
+  url: string;
+  alt: string;
+  title: string;
+}> = [
   {
     url: `${SITES_LARGE}/minirig-4-black.webp?itok=Sz1POk6h`,
     alt: "Minirig 4 Bluetooth Speaker Black - portable wireless speaker, designed in Bristol UK",
@@ -88,10 +93,14 @@ export const PAGE_TITLE =
 export const MAIN_IMAGE_ALT =
   "Minirig 4 Bluetooth Speaker - portable wireless speaker, Bristol UK";
 
-export const MAIN_IMAGE_TITLE = "Minirig 4 Bluetooth Speaker | Portable Bluetooth Speaker";
+export const MAIN_IMAGE_TITLE =
+  "Minirig 4 Bluetooth Speaker | Portable Bluetooth Speaker";
 
 export const OPTION_DEFINITIONS = [
-  { name: "Colour", values: ["Black", "Blue", "Brushed Silver", "Green", "Red"] },
+  {
+    name: "Colour",
+    values: ["Black", "Blue", "Brushed Silver", "Green", "Red"],
+  },
 ];
 
 const COLOURS = ["Black", "Blue", "Brushed Silver", "Green", "Red"] as const;

@@ -91,20 +91,17 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const [form, setForm] = useState(emptyForm);
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState("");
-  const onLoqateSelect = useCallback(
-    (mapped: MappedShippingAddress) => {
-      setForm((prev) => ({
-        ...prev,
-        address1: mapped.street,
-        address2: mapped.apartment || prev.address2,
-        city: mapped.city,
-        stateCode: mapped.state,
-        zip: mapped.zip,
-        countryCode: mapped.country || prev.countryCode,
-      }));
-    },
-    [],
-  );
+  const onLoqateSelect = useCallback((mapped: MappedShippingAddress) => {
+    setForm((prev) => ({
+      ...prev,
+      address1: mapped.street,
+      address2: mapped.apartment || prev.address2,
+      city: mapped.city,
+      stateCode: mapped.state,
+      zip: mapped.zip,
+      countryCode: mapped.country || prev.countryCode,
+    }));
+  }, []);
 
   const loqate = useLoqateAutocomplete({
     text: form.address1 ?? "",
@@ -157,7 +154,11 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
     });
     setPending(false);
     if (res.error) {
-      setFormError(typeof res.error === "string" ? res.error : "Failed to add address. Please try again.");
+      setFormError(
+        typeof res.error === "string"
+          ? res.error
+          : "Failed to add address. Please try again.",
+      );
       return;
     }
     setAddOpen(false);
@@ -182,7 +183,11 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
     });
     setPending(false);
     if (res.error) {
-      setFormError(typeof res.error === "string" ? res.error : "Failed to update address. Please try again.");
+      setFormError(
+        typeof res.error === "string"
+          ? res.error
+          : "Failed to update address. Please try again.",
+      );
       return;
     }
     setEditOpen(false);
@@ -224,7 +229,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
             </DialogHeader>
             <form onSubmit={handleAdd}>
               {formError && (
-                <div className="mb-2 text-sm font-medium text-destructive">{formError}</div>
+                <div className="mb-2 text-sm font-medium text-destructive">
+                  {formError}
+                </div>
               )}
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
@@ -266,8 +273,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                           className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
                           role="listbox"
                         >
-                          {loqate.loading &&
-                          loqate.suggestions.length === 0 ? (
+                          {loqate.loading && loqate.suggestions.length === 0 ? (
                             <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
                               <Loader2
                                 className="h-4 w-4 shrink-0 animate-spin"
@@ -320,9 +326,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="add-phone">
-                    Phone (optional)
-                  </Label>
+                  <Label htmlFor="add-phone">Phone (optional)</Label>
                   <Input
                     id="add-phone"
                     onChange={(e) =>
@@ -480,7 +484,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
           </DialogHeader>
           <form onSubmit={handleEdit}>
             {formError && (
-              <div className="mb-2 text-sm font-medium text-destructive">{formError}</div>
+              <div className="mb-2 text-sm font-medium text-destructive">
+                {formError}
+              </div>
             )}
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
@@ -516,9 +522,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="edit-phone">
-                  Phone (optional)
-                </Label>
+                <Label htmlFor="edit-phone">Phone (optional)</Label>
                 <Input
                   id="edit-phone"
                   onChange={(e) =>

@@ -57,14 +57,18 @@ function buildRow(
 async function main() {
   console.log(DRY_RUN ? "[DRY RUN] No rows will be inserted.\n" : "");
 
-  const brands = await db.select({
-    id: brandTable.id,
-    name: brandTable.name,
-    slug: brandTable.slug,
-  }).from(brandTable);
+  const brands = await db
+    .select({
+      id: brandTable.id,
+      name: brandTable.name,
+      slug: brandTable.slug,
+    })
+    .from(brandTable);
 
   if (brands.length === 0) {
-    console.error("No brands found. Run db:seed-brands first. Failing so CI does not silently skip shipping options.");
+    console.error(
+      "No brands found. Run db:seed-brands first. Failing so CI does not silently skip shipping options.",
+    );
     process.exit(1);
   }
 
@@ -76,7 +80,9 @@ async function main() {
       BRAND_SHIPPING_OVERRIDES[brand.slug] ?? DEFAULT_SHIPPING_OPTIONS;
 
     if (!DRY_RUN) {
-      await db.delete(shippingOptionsTable).where(eq(shippingOptionsTable.brandId, brand.id));
+      await db
+        .delete(shippingOptionsTable)
+        .where(eq(shippingOptionsTable.brandId, brand.id));
     } else {
       console.log(`[${brand.name}] Would delete existing shipping options.`);
     }
@@ -90,7 +96,9 @@ async function main() {
 
       if (DRY_RUN) {
         const amount =
-          opt.amountCents != null ? ` $${(opt.amountCents / 100).toFixed(2)}` : "";
+          opt.amountCents != null
+            ? ` $${(opt.amountCents / 100).toFixed(2)}`
+            : "";
         console.log(`  Would create: ${row.name} (${opt.type}${amount})`);
       } else {
         await db.insert(shippingOptionsTable).values(row);
@@ -100,7 +108,9 @@ async function main() {
     }
   }
 
-  console.log(`\nDone. Seeded ${totalOptions} shipping option(s) for ${brands.length} brand(s).`);
+  console.log(
+    `\nDone. Seeded ${totalOptions} shipping option(s) for ${brands.length} brand(s).`,
+  );
 }
 
 main()

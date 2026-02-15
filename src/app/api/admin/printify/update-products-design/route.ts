@@ -144,7 +144,10 @@ export async function POST(request: NextRequest) {
 
   for (const p of products) {
     try {
-      const product = await fetchPrintifyProduct(pf.shopId, p.printifyProductId);
+      const product = await fetchPrintifyProduct(
+        pf.shopId,
+        p.printifyProductId,
+      );
       const print_areas = product.print_areas.map((pa) => ({
         variant_ids: pa.variant_ids,
         placeholders: pa.placeholders.map((ph) => ({
@@ -195,7 +198,11 @@ export async function POST(request: NextRequest) {
   }
 
   const categoryRows = await db
-    .select({ id: categoriesTable.id, slug: categoriesTable.slug, name: categoriesTable.name })
+    .select({
+      id: categoriesTable.id,
+      slug: categoriesTable.slug,
+      name: categoriesTable.name,
+    })
     .from(categoriesTable);
   const bySlug = new Map<string, string>();
   const byName = new Map<string, string>();
@@ -207,8 +214,7 @@ export async function POST(request: NextRequest) {
   const solanaId = bySlug.get("solana") ?? byName.get("solana") ?? null;
   const glasswareId =
     bySlug.get("glassware") ?? byName.get("glassware") ?? null;
-  const stickersId =
-    bySlug.get("stickers") ?? byName.get("stickers") ?? null;
+  const stickersId = bySlug.get("stickers") ?? byName.get("stickers") ?? null;
 
   for (const p of products) {
     try {
@@ -225,10 +231,7 @@ export async function POST(request: NextRequest) {
       ) {
         categoryIds.push(glasswareId);
       }
-      if (
-        label.toLowerCase().includes("sticker") &&
-        stickersId
-      ) {
+      if (label.toLowerCase().includes("sticker") && stickersId) {
         categoryIds.push(stickersId);
       }
       const mainCategoryId = solunaId ?? categoryIds[0] ?? null;
@@ -236,8 +239,7 @@ export async function POST(request: NextRequest) {
       await db
         .update(productsTable)
         .set({
-          featuresJson:
-            features.length > 0 ? JSON.stringify(features) : null,
+          featuresJson: features.length > 0 ? JSON.stringify(features) : null,
           pageTitle: seo.pageTitle,
           metaDescription: seo.metaDescription,
           seoOptimized: true,

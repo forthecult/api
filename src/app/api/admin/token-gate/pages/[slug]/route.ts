@@ -3,10 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { pageTokenGateTable } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * GET /api/admin/token-gate/pages/[slug]
@@ -23,10 +20,7 @@ export async function GET(
     const { slug } = await params;
     const pageSlug = slug?.trim();
     if (!pageSlug) {
-      return NextResponse.json(
-        { error: "Slug required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Slug required" }, { status: 400 });
     }
 
     const rows = await db
@@ -74,10 +68,7 @@ export async function PATCH(
     const { slug } = await params;
     const pageSlug = slug?.trim();
     if (!pageSlug) {
-      return NextResponse.json(
-        { error: "Slug required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Slug required" }, { status: 400 });
     }
 
     const body = (await request.json()) as {
@@ -97,7 +88,9 @@ export async function PATCH(
       .where(eq(pageTokenGateTable.pageSlug, pageSlug));
 
     for (const gate of gates) {
-      const symbol = String(gate.tokenSymbol ?? "").trim().toUpperCase();
+      const symbol = String(gate.tokenSymbol ?? "")
+        .trim()
+        .toUpperCase();
       const qty = Number(gate.quantity);
       if (!symbol || !Number.isInteger(qty) || qty < 1) continue;
       await db.insert(pageTokenGateTable).values({

@@ -43,16 +43,22 @@ export async function sendRefundRequestSubmittedEmail(
         html: `<!DOCTYPE html><html><body><p>${body.replace(/\n/g, "<br/>")}</p></body></html>`,
       });
     } catch (err) {
-      console.error("[sendRefundRequestSubmittedEmail] Resend send failed:", err);
+      console.error(
+        "[sendRefundRequestSubmittedEmail] Resend send failed:",
+        err,
+      );
     }
     return;
   }
 
   if (process.env.NODE_ENV === "development") {
-    console.log("[sendRefundRequestSubmittedEmail] No RESEND_API_KEY - would send:", {
-      to,
-      subject,
-      body: body.slice(0, 200),
-    });
+    console.log(
+      "[sendRefundRequestSubmittedEmail] No RESEND_API_KEY - would send:",
+      {
+        to,
+        subject,
+        body: body.slice(0, 200),
+      },
+    );
   }
 }

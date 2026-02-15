@@ -12,11 +12,17 @@ const PRODUCT_ID = "minirig-subwoofer-4";
 const PRODUCT_SLUG = "minirig-subwoofer-4";
 const CATEGORY_ID = "accessories-speakers";
 
-const SITES_LARGE_2025_12 = "https://minirigs.co.uk/sites/default/files/styles/large/public/2025-12";
-const SITES_LARGE_2025_11 = "https://minirigs.co.uk/sites/default/files/styles/large/public/2025-11";
+const SITES_LARGE_2025_12 =
+  "https://minirigs.co.uk/sites/default/files/styles/large/public/2025-12";
+const SITES_LARGE_2025_11 =
+  "https://minirigs.co.uk/sites/default/files/styles/large/public/2025-11";
 
 /** Product photos from minirigs.co.uk (not logos). */
-export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+export const PRODUCT_IMAGES: Array<{
+  url: string;
+  alt: string;
+  title: string;
+}> = [
   {
     url: `${SITES_LARGE_2025_12}/black-sub-4.webp?itok=6EtSzO36`,
     alt: "Minirig Subwoofer 4 Black - portable wireless subwoofer, Bristol UK",
@@ -83,7 +89,14 @@ export const OPTION_DEFINITIONS = [
   },
 ];
 
-const COLOURS = ["Black", "Blue", "Brushed Silver", "Green", "Purple", "Red"] as const;
+const COLOURS = [
+  "Black",
+  "Blue",
+  "Brushed Silver",
+  "Green",
+  "Purple",
+  "Red",
+] as const;
 
 /** Photo of each colour variant from minirigs.co.uk (one image per variant). */
 const VARIANT_IMAGE_URLS: Record<(typeof COLOURS)[number], string> = {

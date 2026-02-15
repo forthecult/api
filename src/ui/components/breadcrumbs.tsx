@@ -8,10 +8,7 @@ type Props = {
   lastIsCurrentPage?: boolean;
 };
 
-export function Breadcrumbs({
-  items,
-  lastIsCurrentPage = true,
-}: Props) {
+export function Breadcrumbs({ items, lastIsCurrentPage = true }: Props) {
   if (items.length === 0) return null;
 
   return (

@@ -13,7 +13,10 @@ import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
-import type { ProductOptionDefinition, ProductVariantOption } from "~/app/products/[id]/types";
+import type {
+  ProductOptionDefinition,
+  ProductVariantOption,
+} from "~/app/products/[id]/types";
 
 export interface LongFormProductProps {
   product: {
@@ -74,7 +77,11 @@ export function LongFormProductPage({
           <div className="container px-4 py-6 md:px-6">
             <Breadcrumbs items={breadcrumbTrail} />
             <Link href="/products">
-              <Button aria-label="Back to products" variant="ghost" className="mb-4">
+              <Button
+                aria-label="Back to products"
+                variant="ghost"
+                className="mb-4"
+              >
                 ← Back to Products
               </Button>
             </Link>
@@ -109,12 +116,18 @@ export function LongFormProductPage({
                     <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
                       {b && (
                         <span>
-                          <span className="font-medium text-foreground">Brand:</span> {b}
+                          <span className="font-medium text-foreground">
+                            Brand:
+                          </span>{" "}
+                          {b}
                         </span>
                       )}
                       {m && (
                         <span>
-                          <span className="font-medium text-foreground">Model:</span> {m}
+                          <span className="font-medium text-foreground">
+                            Model:
+                          </span>{" "}
+                          {m}
                         </span>
                       )}
                     </div>
@@ -164,9 +177,15 @@ export function LongFormProductPage({
 
         {/* Features */}
         {product.features.length > 0 && (
-          <section className="border-b py-12 md:py-16" aria-labelledby="features-heading">
+          <section
+            className="border-b py-12 md:py-16"
+            aria-labelledby="features-heading"
+          >
             <div className="container px-4 md:px-6">
-              <h2 id="features-heading" className="mb-8 text-2xl font-bold md:text-3xl">
+              <h2
+                id="features-heading"
+                className="mb-8 text-2xl font-bold md:text-3xl"
+              >
                 Features
               </h2>
               <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -179,7 +198,9 @@ export function LongFormProductPage({
                       className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary"
                       aria-hidden
                     />
-                    <span className="text-sm text-muted-foreground">{feature}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {feature}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -189,7 +210,10 @@ export function LongFormProductPage({
 
         {/* Long-form description (HTML) */}
         {product.description?.trim() && (
-          <section className="border-b py-12 md:py-16" aria-labelledby="details-heading">
+          <section
+            className="border-b py-12 md:py-16"
+            aria-labelledby="details-heading"
+          >
             <div className="container px-4 md:px-6">
               <h2 id="details-heading" className="sr-only">
                 Details

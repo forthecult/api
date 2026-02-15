@@ -24,7 +24,11 @@ export async function GET(
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
 
-  const [chart] = await db.select().from(sizeChartsTable).where(eq(sizeChartsTable.id, id)).limit(1);
+  const [chart] = await db
+    .select()
+    .from(sizeChartsTable)
+    .where(eq(sizeChartsTable.id, id))
+    .limit(1);
   if (!chart) return apiError("NOT_FOUND", { message: "Size chart not found" });
   return NextResponse.json(chart);
 }
@@ -52,16 +56,22 @@ export async function PATCH(
   };
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
-  if (body.displayName !== undefined) updates.displayName = body.displayName?.trim() ?? null;
-  if (body.dataImperial !== undefined) updates.dataImperial = body.dataImperial != null ? JSON.stringify(body.dataImperial) : null;
-  if (body.dataMetric !== undefined) updates.dataMetric = body.dataMetric != null ? JSON.stringify(body.dataMetric) : null;
+  if (body.displayName !== undefined)
+    updates.displayName = body.displayName?.trim() ?? null;
+  if (body.dataImperial !== undefined)
+    updates.dataImperial =
+      body.dataImperial != null ? JSON.stringify(body.dataImperial) : null;
+  if (body.dataMetric !== undefined)
+    updates.dataMetric =
+      body.dataMetric != null ? JSON.stringify(body.dataMetric) : null;
 
   const [updated] = await db
     .update(sizeChartsTable)
     .set(updates as Record<string, unknown>)
     .where(eq(sizeChartsTable.id, id))
     .returning();
-  if (!updated) return apiError("NOT_FOUND", { message: "Size chart not found" });
+  if (!updated)
+    return apiError("NOT_FOUND", { message: "Size chart not found" });
   return NextResponse.json(updated);
 }
 
@@ -80,7 +90,11 @@ export async function DELETE(
   const { id } = await params;
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
 
-  const [deleted] = await db.delete(sizeChartsTable).where(eq(sizeChartsTable.id, id)).returning({ id: sizeChartsTable.id });
-  if (!deleted) return apiError("NOT_FOUND", { message: "Size chart not found" });
+  const [deleted] = await db
+    .delete(sizeChartsTable)
+    .where(eq(sizeChartsTable.id, id))
+    .returning({ id: sizeChartsTable.id });
+  if (!deleted)
+    return apiError("NOT_FOUND", { message: "Size chart not found" });
   return new NextResponse(null, { status: 204 });
 }

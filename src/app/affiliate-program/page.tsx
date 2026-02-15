@@ -40,9 +40,9 @@ export default function AffiliateProgramPage() {
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
             We're a lifestyle brand built on decentralization—premium products
-            that protect health, privacy, and autonomy. If that's what you
-            stand for too, join our affiliate program. Apply once, get a
-            unique link, and earn when your audience shops.
+            that protect health, privacy, and autonomy. If that's what you stand
+            for too, join our affiliate program. Apply once, get a unique link,
+            and earn when your audience shops.
           </p>
           <div className="mt-10 flex flex-wrap gap-4">
             <Button asChild size="lg">
@@ -62,8 +62,8 @@ export default function AffiliateProgramPage() {
             How it works
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
-            Simple, transparent, built for creators and publishers who care
-            what they promote.
+            Simple, transparent, built for creators and publishers who care what
+            they promote.
           </p>
           <div className="mt-12 grid gap-6 sm:grid-cols-3">
             <div className="group rounded-2xl border border-border bg-card/50 p-6 text-center shadow-sm transition-shadow hover:shadow-md">
@@ -82,9 +82,8 @@ export default function AffiliateProgramPage() {
               </span>
               <h3 className="mt-4 font-semibold text-foreground">Share</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Use your unique referral link. Share it anywhere—social,
-                blog, newsletter. When someone clicks, we remember them for
-                90 days.
+                Use your unique referral link. Share it anywhere—social, blog,
+                newsletter. When someone clicks, we remember them for 90 days.
               </p>
             </div>
             <div className="group rounded-2xl border border-border bg-card/50 p-6 text-center shadow-sm transition-shadow hover:shadow-md">
@@ -93,8 +92,8 @@ export default function AffiliateProgramPage() {
               </span>
               <h3 className="mt-4 font-semibold text-foreground">Earn</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                When they buy, you earn a commission. Configurable per
-                partner. Payouts in Bitcoin, stablecoins, CULT, or PayPal when you
+                When they buy, you earn a commission. Configurable per partner.
+                Payouts in Bitcoin, stablecoins, CULT, or PayPal when you
                 &apos;re ready.
               </p>
             </div>
@@ -114,10 +113,10 @@ export default function AffiliateProgramPage() {
           <p className="mt-4 leading-relaxed text-muted-foreground">
             Culture has been here since 2015. We sell premium products that
             protect your health, privacy, assets, and autonomy—natural fiber
-            apparel, clean water, hardware wallets, gear that lasts. We don&apos;t
-            do polyester, data selling, or planned obsolescence. Every product
-            passes the Culture test: Does it improve someone&apos;s life? Would we
-            use it ourselves?
+            apparel, clean water, hardware wallets, gear that lasts. We
+            don&apos;t do polyester, data selling, or planned obsolescence.
+            Every product passes the Culture test: Does it improve
+            someone&apos;s life? Would we use it ourselves?
           </p>
           <ul className="mt-8 space-y-4">
             {[
@@ -126,11 +125,11 @@ export default function AffiliateProgramPage() {
               "Privacy-first: no mandatory sign-up, no third-party trackers, data delete on request.",
               "Quality over quantity. We'd rather carry less and stand behind every item.",
             ].map((item, i) => (
-              <li
-                key={i}
-                className="flex gap-3 text-muted-foreground"
-              >
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden />
+              <li key={i} className="flex gap-3 text-muted-foreground">
+                <span
+                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
+                  aria-hidden
+                />
                 <span>{item}</span>
               </li>
             ))}
@@ -151,20 +150,21 @@ export default function AffiliateProgramPage() {
           </h2>
           <div className="mt-8 grid gap-6 sm:grid-cols-2">
             <div className="rounded-xl border border-border bg-card/50 px-5 py-5">
-              <h3 className="font-semibold text-foreground">Cookie & attribution</h3>
+              <h3 className="font-semibold text-foreground">
+                Cookie & attribution
+              </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 90-day cookie. If someone clicks your link and buys within 90
-                days, you get the commission. One referral can lead to
-                multiple orders in that window.
+                days, you get the commission. One referral can lead to multiple
+                orders in that window.
               </p>
             </div>
             <div className="rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm">
               <h3 className="font-semibold text-foreground">Payouts</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Bitcoin, stablecoins (e.g. USDT), or PayPal. We process
-                payouts manually at first; higher-volume partners can discuss
-                frequency. You're promoting a crypto-native brand—we pay like
-                one.
+                Bitcoin, stablecoins (e.g. USDT), or PayPal. We process payouts
+                manually at first; higher-volume partners can discuss frequency.
+                You're promoting a crypto-native brand—we pay like one.
               </p>
             </div>
             <div className="rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm">
@@ -178,10 +178,10 @@ export default function AffiliateProgramPage() {
             <div className="rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm">
               <h3 className="font-semibold text-foreground">Who can join</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Anyone can apply. We approve based on fit—audience, values,
-                how you plan to promote. No minimum follower count. Blog,
-                YouTube, X, Telegram, newsletter—if you share Culture with
-                your people, we want to hear from you.
+                Anyone can apply. We approve based on fit—audience, values, how
+                you plan to promote. No minimum follower count. Blog, YouTube,
+                X, Telegram, newsletter—if you share Culture with your people,
+                we want to hear from you.
               </p>
             </div>
           </div>
@@ -240,10 +240,9 @@ export default function AffiliateProgramPage() {
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 A free partnership where you earn commission by promoting
-                Culture. You get a unique link, share it, and when someone
-                buys through that link (within 90 days), you get paid. You
-                also get a dashboard to track clicks, conversions, and
-                earnings.
+                Culture. You get a unique link, share it, and when someone buys
+                through that link (within 90 days), you get paid. You also get a
+                dashboard to track clicks, conversions, and earnings.
               </p>
             </li>
             <li>
@@ -251,8 +250,8 @@ export default function AffiliateProgramPage() {
                 How do I get paid?
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                We support Bitcoin, stablecoins (e.g. USDT on ERC-20 or
-                TRC-20), CULT, and PayPal. You choose your preferred method when you
+                We support Bitcoin, stablecoins (e.g. USDT on ERC-20 or TRC-20),
+                CULT, and PayPal. You choose your preferred method when you
                 apply or in your affiliate dashboard. Payouts are processed
                 manually; minimum thresholds may apply.
               </p>
@@ -262,10 +261,10 @@ export default function AffiliateProgramPage() {
                 Do I need a big audience?
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                No. We care about fit—whether you run a blog, a YouTube
-                channel, a Telegram group, or a newsletter. If your audience
-                cares about quality, privacy, or crypto, you're a good
-                candidate. Apply and tell us how you'd promote Culture.
+                No. We care about fit—whether you run a blog, a YouTube channel,
+                a Telegram group, or a newsletter. If your audience cares about
+                quality, privacy, or crypto, you're a good candidate. Apply and
+                tell us how you'd promote Culture.
               </p>
             </li>
             <li>
@@ -274,9 +273,8 @@ export default function AffiliateProgramPage() {
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Optional. When you're approved, we can configure a customer
-                discount for your link (percent or fixed amount). Your
-                audience gets a benefit; you still earn commission on the
-                sale.
+                discount for your link (percent or fixed amount). Your audience
+                gets a benefit; you still earn commission on the sale.
               </p>
             </li>
           </ul>
@@ -290,8 +288,8 @@ export default function AffiliateProgramPage() {
             Ready to partner?
           </h2>
           <p className="mt-4 text-muted-foreground">
-            Apply from your dashboard. If you don't have an account yet,
-            sign up first—then go to Affiliate and submit your application.
+            Apply from your dashboard. If you don't have an account yet, sign up
+            first—then go to Affiliate and submit your application.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Button asChild size="lg">

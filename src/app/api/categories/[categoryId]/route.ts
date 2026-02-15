@@ -157,7 +157,10 @@ export async function GET(
       ]);
 
     const brandOptions = brandCounts
-      .filter((r: { brand: string | null; count: number }) => r.brand != null && String(r.brand).trim() !== "")
+      .filter(
+        (r: { brand: string | null; count: number }) =>
+          r.brand != null && String(r.brand).trim() !== "",
+      )
       .map((r: { brand: string | null; count: number }) => ({
         value: String(r.brand).toLowerCase().replace(/\s+/g, "-"),
         label: String(r.brand),
@@ -214,7 +217,10 @@ export async function GET(
     });
 
     const childProductCountMap = new Map(
-      childCounts.map((c: { id: string; productCount: number }) => [c.id, c.productCount]),
+      childCounts.map((c: { id: string; productCount: number }) => [
+        c.id,
+        c.productCount,
+      ]),
     );
 
     return NextResponse.json({
@@ -223,19 +229,23 @@ export async function GET(
       description: category.description ?? undefined,
       slug: category.slug ?? undefined,
       productCount: ids.length,
-      subcategories: childCategories.map((c: { id: string; name: string; description: string | null }) => ({
-        id: c.id,
-        name: c.name,
-        description: c.description ?? undefined,
-        productCount: childProductCountMap.get(c.id) ?? 0,
-      })),
+      subcategories: childCategories.map(
+        (c: { id: string; name: string; description: string | null }) => ({
+          id: c.id,
+          name: c.name,
+          description: c.description ?? undefined,
+          productCount: childProductCountMap.get(c.id) ?? 0,
+        }),
+      ),
       availableFilters,
       priceRange: { min: priceMin, max: priceMax, currency: "usd" },
-      popularProducts: popularRows.map((p: { id: string; name: string; priceCents: number }) => ({
-        id: p.id,
-        name: p.name,
-        price: { usd: p.priceCents / 100 },
-      })),
+      popularProducts: popularRows.map(
+        (p: { id: string; name: string; priceCents: number }) => ({
+          id: p.id,
+          name: p.name,
+          price: { usd: p.priceCents / 100 },
+        }),
+      ),
     });
   } catch (err) {
     console.error("Category detail error:", err);

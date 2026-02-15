@@ -1,4 +1,10 @@
-import { bigint, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  bigint,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 /**
  * Governance proposals for CULT token holder voting.
@@ -22,18 +28,25 @@ export const governanceProposalTable = pgTable("governance_proposal", {
  * Votes on governance proposals. One vote per wallet per proposal.
  * votingPower = CULT balance (raw, with decimals) at time of vote.
  */
-export const governanceVoteTable = pgTable("governance_vote", {
-  id: text("id").primaryKey(),
-  proposalId: text("proposal_id")
-    .notNull()
-    .references(() => governanceProposalTable.id, { onDelete: "cascade" }),
-  walletAddress: text("wallet_address").notNull(),
-  /** "for" | "against" | "abstain" */
-  choice: text("choice").notNull(),
-  /** Token balance (raw amount with decimals) used as voting power when vote was cast */
-  votingPower: bigint("voting_power", { mode: "number" }).notNull(),
-  createdAt: timestamp("created_at").notNull(),
-}, (t) => [
-  // M43: One vote per wallet per proposal
-  uniqueIndex("governance_vote_proposal_wallet_idx").on(t.proposalId, t.walletAddress),
-]);
+export const governanceVoteTable = pgTable(
+  "governance_vote",
+  {
+    id: text("id").primaryKey(),
+    proposalId: text("proposal_id")
+      .notNull()
+      .references(() => governanceProposalTable.id, { onDelete: "cascade" }),
+    walletAddress: text("wallet_address").notNull(),
+    /** "for" | "against" | "abstain" */
+    choice: text("choice").notNull(),
+    /** Token balance (raw amount with decimals) used as voting power when vote was cast */
+    votingPower: bigint("voting_power", { mode: "number" }).notNull(),
+    createdAt: timestamp("created_at").notNull(),
+  },
+  (t) => [
+    // M43: One vote per wallet per proposal
+    uniqueIndex("governance_vote_proposal_wallet_idx").on(
+      t.proposalId,
+      t.walletAddress,
+    ),
+  ],
+);

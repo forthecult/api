@@ -32,7 +32,11 @@
   color: #f5f5f5;
 }
 
-.dark .api-docs-wrapper .swagger-ui .opblock-tag-section .opblock-tag-section__link {
+.dark
+  .api-docs-wrapper
+  .swagger-ui
+  .opblock-tag-section
+  .opblock-tag-section__link {
   color: #d4d4d8;
 }
 

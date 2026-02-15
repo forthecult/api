@@ -26,7 +26,12 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser();
     const body = (await request.json()) as PurchaseBody;
-    const { packageId, packageType = "DATA-ONLY", paymentMethod = "stripe", email: bodyEmail } = body;
+    const {
+      packageId,
+      packageType = "DATA-ONLY",
+      paymentMethod = "stripe",
+      email: bodyEmail,
+    } = body;
 
     if (!packageId) {
       return NextResponse.json(
@@ -66,14 +71,17 @@ export async function POST(request: Request) {
     // Coerce API values (external API may return strings or omit fields)
     const dataQuantity = Number(pkg.data_quantity);
     const validityDays = Number(pkg.package_validity) || 1;
-    const dataUnit = (pkg.data_unit && String(pkg.data_unit).toUpperCase()) === "MB" ? "MB" : "GB";
-    const packageTypeVal = (pkg.package_type === "DATA-VOICE-SMS" ? "DATA-VOICE-SMS" : "DATA-ONLY") as "DATA-ONLY" | "DATA-VOICE-SMS";
+    const dataUnit =
+      (pkg.data_unit && String(pkg.data_unit).toUpperCase()) === "MB"
+        ? "MB"
+        : "GB";
+    const packageTypeVal = (
+      pkg.package_type === "DATA-VOICE-SMS" ? "DATA-VOICE-SMS" : "DATA-ONLY"
+    ) as "DATA-ONLY" | "DATA-VOICE-SMS";
 
     // Determine country name from package details
     const countryName =
-      pkg.countries?.[0]?.name ??
-      pkg.romaing_countries?.[0]?.name ??
-      null;
+      pkg.countries?.[0]?.name ?? pkg.romaing_countries?.[0]?.name ?? null;
 
     const now = new Date();
     const orderId = createId();

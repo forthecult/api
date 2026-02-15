@@ -56,10 +56,13 @@ function formatDate(s: string): string {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
-  approved: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200",
+  pending:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
+  approved:
+    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200",
   rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200",
-  suspended: "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200",
+  suspended:
+    "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200",
 };
 
 export default function AdminAffiliatesPage() {
@@ -89,7 +92,9 @@ export default function AdminAffiliatesPage() {
       const json = (await res.json()) as AffiliatesResponse;
       setData(json);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load affiliates");
+      setError(
+        err instanceof Error ? err.message : "Failed to load affiliates",
+      );
       setData(null);
     } finally {
       setLoading(false);
@@ -104,7 +109,11 @@ export default function AdminAffiliatesPage() {
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
         {error}
-        <Button className="mt-2" onClick={() => void fetchAffiliates()} type="button">
+        <Button
+          className="mt-2"
+          onClick={() => void fetchAffiliates()}
+          type="button"
+        >
           Retry
         </Button>
       </div>
@@ -184,20 +193,39 @@ export default function AdminAffiliatesPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <th className="whitespace-nowrap p-4 font-medium">Code</th>
-                      <th className="whitespace-nowrap p-4 font-medium">Status</th>
-                      <th className="whitespace-nowrap p-4 font-medium">User</th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">Conversions</th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">Earned</th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">Paid</th>
-                      <th className="whitespace-nowrap p-4 font-medium">Applied</th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">Action</th>
+                      <th className="whitespace-nowrap p-4 font-medium">
+                        Code
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium">
+                        Status
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium">
+                        User
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                        Conversions
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                        Earned
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                        Paid
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium">
+                        Applied
+                      </th>
+                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {data.items.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="p-8 text-center text-muted-foreground">
+                        <td
+                          colSpan={8}
+                          className="p-8 text-center text-muted-foreground"
+                        >
                           No affiliates found.
                         </td>
                       </tr>
@@ -214,7 +242,8 @@ export default function AdminAffiliatesPage() {
                             <span
                               className={cn(
                                 "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                STATUS_BADGE[row.status] ?? "bg-muted text-muted-foreground",
+                                STATUS_BADGE[row.status] ??
+                                  "bg-muted text-muted-foreground",
                               )}
                             >
                               {row.status}
@@ -272,7 +301,8 @@ export default function AdminAffiliatesPage() {
               {data.totalPages > 1 && (
                 <div className="mt-4 flex items-center justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Page {data.page} of {data.totalPages} ({data.totalCount} total)
+                    Page {data.page} of {data.totalPages} ({data.totalCount}{" "}
+                    total)
                   </p>
                   <div className="flex gap-2">
                     <Button

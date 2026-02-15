@@ -3,15 +3,17 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable, refundRequestsTable } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const DEFAULT_PAGE_SIZE = 20;
 const MAX_PAGE_SIZE = 100;
 
-const STATUS_VALUES = ["requested", "approved", "refunded", "rejected"] as const;
+const STATUS_VALUES = [
+  "requested",
+  "approved",
+  "refunded",
+  "rejected",
+] as const;
 type StatusFilter = (typeof STATUS_VALUES)[number];
 
 export async function GET(request: NextRequest) {
@@ -28,7 +30,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -45,11 +48,12 @@ export async function GET(request: NextRequest) {
       request.nextUrl.searchParams.get("orderId")?.trim() ?? "";
 
     const conditions: ReturnType<typeof eq>[] = [];
-    if (statusFilter) conditions.push(eq(refundRequestsTable.status, statusFilter));
-    if (orderIdParam) conditions.push(eq(refundRequestsTable.orderId, orderIdParam));
+    if (statusFilter)
+      conditions.push(eq(refundRequestsTable.status, statusFilter));
+    if (orderIdParam)
+      conditions.push(eq(refundRequestsTable.orderId, orderIdParam));
 
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [rows, countResult] = await Promise.all([
       db
@@ -66,10 +70,7 @@ export async function GET(request: NextRequest) {
           orderPaymentMethod: ordersTable.paymentMethod,
         })
         .from(refundRequestsTable)
-        .innerJoin(
-          ordersTable,
-          eq(refundRequestsTable.orderId, ordersTable.id),
-        )
+        .innerJoin(ordersTable, eq(refundRequestsTable.orderId, ordersTable.id))
         .where(whereClause)
         .orderBy(desc(refundRequestsTable.createdAt))
         .limit(limit)

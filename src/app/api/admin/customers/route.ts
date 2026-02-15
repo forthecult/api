@@ -4,10 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /** Escape SQL LIKE/ILIKE special characters */
 function escapeLike(s: string): string {
@@ -227,14 +224,18 @@ export async function GET(request: NextRequest) {
           : db.select({ count: sql<number>`count(*)::int` }).from(userTable),
       ]);
     } catch (queryErr) {
-      const msg = queryErr instanceof Error ? queryErr.message : String(queryErr);
+      const msg =
+        queryErr instanceof Error ? queryErr.message : String(queryErr);
       const mayBeSchemaError =
         msg.includes("does not exist") ||
         msg.includes("relation") ||
         msg.includes("Failed query") ||
         msg.includes("column");
       if (mayBeSchemaError) {
-        console.warn("Admin customers: full query failed, trying fallback:", msg);
+        console.warn(
+          "Admin customers: full query failed, trying fallback:",
+          msg,
+        );
         try {
           users = await runFallbackQuery();
         } catch (fallbackErr) {
@@ -249,7 +250,9 @@ export async function GET(request: NextRequest) {
               .select({ count: sql<number>`count(*)::int` })
               .from(userTable)
               .where(whereClause)
-          : await db.select({ count: sql<number>`count(*)::int` }).from(userTable);
+          : await db
+              .select({ count: sql<number>`count(*)::int` })
+              .from(userTable);
       } else {
         throw queryErr;
       }
@@ -298,10 +301,17 @@ export async function GET(request: NextRequest) {
     // Latest order location per user using DISTINCT ON to avoid fetching all orders
     const recentOrders =
       userIds.length > 0
-        ? await db.execute<{ user_id: string; shipping_city: string | null; shipping_country_code: string | null }>(sql`
+        ? await db.execute<{
+            user_id: string;
+            shipping_city: string | null;
+            shipping_country_code: string | null;
+          }>(sql`
             SELECT DISTINCT ON (user_id) user_id, shipping_city, shipping_country_code
             FROM "order"
-            WHERE user_id IN (${sql.join(userIds.map(id => sql`${id}`), sql`, `)})
+            WHERE user_id IN (${sql.join(
+              userIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})
             ORDER BY user_id, created_at DESC
           `)
         : [];

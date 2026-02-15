@@ -2,10 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  supportTicketMessageTable,
-  supportTicketTable,
-} from "~/db/schema";
+import { supportTicketMessageTable, supportTicketTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 
 /**
@@ -25,23 +22,19 @@ export async function POST(
 
     const { id: ticketId } = await params;
     if (!ticketId) {
-      return NextResponse.json(
-        { error: "Missing ticket id" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
     }
 
     let body: { content?: string };
     try {
       body = (await request.json()) as { content?: string };
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
     const content =
-      typeof body.content === "string" ? body.content.trim().slice(0, 10000) : "";
+      typeof body.content === "string"
+        ? body.content.trim().slice(0, 10000)
+        : "";
     if (!content) {
       return NextResponse.json(
         { error: "Message content is required" },
@@ -61,10 +54,7 @@ export async function POST(
       .limit(1);
 
     if (!ticket) {
-      return NextResponse.json(
-        { error: "Ticket not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
     if (ticket.status === "closed") {

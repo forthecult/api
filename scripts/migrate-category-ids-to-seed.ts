@@ -65,9 +65,7 @@ async function main() {
       .where(eq(categoriesTable.parentId, oldId));
   }
 
-  await db
-    .delete(categoriesTable)
-    .where(inArray(categoriesTable.id, OLD_IDS));
+  await db.delete(categoriesTable).where(inArray(categoriesTable.id, OLD_IDS));
 
   console.log("Updated references and removed old category rows.");
 

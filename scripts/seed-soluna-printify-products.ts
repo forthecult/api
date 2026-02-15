@@ -25,9 +25,11 @@ if (existsSync(envLocal)) {
   dotenvConfig({ path: envLocal, override: true });
 }
 
-const API_BASE =
-  (process.env.NEXT_PUBLIC_APP_URL || process.env.MAIN_APP_URL || "http://localhost:3000")
-    .replace(/\/$/, "");
+const API_BASE = (
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.MAIN_APP_URL ||
+  "http://localhost:3000"
+).replace(/\/$/, "");
 const API_KEY =
   process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
 if (!API_KEY) {
@@ -90,14 +92,15 @@ function buildSeo(productLabel: string): {
 
 async function ensureSolunaCategory(): Promise<string> {
   // Check if SOLUNA category exists (GET categories and find by slug/name)
-  const listRes = await fetch(
-    `${API_BASE}/api/admin/categories?limit=500`,
-    { headers },
-  );
+  const listRes = await fetch(`${API_BASE}/api/admin/categories?limit=500`, {
+    headers,
+  });
   if (!listRes.ok) {
     throw new Error(`Categories list failed: ${listRes.status}`);
   }
-  const listData = (await listRes.json()) as { items?: Array<{ id: string; name: string; slug?: string }> };
+  const listData = (await listRes.json()) as {
+    items?: Array<{ id: string; name: string; slug?: string }>;
+  };
   const categories = listData.items ?? [];
   const existing = categories.find(
     (c) => c.slug === "soluna" || c.name.toLowerCase() === "soluna",
@@ -126,7 +129,9 @@ async function ensureSolunaCategory(): Promise<string> {
   });
   if (!createRes.ok) {
     const text = await createRes.text();
-    throw new Error(`Create SOLUNA category failed: ${createRes.status} ${text}`);
+    throw new Error(
+      `Create SOLUNA category failed: ${createRes.status} ${text}`,
+    );
   }
   const created = (await createRes.json()) as { id: string; name: string };
   console.log("Created SOLUNA category:", created.id);
@@ -153,20 +158,26 @@ async function uploadImage(): Promise<{ imageId: string; imageUrl: string }> {
   }
   const data = (await res.json()) as { imageId?: string; imageUrl?: string };
   if (!data.imageId) throw new Error("Upload response missing imageId");
-  const imageUrl = data.imageUrl ?? `https://api.printify.com/uploads/${data.imageId}`;
+  const imageUrl =
+    data.imageUrl ?? `https://api.printify.com/uploads/${data.imageId}`;
   console.log("Uploaded image to Printify, imageId:", data.imageId);
   return { imageId: data.imageId, imageUrl };
 }
 
-async function getPrintifyBlueprintAndProvider(
-  search: string,
-): Promise<{ blueprintId: string; printProviderId: number; title: string } | null> {
+async function getPrintifyBlueprintAndProvider(search: string): Promise<{
+  blueprintId: string;
+  printProviderId: number;
+  title: string;
+} | null> {
   const catalogRes = await fetch(
     `${API_BASE}/api/admin/pod/catalog?provider=printify&search=${encodeURIComponent(search)}&limit=20`,
     { headers },
   );
   if (!catalogRes.ok) return null;
-  const catalog = (await catalogRes.json()) as Array<{ id: string; title: string }>;
+  const catalog = (await catalogRes.json()) as Array<{
+    id: string;
+    title: string;
+  }>;
   if (!Array.isArray(catalog) || catalog.length === 0) return null;
 
   const blueprint = catalog[0];
@@ -200,7 +211,9 @@ async function getBlueprintVariants(
     { headers },
   );
   if (!res.ok) throw new Error(`Blueprint detail failed: ${res.status}`);
-  const data = (await res.json()) as { variants?: Array<{ id: number; priceCents?: number }> };
+  const data = (await res.json()) as {
+    variants?: Array<{ id: number; priceCents?: number }>;
+  };
   const variants = data.variants ?? [];
   return variants.map((v) => ({
     id: v.id,
@@ -216,7 +229,14 @@ async function createProduct(params: {
   productLabel: string;
   variants: Array<{ id: number; priceCents: number }>;
 }): Promise<{ localProductId?: string; printifyProductId: string }> {
-  const { imageId, imageUrl, blueprintId, printProviderId, productLabel, variants } = params;
+  const {
+    imageId,
+    imageUrl,
+    blueprintId,
+    printProviderId,
+    productLabel,
+    variants,
+  } = params;
   const title = buildProductTitle(productLabel);
   const avgCost =
     variants.length > 0
@@ -305,17 +325,33 @@ async function main() {
   const categoryId = await ensureSolunaCategory();
   const { imageId, imageUrl } = await uploadImage();
 
-  const created: Array<{ productLabel: string; localProductId?: string; printifyProductId?: string }> = [];
+  const created: Array<{
+    productLabel: string;
+    localProductId?: string;
+    printifyProductId?: string;
+  }> = [];
   for (const { search, productLabel } of PRODUCT_SEARCHES) {
-    console.log("\nResolving blueprint for:", productLabel, `(search: ${search})`);
+    console.log(
+      "\nResolving blueprint for:",
+      productLabel,
+      `(search: ${search})`,
+    );
     const bp = await getPrintifyBlueprintAndProvider(search);
     if (!bp) {
       console.warn("  No blueprint found, skipping.");
       continue;
     }
-    console.log("  Blueprint:", bp.blueprintId, "Provider:", bp.printProviderId);
+    console.log(
+      "  Blueprint:",
+      bp.blueprintId,
+      "Provider:",
+      bp.printProviderId,
+    );
 
-    const variants = await getBlueprintVariants(bp.blueprintId, bp.printProviderId);
+    const variants = await getBlueprintVariants(
+      bp.blueprintId,
+      bp.printProviderId,
+    );
     if (variants.length === 0) {
       console.warn("  No variants, skipping.");
       continue;
@@ -330,13 +366,19 @@ async function main() {
       productLabel,
       variants,
     });
-    const printifyId = result.externalProductId ?? result.printifyProductId ?? "";
+    const printifyId =
+      result.externalProductId ?? result.printifyProductId ?? "";
     created.push({
       productLabel,
       localProductId: result.localProductId,
       printifyProductId: printifyId,
     });
-    console.log("  Created Printify product:", printifyId || "(no id in response)", "Local:", result.localProductId ?? "—");
+    console.log(
+      "  Created Printify product:",
+      printifyId || "(no id in response)",
+      "Local:",
+      result.localProductId ?? "—",
+    );
 
     let localId = result.localProductId;
     if (!localId && printifyId) {
@@ -356,13 +398,12 @@ async function main() {
     }
     if (localId) {
       try {
-        await patchProductSeoAndFeatures(
-          localId,
-          productLabel,
-          categoryId,
-        );
+        await patchProductSeoAndFeatures(localId, productLabel, categoryId);
       } catch (patchErr) {
-        console.warn("  PATCH features/SEO failed (product created in Printify):", patchErr instanceof Error ? patchErr.message : patchErr);
+        console.warn(
+          "  PATCH features/SEO failed (product created in Printify):",
+          patchErr instanceof Error ? patchErr.message : patchErr,
+        );
       }
     }
 
@@ -374,11 +415,15 @@ async function main() {
     console.log(
       " -",
       c.productLabel,
-      c.printifyProductId ? `Printify ID: ${c.printifyProductId}` : "(no Printify ID)",
+      c.printifyProductId
+        ? `Printify ID: ${c.printifyProductId}`
+        : "(no Printify ID)",
       c.localProductId ? `| local: ${c.localProductId}` : "",
     ),
   );
-  console.log("\nIf you don't see these in Printify, confirm the shop at forthecult.store uses the same PRINTIFY_SHOP_ID as the account you're viewing.");
+  console.log(
+    "\nIf you don't see these in Printify, confirm the shop at forthecult.store uses the same PRINTIFY_SHOP_ID as the account you're viewing.",
+  );
 }
 
 main().catch((err) => {

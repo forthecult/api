@@ -2,10 +2,7 @@ import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  supportTicketMessageTable,
-  supportTicketTable,
-} from "~/db/schema";
+import { supportTicketMessageTable, supportTicketTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import { onSupportTicketReply } from "~/lib/create-user-notification";
 
@@ -26,23 +23,16 @@ export async function POST(
 
     const { id: ticketId } = await params;
     if (!ticketId) {
-      return NextResponse.json(
-        { error: "Missing ticket id" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
     }
 
     let body: { content?: string };
     try {
       body = (await request.json()) as { content?: string };
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
-    const content =
-      typeof body.content === "string" ? body.content.trim() : "";
+    const content = typeof body.content === "string" ? body.content.trim() : "";
     if (!content) {
       return NextResponse.json(
         { error: "Message content is required" },
@@ -57,10 +47,7 @@ export async function POST(
       .limit(1);
 
     if (!ticket) {
-      return NextResponse.json(
-        { error: "Ticket not found" },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
     if (ticket.status === "closed") {
@@ -73,7 +60,9 @@ export async function POST(
     const messageId = crypto.randomUUID();
     const now = new Date();
     const staffUserId =
-      authResult.ok && authResult.method === "session" ? authResult.user.id : null;
+      authResult.ok && authResult.method === "session"
+        ? authResult.user.id
+        : null;
 
     await db.insert(supportTicketMessageTable).values({
       id: messageId,

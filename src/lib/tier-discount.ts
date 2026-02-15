@@ -51,7 +51,7 @@ export async function resolveTierDiscountsForCheckout(
   }
 
   const productIds = [...new Set(items.map((i) => i.productId))];
-  let productCategoryMap = new Map<string, string[]>();
+  const productCategoryMap = new Map<string, string[]>();
   if (productIds.length > 0) {
     const links = await db
       .select({

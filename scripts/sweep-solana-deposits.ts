@@ -60,9 +60,7 @@ type TokenAccountInfo = {
 
 function getRpcUrl(): string {
   const url =
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL ||
-    process.env.SOLANA_RPC_URL ||
-    "";
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.SOLANA_RPC_URL || "";
   return url.trim() || "https://rpc.ankr.com/solana";
 }
 
@@ -169,7 +167,9 @@ async function main() {
   }
 
   if (depositAddresses.size === 0) {
-    console.log(`No Solana Pay orders (scope=${scope}) with deposit addresses found.`);
+    console.log(
+      `No Solana Pay orders (scope=${scope}) with deposit addresses found.`,
+    );
     return;
   }
 
@@ -209,7 +209,9 @@ async function main() {
 
     const hasWork = solToSweep > 0 || tokenAccounts.length > 0;
     if (!hasWork) {
-      console.log(`Order ${orderId}: no SOL or SPL balance to sweep, skipping.`);
+      console.log(
+        `Order ${orderId}: no SOL or SPL balance to sweep, skipping.`,
+      );
       continue;
     }
 
@@ -264,7 +266,12 @@ async function main() {
           );
         }
 
-        const mintInfo = await getMint(connection, mintPk, "confirmed", t.programId);
+        const mintInfo = await getMint(
+          connection,
+          mintPk,
+          "confirmed",
+          t.programId,
+        );
         tx.add(
           createTransferCheckedInstruction(
             t.ata,
@@ -280,8 +287,7 @@ async function main() {
       }
 
       tx.feePayer = feePayer!.publicKey;
-      const { blockhash } =
-        await connection.getLatestBlockhash("confirmed");
+      const { blockhash } = await connection.getLatestBlockhash("confirmed");
       tx.recentBlockhash = blockhash;
 
       const sig = await sendAndConfirmTransaction(
@@ -292,8 +298,7 @@ async function main() {
       );
 
       const parts: string[] = [];
-      if (solToSweep > 0)
-        parts.push(`${solToSweep / LAMPORTS_PER_SOL} SOL`);
+      if (solToSweep > 0) parts.push(`${solToSweep / LAMPORTS_PER_SOL} SOL`);
       for (const t of tokenAccounts) {
         const amountFormatted = Number(t.amount) / 10 ** t.decimals;
         parts.push(`${amountFormatted} (mint ${t.mint.slice(0, 8)}…)`);

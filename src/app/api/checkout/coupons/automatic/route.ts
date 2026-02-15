@@ -18,8 +18,9 @@ const validateSchema = {
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
   productIds: (v: unknown) =>
     Array.isArray(v)
-      ? (v as unknown[])
-          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      ? (v as unknown[]).filter(
+          (id): id is string => typeof id === "string" && id.length > 0,
+        )
       : [],
   paymentMethodKey: (v: unknown) =>
     typeof v === "string" && v.length > 0 ? v : undefined,
@@ -27,7 +28,13 @@ const validateSchema = {
     if (!Array.isArray(v)) return [];
     return (v as unknown[])
       .filter(
-        (item): item is { productId: string; priceCents: number; quantity: number } =>
+        (
+          item,
+        ): item is {
+          productId: string;
+          priceCents: number;
+          quantity: number;
+        } =>
           typeof item === "object" &&
           item !== null &&
           typeof (item as Record<string, unknown>).productId === "string" &&
@@ -80,7 +87,12 @@ export async function POST(request: NextRequest) {
     const orderTotalCents = subtotalCents + shippingFeeCents;
 
     // Resolve tier-based discounts when wallet is provided (stack with automatic coupon)
-    let tierDiscounts: { id: string; label: string | null; scope: string; discountCents: number }[] = [];
+    let tierDiscounts: {
+      id: string;
+      label: string | null;
+      scope: string;
+      discountCents: number;
+    }[] = [];
     let tierDiscountTotalCents = 0;
     if (wallet) {
       const memberTier = await getMemberTierForWallet(wallet);

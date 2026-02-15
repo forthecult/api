@@ -27,7 +27,7 @@ export async function getPumpTokenPriceInSol(
     const { poolBaseAmount, poolQuoteAmount, baseMintAccount } = state;
     if (poolBaseAmount.isZero()) return 0;
     const baseDecimals = baseMintAccount.decimals;
-    const baseDivisor = Math.pow(10, baseDecimals);
+    const baseDivisor = 10 ** baseDecimals;
     const solPerToken =
       poolQuoteAmount.toNumber() /
       1e9 /

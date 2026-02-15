@@ -12,7 +12,12 @@ import {
   productsTable,
 } from "~/db/schema";
 
-type ProductRow = { id: string; name: string; priceCents: number; imageUrl: string | null };
+type ProductRow = {
+  id: string;
+  name: string;
+  priceCents: number;
+  imageUrl: string | null;
+};
 
 const FEATURED_LIMIT = 8;
 const TRENDING_LIMIT = 8;

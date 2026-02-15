@@ -4,12 +4,14 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { memberTierDiscountTable } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
-const SORT_COLUMNS = ["memberTier", "scope", "discountValue", "createdAt"] as const;
+const SORT_COLUMNS = [
+  "memberTier",
+  "scope",
+  "discountValue",
+  "createdAt",
+] as const;
 type SortBy = (typeof SORT_COLUMNS)[number];
 
 const SCOPES = ["shipping", "order", "category", "product"] as const;
@@ -97,7 +99,9 @@ export async function POST(request: NextRequest) {
       ? (body.scope as (typeof SCOPES)[number])
       : "order";
     const discountType: (typeof DISCOUNT_TYPES)[number] =
-      DISCOUNT_TYPES.includes(body.discountType as (typeof DISCOUNT_TYPES)[number])
+      DISCOUNT_TYPES.includes(
+        body.discountType as (typeof DISCOUNT_TYPES)[number],
+      )
         ? (body.discountType as (typeof DISCOUNT_TYPES)[number])
         : "percent";
     const discountValue =
@@ -113,11 +117,15 @@ export async function POST(request: NextRequest) {
     }
 
     const categoryId =
-      scope === "category" && typeof body.categoryId === "string" && body.categoryId.trim()
+      scope === "category" &&
+      typeof body.categoryId === "string" &&
+      body.categoryId.trim()
         ? body.categoryId.trim()
         : null;
     const productId =
-      scope === "product" && typeof body.productId === "string" && body.productId.trim()
+      scope === "product" &&
+      typeof body.productId === "string" &&
+      body.productId.trim()
         ? body.productId.trim()
         : null;
     const appliesToEsim =

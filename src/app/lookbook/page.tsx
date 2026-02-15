@@ -146,62 +146,68 @@ export default async function LookbookPage() {
   return (
     <PageTokenGate slug="lookbook">
       <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
-      <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Lookbook
-        </h1>
-        <p className="mt-3 text-lg text-muted-foreground">
-          Premium apparel, natural fibers, and lifestyle — how Culture looks in
-          the wild.
-        </p>
-      </header>
+        <header className="mb-12 border-b border-border pb-10">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Lookbook
+          </h1>
+          <p className="mt-3 text-lg text-muted-foreground">
+            Premium apparel, natural fibers, and lifestyle — how Culture looks
+            in the wild.
+          </p>
+        </header>
 
-      <div
-        className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
-        role="list"
-      >
-        {images.map((img) => (
-          <figure
-            key={img.src}
-            className={`
+        <div
+          className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
+          role="list"
+        >
+          {images.map((img) => (
+            <figure
+              key={img.src}
+              className={`
               relative overflow-hidden rounded-lg border border-border bg-muted/30
               ${img.size === "large" ? "sm:col-span-2 lg:col-span-2" : ""}
               ${img.size === "medium" ? "sm:col-span-2 lg:col-span-1" : ""}
             `}
-          >
-            <Image
-              src={img.src}
-              alt={img.alt}
-              title={img.title}
-              width={
-                img.size === "large" ? 1200 : img.size === "medium" ? 800 : 600
-              }
-              height={
-                img.size === "large" ? 800 : img.size === "medium" ? 600 : 500
-              }
-              className="h-auto w-full object-cover"
-              sizes={
-                img.size === "large"
-                  ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
-                  : img.size === "medium"
-                    ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-              }
-            />
-            <figcaption className="sr-only">
-              {img.title}. {img.description}
-            </figcaption>
-          </figure>
-        ))}
-      </div>
+            >
+              <Image
+                src={img.src}
+                alt={img.alt}
+                title={img.title}
+                width={
+                  img.size === "large"
+                    ? 1200
+                    : img.size === "medium"
+                      ? 800
+                      : 600
+                }
+                height={
+                  img.size === "large" ? 800 : img.size === "medium" ? 600 : 500
+                }
+                className="h-auto w-full object-cover"
+                sizes={
+                  img.size === "large"
+                    ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
+                    : img.size === "medium"
+                      ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                }
+              />
+              <figcaption className="sr-only">
+                {img.title}. {img.description}
+              </figcaption>
+            </figure>
+          ))}
+        </div>
 
-      <footer className="mt-12 border-t border-border pt-8">
-        <p className="text-sm font-medium text-foreground">
-          Photos by {PHOTOGRAPHER.name}
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">{PHOTOGRAPHER.bio}</p>
-      </footer>
-    </div>
+        <footer className="mt-12 border-t border-border pt-8">
+          <p className="text-sm font-medium text-foreground">
+            Photos by {PHOTOGRAPHER.name}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {PHOTOGRAPHER.bio}
+          </p>
+        </footer>
+      </div>
     </PageTokenGate>
   );
 }

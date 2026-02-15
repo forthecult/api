@@ -2,7 +2,11 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
 import { resolveCouponForCheckout, type CartLineItem } from "~/lib/coupon";
-import { getClientIp, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 const validateSchema = {
   code: (v: unknown) =>
@@ -11,8 +15,9 @@ const validateSchema = {
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
   productIds: (v: unknown) =>
     Array.isArray(v)
-      ? (v as unknown[])
-          .filter((id): id is string => typeof id === "string" && id.length > 0)
+      ? (v as unknown[]).filter(
+          (id): id is string => typeof id === "string" && id.length > 0,
+        )
       : [],
   paymentMethodKey: (v: unknown) =>
     typeof v === "string" && v.length > 0 ? v : undefined,
@@ -20,7 +25,13 @@ const validateSchema = {
     if (!Array.isArray(v)) return [];
     return (v as unknown[])
       .filter(
-        (item): item is { productId: string; priceCents: number; quantity: number } =>
+        (
+          item,
+        ): item is {
+          productId: string;
+          priceCents: number;
+          quantity: number;
+        } =>
           typeof item === "object" &&
           item !== null &&
           typeof (item as Record<string, unknown>).productId === "string" &&
@@ -42,7 +53,10 @@ const validateSchema = {
 export async function POST(request: NextRequest) {
   // Rate limit coupon validation to prevent brute-force code guessing
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`coupon-validate:${ip}`, { limit: 10, windowSeconds: 60 });
+  const rl = await checkRateLimit(`coupon-validate:${ip}`, {
+    limit: 10,
+    windowSeconds: 60,
+  });
   if (!rl.success) return rateLimitResponse(rl);
 
   try {
@@ -57,7 +71,9 @@ export async function POST(request: NextRequest) {
     }
     const subtotalCents = validateSchema.subtotalCents(body?.subtotalCents);
     const productIds = validateSchema.productIds(body?.productIds);
-    const shippingFeeCents = validateSchema.subtotalCents(body?.shippingFeeCents);
+    const shippingFeeCents = validateSchema.subtotalCents(
+      body?.shippingFeeCents,
+    );
     const paymentMethodKey = validateSchema.paymentMethodKey(
       body?.paymentMethodKey,
     );

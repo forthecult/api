@@ -62,10 +62,9 @@ export default function AdminSupportTicketDetailPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `${API_BASE}/api/admin/support-tickets/${id}`,
-        { credentials: "include" },
-      );
+      const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+        credentials: "include",
+      });
       if (!res.ok) {
         if (res.status === 404) {
           setError("Ticket not found.");
@@ -112,7 +111,9 @@ export default function AdminSupportTicketDetailPage() {
       setReplyContent("");
       void fetchTicket();
     } catch (err) {
-      setReplyError(err instanceof Error ? err.message : "Failed to send reply");
+      setReplyError(
+        err instanceof Error ? err.message : "Failed to send reply",
+      );
     } finally {
       setSending(false);
     }
@@ -124,15 +125,12 @@ export default function AdminSupportTicketDetailPage() {
       setUpdatingStatus(true);
       setStatusError(null);
       try {
-        const res = await fetch(
-          `${API_BASE}/api/admin/support-tickets/${id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ status }),
-          },
-        );
+        const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ status }),
+        });
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
           updatedAt?: string;
@@ -141,10 +139,14 @@ export default function AdminSupportTicketDetailPage() {
           throw new Error(data.error ?? `HTTP ${res.status}`);
         }
         setTicket((prev) =>
-          prev ? { ...prev, status, updatedAt: data.updatedAt ?? prev.updatedAt } : prev,
+          prev
+            ? { ...prev, status, updatedAt: data.updatedAt ?? prev.updatedAt }
+            : prev,
         );
       } catch (err) {
-        setStatusError(err instanceof Error ? err.message : "Failed to update status");
+        setStatusError(
+          err instanceof Error ? err.message : "Failed to update status",
+        );
       } finally {
         setUpdatingStatus(false);
       }
@@ -158,15 +160,12 @@ export default function AdminSupportTicketDetailPage() {
       setUpdatingPriority(true);
       setPriorityError(null);
       try {
-        const res = await fetch(
-          `${API_BASE}/api/admin/support-tickets/${id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({ type }),
-          },
-        );
+        const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ type }),
+        });
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
           updatedAt?: string;
@@ -175,10 +174,14 @@ export default function AdminSupportTicketDetailPage() {
           throw new Error(data.error ?? `HTTP ${res.status}`);
         }
         setTicket((prev) =>
-          prev ? { ...prev, type, updatedAt: data.updatedAt ?? prev.updatedAt } : prev,
+          prev
+            ? { ...prev, type, updatedAt: data.updatedAt ?? prev.updatedAt }
+            : prev,
         );
       } catch (err) {
-        setPriorityError(err instanceof Error ? err.message : "Failed to update priority");
+        setPriorityError(
+          err instanceof Error ? err.message : "Failed to update priority",
+        );
       } finally {
         setUpdatingPriority(false);
       }
@@ -322,7 +325,9 @@ export default function AdminSupportTicketDetailPage() {
                   >
                     <span className="font-medium">
                       {msg.role === "staff" && msg.staffUser
-                        ? [msg.staffUser.firstName, msg.staffUser.lastName].filter(Boolean).join(" ") || "Staff"
+                        ? [msg.staffUser.firstName, msg.staffUser.lastName]
+                            .filter(Boolean)
+                            .join(" ") || "Staff"
                         : msg.role.charAt(0).toUpperCase() + msg.role.slice(1)}
                       :{" "}
                     </span>

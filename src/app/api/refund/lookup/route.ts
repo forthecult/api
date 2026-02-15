@@ -3,7 +3,12 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 function normalizeEmail(email: string | null | undefined): string {
   return (email ?? "").trim().toLowerCase();
@@ -42,7 +47,9 @@ export async function POST(request: NextRequest) {
 
     if (!orderId) {
       return NextResponse.json(
-        { error: { code: "MISSING_ORDER_ID", message: "Order ID is required" } },
+        {
+          error: { code: "MISSING_ORDER_ID", message: "Order ID is required" },
+        },
         { status: 400 },
       );
     }
@@ -92,8 +99,7 @@ export async function POST(request: NextRequest) {
         {
           error: {
             code: "UNAUTHORIZED",
-            message:
-              "Order not found or the details you entered don't match",
+            message: "Order not found or the details you entered don't match",
           },
         },
         { status: 404 },

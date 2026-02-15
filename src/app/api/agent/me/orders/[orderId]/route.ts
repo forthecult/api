@@ -32,7 +32,10 @@ export async function GET(
   { params }: { params: Promise<{ orderId: string }> },
 ) {
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`agent:me/orders/detail:${ip}`, RATE_LIMITS.api);
+  const rl = await checkRateLimit(
+    `agent:me/orders/detail:${ip}`,
+    RATE_LIMITS.api,
+  );
   if (!rl.success) return rateLimitResponse(rl, RATE_LIMITS.api.limit);
 
   const result = await getMoltbookAgentFromRequest(request);
@@ -97,46 +100,47 @@ export async function GET(
     {
       orderId: order.id,
       status,
-    createdAt: order.createdAt.toISOString(),
-    paidAt:
-      order.status === "paid" || order.paymentStatus === "paid"
-        ? order.updatedAt.toISOString()
-        : null,
-    email: order.email ?? undefined,
-    paymentMethod: order.solanaPayDepositAddress ? "solana_pay" : undefined,
-    items: items.map((i) => ({
-      productId: i.productId,
-      name: i.name,
-      quantity: i.quantity,
-      priceUsd: i.priceCents / 100,
-      subtotalUsd: (i.priceCents * i.quantity) / 100,
-    })),
-    shipping:
-      order.shippingName ||
-      order.shippingAddress1 ||
-      order.shippingCity ||
-      order.shippingCountryCode
-        ? {
-            name: order.shippingName ?? undefined,
-            address1: order.shippingAddress1 ?? undefined,
-            address2: order.shippingAddress2 ?? undefined,
-            city: order.shippingCity ?? undefined,
-            stateCode: order.shippingStateCode ?? undefined,
-            zip: order.shippingZip ?? undefined,
-            countryCode: order.shippingCountryCode ?? undefined,
-            phone: order.shippingPhone ?? undefined,
-          }
-        : undefined,
-    totals: {
-      subtotalUsd: subtotalCents / 100,
-      shippingUsd,
-      totalUsd,
+      createdAt: order.createdAt.toISOString(),
+      paidAt:
+        order.status === "paid" || order.paymentStatus === "paid"
+          ? order.updatedAt.toISOString()
+          : null,
+      email: order.email ?? undefined,
+      paymentMethod: order.solanaPayDepositAddress ? "solana_pay" : undefined,
+      items: items.map((i) => ({
+        productId: i.productId,
+        name: i.name,
+        quantity: i.quantity,
+        priceUsd: i.priceCents / 100,
+        subtotalUsd: (i.priceCents * i.quantity) / 100,
+      })),
+      shipping:
+        order.shippingName ||
+        order.shippingAddress1 ||
+        order.shippingCity ||
+        order.shippingCountryCode
+          ? {
+              name: order.shippingName ?? undefined,
+              address1: order.shippingAddress1 ?? undefined,
+              address2: order.shippingAddress2 ?? undefined,
+              city: order.shippingCity ?? undefined,
+              stateCode: order.shippingStateCode ?? undefined,
+              zip: order.shippingZip ?? undefined,
+              countryCode: order.shippingCountryCode ?? undefined,
+              phone: order.shippingPhone ?? undefined,
+            }
+          : undefined,
+      totals: {
+        subtotalUsd: subtotalCents / 100,
+        shippingUsd,
+        totalUsd,
+      },
+      statusUrl:
+        `${process.env.NEXT_PUBLIC_AGENT_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store"}`.replace(
+          /\/$/,
+          "",
+        ) + `/api/orders/${order.id}/status`,
     },
-    statusUrl: `${process.env.NEXT_PUBLIC_AGENT_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store"}`.replace(
-      /\/$/,
-      "",
-    ) + `/api/orders/${order.id}/status`,
-  },
     { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
   );
 }

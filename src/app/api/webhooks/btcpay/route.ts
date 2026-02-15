@@ -12,10 +12,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import {
-  fulfillEsimOrder,
-  hasEsimItems,
-} from "~/lib/esim-fulfillment";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 
 /** BTCPay/Bitpay webhook: invoice status change. Confirm order when invoice is paid/settled. */
 const SETTLED_STATUSES = new Set(["paid", "confirmed", "complete", "settled"]);
@@ -52,28 +49,28 @@ export async function POST(request: NextRequest) {
     try {
       body = rawBody ? (JSON.parse(rawBody) as Record<string, unknown>) : {};
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
     if (!BTCPAY_WEBHOOK_SECRET) {
       if (process.env.NODE_ENV === "production") {
-        console.error("[BTCPay webhook] BTCPAY_WEBHOOK_SECRET not configured in production");
-        return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });
+        console.error(
+          "[BTCPay webhook] BTCPAY_WEBHOOK_SECRET not configured in production",
+        );
+        return NextResponse.json(
+          { error: "Webhook not configured" },
+          { status: 503 },
+        );
       }
-      console.warn("[BTCPay webhook] ⚠️ Signature verification skipped (no BTCPAY_WEBHOOK_SECRET)");
+      console.warn(
+        "[BTCPay webhook] ⚠️ Signature verification skipped (no BTCPAY_WEBHOOK_SECRET)",
+      );
     } else {
       const signature =
         request.headers.get("x-bitpay-signature") ??
         request.headers.get("btcpay-signature");
       if (
-        !verifyBtcpayWebhookSignature(
-          rawBody,
-          signature,
-          BTCPAY_WEBHOOK_SECRET,
-        )
+        !verifyBtcpayWebhookSignature(rawBody, signature, BTCPAY_WEBHOOK_SECRET)
       ) {
         return NextResponse.json(
           { error: "Invalid webhook signature" },
@@ -131,7 +128,9 @@ export async function POST(request: NextRequest) {
       const [current] = await tx
         .select({ id: ordersTable.id, status: ordersTable.status })
         .from(ordersTable)
-        .where(and(eq(ordersTable.id, order.id), eq(ordersTable.status, "pending")))
+        .where(
+          and(eq(ordersTable.id, order.id), eq(ordersTable.status, "pending")),
+        )
         .limit(1);
       if (!current) return null;
       await tx

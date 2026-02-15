@@ -18,7 +18,10 @@ const ROOT = resolve(__dirname, "..");
 const inputPath =
   process.env.SOLUNA_IMAGE_PATH?.trim() ||
   process.argv[2] ||
-  resolve(ROOT, "assets/soluna_300dpi-63c586ec-70b6-48ef-844d-174bf30db3d8.png");
+  resolve(
+    ROOT,
+    "assets/soluna_300dpi-63c586ec-70b6-48ef-844d-174bf30db3d8.png",
+  );
 const outputDir = resolve(ROOT, "public/crypto/soluna");
 const outputPath = resolve(outputDir, "soluna-logo.png");
 
@@ -54,7 +57,9 @@ async function makeTransparentPng(inputPath: string): Promise<Buffer> {
 async function main() {
   if (!existsSync(inputPath)) {
     console.error("Input not found:", inputPath);
-    console.error("Usage: bun run scripts/make-soluna-logo-transparent.ts <path-to-soluna.png>");
+    console.error(
+      "Usage: bun run scripts/make-soluna-logo-transparent.ts <path-to-soluna.png>",
+    );
     process.exit(1);
   }
 

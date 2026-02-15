@@ -99,7 +99,9 @@ function StakeForm({
           Stake CULT
         </CardTitle>
         <CardDescription>
-          Stake CULT on-chain. Staked balance counts toward voting power. Choose a lock period (30 days or 12 months). Tokens cannot be unstaked until the lock expires.
+          Stake CULT on-chain. Staked balance counts toward voting power. Choose
+          a lock period (30 days or 12 months). Tokens cannot be unstaked until
+          the lock expires.
           {!wallet && " Connect your Solana wallet above to stake or unstake."}
         </CardDescription>
       </CardHeader>
@@ -262,7 +264,7 @@ function ProposalCard({
                 with{" "}
                 {(
                   detail.userVote.votingPower /
-                  Math.pow(10, CULT_DECIMALS)
+                  10 ** CULT_DECIMALS
                 ).toLocaleString()}{" "}
                 CULT
               </p>
@@ -296,11 +298,7 @@ function ProposalCard({
               Abstain
             </Button>
             {!wallet && (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={openConnectModal}
-              >
+              <Button size="sm" variant="ghost" onClick={openConnectModal}>
                 Connect wallet to vote
               </Button>
             )}
@@ -339,8 +337,12 @@ export function StakeVoteClient() {
       .then((r) => r.json())
       .then((data) => {
         const total = data.votingPowerRaw ? BigInt(data.votingPowerRaw) : 0n;
-        const walletRaw = data.walletBalanceRaw ? BigInt(data.walletBalanceRaw) : 0n;
-        const stakedRaw = data.stakedBalanceRaw ? BigInt(data.stakedBalanceRaw) : 0n;
+        const walletRaw = data.walletBalanceRaw
+          ? BigInt(data.walletBalanceRaw)
+          : 0n;
+        const stakedRaw = data.stakedBalanceRaw
+          ? BigInt(data.stakedBalanceRaw)
+          : 0n;
         setVotingPower(Number(total));
         setWalletBalanceRaw(Number(walletRaw));
         setStakedBalanceRaw(Number(stakedRaw));
@@ -384,27 +386,30 @@ export function StakeVoteClient() {
     };
   }, []);
 
-  const fetchProposalDetail = useCallback(async (id: string) => {
-    const url = wallet
-      ? `/api/governance/proposals/${id}?wallet=${encodeURIComponent(wallet)}`
-      : `/api/governance/proposals/${id}`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      proposal: Proposal;
-      totals: { for: number; against: number; abstain: number };
-      userVote: { choice: string; votingPower: number } | null;
-    };
-    setDetails((prev) => ({
-      ...prev,
-      [id]: {
-        ...data.proposal,
-        totals: data.totals,
-        userVote: data.userVote,
-      },
-    }));
-    return data;
-  }, [wallet]);
+  const fetchProposalDetail = useCallback(
+    async (id: string) => {
+      const url = wallet
+        ? `/api/governance/proposals/${id}?wallet=${encodeURIComponent(wallet)}`
+        : `/api/governance/proposals/${id}`;
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      const data = (await res.json()) as {
+        proposal: Proposal;
+        totals: { for: number; against: number; abstain: number };
+        userVote: { choice: string; votingPower: number } | null;
+      };
+      setDetails((prev) => ({
+        ...prev,
+        [id]: {
+          ...data.proposal,
+          totals: data.totals,
+          userVote: data.userVote,
+        },
+      }));
+      return data;
+    },
+    [wallet],
+  );
 
   // Fetch details for each proposal
   useEffect(() => {
@@ -421,11 +426,14 @@ export function StakeVoteClient() {
       }
       setVotingId(proposalId);
       try {
-        const res = await fetch(`/api/governance/proposals/${proposalId}/vote`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, choice }),
-        });
+        const res = await fetch(
+          `/api/governance/proposals/${proposalId}/vote`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ wallet, choice }),
+          },
+        );
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           toast.error(data.error ?? "Failed to vote");
@@ -441,11 +449,11 @@ export function StakeVoteClient() {
   );
 
   const totalPower =
-    votingPower !== null ? votingPower / Math.pow(10, CULT_DECIMALS) : 0;
+    votingPower !== null ? votingPower / 10 ** CULT_DECIMALS : 0;
   const walletPower =
-    walletBalanceRaw !== null ? walletBalanceRaw / Math.pow(10, CULT_DECIMALS) : 0;
+    walletBalanceRaw !== null ? walletBalanceRaw / 10 ** CULT_DECIMALS : 0;
   const stakedPower =
-    stakedBalanceRaw !== null ? stakedBalanceRaw / Math.pow(10, CULT_DECIMALS) : 0;
+    stakedBalanceRaw !== null ? stakedBalanceRaw / 10 ** CULT_DECIMALS : 0;
 
   return (
     <div className="container mx-auto max-w-4xl space-y-10 px-4 py-10 sm:px-6 lg:px-8">

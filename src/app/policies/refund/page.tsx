@@ -77,39 +77,53 @@ export default function RefundPolicyPage() {
           </p>
           <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-muted-foreground">
             <li>
-              <strong className="font-medium text-foreground">Instant refund:</strong>{" "}
+              <strong className="font-medium text-foreground">
+                Instant refund:
+              </strong>{" "}
               Only when there is a verified technical or install failure, or a
               supported carrier&apos;s network signal failure, and the eSIM has
               not been activated and has no data consumption.
             </li>
             <li>
-              <strong className="font-medium text-foreground">Activated or used:</strong>{" "}
+              <strong className="font-medium text-foreground">
+                Activated or used:
+              </strong>{" "}
               Any eSIM that has been activated, partially used, or has data
               consumption is non-refundable. Once an eSIM connects to a network,
               it is considered delivered and consumed.
             </li>
             <li>
-              <strong className="font-medium text-foreground">Unused eSIMs:</strong>{" "}
+              <strong className="font-medium text-foreground">
+                Unused eSIMs:
+              </strong>{" "}
               If not activated, you may submit a refund request within{" "}
-              <strong className="font-medium text-foreground">30 days</strong> of
-              purchase. Requests after 30 days will not be approved.
+              <strong className="font-medium text-foreground">30 days</strong>{" "}
+              of purchase. Requests after 30 days will not be approved.
             </li>
             <li>
-              <strong className="font-medium text-foreground">Carrier &amp; network:</strong>{" "}
-              No refund for country-wide shutdowns, temporary carrier outages, or
-              local regulations affecting connectivity; service resumes when the
-              network is available again.
+              <strong className="font-medium text-foreground">
+                Carrier &amp; network:
+              </strong>{" "}
+              No refund for country-wide shutdowns, temporary carrier outages,
+              or local regulations affecting connectivity; service resumes when
+              the network is available again.
             </li>
             <li>
-              <strong className="font-medium text-foreground">Vodafone &amp; O2:</strong>{" "}
+              <strong className="font-medium text-foreground">
+                Vodafone &amp; O2:
+              </strong>{" "}
               Valid only in officially supported countries. Use outside those
               regions will disable the eSIM and no refund will be issued.
             </li>
             <li>
-              <strong className="font-medium text-foreground">Voice &amp; SMS plans:</strong>{" "}
+              <strong className="font-medium text-foreground">
+                Voice &amp; SMS plans:
+              </strong>{" "}
               All eSIM plans that include Voice and/or SMS are{" "}
-              <strong className="font-medium text-foreground">non-refundable</strong>,{" "}
-              regardless of activation or usage.
+              <strong className="font-medium text-foreground">
+                non-refundable
+              </strong>
+              , regardless of activation or usage.
             </li>
           </ul>
         </section>

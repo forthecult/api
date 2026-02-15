@@ -177,8 +177,15 @@ export function WishlistPageClient() {
                     </div>
                     <div className="flex flex-wrap items-center gap-2 pt-2">
                       {item.product.hasVariants ? (
-                        <Button asChild size="sm" variant="default" className="gap-1.5">
-                          <Link href={`/${item.product.slug ?? item.product.id}`}>
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="default"
+                          className="gap-1.5"
+                        >
+                          <Link
+                            href={`/${item.product.slug ?? item.product.id}`}
+                          >
                             <ShoppingCart className="size-3.5" aria-hidden />
                             Select options
                           </Link>
@@ -192,7 +199,10 @@ export function WishlistPageClient() {
                           onClick={() => handleAddToCart(item)}
                         >
                           {addingId === item.product.id ? (
-                            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                            <Loader2
+                              className="size-3.5 animate-spin"
+                              aria-hidden
+                            />
                           ) : (
                             <ShoppingCart className="size-3.5" aria-hidden />
                           )}

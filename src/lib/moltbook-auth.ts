@@ -6,9 +6,10 @@
  * Optional: MOLTBOOK_AUDIENCE to restrict tokens to your service (e.g. "forthecult.store").
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
-const MOLTBOOK_VERIFY_URL = "https://moltbook.com/api/v1/agents/verify-identity";
+const MOLTBOOK_VERIFY_URL =
+  "https://moltbook.com/api/v1/agents/verify-identity";
 const IDENTITY_HEADER = "x-moltbook-identity";
 
 /** Verified agent profile returned by Moltbook (subset of full response). */
@@ -65,7 +66,10 @@ const MOLTBOOK_ERROR_STATUS: Record<string, number> = {
 export async function verifyMoltbookToken(
   token: string,
   options?: { audience?: string },
-): Promise<{ valid: true; agent: MoltbookAgent } | { valid: false; error: string; status: number }> {
+): Promise<
+  | { valid: true; agent: MoltbookAgent }
+  | { valid: false; error: string; status: number }
+> {
   const appKey = process.env.MOLTBOOK_APP_KEY?.trim();
   if (!appKey) {
     return { valid: false, error: "missing_app_key", status: 401 };
@@ -118,10 +122,7 @@ export async function verifyMoltbookToken(
 export async function getMoltbookAgentFromRequest(
   request: NextRequest,
   options?: { audience?: string },
-): Promise<
-  | { agent: MoltbookAgent }
-  | { error: NextResponse }
-> {
+): Promise<{ agent: MoltbookAgent } | { error: NextResponse }> {
   const token = request.headers.get(IDENTITY_HEADER)?.trim();
   if (!token) {
     return {
@@ -134,7 +135,8 @@ export async function getMoltbookAgentFromRequest(
 
   const audience =
     options?.audience ??
-    (typeof process.env.MOLTBOOK_AUDIENCE === "string" && process.env.MOLTBOOK_AUDIENCE.trim()
+    (typeof process.env.MOLTBOOK_AUDIENCE === "string" &&
+    process.env.MOLTBOOK_AUDIENCE.trim()
       ? process.env.MOLTBOOK_AUDIENCE.trim()
       : undefined);
 
@@ -172,7 +174,8 @@ export async function getOptionalMoltbookAgentFromRequest(
 
   const audience =
     options?.audience ??
-    (typeof process.env.MOLTBOOK_AUDIENCE === "string" && process.env.MOLTBOOK_AUDIENCE.trim()
+    (typeof process.env.MOLTBOOK_AUDIENCE === "string" &&
+    process.env.MOLTBOOK_AUDIENCE.trim()
       ? process.env.MOLTBOOK_AUDIENCE.trim()
       : undefined);
 

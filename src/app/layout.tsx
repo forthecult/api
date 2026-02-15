@@ -60,7 +60,8 @@ const isStaging =
   process.env.VERCEL_ENV === "preview" || process.env.STAGING === "1";
 
 /** Default OG image for social sharing — used by every page unless overridden. */
-const DEFAULT_OG_IMAGE = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
+const DEFAULT_OG_IMAGE =
+  "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
@@ -121,7 +122,9 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
       <ConditionalHeader showAuth={true} />
-      <main className="flex min-h-screen flex-col bg-background">{children}</main>
+      <main className="flex min-h-screen flex-col bg-background">
+        {children}
+      </main>
       <ConditionalFooter />
       <SupportChatWidgetWrapper />
       <Toaster />
@@ -130,7 +133,9 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
 }
 
 /** Single wrapper for store layout: wallet boundary + wagmi + auth modal + shell. Avoids duplicating the tree in fallback vs actual. */
-function StoreLayoutWrapper({ children }: Readonly<{ children: React.ReactNode }>) {
+function StoreLayoutWrapper({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <WalletErrorBoundary>
       <WagmiProvider>

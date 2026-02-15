@@ -164,7 +164,9 @@ export function StatsPageClient() {
               <Icon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardDescription className="mb-1">{card.description}</CardDescription>
+              <CardDescription className="mb-1">
+                {card.description}
+              </CardDescription>
               {card.productHref ? (
                 <Link
                   href={card.productHref}

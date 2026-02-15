@@ -2,7 +2,16 @@
  * Category helpers for storefront: lookup by slug, list slugs, breadcrumbs.
  */
 
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from "drizzle-orm";
 
 import { sortSubcategories } from "~/lib/category-sort";
 import { db } from "~/db";
@@ -177,9 +186,9 @@ export type CategoryWithDisplayImage = {
  * @param opts.topLevelOnly - When true, only return top-level categories (parentId IS NULL).
  *   Useful for the main /products page to avoid overwhelming users with subcategories.
  */
-export async function getCategoriesWithProductsAndDisplayImage(
-  opts?: { topLevelOnly?: boolean },
-): Promise<CategoryWithDisplayImage[]> {
+export async function getCategoriesWithProductsAndDisplayImage(opts?: {
+  topLevelOnly?: boolean;
+}): Promise<CategoryWithDisplayImage[]> {
   const catIdsWithProducts = await db
     .selectDistinct({ categoryId: productCategoriesTable.categoryId })
     .from(productCategoriesTable)
@@ -198,11 +207,23 @@ export async function getCategoriesWithProductsAndDisplayImage(
   if (ids.length === 0) return [];
 
   // Try to include the `visible` filter; fall back if the column doesn't exist yet.
-  let categories: Array<{ id: string; slug: string | null; name: string; imageUrl: string | null }>;
+  let categories: Array<{
+    id: string;
+    slug: string | null;
+    name: string;
+    imageUrl: string | null;
+  }>;
   try {
     const whereConditions = opts?.topLevelOnly
-      ? and(inArray(categoriesTable.id, ids), isNull(categoriesTable.parentId), eq(categoriesTable.visible, true))
-      : and(inArray(categoriesTable.id, ids), eq(categoriesTable.visible, true));
+      ? and(
+          inArray(categoriesTable.id, ids),
+          isNull(categoriesTable.parentId),
+          eq(categoriesTable.visible, true),
+        )
+      : and(
+          inArray(categoriesTable.id, ids),
+          eq(categoriesTable.visible, true),
+        );
     categories = await db
       .select({
         id: categoriesTable.id,
@@ -403,9 +424,7 @@ export async function getSubcategories(
     )
     .groupBy(productCategoriesTable.categoryId);
 
-  const countByCategoryId = new Map(
-    counts.map((c) => [c.categoryId, c.count]),
-  );
+  const countByCategoryId = new Map(counts.map((c) => [c.categoryId, c.count]));
 
   const filtered = rows
     .filter(
@@ -446,7 +465,12 @@ export async function getProductBreadcrumbTrail(
     return [home, productItem];
   }
 
-  const chain: Array<{ id: string; name: string; slug: string | null; parentId: string | null }> = [];
+  const chain: Array<{
+    id: string;
+    name: string;
+    slug: string | null;
+    parentId: string | null;
+  }> = [];
   let currentId: string | null = mainPc.categoryId;
 
   while (currentId) {
@@ -466,10 +490,18 @@ export async function getProductBreadcrumbTrail(
   }
 
   const ordered = chain.reverse();
-  const rootSlug = ordered[0]?.slug ?? ordered[0]?.name?.toLowerCase().replace(/\s+/g, "-") ?? "shop";
+  const rootSlug =
+    ordered[0]?.slug ??
+    ordered[0]?.name?.toLowerCase().replace(/\s+/g, "-") ??
+    "shop";
 
   const categoryItems: BreadcrumbItem[] = ordered.map((c, i) => {
-    const slug = c.slug ?? c.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const slug =
+      c.slug ??
+      c.name
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
     const href = i === 0 ? `/${slug}` : `/${rootSlug}?subcategory=${slug}`;
     return { name: c.name, href };
   });

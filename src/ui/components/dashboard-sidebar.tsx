@@ -65,7 +65,8 @@ export function DashboardSidebar() {
       void fetchCounts().then(setCounts);
     };
     window.addEventListener(DASHBOARD_COUNTS_INVALIDATE, handler);
-    return () => window.removeEventListener(DASHBOARD_COUNTS_INVALIDATE, handler);
+    return () =>
+      window.removeEventListener(DASHBOARD_COUNTS_INVALIDATE, handler);
   }, []);
 
   const handleLogout = useCallback(async () => {

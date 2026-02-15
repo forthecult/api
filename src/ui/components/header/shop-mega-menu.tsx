@@ -54,7 +54,7 @@ type SectionDef = {
 const SECTION_DEFS: SectionDef[] = [
   {
     label: "Tech & Smart Home",
-                    icon: <Cpu className="h-5 w-5" />,
+    icon: <Cpu className="h-5 w-5" />,
     categorySlugs: ["smart-home", "ai", "hardware-wallets", "iot", "esim"],
   },
   {
@@ -149,10 +149,7 @@ export function ShopMegaMenu({
         >
           Shop
           <ChevronDown
-            className={cn(
-              "h-5 w-5 transition-transform",
-              open && "rotate-180",
-            )}
+            className={cn("h-5 w-5 transition-transform", open && "rotate-180")}
             aria-hidden
           />
         </button>

@@ -49,7 +49,12 @@ export async function sendVerificationOTPEmail(params: {
         text: `Your verification code: ${otp}\n\nUse this code to ${purpose}. This code expires in a few minutes.\n\n— ${appName}`,
       });
       if (process.env.NODE_ENV === "development") {
-        console.log("[sendVerificationOTPEmail] OTP sent to:", to, "type:", type);
+        console.log(
+          "[sendVerificationOTPEmail] OTP sent to:",
+          to,
+          "type:",
+          type,
+        );
       }
     } catch (err) {
       console.error("[sendVerificationOTPEmail] Resend send failed:", err);

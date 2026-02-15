@@ -383,11 +383,17 @@ export default function AdminCategoriesPage() {
                               aria-checked={row.visible ?? true}
                               disabled={togglingId === row.id}
                               onClick={() =>
-                                handleToggleField(row.id, "visible", row.visible ?? true)
+                                handleToggleField(
+                                  row.id,
+                                  "visible",
+                                  row.visible ?? true,
+                                )
                               }
                               className={cn(
                                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50",
-                                (row.visible ?? true) ? "bg-primary" : "bg-muted",
+                                (row.visible ?? true)
+                                  ? "bg-primary"
+                                  : "bg-muted",
                               )}
                             >
                               <span
@@ -407,7 +413,11 @@ export default function AdminCategoriesPage() {
                               aria-checked={row.featured}
                               disabled={togglingId === row.id}
                               onClick={() =>
-                                handleToggleField(row.id, "featured", row.featured)
+                                handleToggleField(
+                                  row.id,
+                                  "featured",
+                                  row.featured,
+                                )
                               }
                               className={cn(
                                 "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50",

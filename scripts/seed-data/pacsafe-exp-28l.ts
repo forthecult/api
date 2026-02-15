@@ -14,8 +14,7 @@ export const PACSAFE_EXP_28L_PRICE_CENTS = Math.round(
 );
 
 /** Base CDN URL for product images (Shopify CDN). */
-const CDN =
-  "https://cdn.shopify.com/s/files/1/0041/7638/0013/files";
+const CDN = "https://cdn.shopify.com/s/files/1/0041/7638/0013/files";
 
 /** Product ID and slug for URLs and DB. */
 export const PRODUCT_ID = "pacsafe-exp-28l";
@@ -23,7 +22,11 @@ export const PRODUCT_SLUG = "pacsafe-exp-28l-anti-theft-backpack";
 export const CATEGORY_ID = "accessories-backpacks";
 
 /** SEO-friendly image entries: url, alt, title (custom names and metadata). */
-export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> = [
+export const PRODUCT_IMAGES: Array<{
+  url: string;
+  alt: string;
+  title: string;
+}> = [
   {
     url: `${CDN}/PacsafeEXP_28LBackpack_60314100_Black_01.jpg?v=1769879540`,
     alt: "Pacsafe EXP 28L Anti-Theft Backpack front view, Black - 28 liter travel backpack",
@@ -70,7 +73,7 @@ export const PRODUCT_IMAGES: Array<{ url: string; alt: string; title: string }> 
 export const FEATURES: string[] = [
   "Roobar™ Deluxe locking system and puncture-resistant ToughZip for serious theft deterrence",
   "RFIDsafe® blocking pockets and Carrysafe® slashguard straps with Dyneema®",
-  "Fits 16\" MacBook Pro in padded sleeve; luggage slip for wheeled bags",
+  'Fits 16" MacBook Pro in padded sleeve; luggage slip for wheeled bags',
   "Dual carry: wear as backpack or grab as duffel via center handle",
   "Made with recycled PET (rPET)—equivalent to 32 plastic bottles; PFC-free water repellent",
 ];
@@ -107,7 +110,9 @@ export const MAIN_IMAGE_TITLE =
   "Pacsafe EXP 28L Anti-Theft Backpack - 28L Anti-Theft Travel Backpack";
 
 /** Option definition for variant selector (Color). */
-export const OPTION_DEFINITIONS = [{ name: "Color", values: ["Black", "Slate"] }];
+export const OPTION_DEFINITIONS = [
+  { name: "Color", values: ["Black", "Slate"] },
+];
 
 /** Variants: Black and Slate. Same price (5% above list); each has its own SKU and image. */
 export const VARIANTS: Array<{

@@ -17,7 +17,9 @@ const LIMIT = 50;
 
 async function main() {
   if (!process.env.DATABASE_URL) {
-    console.error("DATABASE_URL is not set. Run from ftc directory so .env is loaded.");
+    console.error(
+      "DATABASE_URL is not set. Run from ftc directory so .env is loaded.",
+    );
     process.exit(1);
   }
 
@@ -62,7 +64,9 @@ async function main() {
   for (const p of products) {
     const slug = p.slug ?? "(no slug)";
     const src = p.source ?? "?";
-    console.log(`  ${p.id.slice(0, 12)}...  slug: ${slug}  "${p.name.slice(0, 40)}${p.name.length > 40 ? "…" : ""}"  [${src}] ${p.published ? "published" : "draft"}`);
+    console.log(
+      `  ${p.id.slice(0, 12)}...  slug: ${slug}  "${p.name.slice(0, 40)}${p.name.length > 40 ? "…" : ""}"  [${src}] ${p.published ? "published" : "draft"}`,
+    );
   }
   if (total > LIMIT) {
     console.log(`  ... and ${total - LIMIT} more`);

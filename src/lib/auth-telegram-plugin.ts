@@ -65,10 +65,14 @@ function buildDataCheckString(
 }
 
 function verifyTelegramHash(
-  params: Record<string, string | number | boolean | undefined> & { hash: string },
+  params: Record<string, string | number | boolean | undefined> & {
+    hash: string;
+  },
 ): boolean {
   const token = getBotToken();
-  const dataCheckString = buildDataCheckString(params as Record<string, string | number | undefined> & { hash: string });
+  const dataCheckString = buildDataCheckString(
+    params as Record<string, string | number | undefined> & { hash: string },
+  );
   // Telegram docs: secret_key = SHA256(bot_token)
   const secretKey = createHash("sha256").update(token).digest();
   const computedHash = createHmac("sha256", secretKey)
@@ -125,7 +129,9 @@ export function telegramAuthPlugin() {
               });
             }
             if (existingAccount) {
-              if (existingAccount.userId === (session.user as { id: string }).id) {
+              if (
+                existingAccount.userId === (session.user as { id: string }).id
+              ) {
                 return ctx.json({ linked: true, user: session.user });
               }
               throw new APIError("BAD_REQUEST", {
@@ -133,7 +139,15 @@ export function telegramAuthPlugin() {
                   "This Telegram account is already linked to another user",
               });
             }
-            await (ctx.context.internalAdapter as { linkAccount: (data: { userId: string; accountId: string; providerId: string }) => Promise<unknown> }).linkAccount({
+            await (
+              ctx.context.internalAdapter as {
+                linkAccount: (data: {
+                  userId: string;
+                  accountId: string;
+                  providerId: string;
+                }) => Promise<unknown>;
+              }
+            ).linkAccount({
               userId: (session.user as { id: string }).id,
               accountId,
               providerId: TELEGRAM_PROVIDER_ID,
@@ -150,7 +164,14 @@ export function telegramAuthPlugin() {
           }
 
           if (!user) {
-            const userId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "user" });
+            const userId = (
+              ctx.context as {
+                generateId: (opts?: {
+                  model?: string;
+                  size?: number;
+                }) => string;
+              }
+            ).generateId({ model: "user" });
             const email = `telegram_${accountId}@telegram.local`;
             const name =
               [body.first_name, body.last_name]
@@ -175,16 +196,17 @@ export function telegramAuthPlugin() {
               });
             } catch (createErr) {
               // Handle duplicate email race condition
-              const errMsg = createErr instanceof Error ? createErr.message : "";
+              const errMsg =
+                createErr instanceof Error ? createErr.message : "";
               if (/duplicate|unique|already exists/i.test(errMsg)) {
                 // Another request created this user concurrently, find them
-                const existing = await adapter.findOne({
+                const existing = (await adapter.findOne({
                   model: "account",
                   where: [
                     { field: "providerId", value: TELEGRAM_PROVIDER_ID },
                     { field: "accountId", value: accountId },
                   ],
-                }) as AccountRecord | null;
+                })) as AccountRecord | null;
                 if (existing) {
                   user = (await adapter.findOne({
                     model: "user",
@@ -197,17 +219,26 @@ export function telegramAuthPlugin() {
               }
             }
             if (!user) {
-              const newAccountId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
-              await (ctx.context.internalAdapter as {
-                createAccount: (data: {
-                  id: string;
-                  userId: string;
-                  accountId: string;
-                  providerId: string;
-                  createdAt: Date;
-                  updatedAt: Date;
-                }) => Promise<unknown>;
-              }).createAccount({
+              const newAccountId = (
+                ctx.context as {
+                  generateId: (opts?: {
+                    model?: string;
+                    size?: number;
+                  }) => string;
+                }
+              ).generateId({ model: "account" });
+              await (
+                ctx.context.internalAdapter as {
+                  createAccount: (data: {
+                    id: string;
+                    userId: string;
+                    accountId: string;
+                    providerId: string;
+                    createdAt: Date;
+                    updatedAt: Date;
+                  }) => Promise<unknown>;
+                }
+              ).createAccount({
                 id: newAccountId,
                 userId,
                 accountId,
@@ -228,18 +259,26 @@ export function telegramAuthPlugin() {
             });
           }
 
-          const session = await (ctx.context.internalAdapter as { createSession: (userId: string, request?: Request, cookie?: boolean) => Promise<{ id: string; userId: string } | null> }).createSession(
-            user.id,
-            ctx.request as Request | undefined,
-            false,
-          );
+          const session = await (
+            ctx.context.internalAdapter as {
+              createSession: (
+                userId: string,
+                request?: Request,
+                cookie?: boolean,
+              ) => Promise<{ id: string; userId: string } | null>;
+            }
+          ).createSession(user.id, ctx.request as Request | undefined, false);
           if (!session) {
             throw new APIError("INTERNAL_SERVER_ERROR", {
               message: "Failed to create session",
             });
           }
 
-          await setSessionCookie(ctx, { session, user } as Parameters<typeof setSessionCookie>[1], false as boolean | undefined);
+          await setSessionCookie(
+            ctx,
+            { session, user } as Parameters<typeof setSessionCookie>[1],
+            false as boolean | undefined,
+          );
           return ctx.json({
             user: {
               id: user.id,

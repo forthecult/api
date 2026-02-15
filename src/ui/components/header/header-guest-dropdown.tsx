@@ -88,7 +88,7 @@ export function HeaderGuestDropdown() {
               Dark
             </DropdownMenuItem>
             <DropdownMenuItem
-              className={`cursor-pointer ${(theme === "system" || !theme) ? "font-medium text-primary" : ""}`}
+              className={`cursor-pointer ${theme === "system" || !theme ? "font-medium text-primary" : ""}`}
               onClick={() => setTheme("system")}
             >
               <svg

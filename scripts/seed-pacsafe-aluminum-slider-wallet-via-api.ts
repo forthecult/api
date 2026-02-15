@@ -10,8 +10,10 @@
 
 import "dotenv/config";
 
-const MAIN_APP_URL = process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";
-const API_KEY = process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
+const MAIN_APP_URL =
+  process.env.MAIN_APP_URL?.trim() || "https://forthecult.store";
+const API_KEY =
+  process.env.ADMIN_AI_API_KEY?.trim() || process.env.ADMIN_API_KEY?.trim();
 if (!API_KEY) {
   console.error("Set ADMIN_AI_API_KEY or ADMIN_API_KEY in .env");
   process.exit(1);
@@ -23,7 +25,8 @@ const headers: Record<string, string> = {
   Authorization: `Bearer ${API_KEY}`,
 };
 
-const PRODUCT_JSON = "https://pacsafe.com/products/rfid-blocking-aluminum-slider-wallet.json";
+const PRODUCT_JSON =
+  "https://pacsafe.com/products/rfid-blocking-aluminum-slider-wallet.json";
 
 type ShopifyImage = { src: string; alt: string | null; position: number };
 
@@ -32,13 +35,18 @@ async function fetchImageBuffer(
 ): Promise<{ buffer: ArrayBuffer; mimeType: string } | null> {
   try {
     const res = await fetch(url, {
-      headers: { Accept: "image/*", "User-Agent": "Mozilla/5.0 (compatible; CultureBot/1.0)" },
+      headers: {
+        Accept: "image/*",
+        "User-Agent": "Mozilla/5.0 (compatible; CultureBot/1.0)",
+      },
       signal: AbortSignal.timeout(15000),
     });
     if (!res.ok) return null;
     const buffer = await res.arrayBuffer();
     const contentType = res.headers.get("content-type") || "";
-    const mimeType = contentType.startsWith("image/") ? contentType.split(";")[0]!.trim() : "image/jpeg";
+    const mimeType = contentType.startsWith("image/")
+      ? contentType.split(";")[0]!.trim()
+      : "image/jpeg";
     return { buffer, mimeType };
   } catch {
     return null;
@@ -50,9 +58,18 @@ async function uploadToUploadThing(
   mimeType: string,
   filename: string,
 ): Promise<string | null> {
-  const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+  const ext =
+    mimeType === "image/png"
+      ? "png"
+      : mimeType === "image/webp"
+        ? "webp"
+        : "jpg";
   const name = filename.replace(/\.[^.]+$/, "") || "image";
-  const file = new File([buffer], name.endsWith(`.${ext}`) ? name : `${name}.${ext}`, { type: mimeType });
+  const file = new File(
+    [buffer],
+    name.endsWith(`.${ext}`) ? name : `${name}.${ext}`,
+    { type: mimeType },
+  );
   const formData = new FormData();
   formData.append("file", file);
   const res = await fetch(`${API_BASE}/api/admin/upload`, {
@@ -68,17 +85,22 @@ async function uploadToUploadThing(
   return data.url ?? null;
 }
 
-async function getImagesFromPacsafe(): Promise<Array<{ url: string; alt: string; title: string }>> {
+async function getImagesFromPacsafe(): Promise<
+  Array<{ url: string; alt: string; title: string }>
+> {
   const res = await fetch(PRODUCT_JSON, {
     headers: { Accept: "application/json" },
     signal: AbortSignal.timeout(15000),
   });
   if (!res.ok) return [];
   const data = (await res.json()) as { product?: { images?: ShopifyImage[] } };
-  const images = (data.product?.images ?? []).sort((a, b) => a.position - b.position);
+  const images = (data.product?.images ?? []).sort(
+    (a, b) => a.position - b.position,
+  );
   const result: Array<{ url: string; alt: string; title: string }> = [];
   const productName = "RFIDsafe® RFID blocking aluminum slider wallet";
-  const pageTitle = "RFIDsafe® RFID Blocking Aluminum Slider Wallet | Pacsafe | Culture";
+  const pageTitle =
+    "RFIDsafe® RFID Blocking Aluminum Slider Wallet | Pacsafe | Culture";
   for (let i = 0; i < images.length; i++) {
     const img = images[i]!;
     const data = await fetchImageBuffer(img.src);
@@ -100,10 +122,16 @@ async function getImagesFromPacsafe(): Promise<Array<{ url: string; alt: string;
 }
 
 async function getCategoryIdWallets(): Promise<string | null> {
-  const res = await fetch(`${API_BASE}/api/admin/categories?limit=300`, { headers });
+  const res = await fetch(`${API_BASE}/api/admin/categories?limit=300`, {
+    headers,
+  });
   if (!res.ok) return null;
-  const data = (await res.json()) as { items?: Array<{ id: string; slug?: string }> };
-  const wallets = (data.items ?? []).find((c) => c.slug === "wallets" || c.id === "accessories-wallets");
+  const data = (await res.json()) as {
+    items?: Array<{ id: string; slug?: string }>;
+  };
+  const wallets = (data.items ?? []).find(
+    (c) => c.slug === "wallets" || c.id === "accessories-wallets",
+  );
   return wallets?.id ?? null;
 }
 
@@ -116,7 +144,8 @@ async function main() {
     process.exit(1);
   }
   const categoryId = await getCategoryIdWallets();
-  if (!categoryId) console.warn("Wallets category not found; product will have no category.");
+  if (!categoryId)
+    console.warn("Wallets category not found; product will have no category.");
 
   const first = images[0]!;
   const name = "RFIDsafe® RFID blocking aluminum slider wallet";
@@ -132,7 +161,8 @@ async function main() {
     "5 normal card slots",
     "RFIDsafe™ blocking pockets and material",
   ];
-  const pageTitle = "RFIDsafe® RFID Blocking Aluminum Slider Wallet | Pacsafe | Culture";
+  const pageTitle =
+    "RFIDsafe® RFID Blocking Aluminum Slider Wallet | Pacsafe | Culture";
   const metaDescription =
     "Pacsafe RFIDsafe RFID blocking aluminum slider wallet — ultra slim, 5 card slots, protects from skimming. Dark Grey. Pay with crypto or card. Culture.";
 
@@ -154,9 +184,16 @@ async function main() {
     metaDescription,
     seoOptimized: true,
     hasVariants: true,
-    optionDefinitionsJson: JSON.stringify([{ name: "Color", values: ["Dark Grey"] }]),
+    optionDefinitionsJson: JSON.stringify([
+      { name: "Color", values: ["Dark Grey"] },
+    ]),
     variants: [{ size: null, color: "Dark Grey", priceCents, sku: "88005703" }],
-    images: images.map((img, i) => ({ url: img.url, alt: img.alt, title: img.title, sortOrder: i })),
+    images: images.map((img, i) => ({
+      url: img.url,
+      alt: img.alt,
+      title: img.title,
+      sortOrder: i,
+    })),
   };
   if (categoryId) body.categoryId = categoryId;
 

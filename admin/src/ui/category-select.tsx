@@ -1,13 +1,7 @@
 "use client";
 
 import { ChevronDown } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 
@@ -84,21 +78,22 @@ export function CategorySelect({
     () => options.find((c) => c.id === value) ?? null,
     [options, value],
   );
-  const selectedLabel = selectedOption ? displayName(selectedOption) : (emptyLabel ?? "None");
+  const selectedLabel = selectedOption
+    ? displayName(selectedOption)
+    : (emptyLabel ?? "None");
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return options;
     return options.filter((c) => {
       const label = displayName(c);
-      return label.toLowerCase().includes(q) || c.name.toLowerCase().includes(q);
+      return (
+        label.toLowerCase().includes(q) || c.name.toLowerCase().includes(q)
+      );
     });
   }, [options, searchQuery, displayName]);
 
-  const visible = useMemo(
-    () => filtered.slice(0, MAX_VISIBLE),
-    [filtered],
-  );
+  const visible = useMemo(() => filtered.slice(0, MAX_VISIBLE), [filtered]);
 
   const close = useCallback(() => {
     setOpen(false);
@@ -153,9 +148,7 @@ export function CategorySelect({
       }
       if (e.key === "ArrowDown") {
         e.preventDefault();
-        setFocusedIndex((i) =>
-          i < visible.length ? i + 1 : i,
-        );
+        setFocusedIndex((i) => (i < visible.length ? i + 1 : i));
         return;
       }
       if (e.key === "ArrowUp") {
@@ -166,7 +159,8 @@ export function CategorySelect({
       if (e.key === "Enter" && focusedIndex >= 0) {
         e.preventDefault();
         if (focusedIndex === 0) handleSelect("");
-        else if (visible[focusedIndex - 1]) handleSelect(visible[focusedIndex - 1]!.id);
+        else if (visible[focusedIndex - 1])
+          handleSelect(visible[focusedIndex - 1]!.id);
         return;
       }
       if (e.key === "Tab") {
@@ -209,7 +203,11 @@ export function CategorySelect({
             }}
             onKeyDown={(e) => {
               if (e.key === "Escape") close();
-              if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
+              if (
+                e.key === "ArrowDown" ||
+                e.key === "ArrowUp" ||
+                e.key === "Enter"
+              ) {
                 e.stopPropagation();
               }
             }}
@@ -218,12 +216,13 @@ export function CategorySelect({
             autoFocus
           />
         ) : (
-          <span className="flex-1 truncate text-left">
-            {selectedLabel}
-          </span>
+          <span className="flex-1 truncate text-left">{selectedLabel}</span>
         )}
         <ChevronDown
-          className={cn("h-4 w-4 shrink-0 text-muted-foreground", open && "rotate-180")}
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground",
+            open && "rotate-180",
+          )}
           aria-hidden
         />
       </div>

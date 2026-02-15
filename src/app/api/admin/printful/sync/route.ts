@@ -70,13 +70,12 @@ export async function POST(request: NextRequest) {
 
       // Always backfill size charts for all Printful products in DB (by brand/model).
       // So size charts are imported even when sync returns 0/0/0 or products were skipped.
-      const sizeChartsResult = await importSizeChartsForAllPrintfulProducts().catch(
-        (err) => ({
+      const sizeChartsResult =
+        await importSizeChartsForAllPrintfulProducts().catch((err) => ({
           success: false as const,
           upserted: 0,
           errors: [err instanceof Error ? err.message : String(err)],
-        }),
-      );
+        }));
 
       return NextResponse.json({
         success: result.success,
@@ -97,10 +96,13 @@ export async function POST(request: NextRequest) {
 
     case "import_single": {
       let printfulSyncProductId = body.printfulSyncProductId;
-      const productIdRaw = body.productId != null ? String(body.productId) : null;
+      const productIdRaw =
+        body.productId != null ? String(body.productId) : null;
       if (printfulSyncProductId == null && productIdRaw) {
         const [row] = await db
-          .select({ printfulSyncProductId: productsTable.printfulSyncProductId })
+          .select({
+            printfulSyncProductId: productsTable.printfulSyncProductId,
+          })
           .from(productsTable)
           .where(eq(productsTable.id, productIdRaw))
           .limit(1);
@@ -122,9 +124,7 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      console.log(
-        `Importing Printful product ${printfulSyncProductId}...`,
-      );
+      console.log(`Importing Printful product ${printfulSyncProductId}...`);
       try {
         const result = await importSinglePrintfulProduct(
           printfulSyncProductId,
@@ -151,7 +151,9 @@ export async function POST(request: NextRequest) {
           action: result.action,
           productId: result.productId,
           sizeChartImported: sizeChartResult.success,
-          ...(sizeChartResult.success ? {} : { sizeChartError: sizeChartResult.error }),
+          ...(sizeChartResult.success
+            ? {}
+            : { sizeChartError: sizeChartResult.error }),
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);

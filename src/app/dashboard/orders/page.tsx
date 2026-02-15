@@ -134,9 +134,15 @@ export default async function OrdersPage() {
                           <>
                             <Button asChild size="sm" variant="outline">
                               <Link href={`/checkout/${order.id}`}>
-                                <CreditCard className="mr-1.5 size-3.5" aria-hidden />
+                                <CreditCard
+                                  className="mr-1.5 size-3.5"
+                                  aria-hidden
+                                />
                                 Pay Now
-                                <span className="sr-only"> for order {order.id}</span>
+                                <span className="sr-only">
+                                  {" "}
+                                  for order {order.id}
+                                </span>
                               </Link>
                             </Button>
                             <CancelOrderButton
@@ -151,7 +157,10 @@ export default async function OrdersPage() {
                         <Button asChild size="sm" variant="ghost">
                           <Link href={`/dashboard/orders/${order.id}`}>
                             Details
-                            <span className="sr-only"> for order {order.id}</span>
+                            <span className="sr-only">
+                              {" "}
+                              for order {order.id}
+                            </span>
                           </Link>
                         </Button>
                       </div>

@@ -86,7 +86,8 @@ export function ProductActions({
   // Respect footer selection and geo: excluded globally, or product restricted to specific countries and current country not in list
   const allowedCountries = product.availableCountryCodes ?? [];
   const hasCountryRestriction = allowedCountries.length > 0;
-  const currentCountryUpper = footerCountry?.trim().toUpperCase().slice(0, 2) ?? "";
+  const currentCountryUpper =
+    footerCountry?.trim().toUpperCase().slice(0, 2) ?? "";
   const notInAllowedCountries =
     hasCountryRestriction &&
     currentCountryUpper.length === 2 &&
@@ -153,7 +154,15 @@ export function ProductActions({
     toast.success(`${product.name} added to cart`);
     await new Promise((r) => setTimeout(r, 400));
     setIsAdding(false);
-  }, [addItem, product, selectedVariant, image, price, quantity, variantRequired]);
+  }, [
+    addItem,
+    product,
+    selectedVariant,
+    image,
+    price,
+    quantity,
+    variantRequired,
+  ]);
 
   const handleWishlistToggle = React.useCallback(async () => {
     if (inWishlist) {
@@ -223,7 +232,9 @@ export function ProductActions({
         >
           <Heart
             className={
-              inWishlist ? "h-4 w-4 fill-destructive text-destructive" : "h-4 w-4"
+              inWishlist
+                ? "h-4 w-4 fill-destructive text-destructive"
+                : "h-4 w-4"
             }
           />
         </Button>
@@ -261,9 +272,7 @@ export function ProductActions({
       <Button
         className="flex-1 min-h-[4.5rem] text-[#111111]"
         disabled={
-          !inStock ||
-          isAdding ||
-          (variantRequired && selectedVariant == null)
+          !inStock || isAdding || (variantRequired && selectedVariant == null)
         }
         onClick={handleAddToCart}
       >

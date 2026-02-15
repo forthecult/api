@@ -111,5 +111,8 @@ function escapeHtml(s: string): string {
  */
 export function plainTextToHtml(text: string): string {
   const escaped = escapeHtml(text);
-  return escaped.split(/\n\n+/).map((p) => `<p style="margin:0 0 12px;">${p.replace(/\n/g, "<br/>")}</p>`).join("");
+  return escaped
+    .split(/\n\n+/)
+    .map((p) => `<p style="margin:0 0 12px;">${p.replace(/\n/g, "<br/>")}</p>`)
+    .join("");
 }

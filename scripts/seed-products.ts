@@ -22,7 +22,10 @@ import { isUploadThingUrl } from "../src/lib/product-mockup-upload";
 import { isShippingExcluded } from "../src/lib/shipping-restrictions";
 import { POD_SHIPPING_COUNTRY_CODES } from "../src/lib/pod-shipping-countries";
 import { CRYPTOMATIC_JETSETTER } from "./seed-data/cryptomatic-jetsetter";
-import { CIRCADIAN_SIZE_CHART, EARTH_RUNNERS_CIRCADIAN } from "./seed-data/earth-runners-circadian";
+import {
+  CIRCADIAN_SIZE_CHART,
+  EARTH_RUNNERS_CIRCADIAN,
+} from "./seed-data/earth-runners-circadian";
 import { HOME_ASSISTANT_GREEN } from "./seed-data/home-assistant-green";
 import { HOME_ASSISTANT_VOICE } from "./seed-data/home-assistant-voice";
 import { HUSKYLENS_2 } from "./seed-data/huskylens-2";
@@ -113,17 +116,18 @@ async function seed() {
     mainImageAlt: p.mainImageAlt ?? null,
     mainImageTitle: p.mainImageTitle ?? null,
     priceCents: p.priceCents,
-    compareAtPriceCents: (p as { compareAtPriceCents?: number }).compareAtPriceCents ?? null,
-    costPerItemCents: (p as { costPerItemCents?: number }).costPerItemCents ?? null,
+    compareAtPriceCents:
+      (p as { compareAtPriceCents?: number }).compareAtPriceCents ?? null,
+    costPerItemCents:
+      (p as { costPerItemCents?: number }).costPerItemCents ?? null,
     model: (p as { model?: string }).model ?? null,
     description: p.description,
     featuresJson:
-      (p.features?.length ?? 0) > 0
-        ? JSON.stringify(p.features)
-        : null,
+      (p.features?.length ?? 0) > 0 ? JSON.stringify(p.features) : null,
     brand: p.brand,
     vendor: (p as { vendor?: string }).vendor ?? null,
-    countryOfOrigin: (p as { countryOfOrigin?: string }).countryOfOrigin ?? null,
+    countryOfOrigin:
+      (p as { countryOfOrigin?: string }).countryOfOrigin ?? null,
     metaDescription: p.metaDescription ?? null,
     pageTitle: p.pageTitle ?? null,
     sku: p.sku ?? null,
@@ -134,22 +138,29 @@ async function seed() {
       ((p as { optionDefinitions?: Array<{ name: string; values: string[] }> })
         .optionDefinitions?.length ?? 0) > 0
         ? JSON.stringify(
-            (p as { optionDefinitions: Array<{ name: string; values: string[] }> })
-              .optionDefinitions,
+            (
+              p as {
+                optionDefinitions: Array<{ name: string; values: string[] }>;
+              }
+            ).optionDefinitions,
           )
         : null,
     source: "manual" as const,
     published: true,
     pageLayout: (p as { pageLayout?: string }).pageLayout ?? null,
-    handlingDaysMin: (p as { handlingDaysMin?: number }).handlingDaysMin ?? null,
-    handlingDaysMax: (p as { handlingDaysMax?: number }).handlingDaysMax ?? null,
+    handlingDaysMin:
+      (p as { handlingDaysMin?: number }).handlingDaysMin ?? null,
+    handlingDaysMax:
+      (p as { handlingDaysMax?: number }).handlingDaysMax ?? null,
     createdAt: now,
     updatedAt: now,
   }));
 
   const allProductRows = [...legacyRows, ...curatedRows];
   if (allProductRows.length === 0) {
-    console.log("No demo or curated products configured. Skipping product seed.");
+    console.log(
+      "No demo or curated products configured. Skipping product seed.",
+    );
     return;
   }
 
@@ -193,7 +204,8 @@ async function seed() {
     (c) => !isShippingExcluded(c),
   );
   for (const p of CURATED_PRODUCTS) {
-    const explicit = (p as { availableCountryCodes?: readonly string[] }).availableCountryCodes;
+    const explicit = (p as { availableCountryCodes?: readonly string[] })
+      .availableCountryCodes;
     const codes =
       explicit?.length && explicit.length > 0
         ? explicit.filter((c) => !isShippingExcluded(c))
@@ -202,19 +214,29 @@ async function seed() {
       .delete(productAvailableCountryTable)
       .where(eq(productAvailableCountryTable.productId, p.id));
     if (codes.length > 0) {
-      await db.insert(productAvailableCountryTable).values(
-        codes.map((countryCode) => ({ productId: p.id, countryCode })),
-      );
+      await db
+        .insert(productAvailableCountryTable)
+        .values(codes.map((countryCode) => ({ productId: p.id, countryCode })));
     }
   }
 
   const categoryLinks: Array<{ productId: string; categoryId: string }> = [
-    ...DEMO_PRODUCTS.map((p) => ({ productId: p.id, categoryId: p.categoryId })),
-    ...CURATED_PRODUCTS.map((p) => ({ productId: p.id, categoryId: p.categoryId })),
+    ...DEMO_PRODUCTS.map((p) => ({
+      productId: p.id,
+      categoryId: p.categoryId,
+    })),
+    ...CURATED_PRODUCTS.map((p) => ({
+      productId: p.id,
+      categoryId: p.categoryId,
+    })),
   ];
 
   // Pacsafe backpacks must be in Backpacks only (not Bags). Remove any Bags link so re-seed fixes category.
-  const pacsafeBackpackIds = [PACSAFE_EXP_28L.id, PACSAFE_V_12L.id, PACSAFE_V_20L.id];
+  const pacsafeBackpackIds = [
+    PACSAFE_EXP_28L.id,
+    PACSAFE_V_12L.id,
+    PACSAFE_V_20L.id,
+  ];
   await db
     .delete(productCategoriesTable)
     .where(
@@ -252,7 +274,10 @@ async function seed() {
     .where(
       and(
         inArray(productCategoriesTable.productId, aiProductIds),
-        inArray(productCategoriesTable.categoryId, ["smart-home", "accessories-tech"]),
+        inArray(productCategoriesTable.categoryId, [
+          "smart-home",
+          "accessories-tech",
+        ]),
       ),
     );
 
@@ -282,8 +307,14 @@ async function seed() {
       brand: CIRCADIAN_SIZE_CHART.brand,
       model: CIRCADIAN_SIZE_CHART.model,
       displayName: CIRCADIAN_SIZE_CHART.displayName,
-      dataImperial: CIRCADIAN_SIZE_CHART.dataImperial as unknown as Record<string, unknown>,
-      dataMetric: CIRCADIAN_SIZE_CHART.dataMetric as unknown as Record<string, unknown>,
+      dataImperial: CIRCADIAN_SIZE_CHART.dataImperial as unknown as Record<
+        string,
+        unknown
+      >,
+      dataMetric: CIRCADIAN_SIZE_CHART.dataMetric as unknown as Record<
+        string,
+        unknown
+      >,
       createdAt: now,
       updatedAt: now,
     })
@@ -295,8 +326,14 @@ async function seed() {
       ],
       set: {
         displayName: CIRCADIAN_SIZE_CHART.displayName,
-        dataImperial: CIRCADIAN_SIZE_CHART.dataImperial as unknown as Record<string, unknown>,
-        dataMetric: CIRCADIAN_SIZE_CHART.dataMetric as unknown as Record<string, unknown>,
+        dataImperial: CIRCADIAN_SIZE_CHART.dataImperial as unknown as Record<
+          string,
+          unknown
+        >,
+        dataMetric: CIRCADIAN_SIZE_CHART.dataMetric as unknown as Record<
+          string,
+          unknown
+        >,
         updatedAt: now,
       },
     });
@@ -306,7 +343,12 @@ async function seed() {
   const existingCurated = await db
     .select({ id: productsTable.id, imageUrl: productsTable.imageUrl })
     .from(productsTable)
-    .where(inArray(productsTable.id, CURATED_PRODUCTS.map((x) => x.id)));
+    .where(
+      inArray(
+        productsTable.id,
+        CURATED_PRODUCTS.map((x) => x.id),
+      ),
+    );
   const hasUploadThingImages = new Set(
     existingCurated
       .filter((r) => r.imageUrl && isUploadThingUrl(r.imageUrl))
@@ -317,7 +359,10 @@ async function seed() {
     const productId = p.id;
     const forceReplaceImages = SEEED_PRODUCT_IDS.has(productId);
 
-    if (p.images?.length && (forceReplaceImages || !hasUploadThingImages.has(productId))) {
+    if (
+      p.images?.length &&
+      (forceReplaceImages || !hasUploadThingImages.has(productId))
+    ) {
       await db
         .delete(productImagesTable)
         .where(eq(productImagesTable.productId, productId));
@@ -333,21 +378,23 @@ async function seed() {
       );
     }
 
-    const variants = (p as {
-      variants?: Array<{
-        id: string;
-        color?: string;
-        size?: string;
-        gender?: string;
-        priceCents: number;
-        sku: string;
-        imageUrl: string;
-        imageAlt?: string;
-        imageTitle?: string;
-        stockQuantity?: number;
-        label?: string;
-      }>;
-    }).variants;
+    const variants = (
+      p as {
+        variants?: Array<{
+          id: string;
+          color?: string;
+          size?: string;
+          gender?: string;
+          priceCents: number;
+          sku: string;
+          imageUrl: string;
+          imageAlt?: string;
+          imageTitle?: string;
+          stockQuantity?: number;
+          label?: string;
+        }>;
+      }
+    ).variants;
     if (variants?.length) {
       await db
         .delete(productVariantsTable)

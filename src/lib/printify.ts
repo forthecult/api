@@ -54,7 +54,10 @@ export function getPrintifyIfConfigured(): {
   }
 }
 
-type PrintifyFetchOptions = Omit<RequestInit, "body"> & { shopId?: string; body?: unknown };
+type PrintifyFetchOptions = Omit<RequestInit, "body"> & {
+  shopId?: string;
+  body?: unknown;
+};
 
 async function printifyFetch<T>(
   endpoint: string,
@@ -828,7 +831,9 @@ export function fetchPrintifyV2Shipping(
   }).then(async (res) => {
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Printify V2 Shipping API Error: ${res.status} - ${body}`);
+      throw new Error(
+        `Printify V2 Shipping API Error: ${res.status} - ${body}`,
+      );
     }
     return res.json() as Promise<PrintifyV2ShippingResponse>;
   });
@@ -888,7 +893,10 @@ export async function fetchPrintifyAllShippingMethods(
       err instanceof Error ? err.message : err,
     );
     try {
-      const v1Data = await fetchPrintifyShippingInfo(blueprintId, printProviderId);
+      const v1Data = await fetchPrintifyShippingInfo(
+        blueprintId,
+        printProviderId,
+      );
       const profile = v1Data.profiles.find(
         (p) =>
           p.countries.includes(countryCode) ||
@@ -963,7 +971,9 @@ export type PrintifyPrintProviderFull = {
 };
 
 /** GET /v1/catalog/print_providers.json - List all print providers */
-export function fetchAllPrintifyPrintProviders(): Promise<PrintifyPrintProviderFull[]> {
+export function fetchAllPrintifyPrintProviders(): Promise<
+  PrintifyPrintProviderFull[]
+> {
   return printifyFetch("/catalog/print_providers.json");
 }
 
@@ -977,9 +987,14 @@ export function fetchPrintifyPrintProviderById(
 // --- Image Uploads ---
 
 /** GET /v1/uploads.json - List uploaded images */
-export function listPrintifyUploads(
-  params?: { limit?: number; page?: number },
-): Promise<{ current_page: number; data: PrintifyUploadResult[]; last_page: number }> {
+export function listPrintifyUploads(params?: {
+  limit?: number;
+  page?: number;
+}): Promise<{
+  current_page: number;
+  data: PrintifyUploadResult[];
+  last_page: number;
+}> {
   const sp = new URLSearchParams();
   if (params?.limit) sp.set("limit", String(params.limit));
   if (params?.page) sp.set("page", String(params.page));

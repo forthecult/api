@@ -28,10 +28,7 @@ import {
 } from "@solana/web3.js";
 import bs58 from "bs58";
 
-import {
-  fetchAllStakers,
-  getStakingProgramId,
-} from "~/lib/cult-staking";
+import { fetchAllStakers, getStakingProgramId } from "~/lib/cult-staking";
 
 function getKeypair(): Keypair {
   const raw = process.env.STAKING_REWARDS_WALLET_SECRET_KEY;
@@ -56,7 +53,8 @@ function parseNumEnv(name: string, defaultVal: number): number {
 
 async function main() {
   const dryRun = process.env.DRY_RUN === "true" || process.env.DRY_RUN === "1";
-  const rpc = process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
+  const rpc =
+    process.env.SOLANA_RPC_URL?.trim() || "https://api.mainnet-beta.solana.com";
   const rewardSol =
     parseNumEnv("REWARD_SOL_TOTAL", 0) || parseNumEnv("REWARD_SOL_PER_RUN", 0);
   const minLamports = parseNumEnv("MIN_STAKER_LAMPORTS", 1000);
@@ -113,7 +111,9 @@ async function main() {
       total += p.lamports;
       console.log(`  ${p.to}: ${Number(p.lamports) / LAMPORTS_PER_SOL} SOL`);
     }
-    console.log(`  Total would send: ${Number(total) / LAMPORTS_PER_SOL} SOL (DRY RUN)`);
+    console.log(
+      `  Total would send: ${Number(total) / LAMPORTS_PER_SOL} SOL (DRY RUN)`,
+    );
     return;
   }
 

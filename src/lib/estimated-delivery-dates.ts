@@ -41,8 +41,14 @@ export function getEstimatedDeliveryRanges(options: {
   const orderedStart = fromDate;
   const shippedStart = addBusinessDays(fromDate, handlingDaysMin);
   const shippedEnd = addBusinessDays(fromDate, handlingDaysMax);
-  const deliveredStart = addBusinessDays(fromDate, handlingDaysMin + transitDaysMin);
-  const deliveredEnd = addBusinessDays(fromDate, handlingDaysMax + transitDaysMax);
+  const deliveredStart = addBusinessDays(
+    fromDate,
+    handlingDaysMin + transitDaysMin,
+  );
+  const deliveredEnd = addBusinessDays(
+    fromDate,
+    handlingDaysMax + transitDaysMax,
+  );
 
   return {
     orderedDate: orderedStart,

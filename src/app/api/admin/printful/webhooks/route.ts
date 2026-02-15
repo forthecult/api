@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const config = await getWebhookConfig();
-    
+
     // Check which required types are missing
     const registeredTypes = new Set(config?.types ?? []);
     const missingTypes = REQUIRED_WEBHOOK_TYPES.filter(
@@ -225,7 +225,9 @@ export async function POST(request: NextRequest) {
 
     default:
       return NextResponse.json(
-        { error: `Unknown action: ${action}. Valid: register_all, register, disable` },
+        {
+          error: `Unknown action: ${action}. Valid: register_all, register, disable`,
+        },
         { status: 400 },
       );
   }

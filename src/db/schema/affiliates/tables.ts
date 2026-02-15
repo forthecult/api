@@ -1,17 +1,13 @@
-import {
-  index,
-  integer,
-  pgTable,
-  text,
-  timestamp,
-} from "drizzle-orm/pg-core";
+import { index, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 
 /** Affiliate account. status: pending (awaiting approval), approved, rejected, suspended. */
 export const affiliateTable = pgTable("affiliate", {
   id: text("id").primaryKey(),
-  userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }),
+  userId: text("user_id").references(() => userTable.id, {
+    onDelete: "set null",
+  }),
   code: text("code").notNull().unique(),
   // TODO (L17): migrate status to pgEnum for type safety
   status: text("status").notNull().default("pending"), // "pending" | "approved" | "rejected" | "suspended"
@@ -30,19 +26,23 @@ export const affiliateTable = pgTable("affiliate", {
 });
 
 /** Tracks affiliate link clicks/visits. orderId is set when visitor converts (no FK to avoid circular deps). */
-export const affiliateAttributionTable = pgTable("affiliate_attribution", {
-  id: text("id").primaryKey(),
-  affiliateId: text("affiliate_id")
-    .notNull()
-    .references(() => affiliateTable.id, { onDelete: "cascade" }),
-  visitorId: text("visitor_id").notNull(),
-  landingPage: text("landing_page"),
-  referrer: text("referrer"),
-  ipAddress: text("ip_address"),
-  createdAt: timestamp("created_at").notNull(),
-  convertedAt: timestamp("converted_at"),
-  orderId: text("order_id"),
-}, (t) => [
-  // M7: Index for looking up attributions by affiliate
-  index("affiliate_attr_affiliate_id_idx").on(t.affiliateId),
-]);
+export const affiliateAttributionTable = pgTable(
+  "affiliate_attribution",
+  {
+    id: text("id").primaryKey(),
+    affiliateId: text("affiliate_id")
+      .notNull()
+      .references(() => affiliateTable.id, { onDelete: "cascade" }),
+    visitorId: text("visitor_id").notNull(),
+    landingPage: text("landing_page"),
+    referrer: text("referrer"),
+    ipAddress: text("ip_address"),
+    createdAt: timestamp("created_at").notNull(),
+    convertedAt: timestamp("converted_at"),
+    orderId: text("order_id"),
+  },
+  (t) => [
+    // M7: Index for looking up attributions by affiliate
+    index("affiliate_attr_affiliate_id_idx").on(t.affiliateId),
+  ],
+);

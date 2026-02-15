@@ -6,10 +6,7 @@
 import { and, asc, eq, inArray } from "drizzle-orm";
 
 import { db } from "~/db";
-import {
-  productImagesTable,
-  productsTable,
-} from "~/db/schema";
+import { productImagesTable, productsTable } from "~/db/schema";
 import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
 
 const COINGECKO_IDS = [
@@ -61,7 +58,10 @@ export async function getFiatRate(
   const toUpper = to.toUpperCase().trim();
   if (fromUpper === toUpper) return 1;
 
-  if (!FiatCodes.includes(fromUpper as FiatCode) || !FiatCodes.includes(toUpper as FiatCode)) {
+  if (
+    !FiatCodes.includes(fromUpper as FiatCode) ||
+    !FiatCodes.includes(toUpper as FiatCode)
+  ) {
     return null;
   }
 
@@ -129,9 +129,7 @@ export async function getBulkProductPricesAndImages(
     if (entry) entry.imageUrls.push(row.url);
   }
 
-  return uniq
-    .map((id) => priceMap.get(id))
-    .filter(Boolean) as Array<{
+  return uniq.map((id) => priceMap.get(id)).filter(Boolean) as Array<{
     productId: string;
     usd: number;
     imageUrl: string | null;

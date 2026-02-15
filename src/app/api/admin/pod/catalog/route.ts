@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
     100,
     Math.max(1, Number.parseInt(searchParams.get("limit") ?? "50", 10)),
   );
-  const offset = Math.max(0, Number.parseInt(searchParams.get("offset") ?? "0", 10));
+  const offset = Math.max(
+    0,
+    Number.parseInt(searchParams.get("offset") ?? "0", 10),
+  );
   try {
     const blueprints = await fetchBlueprints({
       provider,

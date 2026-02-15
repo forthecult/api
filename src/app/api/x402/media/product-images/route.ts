@@ -34,7 +34,11 @@ export async function POST(request: NextRequest) {
     products: products.map((p) => ({
       productId: p.productId,
       imageUrl: p.imageUrl,
-      imageUrls: p.imageUrls.length ? p.imageUrls : (p.imageUrl ? [p.imageUrl] : []),
+      imageUrls: p.imageUrls.length
+        ? p.imageUrls
+        : p.imageUrl
+          ? [p.imageUrl]
+          : [],
     })),
     total: products.length,
   });

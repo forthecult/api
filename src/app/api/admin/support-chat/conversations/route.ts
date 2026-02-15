@@ -1,4 +1,13 @@
-import { and, desc, eq, exists, inArray, isNotNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  inArray,
+  isNotNull,
+  or,
+  sql,
+} from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -32,7 +41,8 @@ export async function GET(request: NextRequest) {
       Math.max(
         1,
         Number.parseInt(
-          request.nextUrl.searchParams.get("limit") ?? String(DEFAULT_PAGE_SIZE),
+          request.nextUrl.searchParams.get("limit") ??
+            String(DEFAULT_PAGE_SIZE),
           10,
         ),
       ),
@@ -76,7 +86,10 @@ export async function GET(request: NextRequest) {
         userEmail: userTable.email,
       })
       .from(supportChatConversationTable)
-      .leftJoin(userTable, eq(supportChatConversationTable.userId, userTable.id))
+      .leftJoin(
+        userTable,
+        eq(supportChatConversationTable.userId, userTable.id),
+      )
       .where(activeFilter)
       .orderBy(desc(supportChatConversationTable.updatedAt))
       .limit(limit)
@@ -100,22 +113,14 @@ export async function GET(request: NextRequest) {
               createdAt: supportChatMessageTable.createdAt,
             })
             .from(supportChatMessageTable)
-            .where(
-              inArray(
-                supportChatMessageTable.conversationId,
-                convIds,
-              ),
-            )
+            .where(inArray(supportChatMessageTable.conversationId, convIds))
             .orderBy(
               supportChatMessageTable.conversationId,
               desc(supportChatMessageTable.createdAt),
             )
         : [];
 
-    const latestByConv = new Map<
-      string,
-      { role: string; createdAt: Date }
-    >();
+    const latestByConv = new Map<string, { role: string; createdAt: Date }>();
     for (const m of latestMessages) {
       if (!latestByConv.has(m.conversationId)) {
         latestByConv.set(m.conversationId, {

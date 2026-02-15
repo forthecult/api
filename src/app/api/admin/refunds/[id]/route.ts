@@ -3,10 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { refundRequestsTable } from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const ALLOWED_STATUSES = [
   "requested",
@@ -42,14 +39,13 @@ export async function PATCH(
     try {
       body = (await request.json()) as { status?: string };
     } catch {
-      return NextResponse.json(
-        { error: "Invalid JSON body" },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
     const status =
       typeof body.status === "string" &&
-      ALLOWED_STATUSES.includes(body.status as (typeof ALLOWED_STATUSES)[number])
+      ALLOWED_STATUSES.includes(
+        body.status as (typeof ALLOWED_STATUSES)[number],
+      )
         ? (body.status as (typeof ALLOWED_STATUSES)[number])
         : undefined;
     if (status === undefined) {
@@ -80,7 +76,9 @@ export async function PATCH(
       .set({ status, updatedAt: now })
       .where(eq(refundRequestsTable.id, id));
 
-    console.info(`[admin-audit] Refund ${id} status changed to ${status} via admin API`);
+    console.info(
+      `[admin-audit] Refund ${id} status changed to ${status} via admin API`,
+    );
 
     return NextResponse.json({ status, updatedAt: now.toISOString() });
   } catch (err) {

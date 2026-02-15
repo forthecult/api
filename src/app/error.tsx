@@ -44,8 +44,8 @@ export default function RootError({ error, reset }: ErrorPageProps) {
               </>
             ) : (
               <>
-                We apologize for the inconvenience. An unexpected error occurred.
-                Please try again or return to the homepage.
+                We apologize for the inconvenience. An unexpected error
+                occurred. Please try again or return to the homepage.
               </>
             )}
           </p>

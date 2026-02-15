@@ -3,7 +3,13 @@
  * Used for security key / passkey registration and sign-in.
  */
 import { createId } from "@paralleldrive/cuid2";
-import { boolean, integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 
 import { userTable } from "../users/tables";
 

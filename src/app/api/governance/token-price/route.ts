@@ -29,7 +29,8 @@ export async function GET() {
     return NextResponse.json(
       {
         status: false,
-        message: "Unable to fetch market data. The token may not be listed on a DEX yet.",
+        message:
+          "Unable to fetch market data. The token may not be listed on a DEX yet.",
         token: {
           symbol: token.symbol,
           mint: token.mint,

@@ -13,7 +13,11 @@ const CATEGORY_ID = "hardware-wallets";
 // Official images from trezor.io (Safe 5 product shots)
 const TREZOR_CDN = "https://imagedelivery.net/dvYzklbs_b5YaLRtI16Mnw";
 
-export const PRODUCT_IMAGES_SAFE_5: Array<{ url: string; alt: string; title: string }> = [
+export const PRODUCT_IMAGES_SAFE_5: Array<{
+  url: string;
+  alt: string;
+  title: string;
+}> = [
   {
     url: `${TREZOR_CDN}/e05a7bf5-a123-4241-535f-571363943e00/public`,
     alt: "Trezor Safe 5 hardware wallet - Black Graphite",
@@ -52,7 +56,7 @@ export const PRODUCT_IMAGES_SAFE_5: Array<{ url: string; alt: string; title: str
 ];
 
 const FEATURES: string[] = [
-  "1.54\" color touchscreen with haptic feedback for confirmations",
+  '1.54" color touchscreen with haptic feedback for confirmations',
   "EAL6+ Secure Element; open-source firmware and design",
   "12-, 20-, or 24-word backup; optional Multi-share Backup",
   "USB-C; Trezor Suite for desktop and mobile; 1000s of coins",
@@ -77,7 +81,8 @@ export const TREZOR_SAFE_5 = {
   name: "Trezor Safe 5",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES_SAFE_5[0]!.url,
-  mainImageAlt: "Trezor Safe 5 hardware wallet - color touchscreen, Secure Element",
+  mainImageAlt:
+    "Trezor Safe 5 hardware wallet - color touchscreen, Secure Element",
   mainImageTitle: "Trezor Safe 5 | Secure Crypto Hardware Wallet",
   priceCents: PRICE_CENTS,
   categoryId: CATEGORY_ID,

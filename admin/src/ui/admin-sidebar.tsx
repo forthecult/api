@@ -238,7 +238,8 @@ export function AdminSidebar() {
               : hasChildren &&
                 section.children!.some((c) => pathMatches(c.href, pathname));
             const shouldExpand =
-              isExpanded || (hasChildren && sectionContainsPath(section, pathname));
+              isExpanded ||
+              (hasChildren && sectionContainsPath(section, pathname));
 
             if (section.href && !hasChildren) {
               return (
@@ -308,15 +309,13 @@ export function AdminSidebar() {
                             <Circle
                               className={cn(
                                 "h-1.5 w-1.5 shrink-0",
-                                itemActive ? "fill-blue-400 text-blue-400" : "text-white/50",
+                                itemActive
+                                  ? "fill-blue-400 text-blue-400"
+                                  : "text-white/50",
                               )}
                               aria-hidden
                             />
-                            <span
-                              className={cn(
-                                itemActive && "font-medium",
-                              )}
-                            >
+                            <span className={cn(itemActive && "font-medium")}>
                               {item.label}
                             </span>
                           </Link>

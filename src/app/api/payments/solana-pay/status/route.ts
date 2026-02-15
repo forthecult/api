@@ -19,7 +19,12 @@ import {
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
 import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -61,9 +66,7 @@ async function findNativeSolTransferToAddress(
           // not a transfer instruction
         }
       }
-    } catch {
-      continue;
-    }
+    } catch {}
   }
   return null;
 }
@@ -95,9 +98,7 @@ async function findTransferToAddress(
         splToken: splTokenPk,
       });
       return signature;
-    } catch {
-      continue;
-    }
+    } catch {}
   }
 
   // 2. Fallback: check deposit address's token balance directly.
@@ -113,7 +114,10 @@ async function findTransferToAddress(
     if (balance) {
       // Convert expected amount from token units to base units for comparison
       const expectedBaseUnits = BigInt(
-        amountBn.times(new BigNumber(10).pow(balance.decimals)).integerValue(BigNumber.ROUND_FLOOR).toString(),
+        amountBn
+          .times(new BigNumber(10).pow(balance.decimals))
+          .integerValue(BigNumber.ROUND_FLOOR)
+          .toString(),
       );
       if (balance.amount >= expectedBaseUnits) {
         // Balance is sufficient — return the most recent signature if available,
@@ -130,7 +134,10 @@ async function findTransferToAddress(
 
 export async function GET(request: Request) {
   const ip = getClientIp(request.headers);
-  const rl = await checkRateLimit(`solana-status:${ip}`, RATE_LIMITS.orderStatus);
+  const rl = await checkRateLimit(
+    `solana-status:${ip}`,
+    RATE_LIMITS.orderStatus,
+  );
   if (!rl.success) return rateLimitResponse(rl);
 
   const { searchParams } = new URL(request.url);
@@ -237,7 +244,10 @@ export async function GET(request: Request) {
       );
       if (balance) {
         const expectedBaseUnits = BigInt(
-          amountBn.times(new BigNumber(10).pow(balance.decimals)).integerValue(BigNumber.ROUND_FLOOR).toString(),
+          amountBn
+            .times(new BigNumber(10).pow(balance.decimals))
+            .integerValue(BigNumber.ROUND_FLOOR)
+            .toString(),
         );
         if (balance.amount >= expectedBaseUnits) {
           return NextResponse.json({ status: "confirmed", signature });

@@ -54,7 +54,10 @@ function iphoneTierIndex(value: string): number {
 }
 
 /** Sort phone model values: latest generation first, then by tier (Pro Max before Pro, etc.). */
-export function sortPhoneModelsLatestFirst(values: string[], brand: PhoneBrand): string[] {
+export function sortPhoneModelsLatestFirst(
+  values: string[],
+  brand: PhoneBrand,
+): string[] {
   return [...values].sort((a, b) => {
     const genA = parseGeneration(a, brand);
     const genB = parseGeneration(b, brand);
@@ -97,9 +100,17 @@ export function groupPhoneModelsByBrand(
  * Whether this option looks like "phone models": option name suggests device/model
  * and we have at least one iPhone or Samsung value (so brand + model dropdown makes sense).
  */
-export function isPhoneModelsOption(optionName: string, values: string[]): boolean {
+export function isPhoneModelsOption(
+  optionName: string,
+  values: string[],
+): boolean {
   const name = optionName.toLowerCase();
-  if (!name.includes("phone") && !name.includes("model") && !name.includes("device")) return false;
+  if (
+    !name.includes("phone") &&
+    !name.includes("model") &&
+    !name.includes("device")
+  )
+    return false;
   const brands = new Set(values.map(getPhoneBrand));
   return brands.has("iPhone") || brands.has("Samsung");
 }

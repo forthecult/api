@@ -90,7 +90,8 @@ export const HOME_ASSISTANT_GREEN = {
   name: "Home Assistant Green",
   slug: PRODUCT_SLUG,
   imageUrl: PRODUCT_IMAGES[0]!.url,
-  mainImageAlt: "Home Assistant Green - official smart home hub with Home Assistant OS, local-first",
+  mainImageAlt:
+    "Home Assistant Green - official smart home hub with Home Assistant OS, local-first",
   mainImageTitle: "Home Assistant Green | Smart Home Hub | Seeed Studio",
   priceCents: PRICE_CENTS,
   costPerItemCents: PRICE_CENTS,

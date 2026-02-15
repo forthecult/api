@@ -7,7 +7,10 @@ import { useCallback, useEffect, useState } from "react";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import { SizeChartDataEditor, type SizeChartData } from "~/ui/size-chart-editor";
+import {
+  SizeChartDataEditor,
+  type SizeChartData,
+} from "~/ui/size-chart-editor";
 
 const API_BASE = getMainAppUrl();
 const inputClass =
@@ -45,7 +48,9 @@ export default function AdminSizeChartsEditPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/admin/size-charts/${id}`, { credentials: "include" });
+        const res = await fetch(`${API_BASE}/api/admin/size-charts/${id}`, {
+          credentials: "include",
+        });
         if (!res.ok) throw new Error("Failed to load");
         const data = (await res.json()) as SizeChart;
         if (!cancelled) {
@@ -53,16 +58,16 @@ export default function AdminSizeChartsEditPage() {
           setDisplayName(data.displayName ?? "");
           setDataImperial(
             data.dataImperial != null
-              ? (typeof data.dataImperial === "string"
-                  ? (JSON.parse(data.dataImperial) as SizeChartData)
-                  : (data.dataImperial as SizeChartData))
+              ? typeof data.dataImperial === "string"
+                ? (JSON.parse(data.dataImperial) as SizeChartData)
+                : (data.dataImperial as SizeChartData)
               : null,
           );
           setDataMetric(
             data.dataMetric != null
-              ? (typeof data.dataMetric === "string"
-                  ? (JSON.parse(data.dataMetric) as SizeChartData)
-                  : (data.dataMetric as SizeChartData))
+              ? typeof data.dataMetric === "string"
+                ? (JSON.parse(data.dataMetric) as SizeChartData)
+                : (data.dataMetric as SizeChartData)
               : null,
           );
         }
@@ -96,7 +101,9 @@ export default function AdminSizeChartsEditPage() {
           }),
         });
         if (!res.ok) {
-          const body = (await res.json().catch(() => ({}))) as { error?: string };
+          const body = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(body.error ?? "Failed to update");
         }
         setSuccess(true);
@@ -113,7 +120,7 @@ export default function AdminSizeChartsEditPage() {
   if (loading || !chart) {
     return (
       <div className="flex min-h-[200px] items-center justify-center">
-        {loading ? "Loading…" : error ?? "Size chart not found."}
+        {loading ? "Loading…" : (error ?? "Size chart not found.")}
       </div>
     );
   }
@@ -150,27 +157,44 @@ export default function AdminSizeChartsEditPage() {
               {chart.provider} · {chart.brand} · {chart.model}
             </CardTitle>
             <p className="text-sm text-muted-foreground">
-              Provider, brand, and model cannot be changed. Edit display name and size data below.
+              Provider, brand, and model cannot be changed. Edit display name
+              and size data below.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-3">
               <div>
                 <label className={labelClass}>Provider</label>
-                <input type="text" value={chart.provider} disabled className={inputClass + " opacity-60"} />
+                <input
+                  type="text"
+                  value={chart.provider}
+                  disabled
+                  className={inputClass + " opacity-60"}
+                />
               </div>
               <div>
                 <label className={labelClass}>Brand</label>
-                <input type="text" value={chart.brand} disabled className={inputClass + " opacity-60"} />
+                <input
+                  type="text"
+                  value={chart.brand}
+                  disabled
+                  className={inputClass + " opacity-60"}
+                />
               </div>
               <div>
                 <label className={labelClass}>Model</label>
-                <input type="text" value={chart.model} disabled className={inputClass + " opacity-60"} />
+                <input
+                  type="text"
+                  value={chart.model}
+                  disabled
+                  className={inputClass + " opacity-60"}
+                />
               </div>
             </div>
             <div>
               <label htmlFor="displayName" className={labelClass}>
-                Display name (shown in accordion) <span className="text-destructive">*</span>
+                Display name (shown in accordion){" "}
+                <span className="text-destructive">*</span>
               </label>
               <input
                 id="displayName"

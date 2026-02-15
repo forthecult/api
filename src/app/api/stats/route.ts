@@ -44,10 +44,7 @@ export async function GET(request: NextRequest) {
           .from(orderItemsTable)
           .innerJoin(
             ordersTable,
-            and(
-              eq(orderItemsTable.orderId, ordersTable.id),
-              paidOrFulfilled,
-            ),
+            and(eq(orderItemsTable.orderId, ordersTable.id), paidOrFulfilled),
           )
           .leftJoin(
             productsTable,
@@ -94,10 +91,7 @@ export async function GET(request: NextRequest) {
       slug?: string | null;
     } | null = null;
     for (const [productId, entry] of byProduct) {
-      if (
-        !mostPopularItem ||
-        entry.quantity > mostPopularItem.quantity
-      ) {
+      if (!mostPopularItem || entry.quantity > mostPopularItem.quantity) {
         mostPopularItem = {
           name: entry.name,
           quantity: entry.quantity,

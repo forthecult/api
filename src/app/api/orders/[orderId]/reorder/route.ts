@@ -57,14 +57,21 @@ export async function GET(
       );
     }
 
-    const emailVerified = (session.user as { emailVerified?: boolean })?.emailVerified;
+    const emailVerified = (session.user as { emailVerified?: boolean })
+      ?.emailVerified;
     const isOwner =
       order.userId === session.user.id ||
-      (emailVerified && normalizeEmail(order.email) === normalizeEmail(session.user.email));
+      (emailVerified &&
+        normalizeEmail(order.email) === normalizeEmail(session.user.email));
 
     if (!isOwner) {
       return NextResponse.json(
-        { error: { code: "UNAUTHORIZED", message: "Not authorized to reorder this order" } },
+        {
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Not authorized to reorder this order",
+          },
+        },
         { status: 401 },
       );
     }
@@ -116,7 +123,8 @@ export async function GET(
           slug: productsTable.slug,
           published: productsTable.published,
           priceCents: productsTable.priceCents,
-          continueSellingWhenOutOfStock: productsTable.continueSellingWhenOutOfStock,
+          continueSellingWhenOutOfStock:
+            productsTable.continueSellingWhenOutOfStock,
           trackQuantity: productsTable.trackQuantity,
           quantity: productsTable.quantity,
         })
@@ -209,7 +217,12 @@ export async function GET(
   } catch (err) {
     console.error("Reorder error:", err);
     return NextResponse.json(
-      { error: { code: "INTERNAL_ERROR", message: "Failed to load order for reorder" } },
+      {
+        error: {
+          code: "INTERNAL_ERROR",
+          message: "Failed to load order for reorder",
+        },
+      },
       { status: 500 },
     );
   }

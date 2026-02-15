@@ -3,8 +3,7 @@
 import { cn } from "~/lib/cn";
 
 /** Standard max-width container with responsive padding. Use for all customer-facing page content. */
-const CONTAINER_CLASS =
-  "container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8";
+const CONTAINER_CLASS = "container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8";
 
 export interface PageContainerProps {
   children: React.ReactNode;
@@ -12,9 +11,7 @@ export interface PageContainerProps {
 }
 
 export function PageContainer({ children, className }: PageContainerProps) {
-  return (
-    <div className={cn(CONTAINER_CLASS, className)}>{children}</div>
-  );
+  return <div className={cn(CONTAINER_CLASS, className)}>{children}</div>;
 }
 
 export interface PageSectionProps {
@@ -63,12 +60,7 @@ export function SectionHeading({
   className,
 }: SectionHeadingProps) {
   return (
-    <div
-      className={cn(
-        "mx-auto max-w-3xl space-y-4 text-center",
-        className,
-      )}
-    >
+    <div className={cn("mx-auto max-w-3xl space-y-4 text-center", className)}>
       <h2 className="font-heading text-2xl font-bold tracking-tight text-[#F5F1EB] md:text-3xl">
         {title}
       </h2>
@@ -91,10 +83,7 @@ export function SectionHeadingBlock({
 }) {
   return (
     <div
-      className={cn(
-        "mb-8 flex flex-col items-center text-center",
-        className,
-      )}
+      className={cn("mb-8 flex flex-col items-center text-center", className)}
     >
       <h2 className="font-heading text-3xl leading-tight font-bold tracking-tight text-[#F5F1EB] md:text-4xl">
         {title}

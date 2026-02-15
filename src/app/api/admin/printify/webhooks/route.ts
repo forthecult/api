@@ -58,14 +58,17 @@ export async function GET(request: NextRequest) {
   const pf = getPrintifyIfConfigured();
   if (!pf) {
     return NextResponse.json(
-      { error: "Printify not configured. Set PRINTIFY_API_TOKEN and PRINTIFY_SHOP_ID." },
+      {
+        error:
+          "Printify not configured. Set PRINTIFY_API_TOKEN and PRINTIFY_SHOP_ID.",
+      },
       { status: 400 },
     );
   }
 
   try {
     const webhooks = await listPrintifyWebhooks(pf.shopId);
-    
+
     // Check which required topics are missing
     const registeredTopics = new Set(webhooks.map((w) => w.topic));
     const missingTopics = REQUIRED_WEBHOOK_TOPICS.filter(
@@ -107,7 +110,10 @@ export async function POST(request: NextRequest) {
   const pf = getPrintifyIfConfigured();
   if (!pf) {
     return NextResponse.json(
-      { error: "Printify not configured. Set PRINTIFY_API_TOKEN and PRINTIFY_SHOP_ID." },
+      {
+        error:
+          "Printify not configured. Set PRINTIFY_API_TOKEN and PRINTIFY_SHOP_ID.",
+      },
       { status: 400 },
     );
   }
@@ -130,7 +136,9 @@ export async function POST(request: NextRequest) {
   const { action } = body;
 
   // Build webhook URL - use custom URL if provided, otherwise use app URL
-  let baseUrl = (body.customUrl || process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/+$/, "");
+  const baseUrl = (body.customUrl || process.env.NEXT_PUBLIC_APP_URL || "")
+    .trim()
+    .replace(/\/+$/, "");
   if (!baseUrl) {
     return NextResponse.json(
       { error: "NEXT_PUBLIC_APP_URL not set and no customUrl provided" },
@@ -164,18 +172,29 @@ export async function POST(request: NextRequest) {
         for (const webhook of existing) {
           // Extract host from the webhook's registered URL for the required host query parameter
           const webhookHost = extractHostFromUrl(webhook.url);
-          const res = await deletePrintifyWebhook(pf.shopId, webhook.id, webhookHost);
+          const res = await deletePrintifyWebhook(
+            pf.shopId,
+            webhook.id,
+            webhookHost,
+          );
           if (res.success) deletedCount++;
         }
         if (deletedCount > 0) {
-          console.log(`Replaced ${deletedCount} existing Printify webhook(s) for shop ${pf.shopId}`);
+          console.log(
+            `Replaced ${deletedCount} existing Printify webhook(s) for shop ${pf.shopId}`,
+          );
         }
       }
 
       const existingAfterDelete = await listPrintifyWebhooks(pf.shopId);
       const existingTopics = new Set(existingAfterDelete.map((w) => w.topic));
 
-      const results: { topic: string; success: boolean; error?: string; id?: string }[] = [];
+      const results: {
+        topic: string;
+        success: boolean;
+        error?: string;
+        id?: string;
+      }[] = [];
 
       for (const topic of REQUIRED_WEBHOOK_TOPICS) {
         if (existingTopics.has(topic)) {
@@ -184,7 +203,11 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-          const webhook = await createPrintifyWebhook(pf.shopId, topic, webhookUrl);
+          const webhook = await createPrintifyWebhook(
+            pf.shopId,
+            topic,
+            webhookUrl,
+          );
           results.push({ topic, success: true, id: webhook.id });
           console.log(`Registered webhook: ${topic} -> ${webhook.id}`);
         } catch (err) {
@@ -195,11 +218,15 @@ export async function POST(request: NextRequest) {
       }
 
       const successCount = results.filter((r) => r.success && r.id).length;
-      const alreadyRegistered = results.filter((r) => r.success && !r.id).length;
+      const alreadyRegistered = results.filter(
+        (r) => r.success && !r.id,
+      ).length;
       const failedCount = results.filter((r) => !r.success).length;
 
       const has9004 = results.some(
-        (r) => r.error?.includes("9004") || r.error?.toLowerCase().includes("validation failed"),
+        (r) =>
+          r.error?.includes("9004") ||
+          r.error?.toLowerCase().includes("validation failed"),
       );
       return NextResponse.json({
         success: failedCount === 0,
@@ -214,7 +241,7 @@ export async function POST(request: NextRequest) {
         hint: !baseUrl.startsWith("https://")
           ? "NEXT_PUBLIC_APP_URL should be https in production so Printify can reach it."
           : has9004
-            ? "9004: When you click Register, check server logs for '[Printify webhook] GET received' or 'POST received'. If none appear, Printify's request is not reaching this app (wrong URL or blocked). Try registering with customUrl without secret: { \"action\": \"register_all\", \"customUrl\": \"https://YOUR_DOMAIN/api/webhooks/printify\" } to see if validation passes."
+            ? '9004: When you click Register, check server logs for \'[Printify webhook] GET received\' or \'POST received\'. If none appear, Printify\'s request is not reaching this app (wrong URL or blocked). Try registering with customUrl without secret: { "action": "register_all", "customUrl": "https://YOUR_DOMAIN/api/webhooks/printify" } to see if validation passes.'
             : undefined,
       });
     }
@@ -228,7 +255,11 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const webhook = await createPrintifyWebhook(pf.shopId, body.topic, webhookUrl);
+        const webhook = await createPrintifyWebhook(
+          pf.shopId,
+          body.topic,
+          webhookUrl,
+        );
         return NextResponse.json({
           success: true,
           webhook,
@@ -253,7 +284,11 @@ export async function POST(request: NextRequest) {
 
       // For single delete, extract host from our app URL as a best guess
       const deleteHost = extractHostFromUrl(baseUrl);
-      const result = await deletePrintifyWebhook(pf.shopId, body.webhookId, deleteHost);
+      const result = await deletePrintifyWebhook(
+        pf.shopId,
+        body.webhookId,
+        deleteHost,
+      );
       return NextResponse.json(result);
     }
 
@@ -261,12 +296,21 @@ export async function POST(request: NextRequest) {
       console.log(`Deleting all Printify webhooks for shop ${pf.shopId}...`);
 
       const existing = await listPrintifyWebhooks(pf.shopId);
-      const results: { id: string; topic: string; url: string; success: boolean }[] = [];
+      const results: {
+        id: string;
+        topic: string;
+        url: string;
+        success: boolean;
+      }[] = [];
 
       for (const webhook of existing) {
         // Extract host from each webhook's registered URL for the required host parameter
         const webhookHost = extractHostFromUrl(webhook.url);
-        const result = await deletePrintifyWebhook(pf.shopId, webhook.id, webhookHost);
+        const result = await deletePrintifyWebhook(
+          pf.shopId,
+          webhook.id,
+          webhookHost,
+        );
         results.push({
           id: webhook.id,
           topic: webhook.topic,
@@ -286,7 +330,10 @@ export async function POST(request: NextRequest) {
       const fragment = body.urlContains?.trim();
       if (!fragment) {
         return NextResponse.json(
-          { error: "urlContains required (e.g. \"staging\" to remove staging webhooks)" },
+          {
+            error:
+              'urlContains required (e.g. "staging" to remove staging webhooks)',
+          },
           { status: 400 },
         );
       }
@@ -296,11 +343,20 @@ export async function POST(request: NextRequest) {
 
       const existing = await listPrintifyWebhooks(pf.shopId);
       const toDelete = existing.filter((w) => w.url.includes(fragment));
-      const results: { id: string; topic: string; url: string; success: boolean }[] = [];
+      const results: {
+        id: string;
+        topic: string;
+        url: string;
+        success: boolean;
+      }[] = [];
 
       for (const webhook of toDelete) {
         const webhookHost = extractHostFromUrl(webhook.url);
-        const result = await deletePrintifyWebhook(pf.shopId, webhook.id, webhookHost);
+        const result = await deletePrintifyWebhook(
+          pf.shopId,
+          webhook.id,
+          webhookHost,
+        );
         results.push({
           id: webhook.id,
           topic: webhook.topic,

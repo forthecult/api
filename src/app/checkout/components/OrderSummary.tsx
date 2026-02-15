@@ -20,15 +20,15 @@ import {
 } from "~/ui/primitives/dialog";
 import { Input } from "~/ui/primitives/input";
 import { FiatPrice } from "~/ui/components/FiatPrice";
-import {
-  checkoutFieldHeight,
-  type AppliedCoupon,
-} from "../checkout-shared";
+import { checkoutFieldHeight, type AppliedCoupon } from "../checkout-shared";
 import type { TierDiscountLine } from "../hooks/useCoupons";
 import type { CartItem } from "~/ui/components/cart";
 
 /** Show only the size/variant (e.g. "2XL", "M") in checkout — strip title/category before " / ". */
-function variantDisplayOnly(_productName: string, variantLabel: string): string {
+function variantDisplayOnly(
+  _productName: string,
+  variantLabel: string,
+): string {
   if (!variantLabel?.trim()) return variantLabel ?? "";
   const lastSlash = variantLabel.lastIndexOf(" / ");
   if (lastSlash >= 0) {
@@ -113,7 +113,7 @@ export function OrderSummary({
             key={item.id}
           >
             <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white">
-              {failedImageIds.has(item.id) || !(item.image?.trim()) ? (
+              {failedImageIds.has(item.id) || !item.image?.trim() ? (
                 <Image
                   alt={item.name}
                   className="object-contain"
@@ -153,7 +153,9 @@ export function OrderSummary({
                     className="flex size-6 items-center justify-center rounded-l-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
                     aria-label={`Decrease quantity of ${item.name}`}
                     disabled={item.quantity <= 1}
-                    onClick={() => onUpdateQuantity?.(item.id, item.quantity - 1)}
+                    onClick={() =>
+                      onUpdateQuantity?.(item.id, item.quantity - 1)
+                    }
                   >
                     <Minus className="size-3" />
                   </button>
@@ -164,7 +166,9 @@ export function OrderSummary({
                     type="button"
                     className="flex size-6 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     aria-label={`Increase quantity of ${item.name}`}
-                    onClick={() => onUpdateQuantity?.(item.id, item.quantity + 1)}
+                    onClick={() =>
+                      onUpdateQuantity?.(item.id, item.quantity + 1)
+                    }
                   >
                     <Plus className="size-3" />
                   </button>
@@ -253,9 +257,7 @@ export function OrderSummary({
                 {appliedCoupon.freeShipping ? (
                   "Free shipping"
                 ) : (
-                  <FiatPrice
-                    usdAmount={appliedCoupon.discountCents / 100}
-                  />
+                  <FiatPrice usdAmount={appliedCoupon.discountCents / 100} />
                 )}
                 {appliedCoupon.source === "code" ? (
                   <button
@@ -294,14 +296,28 @@ export function OrderSummary({
                   </DialogHeader>
                   <div className="space-y-3 text-sm">
                     <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
-                      <span className="font-medium text-blue-700 dark:text-blue-400">Most orders ship within 1 business day</span>
+                      <span className="font-medium text-blue-700 dark:text-blue-400">
+                        Most orders ship within 1 business day
+                      </span>
                     </div>
                     <ul className="space-y-2">
-                      <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>Domestic (US):</strong> 2–4 business days</li>
-                      <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" /><strong>International:</strong> 5–14 business days</li>
-                      <li className="flex items-start gap-2"><span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />Tracking number sent via email once shipped</li>
+                      <li className="flex items-start gap-2">
+                        <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                        <strong>Domestic (US):</strong> 2–4 business days
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                        <strong>International:</strong> 5–14 business days
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                        Tracking number sent via email once shipped
+                      </li>
                     </ul>
-                    <p className="text-sm text-muted-foreground">Peak seasons may add up to 1 week. P.O. Boxes are not supported.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Peak seasons may add up to 1 week. P.O. Boxes are not
+                      supported.
+                    </p>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -325,9 +341,7 @@ export function OrderSummary({
             </div>
           </div>
           {customsDutiesNote ? (
-            <p className="text-xs text-muted-foreground">
-              {customsDutiesNote}
-            </p>
+            <p className="text-xs text-muted-foreground">{customsDutiesNote}</p>
           ) : null}
         </div>
         <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">

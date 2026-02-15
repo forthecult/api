@@ -24,10 +24,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { getCurrentUser } from "~/lib/auth";
-import {
-  fetchUserStake,
-  getStakingProgramId,
-} from "~/lib/cult-staking";
+import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { db } from "~/db";
 import {
   esimOrdersTable,
@@ -95,7 +92,11 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { status: false, message: "Invalid body", details: parsed.error.flatten() },
+      {
+        status: false,
+        message: "Invalid body",
+        details: parsed.error.flatten(),
+      },
       { status: 400 },
     );
   }
@@ -124,14 +125,22 @@ export async function POST(request: Request) {
   const market = await fetchTokenMarketData(token.mint);
   if (!market || market.priceUsd <= 0) {
     return NextResponse.json(
-      { status: false, message: "Unable to fetch token price data. Please try again." },
+      {
+        status: false,
+        message: "Unable to fetch token price data. Please try again.",
+      },
       { status: 503 },
     );
   }
 
-  const stakedHuman = Number(stakeData.amount) / Math.pow(10, token.decimals);
+  const stakedHuman = Number(stakeData.amount) / 10 ** token.decimals;
   // stakerCount=0 here since we just need the MC-based thresholds
-  const pricing = computeTierPricing(token, market.priceUsd, market.marketCapUsd, 0);
+  const pricing = computeTierPricing(
+    token,
+    market.priceUsd,
+    market.marketCapUsd,
+    0,
+  );
   const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
   if (tier === null || tier > MIN_CLAIM_TIER) {
     return NextResponse.json(
@@ -162,7 +171,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         status: false,
-        message: "You have already claimed your free eSIM for this staking period. Your claim will renew if you re-stake.",
+        message:
+          "You have already claimed your free eSIM for this staking period. Your claim will renew if you re-stake.",
       },
       { status: 409 },
     );

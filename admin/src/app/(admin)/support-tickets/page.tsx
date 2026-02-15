@@ -247,22 +247,40 @@ export default function AdminSupportTicketsPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Customer
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Status
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Type
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Subject
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium"
+                      >
                         Ticket date
                       </th>
-                      <th scope="col" className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        scope="col"
+                        className="whitespace-nowrap p-4 font-medium text-right"
+                      >
                         Action
                       </th>
                     </tr>
@@ -286,7 +304,9 @@ export default function AdminSupportTicketsPage() {
                           role="button"
                           tabIndex={0}
                           className="border-b last:border-0 cursor-pointer hover:bg-muted/50 transition-colors"
-                          onClick={() => router.push(`/support-tickets/${ticket.id}`)}
+                          onClick={() =>
+                            router.push(`/support-tickets/${ticket.id}`)
+                          }
                           onKeyDown={(e) => {
                             if (e.key === "Enter" || e.key === " ") {
                               e.preventDefault();
@@ -338,7 +358,10 @@ export default function AdminSupportTicketsPage() {
                               {ticket.type === "urgent" ? "Urgent" : "Normal"}
                             </span>
                           </td>
-                          <td className="max-w-[200px] truncate p-4" title={ticket.subject}>
+                          <td
+                            className="max-w-[200px] truncate p-4"
+                            title={ticket.subject}
+                          >
                             {ticket.subject}
                           </td>
                           <td className="whitespace-nowrap p-4 text-muted-foreground">

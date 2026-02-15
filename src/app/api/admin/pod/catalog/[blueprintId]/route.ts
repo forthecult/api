@@ -37,7 +37,10 @@ export async function GET(
     printProviderIdParam != null
       ? Number.parseInt(printProviderIdParam, 10)
       : undefined;
-  if (provider === "printify" && (Number.isNaN(printProviderId!) || printProviderId! < 1)) {
+  if (
+    provider === "printify" &&
+    (Number.isNaN(printProviderId!) || printProviderId! < 1)
+  ) {
     return NextResponse.json(
       { error: "Invalid printProviderId" },
       { status: 400 },

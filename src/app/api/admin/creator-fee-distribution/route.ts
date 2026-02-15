@@ -1,10 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { desc, sql } from "drizzle-orm";
 
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 import { runDailyDistribution } from "~/lib/creator-fee-distribution";
 import { db } from "~/db";
 import { creatorFeeDistributionTable } from "~/db/schema";

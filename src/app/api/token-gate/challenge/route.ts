@@ -37,9 +37,6 @@ export async function POST(request: Request) {
     const message = buildMessage(resourceType, resourceId);
     return NextResponse.json({ message });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 }

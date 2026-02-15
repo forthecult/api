@@ -16,10 +16,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import {
-  fulfillEsimOrder,
-  hasEsimItems,
-} from "~/lib/esim-fulfillment";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,7 +43,9 @@ export async function POST(request: NextRequest) {
       const paymentIntent = event.data.object as Stripe.PaymentIntent;
       const orderId = paymentIntent.metadata?.orderId;
       if (!orderId || typeof orderId !== "string") {
-        console.error("Webhook payment_intent.succeeded: missing metadata.orderId");
+        console.error(
+          "Webhook payment_intent.succeeded: missing metadata.orderId",
+        );
         return NextResponse.json({ received: true });
       }
 
@@ -57,7 +56,10 @@ export async function POST(request: NextRequest) {
         .limit(1);
 
       if (!order) {
-        console.error("Webhook payment_intent.succeeded: order not found", orderId);
+        console.error(
+          "Webhook payment_intent.succeeded: order not found",
+          orderId,
+        );
         return NextResponse.json({ received: true });
       }
       if (order.status === "paid") {
@@ -85,7 +87,10 @@ export async function POST(request: NextRequest) {
         .where(eq(ordersTable.id, orderId))
         .limit(1);
 
-      if (updatedOrder?.affiliateId && updatedOrder.affiliateCommissionCents != null) {
+      if (
+        updatedOrder?.affiliateId &&
+        updatedOrder.affiliateCommissionCents != null
+      ) {
         const [row] = await db
           .select({ totalEarnedCents: affiliateTable.totalEarnedCents })
           .from(affiliateTable)
@@ -96,7 +101,8 @@ export async function POST(request: NextRequest) {
           .update(affiliateTable)
           .set({
             updatedAt: now,
-            totalEarnedCents: current + (updatedOrder.affiliateCommissionCents ?? 0),
+            totalEarnedCents:
+              current + (updatedOrder.affiliateCommissionCents ?? 0),
           })
           .where(eq(affiliateTable.id, updatedOrder.affiliateId));
       }
@@ -185,7 +191,9 @@ export async function POST(request: NextRequest) {
     );
     const affiliateCodeFromMeta = session.metadata?.affiliateCode;
     const affiliateResult = await resolveAffiliateForOrder(
-      typeof affiliateCodeFromMeta === "string" ? affiliateCodeFromMeta : undefined,
+      typeof affiliateCodeFromMeta === "string"
+        ? affiliateCodeFromMeta
+        : undefined,
       subtotalCents,
       0,
     );

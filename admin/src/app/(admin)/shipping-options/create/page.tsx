@@ -42,7 +42,9 @@ export default function AdminShippingOptionCreatePage() {
   const [maxQuantity, setMaxQuantity] = useState<string>("");
   const [minWeightGrams, setMinWeightGrams] = useState<string>("");
   const [maxWeightGrams, setMaxWeightGrams] = useState<string>("");
-  const [type, setType] = useState<"flat" | "per_item" | "flat_plus_per_item" | "free">("flat");
+  const [type, setType] = useState<
+    "flat" | "per_item" | "flat_plus_per_item" | "free"
+  >("flat");
   const [amountCents, setAmountCents] = useState<string>("");
   const [additionalItemCents, setAdditionalItemCents] = useState<string>("");
   const [priority, setPriority] = useState<string>("0");
@@ -97,7 +99,9 @@ export default function AdminShippingOptionCreatePage() {
             ? null
             : type === "flat_plus_per_item"
               ? (parseDollars(amountCents) ?? 0)
-              : (type === "flat" || type === "per_item" ? (parseDollars(amountCents) ?? 0) : null),
+              : type === "flat" || type === "per_item"
+                ? (parseDollars(amountCents) ?? 0)
+                : null,
         additionalItemCents:
           type === "flat_plus_per_item"
             ? (parseDollars(additionalItemCents) ?? 0)

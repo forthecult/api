@@ -127,7 +127,8 @@ async function collectProviderUrls(productId: string | null): Promise<{
     ) {
       if (!urlToMeta.has(v.imageUrl)) {
         const productName = nameById.get(v.productId) ?? "Product";
-        const variantLabel = [v.color, v.size].filter(Boolean).join(" ") || null;
+        const variantLabel =
+          [v.color, v.size].filter(Boolean).join(" ") || null;
         urlToMeta.set(v.imageUrl, {
           url: v.imageUrl,
           productId: v.productId,
@@ -164,7 +165,12 @@ export async function uploadProductMockupsForProduct(
 ): Promise<UploadMockupsResult> {
   const { toUpload } = await collectProviderUrls(productId);
   if (toUpload.length === 0) {
-    return { uploaded: 0, updatedImages: 0, updatedProducts: 0, updatedVariants: 0 };
+    return {
+      uploaded: 0,
+      updatedImages: 0,
+      updatedProducts: 0,
+      updatedVariants: 0,
+    };
   }
 
   const urlToNew = new Map<string, { newUrl: string; alt: string }>();

@@ -24,12 +24,14 @@ export function ProfilePageClient() {
   // Load profile data from API to get firstName/lastName separately
   useEffect(() => {
     if (!user) return;
-    
+
     const loadProfile = async () => {
       try {
-        const res = await fetch("/api/user/profile", { credentials: "include" });
+        const res = await fetch("/api/user/profile", {
+          credentials: "include",
+        });
         if (res.ok) {
-          const data = await res.json() as {
+          const data = (await res.json()) as {
             firstName?: string;
             lastName?: string;
             email?: string;
@@ -50,7 +52,7 @@ export function ProfilePageClient() {
         setLoading(false);
       }
     };
-    
+
     void loadProfile();
   }, [user]);
 
@@ -76,12 +78,12 @@ export function ProfilePageClient() {
           phone: phone.trim() || null,
         }),
       });
-      
+
       if (!res.ok) {
-        const data = await res.json().catch(() => ({})) as { error?: string };
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error ?? "Failed to save");
       }
-      
+
       toast.success("Profile updated");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save");

@@ -17,10 +17,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { eq, inArray, sql } from "drizzle-orm";
 
 import { db } from "../src/db";
-import {
-  categoriesTable,
-  categoryAutoAssignRuleTable,
-} from "../src/db/schema";
+import { categoriesTable, categoryAutoAssignRuleTable } from "../src/db/schema";
 
 const now = new Date();
 
@@ -144,7 +141,8 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     id: "smart-home",
     name: "Smart Home",
     slug: "smart-home",
-    title: "Smart Home — Automation, Hubs, Sensors & Privacy-Respecting Tech | Culture",
+    title:
+      "Smart Home — Automation, Hubs, Sensors & Privacy-Respecting Tech | Culture",
     metaDescription:
       "Smart home devices, automation hubs, sensors, and accessories. Privacy-conscious options. Quality tech for your space. Culture.",
     description:
@@ -192,8 +190,7 @@ const SHOP_CATEGORIES: CategoryRow[] = [
     id: "esim",
     name: "eSIM",
     slug: "esim",
-    title:
-      "eSIM — Travel Data Plans & Digital SIM Cards Worldwide | Culture",
+    title: "eSIM — Travel Data Plans & Digital SIM Cards Worldwide | Culture",
     metaDescription:
       "Buy eSIM for travel: instant data in 190+ countries. No physical SIM, no roaming fees. Regional and global plans. Activate before you fly. Pay with card or crypto. Culture.",
     description:
@@ -649,7 +646,8 @@ const SMART_HOME_SUB: CategoryRow[] = [
     id: "smart-home-sensors",
     name: "Sensors",
     slug: "smart-home-sensors",
-    title: "Smart Home Sensors — Motion, Door, Temperature & Humidity | Culture",
+    title:
+      "Smart Home Sensors — Motion, Door, Temperature & Humidity | Culture",
     metaDescription:
       "Smart home sensors: motion, door/window, temperature, humidity. Zigbee and battery-efficient. Culture.",
     description:
@@ -1314,13 +1312,10 @@ async function seed() {
       createdAt: now,
       updatedAt: now,
     }));
-    await db
-      .insert(categoriesTable)
-      .values(chunk)
-      .onConflictDoUpdate({
-        target: categoriesTable.slug,
-        set: conflictSet,
-      });
+    await db.insert(categoriesTable).values(chunk).onConflictDoUpdate({
+      target: categoriesTable.slug,
+      set: conflictSet,
+    });
   }
 
   // Resolve slug -> id so we can set parentId and rule categoryIds (existing rows may have different ids).
@@ -1350,8 +1345,12 @@ async function seed() {
   // Seed "Bulk add products" rules: delete for all bulk-add categories, then bulk insert.
   const cryptoCategoryIds = CRYPTO_BULK_ADD_CONFIG.map((c) => c.categoryId);
   const productCategoryIds = PRODUCT_BULK_ADD_CONFIG.map((c) => c.categoryId);
-  const allBulkAddCategoryIds = [...new Set([...cryptoCategoryIds, ...productCategoryIds])];
-  const actualBulkAddIds = [...new Set(allBulkAddCategoryIds.map((id) => slugToId.get(id) ?? id))];
+  const allBulkAddCategoryIds = [
+    ...new Set([...cryptoCategoryIds, ...productCategoryIds]),
+  ];
+  const actualBulkAddIds = [
+    ...new Set(allBulkAddCategoryIds.map((id) => slugToId.get(id) ?? id)),
+  ];
   await db
     .delete(categoryAutoAssignRuleTable)
     .where(inArray(categoryAutoAssignRuleTable.categoryId, actualBulkAddIds));
@@ -1371,7 +1370,10 @@ async function seed() {
     const resolvedId = slugToId.get(categoryId) ?? categoryId;
     const tagFull = fullName.toLowerCase();
     const tagTicker = ticker.toLowerCase();
-    const rules: Array<{ titleContains: string | null; tagContains: string | null }> = [
+    const rules: Array<{
+      titleContains: string | null;
+      tagContains: string | null;
+    }> = [
       { titleContains: fullName, tagContains: null },
       { titleContains: ticker, tagContains: null },
       { titleContains: null, tagContains: tagFull },
@@ -1391,7 +1393,11 @@ async function seed() {
       });
     }
   }
-  for (const { categoryId, titleContains, tagContains } of PRODUCT_BULK_ADD_CONFIG) {
+  for (const {
+    categoryId,
+    titleContains,
+    tagContains,
+  } of PRODUCT_BULK_ADD_CONFIG) {
     const resolvedId = slugToId.get(categoryId) ?? categoryId;
     const tagLower = tagContains.toLowerCase();
     ruleRows.push({

@@ -13,10 +13,7 @@
  * that file from client components.
  */
 
-import {
-  type Connection,
-  PublicKey as PublicKeyClass,
-} from "@solana/web3.js";
+import { type Connection, PublicKey as PublicKeyClass } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   TOKEN_PROGRAM_ID,

@@ -24,5 +24,11 @@ export const sizeChartsTable = pgTable(
     createdAt: timestamp("created_at").notNull(),
     updatedAt: timestamp("updated_at").notNull(),
   },
-  (t) => [unique("size_chart_provider_brand_model_unique").on(t.provider, t.brand, t.model)],
+  (t) => [
+    unique("size_chart_provider_brand_model_unique").on(
+      t.provider,
+      t.brand,
+      t.model,
+    ),
+  ],
 );

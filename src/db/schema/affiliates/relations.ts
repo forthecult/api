@@ -4,13 +4,16 @@ import { userTable } from "../users/tables";
 
 import { affiliateAttributionTable, affiliateTable } from "./tables";
 
-export const affiliateRelations = relations(affiliateTable, ({ one, many }) => ({
-  user: one(userTable, {
-    fields: [affiliateTable.userId],
-    references: [userTable.id],
+export const affiliateRelations = relations(
+  affiliateTable,
+  ({ one, many }) => ({
+    user: one(userTable, {
+      fields: [affiliateTable.userId],
+      references: [userTable.id],
+    }),
+    attributions: many(affiliateAttributionTable),
   }),
-  attributions: many(affiliateAttributionTable),
-}));
+);
 
 export const affiliateAttributionRelations = relations(
   affiliateAttributionTable,

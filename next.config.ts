@@ -2,7 +2,10 @@ import path from "node:path";
 
 import type { NextConfig } from "next";
 
-const wagmiStub = path.resolve(process.cwd(), "src/lib/wagmi-connector-stub.js");
+const wagmiStub = path.resolve(
+  process.cwd(),
+  "src/lib/wagmi-connector-stub.js",
+);
 
 function resolveWalletConnect(): string {
   try {
@@ -169,7 +172,8 @@ const config = {
             ].join(", "),
           },
           // Block crawlers on staging only (VERCEL_ENV=preview or STAGING=1)
-          ...(process.env.VERCEL_ENV === "preview" || process.env.STAGING === "1"
+          ...(process.env.VERCEL_ENV === "preview" ||
+          process.env.STAGING === "1"
             ? [{ key: "X-Robots-Tag" as const, value: "noindex, nofollow" }]
             : []),
         ],

@@ -22,10 +22,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import {
-  fulfillEsimOrder,
-  hasEsimItems,
-} from "~/lib/esim-fulfillment";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   getClientIp,
   RATE_LIMITS,
@@ -177,8 +174,7 @@ export async function POST(request: NextRequest) {
     if (!sigTrim) {
       return NextResponse.json(
         {
-          error:
-            "signature required (server verifies transfer on-chain)",
+          error: "signature required (server verifies transfer on-chain)",
         },
         { status: 400 },
       );

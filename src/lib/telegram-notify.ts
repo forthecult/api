@@ -164,7 +164,11 @@ export async function resolveTelegramChatIdByUserId(
 async function sendTelegramMessage(
   chatId: string,
   text: string,
-  replyMarkup?: { inline_keyboard: Array<Array<{ text: string; url?: string; web_app?: { url: string } }>> },
+  replyMarkup?: {
+    inline_keyboard: Array<
+      Array<{ text: string; url?: string; web_app?: { url: string } }>
+    >;
+  },
 ): Promise<{ sent: boolean; error?: string }> {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
   if (!token) return { sent: false, error: "TELEGRAM_BOT_TOKEN not set" };

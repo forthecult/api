@@ -118,7 +118,12 @@ type Product = {
   variants: ProductVariant[];
 };
 
-type CategoryOption = { id: string; name: string; parentName?: string | null; slug?: string | null };
+type CategoryOption = {
+  id: string;
+  name: string;
+  parentName?: string | null;
+  slug?: string | null;
+};
 
 function slugFromName(name: string): string {
   return name
@@ -210,8 +215,10 @@ export default function AdminProductEditPage() {
     useState(false);
   const [printifyRegisterWebhooksLoading, setPrintifyRegisterWebhooksLoading] =
     useState(false);
-  const [printifyDeleteAllWebhooksLoading, setPrintifyDeleteAllWebhooksLoading] =
-    useState(false);
+  const [
+    printifyDeleteAllWebhooksLoading,
+    setPrintifyDeleteAllWebhooksLoading,
+  ] = useState(false);
   const [printifyDeleteLoading, setPrintifyDeleteLoading] = useState(false);
   const [printifyIdToDelete, setPrintifyIdToDelete] = useState("");
   const [printifyIdToImport, setPrintifyIdToImport] = useState("");
@@ -315,8 +322,13 @@ export default function AdminProductEditPage() {
     (continentIndex: number) => {
       const entry = COUNTRIES_BY_CONTINENT[continentIndex];
       if (!entry) return false;
-      const selectable = entry.countries.filter((c) => !isShippingExcluded(c.code));
-      return selectable.length > 0 && selectable.every((c) => availableCountrySet.has(c.code));
+      const selectable = entry.countries.filter(
+        (c) => !isShippingExcluded(c.code),
+      );
+      return (
+        selectable.length > 0 &&
+        selectable.every((c) => availableCountrySet.has(c.code))
+      );
     },
     [availableCountrySet],
   );
@@ -324,8 +336,12 @@ export default function AdminProductEditPage() {
     (continentIndex: number) => {
       const entry = COUNTRIES_BY_CONTINENT[continentIndex];
       if (!entry) return false;
-      const selectable = entry.countries.filter((c) => !isShippingExcluded(c.code));
-      const count = selectable.filter((c) => availableCountrySet.has(c.code)).length;
+      const selectable = entry.countries.filter(
+        (c) => !isShippingExcluded(c.code),
+      );
+      const count = selectable.filter((c) =>
+        availableCountrySet.has(c.code),
+      ).length;
       return count > 0 && count < selectable.length;
     },
     [availableCountrySet],
@@ -374,7 +390,9 @@ export default function AdminProductEditPage() {
       );
       setMetaDescription(data.metaDescription ?? "");
       setPageTitle(data.pageTitle ?? "");
-      setSeoOptimized((data as { seoOptimized?: boolean }).seoOptimized ?? false);
+      setSeoOptimized(
+        (data as { seoOptimized?: boolean }).seoOptimized ?? false,
+      );
       setPriceCents(String(data.priceCents));
       setCompareAtPriceCents(
         data.compareAtPriceCents != null
@@ -419,9 +437,7 @@ export default function AdminProductEditPage() {
             ? [data.categoryId]
             : [],
       );
-      setMainCategoryId(
-        data.mainCategoryId ?? data.categoryId ?? "",
-      );
+      setMainCategoryId(data.mainCategoryId ?? data.categoryId ?? "");
       setTagsInput(data.tags?.length ? data.tags.join(", ") : "");
       setImages(data.images?.length ? data.images : []);
       setHasVariants(data.hasVariants);
@@ -447,7 +463,9 @@ export default function AdminProductEditPage() {
       }
       skipNextTokenGatesFromFetch.current = false;
       setAvailableCountryCodes(
-        (data.availableCountryCodes ?? []).filter((c) => !isShippingExcluded(c)),
+        (data.availableCountryCodes ?? []).filter(
+          (c) => !isShippingExcluded(c),
+        ),
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load product");
@@ -625,7 +643,9 @@ export default function AdminProductEditPage() {
       }
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete all webhooks failed");
+      setError(
+        err instanceof Error ? err.message : "Delete all webhooks failed",
+      );
     } finally {
       setPrintifyDeleteAllWebhooksLoading(false);
     }
@@ -661,7 +681,9 @@ export default function AdminProductEditPage() {
       }
       await fetchProduct();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete in Printify failed");
+      setError(
+        err instanceof Error ? err.message : "Delete in Printify failed",
+      );
     } finally {
       setPrintifyDeleteLoading(false);
     }
@@ -698,7 +720,9 @@ export default function AdminProductEditPage() {
       }
       setPrintifyIdToDelete("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete in Printify failed");
+      setError(
+        err instanceof Error ? err.message : "Delete in Printify failed",
+      );
     } finally {
       setPrintifyDeleteLoading(false);
     }
@@ -730,7 +754,9 @@ export default function AdminProductEditPage() {
       }
       setPrintifyIdToImport("");
       if (json.productId) {
-        const base = window.location.pathname.replace(/[^/]+\/?$/, "").replace(/\/$/, "");
+        const base = window.location.pathname
+          .replace(/[^/]+\/?$/, "")
+          .replace(/\/$/, "");
         window.location.pathname = `${base}/${json.productId}`;
       } else {
         await fetchProduct();
@@ -747,10 +773,13 @@ export default function AdminProductEditPage() {
     setUploadMockupsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/admin/products/${id}/upload-mockups`, {
-        method: "POST",
-        credentials: "include",
-      });
+      const res = await fetch(
+        `${API_BASE}/api/admin/products/${id}/upload-mockups`,
+        {
+          method: "POST",
+          credentials: "include",
+        },
+      );
       const json = (await res.json().catch(() => ({}))) as {
         success?: boolean;
         error?: string;
@@ -878,11 +907,16 @@ export default function AdminProductEditPage() {
           tokenGates: tokenGatesRef.current.map((g) => ({
             id: g.id,
             tokenSymbol: (g.tokenSymbol ?? "").trim().toUpperCase(),
-            quantity: typeof g.quantity === "number" ? g.quantity : Number(g.quantity) || 0,
+            quantity:
+              typeof g.quantity === "number"
+                ? g.quantity
+                : Number(g.quantity) || 0,
             network: g.network?.trim() || null,
             contractAddress: g.contractAddress?.trim() || null,
           })),
-          availableCountryCodes: availableCountryCodes.filter((c) => !isShippingExcluded(c)),
+          availableCountryCodes: availableCountryCodes.filter(
+            (c) => !isShippingExcluded(c),
+          ),
         };
         const res = await fetch(`${API_BASE}/api/admin/products/${id}`, {
           method: "PATCH",
@@ -916,7 +950,10 @@ export default function AdminProductEditPage() {
           printifyExportError?: string;
         };
         if (Array.isArray(saved.tokenGates)) {
-          if (saved.tokenGates.length > 0 || tokenGatesRef.current.length === 0) {
+          if (
+            saved.tokenGates.length > 0 ||
+            tokenGatesRef.current.length === 0
+          ) {
             setTokenGates(saved.tokenGates);
           }
           skipNextTokenGatesFromFetch.current = true;
@@ -1021,40 +1058,39 @@ export default function AdminProductEditPage() {
   const [galleryDropActive, setGalleryDropActive] = useState(false);
   const [dragImageIndex, setDragImageIndex] = useState<number | null>(null);
 
-  const uploadFilesToGallery = useCallback(
-    async (files: FileList | null) => {
-      if (!files?.length) return;
-      setUploadImageLoading(true);
-      setError(null);
-      try {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          if (!file.type.startsWith("image/")) continue;
-          const form = new FormData();
-          form.append("file", file);
-          const res = await fetch(`${API_BASE}/api/admin/upload`, {
-            method: "POST",
-            credentials: "include",
-            body: form,
-          });
-          if (!res.ok) {
-            const data = (await res.json().catch(() => ({}))) as { error?: string };
-            throw new Error(data.error ?? "Upload failed");
-          }
-          const data = (await res.json()) as { url: string };
-          setImages((prev) => [
-            ...prev,
-            { url: data.url, alt: "", title: "", sortOrder: prev.length },
-          ]);
+  const uploadFilesToGallery = useCallback(async (files: FileList | null) => {
+    if (!files?.length) return;
+    setUploadImageLoading(true);
+    setError(null);
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith("image/")) continue;
+        const form = new FormData();
+        form.append("file", file);
+        const res = await fetch(`${API_BASE}/api/admin/upload`, {
+          method: "POST",
+          credentials: "include",
+          body: form,
+        });
+        if (!res.ok) {
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(data.error ?? "Upload failed");
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Upload failed");
-      } finally {
-        setUploadImageLoading(false);
+        const data = (await res.json()) as { url: string };
+        setImages((prev) => [
+          ...prev,
+          { url: data.url, alt: "", title: "", sortOrder: prev.length },
+        ]);
       }
-    },
-    [],
-  );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadImageLoading(false);
+    }
+  }, []);
 
   const uploadFileAsPrimary = useCallback(async (file: File) => {
     setUploadImageLoading(true);
@@ -1100,7 +1136,9 @@ export default function AdminProductEditPage() {
           body: form,
         });
         if (!res.ok) {
-          const data = (await res.json().catch(() => ({}))) as { error?: string };
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+          };
           throw new Error(data.error ?? "Upload failed");
         }
         const data = (await res.json()) as { url: string };
@@ -1115,13 +1153,10 @@ export default function AdminProductEditPage() {
     },
     [updateImage],
   );
-  const triggerUploadImage = useCallback(
-    (target: "primary" | number) => {
-      uploadImageTargetRef.current = target;
-      uploadImageInputRef.current?.click();
-    },
-    [],
-  );
+  const triggerUploadImage = useCallback((target: "primary" | number) => {
+    uploadImageTargetRef.current = target;
+    uploadImageInputRef.current?.click();
+  }, []);
 
   // Option definitions handlers
   const addOption = useCallback(() => {
@@ -1346,14 +1381,17 @@ export default function AdminProductEditPage() {
                   Categories
                 </label>
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Add multiple categories. One is used as the primary (for URL/breadcrumbs).
+                  Add multiple categories. One is used as the primary (for
+                  URL/breadcrumbs).
                 </p>
                 {categoryIds.length > 0 && (
                   <ul className="mb-2 flex flex-wrap gap-2">
                     {categoryIds.map((cid) => {
                       const opt = categoryOptions.find((c) => c.id === cid);
                       const label = opt
-                        ? (opt.parentName?.trim() ? `${opt.parentName.trim()} → ${opt.name}` : opt.name)
+                        ? opt.parentName?.trim()
+                          ? `${opt.parentName.trim()} → ${opt.name}`
+                          : opt.name
                         : cid;
                       const isPrimary = cid === mainCategoryId;
                       return (
@@ -1361,19 +1399,28 @@ export default function AdminProductEditPage() {
                           key={cid}
                           className={cn(
                             "inline-flex items-center gap-1.5 rounded-md border bg-muted/50 px-2.5 py-1.5 text-sm",
-                            isPrimary && "border-primary/50 ring-1 ring-primary/30",
+                            isPrimary &&
+                              "border-primary/50 ring-1 ring-primary/30",
                           )}
                         >
                           {isPrimary && (
-                            <span className="text-xs font-medium text-primary">Primary</span>
+                            <span className="text-xs font-medium text-primary">
+                              Primary
+                            </span>
                           )}
-                          <span className="truncate max-w-[200px]">{label}</span>
+                          <span className="truncate max-w-[200px]">
+                            {label}
+                          </span>
                           <button
                             type="button"
                             onClick={() => {
-                              setCategoryIds((prev) => prev.filter((id) => id !== cid));
+                              setCategoryIds((prev) =>
+                                prev.filter((id) => id !== cid),
+                              );
                               if (mainCategoryId === cid) {
-                                const rest = categoryIds.filter((id) => id !== cid);
+                                const rest = categoryIds.filter(
+                                  (id) => id !== cid,
+                                );
                                 setMainCategoryId(rest[0] ?? "");
                               }
                             }}
@@ -1407,7 +1454,9 @@ export default function AdminProductEditPage() {
                     }
                     setAddCategoryValue("");
                   }}
-                  options={categoryOptions.filter((c) => !categoryIds.includes(c.id))}
+                  options={categoryOptions.filter(
+                    (c) => !categoryIds.includes(c.id),
+                  )}
                   className={inputClass}
                   labelClass={labelClass}
                   placeholder="Search categories…"
@@ -1804,7 +1853,8 @@ export default function AdminProductEditPage() {
           <CardHeader>
             <CardTitle>Media</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Primary image and gallery. Drag and drop to upload (optimized for web) or paste a URL.
+              Primary image and gallery. Drag and drop to upload (optimized for
+              web) or paste a URL.
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1825,7 +1875,8 @@ export default function AdminProductEditPage() {
                   e.stopPropagation();
                   setPrimaryDropActive(false);
                   const file = e.dataTransfer.files?.[0];
-                  if (file?.type.startsWith("image/")) uploadFileAsPrimary(file);
+                  if (file?.type.startsWith("image/"))
+                    uploadFileAsPrimary(file);
                 }}
                 className={cn(
                   "rounded-md transition-colors",
@@ -1891,10 +1942,7 @@ export default function AdminProductEditPage() {
               </div>
               <div className="mt-2 grid gap-2 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="mainImageAlt"
-                    className={labelClass}
-                  >
+                  <label htmlFor="mainImageAlt" className={labelClass}>
                     Main image alt text (SEO)
                   </label>
                   <input
@@ -1907,10 +1955,7 @@ export default function AdminProductEditPage() {
                   />
                 </div>
                 <div>
-                  <label
-                    htmlFor="mainImageTitle"
-                    className={labelClass}
-                  >
+                  <label htmlFor="mainImageTitle" className={labelClass}>
                     Main image title (SEO)
                   </label>
                   <input
@@ -1980,8 +2025,7 @@ export default function AdminProductEditPage() {
                       e.dataTransfer.getData("text/plain"),
                       10,
                     );
-                    if (!Number.isNaN(from) && from !== i)
-                      moveImage(from, i);
+                    if (!Number.isNaN(from) && from !== i) moveImage(from, i);
                   }}
                   className={cn(
                     "flex flex-wrap items-start gap-2 rounded border p-2",
@@ -2077,10 +2121,13 @@ export default function AdminProductEditPage() {
                 </div>
               ))}
             </div>
-            {(product?.source === "printful" || product?.source === "printify") && (
+            {(product?.source === "printful" ||
+              product?.source === "printify") && (
               <div className="mt-4 flex flex-wrap items-center gap-2 border-t pt-4">
                 <p className="text-sm text-muted-foreground">
-                  Images from Printful/Printify are on their CDN. Re-host to UploadThing for SEO (WebP, filenames, alt) and your own hosting.
+                  Images from Printful/Printify are on their CDN. Re-host to
+                  UploadThing for SEO (WebP, filenames, alt) and your own
+                  hosting.
                 </p>
                 <Button
                   type="button"
@@ -2091,9 +2138,14 @@ export default function AdminProductEditPage() {
                   className="gap-1.5"
                 >
                   <CloudUpload
-                    className={cn("size-3.5", uploadMockupsLoading && "animate-pulse")}
+                    className={cn(
+                      "size-3.5",
+                      uploadMockupsLoading && "animate-pulse",
+                    )}
                   />
-                  {uploadMockupsLoading ? "Re-hosting…" : "Re-host images to UploadThing"}
+                  {uploadMockupsLoading
+                    ? "Re-hosting…"
+                    : "Re-host images to UploadThing"}
                 </Button>
               </div>
             )}
@@ -2241,7 +2293,10 @@ export default function AdminProductEditPage() {
                               onDragStart={(e) => {
                                 setDraggedOptionIndex(oi);
                                 e.dataTransfer.effectAllowed = "move";
-                                e.dataTransfer.setData("text/plain", String(oi));
+                                e.dataTransfer.setData(
+                                  "text/plain",
+                                  String(oi),
+                                );
                               }}
                               onDragEnd={() => setDraggedOptionIndex(null)}
                               className="mt-2.5 cursor-grab active:cursor-grabbing touch-none shrink-0"
@@ -2430,7 +2485,9 @@ export default function AdminProductEditPage() {
                                       <button
                                         type="button"
                                         onClick={() =>
-                                          setExpandedImageUrl(v.imageUrl ?? null)
+                                          setExpandedImageUrl(
+                                            v.imageUrl ?? null,
+                                          )
                                         }
                                         className="flex h-full w-full items-center justify-center transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
                                         title="Click to expand"
@@ -2452,34 +2509,55 @@ export default function AdminProductEditPage() {
                                 </div>
                               </td>
                               <td className="p-2">
-                                <div className="min-w-[8rem] font-mono text-xs text-muted-foreground" title="Internal ID and Printful/Printify variant ID (for sync and shipping)">
+                                <div
+                                  className="min-w-[8rem] font-mono text-xs text-muted-foreground"
+                                  title="Internal ID and Printful/Printify variant ID (for sync and shipping)"
+                                >
                                   {v.id ? (
-                                    <span className="block truncate" title={v.id}>
+                                    <span
+                                      className="block truncate"
+                                      title={v.id}
+                                    >
                                       {v.id}
                                     </span>
                                   ) : (
                                     <span className="italic">—</span>
                                   )}
                                   {v.printfulSyncVariantId != null && (
-                                    <span className="mt-0.5 block text-muted-foreground" title={`Sync variant ID (decimal: ${v.printfulSyncVariantId})`}>
-                                      Printful: #{typeof v.printfulSyncVariantId === "number" && Number.isSafeInteger(v.printfulSyncVariantId)
+                                    <span
+                                      className="mt-0.5 block text-muted-foreground"
+                                      title={`Sync variant ID (decimal: ${v.printfulSyncVariantId})`}
+                                    >
+                                      Printful: #
+                                      {typeof v.printfulSyncVariantId ===
+                                        "number" &&
+                                      Number.isSafeInteger(
+                                        v.printfulSyncVariantId,
+                                      )
                                         ? v.printfulSyncVariantId.toString(16)
                                         : String(v.printfulSyncVariantId)}
                                     </span>
                                   )}
-                                  {v.printifyVariantId != null && !v.printfulSyncVariantId && (
-                                    <span className="mt-0.5 block text-muted-foreground">
-                                      Printify: {v.printifyVariantId}
-                                    </span>
-                                  )}
+                                  {v.printifyVariantId != null &&
+                                    !v.printfulSyncVariantId && (
+                                      <span className="mt-0.5 block text-muted-foreground">
+                                        Printify: {v.printifyVariantId}
+                                      </span>
+                                    )}
                                   {v.externalId != null && (
-                                    <span className="mt-0.5 block text-muted-foreground" title="Catalog ID (shipping)">
+                                    <span
+                                      className="mt-0.5 block text-muted-foreground"
+                                      title="Catalog ID (shipping)"
+                                    >
                                       Catalog: {v.externalId}
                                     </span>
                                   )}
-                                  {!v.id && !v.printfulSyncVariantId && !v.printifyVariantId && !v.externalId && (
-                                    <span className="italic">—</span>
-                                  )}
+                                  {!v.id &&
+                                    !v.printfulSyncVariantId &&
+                                    !v.printifyVariantId &&
+                                    !v.externalId && (
+                                      <span className="italic">—</span>
+                                    )}
                                 </div>
                               </td>
                               <td className="p-2">
@@ -2671,7 +2749,11 @@ export default function AdminProductEditPage() {
                     placeholder="Variant display name (e.g. from Printful)"
                     value={variants[editingVariantIndex]!.label ?? ""}
                     onChange={(e) =>
-                      updateVariant(editingVariantIndex, "label", e.target.value)
+                      updateVariant(
+                        editingVariantIndex,
+                        "label",
+                        e.target.value,
+                      )
                     }
                     className={inputClass}
                   />
@@ -2759,12 +2841,11 @@ export default function AdminProductEditPage() {
               least one country, the product will only be shown and purchasable
               in those regions (storefront and checkout).
             </p>
-            {(product?.source === "printful" || product?.source === "printify") && (
+            {(product?.source === "printful" ||
+              product?.source === "printify") && (
               <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 <p className="basis-full">
-                  {product?.source === "printful"
-                    ? "Printful"
-                    : "Printify"}{" "}
+                  {product?.source === "printful" ? "Printful" : "Printify"}{" "}
                   products: shipping countries (Markets) are filled on import or
                   re-sync. If Markets is empty, re-sync to refresh shipping
                   destinations.
@@ -2779,9 +2860,14 @@ export default function AdminProductEditPage() {
                     className="gap-1.5"
                   >
                     <RefreshCw
-                      className={cn("size-3.5", printfulResyncLoading && "animate-spin")}
+                      className={cn(
+                        "size-3.5",
+                        printfulResyncLoading && "animate-spin",
+                      )}
                     />
-                    {printfulResyncLoading ? "Re-syncing…" : "Sync from Printful"}
+                    {printfulResyncLoading
+                      ? "Re-syncing…"
+                      : "Sync from Printful"}
                   </Button>
                 )}
                 {product?.source === "printify" && (
@@ -2795,9 +2881,14 @@ export default function AdminProductEditPage() {
                       className="gap-1.5"
                     >
                       <RefreshCw
-                        className={cn("size-3.5", printifyResyncLoading && "animate-spin")}
+                        className={cn(
+                          "size-3.5",
+                          printifyResyncLoading && "animate-spin",
+                        )}
                       />
-                      {printifyResyncLoading ? "Re-syncing…" : "Sync from Printify"}
+                      {printifyResyncLoading
+                        ? "Re-syncing…"
+                        : "Sync from Printify"}
                     </Button>
                     <Button
                       type="button"
@@ -2827,7 +2918,9 @@ export default function AdminProductEditPage() {
                       className="gap-1.5 text-destructive hover:text-destructive"
                     >
                       <Trash2 className="size-3.5" />
-                      {printifyDeleteLoading ? "Deleting…" : "Delete from Printify"}
+                      {printifyDeleteLoading
+                        ? "Deleting…"
+                        : "Delete from Printify"}
                     </Button>
                     <Button
                       type="button"
@@ -2875,7 +2968,16 @@ export default function AdminProductEditPage() {
               <>
                 <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-muted-foreground">
-                    Products going to staging? Use &quot;Delete all webhooks&quot; above (from production), then &quot;Register webhooks&quot; so only production URL is registered. Stuck in Publishing? Sync and Confirm publish often do not change status for already-stuck products (Printify may not re-send the webhook). Reliable fix: 1) Click &quot;Register webhooks&quot; above. 2) Delete this product in Printify (or by ID below). 3) Re-create or re-publish the product in Printify—the webhook will fire and status will become Published. Or delete by Printify product ID:
+                    Products going to staging? Use &quot;Delete all
+                    webhooks&quot; above (from production), then &quot;Register
+                    webhooks&quot; so only production URL is registered. Stuck
+                    in Publishing? Sync and Confirm publish often do not change
+                    status for already-stuck products (Printify may not re-send
+                    the webhook). Reliable fix: 1) Click &quot;Register
+                    webhooks&quot; above. 2) Delete this product in Printify (or
+                    by ID below). 3) Re-create or re-publish the product in
+                    Printify—the webhook will fire and status will become
+                    Published. Or delete by Printify product ID:
                   </span>
                   <input
                     type="text"
@@ -2888,7 +2990,9 @@ export default function AdminProductEditPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={printifyDeleteLoading || !printifyIdToDelete.trim()}
+                    disabled={
+                      printifyDeleteLoading || !printifyIdToDelete.trim()
+                    }
                     onClick={() => void handleDeleteInPrintifyById()}
                     className="gap-1.5 text-destructive hover:text-destructive"
                   >
@@ -2911,11 +3015,18 @@ export default function AdminProductEditPage() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    disabled={printifyImportLoading || !printifyIdToImport.trim()}
+                    disabled={
+                      printifyImportLoading || !printifyIdToImport.trim()
+                    }
                     onClick={() => void handleImportPrintifyById()}
                     className="gap-1.5"
                   >
-                    <RefreshCw className={cn("size-3.5", printifyImportLoading && "animate-spin")} />
+                    <RefreshCw
+                      className={cn(
+                        "size-3.5",
+                        printifyImportLoading && "animate-spin",
+                      )}
+                    />
                     {printifyImportLoading ? "Importing…" : "Import"}
                   </Button>
                 </div>
@@ -2955,15 +3066,25 @@ export default function AdminProductEditPage() {
                       >
                         <input
                           type="checkbox"
-                          checked={!noShip && availableCountrySet.has(country.code)}
+                          checked={
+                            !noShip && availableCountrySet.has(country.code)
+                          }
                           disabled={noShip}
                           onChange={(e) =>
-                            !noShip && setCountry(country.code, e.target.checked)
+                            !noShip &&
+                            setCountry(country.code, e.target.checked)
                           }
                           className="size-4 rounded border-input"
-                          title={noShip ? "We do not ship to this country" : undefined}
+                          title={
+                            noShip
+                              ? "We do not ship to this country"
+                              : undefined
+                          }
                         />
-                        <span>{country.name}{noShip ? " (no ship)" : ""}</span>
+                        <span>
+                          {country.name}
+                          {noShip ? " (no ship)" : ""}
+                        </span>
                       </label>
                     );
                   })}

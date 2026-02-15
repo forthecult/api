@@ -6,10 +6,7 @@ import { accountTable } from "~/db/schema";
 import { affiliateTable } from "~/db/schema/affiliates/tables";
 import { addressesTable, ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const TELEGRAM_PROVIDER_ID = "telegram";
 
@@ -60,58 +57,63 @@ export async function GET(
       );
     }
 
-    const [orderCountRow, latestOrder, addresses, affiliateRow, telegramAccount] =
-      await Promise.all([
-        db
-          .select({ count: sql<number>`count(*)::int`.as("count") })
-          .from(ordersTable)
-          .where(eq(ordersTable.userId, id)),
-        db
-          .select({
-            shippingAddress1: ordersTable.shippingAddress1,
-            shippingAddress2: ordersTable.shippingAddress2,
-            shippingCity: ordersTable.shippingCity,
-            shippingStateCode: ordersTable.shippingStateCode,
-            shippingZip: ordersTable.shippingZip,
-            shippingCountryCode: ordersTable.shippingCountryCode,
-          })
-          .from(ordersTable)
-          .where(eq(ordersTable.userId, id))
-          .orderBy(desc(ordersTable.createdAt))
-          .limit(1),
-        db
-          .select({
-            id: addressesTable.id,
-            address1: addressesTable.address1,
-            address2: addressesTable.address2,
-            city: addressesTable.city,
-            stateCode: addressesTable.stateCode,
-            countryCode: addressesTable.countryCode,
-            zip: addressesTable.zip,
-            label: addressesTable.label,
-            isDefault: addressesTable.isDefault,
-          })
-          .from(addressesTable)
-          .where(eq(addressesTable.userId, id)),
-        db
-          .select({
-            code: affiliateTable.code,
-            status: affiliateTable.status,
-          })
-          .from(affiliateTable)
-          .where(eq(affiliateTable.userId, id))
-          .limit(1),
-        db
-          .select({ accountId: accountTable.accountId })
-          .from(accountTable)
-          .where(
-            and(
-              eq(accountTable.userId, id),
-              eq(accountTable.providerId, TELEGRAM_PROVIDER_ID),
-            ),
-          )
-          .limit(1),
-      ]);
+    const [
+      orderCountRow,
+      latestOrder,
+      addresses,
+      affiliateRow,
+      telegramAccount,
+    ] = await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)::int`.as("count") })
+        .from(ordersTable)
+        .where(eq(ordersTable.userId, id)),
+      db
+        .select({
+          shippingAddress1: ordersTable.shippingAddress1,
+          shippingAddress2: ordersTable.shippingAddress2,
+          shippingCity: ordersTable.shippingCity,
+          shippingStateCode: ordersTable.shippingStateCode,
+          shippingZip: ordersTable.shippingZip,
+          shippingCountryCode: ordersTable.shippingCountryCode,
+        })
+        .from(ordersTable)
+        .where(eq(ordersTable.userId, id))
+        .orderBy(desc(ordersTable.createdAt))
+        .limit(1),
+      db
+        .select({
+          id: addressesTable.id,
+          address1: addressesTable.address1,
+          address2: addressesTable.address2,
+          city: addressesTable.city,
+          stateCode: addressesTable.stateCode,
+          countryCode: addressesTable.countryCode,
+          zip: addressesTable.zip,
+          label: addressesTable.label,
+          isDefault: addressesTable.isDefault,
+        })
+        .from(addressesTable)
+        .where(eq(addressesTable.userId, id)),
+      db
+        .select({
+          code: affiliateTable.code,
+          status: affiliateTable.status,
+        })
+        .from(affiliateTable)
+        .where(eq(affiliateTable.userId, id))
+        .limit(1),
+      db
+        .select({ accountId: accountTable.accountId })
+        .from(accountTable)
+        .where(
+          and(
+            eq(accountTable.userId, id),
+            eq(accountTable.providerId, TELEGRAM_PROVIDER_ID),
+          ),
+        )
+        .limit(1),
+    ]);
 
     const orderCount = orderCountRow[0]?.count ?? 0;
     const loc = latestOrder[0];

@@ -215,7 +215,9 @@ function run() {
   fs.mkdirSync(path.dirname(OUT_PATH), { recursive: true });
   fs.writeFileSync(OUT_PATH, JSON.stringify(rows, null, 0), "utf-8");
 
-  console.log(`Wrote ${rows.length} review rows to ${OUT_PATH} (skipped ${skipped} invalid).`);
+  console.log(
+    `Wrote ${rows.length} review rows to ${OUT_PATH} (skipped ${skipped} invalid).`,
+  );
 }
 
 run();

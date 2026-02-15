@@ -21,7 +21,10 @@ import {
   isProviderImageUrl,
   isUploadThingUrl,
 } from "~/lib/upload-product-mockups";
-import { getUploadThingToken, validateUploadThingToken } from "~/lib/uploadthing-token";
+import {
+  getUploadThingToken,
+  validateUploadThingToken,
+} from "~/lib/uploadthing-token";
 
 export async function POST(
   request: NextRequest,
@@ -92,8 +95,10 @@ export async function POST(
     const result = await uploadProductMockupsForProduct(utapi, product.id);
 
     if (result.uploaded === 0) {
-      const hasProviderUrl = product.imageUrl && isProviderImageUrl(product.imageUrl);
-      const alreadyUploadThing = product.imageUrl && isUploadThingUrl(product.imageUrl);
+      const hasProviderUrl =
+        product.imageUrl && isProviderImageUrl(product.imageUrl);
+      const alreadyUploadThing =
+        product.imageUrl && isUploadThingUrl(product.imageUrl);
       return NextResponse.json({
         success: true,
         message: alreadyUploadThing

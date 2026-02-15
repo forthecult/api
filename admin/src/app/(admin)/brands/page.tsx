@@ -84,9 +84,7 @@ export default function AdminBrandsPage() {
       const json = (await res.json()) as BrandsResponse;
       setData(json);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load brands",
-      );
+      setError(err instanceof Error ? err.message : "Failed to load brands");
       setData(null);
     } finally {
       setLoading(false);
@@ -134,9 +132,7 @@ export default function AdminBrandsPage() {
 
   const handleDelete = useCallback(
     async (id: string, name: string) => {
-      if (
-        !window.confirm(`Delete brand "${name}"? This cannot be undone.`)
-      ) {
+      if (!window.confirm(`Delete brand "${name}"? This cannot be undone.`)) {
         return;
       }
       setDeletingId(id);
@@ -253,7 +249,9 @@ export default function AdminBrandsPage() {
                     <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                       {COLUMNS.map((col) => {
                         const isSortable =
-                          "sortable" in col && col.sortable && col.key === "name";
+                          "sortable" in col &&
+                          col.sortable &&
+                          col.key === "name";
                         const isActive = isSortable && sortBy === col.key;
                         return (
                           <th

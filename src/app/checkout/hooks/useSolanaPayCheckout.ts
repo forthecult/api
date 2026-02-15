@@ -117,7 +117,9 @@ export function useSolanaPayCheckout({
       };
       const { orderId: id, depositAddress, confirmationToken } = data;
       if (confirmationToken) {
-        try { sessionStorage.setItem(`checkout_ct_${id}`, confirmationToken); } catch {}
+        try {
+          sessionStorage.setItem(`checkout_ct_${id}`, confirmationToken);
+        } catch {}
       }
       const amount = usdcAmountFromUsd(orderTotalCents / 100);
       const url = encodeURL({

@@ -51,10 +51,7 @@ export async function POST(request: Request) {
   }
   const amountRaw = BigInt(Math.floor(amountNum * 10 ** CULT_DECIMALS));
   if (amountRaw <= 0n) {
-    return NextResponse.json(
-      { error: "Amount too small" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Amount too small" }, { status: 400 });
   }
 
   try {

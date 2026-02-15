@@ -75,7 +75,12 @@ export async function POST(request: NextRequest) {
         priceCents: productsTable.priceCents,
       })
       .from(productsTable)
-      .where(and(inArray(productsTable.id, productIds), eq(productsTable.published, true)));
+      .where(
+        and(
+          inArray(productsTable.id, productIds),
+          eq(productsTable.published, true),
+        ),
+      );
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     const orderItems: {

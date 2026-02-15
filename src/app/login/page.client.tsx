@@ -25,9 +25,12 @@ function LoginPageClientInner() {
   // Check for callbackUrl from query params (e.g., from admin app redirect)
   // [SECURITY] Only allow relative paths to prevent open redirect attacks
   const rawCallbackUrl = searchParams.get("callbackUrl");
-  const isRelativePath = rawCallbackUrl?.startsWith("/") && !rawCallbackUrl.startsWith("//");
+  const isRelativePath =
+    rawCallbackUrl?.startsWith("/") && !rawCallbackUrl.startsWith("//");
   const redirectTarget: string =
-    isRelativePath && rawCallbackUrl ? rawCallbackUrl : SYSTEM_CONFIG.redirectAfterSignIn;
+    isRelativePath && rawCallbackUrl
+      ? rawCallbackUrl
+      : SYSTEM_CONFIG.redirectAfterSignIn;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -192,7 +195,13 @@ function LoginPageClientInner() {
 
 export function LoginPageClient() {
   return (
-    <Suspense fallback={<div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">Loading…</div>}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">
+          Loading…
+        </div>
+      }
+    >
       <LoginPageClientInner />
     </Suspense>
   );

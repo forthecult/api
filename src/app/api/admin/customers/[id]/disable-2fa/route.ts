@@ -2,14 +2,8 @@ import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import {
-  twoFactorTable,
-  userTable,
-} from "~/db/schema";
-import {
-  adminAuthFailureResponse,
-  getAdminAuth,
-} from "~/lib/admin-api-auth";
+import { twoFactorTable, userTable } from "~/db/schema";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * POST /api/admin/customers/[id]/disable-2fa
@@ -37,9 +31,7 @@ export async function POST(
       );
     }
 
-    await db
-      .delete(twoFactorTable)
-      .where(eq(twoFactorTable.userId, id));
+    await db.delete(twoFactorTable).where(eq(twoFactorTable.userId, id));
 
     await db
       .update(userTable)

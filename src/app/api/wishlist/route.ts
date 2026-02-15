@@ -37,10 +37,17 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = request.nextUrl;
-    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10) || 1);
+    const page = Math.max(
+      1,
+      parseInt(searchParams.get("page") ?? "1", 10) || 1,
+    );
     const limit = Math.min(
       MAX_LIMIT,
-      Math.max(1, parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) || DEFAULT_LIMIT),
+      Math.max(
+        1,
+        parseInt(searchParams.get("limit") ?? String(DEFAULT_LIMIT), 10) ||
+          DEFAULT_LIMIT,
+      ),
     );
     const offset = (page - 1) * limit;
 

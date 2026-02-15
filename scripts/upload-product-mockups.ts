@@ -20,12 +20,16 @@ import {
   buildSeoFilename,
   buildSeoAlt,
 } from "../src/lib/upload-product-mockups";
-import { getUploadThingToken, validateUploadThingToken } from "../src/lib/uploadthing-token";
+import {
+  getUploadThingToken,
+  validateUploadThingToken,
+} from "../src/lib/uploadthing-token";
 
 async function main() {
   const dryRun = process.argv.includes("--dry-run");
   const productIdArg = process.argv.find((a) => a.startsWith("--product-id="));
-  const singleProductId = productIdArg?.slice("--product-id=".length).trim() || null;
+  const singleProductId =
+    productIdArg?.slice("--product-id=".length).trim() || null;
 
   const toUpload = await getProductMockupsToUpload(singleProductId ?? null);
 

@@ -41,7 +41,9 @@ export function ShopByCryptoMenu({
   const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const openTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const clearCloseTimeout = React.useCallback(() => {
     if (closeTimeoutRef.current != null) {
@@ -60,12 +62,18 @@ export function ShopByCryptoMenu({
   const handleTriggerEnter = React.useCallback(() => {
     clearCloseTimeout();
     clearOpenTimeout();
-    openTimeoutRef.current = setTimeout(() => setOpen(true), HOVER_OPEN_DELAY_MS);
+    openTimeoutRef.current = setTimeout(
+      () => setOpen(true),
+      HOVER_OPEN_DELAY_MS,
+    );
   }, [clearCloseTimeout, clearOpenTimeout]);
 
   const handleTriggerLeave = React.useCallback(() => {
     clearOpenTimeout();
-    closeTimeoutRef.current = setTimeout(() => setOpen(false), HOVER_CLOSE_DELAY_MS);
+    closeTimeoutRef.current = setTimeout(
+      () => setOpen(false),
+      HOVER_CLOSE_DELAY_MS,
+    );
   }, [clearOpenTimeout]);
 
   const handleContentEnter = React.useCallback(() => {
@@ -76,7 +84,10 @@ export function ShopByCryptoMenu({
 
   const handleContentLeave = React.useCallback(() => {
     clearOpenTimeout();
-    closeTimeoutRef.current = setTimeout(() => setOpen(false), HOVER_CLOSE_DELAY_MS);
+    closeTimeoutRef.current = setTimeout(
+      () => setOpen(false),
+      HOVER_CLOSE_DELAY_MS,
+    );
   }, [clearOpenTimeout]);
 
   React.useEffect(() => {
@@ -152,11 +163,12 @@ export function ShopByCryptoMenu({
                             onClick={() => setOpen(false)}
                           >
                             {sub.name}
-                            {sub.productCount != null && sub.productCount > 0 && (
-                              <span className="ml-1 tabular-nums">
-                                ({sub.productCount})
-                              </span>
-                            )}
+                            {sub.productCount != null &&
+                              sub.productCount > 0 && (
+                                <span className="ml-1 tabular-nums">
+                                  ({sub.productCount})
+                                </span>
+                              )}
                           </Link>
                         </li>
                       );

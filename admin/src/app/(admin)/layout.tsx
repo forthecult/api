@@ -5,7 +5,9 @@ import { AdminSidebar } from "~/ui/admin-sidebar";
 
 export default function AdminSectionLayout({
   children,
-}: { children: React.ReactNode }) {
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <AdminGuard>
       <AdminChatPopup />

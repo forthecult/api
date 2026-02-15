@@ -70,7 +70,10 @@ export async function GET(request: NextRequest) {
 
     // Blueprint + provider + shipping
     if (providerId && wantShipping) {
-      const shipping = await fetchPrintifyShippingInfo(bpId, Number(providerId));
+      const shipping = await fetchPrintifyShippingInfo(
+        bpId,
+        Number(providerId),
+      );
       return NextResponse.json(shipping);
     }
 

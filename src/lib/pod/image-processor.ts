@@ -175,9 +175,10 @@ export async function resizeForPrintArea(
 
   const outBuffer = await pipeline.toBuffer();
   const outMeta = await sharp(outBuffer).metadata();
-  const effectiveDpi = (outMeta.width ?? 0) > 0
-    ? Math.round((outMeta.width ?? 0) / assumedPrintWidthInches)
-    : 0;
+  const effectiveDpi =
+    (outMeta.width ?? 0) > 0
+      ? Math.round((outMeta.width ?? 0) / assumedPrintWidthInches)
+      : 0;
 
   const analysis: ImageAnalysis = {
     width: outMeta.width ?? targetWidth,
@@ -192,7 +193,8 @@ export async function resizeForPrintArea(
     buffer: outBuffer,
     analysis,
     warnings,
-    meetsRequirements: warnings.filter((w) => w.includes("upscaled")).length === 0,
+    meetsRequirements:
+      warnings.filter((w) => w.includes("upscaled")).length === 0,
   };
 }
 
@@ -252,7 +254,9 @@ export async function enhanceForPrint(
     const newWidth = Math.round(analysis.width * scale);
     const newHeight = Math.round(analysis.height * scale);
     pipeline = pipeline.resize(newWidth, newHeight, { fit: "fill" });
-    warnings.push("Image was upscaled for print DPI; consider using a higher-resolution source.");
+    warnings.push(
+      "Image was upscaled for print DPI; consider using a higher-resolution source.",
+    );
   }
 
   const outBuffer = await pipeline.png().toBuffer();

@@ -18,10 +18,7 @@ interface SpinnerProps {
  * Shared spinner for loading states. Use "page" for route/section fallbacks,
  * "inline" for buttons and compact UI.
  */
-export function Spinner({
-  variant = "page",
-  className,
-}: SpinnerProps) {
+export function Spinner({ variant = "page", className }: SpinnerProps) {
   const baseClass =
     variant === "page" ? PAGE_SPINNER_CLASS : INLINE_SPINNER_CLASS;
   return <div className={cn(baseClass, className)} aria-hidden />;
@@ -32,7 +29,11 @@ export function Spinner({
  */
 export function PageLoadingFallback() {
   return (
-    <div className="flex min-h-screen items-center justify-center" role="status" aria-label="Loading">
+    <div
+      className="flex min-h-screen items-center justify-center"
+      role="status"
+      aria-label="Loading"
+    >
       <Spinner variant="page" />
     </div>
   );

@@ -36,7 +36,9 @@ function constantTimeEqual(a: string, b: string): boolean {
  * without affecting human admin or scripts using ADMIN_API_KEY. See
  * ftc/docs/ai-admin-temporary-access.md.
  */
-export async function getAdminAuth(request: NextRequest): Promise<
+export async function getAdminAuth(
+  request: NextRequest,
+): Promise<
   | { ok: true; method: "api_key"; source?: "ai" }
   | { ok: true; method: "session"; user: { id: string; email?: string } }
   | { ok: false }
@@ -52,8 +54,9 @@ export async function getAdminAuth(request: NextRequest): Promise<
   const authHeader = request.headers.get("authorization");
   const apiKeyHeader = request.headers.get("x-api-key");
 
-  const bearer =
-    authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null;
+  const bearer = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : null;
   const key = bearer ?? apiKeyHeader?.trim() ?? null;
 
   if (key) {
@@ -79,7 +82,8 @@ export async function getAdminAuth(request: NextRequest): Promise<
 export function adminAuthFailureResponse(
   result: Awaited<ReturnType<typeof getAdminAuth>>,
 ): NextResponse | Response {
-  if (result.ok) throw new Error("adminAuthFailureResponse only when !result.ok");
+  if (result.ok)
+    throw new Error("adminAuthFailureResponse only when !result.ok");
   return "response" in result && result.response
     ? result.response
     : NextResponse.json({ error: "Unauthorized" }, { status: 401 });

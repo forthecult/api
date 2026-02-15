@@ -13,7 +13,9 @@ export function AgentSubdomainLayout({
   children: React.ReactNode;
 }) {
   const base = getAgentBaseUrl() || "";
-  const capabilitiesUrl = base ? `${base}/api/agent/capabilities` : "/api/agent/capabilities";
+  const capabilitiesUrl = base
+    ? `${base}/api/agent/capabilities`
+    : "/api/agent/capabilities";
 
   return (
     <>

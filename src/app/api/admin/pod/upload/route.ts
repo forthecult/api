@@ -21,7 +21,9 @@ export async function POST(request: NextRequest) {
   if (!authResult?.ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const provider = request.nextUrl.searchParams.get("provider") as PodProvider | null;
+  const provider = request.nextUrl.searchParams.get(
+    "provider",
+  ) as PodProvider | null;
   if (!provider || (provider !== "printify" && provider !== "printful")) {
     return NextResponse.json(
       { error: "Query provider is required: printify or printful" },
@@ -30,12 +32,9 @@ export async function POST(request: NextRequest) {
   }
   let formData: FormData;
   try {
-    formData = await request.formData() as unknown as FormData;
+    formData = (await request.formData()) as unknown as FormData;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid form data" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
   }
   const file = formData.get("file");
   if (!file || !(file instanceof File)) {
@@ -50,15 +49,23 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const ALLOWED_IMAGE_TYPES = [
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+  ];
   if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}` },
+      {
+        error: `Invalid file type: ${file.type}. Allowed: ${ALLOWED_IMAGE_TYPES.join(", ")}`,
+      },
       { status: 400 },
     );
   }
   const process = request.nextUrl.searchParams.get("process") === "true";
-  const makeTransparent = request.nextUrl.searchParams.get("makeTransparent") === "true";
+  const makeTransparent =
+    request.nextUrl.searchParams.get("makeTransparent") === "true";
   let buffer: Buffer = Buffer.from(await file.arrayBuffer());
   if (makeTransparent) {
     try {

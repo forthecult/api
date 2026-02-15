@@ -98,7 +98,9 @@ export function ProductReviewsCarousel({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/reviews?limit=20&includeProductName=true");
+        const res = await fetch(
+          "/api/reviews?limit=20&includeProductName=true",
+        );
         if (!res.ok) throw new Error("Failed to fetch reviews");
         const data = (await res.json()) as { items: ReviewItem[] };
         if (!cancelled) {

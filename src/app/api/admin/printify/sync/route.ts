@@ -49,7 +49,9 @@ function isWebhookUrlReachableByPrintify(url: string): boolean {
   if (!url?.trim()) return false;
   try {
     const host = new URL(url).hostname.toLowerCase();
-    return host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".local");
+    return (
+      host !== "localhost" && host !== "127.0.0.1" && !host.endsWith(".local")
+    );
   } catch {
     return false;
   }
@@ -85,7 +87,8 @@ async function validatePrintifyWebhooks(
   const missingProductTopics = REQUIRED_PRODUCT_WEBHOOK_TOPICS.filter(
     (t) => !registeredTopics.includes(t),
   );
-  const urlMismatch = registered.length > 0 && registered.some((r) => r.url !== expectedUrl);
+  const urlMismatch =
+    registered.length > 0 && registered.some((r) => r.url !== expectedUrl);
   const ok = missingProductTopics.length === 0 && !urlMismatch;
   let message: string;
   if (missingProductTopics.length > 0) {
@@ -93,7 +96,8 @@ async function validatePrintifyWebhooks(
   } else if (urlMismatch) {
     message = `Webhooks point to different URL(s). Expected: ${expectedUrl}. Update via our app API only: POST /api/admin/printify/webhooks (do not use Printify's front-end).`;
   } else {
-    message = "Product webhooks registered; Printify can clear Publishing when we return 200.";
+    message =
+      "Product webhooks registered; Printify can clear Publishing when we return 200.";
   }
   return {
     ok,
@@ -123,7 +127,8 @@ async function ensurePrintifyProductWebhooks(
   let failed = 0;
   let validationMessageOverride: string | null = null;
 
-  const canRegister = expectedUrl && isWebhookUrlReachableByPrintify(expectedUrl);
+  const canRegister =
+    expectedUrl && isWebhookUrlReachableByPrintify(expectedUrl);
   if (canRegister) {
     for (const topic of REQUIRED_PRODUCT_WEBHOOK_TOPICS) {
       if (validation.registeredTopics.includes(topic)) {
@@ -162,8 +167,7 @@ async function ensurePrintifyProductWebhooks(
     failed,
     validation: {
       ...validationAfter,
-      message:
-        validationMessageOverride ?? validationAfter.message,
+      message: validationMessageOverride ?? validationAfter.message,
     },
   };
 }
@@ -223,7 +227,10 @@ export async function POST(request: NextRequest) {
     case "import_all": {
       console.log("Starting Printify import_all sync...");
       // Ensure product webhooks are registered so Printify can clear "Publishing" when we return 200
-      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId, request);
+      const webhooksResult = await ensurePrintifyProductWebhooks(
+        pf.shopId,
+        request,
+      );
       const result = await importAllPrintifyProducts({
         visibleOnly: body.visibleOnly ?? true,
         overwriteExisting: body.overwrite ?? false,
@@ -232,7 +239,8 @@ export async function POST(request: NextRequest) {
       // After import, call publishing_succeeded for each product to clear "Publishing" status.
       // This completes the publish handshake that was previously missing.
       let confirmPublishCount = 0;
-      const confirmPublishAfterImport = body.confirmPublishAfterImport !== false;
+      const confirmPublishAfterImport =
+        body.confirmPublishAfterImport !== false;
       const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
       if (confirmPublishAfterImport && result.success) {
         const printifyProducts = await db
@@ -243,13 +251,19 @@ export async function POST(request: NextRequest) {
           })
           .from(productsTable)
           .where(eq(productsTable.source, "printify"));
-        const withIds = printifyProducts.filter((p) => p.printifyProductId != null);
+        const withIds = printifyProducts.filter(
+          (p) => p.printifyProductId != null,
+        );
         for (const p of withIds) {
           const handle = p.slug ? `/products/${p.slug}` : `/products/${p.id}`;
-          const res = await confirmPrintifyPublishingSucceeded(pf.shopId, p.printifyProductId!, {
-            id: p.id,
-            handle: appUrl ? `${appUrl}${handle}` : handle,
-          });
+          const res = await confirmPrintifyPublishingSucceeded(
+            pf.shopId,
+            p.printifyProductId!,
+            {
+              id: p.id,
+              handle: appUrl ? `${appUrl}${handle}` : handle,
+            },
+          );
           if (res.success) confirmPublishCount++;
         }
       }
@@ -261,7 +275,9 @@ export async function POST(request: NextRequest) {
           updated: result.updated,
           skipped: result.skipped,
           errors: result.errors.length,
-          confirmPublish: confirmPublishAfterImport ? confirmPublishCount : undefined,
+          confirmPublish: confirmPublishAfterImport
+            ? confirmPublishCount
+            : undefined,
         },
         errors: result.errors.slice(0, 20), // Limit errors in response
         webhooks: {
@@ -303,7 +319,10 @@ export async function POST(request: NextRequest) {
 
       console.log(`Importing Printify product ${printifyProductId}...`);
       // Ensure product webhooks are registered so Printify can clear "Publishing" when we return 200
-      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId, request);
+      const webhooksResult = await ensurePrintifyProductWebhooks(
+        pf.shopId,
+        request,
+      );
       try {
         const result = await importSinglePrintifyProduct(
           printifyProductId,
@@ -334,7 +353,10 @@ export async function POST(request: NextRequest) {
 
     case "confirm_publish": {
       // Ensure product webhooks exist, then validate so caller knows if "Publishing" will clear
-      const webhooksResult = await ensurePrintifyProductWebhooks(pf.shopId, request);
+      const webhooksResult = await ensurePrintifyProductWebhooks(
+        pf.shopId,
+        request,
+      );
       const webhooksPayload = {
         ok: webhooksResult.validation.ok,
         expectedUrl: webhooksResult.validation.expectedUrl,
@@ -353,11 +375,17 @@ export async function POST(request: NextRequest) {
         localProductId: string,
         slug: string | null,
       ): Promise<{ success: boolean; error?: string }> {
-        const handle = slug ? `/products/${slug}` : `/products/${localProductId}`;
-        return confirmPrintifyPublishingSucceeded(pf!.shopId, printifyProductId, {
-          id: localProductId,
-          handle: appUrl ? `${appUrl}${handle}` : handle,
-        });
+        const handle = slug
+          ? `/products/${slug}`
+          : `/products/${localProductId}`;
+        return confirmPrintifyPublishingSucceeded(
+          pf!.shopId,
+          printifyProductId,
+          {
+            id: localProductId,
+            handle: appUrl ? `${appUrl}${handle}` : handle,
+          },
+        );
       }
 
       // Confirm a single product by Printify product ID
@@ -372,16 +400,25 @@ export async function POST(request: NextRequest) {
           .where(eq(productsTable.printifyProductId, printifyProductIdParam))
           .limit(1);
         const localId = localProduct?.id ?? printifyProductIdParam;
-        const result = await confirmSingleProduct(printifyProductIdParam, localId, localProduct?.slug ?? null);
+        const result = await confirmSingleProduct(
+          printifyProductIdParam,
+          localId,
+          localProduct?.slug ?? null,
+        );
         if (!result.success) {
           return NextResponse.json(
-            { success: false, error: result.error ?? "Printify publishing_succeeded API failed", webhooks: webhooksPayload },
+            {
+              success: false,
+              error: result.error ?? "Printify publishing_succeeded API failed",
+              webhooks: webhooksPayload,
+            },
             { status: 400 },
           );
         }
         return NextResponse.json({
           success: true,
-          message: "Publishing confirmed via publishing_succeeded for one product. Printify should clear 'Publishing' status.",
+          message:
+            "Publishing confirmed via publishing_succeeded for one product. Printify should clear 'Publishing' status.",
           confirmed: 1,
           webhooks: webhooksPayload,
         });
@@ -389,26 +426,41 @@ export async function POST(request: NextRequest) {
 
       if (productIdParam) {
         const [row] = await db
-          .select({ printifyProductId: productsTable.printifyProductId, slug: productsTable.slug })
+          .select({
+            printifyProductId: productsTable.printifyProductId,
+            slug: productsTable.slug,
+          })
           .from(productsTable)
           .where(eq(productsTable.id, productIdParam))
           .limit(1);
         if (!row?.printifyProductId) {
           return NextResponse.json(
-            { error: "Product not found or is not a Printify product.", webhooks: webhooksPayload },
+            {
+              error: "Product not found or is not a Printify product.",
+              webhooks: webhooksPayload,
+            },
             { status: 400 },
           );
         }
-        const result = await confirmSingleProduct(row.printifyProductId, productIdParam, row.slug);
+        const result = await confirmSingleProduct(
+          row.printifyProductId,
+          productIdParam,
+          row.slug,
+        );
         if (!result.success) {
           return NextResponse.json(
-            { success: false, error: result.error ?? "Printify publishing_succeeded API failed", webhooks: webhooksPayload },
+            {
+              success: false,
+              error: result.error ?? "Printify publishing_succeeded API failed",
+              webhooks: webhooksPayload,
+            },
             { status: 400 },
           );
         }
         return NextResponse.json({
           success: true,
-          message: "Publishing confirmed via publishing_succeeded for one product. Printify should clear 'Publishing' status.",
+          message:
+            "Publishing confirmed via publishing_succeeded for one product. Printify should clear 'Publishing' status.",
           confirmed: 1,
           webhooks: webhooksPayload,
         });
@@ -424,12 +476,18 @@ export async function POST(request: NextRequest) {
         .from(productsTable)
         .where(eq(productsTable.source, "printify"));
 
-      const withIds = printifyProducts.filter((p) => p.printifyProductId != null);
+      const withIds = printifyProducts.filter(
+        (p) => p.printifyProductId != null,
+      );
       const confirmed: number[] = [];
       const errors: string[] = [];
 
       for (const p of withIds) {
-        const res = await confirmSingleProduct(p.printifyProductId!, p.id, p.slug);
+        const res = await confirmSingleProduct(
+          p.printifyProductId!,
+          p.id,
+          p.slug,
+        );
         if (res.success) confirmed.push(1);
         else errors.push(`${p.printifyProductId}: ${res.error ?? "unknown"}`);
       }
@@ -557,7 +615,8 @@ export async function GET(request: NextRequest) {
   }
 
   const pf = getPrintifyIfConfigured();
-  let webhooks: Awaited<ReturnType<typeof validatePrintifyWebhooks>> | null = null;
+  let webhooks: Awaited<ReturnType<typeof validatePrintifyWebhooks>> | null =
+    null;
   if (pf) {
     webhooks = await validatePrintifyWebhooks(pf.shopId, request);
   }

@@ -79,8 +79,7 @@ export async function POST(
         brand: b,
         tagContains: tag,
       } = opts;
-      const hasFilter =
-        !!tc || cwd !== null || !!b || !!tag;
+      const hasFilter = !!tc || cwd !== null || !!b || !!tag;
       if (!hasFilter) return [];
 
       const conditions = [
@@ -109,13 +108,12 @@ export async function POST(
 
       if (tag) {
         const tagPattern = getWholeWordRegexPattern(tag);
-        const productIdsWithTag =
-          tagPattern
-            ? await db
-                .selectDistinct({ productId: productTagsTable.productId })
-                .from(productTagsTable)
-                .where(sql`${productTagsTable.tag} ~* ${tagPattern}`)
-            : [];
+        const productIdsWithTag = tagPattern
+          ? await db
+              .selectDistinct({ productId: productTagsTable.productId })
+              .from(productTagsTable)
+              .where(sql`${productTagsTable.tag} ~* ${tagPattern}`)
+          : [];
         const ids = new Set(productIdsWithTag.map((r) => r.productId));
         rows = rows.filter((p) => ids.has(p.id));
       }
@@ -216,10 +214,9 @@ export async function POST(
         skipped: 0,
         totalMatched: 0,
         perpetualSaved: perpetual,
-        message:
-          perpetual
-            ? "No current products match. Perpetual rule saved—future products matching these filters will be added to this category."
-            : "No products match the filters.",
+        message: perpetual
+          ? "No current products match. Perpetual rule saved—future products matching these filters will be added to this category."
+          : "No products match the filters.",
       });
     }
 

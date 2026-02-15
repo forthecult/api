@@ -114,7 +114,9 @@ export default function AdminCategoryEditPage() {
       setTitle(data.title ?? "");
       setMetaDescription(data.metaDescription ?? "");
       setDescription(data.description ?? "");
-      setSeoOptimized((data as { seoOptimized?: boolean }).seoOptimized ?? false);
+      setSeoOptimized(
+        (data as { seoOptimized?: boolean }).seoOptimized ?? false,
+      );
       setImageUrl(data.imageUrl ?? "");
       setLevel(data.level);
       setFeatured(data.featured);
@@ -283,12 +285,7 @@ export default function AdminCategoryEditPage() {
       : null;
     const brand = bulkBrand.trim() || null;
     const tagContains = bulkTagContains.trim() || null;
-    if (
-      !titleContains &&
-      createdWithinDays == null &&
-      !brand &&
-      !tagContains
-    ) {
+    if (!titleContains && createdWithinDays == null && !brand && !tagContains) {
       setBulkResult({
         added: 0,
         skipped: 0,
@@ -359,7 +356,7 @@ export default function AdminCategoryEditPage() {
             ? "Unauthorized. Sign in again at the main store (e.g. localhost:3000)."
             : res.status === 403
               ? "Forbidden. Your account may not have admin access."
-              : data.error ?? "Failed to add products";
+              : (data.error ?? "Failed to add products");
         setBulkResult({
           added: 0,
           skipped: 0,
@@ -381,14 +378,25 @@ export default function AdminCategoryEditPage() {
         added: 0,
         skipped: 0,
         totalMatched: 0,
-        message: isAbort ? "Request timed out. Try fewer filters or try again." : "Request failed. Ensure the main store (e.g. localhost:3000) is running.",
+        message: isAbort
+          ? "Request timed out. Try fewer filters or try again."
+          : "Request failed. Ensure the main store (e.g. localhost:3000) is running.",
       });
     } finally {
       clearTimeout(timeoutId);
       bulkAddAbortRef.current = null;
       setBulkAdding(false);
     }
-  }, [id, bulkTitleContains, bulkCreatedWithinDays, bulkBrand, bulkTagContains, bulkPerpetual, fetchCategory, fetchAutoAssignRules]);
+  }, [
+    id,
+    bulkTitleContains,
+    bulkCreatedWithinDays,
+    bulkBrand,
+    bulkTagContains,
+    bulkPerpetual,
+    fetchCategory,
+    fetchAutoAssignRules,
+  ]);
 
   const handleCancelBulkAdd = useCallback(() => {
     bulkAddAbortRef.current?.abort();
@@ -444,7 +452,7 @@ export default function AdminCategoryEditPage() {
             ? "Unauthorized. Sign in again at the main store (e.g. localhost:3000)."
             : res.status === 403
               ? "Forbidden. Your account may not have admin access."
-              : data.error ?? "Failed to add products";
+              : (data.error ?? "Failed to add products");
         setBulkResult({
           added: 0,
           skipped: 0,
@@ -466,7 +474,9 @@ export default function AdminCategoryEditPage() {
         added: 0,
         skipped: 0,
         totalMatched: 0,
-        message: isAbort ? "Request timed out. Try again." : "Request failed. Ensure the main store (e.g. localhost:3000) is running.",
+        message: isAbort
+          ? "Request timed out. Try again."
+          : "Request failed. Ensure the main store (e.g. localhost:3000) is running.",
       });
     } finally {
       clearTimeout(timeoutId);
@@ -545,7 +555,7 @@ export default function AdminCategoryEditPage() {
 
   // Storefront category URLs are /{slug}; use form slug so View link updates when slug is changed
   const storefrontCategoryUrl =
-    (slug?.trim() || category?.slug?.trim())
+    slug?.trim() || category?.slug?.trim()
       ? `${API_BASE}/${slug.trim() || category?.slug?.trim()}`
       : "";
 
@@ -607,10 +617,13 @@ export default function AdminCategoryEditPage() {
           {savedRules.length > 0 && (
             <div className="space-y-2">
               <p className="font-medium text-green-800 dark:text-green-200">
-                Active perpetual rules ({savedRules.length}) — saved for future products
+                Active perpetual rules ({savedRules.length}) — saved for future
+                products
               </p>
               <p className="text-sm text-muted-foreground">
-                New and updated products are automatically added to this category when they match any rule below, and removed when they no longer match.
+                New and updated products are automatically added to this
+                category when they match any rule below, and removed when they
+                no longer match.
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Button
@@ -620,7 +633,9 @@ export default function AdminCategoryEditPage() {
                   disabled={bulkRunningSaved || bulkAdding}
                   onClick={handleRunSavedRules}
                 >
-                  {bulkRunningSaved ? "Adding…" : "Add products matching saved rules"}
+                  {bulkRunningSaved
+                    ? "Adding…"
+                    : "Add products matching saved rules"}
                 </Button>
                 <span className="text-xs text-muted-foreground">
                   Adds existing products that match any rule below (OR).
@@ -634,14 +649,16 @@ export default function AdminCategoryEditPage() {
                   >
                     <ul className="list-inside list-disc space-y-0.5">
                       {rule.titleContains && (
-                        <li>Title contains: &quot;{rule.titleContains}&quot;</li>
+                        <li>
+                          Title contains: &quot;{rule.titleContains}&quot;
+                        </li>
                       )}
                       {rule.createdWithinDays != null && (
-                        <li>Created within last {rule.createdWithinDays} days</li>
+                        <li>
+                          Created within last {rule.createdWithinDays} days
+                        </li>
                       )}
-                      {rule.brand && (
-                        <li>Brand: {rule.brand}</li>
-                      )}
+                      {rule.brand && <li>Brand: {rule.brand}</li>}
                       {rule.tagContains && (
                         <li>Tag contains: &quot;{rule.tagContains}&quot;</li>
                       )}
@@ -720,7 +737,8 @@ export default function AdminCategoryEditPage() {
                 className={inputClass}
               />
               <p className="text-xs text-muted-foreground">
-                Products with at least one tag containing this text (case-insensitive).
+                Products with at least one tag containing this text
+                (case-insensitive).
               </p>
             </div>
           </div>
@@ -736,13 +754,15 @@ export default function AdminCategoryEditPage() {
                 Also apply to new/imported products (perpetual rule)
               </label>
               <Button
-              type="button"
-              variant="secondary"
-              disabled={bulkAdding || bulkRunningSaved}
-              onClick={handleBulkAdd}
-            >
-              {bulkAdding || bulkRunningSaved ? "Adding…" : "Add matching products"}
-            </Button>
+                type="button"
+                variant="secondary"
+                disabled={bulkAdding || bulkRunningSaved}
+                onClick={handleBulkAdd}
+              >
+                {bulkAdding || bulkRunningSaved
+                  ? "Adding…"
+                  : "Add matching products"}
+              </Button>
               {(bulkAdding || bulkRunningSaved) && (
                 <Button
                   type="button"
@@ -754,7 +774,9 @@ export default function AdminCategoryEditPage() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              When the perpetual rule box is checked, the rule is saved even if no products match now. Saved rules appear in the green box above. Main store (e.g. localhost:3000) must be running.
+              When the perpetual rule box is checked, the rule is saved even if
+              no products match now. Saved rules appear in the green box above.
+              Main store (e.g. localhost:3000) must be running.
             </p>
           </div>
           {bulkResult && (
@@ -870,7 +892,8 @@ export default function AdminCategoryEditPage() {
                     {imageUploading ? "Uploading…" : "Upload"}
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    Drop an image here or paste a URL. Uploads are optimized for web.
+                    Drop an image here or paste a URL. Uploads are optimized for
+                    web.
                   </span>
                 </div>
               </div>
@@ -887,9 +910,7 @@ export default function AdminCategoryEditPage() {
                       }}
                     />
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    Preview
-                  </span>
+                  <span className="text-xs text-muted-foreground">Preview</span>
                 </div>
               )}
             </div>

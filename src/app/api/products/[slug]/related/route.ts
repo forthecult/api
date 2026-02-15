@@ -141,7 +141,9 @@ export async function GET(
         .select({ categoryId: productCategoriesTable.categoryId })
         .from(productCategoriesTable)
         .where(eq(productCategoriesTable.productId, id));
-      const myCategoryIds = myCategoryRows.map((r) => r.categoryId).filter(Boolean);
+      const myCategoryIds = myCategoryRows
+        .map((r) => r.categoryId)
+        .filter(Boolean);
 
       if (myCategoryIds.length > 0) {
         const sameCategory = await db
@@ -267,7 +269,9 @@ export async function GET(
       .map((s) => s.trim())
       .find((s) => s.toLowerCase().startsWith("tg="));
     const tgCookieValue = tgCookieMatch
-      ? decodeURIComponent(tgCookieMatch.slice(tgCookieMatch.indexOf("=") + 1).trim())
+      ? decodeURIComponent(
+          tgCookieMatch.slice(tgCookieMatch.indexOf("=") + 1).trim(),
+        )
       : undefined;
 
     const items = collected.slice(0, RELATED_LIMIT).map((p) => {
@@ -284,7 +288,9 @@ export async function GET(
         image: p.imageUrl ?? "/placeholder.svg",
         price: p.priceCents / 100,
         originalPrice:
-          p.compareAtPriceCents != null ? p.compareAtPriceCents / 100 : undefined,
+          p.compareAtPriceCents != null
+            ? p.compareAtPriceCents / 100
+            : undefined,
         inStock: true,
         rating: 0,
         tokenGated: p.tokenGated,

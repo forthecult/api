@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
-import { ArrowRight, Clock, Globe, Shield, Star, Truck, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  Clock,
+  Globe,
+  Shield,
+  Star,
+  Truck,
+  Zap,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -49,10 +57,13 @@ type TestimonialItem = {
 async function fetchReviewsForTestimonials(): Promise<TestimonialItem[]> {
   const baseUrl = getServerBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/reviews?limit=20&includeProductName=true`, {
-      next: { revalidate: 300 },
-      signal: AbortSignal.timeout(5000),
-    });
+    const res = await fetch(
+      `${baseUrl}/api/reviews?limit=20&includeProductName=true`,
+      {
+        next: { revalidate: 300 },
+        signal: AbortSignal.timeout(5000),
+      },
+    );
     if (!res.ok) return [];
     const data = (await res.json()) as {
       items?: Array<{
@@ -126,11 +137,14 @@ async function fetchFeaturedProducts(cookieHeader?: string): Promise<
 > {
   const baseUrl = getServerBaseUrl();
   try {
-    const res = await fetch(`${baseUrl}/api/products?page=1&limit=8&category=__featured__&sort=manual`, {
-      next: { revalidate: 60 },
-      signal: AbortSignal.timeout(8000),
-      ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
-    });
+    const res = await fetch(
+      `${baseUrl}/api/products?page=1&limit=8&category=__featured__&sort=manual`,
+      {
+        next: { revalidate: 60 },
+        signal: AbortSignal.timeout(8000),
+        ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
+      },
+    );
     if (!res.ok) return [];
     const data = (await res.json()) as {
       items?: Array<{
@@ -216,22 +230,28 @@ export default async function HomePage() {
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const [featuredProducts, shopCategories, reviewTestimonials, categoriesWithImage] =
-    await Promise.all([
-      fetchFeaturedProducts(cookieHeader),
-      fetchCategories(),
-      fetchReviewsForTestimonials(),
-      getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
-    ]);
+  const [
+    featuredProducts,
+    shopCategories,
+    reviewTestimonials,
+    categoriesWithImage,
+  ] = await Promise.all([
+    fetchFeaturedProducts(cookieHeader),
+    fetchCategories(),
+    fetchReviewsForTestimonials(),
+    getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+  ]);
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
   // Shop by category: only categories that have products; exclude Currency/Network/Application Token and show-in-all-products (internal)
-  const EXCLUDED_SLUGS = ["currency", "network", "dapp", SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG];
+  const EXCLUDED_SLUGS = [
+    "currency",
+    "network",
+    "dapp",
+    SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
+  ];
   const topLevelShopFiltered = shopCategories.filter(
-    (c) =>
-      c.slug &&
-      c.productCount > 0 &&
-      !EXCLUDED_SLUGS.includes(c.slug),
+    (c) => c.slug && c.productCount > 0 && !EXCLUDED_SLUGS.includes(c.slug),
   );
   const imageBySlug = new Map(
     categoriesWithImage
@@ -246,7 +266,6 @@ export default async function HomePage() {
   return (
     <>
       <div className="flex min-h-screen flex-col bg-background">
-
         {/* ═══════════════════════════════════════════
             HERO — Dark, futuristic, cult-y
             ═══════════════════════════════════════════ */}
@@ -263,21 +282,28 @@ export default async function HomePage() {
               </div>
               <h1 className="font-heading text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl md:text-7xl lg:leading-[1.05]">
                 Where culture and{" "}
-                <span className="text-gradient-brand">technology</span>{" "}
-                converge
+                <span className="text-gradient-brand">technology</span> converge
               </h1>
               <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl">
-                Curated tech, premium apparel, wellness gear, and travel essentials
-                — for people who invest in themselves and the future they&apos;re building.
+                Curated tech, premium apparel, wellness gear, and travel
+                essentials — for people who invest in themselves and the future
+                they&apos;re building.
               </p>
               <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
                 <Link href="/products">
-                  <Button className="h-12 gap-2 px-8 text-sm uppercase tracking-wider" size="lg">
+                  <Button
+                    className="h-12 gap-2 px-8 text-sm uppercase tracking-wider"
+                    size="lg"
+                  >
                     Enter the shop <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
                 <Link href="/about">
-                  <Button className="h-12 px-8 text-sm uppercase tracking-wider" size="lg" variant="outline">
+                  <Button
+                    className="h-12 px-8 text-sm uppercase tracking-wider"
+                    size="lg"
+                    variant="outline"
+                  >
                     Read the manifesto
                   </Button>
                 </Link>
@@ -315,15 +341,20 @@ export default async function HomePage() {
                 A lifestyle for the independent
               </p>
               <h2 className="font-heading text-2xl font-bold leading-snug text-foreground md:text-4xl">
-                We curate tech, apparel, wellness, and travel gear that fits how you live
-                — and the future you&apos;re building.
+                We curate tech, apparel, wellness, and travel gear that fits how
+                you live — and the future you&apos;re building.
               </h2>
               <p className="text-muted-foreground md:text-lg">
-                Join as a member for product discounts, free shipping, exclusive drops,
-                and early access to new arrivals. This isn&apos;t just a store — it&apos;s a signal.
+                Join as a member for product discounts, free shipping, exclusive
+                drops, and early access to new arrivals. This isn&apos;t just a
+                store — it&apos;s a signal.
               </p>
               <Link href="/signup">
-                <Button variant="outline" size="lg" className="uppercase tracking-wider text-sm">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="uppercase tracking-wider text-sm"
+                >
                   Join the cult
                 </Button>
               </Link>
@@ -347,11 +378,16 @@ export default async function HomePage() {
                 Quality that looks good and does good
               </h2>
               <p className="text-muted-foreground md:text-lg">
-                What you wear and use should look great and support how you feel.
-                Thoughtfully curated apparel — gear we&apos;d use ourselves.
+                What you wear and use should look great and support how you
+                feel. Thoughtfully curated apparel — gear we&apos;d use
+                ourselves.
               </p>
               <Link href="/lookbook">
-                <Button variant="outline" size="lg" className="mt-2 uppercase tracking-wider text-sm">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="mt-2 uppercase tracking-wider text-sm"
+                >
                   View lookbook
                 </Button>
               </Link>
@@ -393,7 +429,8 @@ export default async function HomePage() {
               </h2>
               <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30" />
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                Browse curated tech, apparel, wellness, and travel essentials — each category handpicked for quality
+                Browse curated tech, apparel, wellness, and travel essentials —
+                each category handpicked for quality
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6 md:gap-5">
@@ -436,7 +473,9 @@ export default async function HomePage() {
                   className="cult-glow rounded-lg border border-border bg-card p-5"
                   href="/products"
                 >
-                  <div className="text-base font-medium text-foreground">All Products</div>
+                  <div className="text-base font-medium text-foreground">
+                    All Products
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Browse the store
                   </p>
@@ -463,7 +502,8 @@ export default async function HomePage() {
               </h2>
               <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30" />
               <p className="mt-4 max-w-2xl text-muted-foreground">
-                Handpicked tech, apparel, wellness, and travel gear for how you live
+                Handpicked tech, apparel, wellness, and travel gear for how you
+                live
               </p>
             </div>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -471,7 +511,11 @@ export default async function HomePage() {
             </div>
             <div className="mt-12 flex justify-center">
               <Link href="/products">
-                <Button className="group h-12 px-8 uppercase tracking-wider text-sm" size="lg" variant="outline">
+                <Button
+                  className="group h-12 px-8 uppercase tracking-wider text-sm"
+                  size="lg"
+                  variant="outline"
+                >
                   View all products
                   <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
                 </Button>
@@ -494,7 +538,8 @@ export default async function HomePage() {
               </h2>
               <div className="mt-3 h-0.5 w-16 bg-gradient-to-r from-primary to-primary/30" />
               <p className="mt-4 max-w-2xl text-muted-foreground md:text-lg">
-                Secure checkout, crypto or card, free shipping over $200, and real support when you need it
+                Secure checkout, crypto or card, free shipping over $200, and
+                real support when you need it
               </p>
             </div>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -556,17 +601,25 @@ export default async function HomePage() {
                   Ready to join the Cult?
                 </h2>
                 <p className="mt-4 text-lg text-muted-foreground md:text-xl">
-                  Member discounts, early access to new drops, free shipping on most orders.
-                  This is more than a store — it&apos;s a community.
+                  Member discounts, early access to new drops, free shipping on
+                  most orders. This is more than a store — it&apos;s a
+                  community.
                 </p>
                 <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
                   <Link href="/signup">
-                    <Button className="h-12 px-8 uppercase tracking-wider text-sm" size="lg">
+                    <Button
+                      className="h-12 px-8 uppercase tracking-wider text-sm"
+                      size="lg"
+                    >
                       Sign up now
                     </Button>
                   </Link>
                   <Link href="/products">
-                    <Button className="h-12 px-8 uppercase tracking-wider text-sm" size="lg" variant="outline">
+                    <Button
+                      className="h-12 px-8 uppercase tracking-wider text-sm"
+                      size="lg"
+                      variant="outline"
+                    >
                       Browse products
                     </Button>
                   </Link>

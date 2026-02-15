@@ -5,7 +5,12 @@ import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
 import { auth } from "~/lib/auth";
 import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
-import { getClientIp, RATE_LIMITS, checkRateLimit, rateLimitResponse } from "~/lib/rate-limit";
+import {
+  getClientIp,
+  RATE_LIMITS,
+  checkRateLimit,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 /**
  * GET /api/user/profile
@@ -93,10 +98,16 @@ export async function PATCH(request: NextRequest) {
     updates.lastName = body.lastName.trim() || null;
   }
   if (body.image !== undefined) {
-    updates.image = typeof body.image === "string" && body.image.trim() ? body.image.trim() : null;
+    updates.image =
+      typeof body.image === "string" && body.image.trim()
+        ? body.image.trim()
+        : null;
   }
   if (body.phone !== undefined) {
-    updates.phone = typeof body.phone === "string" && body.phone.trim() ? body.phone.trim() : null;
+    updates.phone =
+      typeof body.phone === "string" && body.phone.trim()
+        ? body.phone.trim()
+        : null;
   }
   if (
     body.theme === "light" ||
@@ -107,7 +118,10 @@ export async function PATCH(request: NextRequest) {
   }
 
   if (Object.keys(updates).length === 0) {
-    return NextResponse.json({ error: "No valid fields to update" }, { status: 400 });
+    return NextResponse.json(
+      { error: "No valid fields to update" },
+      { status: 400 },
+    );
   }
 
   // Also update the combined 'name' field for Better Auth session compatibility
@@ -118,10 +132,15 @@ export async function PATCH(request: NextRequest) {
       .from(userTable)
       .where(eq(userTable.id, session.user.id))
       .limit(1);
-    
-    const newFirstName = updates.firstName !== undefined ? updates.firstName : currentUser?.firstName;
-    const newLastName = updates.lastName !== undefined ? updates.lastName : currentUser?.lastName;
-    const combinedName = [newFirstName, newLastName].filter(Boolean).join(" ") || "User";
+
+    const newFirstName =
+      updates.firstName !== undefined
+        ? updates.firstName
+        : currentUser?.firstName;
+    const newLastName =
+      updates.lastName !== undefined ? updates.lastName : currentUser?.lastName;
+    const combinedName =
+      [newFirstName, newLastName].filter(Boolean).join(" ") || "User";
     updates.name = combinedName;
   }
 

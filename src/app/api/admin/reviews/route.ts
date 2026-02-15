@@ -59,8 +59,10 @@ export async function GET(request: NextRequest) {
       const author = (r as { author?: string | null }).author ?? null;
       const title = (r as { title?: string | null }).title ?? null;
       const location = (r as { location?: string | null }).location ?? null;
-      const productName = (r as { productName?: string | null }).productName ?? null;
-      const productSlug = (r as { productSlug?: string | null }).productSlug ?? null;
+      const productName =
+        (r as { productName?: string | null }).productName ?? null;
+      const productSlug =
+        (r as { productSlug?: string | null }).productSlug ?? null;
       const createdAt = r.createdAt;
       return {
         id: r.id,

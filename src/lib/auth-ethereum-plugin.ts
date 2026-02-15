@@ -41,11 +41,27 @@ function getFullErrorMessage(err: unknown): string {
 /** True if this error is a DB unique constraint on user email (duplicate signup). */
 function isDuplicateUserEmailError(err: unknown): boolean {
   const msg = getFullErrorMessage(err);
-  if (/user_email_unique/i.test(msg) && /duplicate key|unique constraint/i.test(msg)) return true;
-  const code = err && typeof err === "object" && "code" in err ? String((err as { code: string }).code) : "";
+  if (
+    /user_email_unique/i.test(msg) &&
+    /duplicate key|unique constraint/i.test(msg)
+  )
+    return true;
+  const code =
+    err && typeof err === "object" && "code" in err
+      ? String((err as { code: string }).code)
+      : "";
   if (code === "23505") return true; // PostgreSQL unique_violation
-  const cause = err && typeof err === "object" && "cause" in err ? (err as { cause: unknown }).cause : null;
-  if (cause && typeof cause === "object" && "code" in cause && String((cause as { code: string }).code) === "23505") return true;
+  const cause =
+    err && typeof err === "object" && "cause" in err
+      ? (err as { cause: unknown }).cause
+      : null;
+  if (
+    cause &&
+    typeof cause === "object" &&
+    "code" in cause &&
+    String((cause as { code: string }).code) === "23505"
+  )
+    return true;
   return false;
 }
 const NONCE_EXPIRY_SEC = 300; // 5 minutes
@@ -281,14 +297,24 @@ export function ethereumAuthPlugin() {
                 });
               }
               if (existingAccount) {
-                if (existingAccount.userId === (session.user as { id: string }).id) {
+                if (
+                  existingAccount.userId === (session.user as { id: string }).id
+                ) {
                   return ctx.json({ linked: true, user: session.user });
                 }
                 throw new APIError("BAD_REQUEST", {
                   message: "This wallet is already linked to another account",
                 });
               }
-              await (ctx.context.internalAdapter as { linkAccount: (data: { userId: string; accountId: string; providerId: string }) => Promise<unknown> }).linkAccount({
+              await (
+                ctx.context.internalAdapter as {
+                  linkAccount: (data: {
+                    userId: string;
+                    accountId: string;
+                    providerId: string;
+                  }) => Promise<unknown>;
+                }
+              ).linkAccount({
                 userId: (session.user as { id: string }).id,
                 accountId: addressTrim.toLowerCase(),
                 providerId: ETHEREUM_PROVIDER_ID,
@@ -307,8 +333,22 @@ export function ethereumAuthPlugin() {
             if (!user) {
               const email = `ethereum_${addressTrim.slice(2, 10)}@wallet.local`;
               const now = new Date();
-              const userId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "user" });
-              console.log("[ethereum-auth] No existing account for", addressTrim, "— creating new user", userId, "with email", email);
+              const userId = (
+                ctx.context as {
+                  generateId: (opts?: {
+                    model?: string;
+                    size?: number;
+                  }) => string;
+                }
+              ).generateId({ model: "user" });
+              console.log(
+                "[ethereum-auth] No existing account for",
+                addressTrim,
+                "— creating new user",
+                userId,
+                "with email",
+                email,
+              );
               try {
                 await adapter.create({
                   model: "user",
@@ -340,9 +380,15 @@ export function ethereumAuthPlugin() {
                   },
                 });
               } catch (createUserErr) {
-                console.error("[ethereum-auth] User creation failed:", createUserErr);
+                console.error(
+                  "[ethereum-auth] User creation failed:",
+                  createUserErr,
+                );
                 if (isDuplicateUserEmailError(createUserErr)) {
-                  console.log("[ethereum-auth] Duplicate email detected, looking up existing user for", email);
+                  console.log(
+                    "[ethereum-auth] Duplicate email detected, looking up existing user for",
+                    email,
+                  );
                   const existingUser = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "email", value: email }],
@@ -353,22 +399,34 @@ export function ethereumAuthPlugin() {
                       model: "account",
                       where: [
                         { field: "providerId", value: ETHEREUM_PROVIDER_ID },
-                        { field: "accountId", value: addressTrim.toLowerCase() },
+                        {
+                          field: "accountId",
+                          value: addressTrim.toLowerCase(),
+                        },
                       ],
                     })) as AccountRecord | null;
                     if (!existingAccountForWallet) {
-                      const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
+                      const accountRowId = (
+                        ctx.context as {
+                          generateId: (opts?: {
+                            model?: string;
+                            size?: number;
+                          }) => string;
+                        }
+                      ).generateId({ model: "account" });
                       try {
-                        await (ctx.context.internalAdapter as {
-                          createAccount: (data: {
-                            id: string;
-                            userId: string;
-                            accountId: string;
-                            providerId: string;
-                            createdAt: Date;
-                            updatedAt: Date;
-                          }) => Promise<unknown>;
-                        }).createAccount({
+                        await (
+                          ctx.context.internalAdapter as {
+                            createAccount: (data: {
+                              id: string;
+                              userId: string;
+                              accountId: string;
+                              providerId: string;
+                              createdAt: Date;
+                              updatedAt: Date;
+                            }) => Promise<unknown>;
+                          }
+                        ).createAccount({
                           id: accountRowId,
                           userId: existingUser.id,
                           accountId: addressTrim.toLowerCase(),
@@ -377,7 +435,10 @@ export function ethereumAuthPlugin() {
                           updatedAt: now,
                         });
                       } catch (linkErr) {
-                        console.error("[ethereum-auth] createAccount (link existing user) failed:", linkErr);
+                        console.error(
+                          "[ethereum-auth] createAccount (link existing user) failed:",
+                          linkErr,
+                        );
                         throw linkErr;
                       }
                     }
@@ -386,19 +447,31 @@ export function ethereumAuthPlugin() {
                 if (!user) throw createUserErr;
               }
               if (!user) {
-                console.log("[ethereum-auth] Linking new Ethereum account for user", userId);
-                const accountRowId = (ctx.context as { generateId: (opts?: { model?: string; size?: number }) => string }).generateId({ model: "account" });
+                console.log(
+                  "[ethereum-auth] Linking new Ethereum account for user",
+                  userId,
+                );
+                const accountRowId = (
+                  ctx.context as {
+                    generateId: (opts?: {
+                      model?: string;
+                      size?: number;
+                    }) => string;
+                  }
+                ).generateId({ model: "account" });
                 try {
-                  await (ctx.context.internalAdapter as {
-                    createAccount: (data: {
-                      id: string;
-                      userId: string;
-                      accountId: string;
-                      providerId: string;
-                      createdAt: Date;
-                      updatedAt: Date;
-                    }) => Promise<unknown>;
-                  }).createAccount({
+                  await (
+                    ctx.context.internalAdapter as {
+                      createAccount: (data: {
+                        id: string;
+                        userId: string;
+                        accountId: string;
+                        providerId: string;
+                        createdAt: Date;
+                        updatedAt: Date;
+                      }) => Promise<unknown>;
+                    }
+                  ).createAccount({
                     id: accountRowId,
                     userId,
                     accountId: addressTrim.toLowerCase(),
@@ -407,7 +480,10 @@ export function ethereumAuthPlugin() {
                     updatedAt: now,
                   });
                 } catch (createAccountErr) {
-                  console.error("[ethereum-auth] createAccount failed:", createAccountErr);
+                  console.error(
+                    "[ethereum-auth] createAccount failed:",
+                    createAccountErr,
+                  );
                   throw createAccountErr;
                 }
                 user = (await adapter.findOne({
@@ -418,18 +494,29 @@ export function ethereumAuthPlugin() {
             }
 
             if (!user) {
-              console.error("[ethereum-auth] User record not found after creation for address:", addressTrim);
+              console.error(
+                "[ethereum-auth] User record not found after creation for address:",
+                addressTrim,
+              );
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to get user",
               });
             }
-            console.log("[ethereum-auth] User ready:", user.id, "— creating session");
-
-            const session = await (ctx.context.internalAdapter as { createSession: (userId: string, request?: Request, cookie?: boolean) => Promise<{ id: string; userId: string } | null> }).createSession(
+            console.log(
+              "[ethereum-auth] User ready:",
               user.id,
-              ctx.request as Request | undefined,
-              false,
+              "— creating session",
             );
+
+            const session = await (
+              ctx.context.internalAdapter as {
+                createSession: (
+                  userId: string,
+                  request?: Request,
+                  cookie?: boolean,
+                ) => Promise<{ id: string; userId: string } | null>;
+              }
+            ).createSession(user.id, ctx.request as Request | undefined, false);
             if (!session) {
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to create session",
@@ -440,10 +527,17 @@ export function ethereumAuthPlugin() {
             void linkOrdersToUserByWallet(user.id, addressTrim.toLowerCase(), {
               isEvm: true,
             }).catch((err) =>
-              console.warn("[ethereum-auth] linkOrdersToUserByWallet failed:", err),
+              console.warn(
+                "[ethereum-auth] linkOrdersToUserByWallet failed:",
+                err,
+              ),
             );
 
-            await setSessionCookie(ctx, { session, user } as Parameters<typeof setSessionCookie>[1], false as boolean | undefined);
+            await setSessionCookie(
+              ctx,
+              { session, user } as Parameters<typeof setSessionCookie>[1],
+              false as boolean | undefined,
+            );
             return ctx.json({
               user: {
                 id: user.id,
@@ -459,10 +553,12 @@ export function ethereumAuthPlugin() {
             console.error("[ethereum-auth] Verify error:", err);
             if (err instanceof APIError) throw err;
             // Always use generic message — never expose raw error details to the client
-            const raw = err instanceof Error ? err.message : "Verification failed";
+            const raw =
+              err instanceof Error ? err.message : "Verification failed";
             console.error("[wallet-auth] Verification error:", raw);
             throw new APIError("INTERNAL_SERVER_ERROR", {
-              message: "Something went wrong on our end. Please try again or contact support.",
+              message:
+                "Something went wrong on our end. Please try again or contact support.",
             });
           }
         },

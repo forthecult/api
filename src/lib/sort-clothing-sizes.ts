@@ -42,7 +42,9 @@ function sizeRank(a: string): number {
   if (known !== undefined) return known;
   // Match "Small - ..." or "Large - ..." style labels (use first word for ordering)
   const firstWord = upper.split(/\s+/)[0];
-  const firstWordKnown = firstWord ? SIZE_ORDER_INDEX.get(firstWord) : undefined;
+  const firstWordKnown = firstWord
+    ? SIZE_ORDER_INDEX.get(firstWord)
+    : undefined;
   if (firstWordKnown !== undefined) return firstWordKnown;
   const num = parseFloat(a.replace(/,/g, ".").trim());
   if (!Number.isNaN(num)) return 1000 + num;
