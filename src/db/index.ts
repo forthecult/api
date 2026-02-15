@@ -12,24 +12,36 @@ if (!process.env.DATABASE_URL) {
 }
 
 /**
- * Caches the database connection in development to
- * prevent creating a new connection on every HMR update.
+ * Cache the database connection so we reuse one client per process.
+ * - In development: avoids a new connection on every HMR update.
+ * - In production: avoids multiple pools when the module is re-evaluated,
+ *   and keeps total connections low so multiple workers/instances don't
+ *   hit "Max client connections reached".
  */
 type DbConnection = ReturnType<typeof postgres>;
 const globalForDb = globalThis as unknown as {
   conn?: DbConnection;
 };
+
+// Production: pool 12 per process for good concurrency (parallel queries per request)
+// without exhausting DB when multiple Next.js workers run. Idle connections
+// released after 20s to free headroom for traffic bursts.
+const isProduction = process.env.NODE_ENV === "production";
+const poolSize = process.env.DATABASE_POOL_SIZE
+  ? Math.max(1, Math.min(50, parseInt(process.env.DATABASE_POOL_SIZE, 10) || 12))
+  : isProduction
+    ? 12
+    : 20;
+const idleTimeout = isProduction ? 20 : 30;
+
 export const conn: DbConnection =
   globalForDb.conn ??
-  postgres(process.env.DATABASE_URL, {
+  (globalForDb.conn = postgres(process.env.DATABASE_URL!, {
     connect_timeout: 10,
-    idle_timeout: 30,
-    max: 20,
+    idle_timeout: idleTimeout,
+    max: poolSize,
     max_lifetime: 60 * 30,
-  });
-if (process.env.NODE_ENV !== "production") {
-  globalForDb.conn = conn;
-}
+  }));
 
 /**
  * Schema passed to Drizzle. We add auth model names (user, account, session, …)

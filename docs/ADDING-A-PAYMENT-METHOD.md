@@ -26,12 +26,16 @@ This guide covers adding a new payment option (e.g. a new cryptocurrency) so it 
 
 ### 1.2 Checkout payment section
 
-- **`src/app/checkout/components/PaymentMethodSection.tsx`**
+- **`src/app/checkout/components/PaymentMethodSection.tsx`**  
+  This component drives the payment method list, the “Place order” bar (total + optional crypto amount on mobile), and the pay button. When adding a new crypto option, implement the crypto total label so the amount shows in the Order summary and in the mobile sticky bar.
   - **Payment method key (useEffect)**: when `paymentMethod === "crypto"` and the user selects the new option, set the key passed to the parent, e.g. `else if (sub === "seeker") key = "crypto_seeker"`.
   - **Create-order token (Solana Pay only)** — **required**: In `handleGoToCryptoPay`, the `token` variable sent in the request body to `/api/checkout/solana-pay/create-order` must include a branch for the new option. Add e.g. `: paymentMethod === "crypto" && paymentSubOption === "seeker" ? "seeker"` before the final `"solana"` fallback. **If you skip this, the payment page will show “Pay with SOL” instead of the selected token.**
   - **Supported flag**: add the new option to the condition that determines whether the “Pay with …” button is shown (e.g. for Solana Pay: `(paymentMethod === "crypto" && paymentSubOption === "seeker")` in `isSolanaPaySupported`).
   - **Pay button label**: in the branch that renders the main pay button (e.g. Solana Pay), add a label for the new option, e.g. `: paymentMethod === "crypto" && paymentSubOption === "seeker" ? "Pay with Seeker (SKR)" : ...`.
-  - **Crypto total label (optional)**: if the order total should be shown in the new token (e.g. “≈ 123 SKR”), add a case in the `cryptoTotalLabel` useMemo: fetch price from your prices API, then `return \`≈ ${formatCrypto(amount, 6)} SKR\``. Add the price key to the `cryptoPrices` state type and to the fetch callback type.
+  - **Crypto total label (recommended for tokens with a USD price)**: so customers see the order total in the selected token (e.g. “≈ 123 SKR”):
+    - **Where it appears**: the label is shown in the checkout **Order summary** (sidebar/column) and, on **mobile only**, directly below the fiat total in the sticky bottom “Place order” bar that scrolls with the page. If you omit the case for your token, the crypto amount will not appear when that option is selected (e.g. SOLUNA was missing and showed no amount until added).
+    - In **`cryptoTotalLabel`** (useMemo in `PaymentMethodSection.tsx`): add a branch for your sub-option, e.g. `if (paymentSubOption === "seeker") { const rate = cryptoPrices.SKR; if (typeof rate !== "number" || rate <= 0) return null; const amount = total / rate; return \`≈ ${formatCrypto(amount, 6)} SKR\`; }`.
+    - Add the price key to: **`cryptoPrices`** state type (e.g. `SKR?: number`), the **fetch callback** type for `/api/crypto/prices`, and the **useMemo dependency array** (e.g. `cryptoPrices.SKR`). The prices API must return this key (see 1.6).
   - **Crypto row icons**: in the `cryptoRowIcons` useMemo, add e.g. `if (visibility.cryptoSeeker) icons.push({ alt: "Seeker (SKR)", src: "/crypto/seeker/..." })`.
 
 ### 1.3 Checkout payment constants and crypto pay client (Solana / SPL tokens)
@@ -62,6 +66,7 @@ This guide covers adding a new payment option (e.g. a new cryptocurrency) so it 
 - **`src/app/api/crypto/prices/route.ts`**
   - Add the token to the response type and fetch its price (e.g. from CoinGecko or another provider).
   - Add a fallback price in `FALLBACK_PRICES` if desired.
+  - **Required for crypto total label**: the prices API is used by `PaymentMethodSection` (see 1.2). If the API does not return this key, the `cryptoTotalLabel` for your token will be `null` and the amount will not show in the Order summary or the mobile “Place order” bar.
 
 ---
 
@@ -102,7 +107,7 @@ This guide covers adding a new payment option (e.g. a new cryptocurrency) so it 
 |------|--------|-------------|
 | Registry | `src/lib/payment-method-settings.ts` | Entry in `PAYMENT_METHOD_DEFAULTS` |
 | Visibility & options | `src/lib/checkout-payment-options.ts` | PaymentVisibility, METHOD_KEY_MAP, CRYPTO_SUB_OPTIONS, visibleCryptoSubFromVisibility, hasAnyCryptoEnabled, getFooterPaymentItems, getPaymentOptionsForDisplay (and icons if needed) |
-| Checkout section | `src/app/checkout/components/PaymentMethodSection.tsx` | Key mapping, **create-order token in `handleGoToCryptoPay`** (Solana Pay), isSolanaPaySupported, button label, cryptoTotalLabel, cryptoRowIcons |
+| Checkout section | `src/app/checkout/components/PaymentMethodSection.tsx` | Key mapping, **create-order token in `handleGoToCryptoPay`** (Solana Pay), isSolanaPaySupported, button label, **cryptoTotalLabel** (Order summary + mobile sticky bar), cryptoRowIcons |
 | Payment constants | `src/app/checkout/checkout-payment-constants.ts` | Option value/label and icon path |
 | Crypto pay client | `src/app/checkout/crypto/CryptoPayClient.tsx` | Token, labels, icons, price, create-order payload |
 | Create-order API | e.g. `src/app/api/checkout/solana-pay/create-order/route.ts` | Token → payment method key (and token → cryptoCurrency if applicable) |

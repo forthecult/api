@@ -79,8 +79,18 @@ export function ProductVariantSection({
 
   // Options with only one value are hidden; customer selection defaults to that value. Multiple options (even if only one in stock) are always shown.
 
+  // Require a selection for every multi-value option before we consider any variant selected (e.g. Color + Men/Women + Size all must be chosen).
+  const allMultiValueOptionsSelected = optionDefinitions.every((opt, idx) => {
+    const values = (opt.values ?? []).filter(Boolean);
+    if (values.length <= 1) return true;
+    return Boolean(selectedByIndex[idx]?.trim());
+  });
+
   const selectedVariant =
-    hasVariants && optionDefinitions.length > 0 && variants.length > 0
+    hasVariants &&
+    optionDefinitions.length > 0 &&
+    variants.length > 0 &&
+    allMultiValueOptionsSelected
       ? findVariant(variants, selectedByIndex)
       : null;
 
@@ -355,14 +365,34 @@ function toLowerSet(set: Set<string>): Set<string> {
   return new Set([...set].map((s) => s.toLowerCase()));
 }
 
+/** e.g. "8M/10W" -> ["8m", "10w"]; "10W" -> ["10w"]. Used so variant size "10W" matches selected "8M/10W". */
+function expandSizeValueForMatching(val: string): string[] {
+  const lower = val.trim().toLowerCase();
+  if (!lower) return [];
+  const parts = lower.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 2 && /^\d+(\.\d+)?[mw]$/.test(parts[0]!) && /^\d+(\.\d+)?[mw]$/.test(parts[1]!))
+    return [lower, parts[0]!, parts[1]!];
+  return [lower];
+}
+
+/** Selected set expanded so combined sizes (8M/10W) also include 8M and 10W for matching variant size 10W or 8M. */
+function expandedSelectedLower(selectedSet: Set<string>): Set<string> {
+  const out = new Set<string>();
+  for (const s of selectedSet) {
+    const expanded = expandSizeValueForMatching(s);
+    expanded.forEach((e) => out.add(e));
+  }
+  return out;
+}
+
 /**
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names (Brand, Model, Finishes, etc.) are not tied to
  * specific columns — any option values can live in color/size/gender/label.
- * Comparison is case-insensitive.
+ * Comparison is case-insensitive. Combined sizes like "8M/10W" match variant "10W" or "8M".
  *
  * Match order:
- * 1. Exact: selected set equals variant set (same values).
+ * 1. Exact: selected set equals variant set (same values, or size expanded so 8M/10W matches 10W).
  * 2. Subset: variant set ⊆ selected (e.g. UI has Brand+Model, variant has only model name — phone cases).
  * 3. Superset: selected set ⊆ variant (e.g. UI shows only Size, variant has Size+Color — apparel).
  */
@@ -377,13 +407,14 @@ function findVariant(
   );
   if (selectedSet.size === 0) return null;
   const selectedLower = toLowerSet(selectedSet);
+  const selectedExpanded = expandedSelectedLower(selectedSet);
 
-  // 1. Exact match
+  // 1. Exact match (variant values must match selected; combined size 8M/10W matches variant 10W or 8M)
   const exact = variants.find((v) => {
     const variantLower = toLowerSet(getVariantValueSet(v));
     if (variantLower.size !== selectedLower.size) return false;
-    for (const s of selectedLower) {
-      if (!variantLower.has(s)) return false;
+    for (const vVal of variantLower) {
+      if (!selectedLower.has(vVal) && !selectedExpanded.has(vVal)) return false;
     }
     return true;
   });
@@ -397,7 +428,7 @@ function findVariant(
     if (variantLower.size > bestSubsetSize && variantLower.size <= selectedLower.size) {
       let allIn = true;
       for (const x of variantLower) {
-        if (!selectedLower.has(x)) {
+        if (!selectedLower.has(x) && !selectedExpanded.has(x)) {
           allIn = false;
           break;
         }
@@ -410,12 +441,15 @@ function findVariant(
   }
   if (bestSubset) return bestSubset;
 
-  // 3. Selected set ⊆ variant (apparel: UI shows only Size "L", variant has size "L" + color "Black")
+  // 3. Selected set ⊆ variant (apparel: UI shows only Size, variant has size "L" + color "Black")
   for (const v of variants) {
     const variantLower = toLowerSet(getVariantValueSet(v));
     let allSelectedInVariant = true;
     for (const s of selectedLower) {
-      if (!variantLower.has(s)) {
+      const match =
+        variantLower.has(s) ||
+        [...variantLower].some((vVal) => expandSizeValueForMatching(s).includes(vVal));
+      if (!match) {
         allSelectedInVariant = false;
         break;
       }

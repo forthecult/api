@@ -465,6 +465,12 @@ export const PaymentMethodSection = forwardRef<
       const amount = total / rate;
       return `≈ ${formatCrypto(amount, 6)} SKR`;
     }
+    if (paymentSubOption === "soluna") {
+      const rate = cryptoPrices.SOLUNA;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${formatCrypto(amount, 6)} SOLUNA`;
+    }
     return null;
   }, [
     paymentMethod,
@@ -477,6 +483,7 @@ export const PaymentMethodSection = forwardRef<
     cryptoPrices.PUMP,
     cryptoPrices.TROLL,
     cryptoPrices.SKR,
+    cryptoPrices.SOLUNA,
   ]);
 
   useEffect(() => {

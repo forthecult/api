@@ -577,9 +577,30 @@ export function QuickViewButton({
   );
 }
 
+/** e.g. "8M/10W" -> ["8m", "10w"]. So variant size "10W" matches selected "8M/10W". */
+function expandSizeValueForMatching(val: string): string[] {
+  const lower = val.trim().toLowerCase();
+  if (!lower) return [];
+  const parts = lower.split(/\s*\/\s*/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 2 && /^\d+(\.\d+)?[mw]$/.test(parts[0]!) && /^\d+(\.\d+)?[mw]$/.test(parts[1]!))
+    return [lower, parts[0]!, parts[1]!];
+  return [lower];
+}
+
+function expandedSelectedSet(selectedSet: Set<string>): Set<string> {
+  const out = new Set<string>();
+  for (const s of selectedSet) {
+    const lower = s.toLowerCase();
+    out.add(lower);
+    expandSizeValueForMatching(s).forEach((e) => out.add(e));
+  }
+  return out;
+}
+
 /**
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names are not tied to specific columns.
+ * Combined sizes like "8M/10W" match variant "10W" or "8M".
  */
 function findVariant(
   variants: QuickViewVariant[],
@@ -591,11 +612,15 @@ function findVariant(
       .map((s) => String(s).trim()),
   );
   if (selectedSet.size === 0) return null;
+  const selectedExpanded = expandedSelectedSet(selectedSet);
+
   const match = variants.find((v) => {
     const variantSet = getVariantValueSet(v);
     if (variantSet.size !== selectedSet.size) return false;
-    for (const s of selectedSet) {
-      if (!variantSet.has(s)) return false;
+    for (const vVal of variantSet) {
+      const vLower = vVal.toLowerCase();
+      if (!selectedSet.has(vVal) && !selectedSet.has(vLower) && !selectedExpanded.has(vLower))
+        return false;
     }
     return true;
   });
@@ -607,7 +632,12 @@ function findVariant(
     if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
       let allIn = true;
       for (const x of variantSet) {
-        if (!selectedSet.has(x)) {
+        const xLower = x.toLowerCase();
+        if (
+          !selectedSet.has(x) &&
+          !selectedSet.has(xLower) &&
+          !selectedExpanded.has(xLower)
+        ) {
           allIn = false;
           break;
         }
@@ -802,15 +832,22 @@ function VariantSelector({
     if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
   }, [optionDefinitions]);
 
+  // Require a selection for every multi-value option before we consider any variant (same as product detail page).
+  const allMultiValueOptionsSelected = optionDefinitions.every((opt, idx) => {
+    const values = (opt.values ?? []).filter(Boolean);
+    if (values.length <= 1) return true;
+    return Boolean(selectedByIndex[idx]?.trim());
+  });
+
   // When selections change, find matching variant by value set (option names not tied to columns)
   React.useEffect(() => {
-    if (Object.keys(selectedByIndex).length < optionDefinitions.length) {
+    if (!allMultiValueOptionsSelected) {
       onSelectVariant(null);
       return;
     }
     const match = findVariant(variants, selectedByIndex);
     onSelectVariant(match);
-  }, [selectedByIndex, optionDefinitions.length, variants, onSelectVariant]);
+  }, [selectedByIndex, allMultiValueOptionsSelected, variants, onSelectVariant]);
 
   // Sync phone option selection when displayed fallback model differs from current (e.g. brand switch)
   React.useEffect(() => {

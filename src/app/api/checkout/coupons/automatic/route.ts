@@ -43,8 +43,11 @@ const validateSchema = {
       })
       .filter((item) => item.productId.length > 0);
   },
-  paymentMethodKey: (v: unknown) =>
-    typeof v === "string" && v.length > 0 ? v : undefined,
+  paymentMethodKey: (v: unknown) => {
+    if (v == null) return undefined;
+    const s = typeof v === "string" ? v : String(v).trim();
+    return s.length > 0 ? s : undefined;
+  },
   productCount: (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
   productIds: (v: unknown) =>
