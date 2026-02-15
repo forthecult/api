@@ -26,6 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/ui/primitives/dropdown-menu";
+import { SideshiftBackdropOverlay } from "~/ui/components/footer/SideshiftBackdropOverlay";
 
 // Lazy load FooterPreferencesModal - only needed when user opens preferences
 const FooterPreferencesModal = dynamic(
@@ -37,6 +38,40 @@ const FooterPreferencesModal = dynamic(
 );
 
 const CRYPTO_ICON_SIZE = 20;
+
+const SIDESHIFT_CONFIG = {
+  commissionRate: undefined,
+  defaultDepositMethodId: "sol",
+  defaultSettleMethodId: "eth",
+  parentAffiliateId: "03RoxqMia",
+  settleAddress: undefined,
+  settleAmount: undefined,
+  theme: "light",
+  type: "variable",
+} as const;
+
+const SIDESHIFT_SCRIPT_URL = "https://sideshift.ai/static/js/main.js";
+
+/** Load Sideshift script on demand and open the widget. No network cost until first click. */
+function loadSideshiftAndShow(): void {
+  if (typeof window === "undefined") return;
+  (window as unknown as Record<string, unknown>).__SIDESHIFT__ = SIDESHIFT_CONFIG;
+  const w = window as unknown as { sideshift?: { show: () => void } };
+  if (w.sideshift) {
+    w.sideshift.show();
+    return;
+  }
+  const existing = document.querySelector(`script[src="${SIDESHIFT_SCRIPT_URL}"]`);
+  if (existing) {
+    existing.addEventListener("load", () => w.sideshift?.show());
+    return;
+  }
+  const script = document.createElement("script");
+  script.src = SIDESHIFT_SCRIPT_URL;
+  script.async = true;
+  script.onload = () => w.sideshift?.show();
+  document.body.appendChild(script);
+}
 
 const CRYPTO_COLORS: Record<CryptoCode, string> = {
   BTC: "#F7931A",
@@ -56,6 +91,7 @@ const CRYPTO_COLORS: Record<CryptoCode, string> = {
 export function FooterBottom() {
   const [mounted, setMounted] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [sideshiftOverlayOpen, setSideshiftOverlayOpen] = useState(false);
   const { rates, selectedCrypto, setSelectedCrypto } = useCryptoCurrency();
   const { convertUsdToFiat, currency, formatFiat, selectedCountry } =
     useCountryCurrency();
@@ -136,10 +172,10 @@ export function FooterBottom() {
               }
             `}
             style={{ color: CRYPTO_COLORS[selectedCrypto] }}
-            onClick={() =>
-              (window as unknown as { sideshift?: { show: () => void } })
-                .sideshift?.show()
-            }
+            onClick={() => {
+              setSideshiftOverlayOpen(true);
+              loadSideshiftAndShow();
+            }}
           >
             <Image
               alt=""
@@ -238,6 +274,9 @@ export function FooterBottom() {
             open={prefsOpen}
           />
         </div>
+        {sideshiftOverlayOpen && (
+          <SideshiftBackdropOverlay onClose={() => setSideshiftOverlayOpen(false)} />
+        )}
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link className="hover:text-foreground" href="/policies/privacy">
             Privacy
