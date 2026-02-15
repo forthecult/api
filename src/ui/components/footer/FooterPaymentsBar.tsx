@@ -55,13 +55,16 @@ export function FooterPaymentsBar() {
     </li>
   );
 
+  // Same gap for crypto and card rows so spacing is consistent (tighter gap so crypto row isn’t visually wider)
+  const logoGap = "gap-1.5";
+
   return (
     <div className="flex flex-wrap items-center justify-center gap-2">
       <span className="sr-only">Payment methods</span>
       {cryptoItems.length > 0 && (
         <ul
           aria-label="Crypto payment options"
-          className="flex flex-wrap items-center justify-center gap-1.5"
+          className={`flex flex-wrap items-center justify-center ${logoGap}`}
           role="list"
         >
           {cryptoItems.map(renderItem)}
@@ -70,7 +73,7 @@ export function FooterPaymentsBar() {
       {cardItems.length > 0 && (
         <ul
           aria-label="Card and wallet payment options"
-          className="flex flex-wrap items-center justify-center gap-2"
+          className={`flex flex-wrap items-center justify-center ${logoGap}`}
           role="list"
         >
           {cardItems.map(renderItem)}

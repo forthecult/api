@@ -10,11 +10,8 @@ const CryptoPayClient = dynamic(
   () => import("../crypto/CryptoPayClient").then((m) => m.CryptoPayClient),
   {
     loading: () => (
-      <div className="container mx-auto py-8">
-        <div className="space-y-6">
-          <Skeleton className="h-10 w-48" />
-          <Skeleton className="h-64 w-full" />
-        </div>
+      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+        <p className="text-sm text-muted-foreground">Loading order…</p>
       </div>
     ),
     ssr: false, // Wallet adapters need browser APIs
@@ -116,9 +113,8 @@ export function CryptoPayLoader() {
   if (paymentType === "solana") return <CryptoPayClient />;
 
   return (
-    <div className="container mx-auto py-8">
-      <Skeleton className="mb-4 h-10 w-48" />
-      <Skeleton className="h-64 w-full" />
+    <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <p className="text-sm text-muted-foreground">Loading order…</p>
     </div>
   );
 }

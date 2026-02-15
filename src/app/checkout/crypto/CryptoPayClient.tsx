@@ -1166,6 +1166,26 @@ export function CryptoPayClient() {
     );
   }
 
+  // Show loading until order AND payment data are ready (avoids flash of "Loading QR code...")
+  const pricesReady = token === "sui" || solUsdRate !== null;
+  const qrReady =
+    token === "sui" ||
+    qrDataUrl !== null ||
+    isExpired ||
+    (connected && payStatus !== "idle");
+
+  if (!pricesReady || !qrReady) {
+    return (
+      <div
+        className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+      >
+        <p className="text-sm text-muted-foreground">Loading order…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
       <div

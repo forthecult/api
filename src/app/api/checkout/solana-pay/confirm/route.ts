@@ -147,16 +147,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use server-stored amount, never trust client-provided amount
+    // Use server-stored amount for SPL tokens / USDC. For native SOL, when order has no
+    // cryptoAmount, the client sends amount in lamports — use that for verification so we
+    // match the correct tx and store the actual SOL amount.
+    const isNativeSol = splToken === NATIVE_SOL_SENTINEL;
     let serverAmount: string;
     if (order.cryptoAmount) {
       serverAmount = order.cryptoAmount;
+    } else if (isNativeSol && amount != null && String(amount).trim() !== "") {
+      // Client sends lamports for native SOL; we'll verify with this and store actual SOL from tx
+      serverAmount = String(amount).trim();
     } else {
       // Default: USDC where 1 USD = 1 USDC, totalCents / 100
       serverAmount = (order.totalCents / 100).toString();
     }
 
-    const isNativeSol = splToken === NATIVE_SOL_SENTINEL;
     const splTokenMint =
       splToken === NATIVE_SOL_SENTINEL
         ? USDC_MINT_MAINNET
@@ -172,6 +177,7 @@ export async function POST(request: NextRequest) {
                   ? SKR_MINT_MAINNET
                   : USDC_MINT_MAINNET;
 
+    let verifiedNativeSolLamports: number | undefined;
     try {
       const connection = new Connection(getSolanaRpcUrlServer(), {
         commitment: "confirmed",
@@ -180,18 +186,19 @@ export async function POST(request: NextRequest) {
       const amountBn = new BigNumber(serverAmount);
       if (isNativeSol) {
         const expectedLamports = amountBn.integerValue().toNumber();
-        const valid = await verifyNativeSolTransfer(
+        const result = await verifyNativeSolTransfer(
           connection,
           sigTrim,
           depositPk,
           expectedLamports,
         );
-        if (!valid) {
+        if (!result.ok) {
           return NextResponse.json(
             { error: "Transfer verification failed (native SOL)" },
             { status: 400 },
           );
         }
+        verifiedNativeSolLamports = result.lamports;
       } else if (isBalanceVerified) {
         // Status route already verified balance — just re-confirm here
         const balance = await getTokenBalanceAnyProgram(
@@ -283,6 +290,12 @@ export async function POST(request: NextRequest) {
               ? "WHITEWHALE"
               : "USDC";
 
+    // For native SOL, store the actual SOL amount from the verified tx (not USD)
+    const amountToStore =
+      isNativeSol && verifiedNativeSolLamports != null
+        ? (verifiedNativeSolLamports / 1e9).toFixed(9).replace(/\.?0+$/, "")
+        : serverAmount;
+
     // Idempotent update: only transition from 'pending' to prevent double-fulfillment
     const updated = await db.transaction(async (tx) => {
       const [current] = await tx
@@ -303,7 +316,7 @@ export async function POST(request: NextRequest) {
           // Store crypto payment details for admin visibility
           // Don't store the "balance-verified" sentinel as a real txid
           ...(sigTrim && !isBalanceVerified ? { cryptoTxHash: sigTrim } : {}),
-          cryptoAmount: serverAmount,
+          cryptoAmount: amountToStore,
           cryptoCurrency: tokenDisplayName,
           cryptoCurrencyNetwork: "Solana",
           ...(typeof payerWalletFromBody === "string" &&
@@ -398,18 +411,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/** Verify that the given signature is a native SOL transfer to depositAddress with at least expectedLamports. */
+/** Verify that the given signature is a native SOL transfer to depositAddress with at least expectedLamports. Returns actual lamports transferred for correct admin display. */
 async function verifyNativeSolTransfer(
   connection: Connection,
   signature: string,
   depositAddress: PublicKey,
   expectedLamports: number,
-): Promise<boolean> {
+): Promise<{ ok: boolean; lamports?: number }> {
   const tx = await connection.getTransaction(signature, {
     commitment: "confirmed",
     maxSupportedTransactionVersion: 0,
   });
-  if (!tx?.transaction?.message) return false;
+  if (!tx?.transaction?.message) return { ok: false };
   const message = tx.transaction.message as Parameters<
     typeof TransactionMessage.decompile
   >[0];
@@ -422,11 +435,11 @@ async function verifyNativeSolTransfer(
         decoded.toPubkey.equals(depositAddress) &&
         decoded.lamports >= expectedLamports
       ) {
-        return true;
+        return { ok: true, lamports: Number(decoded.lamports) };
       }
     } catch {
       // not a transfer instruction
     }
   }
-  return false;
+  return { ok: false };
 }
