@@ -16,6 +16,7 @@ import {
 } from "./chain-wallets";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import { cn } from "~/lib/cn";
+import { useIsMobile } from "~/lib/hooks/use-mobile";
 
 type ConnectWalletModalProps = {
   open: boolean;
@@ -116,6 +117,7 @@ export function ConnectWalletModal({
 }: ConnectWalletModalProps) {
   const params = useParams();
   const searchParams = useSearchParams();
+  const isMobile = useIsMobile();
   const invoiceId = (params?.invoiceId as string) ?? "";
   const [token, setToken] = useState("solana");
   const [step, setStep] = useState<"wallet" | "network" | "requesting">(
@@ -167,9 +169,12 @@ export function ConnectWalletModal({
   const chain = tokenToChain(token);
   const allowedNames = chain ? CHAIN_WALLET_NAMES[chain] : [];
   const walletsToShow = wallets.filter((w) => {
+    // Hide the MWA transport entry — it's used under-the-hood on mobile, not user-facing
+    if (w.adapter.name === "Mobile Wallet Adapter") return false;
     if (!allowedNames.includes(w.adapter.name)) return false;
-    // only show Solflare when the wallet is detected (extension installed)
-    if (w.adapter.name === "Solflare")
+    // On desktop, only show Solflare when the extension is detected
+    // On mobile, show it regardless (MWA handles the actual connection)
+    if (w.adapter.name === "Solflare" && !isMobile)
       return w.readyState === WalletReadyState.Installed;
     return true;
   });
@@ -227,7 +232,19 @@ export function ConnectWalletModal({
         setConnectingToNetwork("solana");
         setStep("requesting");
         try {
-          select(selectedWallet.adapter.name);
+          // On mobile, if the chosen wallet isn't installed, fall back to MWA
+          // (the Mobile Wallet Adapter routes to any wallet app on the device).
+          const useMwa =
+            isMobile &&
+            selectedWallet.readyState !== WalletReadyState.Installed;
+          const mwaAdapter = useMwa
+            ? wallets.find((w) => w.adapter.name === "Mobile Wallet Adapter")
+            : null;
+          const adapterName = mwaAdapter
+            ? mwaAdapter.adapter.name
+            : selectedWallet.adapter.name;
+
+          select(adapterName);
           // Give the adapter time to register the selected wallet before connect() to reduce WalletNotSelectedError
           await new Promise((r) => setTimeout(r, 400));
           const connectPromise = connect();
@@ -264,7 +281,7 @@ export function ConnectWalletModal({
         }
       }
     },
-    [selectedWallet, select, connect, suiWallets, connectSui, onOpenChange],
+    [selectedWallet, select, connect, suiWallets, connectSui, onOpenChange, isMobile, wallets],
   );
 
   const handleBack = useCallback(() => {

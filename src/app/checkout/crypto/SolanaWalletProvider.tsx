@@ -8,7 +8,10 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import type { WalletAdapter } from "@solana/wallet-adapter-base";
-import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
 import { toast } from "sonner";
 
 import { useIsMobile } from "~/lib/hooks/use-mobile";
@@ -86,7 +89,10 @@ export function SolanaWalletProvider({
   const rpcEndpoint = useMemo(() => getSolanaRpcUrl(), []);
 
   const wallets = useMemo((): WalletAdapter[] => {
-    const list: WalletAdapter[] = [new SolflareWalletAdapter()];
+    const list: WalletAdapter[] = [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+    ];
     if (typeof window !== "undefined" && isMobile) {
       try {
         const mobile = require("@solana-mobile/wallet-adapter-mobile");

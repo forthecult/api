@@ -1247,27 +1247,7 @@ export function CryptoPayClient() {
                           connection and refresh.
                         </p>
                       </div>
-                    ) : isMobile && token !== "sui" ? (
-                      <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 py-6">
-                        {qrDataUrl ? (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="lg"
-                            className="gap-2"
-                            onClick={() => setShowQrDialog(true)}
-                          >
-                            <QrCode className="size-5" aria-hidden />
-                            Scan QR with another device
-                          </Button>
-                        ) : (
-                          <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                            <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
-                            <span className="text-sm">Loading QR code…</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : qrDataUrl ? (
+                    ) : isMobile && token !== "sui" ? null : qrDataUrl ? (
                       <div className="relative inline-block">
                         <img
                           src={qrDataUrl}
@@ -1581,6 +1561,31 @@ export function CryptoPayClient() {
                       >
                         Pay with your wallet
                       </Button>
+                    )}
+                  </div>
+                )}
+              {/* Scan QR button — mobile only, below Connect / Pay button */}
+              {isMobile &&
+                token !== "sui" &&
+                !isExpired &&
+                (!connected || payStatus === "idle") && (
+                  <div className="flex justify-center">
+                    {qrDataUrl ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="lg"
+                        className="gap-2"
+                        onClick={() => setShowQrDialog(true)}
+                      >
+                        <QrCode className="size-5" aria-hidden />
+                        Scan QR with another device
+                      </Button>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                        <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                        <span className="text-sm">Loading QR code…</span>
+                      </div>
                     )}
                   </div>
                 )}
