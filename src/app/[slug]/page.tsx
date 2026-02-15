@@ -16,6 +16,10 @@ import {
 } from "~/lib/categories";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
 import {
+  mapProductBySlugResultToPageProduct,
+  type PageProduct,
+} from "~/lib/product-for-page";
+import {
   sanitizeProductDescription,
   stripHtmlForMeta,
 } from "~/lib/sanitize-product-description";
@@ -37,11 +41,10 @@ import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
-// Types re-exported from product detail page (product page lives at base [slug] now)
 import type {
   ProductOptionDefinition,
   ProductVariantOption,
-} from "~/app/products/[id]/page";
+} from "~/app/products/[id]/types";
 import { ProductsClient } from "~/app/products/products-client";
 import { LongFormProductPage } from "~/app/[slug]/long-form-product-page";
 import { getTokenGateConfig } from "~/lib/token-gate";
@@ -56,50 +59,6 @@ export const dynamic = "force-dynamic";
 /* -------------------------------------------------------------------------- */
 
 type CategoryOption = { slug: string; name: string };
-
-interface Product {
-  category: string;
-  description: string;
-  features: string[];
-  id: string;
-  image: string;
-  images?: string[];
-  mainImageAlt?: string | null;
-  inStock: boolean;
-  /** When true, product can be purchased regardless of stock (POD/made-to-order). */
-  continueSellingWhenOutOfStock?: boolean;
-  name: string;
-  originalPrice?: number;
-  price: number;
-  rating: number;
-  shipsFrom?: string | null;
-  slug?: string;
-  specs: Record<string, string>;
-  /** When non-empty, product ships only to these countries (ISO 2-letter). */
-  availableCountryCodes?: string[];
-  hasVariants?: boolean;
-  optionDefinitions?: ProductOptionDefinition[];
-  variants?: ProductVariantOption[];
-  /** Estimated delivery: handling and transit days (from fulfillment provider or manual). */
-  handlingDaysMin?: number | null;
-  handlingDaysMax?: number | null;
-  transitDaysMin?: number | null;
-  transitDaysMax?: number | null;
-  /** Blank product brand (synced from fulfillment). */
-  brand?: string | null;
-  /** Blank product model (synced from fulfillment). */
-  model?: string | null;
-  metaDescription?: string | null;
-  pageTitle?: string | null;
-  /** Size chart for accordion when product has brand+model (e.g. apparel). */
-  sizeChart?: {
-    displayName: string;
-    dataImperial: unknown;
-    dataMetric: unknown;
-  } | null;
-  /** Product page layout: "default" or "long-form". */
-  pageLayout?: string | null;
-}
 
 interface ProductListResponse {
   items?: Array<{
@@ -140,53 +99,11 @@ type RelatedProduct = {
 
 const baseUrl = () => getServerBaseUrl();
 
-/** Resolve product by slug from DB (no self-fetch; avoids 404/cache issues). */
-async function fetchProductBySlug(slug: string): Promise<Product | null> {
+/** Resolve product by slug from DB; uses shared mapper (single source of truth). */
+async function getProductForPageBySlug(slug: string): Promise<PageProduct | null> {
   const data = await getProductBySlugOrId(slug);
   if (!data) return null;
-  const price = data.price.usd ?? 0;
-  const originalPrice =
-    data.compareAtPriceCents != null
-      ? data.compareAtPriceCents / 100
-      : undefined;
-  const images =
-    data.images && data.images.length > 0
-      ? data.images
-      : data.imageUrl
-        ? [data.imageUrl]
-        : ["/placeholder.svg"];
-  return {
-    id: data.id,
-    slug: data.slug,
-    name: data.name,
-    description: data.description ?? "",
-    features: data.features ?? [],
-    image: data.imageUrl ?? "/placeholder.svg",
-    images,
-    mainImageAlt: data.mainImageAlt ?? undefined,
-    inStock: data.inStock ?? true,
-    continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
-    originalPrice,
-    price,
-    rating: 0,
-    specs: {},
-    category: data.category ?? "Uncategorized",
-    hasVariants: data.hasVariants ?? false,
-    optionDefinitions: data.optionDefinitions ?? undefined,
-    variants: data.variants ?? undefined,
-    shipsFrom: data.shipsFrom ?? undefined,
-    handlingDaysMin: data.handlingDaysMin ?? undefined,
-    handlingDaysMax: data.handlingDaysMax ?? undefined,
-    transitDaysMin: data.transitDaysMin ?? undefined,
-    transitDaysMax: data.transitDaysMax ?? undefined,
-    brand: data.brand ?? undefined,
-    model: data.model ?? undefined,
-    metaDescription: data.metaDescription ?? undefined,
-    pageTitle: data.pageTitle ?? undefined,
-    sizeChart: data.sizeChart ?? undefined,
-    pageLayout: data.pageLayout ?? undefined,
-    availableCountryCodes: data.availableCountryCodes ?? [],
-  };
+  return mapProductBySlugResultToPageProduct(data);
 }
 
 async function fetchRelatedProducts(
@@ -254,7 +171,7 @@ export async function generateMetadata({
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const siteUrl = getPublicSiteUrl();
-  const product = await fetchProductBySlug(slug);
+  const product = await getProductForPageBySlug(slug);
   if (product) {
     const canonicalSlug = product.slug ?? product.id;
     const metaDesc =
@@ -357,7 +274,7 @@ export async function generateMetadata({
 
 export default async function SlugPage({ params, searchParams }: PageProps) {
   const { slug } = await params;
-  const product = await fetchProductBySlug(slug);
+  const product = await getProductForPageBySlug(slug);
 
   if (product) {
     const canonicalSlug = product.slug ?? product.id;

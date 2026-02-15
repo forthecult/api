@@ -7,6 +7,11 @@ import { notFound } from "next/navigation";
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { getProductBreadcrumbTrail } from "~/lib/categories";
+import { getProductBySlugOrId } from "~/lib/product-by-slug";
+import {
+  mapProductBySlugResultToPageProduct,
+  type PageProduct,
+} from "~/lib/product-for-page";
 import {
   sanitizeProductDescription,
   stripHtmlForMeta,
@@ -38,128 +43,11 @@ import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import type { ProductOptionDefinition, ProductVariantOption } from "./types";
 export type { ProductOptionDefinition, ProductVariantOption };
 
-interface Product {
-  category: string;
-  description: string;
-  features: string[];
-  id: string;
-  image: string;
-  images?: string[];
-  mainImageAlt?: string | null;
-  inStock: boolean;
-  /** When true, product can be purchased regardless of stock (POD/made-to-order). */
-  continueSellingWhenOutOfStock?: boolean;
-  name: string;
-  originalPrice?: number;
-  price: number;
-  rating: number;
-  shipsFrom?: string | null;
-  specs: Record<string, string>;
-  hasVariants?: boolean;
-  optionDefinitions?: ProductOptionDefinition[];
-  variants?: ProductVariantOption[];
-  handlingDaysMin?: number | null;
-  handlingDaysMax?: number | null;
-  transitDaysMin?: number | null;
-  transitDaysMax?: number | null;
-  /** When non-empty, product ships only to these countries (ISO 2-letter). */
-  availableCountryCodes?: string[];
-  /** Blank product brand (synced from fulfillment). */
-  brand?: string | null;
-  /** Blank product model (synced from fulfillment). */
-  model?: string | null;
-  /** Size chart for accordion when product has brand+model (e.g. apparel). */
-  sizeChart?: {
-    displayName: string;
-    dataImperial: unknown;
-    dataMetric: unknown;
-  } | null;
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              Fetch from API                                */
-/* -------------------------------------------------------------------------- */
-
-async function fetchProductById(id: string): Promise<Product | null> {
-  const baseUrl = getServerBaseUrl();
-  try {
-    const res = await fetch(`${baseUrl}/api/products/${id}`, {
-      next: { revalidate: 60 },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json()) as {
-      id: string;
-      name: string;
-      description?: string;
-      price?: { usd?: number };
-      compareAtPriceCents?: number;
-      imageUrl?: string;
-      images?: string[];
-      mainImageAlt?: string | null;
-      category?: string;
-      inStock?: boolean;
-      hasVariants?: boolean;
-      optionDefinitions?: ProductOptionDefinition[];
-      variants?: ProductVariantOption[];
-      shipsFrom?: string | null;
-      handlingDaysMin?: number | null;
-      handlingDaysMax?: number | null;
-      transitDaysMin?: number | null;
-      transitDaysMax?: number | null;
-      availableCountryCodes?: string[];
-      features?: string[];
-      continueSellingWhenOutOfStock?: boolean;
-      brand?: string | null;
-      model?: string | null;
-      sizeChart?: {
-        displayName: string;
-        dataImperial: unknown;
-        dataMetric: unknown;
-      } | null;
-    };
-    const price = data.price?.usd ?? 0;
-    const originalPrice =
-      data.compareAtPriceCents != null
-        ? data.compareAtPriceCents / 100
-        : undefined;
-    const images =
-      data.images && data.images.length > 0
-        ? data.images
-        : data.imageUrl
-          ? [data.imageUrl]
-          : ["/placeholder.svg"];
-    return {
-      id: data.id,
-      name: data.name,
-      description: data.description ?? "",
-      features: data.features ?? [],
-      image: data.imageUrl ?? "/placeholder.svg",
-      images,
-      mainImageAlt: data.mainImageAlt ?? undefined,
-      inStock: data.inStock ?? true,
-      continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
-      originalPrice,
-      price,
-      rating: 0,
-      shipsFrom: data.shipsFrom ?? null,
-      specs: {},
-      category: data.category ?? "Uncategorized",
-      hasVariants: data.hasVariants ?? false,
-      optionDefinitions: data.optionDefinitions ?? undefined,
-      variants: data.variants ?? undefined,
-      handlingDaysMin: data.handlingDaysMin ?? undefined,
-      handlingDaysMax: data.handlingDaysMax ?? undefined,
-      transitDaysMin: data.transitDaysMin ?? undefined,
-      transitDaysMax: data.transitDaysMax ?? undefined,
-      availableCountryCodes: data.availableCountryCodes ?? [],
-      brand: data.brand ?? undefined,
-      model: data.model ?? undefined,
-      sizeChart: data.sizeChart ?? undefined,
-    };
-  } catch {
-    return null;
-  }
+/** Resolve product by id from DB (no HTTP self-fetch). Uses shared mapper for single source of truth. */
+async function getProductForPage(id: string): Promise<PageProduct | null> {
+  const data = await getProductBySlugOrId(id);
+  if (!data) return null;
+  return mapProductBySlugResultToPageProduct(data);
 }
 
 type RelatedProduct = {
@@ -207,7 +95,7 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  const product = await fetchProductById(id);
+  const product = await getProductForPage(id);
 
   if (!product) {
     return {
@@ -259,7 +147,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
     .join("; ");
 
   const [product, relatedProducts] = await Promise.all([
-    fetchProductById(id),
+    getProductForPage(id),
     fetchRelatedProducts(id, cookieHeader),
   ]);
 

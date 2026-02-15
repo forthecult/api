@@ -127,6 +127,19 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
+/** Single wrapper for store layout: wallet boundary + wagmi + auth modal + shell. Avoids duplicating the tree in fallback vs actual. */
+function StoreLayoutWrapper({ children }: Readonly<{ children: React.ReactNode }>) {
+  return (
+    <WalletErrorBoundary>
+      <WagmiProvider>
+        <AuthWalletModalProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </AuthWalletModalProvider>
+      </WagmiProvider>
+    </WalletErrorBoundary>
+  );
+}
+
 async function CookieCountryProvider({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
@@ -206,24 +219,12 @@ export default async function RootLayout({
               <Suspense
                 fallback={
                   <CountryCurrencyProvider initialCountry={null}>
-                    <WalletErrorBoundary>
-                      <WagmiProvider>
-                        <AuthWalletModalProvider>
-                          <LayoutShell>{children}</LayoutShell>
-                        </AuthWalletModalProvider>
-                      </WagmiProvider>
-                    </WalletErrorBoundary>
+                    <StoreLayoutWrapper>{children}</StoreLayoutWrapper>
                   </CountryCurrencyProvider>
                 }
               >
                 <CookieCountryProvider>
-                  <WalletErrorBoundary>
-                    <WagmiProvider>
-                      <AuthWalletModalProvider>
-                        <LayoutShell>{children}</LayoutShell>
-                      </AuthWalletModalProvider>
-                    </WagmiProvider>
-                  </WalletErrorBoundary>
+                  <StoreLayoutWrapper>{children}</StoreLayoutWrapper>
                 </CookieCountryProvider>
               </Suspense>
             </CryptoCurrencyProvider>
