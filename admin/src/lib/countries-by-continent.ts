@@ -1,9 +1,15 @@
+export interface ContinentEntry {
+  continent: string;
+  countries: CountryEntry[];
+}
 /**
  * Countries by continent for product market availability (ISO 3166-1 alpha-2).
  * Used in admin product edit "Markets" section.
  */
-export type CountryEntry = { code: string; name: string };
-export type ContinentEntry = { continent: string; countries: CountryEntry[] };
+export interface CountryEntry {
+  code: string;
+  name: string;
+}
 
 export const COUNTRIES_BY_CONTINENT: ContinentEntry[] = [
   {

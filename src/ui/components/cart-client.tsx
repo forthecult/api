@@ -30,6 +30,10 @@ import {
 
 import type { CartItem } from "./cart";
 
+interface CartClientProps {
+  className?: string;
+}
+
 /** Show only the size/variant (e.g. "2XL", "M") in cart — strip title/category before " / ". */
 function variantDisplayOnly(
   _productName: string,
@@ -44,10 +48,6 @@ function variantDisplayOnly(
   return variantLabel;
 }
 
-interface CartClientProps {
-  className?: string;
-}
-
 const CART_PLACEHOLDER = "/placeholder.svg";
 
 export function CartClient({ className }: CartClientProps) {
@@ -57,13 +57,13 @@ export function CartClient({ className }: CartClientProps) {
   );
   const isDesktop = useMediaQuery("(min-width: 768px)");
   const {
+    cartOpen: isOpen,
+    itemCount: totalItems,
     items: cartItems,
     removeItem,
-    updateQuantity,
-    itemCount: totalItems,
-    subtotal,
-    cartOpen: isOpen,
     setCartOpen: setIsOpen,
+    subtotal,
+    updateQuantity,
   } = useCart();
 
   React.useEffect(() => {
@@ -82,14 +82,20 @@ export function CartClient({ className }: CartClientProps) {
   const CartTrigger = (
     <Button
       aria-label="Open cart"
-      className="relative h-9 w-9 rounded-full text-[#1A1611] dark:text-[#F5F1EB]"
+      className={`
+        relative h-9 w-9 rounded-full text-[#1A1611]
+        dark:text-[#F5F1EB]
+      `}
       size="icon"
       variant="outline"
     >
       <ShoppingCart className="h-4 w-4" />
       {totalItems > 0 && (
         <Badge
-          className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-[10px] bg-[#C4873A] text-[#111111] font-bold"
+          className={`
+            absolute -top-1 -right-1 h-5 w-5 rounded-full bg-[#C4873A] p-0
+            text-[10px] font-bold text-[#111111]
+          `}
           variant="default"
         >
           {totalItems}
@@ -100,7 +106,12 @@ export function CartClient({ className }: CartClientProps) {
 
   const CartContent = (
     <>
-      <div className="flex h-full max-h-[100dvh] flex-col md:max-h-full">
+      <div
+        className={`
+        flex h-full max-h-[100dvh] flex-col
+        md:max-h-full
+      `}
+      >
         {/* Fixed header */}
         <div className="shrink-0 border-b px-6 py-4">
           <div>
@@ -116,12 +127,17 @@ export function CartClient({ className }: CartClientProps) {
         {/* Scrollable items area */}
         <div className="min-h-0 flex-1 overflow-y-auto px-6">
           {cartItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 animate-in fade-in duration-200">
+            <div
+              className={`
+              flex flex-col items-center justify-center py-12 duration-200
+              animate-in fade-in
+            `}
+            >
               <div
                 className={`
-                    mb-4 flex h-20 w-20 items-center justify-center rounded-full
-                    bg-muted
-                  `}
+                  mb-4 flex h-20 w-20 items-center justify-center rounded-full
+                  bg-muted
+                `}
               >
                 <ShoppingCart className="h-10 w-10 text-muted-foreground" />
               </div>
@@ -147,14 +163,19 @@ export function CartClient({ className }: CartClientProps) {
             <div className="space-y-4 py-4">
               {cartItems.map((item) => (
                 <div
-                  key={item.id}
                   className={`
-                      group relative flex rounded-lg border bg-card p-2
-                      shadow-sm transition-colors
-                      hover:bg-accent/50 animate-in fade-in slide-in-from-bottom-2 duration-200
-                    `}
+                    group relative flex rounded-lg border bg-card p-2 shadow-sm
+                    transition-colors duration-200 animate-in fade-in
+                    slide-in-from-bottom-2
+                    hover:bg-accent/50
+                  `}
+                  key={item.id}
                 >
-                  <div className="relative h-20 w-20 overflow-hidden rounded bg-white">
+                  <div
+                    className={`
+                    relative h-20 w-20 overflow-hidden rounded bg-white
+                  `}
+                  >
                     {failedImageIds.has(item.id) || !item.image?.trim() ? (
                       <Image
                         alt={item.name}
@@ -168,14 +189,14 @@ export function CartClient({ className }: CartClientProps) {
                         alt={item.name}
                         className="object-contain"
                         fill
-                        sizes="80px"
-                        src={item.image!.trim()}
-                        unoptimized={/^https?:\/\//i.test(item.image!)}
                         onError={() =>
                           setFailedImageIds((prev) =>
                             new Set(prev).add(item.id),
                           )
                         }
+                        sizes="80px"
+                        src={item.image!.trim()}
+                        unoptimized={/^https?:\/\//i.test(item.image!)}
                       />
                     )}
                   </div>
@@ -184,9 +205,9 @@ export function CartClient({ className }: CartClientProps) {
                       <div className="flex items-start justify-between">
                         <Link
                           className={`
-                              line-clamp-2 text-sm font-medium
-                              group-hover:text-primary
-                            `}
+                            line-clamp-2 text-sm font-medium
+                            group-hover:text-primary
+                          `}
                           href={`/${item.slug ?? item.id}`}
                           onClick={() => setIsOpen(false)}
                         >
@@ -194,10 +215,10 @@ export function CartClient({ className }: CartClientProps) {
                         </Link>
                         <button
                           className={`
-                              -mt-1 -mr-1 ml-2 rounded-full p-1
-                              text-muted-foreground transition-colors
-                              hover:bg-muted hover:text-destructive
-                            `}
+                            -mt-1 -mr-1 ml-2 rounded-full p-1
+                            text-muted-foreground transition-colors
+                            hover:bg-muted hover:text-destructive
+                          `}
                           onClick={() => handleRemoveItem(item.id)}
                           type="button"
                         >
@@ -215,11 +236,11 @@ export function CartClient({ className }: CartClientProps) {
                       <div className="flex items-center rounded-md border">
                         <button
                           className={`
-                              flex h-7 w-7 items-center justify-center
-                              rounded-l-md border-r text-muted-foreground
-                              transition-colors
-                              hover:bg-muted hover:text-foreground
-                            `}
+                            flex h-7 w-7 items-center justify-center
+                            rounded-l-md border-r text-muted-foreground
+                            transition-colors
+                            hover:bg-muted hover:text-foreground
+                          `}
                           disabled={item.quantity <= 1}
                           onClick={() =>
                             handleUpdateQuantity(item.id, item.quantity - 1)
@@ -231,19 +252,19 @@ export function CartClient({ className }: CartClientProps) {
                         </button>
                         <span
                           className={`
-                              flex h-7 w-7 items-center justify-center text-xs
-                              font-medium
-                            `}
+                            flex h-7 w-7 items-center justify-center text-xs
+                            font-medium
+                          `}
                         >
                           {item.quantity}
                         </span>
                         <button
                           className={`
-                              flex h-7 w-7 items-center justify-center
-                              rounded-r-md border-l text-muted-foreground
-                              transition-colors
-                              hover:bg-muted hover:text-foreground
-                            `}
+                            flex h-7 w-7 items-center justify-center
+                            rounded-r-md border-l text-muted-foreground
+                            transition-colors
+                            hover:bg-muted hover:text-foreground
+                          `}
                           onClick={() =>
                             handleUpdateQuantity(item.id, item.quantity + 1)
                           }
@@ -286,8 +307,8 @@ export function CartClient({ className }: CartClientProps) {
                     <FiatPrice usdAmount={subtotal} />
                   </span>
                   <CryptoPrice
-                    usdAmount={subtotal}
                     className="text-sm font-normal text-muted-foreground"
+                    usdAmount={subtotal}
                   />
                 </span>
               </div>
@@ -309,8 +330,13 @@ export function CartClient({ className }: CartClientProps) {
                     </Link>
                   </DrawerClose>
                 )}
-                <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-sm text-muted-foreground">
-                  <Lock className="size-4" aria-hidden />
+                <p
+                  className={`
+                  mt-4 flex items-center justify-center gap-1.5 text-center
+                  text-sm text-muted-foreground
+                `}
+                >
+                  <Lock aria-hidden className="size-4" />
                   Secure Checkout
                 </p>
               </div>

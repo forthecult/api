@@ -11,14 +11,6 @@ import {
 /** Cache for 5 minutes (public data) */
 export const revalidate = 300;
 
-function isMissingTableError(err: unknown): boolean {
-  const code =
-    typeof err === "object" && err !== null && "code" in err
-      ? (err as { code: string }).code
-      : (err as { cause?: { code?: string } })?.cause?.code;
-  return code === "42P01";
-}
-
 /**
  * List all categories with subcategories and product counts.
  * GET /api/categories
@@ -28,22 +20,22 @@ export async function GET() {
   try {
     // Fetch all categories; try to include the `visible` column. If it doesn't
     // exist yet (needs db:push), fall back to treating all as visible.
-    let allCategories: Array<{
+    let allCategories: {
+      description: null | string;
       id: string;
       name: string;
-      description: string | null;
-      slug: string | null;
-      parentId: string | null;
+      parentId: null | string;
+      slug: null | string;
       visible: boolean;
-    }>;
+    }[];
     try {
       allCategories = await db
         .select({
+          description: categoriesTable.description,
           id: categoriesTable.id,
           name: categoriesTable.name,
-          description: categoriesTable.description,
-          slug: categoriesTable.slug,
           parentId: categoriesTable.parentId,
+          slug: categoriesTable.slug,
           visible: categoriesTable.visible,
         })
         .from(categoriesTable)
@@ -52,11 +44,11 @@ export async function GET() {
       // visible column may not exist yet — fetch without it
       const rows = await db
         .select({
+          description: categoriesTable.description,
           id: categoriesTable.id,
           name: categoriesTable.name,
-          description: categoriesTable.description,
-          slug: categoriesTable.slug,
           parentId: categoriesTable.parentId,
+          slug: categoriesTable.slug,
         })
         .from(categoriesTable)
         .orderBy(asc(categoriesTable.name));
@@ -86,7 +78,7 @@ export async function GET() {
     );
 
     const topLevel = allCategories.filter((c) => c.parentId == null);
-    const byParentId = new Map<string | null, typeof allCategories>();
+    const byParentId = new Map<null | string, typeof allCategories>();
     for (const c of allCategories) {
       const key = c.parentId ?? null;
       if (!byParentId.has(key)) byParentId.set(key, []);
@@ -95,18 +87,18 @@ export async function GET() {
 
     const categories = topLevel.map((parent) => {
       const children = (byParentId.get(parent.id) ?? []).map((child) => ({
+        description: child.description ?? undefined,
         id: child.id,
         name: child.name,
-        description: child.description ?? undefined,
         productCount: countByCategoryId.get(child.id) ?? 0,
         slug: child.slug ?? undefined,
       }));
       return {
+        description: parent.description ?? undefined,
         id: parent.id,
         name: parent.name,
-        description: parent.description ?? undefined,
-        slug: parent.slug ?? undefined,
         productCount: countByCategoryId.get(parent.id) ?? 0,
+        slug: parent.slug ?? undefined,
         subcategories: children.length > 0 ? children : undefined,
       };
     });
@@ -136,4 +128,12 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+function isMissingTableError(err: unknown): boolean {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? (err as { code: string }).code
+      : (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42P01";
 }

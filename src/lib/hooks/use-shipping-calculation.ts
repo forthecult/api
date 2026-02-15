@@ -7,26 +7,26 @@ interface CartItem {
   quantity: number;
 }
 
-interface UseShippingCalculationOptions {
-  countryCode: string;
-  orderValueCents: number;
-  items: CartItem[];
-  enabled?: boolean;
+interface ShippingResult {
+  freeShipping: boolean;
+  label: null | string;
+  shippingCents: number;
 }
 
-interface ShippingResult {
-  shippingCents: number;
-  label: string | null;
-  freeShipping: boolean;
+interface UseShippingCalculationOptions {
+  countryCode: string;
+  enabled?: boolean;
+  items: CartItem[];
+  orderValueCents: number;
 }
 
 interface UseShippingCalculationResult {
-  shippingCents: number;
-  shippingLabel: string | null;
+  error: null | string;
   freeShipping: boolean;
   loading: boolean;
-  error: string | null;
   refetch: () => void;
+  shippingCents: number;
+  shippingLabel: null | string;
 }
 
 /**
@@ -35,15 +35,15 @@ interface UseShippingCalculationResult {
  */
 export function useShippingCalculation({
   countryCode,
-  orderValueCents,
-  items,
   enabled = true,
+  items,
+  orderValueCents,
 }: UseShippingCalculationOptions): UseShippingCalculationResult {
   const [shippingCents, setShippingCents] = useState(0);
-  const [shippingLabel, setShippingLabel] = useState<string | null>(null);
+  const [shippingLabel, setShippingLabel] = useState<null | string>(null);
   const [freeShipping, setFreeShipping] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const fetchShipping = useCallback(async () => {
     if (!enabled || !countryCode.trim()) {
@@ -58,13 +58,13 @@ export function useShippingCalculation({
 
     try {
       const res = await fetch("/api/shipping/calculate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           countryCode: countryCode.trim().toUpperCase(),
-          orderValueCents,
           items: items.map((i) => ({ productId: i.id, quantity: i.quantity })),
+          orderValueCents,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
 
       if (!res.ok) {
@@ -100,11 +100,11 @@ export function useShippingCalculation({
   }, [fetchShipping]);
 
   return {
-    shippingCents,
-    shippingLabel,
+    error,
     freeShipping,
     loading,
-    error,
     refetch: fetchShipping,
+    shippingCents,
+    shippingLabel,
   };
 }

@@ -1,11 +1,15 @@
 "use client";
 
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 
 export const OPEN_CONNECT_WALLET_MODAL = "open-connect-wallet-modal";
 
 /** ref set by layout so header (including portal content) can open the modal without relying on context */
 export const openModalRef: { current: (() => void) | null } = { current: null };
+
+interface OpenConnectWalletModalContextValue {
+  openModal: () => void;
+}
 
 export function openConnectWalletModal(): void {
   if (typeof window !== "undefined") {
@@ -14,12 +18,8 @@ export function openConnectWalletModal(): void {
   openModalRef.current?.();
 }
 
-type OpenConnectWalletModalContextValue = {
-  openModal: () => void;
-};
-
 const OpenConnectWalletModalContext =
-  createContext<OpenConnectWalletModalContextValue | null>(null);
+  createContext<null | OpenConnectWalletModalContextValue>(null);
 
 export function OpenConnectWalletModalProvider({
   children,
@@ -29,15 +29,15 @@ export function OpenConnectWalletModalProvider({
   openModal: () => void;
 }) {
   return (
-    <OpenConnectWalletModalContext.Provider value={{ openModal }}>
+    <OpenConnectWalletModalContext value={{ openModal }}>
       {children}
-    </OpenConnectWalletModalContext.Provider>
+    </OpenConnectWalletModalContext>
   );
 }
 
 export function useOpenConnectWalletModal(): (() => void) | null {
   try {
-    const ctx = useContext(OpenConnectWalletModalContext);
+    const ctx = use(OpenConnectWalletModalContext);
     return ctx?.openModal ?? null;
   } catch {
     // Can happen with duplicate React or when dispatcher is null (e.g. wrong React instance)

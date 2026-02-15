@@ -9,25 +9,25 @@ import { useCart } from "~/lib/hooks/use-cart";
 import { Button } from "~/ui/primitives/button";
 
 interface ReorderButtonProps {
+  children?: React.ReactNode;
+  className?: string;
   orderId: string;
+  size?: "default" | "icon" | "lg" | "sm";
   variant?:
     | "default"
-    | "outline"
+    | "destructive"
     | "ghost"
     | "link"
-    | "destructive"
+    | "outline"
     | "secondary";
-  size?: "default" | "sm" | "lg" | "icon";
-  className?: string;
-  children?: React.ReactNode;
 }
 
 export function ReorderButton({
-  orderId,
-  variant = "outline",
-  size = "sm",
-  className,
   children,
+  className,
+  orderId,
+  size = "sm",
+  variant = "outline",
 }: ReorderButtonProps) {
   const router = useRouter();
   const { addItem } = useCart();
@@ -51,18 +51,18 @@ export function ReorderButton({
       }
 
       const data = (await res.json()) as {
-        items: Array<{
+        items: {
+          available: boolean;
+          category: string;
+          image: string;
+          name: string;
+          priceUsd: number;
           productId: string;
           productVariantId?: string;
           quantity: number;
-          name: string;
-          image: string;
           slug?: string;
-          category: string;
-          priceUsd: number;
-          available: boolean;
           unavailableReason?: string;
-        }>;
+        }[];
       };
 
       const items = data.items ?? [];
@@ -84,9 +84,9 @@ export function ReorderButton({
             image: item.image,
             name: item.name,
             price: item.priceUsd,
-            slug: item.slug,
             productId: item.productId,
             productVariantId: item.productVariantId,
+            slug: item.slug,
           },
           item.quantity,
         );
@@ -113,23 +113,23 @@ export function ReorderButton({
 
   return (
     <Button
+      className={className}
+      disabled={loading}
+      onClick={handleReorder}
+      size={size}
       type="button"
       variant={variant}
-      size={size}
-      className={className}
-      onClick={handleReorder}
-      disabled={loading}
     >
       {loading ? (
         <>
-          <Loader2 className="mr-1.5 size-3.5 animate-spin" aria-hidden />
+          <Loader2 aria-hidden className="mr-1.5 size-3.5 animate-spin" />
           Loading…
         </>
       ) : (
         <>
           {children ?? (
             <>
-              <RotateCcw className="mr-1.5 size-3.5" aria-hidden />
+              <RotateCcw aria-hidden className="mr-1.5 size-3.5" />
               Reorder
             </>
           )}

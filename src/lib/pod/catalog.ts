@@ -4,22 +4,23 @@
  */
 
 import type { CatalogBlueprint, PodProvider } from "./types";
+
 import {
   fetchPrintfulBlueprintWithSpecs,
   fetchPrintfulCatalogList,
 } from "./catalog-printful";
 import {
-  fetchPrintifyBlueprintWithSpecs,
   fetchPrintifyBlueprintsList,
+  fetchPrintifyBlueprintWithSpecs,
 } from "./catalog-printify";
 
-export type FetchBlueprintsOptions = {
-  provider?: PodProvider | "all";
-  search?: string;
+export interface FetchBlueprintsOptions {
   category?: string;
   limit?: number;
   offset?: number;
-};
+  provider?: "all" | PodProvider;
+  search?: string;
+}
 
 /**
  * Fetch blueprints (product templates) from one or both providers.
@@ -28,7 +29,7 @@ export type FetchBlueprintsOptions = {
 export async function fetchBlueprints(
   options: FetchBlueprintsOptions = {},
 ): Promise<CatalogBlueprint[]> {
-  const { provider = "all", search, limit = 50, offset = 0 } = options;
+  const { limit = 50, offset = 0, provider = "all", search } = options;
   const results: CatalogBlueprint[] = [];
 
   if (provider === "printify" || provider === "all") {
@@ -88,9 +89,9 @@ export async function searchBlueprints(
 ): Promise<CatalogBlueprint[]> {
   const providerParam = providers.length === 2 ? "all" : providers[0];
   return fetchBlueprints({
+    limit: 100,
     provider: providerParam as FetchBlueprintsOptions["provider"],
     search: query,
-    limit: 100,
   });
 }
 

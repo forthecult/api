@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
     const conditions = [];
     if (
       statusFilter &&
-      ["pending", "approved", "rejected", "suspended"].includes(statusFilter)
+      ["approved", "pending", "rejected", "suspended"].includes(statusFilter)
     ) {
       conditions.push(eq(affiliateTable.status, statusFilter));
     }
@@ -57,22 +57,22 @@ export async function GET(request: NextRequest) {
 
     const affiliates = await db
       .select({
-        id: affiliateTable.id,
-        userId: affiliateTable.userId,
+        applicationNote: affiliateTable.applicationNote,
         code: affiliateTable.code,
-        status: affiliateTable.status,
         commissionType: affiliateTable.commissionType,
         commissionValue: affiliateTable.commissionValue,
+        createdAt: affiliateTable.createdAt,
         customerDiscountType: affiliateTable.customerDiscountType,
         customerDiscountValue: affiliateTable.customerDiscountValue,
+        id: affiliateTable.id,
+        payoutAddress: affiliateTable.payoutAddress,
+        payoutMethod: affiliateTable.payoutMethod,
+        status: affiliateTable.status,
         totalEarnedCents: affiliateTable.totalEarnedCents,
         totalPaidCents: affiliateTable.totalPaidCents,
-        applicationNote: affiliateTable.applicationNote,
-        payoutMethod: affiliateTable.payoutMethod,
-        payoutAddress: affiliateTable.payoutAddress,
-        createdAt: affiliateTable.createdAt,
         updatedAt: affiliateTable.updatedAt,
         userEmail: userTable.email,
+        userId: affiliateTable.userId,
         userName: userTable.name,
       })
       .from(affiliateTable)
@@ -109,30 +109,30 @@ export async function GET(request: NextRequest) {
     const total = countResult?.total ?? 0;
 
     const items = affiliates.map((a) => ({
-      id: a.id,
-      userId: a.userId,
+      applicationNote: a.applicationNote,
       code: a.code,
-      status: a.status,
       commissionType: a.commissionType,
       commissionValue: a.commissionValue,
+      conversionCount: countMap.get(a.id) ?? 0,
+      createdAt: a.createdAt,
       customerDiscountType: a.customerDiscountType,
       customerDiscountValue: a.customerDiscountValue,
+      id: a.id,
+      payoutAddress: a.payoutAddress,
+      payoutMethod: a.payoutMethod,
+      status: a.status,
       totalEarnedCents: a.totalEarnedCents,
       totalPaidCents: a.totalPaidCents,
-      applicationNote: a.applicationNote,
-      payoutMethod: a.payoutMethod,
-      payoutAddress: a.payoutAddress,
-      createdAt: a.createdAt,
       updatedAt: a.updatedAt,
       userEmail: a.userEmail,
+      userId: a.userId,
       userName: a.userName,
-      conversionCount: countMap.get(a.id) ?? 0,
     }));
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount: total,
       totalPages: Math.ceil(total / limit),
     });

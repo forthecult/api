@@ -2,7 +2,7 @@ import { and, eq, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { productVariantsTable, productsTable } from "~/db/schema";
+import { productsTable, productVariantsTable } from "~/db/schema";
 
 /**
  * Get product variants by product slug.
@@ -22,7 +22,7 @@ export async function GET(
     const slug = slugParam.trim();
 
     const [product] = await db
-      .select({ id: productsTable.id, hasVariants: productsTable.hasVariants })
+      .select({ hasVariants: productsTable.hasVariants, id: productsTable.id })
       .from(productsTable)
       .where(
         and(
@@ -42,26 +42,26 @@ export async function GET(
 
     const variants = await db
       .select({
-        id: productVariantsTable.id,
-        size: productVariantsTable.size,
         color: productVariantsTable.color,
         gender: productVariantsTable.gender,
-        priceCents: productVariantsTable.priceCents,
-        stockQuantity: productVariantsTable.stockQuantity,
+        id: productVariantsTable.id,
         imageUrl: productVariantsTable.imageUrl,
+        priceCents: productVariantsTable.priceCents,
+        size: productVariantsTable.size,
+        stockQuantity: productVariantsTable.stockQuantity,
       })
       .from(productVariantsTable)
       .where(eq(productVariantsTable.productId, product.id));
 
     return NextResponse.json({
       variants: variants.map((v) => ({
-        id: v.id,
-        size: v.size ?? undefined,
         color: v.color ?? undefined,
         gender: v.gender ?? undefined,
-        priceCents: v.priceCents,
-        stockQuantity: v.stockQuantity ?? undefined,
+        id: v.id,
         imageUrl: v.imageUrl ?? undefined,
+        priceCents: v.priceCents,
+        size: v.size ?? undefined,
+        stockQuantity: v.stockQuantity ?? undefined,
       })),
     });
   } catch (err) {

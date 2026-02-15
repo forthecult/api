@@ -24,12 +24,12 @@ type ProductCardProps = Omit<
 > & {
   /** When "wide", thumbnail uses 4/3 aspect so the image area is wider. Default "square". */
   imageAspect?: "square" | "wide";
+  isInWishlist?: boolean;
   onAddToCart?: (productId: string) => void;
   onAddToWishlist?: (productId: string) => void;
-  onRemoveFromWishlist?: (productId: string) => void;
   /** Callback to open Quick View. Receives the product slug or id. */
   onQuickView?: (slugOrId: string) => void;
-  isInWishlist?: boolean;
+  onRemoveFromWishlist?: (productId: string) => void;
   /** Hint Next/Image to preload this image (use for above-fold cards). */
   priority?: boolean;
   product: {
@@ -61,11 +61,11 @@ type ProductCardProps = Omit<
 
 /** Memoized star rating component to prevent re-renders */
 const StarRating = React.memo(function StarRating({
-  rating,
   productId,
+  rating,
 }: {
-  rating: number;
   productId: string;
+  rating: number;
 }) {
   const fullStars = Math.floor(rating);
   const hasHalfStar = rating % 1 >= 0.5;
@@ -100,11 +100,11 @@ const NEW_PRODUCT_DAYS = 14;
 function ProductCardInner({
   className,
   imageAspect = "square",
+  isInWishlist: isInWishlistProp,
   onAddToCart,
   onAddToWishlist,
-  onRemoveFromWishlist,
   onQuickView,
-  isInWishlist: isInWishlistProp,
+  onRemoveFromWishlist,
   priority = false,
   product,
   variant = "default",
@@ -212,12 +212,12 @@ function ProductCardInner({
         <Card
           className={cn(
             `
-              relative flex h-full flex-col overflow-hidden rounded-lg py-0
-              border-[#2A2A2A] bg-[#1A1A1A]
-              transition-all duration-300 ease-in-out will-change-transform
-              hover:shadow-lg hover:shadow-[#C4873A]/5 hover:-translate-y-0.5
+              relative flex h-full flex-col overflow-hidden rounded-lg
+              border-[#2A2A2A] bg-[#1A1A1A] py-0 transition-all duration-300
+              ease-in-out will-change-transform
+              hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#C4873A]/5
             `,
-            isHovered && "ring-1 ring-[#C4873A]/20 border-[#C4873A]/20",
+            isHovered && "border-[#C4873A]/20 ring-1 ring-[#C4873A]/20",
           )}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
@@ -238,11 +238,11 @@ function ProductCardInner({
                   isHovered && hoverImage && !hoverImageError && "opacity-0",
                 )}
                 fill
+                onError={() => setImageError(true)}
                 priority={priority}
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 src={imageSrc}
                 unoptimized={isExternalImage}
-                onError={() => setImageError(true)}
               />
             )}
 
@@ -251,28 +251,32 @@ function ProductCardInner({
               <Image
                 alt={`${product.name} - alternate view`}
                 className={cn(
-                  "absolute inset-0 object-contain transition-all duration-300 ease-in-out",
+                  `
+                    absolute inset-0 object-contain transition-all duration-300
+                    ease-in-out
+                  `,
                   isHovered ? "scale-105 opacity-100" : "opacity-0",
                 )}
                 fill
+                onError={() => setHoverImageError(true)}
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 src={hoverImage}
                 unoptimized={/^https?:\/\//i.test(hoverImage)}
-                onError={() => setHoverImageError(true)}
               />
             )}
 
             {/* Token-gated: strong overlay, message, and ungate from thumbnail */}
             {isGated && (
               <div
-                role="button"
-                tabIndex={0}
-                className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-muted p-4 text-center"
                 aria-label={
                   product.tokenGateSummary
                     ? `Token-gated. You need: ${product.tokenGateSummary}`
                     : "Token-gated product. Connect wallet to view."
                 }
+                className={`
+                  absolute inset-0 z-10 flex flex-col items-center
+                  justify-center gap-3 bg-muted p-4 text-center
+                `}
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -285,9 +289,16 @@ function ProductCardInner({
                     setTokenGateOpen(true);
                   }
                 }}
+                role="button"
+                tabIndex={0}
               >
-                <div className="flex size-14 items-center justify-center rounded-full bg-background shadow-lg">
-                  <Lock className="h-7 w-7 text-primary" aria-hidden />
+                <div
+                  className={`
+                  flex size-14 items-center justify-center rounded-full
+                  bg-background shadow-lg
+                `}
+                >
+                  <Lock aria-hidden className="h-7 w-7 text-primary" />
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <span className="text-base font-semibold text-foreground">
@@ -308,14 +319,14 @@ function ProductCardInner({
                   </span>
                 </div>
                 <Button
-                  type="button"
-                  size="sm"
                   className="gap-2"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     setTokenGateOpen(true);
                   }}
+                  size="sm"
+                  type="button"
                 >
                   <Wallet className="h-4 w-4" />
                   Unlock
@@ -333,7 +344,12 @@ function ProductCardInner({
                   {product.category}
                 </Badge>
                 {isNew && (
-                  <Badge className="bg-[#C4873A] text-[#111111] font-semibold hover:bg-[#C4873A]">
+                  <Badge
+                    className={`
+                    bg-[#C4873A] font-semibold text-[#111111]
+                    hover:bg-[#C4873A]
+                  `}
+                  >
                     New
                   </Badge>
                 )}
@@ -350,7 +366,12 @@ function ProductCardInner({
 
             {/* Top-right badges: discount */}
             {!isGated && discount > 0 && (
-              <Badge className="absolute top-2 right-2 z-[5] bg-destructive text-destructive-foreground">
+              <Badge
+                className={`
+                absolute top-2 right-2 z-[5] bg-destructive
+                text-destructive-foreground
+              `}
+              >
                 {discount}% OFF
               </Badge>
             )}
@@ -359,12 +380,16 @@ function ProductCardInner({
             {!isGated && (
               <div
                 className={cn(
-                  "absolute right-2 bottom-2 z-10 flex flex-col gap-1.5 transition-opacity duration-300",
+                  `
+                    absolute right-2 bottom-2 z-10 flex flex-col gap-1.5
+                    transition-opacity duration-300
+                  `,
                   !isHovered && !isInWishlist && "opacity-0",
                 )}
               >
                 {onQuickView && (
                   <Button
+                    aria-label="Quick view"
                     className="rounded-full bg-background/80 backdrop-blur-sm"
                     onClick={(e) => {
                       e.preventDefault();
@@ -374,18 +399,17 @@ function ProductCardInner({
                     size="icon"
                     type="button"
                     variant="outline"
-                    aria-label="Quick view"
                   >
                     <Eye className="h-4 w-4 text-muted-foreground" />
                   </Button>
                 )}
                 <Button
+                  aria-pressed={isInWishlist}
                   className="rounded-full bg-background/80 backdrop-blur-sm"
                   onClick={handleWishlistClick}
                   size="icon"
                   type="button"
                   variant="outline"
-                  aria-pressed={isInWishlist}
                 >
                   <Heart
                     className={cn(
@@ -404,13 +428,14 @@ function ProductCardInner({
           </div>
 
           {!isGated && (
-            <CardContent className="flex flex-1 flex-col p-4 pt-4 min-h-0">
+            <CardContent className="flex min-h-0 flex-1 flex-col p-4 pt-4">
               {/* Product name with line clamp */}
               <h3
                 className={`
-                line-clamp-2 text-base font-medium text-[#F5F1EB] transition-colors
-                group-hover:text-[#C4873A]
-              `}
+                  line-clamp-2 text-base font-medium text-[#F5F1EB]
+                  transition-colors
+                  group-hover:text-[#C4873A]
+                `}
               >
                 {product.name}
               </h3>
@@ -420,26 +445,26 @@ function ProductCardInner({
                   {(product.rating ?? 0) > 0 && (
                     <div className="mt-1.5">
                       <StarRating
-                        rating={product.rating ?? 0}
                         productId={product.id}
+                        rating={product.rating ?? 0}
                       />
                     </div>
                   )}
                   <div className="mt-2 flex items-center gap-1.5">
                     <FiatPrice
-                      usdAmount={product.price}
                       className="font-medium text-[#F5F1EB]"
+                      usdAmount={product.price}
                     />
                     {product.originalPrice ? (
                       <FiatPrice
-                        usdAmount={product.originalPrice}
                         className="text-sm text-[#F5F1EB]/70 line-through"
+                        usdAmount={product.originalPrice}
                       />
                     ) : null}
                   </div>
                   <CryptoPrice
-                    usdAmount={product.price}
                     className="mt-0.5 text-sm text-[#F5F1EB]/80"
+                    usdAmount={product.price}
                   />
                 </>
               )}
@@ -452,7 +477,11 @@ function ProductCardInner({
                 className={cn(
                   "w-full gap-2 transition-all",
                   product.hasVariants &&
-                    "bg-secondary text-[#1A1611] dark:bg-transparent dark:text-[#F5F1EB] [&_svg]:text-inherit",
+                    `
+                      bg-secondary text-[#1A1611]
+                      dark:bg-transparent dark:text-[#F5F1EB]
+                      [&_svg]:text-inherit
+                    `,
                   isAddingToCart && "opacity-70",
                 )}
                 disabled={isAddingToCart || product.inStock === false}
@@ -484,23 +513,28 @@ function ProductCardInner({
                 <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
                     <FiatPrice
-                      usdAmount={product.price}
                       className="font-medium text-[#F5F1EB]"
+                      usdAmount={product.price}
                     />
                     {product.originalPrice ? (
                       <FiatPrice
-                        usdAmount={product.originalPrice}
                         className="text-sm text-[#F5F1EB]/70 line-through"
+                        usdAmount={product.originalPrice}
                       />
                     ) : null}
                   </div>
                   <CryptoPrice
-                    usdAmount={product.price}
                     className="text-[#F5F1EB]/80"
+                    usdAmount={product.price}
                   />
                 </div>
                 {unavailableInCountry ? (
-                  <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                  <span
+                    className={`
+                    text-xs font-medium text-amber-700
+                    dark:text-amber-400
+                  `}
+                  >
                     Unavailable in your country
                   </span>
                 ) : product.inStock === false ? (
@@ -535,16 +569,21 @@ function ProductCardInner({
       </Link>
 
       {product.tokenGated && (
-        <Dialog open={tokenGateOpen} onOpenChange={setTokenGateOpen}>
-          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
+        <Dialog onOpenChange={setTokenGateOpen} open={tokenGateOpen}>
+          <DialogContent
+            className={`
+            max-h-[90vh] overflow-y-auto
+            sm:max-w-md
+          `}
+          >
             <TokenGateGuard
-              resourceType="product"
-              resourceId={product.slug ?? product.id}
               className="min-h-0 py-0"
               onValidated={() => {
                 setTokenGateOpen(false);
                 router.push(`/${product.slug ?? product.id}`);
               }}
+              resourceId={product.slug ?? product.id}
+              resourceType="product"
             />
           </DialogContent>
         </Dialog>

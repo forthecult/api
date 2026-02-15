@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/react";
+
 import { getMainAppUrl } from "~/lib/env";
 
 const baseURL = getMainAppUrl();

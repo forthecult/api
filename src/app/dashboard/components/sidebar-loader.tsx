@@ -17,7 +17,7 @@ const DashboardSidebar = dynamic(
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />
           </div>
-          <Skeleton className="h-4 w-24 mt-4" />
+          <Skeleton className="mt-4 h-4 w-24" />
           <div className="space-y-2">
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-10 w-full" />

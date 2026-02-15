@@ -13,7 +13,7 @@ export const AFFILIATE_COOKIE_MAX_AGE_SECONDS =
  * Get the affiliate code from the cookie (client-side only).
  * Use in checkout to prefill or send with order.
  */
-export function getAffiliateCodeFromDocument(): string | null {
+export function getAffiliateCodeFromDocument(): null | string {
   if (typeof document === "undefined") return null;
   const match = document.cookie.match(
     new RegExp(`(?:^|;\\s*)${AFFILIATE_COOKIE_NAME}=([^;]*)`),

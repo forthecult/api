@@ -10,13 +10,13 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchPrintifyProduct,
-  updatePrintifyProduct,
-  publishPrintifyProduct,
   getPrintifyIfConfigured,
+  publishPrintifyProduct,
+  updatePrintifyProduct,
 } from "~/lib/printify";
-import { getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function POST(
   request: NextRequest,
@@ -62,17 +62,17 @@ export async function POST(
     const product = await fetchPrintifyProduct(pf.shopId, printifyProductId);
 
     const print_areas = product.print_areas.map((pa) => ({
-      variant_ids: pa.variant_ids,
       placeholders: pa.placeholders.map((ph) => ({
-        position: ph.position,
         images: ph.images.map((img) => ({
+          angle: img.angle,
           id: imageId,
+          scale: img.scale,
           x: img.x,
           y: img.y,
-          scale: img.scale,
-          angle: img.angle,
         })),
+        position: ph.position,
       })),
+      variant_ids: pa.variant_ids,
     }));
 
     await updatePrintifyProduct(pf.shopId, printifyProductId, { print_areas });
@@ -80,9 +80,9 @@ export async function POST(
     await publishPrintifyProduct(pf.shopId, printifyProductId).catch(() => {});
 
     return NextResponse.json({
+      message: "Design updated and publish triggered; mockups will regenerate.",
       ok: true,
       printifyProductId,
-      message: "Design updated and publish triggered; mockups will regenerate.",
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

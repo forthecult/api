@@ -22,53 +22,33 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type AffiliateDetail = {
-  id: string;
-  userId: string | null;
+interface AffiliateDetail {
+  adminNote: null | string;
+  applicationNote: null | string;
   code: string;
-  status: string;
   commissionType: string;
   commissionValue: number;
-  customerDiscountType: string | null;
-  customerDiscountValue: number | null;
-  applicationNote: string | null;
-  adminNote: string | null;
-  payoutMethod: string | null;
-  payoutAddress: string | null;
+  conversionCount: number;
+  createdAt: string;
+  customerDiscountType: null | string;
+  customerDiscountValue: null | number;
+  id: string;
+  payoutAddress: null | string;
+  payoutMethod: null | string;
+  status: string;
   totalEarnedCents: number;
   totalPaidCents: number;
-  createdAt: string;
   updatedAt: string;
-  userEmail: string | null;
-  userName: string | null;
-  conversionCount: number;
-};
-
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
-function formatDate(s: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
+  userEmail: null | string;
+  userId: null | string;
+  userName: null | string;
 }
 
 export default function AdminAffiliateDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [affiliate, setAffiliate] = useState<AffiliateDetail | null>(null);
 
   const [status, setStatus] = useState("");
@@ -82,10 +62,10 @@ export default function AdminAffiliateDetailPage() {
   const [payoutMethod, setPayoutMethod] = useState("");
   const [payoutAddress, setPayoutAddress] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: "success" | "error";
+  const [saveMessage, setSaveMessage] = useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
 
   const fetchAffiliate = useCallback(async () => {
     if (!id) return;
@@ -132,13 +112,13 @@ export default function AdminAffiliateDetailPage() {
     setSaveLoading(true);
     try {
       const body: Record<string, unknown> = {
-        status,
+        adminNote: adminNote.trim() || null,
         code: code.trim() || undefined,
         commissionType,
         commissionValue,
-        adminNote: adminNote.trim() || null,
-        payoutMethod: payoutMethod.trim() || null,
         payoutAddress: payoutAddress.trim() || null,
+        payoutMethod: payoutMethod.trim() || null,
+        status,
       };
       if (customerDiscountType) {
         body.customerDiscountType = customerDiscountType;
@@ -149,23 +129,23 @@ export default function AdminAffiliateDetailPage() {
         body.customerDiscountValue = null;
       }
       const res = await fetch(`${API_BASE}/api/admin/affiliates/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       const json = (await res.json().catch(() => ({}))) as {
-        updated?: boolean;
         error?: string;
+        updated?: boolean;
       };
       if (!res.ok) {
         setSaveMessage({
-          type: "error",
           text: json.error ?? "Failed to update",
+          type: "error",
         });
         return;
       }
-      setSaveMessage({ type: "success", text: "Saved." });
+      setSaveMessage({ text: "Saved.", type: "success" });
       void fetchAffiliate();
     } finally {
       setSaveLoading(false);
@@ -174,7 +154,11 @@ export default function AdminAffiliateDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -183,13 +167,18 @@ export default function AdminAffiliateDetailPage() {
   if (error || !affiliate) {
     return (
       <div className="space-y-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/affiliates" className="gap-2">
+        <Button asChild size="sm" variant="ghost">
+          <Link className="gap-2" href="/affiliates">
             <ChevronLeft className="h-4 w-4" />
             Back to affiliates
           </Link>
         </Button>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       </div>
@@ -199,8 +188,8 @@ export default function AdminAffiliateDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/affiliates" className="gap-2">
+        <Button asChild size="sm" variant="ghost">
+          <Link className="gap-2" href="/affiliates">
             <ChevronLeft className="h-4 w-4" />
             Back
           </Link>
@@ -215,7 +204,12 @@ export default function AdminAffiliateDetailPage() {
           <CardTitle>Overview</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+          <dl
+            className={`
+            grid gap-2 text-sm
+            sm:grid-cols-2
+          `}
+          >
             <div>
               <dt className="text-muted-foreground">User</dt>
               <dd className="font-medium">
@@ -270,18 +264,23 @@ export default function AdminAffiliateDetailPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+          <form className="space-y-4" onSubmit={handleSave}>
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div>
                 <label className={labelClass} htmlFor="status">
                   Status
                 </label>
                 <select
-                  id="status"
-                  className={inputClass}
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
                   aria-label="Status"
+                  className={inputClass}
+                  id="status"
+                  onChange={(e) => setStatus(e.target.value)}
+                  value={status}
                 >
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
@@ -294,27 +293,32 @@ export default function AdminAffiliateDetailPage() {
                   Code
                 </label>
                 <input
-                  id="code"
-                  type="text"
                   className={inputClass}
-                  value={code}
+                  id="code"
+                  maxLength={64}
                   onChange={(e) => setCode(e.target.value)}
                   placeholder="e.g. JOHN10"
-                  maxLength={64}
+                  type="text"
+                  value={code}
                 />
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div>
                 <label className={labelClass} htmlFor="commissionType">
                   Commission type
                 </label>
                 <select
-                  id="commissionType"
                   className={inputClass}
-                  value={commissionType}
+                  id="commissionType"
                   onChange={(e) => setCommissionType(e.target.value)}
+                  value={commissionType}
                 >
                   <option value="percent">Percent</option>
                   <option value="fixed">Fixed (cents)</option>
@@ -326,29 +330,34 @@ export default function AdminAffiliateDetailPage() {
                   {commissionType === "percent" ? "0–100" : "cents"})
                 </label>
                 <input
-                  id="commissionValue"
-                  type="number"
-                  min={0}
-                  max={commissionType === "percent" ? 100 : undefined}
                   className={inputClass}
-                  value={commissionValue}
+                  id="commissionValue"
+                  max={commissionType === "percent" ? 100 : undefined}
+                  min={0}
                   onChange={(e) =>
                     setCommissionValue(Number(e.target.value) || 0)
                   }
+                  type="number"
+                  value={commissionValue}
                 />
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div>
                 <label className={labelClass} htmlFor="customerDiscountType">
                   Customer discount type (optional)
                 </label>
                 <select
-                  id="customerDiscountType"
                   className={inputClass}
-                  value={customerDiscountType}
+                  id="customerDiscountType"
                   onChange={(e) => setCustomerDiscountType(e.target.value)}
+                  value={customerDiscountType}
                 >
                   <option value="">None</option>
                   <option value="percent">Percent</option>
@@ -361,15 +370,15 @@ export default function AdminAffiliateDetailPage() {
                     Customer discount value
                   </label>
                   <input
-                    id="customerDiscountValue"
-                    type="number"
-                    min={0}
                     className={inputClass}
-                    value={customerDiscountValue}
+                    id="customerDiscountValue"
+                    min={0}
                     onChange={(e) => setCustomerDiscountValue(e.target.value)}
                     placeholder={
                       customerDiscountType === "percent" ? "10" : "500"
                     }
+                    type="number"
+                    value={customerDiscountValue}
                   />
                 </div>
               )}
@@ -380,25 +389,30 @@ export default function AdminAffiliateDetailPage() {
                 Admin note (internal)
               </label>
               <textarea
-                id="adminNote"
                 className={cn(inputClass, "min-h-[80px] resize-y")}
-                value={adminNote}
+                id="adminNote"
                 onChange={(e) => setAdminNote(e.target.value)}
                 placeholder="Internal notes..."
                 rows={3}
+                value={adminNote}
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div>
                 <label className={labelClass} htmlFor="payoutMethod">
                   Payout method
                 </label>
                 <select
-                  id="payoutMethod"
                   className={inputClass}
-                  value={payoutMethod}
+                  id="payoutMethod"
                   onChange={(e) => setPayoutMethod(e.target.value)}
+                  value={payoutMethod}
                 >
                   <option value="">—</option>
                   <option value="paypal">PayPal</option>
@@ -412,12 +426,12 @@ export default function AdminAffiliateDetailPage() {
                   Payout address / email
                 </label>
                 <input
-                  id="payoutAddress"
-                  type="text"
                   className={inputClass}
-                  value={payoutAddress}
+                  id="payoutAddress"
                   onChange={(e) => setPayoutAddress(e.target.value)}
                   placeholder="PayPal email or wallet address"
+                  type="text"
+                  value={payoutAddress}
                 />
               </div>
             </div>
@@ -427,15 +441,21 @@ export default function AdminAffiliateDetailPage() {
                 className={cn(
                   "text-sm",
                   saveMessage.type === "success"
-                    ? "text-green-600 dark:text-green-400"
-                    : "text-red-600 dark:text-red-400",
+                    ? `
+                      text-green-600
+                      dark:text-green-400
+                    `
+                    : `
+                      text-red-600
+                      dark:text-red-400
+                    `,
                 )}
               >
                 {saveMessage.text}
               </p>
             )}
 
-            <Button type="submit" disabled={saveLoading}>
+            <Button disabled={saveLoading} type="submit">
               {saveLoading ? "Saving…" : "Save changes"}
               <Save className="ml-2 h-4 w-4" />
             </Button>
@@ -444,4 +464,24 @@ export default function AdminAffiliateDetailPage() {
       </Card>
     </div>
   );
+}
+
+function formatCents(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
+  }).format(cents / 100);
+}
+
+function formatDate(s: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
 }

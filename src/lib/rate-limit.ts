@@ -7,10 +7,10 @@
 
 import type { NextRequest } from "next/server";
 
-type RateLimitEntry = {
+interface RateLimitEntry {
   count: number;
   resetAt: number;
-};
+}
 
 const store = new Map<string, RateLimitEntry>();
 
@@ -37,9 +37,9 @@ export interface RateLimitConfig {
 }
 
 export interface RateLimitResult {
-  success: boolean;
   remaining: number;
   resetAt: number;
+  success: boolean;
 }
 
 /** In-memory check (sync). */
@@ -60,9 +60,9 @@ function checkRateLimitMemory(
     };
     store.set(key, entry);
     return {
-      success: true,
       remaining: config.limit - 1,
       resetAt: entry.resetAt,
+      success: true,
     };
   }
 
@@ -70,16 +70,16 @@ function checkRateLimitMemory(
 
   if (entry.count > config.limit) {
     return {
-      success: false,
       remaining: 0,
       resetAt: entry.resetAt,
+      success: false,
     };
   }
 
   return {
-    success: true,
     remaining: config.limit - entry.count,
     resetAt: entry.resetAt,
+    success: true,
   };
 }
 
@@ -88,17 +88,6 @@ const redisLimiterCache = new Map<
   string,
   Awaited<ReturnType<typeof createRedisLimiter>>
 >();
-
-async function createRedisLimiter(config: RateLimitConfig) {
-  const { Ratelimit } = await import("@upstash/ratelimit");
-  const { Redis } = await import("@upstash/redis");
-  const redis = Redis.fromEnv();
-  return new Ratelimit({
-    redis,
-    limiter: Ratelimit.fixedWindow(config.limit, `${config.windowSeconds} s`),
-    prefix: "rl",
-  });
-}
 
 /** Redis-backed check when Upstash env is set. */
 async function checkRateLimitRedis(
@@ -114,10 +103,21 @@ async function checkRateLimitRedis(
 
   const res = await limiter.limit(identifier);
   return {
-    success: res.success,
     remaining: res.remaining,
     resetAt: res.reset,
+    success: res.success,
   };
+}
+
+async function createRedisLimiter(config: RateLimitConfig) {
+  const { Ratelimit } = await import("@upstash/ratelimit");
+  const { Redis } = await import("@upstash/redis");
+  const redis = Redis.fromEnv();
+  return new Ratelimit({
+    limiter: Ratelimit.fixedWindow(config.limit, `${config.windowSeconds} s`),
+    prefix: "rl",
+    redis,
+  });
 }
 
 function isRedisConfigured(): boolean {
@@ -168,6 +168,10 @@ export function getClientIp(headers: Headers): string {
 
 /** Preset rate limit configs. Kept generous to avoid blocking normal use. */
 export const RATE_LIMITS = {
+  /** Admin API: 200/min per IP so dashboards and scripts are not blocked */
+  admin: { limit: 200, windowSeconds: 60 } as RateLimitConfig,
+  /** General API: 100 requests per minute (agent capabilities, me, orders, preferences) */
+  api: { limit: 100, windowSeconds: 60 } as RateLimitConfig,
   /** Auth endpoints: 180/min per IP so multiple admin tabs (session checks) don't hit 429 */
   auth: { limit: 180, windowSeconds: 60 } as RateLimitConfig,
   /**
@@ -176,18 +180,14 @@ export const RATE_LIMITS = {
   authUnknownIp: { limit: 300, windowSeconds: 60 } as RateLimitConfig,
   /** Checkout/order creation: 5 requests per minute */
   checkout: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
-  /** Admin API: 200/min per IP so dashboards and scripts are not blocked */
-  admin: { limit: 200, windowSeconds: 60 } as RateLimitConfig,
-  /** Order status polling: 120/min per IP (~2/s, enough for several orders polling every 5s) */
-  orderStatus: { limit: 120, windowSeconds: 60 } as RateLimitConfig,
-  /** General API: 100 requests per minute (agent capabilities, me, orders, preferences) */
-  api: { limit: 100, windowSeconds: 60 } as RateLimitConfig,
-  /** Search / product listing: 30 requests per minute (agent/products, semantic-search) */
-  search: { limit: 30, windowSeconds: 60 } as RateLimitConfig,
   /** Contact form: 5 submissions per minute per IP (spam protection) */
   contact: { limit: 5, windowSeconds: 60 } as RateLimitConfig,
   /** Loqate address lookup: 30 requests per minute per IP (quota protection) */
   loqate: { limit: 30, windowSeconds: 60 } as RateLimitConfig,
+  /** Order status polling: 120/min per IP (~2/s, enough for several orders polling every 5s) */
+  orderStatus: { limit: 120, windowSeconds: 60 } as RateLimitConfig,
+  /** Search / product listing: 30 requests per minute (agent/products, semantic-search) */
+  search: { limit: 30, windowSeconds: 60 } as RateLimitConfig,
 } as const;
 
 /**
@@ -223,6 +223,6 @@ export function rateLimitResponse(
       error: "Too many requests",
       retryAfter: Math.ceil((result.resetAt - Date.now()) / 1000),
     }),
-    { status: 429, headers },
+    { headers, status: 429 },
   );
 }

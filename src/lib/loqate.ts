@@ -4,37 +4,37 @@
  */
 
 export interface LoqateFindItem {
-  Id: string;
-  Type: string;
-  Text: string;
   Description?: string;
   Highlight?: string;
+  Id: string;
+  Text: string;
+  Type: string;
 }
 
 export interface LoqateRetrieveAddress {
-  Line1?: string;
-  Line2?: string;
-  Street?: string;
-  City?: string;
-  ProvinceCode?: string;
   AdminAreaCode?: string;
-  ProvinceName?: string;
   AdminAreaName?: string;
-  PostalCode?: string;
+  BuildingName?: string;
+  BuildingNumber?: string;
+  City?: string;
   CountryIso2?: string;
   CountryIso3?: string;
+  Line1?: string;
+  Line2?: string;
+  PostalCode?: string;
+  ProvinceCode?: string;
+  ProvinceName?: string;
+  Street?: string;
   SubBuilding?: string;
-  BuildingNumber?: string;
-  BuildingName?: string;
 }
 
 export interface MappedShippingAddress {
-  street: string;
   apartment: string;
   city: string;
-  state: string;
-  zip: string;
   country: string;
+  state: string;
+  street: string;
+  zip: string;
 }
 
 /**
@@ -60,5 +60,5 @@ export function mapRetrieveToShipping(
     "";
   const zip = addr.PostalCode?.trim() || "";
   const country = addr.CountryIso2?.trim() || addr.CountryIso3?.trim() || "";
-  return { street, apartment, city, state, zip, country };
+  return { apartment, city, country, state, street, zip };
 }

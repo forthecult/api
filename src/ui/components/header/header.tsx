@@ -7,21 +7,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { SEO_CONFIG } from "~/app";
-import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
+import { cn } from "~/lib/cn";
+import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import {
   CRYPTO_CATEGORY_NAMES_SET,
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 } from "~/lib/storefront-categories";
-import { cn } from "~/lib/cn";
 import { Cart } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
 import { NotificationsWidget } from "../notifications/notifications-widget";
-import { HeaderSearch } from "./header-search";
 import { HeaderGuestDropdown } from "./header-guest-dropdown";
+import { HeaderSearch } from "./header-search";
 import { HeaderUserDropdown } from "./header-user";
 import { MobileNavSheet } from "./mobile-nav-sheet";
 import { ShopByCryptoMenu } from "./shop-by-crypto-menu";
@@ -33,7 +33,7 @@ function throttle<T extends (...args: unknown[]) => void>(
   delay: number,
 ): T {
   let lastCall = 0;
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let timeoutId: null | ReturnType<typeof setTimeout> = null;
 
   return ((...args: Parameters<T>) => {
     const now = Date.now();
@@ -68,7 +68,7 @@ interface HeaderProps {
   showAuth?: boolean;
 }
 
-export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
+export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { isPending, user } = useCurrentUser();
@@ -88,18 +88,18 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
     Boolean(user?.email && ADMIN_EMAILS.has(user.email.trim().toLowerCase()));
 
   const [shopCategories, setShopCategories] = useState<
-    Array<{
+    {
       id: string;
       name: string;
-      slug?: string;
       productCount?: number;
-      subcategories?: Array<{
+      slug?: string;
+      subcategories?: {
         id: string;
         name: string;
-        slug?: string;
         productCount?: number;
-      }>;
-    }>
+        slug?: string;
+      }[];
+    }[]
   >([]);
 
   // Mega menu: exclude crypto categories (they appear in Shop by Crypto when user has Web3)
@@ -208,10 +208,10 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       .then((res) => (res.ok ? res.json() : null))
       .then(
         (
-          data: {
-            transactional?: { website?: boolean };
+          data: null | {
             marketing?: { website?: boolean };
-          } | null,
+            transactional?: { website?: boolean };
+          },
         ) => {
           if (!data) return;
           const transactional = data.transactional?.website ?? true;
@@ -253,7 +253,7 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       signal: controller.signal,
     })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { categories?: typeof shopCategories } | null) => {
+      .then((data: null | { categories?: typeof shopCategories }) => {
         if (data?.categories) setShopCategories(data.categories);
       })
       .catch(() => {})
@@ -353,7 +353,11 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
   const headerEl = (
     <header
       className={cn(
-        "w-full border-b border-border bg-background/95 text-foreground backdrop-blur-md supports-[backdrop-filter]:bg-background/80",
+        `
+          w-full border-b border-border bg-background/95 text-foreground
+          backdrop-blur-md
+          supports-[backdrop-filter]:bg-background/80
+        `,
         !isCheckout && "sticky top-0 z-40",
       )}
     >
@@ -366,11 +370,20 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       >
         <div className="flex h-16 items-center justify-between">
           {/* Left: desktop = logo + nav; mobile = hamburger + logo. Same container padding as dashboard so content aligns. */}
-          <div className="flex items-center gap-4 md:gap-6">
+          <div
+            className={`
+            flex items-center gap-4
+            md:gap-6
+          `}
+          >
             {!isCheckout && (
               <Button
                 aria-label="Open menu"
-                className="md:hidden text-[#1A1611] dark:text-[#F5F1EB]"
+                className={`
+                  text-[#1A1611]
+                  md:hidden
+                  dark:text-[#F5F1EB]
+                `}
                 onClick={() => setMobileMenuOpen(true)}
                 size="icon"
                 variant="ghost"
@@ -381,19 +394,26 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
             <Link className="flex items-center gap-2" href="/">
               {SEO_CONFIG.brandLogoUrl ? (
                 <Image
-                  src={SEO_CONFIG.brandLogoUrl}
                   alt={SEO_CONFIG.name}
-                  width={140}
-                  height={32}
                   className="h-8 w-auto object-contain"
+                  height={32}
                   priority
+                  src={SEO_CONFIG.brandLogoUrl}
+                  width={140}
                 />
               ) : (
                 <span
                   className={cn(
-                    "font-heading text-lg font-bold tracking-[0.2em] uppercase text-[#1A1611] dark:text-[#F5F1EB]",
+                    `
+                      font-heading text-lg font-bold tracking-[0.2em]
+                      text-[#1A1611] uppercase
+                      dark:text-[#F5F1EB]
+                    `,
                     !isDashboard &&
-                      "hover:text-primary transition-colors duration-300",
+                      `
+                        transition-colors duration-300
+                        hover:text-primary
+                      `,
                   )}
                 >
                   {SEO_CONFIG.name}
@@ -401,7 +421,12 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
               )}
             </Link>
             {!isCheckout && (
-              <nav className="hidden md:flex">
+              <nav
+                className={`
+                hidden
+                md:flex
+              `}
+              >
                 <ul className="flex items-center gap-6">
                   {authPending ? (
                     <>
@@ -433,7 +458,11 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "accent-underline text-base font-medium tracking-wider transition-colors hover:text-primary",
+                            `
+                              accent-underline text-base font-medium
+                              tracking-wider transition-colors
+                              hover:text-primary
+                            `,
                             "normal-case", // show as "eSIM" not "ESIM"
                             pathname?.startsWith("/esim")
                               ? "font-semibold text-primary"
@@ -447,7 +476,11 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
                       <li>
                         <Link
                           className={cn(
-                            "accent-underline text-base font-medium uppercase tracking-wider transition-colors hover:text-primary",
+                            `
+                              accent-underline text-base font-medium
+                              tracking-wider uppercase transition-colors
+                              hover:text-primary
+                            `,
                             pathname === "/about"
                               ? "font-semibold text-primary"
                               : "text-muted-foreground",
@@ -465,7 +498,12 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
           </div>
 
           {/* Right: search, user, cart; on mobile same order, no NotificationsWidget */}
-          <div className="flex items-center gap-2 md:gap-4">
+          <div
+            className={`
+            flex items-center gap-2
+            md:gap-4
+          `}
+          >
             {authPending ? (
               <>
                 <Skeleton className="h-9 w-9 rounded-full" />
@@ -475,17 +513,32 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
               <>
                 {/* Desktop: search icon; mobile: search bar below; hidden on checkout */}
                 {!isCheckout && (
-                  <div className="hidden md:block">
+                  <div
+                    className={`
+                    hidden
+                    md:block
+                  `}
+                  >
                     <HeaderSearch />
                   </div>
                 )}
                 {!isCheckout && user && websiteNotificationsOn === true && (
-                  <div className="hidden md:flex">
+                  <div
+                    className={`
+                    hidden
+                    md:flex
+                  `}
+                  >
                     <NotificationsWidget />
                   </div>
                 )}
                 {showAuth && !isCheckout && (user || !isCheckout) && (
-                  <div className="hidden md:block">
+                  <div
+                    className={`
+                    hidden
+                    md:block
+                  `}
+                  >
                     {user ? (
                       <HeaderUserDropdown
                         isAdmin={isAdmin}
@@ -507,20 +560,29 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
         {/* Mobile: always-visible search bar below main header */}
         {!isCheckout && (
           <form
+            className={`
+              flex items-center gap-2 border-t
+              md:hidden
+            `}
             onSubmit={handleMobileSearchSubmit}
-            className="flex items-center gap-2 border-t md:hidden"
           >
             <Search
-              className="ml-2 h-4 w-4 shrink-0 text-[#1A1611] dark:text-[#F5F1EB]"
               aria-hidden
+              className={`
+                ml-2 h-4 w-4 shrink-0 text-[#1A1611]
+                dark:text-[#F5F1EB]
+              `}
             />
             <Input
-              type="search"
-              placeholder="Search products..."
-              value={mobileSearchQuery}
-              onChange={(e) => setMobileSearchQuery(e.target.value)}
-              className="border-0 bg-transparent py-2 shadow-none focus-visible:ring-0"
               aria-label="Search products"
+              className={`
+                border-0 bg-transparent py-2 shadow-none
+                focus-visible:ring-0
+              `}
+              onChange={(e) => setMobileSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              type="search"
+              value={mobileSearchQuery}
             />
           </form>
         )}
@@ -529,15 +591,15 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
       {/* Mobile nav drawer — no crypto ticker */}
       {!isCheckout && (
         <MobileNavSheet
-          open={mobileMenuOpen}
-          onOpenChange={setMobileMenuOpen}
-          categories={filteredShopCategories}
-          pathname={pathname}
-          user={user}
           authPending={authPending}
+          categories={filteredShopCategories}
           isAdmin={isAdmin}
-          showAuth={showAuth}
           isShopActive={isShopActive}
+          onOpenChange={setMobileMenuOpen}
+          open={mobileMenuOpen}
+          pathname={pathname}
+          showAuth={showAuth}
+          user={user}
         />
       )}
     </header>
@@ -547,7 +609,10 @@ export function Header({ showAuth = true, isAdmin: isAdminProp }: HeaderProps) {
     return (
       <div
         className={cn(
-          "sticky top-0 z-40 overflow-hidden transition-[max-height] duration-200 ease-out",
+          `
+            sticky top-0 z-40 overflow-hidden transition-[max-height]
+            duration-200 ease-out
+          `,
           headerHidden ? "max-h-0" : "max-h-24",
         )}
       >

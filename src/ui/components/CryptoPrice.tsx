@@ -6,11 +6,11 @@ import { cn } from "~/lib/cn";
 import { useCryptoCurrency } from "~/lib/hooks/use-crypto-currency";
 
 interface CryptoPriceProps {
-  usdAmount: number;
   className?: string;
+  usdAmount: number;
 }
 
-export function CryptoPrice({ usdAmount, className }: CryptoPriceProps) {
+export function CryptoPrice({ className, usdAmount }: CryptoPriceProps) {
   const [mounted, setMounted] = useState(false);
   const { convertUsdToCrypto, formatCrypto } = useCryptoCurrency();
 
@@ -21,12 +21,12 @@ export function CryptoPrice({ usdAmount, className }: CryptoPriceProps) {
   if (!mounted) {
     return (
       <span
+        aria-hidden
         className={cn(
           "font-mono-crypto text-sm text-muted-foreground",
           className,
         )}
         data-crypto-price
-        aria-hidden
         style={{ minWidth: "8ch" }}
       >
         {"\u00A0"}

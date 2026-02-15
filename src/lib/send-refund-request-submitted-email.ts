@@ -7,14 +7,14 @@ import { getPublicSiteUrl } from "~/lib/app-url";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendRefundRequestSubmittedEmailParams {
-  to: string;
   orderId: string;
+  to: string;
 }
 
 export async function sendRefundRequestSubmittedEmail(
   params: SendRefundRequestSubmittedEmailParams,
 ): Promise<void> {
-  const { to, orderId } = params;
+  const { orderId, to } = params;
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("refund_request_submitted");
   const subject = template.emailSubject ?? "Refund request received";
@@ -37,10 +37,10 @@ export async function sendRefundRequestSubmittedEmail(
           : "onboarding@resend.dev";
       await resend.emails.send({
         from,
-        to,
+        html: `<!DOCTYPE html><html><body><p>${body.replace(/\n/g, "<br/>")}</p></body></html>`,
         subject,
         text: body,
-        html: `<!DOCTYPE html><html><body><p>${body.replace(/\n/g, "<br/>")}</p></body></html>`,
+        to,
       });
     } catch (err) {
       console.error(
@@ -55,9 +55,9 @@ export async function sendRefundRequestSubmittedEmail(
     console.log(
       "[sendRefundRequestSubmittedEmail] No RESEND_API_KEY - would send:",
       {
-        to,
-        subject,
         body: body.slice(0, 200),
+        subject,
+        to,
       },
     );
   }

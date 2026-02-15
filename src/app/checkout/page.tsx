@@ -9,7 +9,12 @@ export const metadata = {
 
 export default function CheckoutPage() {
   return (
-    <div className="container mx-auto py-8 md:py-10">
+    <div
+      className={`
+      container mx-auto py-8
+      md:py-10
+    `}
+    >
       <CheckoutLoader />
     </div>
   );

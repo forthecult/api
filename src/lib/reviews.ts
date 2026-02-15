@@ -8,10 +8,10 @@ import { createHmac } from "node:crypto";
  *   derived from the review id and server secret (not reversible, not guessable).
  */
 export function getReviewDisplayName(review: {
-  id: string;
+  author?: null | string;
   customerName: string;
+  id: string;
   showName: boolean;
-  author?: string | null;
 }): string {
   if (review.author?.trim()) return review.author.trim();
   if (review.showName && review.customerName.trim()) {

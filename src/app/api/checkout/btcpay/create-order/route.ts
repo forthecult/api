@@ -2,7 +2,6 @@ import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
-import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   buildSuccessRedirectUrl,
   buildWebhookUrl,
@@ -19,6 +18,7 @@ import {
   validateAndFetchProducts,
   validateTotal,
 } from "~/lib/checkout/create-order-helpers";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   checkRateLimit,
   getClientIp,
@@ -55,21 +55,21 @@ export async function POST(request: NextRequest) {
     }
 
     const {
-      reference,
-      email,
-      orderItems: rawItems,
-      totalCents,
-      shippingFeeCents = 0,
-      taxCents = 0,
-      emailMarketingConsent,
-      smsMarketingConsent,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
       affiliateCode,
       couponCode,
-      wallet,
+      email,
+      emailMarketingConsent,
+      orderItems: rawItems,
+      reference,
       shipping,
+      shippingFeeCents = 0,
+      smsMarketingConsent,
+      taxCents = 0,
+      telegramFirstName,
+      telegramUserId,
+      telegramUsername,
+      totalCents,
+      wallet,
     } = validation.data;
 
     const token =
@@ -84,23 +84,23 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { validatedItems, productIds, subtotalCents } = productResult;
+    const { productIds, subtotalCents, validatedItems } = productResult;
 
     // ── Resolve discounts ──────────────────────────────────────────────
     const { affiliateResult, couponResult, expectedTotal } =
       await resolveDiscounts({
         affiliateCode,
         couponCode,
-        subtotalCents,
-        shippingFeeCents,
-        userId: session?.user?.id,
-        productIds,
-        paymentMethodKey: "crypto_bitcoin",
         items: validatedItems.map((i) => ({
-          productId: i.productId,
           priceCents: i.priceCents,
+          productId: i.productId,
           quantity: i.quantity,
         })),
+        paymentMethodKey: "crypto_bitcoin",
+        productIds,
+        shippingFeeCents,
+        subtotalCents,
+        userId: session?.user?.id,
         wallet: wallet ?? undefined,
       });
 
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
     const origin =
       process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://forthecult.store";
 
-    let btcpayInvoiceId: string | null = null;
-    let btcpayInvoiceUrl: string | null = null;
+    let btcpayInvoiceId: null | string = null;
+    let btcpayInvoiceUrl: null | string = null;
     const { configured } = getBtcpayConfig();
 
     if (configured) {
@@ -142,11 +142,11 @@ export async function POST(request: NextRequest) {
             ? validatedItems[0].name
             : `Order ${orderId} (${validatedItems.length} items)`;
         const invoice = await createBtcpayInvoice({
-          price: priceUsd,
           currency: "USD",
-          orderId,
           itemDesc,
           notificationURL: buildWebhookUrl(origin),
+          orderId,
+          price: priceUsd,
           redirectURL: buildSuccessRedirectUrl(origin, orderId),
         });
         if (invoice) {
@@ -168,18 +168,18 @@ export async function POST(request: NextRequest) {
     // ── Insert order ───────────────────────────────────────────────────
     await insertOrder(
       {
-        orderId,
+        affiliateResult,
         email,
+        orderId,
         paymentMethod: "btcpay",
-        totalCents: totalCheck.expectedTotal,
+        reference,
         shippingFeeCents,
         taxCents,
-        userId: userIdVal,
-        reference,
+        telegramFirstName,
         telegramUserId,
         telegramUsername,
-        telegramFirstName,
-        affiliateResult,
+        totalCents: totalCheck.expectedTotal,
+        userId: userIdVal,
       },
       {
         cryptoCurrency,
@@ -207,32 +207,32 @@ export async function POST(request: NextRequest) {
 
     // ── Post-order bookkeeping ─────────────────────────────────────────
     await postOrderBookkeeping({
-      orderId,
-      userId: userIdVal,
       affiliateResult,
       couponResult,
       emailMarketingConsent,
+      orderId,
       smsMarketingConsent,
+      userId: userIdVal,
     });
 
     // ── eSIM order records (for cart items with esimPackageId) ──────────
     await createEsimOrderRecordsForOrder({
-      orderId,
-      userId: userIdVal,
-      paymentMethod: "btcpay",
       items: validatedItems,
+      orderId,
+      paymentMethod: "btcpay",
+      userId: userIdVal,
     });
 
     return NextResponse.json({
-      orderId,
-      confirmationToken: generateOrderConfirmationToken(orderId),
       configured,
+      confirmationToken: generateOrderConfirmationToken(orderId),
+      orderId,
       ...(btcpayInvoiceId && { invoiceId: btcpayInvoiceId }),
       ...(btcpayInvoiceUrl && { invoiceUrl: btcpayInvoiceUrl }),
       _actions: {
-        next: "Redirect to /checkout/{orderId}#bitcoin (or #doge, #monero) and poll status until paid.",
         cancel: `POST /api/orders/${orderId}/cancel (only before payment)`,
         help: "Contact support@forthecult.store",
+        next: "Redirect to /checkout/{orderId}#bitcoin (or #doge, #monero) and poll status until paid.",
       },
     });
   } catch (err) {

@@ -1,7 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { fetchBlueprintWithSpecs } from "@/lib/pod/catalog";
-import { getAdminAuth } from "@/lib/admin-api-auth";
+
 import type { PodProvider } from "@/lib/pod/types";
+
+import { getAdminAuth } from "@/lib/admin-api-auth";
+import { fetchBlueprintWithSpecs } from "@/lib/pod/catalog";
 
 /**
  * GET /api/admin/pod/catalog/[blueprintId]
@@ -19,7 +21,7 @@ export async function GET(
   }
   const { blueprintId } = await params;
   const { searchParams } = new URL(request.url);
-  const provider = searchParams.get("provider") as PodProvider | null;
+  const provider = searchParams.get("provider") as null | PodProvider;
   const printProviderIdParam = searchParams.get("printProviderId");
   if (!provider || (provider !== "printify" && provider !== "printful")) {
     return NextResponse.json(

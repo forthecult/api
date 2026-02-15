@@ -7,11 +7,12 @@
  * @see https://metamask.io/developer/sdk
  */
 
+import type { MetaMaskSDKOptions } from "@metamask/sdk";
+
 import {
   MetaMaskProvider as SDKMetaMaskProvider,
   useSDK,
 } from "@metamask/sdk-react";
-import type { MetaMaskSDKOptions } from "@metamask/sdk";
 
 type MetaMaskProviderProps = React.PropsWithChildren<{
   /** optional overrides; dappMetadata is set by default */

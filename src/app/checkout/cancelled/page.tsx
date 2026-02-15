@@ -17,7 +17,11 @@ export const metadata = {
 
 export default function CheckoutCancelledPage() {
   return (
-    <div className="container flex min-h-[60vh] flex-col items-center justify-center py-16">
+    <div
+      className={`
+      container flex min-h-[60vh] flex-col items-center justify-center py-16
+    `}
+    >
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Checkout cancelled</CardTitle>
@@ -30,7 +34,7 @@ export default function CheckoutCancelledPage() {
           <Button asChild className="w-full">
             <Link href="/products">Continue shopping</Link>
           </Button>
-          <Button asChild variant="outline" className="w-full">
+          <Button asChild className="w-full" variant="outline">
             <Link href="/">Back to home</Link>
           </Button>
         </CardContent>

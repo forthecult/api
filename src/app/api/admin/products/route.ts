@@ -9,8 +9,8 @@ import {
   or,
   sql,
 } from "drizzle-orm";
-import { type NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import {
@@ -18,14 +18,14 @@ import {
   productAvailableCountryTable,
   productCategoriesTable,
   productImagesTable,
-  productTokenGateTable,
   productsTable,
   productTagsTable,
+  productTokenGateTable,
   productVariantsTable,
 } from "~/db/schema";
-import { isShippingExcluded } from "~/lib/shipping-restrictions";
-import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
+import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { slugify } from "~/lib/slugify";
 
 /** Escape SQL LIKE/ILIKE special characters */
@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
       const rows = await db
         .select({
           id: productsTable.id,
-          printifyProductId: productsTable.printifyProductId,
           name: productsTable.name,
+          printifyProductId: productsTable.printifyProductId,
         })
         .from(productsTable)
         .where(
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
         .filter((r) => r.printifyProductId != null)
         .map((r) => ({
           id: r.id,
-          printifyProductId: r.printifyProductId!,
           name: r.name,
+          printifyProductId: r.printifyProductId!,
         }));
       return NextResponse.json({ products });
     }
@@ -162,25 +162,25 @@ export async function GET(request: NextRequest) {
                   ? [sortOrder(productsTable.quantity)]
                   : [sortOrder(productsTable.createdAt)];
 
-    type ProductWithRelations = {
-      id: string;
-      name: string;
-      slug: string | null;
-      imageUrl: string | null;
-      priceCents: number;
-      published: boolean;
-      brand: string | null;
-      vendor: string | null;
-      trackQuantity: boolean;
+    interface ProductWithRelations {
+      brand: null | string;
       hasVariants: boolean;
-      quantity: number | null;
-      productCategories?: Array<{
-        isMain?: boolean;
-        categoryId?: string;
+      id: string;
+      imageUrl: null | string;
+      name: string;
+      priceCents: number;
+      productCategories?: {
         category?: { name?: string; slug?: string };
-      }>;
-      productVariants?: Array<{ stockQuantity?: number | null }>;
-    };
+        categoryId?: string;
+        isMain?: boolean;
+      }[];
+      productVariants?: { stockQuantity?: null | number }[];
+      published: boolean;
+      quantity: null | number;
+      slug: null | string;
+      trackQuantity: boolean;
+      vendor: null | string;
+    }
     let products: ProductWithRelations[] = [];
     let countResult: { count: number }[] = [{ count: 0 }];
 
@@ -242,16 +242,16 @@ export async function GET(request: NextRequest) {
       } else {
         const [prods, count] = await Promise.all([
           db.query.productsTable.findMany({
-            where: whereClause,
+            limit,
+            offset,
             orderBy,
+            where: whereClause,
             with: {
               productCategories: {
                 with: { category: true },
               },
               productVariants: { columns: { stockQuantity: true } },
             },
-            limit,
-            offset,
           }),
           whereClause !== undefined
             ? db
@@ -286,17 +286,17 @@ export async function GET(request: NextRequest) {
             : [desc(productsTable.createdAt)];
       const selectQuery = db
         .select({
+          brand: productsTable.brand,
+          hasVariants: productsTable.hasVariants,
           id: productsTable.id,
-          name: productsTable.name,
-          slug: productsTable.slug,
           imageUrl: productsTable.imageUrl,
+          name: productsTable.name,
           priceCents: productsTable.priceCents,
           published: productsTable.published,
-          brand: productsTable.brand,
-          vendor: productsTable.vendor,
-          trackQuantity: productsTable.trackQuantity,
-          hasVariants: productsTable.hasVariants,
           quantity: productsTable.quantity,
+          slug: productsTable.slug,
+          trackQuantity: productsTable.trackQuantity,
+          vendor: productsTable.vendor,
         })
         .from(productsTable)
         .orderBy(...fallbackOrder)
@@ -350,7 +350,7 @@ export async function GET(request: NextRequest) {
         inventory = "Not tracked";
       } else if (p.hasVariants && variants.length > 0) {
         const total = variants.reduce(
-          (sum: number, v: { stockQuantity?: number | null }) =>
+          (sum: number, v: { stockQuantity?: null | number }) =>
             sum + (v.stockQuantity ?? 0),
           0,
         );
@@ -361,24 +361,24 @@ export async function GET(request: NextRequest) {
         inventory = "Not tracked";
       }
       return {
+        brand: p.brand,
+        categoryId: mainPc?.categoryId ?? null,
+        categoryName: mainPc?.category?.name ?? null,
         id: p.id,
-        name: p.name,
-        slug: p.slug ?? null,
         imageUrl: p.imageUrl,
+        inventory,
+        name: p.name,
         priceCents: p.priceCents,
         published: p.published,
-        brand: p.brand,
-        categoryName: mainPc?.category?.name ?? null,
-        categoryId: mainPc?.categoryId ?? null,
+        slug: p.slug ?? null,
         vendor: p.vendor,
-        inventory,
       };
     });
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });
@@ -400,72 +400,72 @@ export async function POST(request: NextRequest) {
     if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
-      name: string;
-      priceCents: number;
-      description?: string | null;
-      features?: string[];
-      imageUrl?: string | null;
-      mainImageAlt?: string | null;
-      mainImageTitle?: string | null;
-      metaDescription?: string | null;
-      pageTitle?: string | null;
-      seoOptimized?: boolean;
-      compareAtPriceCents?: number | null;
-      costPerItemCents?: number | null;
-      brand?: string | null;
-      vendor?: string | null;
-      slug?: string | null;
-      sku?: string | null;
-      barcode?: string | null;
-      weightGrams?: number | null;
-      weightUnit?: string | null;
-      physicalProduct?: boolean;
-      trackQuantity?: boolean;
-      continueSellingWhenOutOfStock?: boolean;
-      quantity?: number | null;
-      hsCode?: string | null;
-      countryOfOrigin?: string | null;
-      shipsFromDisplay?: string | null;
-      shipsFromCountry?: string | null;
-      shipsFromRegion?: string | null;
-      shipsFromCity?: string | null;
-      shipsFromPostalCode?: string | null;
-      published?: boolean;
-      hidden?: boolean;
-      categoryId?: string | null;
-      hasVariants?: boolean;
-      optionDefinitionsJson?: string | null;
-      tokenGated?: boolean;
-      tokenGateType?: string | null;
-      tokenGateQuantity?: number | null;
-      tokenGateNetwork?: string | null;
-      tokenGateContractAddress?: string | null;
-      tokenGates?: Array<{
-        id?: string;
-        tokenSymbol: string;
-        quantity: number;
-        network?: string | null;
-        contractAddress?: string | null;
-      }>;
-      images?: Array<{
-        id?: string;
-        url: string;
-        alt?: string | null;
-        title?: string | null;
-        sortOrder?: number;
-      }>;
-      tags?: string[];
-      variants?: Array<{
-        id?: string;
-        size?: string | null;
-        color?: string | null;
-        label?: string | null;
-        sku?: string | null;
-        stockQuantity?: number | null;
-        priceCents: number;
-        imageUrl?: string | null;
-      }>;
       availableCountryCodes?: string[];
+      barcode?: null | string;
+      brand?: null | string;
+      categoryId?: null | string;
+      compareAtPriceCents?: null | number;
+      continueSellingWhenOutOfStock?: boolean;
+      costPerItemCents?: null | number;
+      countryOfOrigin?: null | string;
+      description?: null | string;
+      features?: string[];
+      hasVariants?: boolean;
+      hidden?: boolean;
+      hsCode?: null | string;
+      images?: {
+        alt?: null | string;
+        id?: string;
+        sortOrder?: number;
+        title?: null | string;
+        url: string;
+      }[];
+      imageUrl?: null | string;
+      mainImageAlt?: null | string;
+      mainImageTitle?: null | string;
+      metaDescription?: null | string;
+      name: string;
+      optionDefinitionsJson?: null | string;
+      pageTitle?: null | string;
+      physicalProduct?: boolean;
+      priceCents: number;
+      published?: boolean;
+      quantity?: null | number;
+      seoOptimized?: boolean;
+      shipsFromCity?: null | string;
+      shipsFromCountry?: null | string;
+      shipsFromDisplay?: null | string;
+      shipsFromPostalCode?: null | string;
+      shipsFromRegion?: null | string;
+      sku?: null | string;
+      slug?: null | string;
+      tags?: string[];
+      tokenGateContractAddress?: null | string;
+      tokenGated?: boolean;
+      tokenGateNetwork?: null | string;
+      tokenGateQuantity?: null | number;
+      tokenGates?: {
+        contractAddress?: null | string;
+        id?: string;
+        network?: null | string;
+        quantity: number;
+        tokenSymbol: string;
+      }[];
+      tokenGateType?: null | string;
+      trackQuantity?: boolean;
+      variants?: {
+        color?: null | string;
+        id?: string;
+        imageUrl?: null | string;
+        label?: null | string;
+        priceCents: number;
+        size?: null | string;
+        sku?: null | string;
+        stockQuantity?: null | number;
+      }[];
+      vendor?: null | string;
+      weightGrams?: null | number;
+      weightUnit?: null | string;
     };
 
     if (typeof body.name !== "string" || !body.name.trim()) {
@@ -487,9 +487,14 @@ export async function POST(request: NextRequest) {
     const slug = body.slug?.trim() || slugify(name) || null;
 
     await db.insert(productsTable).values({
-      id,
-      name,
-      priceCents: Math.round(body.priceCents),
+      barcode: body.barcode?.trim() ?? null,
+      brand: body.brand?.trim() ?? null,
+      compareAtPriceCents: body.compareAtPriceCents ?? null,
+      continueSellingWhenOutOfStock:
+        body.continueSellingWhenOutOfStock ?? false,
+      costPerItemCents: body.costPerItemCents ?? null,
+      countryOfOrigin: body.countryOfOrigin?.trim() ?? null,
+      createdAt: now,
       description: body.description?.trim() ?? null,
       featuresJson:
         Array.isArray(body.features) && body.features.length > 0
@@ -499,47 +504,42 @@ export async function POST(request: NextRequest) {
               ),
             )
           : null,
+      hasVariants: body.hasVariants ?? false,
+      hidden: body.hidden ?? false,
+      hsCode: body.hsCode?.trim() ?? null,
+      id,
       imageUrl: body.imageUrl?.trim() ?? null,
       mainImageAlt: body.mainImageAlt?.trim() ?? null,
       mainImageTitle: body.mainImageTitle?.trim() ?? null,
       metaDescription: body.metaDescription?.trim() ?? null,
-      pageTitle: body.pageTitle?.trim() ?? null,
-      seoOptimized: body.seoOptimized ?? false,
-      compareAtPriceCents: body.compareAtPriceCents ?? null,
-      costPerItemCents: body.costPerItemCents ?? null,
-      brand: body.brand?.trim() ?? null,
-      vendor: body.vendor?.trim() ?? null,
-      slug,
-      sku: body.sku?.trim() ?? null,
-      barcode: body.barcode?.trim() ?? null,
-      weightGrams: body.weightGrams ?? null,
-      weightUnit: body.weightUnit ?? null,
-      physicalProduct: body.physicalProduct ?? true,
-      trackQuantity: body.trackQuantity ?? false,
-      continueSellingWhenOutOfStock:
-        body.continueSellingWhenOutOfStock ?? false,
-      quantity: body.quantity ?? null,
-      hsCode: body.hsCode?.trim() ?? null,
-      countryOfOrigin: body.countryOfOrigin?.trim() ?? null,
-      shipsFromDisplay: body.shipsFromDisplay?.trim() ?? null,
-      shipsFromCountry: body.shipsFromCountry?.trim() ?? null,
-      shipsFromRegion: body.shipsFromRegion?.trim() ?? null,
-      shipsFromCity: body.shipsFromCity?.trim() ?? null,
-      shipsFromPostalCode: body.shipsFromPostalCode?.trim() ?? null,
-      published: body.published ?? true,
-      hidden: body.hidden ?? false,
-      hasVariants: body.hasVariants ?? false,
+      name,
       optionDefinitionsJson: body.optionDefinitionsJson ?? null,
+      pageTitle: body.pageTitle?.trim() ?? null,
+      physicalProduct: body.physicalProduct ?? true,
+      priceCents: Math.round(body.priceCents),
+      published: body.published ?? true,
+      quantity: body.quantity ?? null,
+      seoOptimized: body.seoOptimized ?? false,
+      shipsFromCity: body.shipsFromCity?.trim() ?? null,
+      shipsFromCountry: body.shipsFromCountry?.trim() ?? null,
+      shipsFromDisplay: body.shipsFromDisplay?.trim() ?? null,
+      shipsFromPostalCode: body.shipsFromPostalCode?.trim() ?? null,
+      shipsFromRegion: body.shipsFromRegion?.trim() ?? null,
+      sku: body.sku?.trim() ?? null,
+      slug,
+      source: "manual",
+      tokenGateContractAddress: body.tokenGateContractAddress ?? null,
       tokenGated:
         (Array.isArray(body.tokenGates) && body.tokenGates.length > 0) ||
         (body.tokenGated ?? false),
-      tokenGateType: body.tokenGateType ?? null,
-      tokenGateQuantity: body.tokenGateQuantity ?? null,
       tokenGateNetwork: body.tokenGateNetwork ?? null,
-      tokenGateContractAddress: body.tokenGateContractAddress ?? null,
-      source: "manual",
-      createdAt: now,
+      tokenGateQuantity: body.tokenGateQuantity ?? null,
+      tokenGateType: body.tokenGateType ?? null,
+      trackQuantity: body.trackQuantity ?? false,
       updatedAt: now,
+      vendor: body.vendor?.trim() ?? null,
+      weightGrams: body.weightGrams ?? null,
+      weightUnit: body.weightUnit ?? null,
     });
 
     if (Array.isArray(body.tokenGates) && body.tokenGates.length > 0) {
@@ -551,12 +551,12 @@ export async function POST(request: NextRequest) {
           const qty = Number(gate.quantity);
           if (!symbol || !Number.isInteger(qty) || qty < 1) return null;
           return {
-            id: gate.id ?? crypto.randomUUID(),
-            productId: id,
-            tokenSymbol: symbol,
-            quantity: qty,
-            network: gate.network?.trim() || null,
             contractAddress: gate.contractAddress?.trim() || null,
+            id: gate.id ?? crypto.randomUUID(),
+            network: gate.network?.trim() || null,
+            productId: id,
+            quantity: qty,
+            tokenSymbol: symbol,
           };
         })
         .filter((v): v is NonNullable<typeof v> => v !== null);
@@ -568,9 +568,9 @@ export async function POST(request: NextRequest) {
     const categoryId = body.categoryId?.trim() || null;
     if (categoryId) {
       await db.insert(productCategoriesTable).values({
-        productId: id,
         categoryId,
         isMain: true,
+        productId: id,
       });
     }
 
@@ -588,8 +588,8 @@ export async function POST(request: NextRequest) {
       ];
       for (const code of codes) {
         await db.insert(productAvailableCountryTable).values({
-          productId: id,
           countryCode: code,
+          productId: id,
         });
       }
     }
@@ -599,12 +599,12 @@ export async function POST(request: NextRequest) {
         .map((img, i) => {
           if (!img?.url?.trim()) return null;
           return {
+            alt: img.alt?.trim() ?? null,
             id: img.id ?? crypto.randomUUID(),
             productId: id,
-            url: img.url.trim(),
-            alt: img.alt?.trim() ?? null,
-            title: img.title?.trim() ?? null,
             sortOrder: typeof img.sortOrder === "number" ? img.sortOrder : i,
+            title: img.title?.trim() ?? null,
+            url: img.url.trim(),
           };
         })
         .filter((v): v is NonNullable<typeof v> => v !== null);
@@ -625,26 +625,26 @@ export async function POST(request: NextRequest) {
     if (body.variants?.length && body.hasVariants) {
       await db.insert(productVariantsTable).values(
         body.variants.map((v) => ({
+          color: v.color?.trim() ?? null,
+          createdAt: now,
           id: v.id ?? crypto.randomUUID(),
+          imageUrl: v.imageUrl?.trim() ?? null,
+          label: v.label?.trim() ?? null,
+          priceCents: v.priceCents,
           productId: id,
           size: v.size?.trim() ?? null,
-          color: v.color?.trim() ?? null,
-          label: v.label?.trim() ?? null,
           sku: v.sku?.trim() ?? null,
           stockQuantity: v.stockQuantity ?? null,
-          priceCents: v.priceCents,
-          imageUrl: v.imageUrl?.trim() ?? null,
-          createdAt: now,
           updatedAt: now,
         })),
       );
     }
 
     await applyCategoryAutoRules({
-      id,
-      name,
       brand: body.brand?.trim() ?? null,
       createdAt: now,
+      id,
+      name,
     });
 
     revalidatePath("/api/products");

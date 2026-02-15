@@ -52,9 +52,9 @@ export async function POST(
       .where(eq(supportChatConversationTable.id, conversationId));
 
     return NextResponse.json({
+      message: "You have taken over this chat. AI will no longer reply.",
       success: true,
       takenOverBy: adminUserId,
-      message: "You have taken over this chat. AI will no longer reply.",
     });
   } catch (err) {
     console.error("Admin support-chat takeover:", err);

@@ -1,16 +1,11 @@
 import type { NextRequest } from "next/server";
 
+import { apiError, apiSuccess } from "~/lib/api-error";
 import { withPublicApiCors } from "~/lib/cors-public-api";
 import { getProductBySlugOrId } from "~/lib/product-by-slug";
-import { apiError, apiSuccess } from "~/lib/api-error";
 
 /** Always return fresh product data so variants (e.g. Printful size/color) are never stale on customer frontend. */
 export const dynamic = "force-dynamic";
-
-export async function OPTIONS() {
-  const { publicApiCorsPreflight } = await import("~/lib/cors-public-api");
-  return publicApiCorsPreflight();
-}
 
 /**
  * Single product details by slug. 404 if not found or not published.
@@ -52,4 +47,9 @@ export async function GET(
     console.error("Product by slug error:", err);
     return withPublicApiCors(apiError("INTERNAL_ERROR"));
   }
+}
+
+export async function OPTIONS() {
+  const { publicApiCorsPreflight } = await import("~/lib/cors-public-api");
+  return publicApiCorsPreflight();
 }

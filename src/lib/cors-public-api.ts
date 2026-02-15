@@ -6,16 +6,16 @@ import { NextResponse } from "next/server";
  * Allow-Origin: * (no credentials).
  */
 export const PUBLIC_API_CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Accept",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Max-Age": "86400",
 };
 
 export function publicApiCorsPreflight() {
   return new NextResponse(null, {
-    status: 204,
     headers: PUBLIC_API_CORS_HEADERS,
+    status: 204,
   });
 }
 

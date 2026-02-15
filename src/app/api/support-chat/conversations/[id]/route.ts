@@ -30,10 +30,10 @@ export async function GET(
 
   const [conv] = await db
     .select({
+      createdAt: supportChatConversationTable.createdAt,
       id: supportChatConversationTable.id,
       status: supportChatConversationTable.status,
       takenOverBy: supportChatConversationTable.takenOverBy,
-      createdAt: supportChatConversationTable.createdAt,
       updatedAt: supportChatConversationTable.updatedAt,
     })
     .from(supportChatConversationTable)
@@ -49,8 +49,8 @@ export async function GET(
 
   const [full] = await db
     .select({
-      userId: supportChatConversationTable.userId,
       guestId: supportChatConversationTable.guestId,
+      userId: supportChatConversationTable.userId,
     })
     .from(supportChatConversationTable)
     .where(eq(supportChatConversationTable.id, conversationId))
@@ -88,9 +88,9 @@ export async function PATCH(
 
   const [full] = await db
     .select({
-      userId: supportChatConversationTable.userId,
       guestId: supportChatConversationTable.guestId,
       status: supportChatConversationTable.status,
+      userId: supportChatConversationTable.userId,
     })
     .from(supportChatConversationTable)
     .where(eq(supportChatConversationTable.id, conversationId))
@@ -112,7 +112,7 @@ export async function PATCH(
   }
 
   if (full.status === "closed") {
-    return NextResponse.json({ status: "closed", id: conversationId });
+    return NextResponse.json({ id: conversationId, status: "closed" });
   }
 
   try {
@@ -124,8 +124,8 @@ export async function PATCH(
       })
       .where(eq(supportChatConversationTable.id, conversationId));
     return NextResponse.json({
-      status: "closed",
       id: conversationId,
+      status: "closed",
     });
   } catch (err) {
     console.error("Support chat conversation close:", err);

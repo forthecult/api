@@ -24,72 +24,106 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/ui/primitives/tabs";
 
 // ---------- Types ----------
 
-type Country = {
-  id: number;
-  name: string;
-  image_url: string;
-};
-
-type Continent = {
-  id: number;
-  name: string;
+interface Continent {
   code: string;
+  id: number;
   image_url: string;
-};
-
-type Package = {
-  id: string;
   name: string;
-  price: string;
+}
+
+interface Country {
+  id: number;
+  image_url: string;
+  name: string;
+}
+
+type DataFilter = "1" | "1-5" | "5-10" | "10-25" | "25+" | "all" | "unlimited";
+
+interface Package {
   data_quantity: number;
   data_unit: string;
-  voice_quantity?: number;
-  voice_unit?: string;
-  sms_quantity?: number;
-  package_validity: number;
-  package_validity_unit: string;
-  package_type?: string;
-  unlimited?: boolean;
   /** When true, show 5G badge (from coverage data; list API may not provide this). */
   has5g?: boolean;
-};
-
-type ValidityFilter = "all" | "7" | "14" | "30" | "30+";
-type DataFilter = "all" | "1" | "1-5" | "5-10" | "10-25" | "25+" | "unlimited";
-
-function matchesValidity(pkg: Package, filter: ValidityFilter): boolean {
-  if (filter === "all") return true;
-  const days = (pkg.package_validity_unit ?? "day")
-    .toLowerCase()
-    .startsWith("day")
-    ? pkg.package_validity
-    : pkg.package_validity;
-  if (filter === "7") return days === 7;
-  if (filter === "14") return days === 14;
-  if (filter === "30") return days === 30;
-  if (filter === "30+") return days >= 30;
-  return true;
+  id: string;
+  name: string;
+  package_type?: string;
+  package_validity: number;
+  package_validity_unit: string;
+  price: string;
+  sms_quantity?: number;
+  unlimited?: boolean;
+  voice_quantity?: number;
+  voice_unit?: string;
 }
-
-function matchesData(pkg: Package, filter: DataFilter): boolean {
-  if (filter === "all") return true;
-  if (filter === "unlimited") return Boolean(pkg.unlimited);
-  const gb =
-    (pkg.data_unit ?? "GB").toUpperCase() === "GB"
-      ? pkg.data_quantity
-      : pkg.data_quantity / 1024;
-  if (filter === "1") return gb >= 0.5 && gb < 2;
-  if (filter === "1-5") return gb >= 1 && gb < 5;
-  if (filter === "5-10") return gb >= 5 && gb < 10;
-  if (filter === "10-25") return gb >= 10 && gb < 25;
-  if (filter === "25+") return gb >= 25;
-  return true;
-}
-
 /** One card (single package) or a group of unlimited packages (same product line). */
 type PlanItem =
-  | { type: "single"; pkg: Package }
-  | { type: "unlimited"; baseName: string; packages: Package[] };
+  | { baseName: string; packages: Package[]; type: "unlimited" }
+  | { pkg: Package; type: "single" };
+
+type ValidityFilter = "7" | "14" | "30" | "30+" | "all";
+
+function ContinentCard({
+  continent,
+  onClick,
+}: {
+  continent: Continent;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={cn(
+        `
+          flex flex-col items-center gap-2 rounded-lg border bg-card p-5
+          transition-all
+        `,
+        `
+          cursor-pointer
+          hover:border-primary/30 hover:shadow-md
+        `,
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      <Globe className="h-8 w-8 text-primary" />
+      <span className="text-sm font-semibold">{continent.name}</span>
+    </button>
+  );
+}
+
+function CountryCard({
+  country,
+  onClick,
+}: {
+  country: Country;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      className={cn(
+        `
+          flex items-center gap-3 rounded-lg border bg-card p-3 text-left
+          transition-all
+        `,
+        `
+          w-full cursor-pointer
+          hover:border-primary/30 hover:shadow-md
+        `,
+      )}
+      onClick={onClick}
+      type="button"
+    >
+      <Image
+        alt={country.name}
+        className="rounded-sm object-cover"
+        height={28}
+        src={country.image_url}
+        unoptimized
+        width={40}
+      />
+      <span className="text-sm font-medium">{country.name}</span>
+    </button>
+  );
+}
 
 function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
   const unlimitedGroups = new Map<string, Package[]>();
@@ -122,26 +156,64 @@ function groupPackagesForDisplay(packages: Package[]): PlanItem[] {
       const variant = parts.length >= 3 ? parts[2]!.trim() : "";
       const baseName =
         variant && variant !== "default" ? `${base} (${variant})` : base;
-      result.push({ type: "unlimited", baseName, packages: pkgs });
+      result.push({ baseName, packages: pkgs, type: "unlimited" });
     } else {
       singles.push(pkgs[0]!);
     }
   }
   for (const pkg of singles) {
-    result.push({ type: "single", pkg });
+    result.push({ pkg, type: "single" });
   }
   return result;
 }
 
 // ---------- Sub-components ----------
 
+function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
+  return (
+    <div className="flex items-center justify-center gap-2 py-16">
+      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      <span className="text-sm text-muted-foreground">{text}</span>
+    </div>
+  );
+}
+
+function matchesData(pkg: Package, filter: DataFilter): boolean {
+  if (filter === "all") return true;
+  if (filter === "unlimited") return Boolean(pkg.unlimited);
+  const gb =
+    (pkg.data_unit ?? "GB").toUpperCase() === "GB"
+      ? pkg.data_quantity
+      : pkg.data_quantity / 1024;
+  if (filter === "1") return gb >= 0.5 && gb < 2;
+  if (filter === "1-5") return gb >= 1 && gb < 5;
+  if (filter === "5-10") return gb >= 5 && gb < 10;
+  if (filter === "10-25") return gb >= 10 && gb < 25;
+  if (filter === "25+") return gb >= 25;
+  return true;
+}
+
+function matchesValidity(pkg: Package, filter: ValidityFilter): boolean {
+  if (filter === "all") return true;
+  const days = (pkg.package_validity_unit ?? "day")
+    .toLowerCase()
+    .startsWith("day")
+    ? pkg.package_validity
+    : pkg.package_validity;
+  if (filter === "7") return days === 7;
+  if (filter === "14") return days === 14;
+  if (filter === "30") return days === 30;
+  if (filter === "30+") return days >= 30;
+  return true;
+}
+
 function PackageCard({
-  pkg,
   onAddToCart,
+  pkg,
   returnQuery,
 }: {
-  pkg: Package;
   onAddToCart?: (pkg: Package) => void;
+  pkg: Package;
   /** Query string to append so Back from detail returns to same filters (e.g. tab=countries&country=5). */
   returnQuery?: string;
 }) {
@@ -149,29 +221,42 @@ function PackageCard({
     ? `/esim/${pkg.id}?${returnQuery}`
     : `/esim/${pkg.id}`;
   return (
-    <Card className="group relative h-full transition-all hover:shadow-md hover:border-primary/30 flex flex-col">
+    <Card
+      className={`
+      group relative flex h-full flex-col transition-all
+      hover:border-primary/30 hover:shadow-md
+    `}
+    >
       {pkg.has5g && (
         <span
-          className="absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary shadow-sm"
+          className={`
+            absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded
+            bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary
+            shadow-sm
+          `}
           title="5G available"
         >
           <Signal className="h-3 w-3" />
           5G
         </span>
       )}
-      <Link href={detailHref} className="flex flex-col flex-1 min-h-0">
-        <CardContent className="flex flex-col gap-3 p-5 flex-1">
+      <Link className="flex min-h-0 flex-1 flex-col" href={detailHref}>
+        <CardContent className="flex flex-1 flex-col gap-3 p-5">
           <div className="flex items-start justify-between gap-2">
             <h3
               className={cn(
-                "text-sm font-semibold leading-tight line-clamp-2 group-hover:text-primary transition-colors",
+                `
+                  line-clamp-2 text-sm leading-tight font-semibold
+                  transition-colors
+                  group-hover:text-primary
+                `,
                 pkg.has5g && "pr-12",
               )}
             >
               {formatEsimPackageName(pkg.name)}
             </h3>
             {pkg.package_type === "DATA-VOICE-SMS" && (
-              <Badge variant="secondary" className="shrink-0 text-[10px]">
+              <Badge className="shrink-0 text-[10px]" variant="secondary">
                 Voice+SMS
               </Badge>
             )}
@@ -210,32 +295,36 @@ function PackageCard({
               )}
             </div>
           )}
-          <div className="mt-auto pt-2 flex items-start justify-between gap-2 border-t">
+          <div
+            className={`
+            mt-auto flex items-start justify-between gap-2 border-t pt-2
+          `}
+          >
             <div className="flex flex-col gap-0.5">
               <span className="text-xl font-bold text-primary">
                 ${pkg.price}
               </span>
               <CryptoPrice
-                usdAmount={Number(pkg.price)}
                 className="text-sm text-muted-foreground"
+                usdAmount={Number(pkg.price)}
               />
             </div>
-            <span className="text-xs text-muted-foreground shrink-0">
+            <span className="shrink-0 text-xs text-muted-foreground">
               ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
             </span>
           </div>
         </CardContent>
       </Link>
       {onAddToCart && (
-        <div className="px-5 pb-5 pt-0">
+        <div className="px-5 pt-0 pb-5">
           <Button
-            variant="outline"
-            size="sm"
             className="w-full"
             onClick={(e) => {
               e.preventDefault();
               onAddToCart(pkg);
             }}
+            size="sm"
+            variant="outline"
           >
             Add to Cart
           </Button>
@@ -247,13 +336,13 @@ function PackageCard({
 
 function UnlimitedPlanCard({
   baseName,
-  packages: groupPackages,
   onAddToCart,
+  packages: groupPackages,
   returnQuery,
 }: {
   baseName: string;
-  packages: Package[];
   onAddToCart?: (pkg: Package) => void;
+  packages: Package[];
   returnQuery?: string;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -266,20 +355,29 @@ function UnlimitedPlanCard({
     : "#";
 
   return (
-    <Card className="group relative flex h-full flex-col transition-all hover:shadow-md hover:border-primary/30">
+    <Card
+      className={`
+      group relative flex h-full flex-col transition-all
+      hover:border-primary/30 hover:shadow-md
+    `}
+    >
       {has5g && (
         <span
-          className="absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary shadow-sm"
+          className={`
+            absolute top-3 right-3 z-10 inline-flex items-center gap-0.5 rounded
+            bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary
+            shadow-sm
+          `}
           title="5G available"
         >
           <Signal className="h-3 w-3" />
           5G
         </span>
       )}
-      <CardContent className="flex flex-col gap-3 p-5 flex-1">
+      <CardContent className="flex flex-1 flex-col gap-3 p-5">
         <h3
           className={cn(
-            "text-sm font-semibold leading-tight text-primary",
+            "text-sm leading-tight font-semibold text-primary",
             has5g && "pr-12",
           )}
         >
@@ -293,8 +391,8 @@ function UnlimitedPlanCard({
             <span className="text-xs text-muted-foreground">USD</span>
           </div>
           <CryptoPrice
-            usdAmount={Number(selected.price)}
             className="text-sm text-muted-foreground"
+            usdAmount={Number(selected.price)}
           />
         </div>
         {(groupPackages[0]?.package_type === "DATA-VOICE-SMS" ||
@@ -328,10 +426,13 @@ function UnlimitedPlanCard({
             Days
           </label>
           <select
-            value={selectedIndex}
-            onChange={(e) => setSelectedIndex(Number(e.target.value))}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-medium"
             aria-label="Select duration"
+            className={`
+              w-full rounded-md border border-input bg-background px-3 py-2
+              text-sm font-medium
+            `}
+            onChange={(e) => setSelectedIndex(Number(e.target.value))}
+            value={selectedIndex}
           >
             {groupPackages.map((pkg, i) => (
               <option key={pkg.id} value={i}>
@@ -340,7 +441,11 @@ function UnlimitedPlanCard({
             ))}
           </select>
         </div>
-        <div className="mt-auto flex items-center gap-2 pt-2 text-sm text-muted-foreground">
+        <div
+          className={`
+          mt-auto flex items-center gap-2 pt-2 text-sm text-muted-foreground
+        `}
+        >
           <Globe className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">
             {(() => {
@@ -358,23 +463,26 @@ function UnlimitedPlanCard({
         </div>
         <div className="flex items-center gap-2 border-t pt-3">
           <Link
+            className={`
+              text-sm font-medium text-primary
+              hover:underline
+            `}
             href={detailHref}
-            className="text-sm font-medium text-primary hover:underline"
           >
             View Details →
           </Link>
         </div>
       </CardContent>
       {onAddToCart && (
-        <div className="px-5 pb-5 pt-0">
+        <div className="px-5 pt-0 pb-5">
           <Button
-            variant="outline"
-            size="sm"
             className="w-full"
             onClick={(e) => {
               e.preventDefault();
               onAddToCart(selected);
             }}
+            size="sm"
+            variant="outline"
           >
             Add to Cart
           </Button>
@@ -384,112 +492,34 @@ function UnlimitedPlanCard({
   );
 }
 
-function CountryCard({
-  country,
-  onClick,
-}: {
-  country: Country;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 rounded-lg border bg-card p-3 text-left transition-all",
-        "hover:shadow-md hover:border-primary/30 cursor-pointer w-full",
-      )}
-    >
-      <Image
-        src={country.image_url}
-        alt={country.name}
-        width={40}
-        height={28}
-        className="rounded-sm object-cover"
-        unoptimized
-      />
-      <span className="text-sm font-medium">{country.name}</span>
-    </button>
-  );
-}
-
-function ContinentCard({
-  continent,
-  onClick,
-}: {
-  continent: Continent;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex flex-col items-center gap-2 rounded-lg border bg-card p-5 transition-all",
-        "hover:shadow-md hover:border-primary/30 cursor-pointer",
-      )}
-    >
-      <Globe className="h-8 w-8 text-primary" />
-      <span className="text-sm font-semibold">{continent.name}</span>
-    </button>
-  );
-}
-
-function LoadingSpinner({ text = "Loading..." }: { text?: string }) {
-  return (
-    <div className="flex items-center justify-center gap-2 py-16">
-      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-      <span className="text-sm text-muted-foreground">{text}</span>
-    </div>
-  );
-}
-
 // ---------- Main Component ----------
 
-const VALIDITY_OPTIONS: { value: ValidityFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "7", label: "7 days" },
-  { value: "14", label: "14 days" },
-  { value: "30", label: "30 days" },
-  { value: "30+", label: "30+ days" },
+const VALIDITY_OPTIONS: { label: string; value: ValidityFilter }[] = [
+  { label: "All", value: "all" },
+  { label: "7 days", value: "7" },
+  { label: "14 days", value: "14" },
+  { label: "30 days", value: "30" },
+  { label: "30+ days", value: "30+" },
 ];
 
-const DATA_OPTIONS: { value: DataFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "1", label: "1 GB" },
-  { value: "1-5", label: "1-5 GB" },
-  { value: "5-10", label: "5-10 GB" },
-  { value: "10-25", label: "10-25 GB" },
-  { value: "25+", label: "25+ GB" },
-  { value: "unlimited", label: "Unlimited" },
+const DATA_OPTIONS: { label: string; value: DataFilter }[] = [
+  { label: "All", value: "all" },
+  { label: "1 GB", value: "1" },
+  { label: "1-5 GB", value: "1-5" },
+  { label: "5-10 GB", value: "5-10" },
+  { label: "10-25 GB", value: "10-25" },
+  { label: "25+ GB", value: "25+" },
+  { label: "Unlimited", value: "unlimited" },
 ];
-
-function parseValidity(s: string | null): ValidityFilter {
-  if (s === "7" || s === "14" || s === "30" || s === "30+") return s;
-  return "all";
-}
-
-function parseData(s: string | null): DataFilter {
-  if (
-    s === "1" ||
-    s === "1-5" ||
-    s === "5-10" ||
-    s === "10-25" ||
-    s === "25+" ||
-    s === "unlimited"
-  )
-    return s;
-  return "all";
-}
 
 export function EsimStorePage() {
   const searchParams = useSearchParams();
   const { addItem, openCart } = useCart();
   const [activeTab, setActiveTab] = useState<
-    "countries" | "continents" | "global"
+    "continents" | "countries" | "global"
   >(
     () =>
-      (searchParams.get("tab") as "countries" | "continents" | "global") ||
+      (searchParams.get("tab") as "continents" | "countries" | "global") ||
       "countries",
   );
   const [countries, setCountries] = useState<Country[]>([]);
@@ -523,7 +553,7 @@ export function EsimStorePage() {
     setCountriesLoading(true);
     fetch("/api/esim/countries")
       .then((res) => res.json())
-      .then((data: { status: boolean; data?: Country[] }) => {
+      .then((data: { data?: Country[]; status: boolean }) => {
         if (data.status && data.data) {
           setCountries(data.data);
         }
@@ -537,7 +567,7 @@ export function EsimStorePage() {
     setContinentsLoading(true);
     fetch("/api/esim/continents")
       .then((res) => res.json())
-      .then((data: { status: boolean; data?: Continent[] }) => {
+      .then((data: { data?: Continent[]; status: boolean }) => {
         if (data.status && data.data) {
           setContinents(data.data);
         }
@@ -552,7 +582,7 @@ export function EsimStorePage() {
     setLoading(true);
     fetch(`/api/esim/packages/global?package_type=${packageType}`)
       .then((res) => res.json())
-      .then((data: { status: boolean; data?: Package[] }) => {
+      .then((data: { data?: Package[]; status: boolean }) => {
         if (data.status && data.data) {
           setPackages(data.data);
         }
@@ -571,7 +601,7 @@ export function EsimStorePage() {
         `/api/esim/packages/country/${country.id}?package_type=${packageType}`,
       )
         .then((res) => res.json())
-        .then((data: { status: boolean; data?: Package[] }) => {
+        .then((data: { data?: Package[]; status: boolean }) => {
           if (data.status && data.data) {
             setPackages(data.data);
           }
@@ -592,7 +622,7 @@ export function EsimStorePage() {
         `/api/esim/packages/continent/${continent.id}?package_type=${packageType}`,
       )
         .then((res) => res.json())
-        .then((data: { status: boolean; data?: Package[] }) => {
+        .then((data: { data?: Package[]; status: boolean }) => {
           if (data.status && data.data) {
             setPackages(data.data);
           }
@@ -628,7 +658,7 @@ export function EsimStorePage() {
             `/api/esim/packages/country/${c.id}?package_type=${packageType}`,
           )
             .then((res) => res.json())
-            .then((data: { status: boolean; data?: Package[] }) => {
+            .then((data: { data?: Package[]; status: boolean }) => {
               if (data.status && data.data) setPackages(data.data);
             })
             .catch(console.error)
@@ -648,7 +678,7 @@ export function EsimStorePage() {
             `/api/esim/packages/continent/${c.id}?package_type=${packageType}`,
           )
             .then((res) => res.json())
-            .then((data: { status: boolean; data?: Package[] }) => {
+            .then((data: { data?: Package[]; status: boolean }) => {
               if (data.status && data.data) setPackages(data.data);
             })
             .catch(console.error)
@@ -744,14 +774,14 @@ export function EsimStorePage() {
   const handleAddToCart = useCallback(
     (pkg: Package) => {
       addItem({
-        id: `esim_${pkg.id}`,
-        name: `eSIM: ${pkg.name}`,
-        price: parseFloat(pkg.price),
         category: "eSIM",
-        image: "/placeholder.svg",
         digital: true,
         esimPackageId: pkg.id,
         esimPackageType: pkg.package_type ?? "DATA-ONLY",
+        id: `esim_${pkg.id}`,
+        image: "/placeholder.svg",
+        name: `eSIM: ${pkg.name}`,
+        price: parseFloat(pkg.price),
       });
       toast.success("eSIM added to cart");
       openCart();
@@ -761,7 +791,13 @@ export function EsimStorePage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div
+        className={`
+        container mx-auto max-w-7xl px-4 py-8
+        sm:px-6
+        lg:px-8
+      `}
+      >
         {/* Hero */}
         <div className="mb-10 text-center">
           <div className="mb-4 flex justify-center">
@@ -769,10 +805,15 @@ export function EsimStorePage() {
               <Wifi className="h-10 w-10 text-primary" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <h1
+            className={`
+            text-3xl font-bold tracking-tight
+            sm:text-4xl
+          `}
+          >
             eSIM Data Plans
           </h1>
-          <p className="mt-3 text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-muted-foreground">
             Get instant mobile data for 200+ countries. No physical SIM card
             needed — activate in seconds right from your phone.
           </p>
@@ -781,17 +822,17 @@ export function EsimStorePage() {
         {/* Package type toggle */}
         <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
           <Button
-            variant={packageType === "DATA-ONLY" ? "default" : "outline"}
-            size="sm"
             onClick={() => setPackageType("DATA-ONLY")}
+            size="sm"
+            variant={packageType === "DATA-ONLY" ? "default" : "outline"}
           >
             <Wifi className="mr-1 h-4 w-4" />
             Data Only
           </Button>
           <Button
-            variant={packageType === "DATA-VOICE-SMS" ? "default" : "outline"}
-            size="sm"
             onClick={() => setPackageType("DATA-VOICE-SMS")}
+            size="sm"
+            variant={packageType === "DATA-VOICE-SMS" ? "default" : "outline"}
           >
             <Signal className="mr-1 h-4 w-4" />
             Data + Voice + SMS
@@ -800,11 +841,11 @@ export function EsimStorePage() {
 
         {/* Tabs */}
         <Tabs
-          value={activeTab}
           onValueChange={(v) => {
-            setActiveTab(v as "countries" | "continents" | "global");
+            setActiveTab(v as "continents" | "countries" | "global");
             clearSelection();
           }}
+          value={activeTab}
         >
           <TabsList className="mx-auto mb-6">
             <TabsTrigger value="countries">
@@ -825,27 +866,44 @@ export function EsimStorePage() {
           <TabsContent value="countries">
             {!selectedCountry ? (
               <>
-                <div className="relative mb-6 max-w-md mx-auto">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <div className="relative mx-auto mb-6 max-w-md">
+                  <Search
+                    className={`
+                    absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                    text-muted-foreground
+                  `}
+                  />
                   <Input
+                    className="pl-9"
+                    onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search countries..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
                   />
                 </div>
                 {countriesLoading ? (
-                  <div className="flex items-center justify-center gap-2 py-16 text-muted-foreground">
+                  <div
+                    className={`
+                    flex items-center justify-center gap-2 py-16
+                    text-muted-foreground
+                  `}
+                  >
                     <Loader2 className="h-5 w-5 animate-spin" />
                     <span>Loading countries…</span>
                   </div>
                 ) : (
                   <>
-                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    <div
+                      className={`
+                      grid grid-cols-2 gap-3
+                      sm:grid-cols-3
+                      md:grid-cols-4
+                      lg:grid-cols-5
+                    `}
+                    >
                       {filteredCountries.map((country) => (
                         <CountryCard
-                          key={country.id}
                           country={country}
+                          key={country.id}
                           onClick={() => handleCountrySelect(country)}
                         />
                       ))}
@@ -863,17 +921,17 @@ export function EsimStorePage() {
             ) : (
               <>
                 <div className="mb-6 flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                  <Button onClick={clearSelection} size="sm" variant="outline">
                     &larr; All Countries
                   </Button>
                   <div className="flex items-center gap-2">
                     <Image
-                      src={selectedCountry.image_url}
                       alt={selectedCountry.name}
-                      width={32}
-                      height={22}
                       className="rounded-sm"
+                      height={22}
+                      src={selectedCountry.image_url}
                       unoptimized
+                      width={32}
                     />
                     <h2 className="text-lg font-semibold">
                       {selectedCountry.name}
@@ -889,14 +947,17 @@ export function EsimStorePage() {
                         Filter:
                       </span>
                       <select
-                        value={filterValidity}
+                        aria-label="Filter by validity"
+                        className={cn(
+                          `
+                            w-[130px] rounded-md border border-input
+                            bg-background px-3 py-2 text-sm
+                          `,
+                        )}
                         onChange={(e) =>
                           setFilterValidity(e.target.value as ValidityFilter)
                         }
-                        className={cn(
-                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                        )}
-                        aria-label="Filter by validity"
+                        value={filterValidity}
                       >
                         {VALIDITY_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -905,14 +966,17 @@ export function EsimStorePage() {
                         ))}
                       </select>
                       <select
-                        value={filterData}
+                        aria-label="Filter by data"
+                        className={cn(
+                          `
+                            w-[130px] rounded-md border border-input
+                            bg-background px-3 py-2 text-sm
+                          `,
+                        )}
                         onChange={(e) =>
                           setFilterData(e.target.value as DataFilter)
                         }
-                        className={cn(
-                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                        )}
-                        aria-label="Filter by data"
+                        value={filterData}
                       >
                         {DATA_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -921,21 +985,28 @@ export function EsimStorePage() {
                         ))}
                       </select>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div
+                      className={`
+                      grid gap-4
+                      sm:grid-cols-2
+                      lg:grid-cols-3
+                      xl:grid-cols-4
+                    `}
+                    >
                       {displayItems.map((item) =>
                         item.type === "single" ? (
                           <PackageCard
                             key={item.pkg.id}
-                            pkg={item.pkg}
                             onAddToCart={handleAddToCart}
+                            pkg={item.pkg}
                             returnQuery={returnQuery}
                           />
                         ) : (
                           <UnlimitedPlanCard
-                            key={`unlimited-${item.baseName}`}
                             baseName={item.baseName}
-                            packages={item.packages}
+                            key={`unlimited-${item.baseName}`}
                             onAddToCart={handleAddToCart}
+                            packages={item.packages}
                             returnQuery={returnQuery}
                           />
                         ),
@@ -963,11 +1034,18 @@ export function EsimStorePage() {
           {/* Continents Tab */}
           <TabsContent value="continents">
             {!selectedContinent ? (
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+              <div
+                className={`
+                grid grid-cols-2 gap-4
+                sm:grid-cols-3
+                md:grid-cols-4
+                lg:grid-cols-6
+              `}
+              >
                 {continents.map((continent) => (
                   <ContinentCard
-                    key={continent.id}
                     continent={continent}
+                    key={continent.id}
                     onClick={() => handleContinentSelect(continent)}
                   />
                 ))}
@@ -975,7 +1053,7 @@ export function EsimStorePage() {
             ) : (
               <>
                 <div className="mb-6 flex items-center gap-3">
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                  <Button onClick={clearSelection} size="sm" variant="outline">
                     &larr; All Regions
                   </Button>
                   <h2 className="text-lg font-semibold">
@@ -991,14 +1069,17 @@ export function EsimStorePage() {
                         Filter:
                       </span>
                       <select
-                        value={filterValidity}
+                        aria-label="Filter by validity"
+                        className={cn(
+                          `
+                            w-[130px] rounded-md border border-input
+                            bg-background px-3 py-2 text-sm
+                          `,
+                        )}
                         onChange={(e) =>
                           setFilterValidity(e.target.value as ValidityFilter)
                         }
-                        className={cn(
-                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                        )}
-                        aria-label="Filter by validity"
+                        value={filterValidity}
                       >
                         {VALIDITY_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -1007,14 +1088,17 @@ export function EsimStorePage() {
                         ))}
                       </select>
                       <select
-                        value={filterData}
+                        aria-label="Filter by data"
+                        className={cn(
+                          `
+                            w-[130px] rounded-md border border-input
+                            bg-background px-3 py-2 text-sm
+                          `,
+                        )}
                         onChange={(e) =>
                           setFilterData(e.target.value as DataFilter)
                         }
-                        className={cn(
-                          "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                        )}
-                        aria-label="Filter by data"
+                        value={filterData}
                       >
                         {DATA_OPTIONS.map((o) => (
                           <option key={o.value} value={o.value}>
@@ -1023,21 +1107,28 @@ export function EsimStorePage() {
                         ))}
                       </select>
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                    <div
+                      className={`
+                      grid gap-4
+                      sm:grid-cols-2
+                      lg:grid-cols-3
+                      xl:grid-cols-4
+                    `}
+                    >
                       {displayItems.map((item) =>
                         item.type === "single" ? (
                           <PackageCard
                             key={item.pkg.id}
-                            pkg={item.pkg}
                             onAddToCart={handleAddToCart}
+                            pkg={item.pkg}
                             returnQuery={returnQuery}
                           />
                         ) : (
                           <UnlimitedPlanCard
-                            key={`unlimited-${item.baseName}`}
                             baseName={item.baseName}
-                            packages={item.packages}
+                            key={`unlimited-${item.baseName}`}
                             onAddToCart={handleAddToCart}
+                            packages={item.packages}
                             returnQuery={returnQuery}
                           />
                         ),
@@ -1067,14 +1158,17 @@ export function EsimStorePage() {
                 <div className="mb-4 flex flex-wrap items-center gap-3">
                   <span className="text-sm text-muted-foreground">Filter:</span>
                   <select
-                    value={filterValidity}
+                    aria-label="Filter by validity"
+                    className={cn(
+                      `
+                        w-[130px] rounded-md border border-input bg-background
+                        px-3 py-2 text-sm
+                      `,
+                    )}
                     onChange={(e) =>
                       setFilterValidity(e.target.value as ValidityFilter)
                     }
-                    className={cn(
-                      "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                    )}
-                    aria-label="Filter by validity"
+                    value={filterValidity}
                   >
                     {VALIDITY_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -1083,14 +1177,17 @@ export function EsimStorePage() {
                     ))}
                   </select>
                   <select
-                    value={filterData}
+                    aria-label="Filter by data"
+                    className={cn(
+                      `
+                        w-[130px] rounded-md border border-input bg-background
+                        px-3 py-2 text-sm
+                      `,
+                    )}
                     onChange={(e) =>
                       setFilterData(e.target.value as DataFilter)
                     }
-                    className={cn(
-                      "w-[130px] rounded-md border border-input bg-background px-3 py-2 text-sm",
-                    )}
-                    aria-label="Filter by data"
+                    value={filterData}
                   >
                     {DATA_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>
@@ -1099,21 +1196,28 @@ export function EsimStorePage() {
                     ))}
                   </select>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div
+                  className={`
+                  grid gap-4
+                  sm:grid-cols-2
+                  lg:grid-cols-3
+                  xl:grid-cols-4
+                `}
+                >
                   {displayItems.map((item) =>
                     item.type === "single" ? (
                       <PackageCard
                         key={item.pkg.id}
-                        pkg={item.pkg}
                         onAddToCart={handleAddToCart}
+                        pkg={item.pkg}
                         returnQuery={returnQuery}
                       />
                     ) : (
                       <UnlimitedPlanCard
-                        key={`unlimited-${item.baseName}`}
                         baseName={item.baseName}
-                        packages={item.packages}
+                        key={`unlimited-${item.baseName}`}
                         onAddToCart={handleAddToCart}
+                        packages={item.packages}
                         returnQuery={returnQuery}
                       />
                     ),
@@ -1135,15 +1239,35 @@ export function EsimStorePage() {
 
         {/* Info section */}
         <section className="mt-16 border-t border-border pt-12">
-          <h2 className="text-center mb-10 text-3xl font-bold text-[#1A1611] dark:text-[#F5F1EB]">
+          <h2
+            className={`
+            mb-10 text-center text-3xl font-bold text-[#1A1611]
+            dark:text-[#F5F1EB]
+          `}
+          >
             How eSIM Works
           </h2>
-          <div className="mx-auto grid max-w-3xl grid-cols-1 gap-8 sm:grid-cols-3">
+          <div
+            className={`
+            mx-auto grid max-w-3xl grid-cols-1 gap-8
+            sm:grid-cols-3
+          `}
+          >
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <div
+                className={`
+                mx-auto mb-4 flex h-14 w-14 items-center justify-center
+                rounded-full bg-primary/10
+              `}
+              >
                 <span className="text-xl font-bold text-primary">1</span>
               </div>
-              <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">
+              <h3
+                className={`
+                text-xl font-semibold text-[#1A1611]
+                dark:text-[#F5F1EB]
+              `}
+              >
                 Choose a Plan
               </h3>
               <p className="mt-2 text-base text-muted-foreground">
@@ -1152,10 +1276,20 @@ export function EsimStorePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <div
+                className={`
+                mx-auto mb-4 flex h-14 w-14 items-center justify-center
+                rounded-full bg-primary/10
+              `}
+              >
                 <span className="text-xl font-bold text-primary">2</span>
               </div>
-              <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">
+              <h3
+                className={`
+                text-xl font-semibold text-[#1A1611]
+                dark:text-[#F5F1EB]
+              `}
+              >
                 Purchase &amp; Install
               </h3>
               <p className="mt-2 text-base text-muted-foreground">
@@ -1164,10 +1298,20 @@ export function EsimStorePage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+              <div
+                className={`
+                mx-auto mb-4 flex h-14 w-14 items-center justify-center
+                rounded-full bg-primary/10
+              `}
+              >
                 <span className="text-xl font-bold text-primary">3</span>
               </div>
-              <h3 className="text-xl font-semibold text-[#1A1611] dark:text-[#F5F1EB]">
+              <h3
+                className={`
+                text-xl font-semibold text-[#1A1611]
+                dark:text-[#F5F1EB]
+              `}
+              >
                 Stay Connected
               </h3>
               <p className="mt-2 text-base text-muted-foreground">
@@ -1180,4 +1324,22 @@ export function EsimStorePage() {
       </div>
     </div>
   );
+}
+
+function parseData(s: null | string): DataFilter {
+  if (
+    s === "1" ||
+    s === "1-5" ||
+    s === "5-10" ||
+    s === "10-25" ||
+    s === "25+" ||
+    s === "unlimited"
+  )
+    return s;
+  return "all";
+}
+
+function parseValidity(s: null | string): ValidityFilter {
+  if (s === "7" || s === "14" || s === "30" || s === "30+") return s;
+  return "all";
 }

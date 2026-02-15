@@ -18,7 +18,7 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
   const [subject, setSubject] = useState("");
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<
-    "idle" | "sending" | "success" | "error"
+    "error" | "idle" | "sending" | "success"
   >("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -29,14 +29,14 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
       setErrorMessage("");
       try {
         const res = await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            name: name.trim(),
             email: email.trim(),
-            subject: subject.trim(),
             message: message.trim(),
+            name: name.trim(),
+            subject: subject.trim(),
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         if (!res.ok) {
@@ -72,78 +72,101 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-2 sm:grid-cols-2">
+          <form className="space-y-4" onSubmit={handleSubmit}>
+            <div
+              className={`
+              grid gap-2
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
                 <Label htmlFor="contact-name">Name</Label>
                 <Input
+                  className={inputClass}
                   id="contact-name"
-                  type="text"
-                  value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
-                  className={inputClass}
                   required
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contact-email">Email</Label>
                 <Input
+                  className={inputClass}
                   id="contact-email"
-                  type="email"
-                  value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="satoshi@nakamoto.com"
-                  className={inputClass}
                   required
+                  type="email"
+                  value={email}
                 />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="contact-subject">Subject</Label>
               <Input
+                className={inputClass}
                 id="contact-subject"
-                type="text"
-                value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder="What is this about?"
-                className={inputClass}
                 required
+                type="text"
+                value={subject}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="contact-message">Message</Label>
               <textarea
+                className={cn(inputClass, "min-h-[120px] resize-y py-2")}
                 id="contact-message"
-                value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Your message…"
-                rows={5}
                 required
-                className={cn(inputClass, "min-h-[120px] resize-y py-2")}
+                rows={5}
+                value={message}
               />
             </div>
             {status === "success" && (
-              <p className="rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950/30 dark:text-green-400">
+              <p
+                className={`
+                rounded-md bg-green-50 p-3 text-sm text-green-800
+                dark:bg-green-950/30 dark:text-green-400
+              `}
+              >
                 Message sent. We&apos;ll be in touch soon.
               </p>
             )}
             {status === "error" && errorMessage && (
-              <p className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <p
+                className={`
+                rounded-md bg-destructive/10 p-3 text-sm text-destructive
+              `}
+              >
                 {errorMessage}
               </p>
             )}
-            <Button type="submit" disabled={status === "sending"}>
+            <Button disabled={status === "sending"} type="submit">
               {status === "sending" ? "Sending…" : "Send message"}
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card className="overflow-hidden rounded-lg border border-border bg-card/50 shadow-none">
+      <Card
+        className={`
+        overflow-hidden rounded-lg border border-border bg-card/50 shadow-none
+      `}
+      >
         <CardHeader className="space-y-1 pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold tracking-tight text-foreground">
-            <KeyRound className="size-5 shrink-0 text-primary" aria-hidden />
+          <CardTitle
+            className={`
+            flex items-center gap-2 text-lg font-semibold tracking-tight
+            text-foreground
+          `}
+          >
+            <KeyRound aria-hidden className="size-5 shrink-0 text-primary" />
             PGP public key
           </CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -158,11 +181,14 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
                 Public key (copy to encrypt)
               </Label>
               <pre
-                className={cn(
-                  "overflow-x-auto rounded-md border border-border bg-muted/30 p-4 text-xs font-mono leading-relaxed",
-                  "select-all whitespace-pre-wrap break-all",
-                )}
                 aria-label="PGP public key"
+                className={cn(
+                  `
+                    overflow-x-auto rounded-md border border-border bg-muted/30
+                    p-4 font-mono text-xs leading-relaxed
+                  `,
+                  "break-all whitespace-pre-wrap select-all",
+                )}
               >
                 {pgpPublicKey}
               </pre>
@@ -173,7 +199,12 @@ export function ContactPageClient({ pgpPublicKey }: { pgpPublicKey: string }) {
               </p>
             </div>
           ) : (
-            <p className="rounded-md border border-dashed border-border bg-muted/20 p-4 text-sm text-muted-foreground">
+            <p
+              className={`
+              rounded-md border border-dashed border-border bg-muted/20 p-4
+              text-sm text-muted-foreground
+            `}
+            >
               No PGP key is configured yet. Add{" "}
               <code className="rounded bg-muted px-1">
                 CONTACT_PGP_PUBLIC_KEY

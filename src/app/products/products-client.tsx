@@ -1,9 +1,5 @@
 "use client";
 
-import * as React from "react";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import {
   ChevronLeft,
   ChevronRight,
@@ -12,6 +8,10 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import * as React from "react";
+import { toast } from "sonner";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
@@ -20,6 +20,26 @@ import { ProductGridSkeleton } from "~/ui/components/product-card-skeleton";
 import { ProductQuickView } from "~/ui/components/product-quick-view";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
+
+export type SortOption =
+  | "best_selling"
+  | "manual"
+  | "newest"
+  | "price_asc"
+  | "price_desc"
+  | "rating";
+
+interface BreadcrumbItem {
+  href: string;
+  name: string;
+}
+
+interface CategoryOption {
+  /** Display image: category image or product fallback (not persisted). */
+  image?: null | string;
+  name: string;
+  slug: string;
+}
 
 interface Product {
   category: string;
@@ -38,76 +58,56 @@ interface Product {
   tokenGatePassed?: boolean;
 }
 
-interface CategoryOption {
-  slug: string;
-  name: string;
-  /** Display image: category image or product fallback (not persisted). */
-  image?: string | null;
-}
-
-export type SortOption =
-  | "newest"
-  | "price_asc"
-  | "price_desc"
-  | "best_selling"
-  | "rating"
-  | "manual";
-
-interface BreadcrumbItem {
-  name: string;
-  href: string;
-}
-
 interface ProductsClientProps {
-  initialProducts: Product[];
-  initialCategories: CategoryOption[];
-  initialPage: number;
-  initialTotalPages: number;
-  initialTotal: number;
-  initialCategory: string;
-  /** For category pages: heading and subtext (default: "Products" / "Browse our latest...") */
-  title?: string;
-  description?: string;
-  /** Full category description (customer-facing, can be long) */
-  categoryDescriptionFull?: string;
-  /** Child categories for subcategory filter (when on a category page) */
-  subcategories?: CategoryOption[];
-  initialSort?: SortOption;
-  initialSubcategory?: string;
-  /** Initial search query (for category pages) */
-  initialSearch?: string;
   /** Breadcrumbs for navigation context (optional, auto-generated if not provided). */
   breadcrumbs?: BreadcrumbItem[];
+  /** Full category description (customer-facing, can be long) */
+  categoryDescriptionFull?: string;
+  description?: string;
+  initialCategories: CategoryOption[];
+  initialCategory: string;
+  initialPage: number;
+  initialProducts: Product[];
+  /** Initial search query (for category pages) */
+  initialSearch?: string;
+  initialSort?: SortOption;
+  initialSubcategory?: string;
+  initialTotal: number;
+  initialTotalPages: number;
+  /** Child categories for subcategory filter (when on a category page) */
+  subcategories?: CategoryOption[];
+  /** For category pages: heading and subtext (default: "Products" / "Browse our latest...") */
+  title?: string;
 }
 
 const SORT_LABELS: Record<SortOption, string> = {
+  best_selling: "Best Selling",
   manual: "Recommended",
   newest: "Newest",
   price_asc: "Price (low to high)",
   price_desc: "Price (high to low)",
-  best_selling: "Best Selling",
   rating: "Rating",
 };
 
 export function ProductsClient({
-  initialProducts,
-  initialCategories,
-  initialPage,
-  initialTotalPages,
-  initialTotal,
-  initialCategory,
-  title = "Products",
-  description = "Browse our latest products and find something you'll love.",
+  breadcrumbs,
   categoryDescriptionFull,
-  subcategories = [],
+  description = "Browse our latest products and find something you'll love.",
+  initialCategories,
+  initialCategory,
+  initialPage,
+  initialProducts,
+  initialSearch = "",
   initialSort = "newest",
   initialSubcategory,
-  initialSearch = "",
-  breadcrumbs,
+  initialTotal,
+  initialTotalPages,
+  subcategories = [],
+  title = "Products",
 }: ProductsClientProps) {
   const router = useRouter();
   const { addItem } = useCart();
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
   const [products, setProducts] = React.useState<Product[]>(initialProducts);
   const [categories] = React.useState<CategoryOption[]>(initialCategories);
@@ -130,7 +130,7 @@ export function ProductsClient({
 
   // Quick View state
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
-  const [quickViewSlug, setQuickViewSlug] = React.useState<string | null>(null);
+  const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
 
   const handleQuickView = React.useCallback((slugOrId: string) => {
     setQuickViewSlug(slugOrId);
@@ -147,11 +147,11 @@ export function ProductsClient({
 
   const buildPath = React.useCallback(
     (opts: {
+      category?: string;
       page?: number;
+      q?: string;
       sort?: SortOption;
       subcategory?: string;
-      category?: string;
-      q?: string;
     }) => {
       const cat = opts.category ?? selectedCategory;
       const path = cat === "all" ? "/products" : `/${cat}`;
@@ -176,9 +176,9 @@ export function ProductsClient({
       categorySlug: string,
       sortOption: SortOption,
       subcategorySlug: string,
-      search: string = "",
+      search = "",
       /** When true, appends results to the existing list instead of replacing. */
-      append: boolean = false,
+      append = false,
     ) => {
       if (append) {
         setLoadingMore(true);
@@ -187,8 +187,8 @@ export function ProductsClient({
       }
       try {
         const params = new URLSearchParams({
-          page: String(newPage),
           limit: String(limit),
+          page: String(newPage),
           sort: sortOption,
         });
         if (categorySlug !== "all") params.set("category", categorySlug);
@@ -412,34 +412,49 @@ export function ProductsClient({
   const breadcrumbItems = React.useMemo<BreadcrumbItem[]>(() => {
     if (breadcrumbs) return breadcrumbs;
     const items: BreadcrumbItem[] = [
-      { name: "Home", href: "/" },
-      { name: "Products", href: "/products" },
+      { href: "/", name: "Home" },
+      { href: "/products", name: "Products" },
     ];
     if (selectedCategory !== "all") {
       const cat = categories.find((c) => c.slug === selectedCategory);
-      if (cat) items.push({ name: cat.name, href: `/${cat.slug}` });
+      if (cat) items.push({ href: `/${cat.slug}`, name: cat.name });
     }
     return items;
   }, [breadcrumbs, selectedCategory, categories]);
 
   return (
     <div className="flex min-h-screen flex-col">
-      <main className="flex-1 py-6 sm:py-10">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <main
+        className={`
+        flex-1 py-6
+        sm:py-10
+      `}
+      >
+        <div
+          className={`
+          mx-auto w-full max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
+        >
           {/* Breadcrumbs */}
           <nav aria-label="Breadcrumb" className="mb-4">
-            <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+            <ol
+              className={`
+              flex flex-wrap items-center gap-1 text-sm text-muted-foreground
+            `}
+            >
               {breadcrumbItems.map((item, i) => {
                 const isLast = i === breadcrumbItems.length - 1;
                 return (
                   <li
-                    key={`${item.href}-${i}`}
                     className="flex items-center gap-1"
+                    key={`${item.href}-${i}`}
                   >
                     {i > 0 && (
                       <ChevronRight
-                        className="h-3.5 w-3.5 shrink-0"
                         aria-hidden
+                        className="h-3.5 w-3.5 shrink-0"
                       />
                     )}
                     {isLast ? (
@@ -448,8 +463,11 @@ export function ProductsClient({
                       </span>
                     ) : (
                       <a
+                        className={`
+                          transition-colors
+                          hover:text-foreground
+                        `}
                         href={item.href}
-                        className="hover:text-foreground transition-colors"
                       >
                         {i === 0 ? <Home className="h-3.5 w-3.5" /> : item.name}
                       </a>
@@ -462,34 +480,65 @@ export function ProductsClient({
 
           {/* Header */}
           <header className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight md:text-3xl">
+            <h1
+              className={`
+              text-2xl font-bold tracking-tight
+              md:text-3xl
+            `}
+            >
               {title}
             </h1>
             {(categoryDescriptionFull?.trim() || description) && (
-              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground">
+              <p
+                className={`
+                mt-1 max-w-2xl text-sm leading-relaxed text-muted-foreground
+              `}
+              >
                 {categoryDescriptionFull?.trim() || description}
               </p>
             )}
           </header>
 
           {/* Sticky controls bar: sort + search + active filter count */}
-          <div className="sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent bg-background/95 px-4 py-2 backdrop-blur-md transition-shadow sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8 [&:not(:first-child)]:border-border/50 [&:not(:first-child)]:shadow-sm">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div
+            className={`
+            sticky top-0 z-20 -mx-4 mb-4 border-b border-transparent
+            bg-background/95 px-4 py-2 backdrop-blur-md transition-shadow
+            sm:-mx-6 sm:px-6
+            lg:-mx-8 lg:px-8
+            [&:not(:first-child)]:border-border/50
+            [&:not(:first-child)]:shadow-sm
+          `}
+          >
+            <div
+              className={`
+              flex flex-col gap-3
+              sm:flex-row sm:items-center sm:justify-between
+            `}
+            >
               <div className="flex items-center gap-2">
                 <SlidersHorizontal
-                  className="hidden h-4 w-4 text-muted-foreground sm:block"
                   aria-hidden
+                  className={`
+                    hidden h-4 w-4 text-muted-foreground
+                    sm:block
+                  `}
                 />
-                <label htmlFor="sort-products" className="sr-only">
+                <label className="sr-only" htmlFor="sort-products">
                   Sort by
                 </label>
                 <select
+                  className={`
+                    h-9 rounded-md border border-input bg-background px-3 py-1
+                    text-sm
+                    focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:outline-none
+                  `}
                   id="sort-products"
-                  value={sort}
                   onChange={(e) =>
                     handleSortChange(e.target.value as SortOption)
                   }
-                  className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  value={sort}
                 >
                   {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(
                     ([value, label]) => (
@@ -506,9 +555,10 @@ export function ProductsClient({
                 )}
                 {activeFilterCount > 0 && (
                   <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1 text-xs text-muted-foreground hover:text-foreground"
+                    className={`
+                      gap-1 text-xs text-muted-foreground
+                      hover:text-foreground
+                    `}
                     onClick={() => {
                       setSearchInput("");
                       setSelectedSubcategory("");
@@ -521,24 +571,34 @@ export function ProductsClient({
                         router.push("/products", { scroll: false });
                       }
                     }}
+                    size="sm"
+                    variant="ghost"
                   >
                     <X className="h-3 w-3" />
                     Clear filters ({activeFilterCount})
                   </Button>
                 )}
               </div>
-              <div className="relative w-full sm:w-64">
+              <div
+                className={`
+                relative w-full
+                sm:w-64
+              `}
+              >
                 <Search
-                  className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
                   aria-hidden
+                  className={`
+                    absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                    text-muted-foreground
+                  `}
                 />
                 <Input
-                  type="search"
-                  placeholder="Search products…"
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-9"
                   aria-label="Search products in this category"
+                  className="pl-9"
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search products…"
+                  type="search"
+                  value={searchInput}
                 />
               </div>
             </div>
@@ -549,7 +609,7 @@ export function ProductsClient({
             {categories.map((cat) => (
               <Button
                 aria-pressed={cat.slug === selectedCategory}
-                className="rounded-full gap-1.5 pl-1.5 pr-3"
+                className="gap-1.5 rounded-full pr-3 pl-1.5"
                 key={cat.slug}
                 onClick={() => handleCategoryChange(cat.slug)}
                 size="sm"
@@ -557,7 +617,12 @@ export function ProductsClient({
                 variant={cat.slug === selectedCategory ? "default" : "outline"}
               >
                 {cat.image?.trim() ? (
-                  <span className="relative size-6 shrink-0 overflow-hidden rounded-full bg-white">
+                  <span
+                    className={`
+                    relative size-6 shrink-0 overflow-hidden rounded-full
+                    bg-white
+                  `}
+                  >
                     <Image
                       alt=""
                       className="object-contain"
@@ -602,29 +667,41 @@ export function ProductsClient({
           )}
 
           {/* Products grid + pagination */}
-          <section className="space-y-6" aria-label="Products in this category">
+          <section aria-label="Products in this category" className="space-y-6">
             {loading ? (
               <ProductGridSkeleton count={limit} />
             ) : (
               <>
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                <div
+                  className={`
+                  grid grid-cols-1 gap-6
+                  sm:grid-cols-2
+                  md:grid-cols-3
+                  lg:grid-cols-4
+                `}
+                >
                   {products.map((product, index) => (
                     <ProductCard
-                      key={product.id}
                       isInWishlist={isInWishlist(product.id)}
+                      key={product.id}
                       onAddToCart={handleAddToCart}
                       onAddToWishlist={handleAddToWishlist}
-                      onRemoveFromWishlist={handleRemoveFromWishlist}
                       onQuickView={handleQuickView}
-                      product={product}
+                      onRemoveFromWishlist={handleRemoveFromWishlist}
                       priority={index < 4}
+                      product={product}
                     />
                   ))}
                 </div>
 
                 {products.length === 0 && (
                   <div className="py-16 text-center">
-                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                    <div
+                      className={`
+                      mx-auto mb-4 flex h-16 w-16 items-center justify-center
+                      rounded-full bg-muted
+                    `}
+                    >
                       <Search className="h-7 w-7 text-muted-foreground" />
                     </div>
                     <h3 className="text-lg font-medium">No products found</h3>
@@ -638,7 +715,6 @@ export function ProductsClient({
                       selectedCategory !== "all") && (
                       <Button
                         className="mt-4"
-                        variant="outline"
                         onClick={() => {
                           setSearchInput("");
                           setSelectedSubcategory("");
@@ -648,11 +724,12 @@ export function ProductsClient({
                             setPage(1);
                             fetchProducts(1, selectedCategory, sort, "", "");
                             router.push(
-                              buildPath({ page: 1, subcategory: "", q: "" }),
+                              buildPath({ page: 1, q: "", subcategory: "" }),
                               { scroll: false },
                             );
                           }
                         }}
+                        variant="outline"
                       >
                         Clear all filters
                       </Button>
@@ -663,13 +740,17 @@ export function ProductsClient({
                 {/* Pagination: Previous + Load More */}
                 {(page > 1 || page < totalPages) && products.length > 0 && (
                   <div className="mt-10 flex flex-col items-center gap-3">
-                    <div className="flex flex-wrap items-center justify-center gap-3">
+                    <div
+                      className={`
+                      flex flex-wrap items-center justify-center gap-3
+                    `}
+                    >
                       {page > 1 && (
                         <Button
                           className="gap-2"
                           onClick={handlePreviousPage}
-                          variant="outline"
                           size="lg"
+                          variant="outline"
                         >
                           <ChevronLeft className="h-4 w-4" />
                           Previous
@@ -680,11 +761,16 @@ export function ProductsClient({
                           className="min-w-[200px] gap-2"
                           disabled={loadingMore}
                           onClick={handleLoadMore}
-                          variant="outline"
                           size="lg"
+                          variant="outline"
                         >
                           {loadingMore ? (
-                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                            <div
+                              className={`
+                              h-4 w-4 animate-spin rounded-full border-2
+                              border-primary border-t-transparent
+                            `}
+                            />
                           ) : null}
                           {loadingMore ? "Loading…" : "Load More Products"}
                         </Button>
@@ -703,7 +789,11 @@ export function ProductsClient({
                   products.length > 0 &&
                   total > limit &&
                   products.length >= total && (
-                    <p className="mt-8 text-center text-sm text-muted-foreground">
+                    <p
+                      className={`
+                      mt-8 text-center text-sm text-muted-foreground
+                    `}
+                    >
                       Showing all {total} products
                     </p>
                   )}
@@ -715,8 +805,8 @@ export function ProductsClient({
 
       {/* Quick View drawer */}
       <ProductQuickView
-        open={quickViewOpen}
         onOpenChange={setQuickViewOpen}
+        open={quickViewOpen}
         productSlugOrId={quickViewSlug}
       />
     </div>

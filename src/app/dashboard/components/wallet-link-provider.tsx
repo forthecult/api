@@ -25,9 +25,9 @@ export function DashboardWalletLinkProvider({
     <SolanaWalletProvider>
       {children}
       <AuthWalletModal
-        open={linkModalOpen}
-        onOpenChange={setLinkModalOpen}
         link
+        onOpenChange={setLinkModalOpen}
+        open={linkModalOpen}
       />
     </SolanaWalletProvider>
   );

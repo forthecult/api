@@ -5,6 +5,40 @@ import { db } from "~/db";
 import { shippingOptionsTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    const [deleted] = await db
+      .delete(shippingOptionsTable)
+      .where(eq(shippingOptionsTable.id, id))
+      .returning({ id: shippingOptionsTable.id });
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Shipping option not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin shipping option delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete shipping option" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -30,24 +64,24 @@ export async function GET(
     }
 
     return NextResponse.json({
-      id: row.id,
-      name: row.name,
-      countryCode: row.countryCode,
-      minOrderCents: row.minOrderCents,
-      maxOrderCents: row.maxOrderCents,
-      minQuantity: row.minQuantity,
-      maxQuantity: row.maxQuantity,
-      minWeightGrams: row.minWeightGrams,
-      maxWeightGrams: row.maxWeightGrams,
-      type: row.type,
-      amountCents: row.amountCents,
       additionalItemCents: row.additionalItemCents ?? null,
-      priority: row.priority,
-      speed: row.speed ?? "standard",
+      amountCents: row.amountCents,
       brandId: row.brandId,
-      sourceUrl: row.sourceUrl,
-      estimatedDaysText: row.estimatedDaysText,
+      countryCode: row.countryCode,
       createdAt: row.createdAt,
+      estimatedDaysText: row.estimatedDaysText,
+      id: row.id,
+      maxOrderCents: row.maxOrderCents,
+      maxQuantity: row.maxQuantity,
+      maxWeightGrams: row.maxWeightGrams,
+      minOrderCents: row.minOrderCents,
+      minQuantity: row.minQuantity,
+      minWeightGrams: row.minWeightGrams,
+      name: row.name,
+      priority: row.priority,
+      sourceUrl: row.sourceUrl,
+      speed: row.speed ?? "standard",
+      type: row.type,
       updatedAt: row.updatedAt,
     });
   } catch (err) {
@@ -71,22 +105,22 @@ export async function PATCH(
 
     const { id } = await params;
     const body = (await request.json()) as {
+      additionalItemCents?: null | number;
+      amountCents?: null | number;
+      brandId?: null | string;
+      countryCode?: null | string;
+      estimatedDaysText?: null | string;
+      maxOrderCents?: null | number;
+      maxQuantity?: null | number;
+      maxWeightGrams?: null | number;
+      minOrderCents?: null | number;
+      minQuantity?: null | number;
+      minWeightGrams?: null | number;
       name?: string;
-      countryCode?: string | null;
-      minOrderCents?: number | null;
-      maxOrderCents?: number | null;
-      minQuantity?: number | null;
-      maxQuantity?: number | null;
-      minWeightGrams?: number | null;
-      maxWeightGrams?: number | null;
-      type?: "flat" | "per_item" | "flat_plus_per_item" | "free";
-      amountCents?: number | null;
-      additionalItemCents?: number | null;
       priority?: number;
-      speed?: "standard" | "express";
-      brandId?: string | null;
-      sourceUrl?: string | null;
-      estimatedDaysText?: string | null;
+      sourceUrl?: null | string;
+      speed?: "express" | "standard";
+      type?: "flat" | "flat_plus_per_item" | "free" | "per_item";
     };
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -181,64 +215,30 @@ export async function PATCH(
     }
 
     return NextResponse.json({
-      id: updated.id,
-      name: updated.name,
-      countryCode: updated.countryCode,
-      minOrderCents: updated.minOrderCents,
-      maxOrderCents: updated.maxOrderCents,
-      minQuantity: updated.minQuantity,
-      maxQuantity: updated.maxQuantity,
-      minWeightGrams: updated.minWeightGrams,
-      maxWeightGrams: updated.maxWeightGrams,
-      type: updated.type,
-      amountCents: updated.amountCents,
-      priority: updated.priority,
-      speed: updated.speed ?? "standard",
       additionalItemCents: updated.additionalItemCents ?? null,
+      amountCents: updated.amountCents,
       brandId: updated.brandId,
-      sourceUrl: updated.sourceUrl,
-      estimatedDaysText: updated.estimatedDaysText,
+      countryCode: updated.countryCode,
       createdAt: updated.createdAt,
+      estimatedDaysText: updated.estimatedDaysText,
+      id: updated.id,
+      maxOrderCents: updated.maxOrderCents,
+      maxQuantity: updated.maxQuantity,
+      maxWeightGrams: updated.maxWeightGrams,
+      minOrderCents: updated.minOrderCents,
+      minQuantity: updated.minQuantity,
+      minWeightGrams: updated.minWeightGrams,
+      name: updated.name,
+      priority: updated.priority,
+      sourceUrl: updated.sourceUrl,
+      speed: updated.speed ?? "standard",
+      type: updated.type,
       updatedAt: updated.updatedAt,
     });
   } catch (err) {
     console.error("Admin shipping option update error:", err);
     return NextResponse.json(
       { error: "Failed to update shipping option" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id } = await params;
-
-    const [deleted] = await db
-      .delete(shippingOptionsTable)
-      .where(eq(shippingOptionsTable.id, id))
-      .returning({ id: shippingOptionsTable.id });
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: "Shipping option not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Admin shipping option delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete shipping option" },
       { status: 500 },
     );
   }

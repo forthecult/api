@@ -31,8 +31,8 @@ export async function GET(request: NextRequest) {
   const rows = await db
     .select({
       id: productsTable.id,
-      printifyProductId: productsTable.printifyProductId,
       name: productsTable.name,
+      printifyProductId: productsTable.printifyProductId,
     })
     .from(productsTable)
     .where(
@@ -47,8 +47,8 @@ export async function GET(request: NextRequest) {
     .filter((r) => r.printifyProductId != null)
     .map((r) => ({
       id: r.id,
-      printifyProductId: r.printifyProductId!,
       name: r.name,
+      printifyProductId: r.printifyProductId!,
     }));
 
   return NextResponse.json({ products });

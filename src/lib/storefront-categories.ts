@@ -26,38 +26,12 @@ export const CRYPTO_CATEGORY_NAMES_SET = new Set<string>(CRYPTO_CATEGORY_NAMES);
 export const SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG = "show-in-all-products";
 
 /**
- * Given category rows (id, name, parentId), returns the set of category IDs
- * that are crypto (by name) or any descendant of those. Used to exclude crypto
- * and subcategories from "all products" unless in show-in-all-products.
- */
-export function computeCryptoCategoryIdsIncludingDescendants(
-  rows: { id: string; name: string; parentId: string | null }[],
-): Set<string> {
-  const cryptoIds = new Set<string>();
-  for (const r of rows) {
-    if (CRYPTO_CATEGORY_NAMES_SET.has(r.name)) cryptoIds.add(r.id);
-  }
-  let added = true;
-  while (added) {
-    added = false;
-    for (const r of rows) {
-      if (cryptoIds.has(r.id)) continue;
-      if (r.parentId && cryptoIds.has(r.parentId)) {
-        cryptoIds.add(r.id);
-        added = true;
-      }
-    }
-  }
-  return cryptoIds;
-}
-
-/**
  * Given category rows and a category slug, returns the set of category IDs
  * that are the category (matched by slug) plus all its descendants.
  * Used so category pages show products from the category and all subcategories.
  */
 export function computeCategoryIdAndDescendantIds(
-  rows: { id: string; slug: string | null; parentId: string | null }[],
+  rows: { id: string; parentId: null | string; slug: null | string }[],
   categorySlug: string,
 ): Set<string> {
   const slugNorm = categorySlug.trim().toLowerCase();
@@ -76,4 +50,30 @@ export function computeCategoryIdAndDescendantIds(
     }
   }
   return ids;
+}
+
+/**
+ * Given category rows (id, name, parentId), returns the set of category IDs
+ * that are crypto (by name) or any descendant of those. Used to exclude crypto
+ * and subcategories from "all products" unless in show-in-all-products.
+ */
+export function computeCryptoCategoryIdsIncludingDescendants(
+  rows: { id: string; name: string; parentId: null | string }[],
+): Set<string> {
+  const cryptoIds = new Set<string>();
+  for (const r of rows) {
+    if (CRYPTO_CATEGORY_NAMES_SET.has(r.name)) cryptoIds.add(r.id);
+  }
+  let added = true;
+  while (added) {
+    added = false;
+    for (const r of rows) {
+      if (cryptoIds.has(r.id)) continue;
+      if (r.parentId && cryptoIds.has(r.parentId)) {
+        cryptoIds.add(r.id);
+        added = true;
+      }
+    }
+  }
+  return cryptoIds;
 }

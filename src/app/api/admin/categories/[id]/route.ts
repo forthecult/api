@@ -5,6 +5,44 @@ import { db } from "~/db";
 import { categoriesTable, categoryTokenGateTable } from "~/db/schema";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
+    const { id } = await params;
+
+    // unlink children so we can delete the category
+    await db
+      .update(categoriesTable)
+      .set({ parentId: null, updatedAt: new Date() })
+      .where(eq(categoriesTable.parentId, id));
+
+    const [deleted] = await db
+      .delete(categoriesTable)
+      .where(eq(categoriesTable.id, id))
+      .returning({ id: categoriesTable.id });
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Category not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin category delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete category" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -16,25 +54,25 @@ export async function GET(
     const { id } = await params;
     const [category] = await db
       .select({
-        id: categoriesTable.id,
-        name: categoriesTable.name,
-        slug: categoriesTable.slug,
-        title: categoriesTable.title,
-        metaDescription: categoriesTable.metaDescription,
+        createdAt: categoriesTable.createdAt,
         description: categoriesTable.description,
+        featured: categoriesTable.featured,
+        id: categoriesTable.id,
         imageUrl: categoriesTable.imageUrl,
         level: categoriesTable.level,
-        featured: categoriesTable.featured,
-        visible: categoriesTable.visible,
-        seoOptimized: categoriesTable.seoOptimized,
+        metaDescription: categoriesTable.metaDescription,
+        name: categoriesTable.name,
         parentId: categoriesTable.parentId,
-        tokenGated: categoriesTable.tokenGated,
-        tokenGateType: categoriesTable.tokenGateType,
-        tokenGateQuantity: categoriesTable.tokenGateQuantity,
-        tokenGateNetwork: categoriesTable.tokenGateNetwork,
+        seoOptimized: categoriesTable.seoOptimized,
+        slug: categoriesTable.slug,
+        title: categoriesTable.title,
         tokenGateContractAddress: categoriesTable.tokenGateContractAddress,
-        createdAt: categoriesTable.createdAt,
+        tokenGated: categoriesTable.tokenGated,
+        tokenGateNetwork: categoriesTable.tokenGateNetwork,
+        tokenGateQuantity: categoriesTable.tokenGateQuantity,
+        tokenGateType: categoriesTable.tokenGateType,
         updatedAt: categoriesTable.updatedAt,
+        visible: categoriesTable.visible,
       })
       .from(categoriesTable)
       .where(eq(categoriesTable.id, id))
@@ -49,44 +87,44 @@ export async function GET(
 
     const tokenGatesRows = await db
       .select({
-        id: categoryTokenGateTable.id,
-        tokenSymbol: categoryTokenGateTable.tokenSymbol,
-        quantity: categoryTokenGateTable.quantity,
-        network: categoryTokenGateTable.network,
         contractAddress: categoryTokenGateTable.contractAddress,
+        id: categoryTokenGateTable.id,
+        network: categoryTokenGateTable.network,
+        quantity: categoryTokenGateTable.quantity,
+        tokenSymbol: categoryTokenGateTable.tokenSymbol,
       })
       .from(categoryTokenGateTable)
       .where(eq(categoryTokenGateTable.categoryId, id));
 
     const tokenGates = tokenGatesRows.map((r) => ({
-      id: r.id,
-      tokenSymbol: r.tokenSymbol,
-      quantity: r.quantity,
-      network: r.network ?? null,
       contractAddress: r.contractAddress ?? null,
+      id: r.id,
+      network: r.network ?? null,
+      quantity: r.quantity,
+      tokenSymbol: r.tokenSymbol,
     }));
 
     return NextResponse.json({
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      title: category.title,
-      metaDescription: category.metaDescription,
+      createdAt: category.createdAt,
       description: category.description,
+      featured: category.featured,
+      id: category.id,
       imageUrl: category.imageUrl,
       level: category.level,
-      featured: category.featured,
-      visible: category.visible ?? true,
-      seoOptimized: category.seoOptimized,
+      metaDescription: category.metaDescription,
+      name: category.name,
       parentId: category.parentId,
-      tokenGated: tokenGates.length > 0 || category.tokenGated,
-      tokenGateType: category.tokenGateType,
-      tokenGateQuantity: category.tokenGateQuantity,
-      tokenGateNetwork: category.tokenGateNetwork,
+      seoOptimized: category.seoOptimized,
+      slug: category.slug,
+      title: category.title,
       tokenGateContractAddress: category.tokenGateContractAddress,
+      tokenGated: tokenGates.length > 0 || category.tokenGated,
+      tokenGateNetwork: category.tokenGateNetwork,
+      tokenGateQuantity: category.tokenGateQuantity,
       tokenGates,
-      createdAt: category.createdAt,
+      tokenGateType: category.tokenGateType,
       updatedAt: category.updatedAt,
+      visible: category.visible ?? true,
     });
   } catch (err) {
     console.error("Admin category get error:", err);
@@ -107,29 +145,29 @@ export async function PATCH(
 
     const { id } = await params;
     const body = (await request.json()) as {
-      name?: string;
-      slug?: string | null;
-      title?: string | null;
-      metaDescription?: string | null;
-      description?: string | null;
-      imageUrl?: string | null;
-      level?: number;
+      description?: null | string;
       featured?: boolean;
-      visible?: boolean;
+      imageUrl?: null | string;
+      level?: number;
+      metaDescription?: null | string;
+      name?: string;
+      parentId?: null | string;
       seoOptimized?: boolean;
-      parentId?: string | null;
+      slug?: null | string;
+      title?: null | string;
+      tokenGateContractAddress?: null | string;
       tokenGated?: boolean;
-      tokenGateType?: string | null;
-      tokenGateQuantity?: number | null;
-      tokenGateNetwork?: string | null;
-      tokenGateContractAddress?: string | null;
-      tokenGates?: Array<{
+      tokenGateNetwork?: null | string;
+      tokenGateQuantity?: null | number;
+      tokenGates?: {
+        contractAddress?: null | string;
         id?: string;
-        tokenSymbol: string;
+        network?: null | string;
         quantity: number;
-        network?: string | null;
-        contractAddress?: string | null;
-      }>;
+        tokenSymbol: string;
+      }[];
+      tokenGateType?: null | string;
+      visible?: boolean;
     };
 
     const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -194,98 +232,60 @@ export async function PATCH(
         const qty = Number(gate.quantity);
         if (!symbol || !Number.isInteger(qty) || qty < 1) continue;
         await db.insert(categoryTokenGateTable).values({
-          id: gate.id ?? crypto.randomUUID(),
           categoryId: id,
-          tokenSymbol: symbol,
-          quantity: qty,
-          network: gate.network?.trim() || null,
           contractAddress: gate.contractAddress?.trim() || null,
+          id: gate.id ?? crypto.randomUUID(),
+          network: gate.network?.trim() || null,
+          quantity: qty,
+          tokenSymbol: symbol,
         });
       }
     }
 
     const tokenGatesRows = await db
       .select({
-        id: categoryTokenGateTable.id,
-        tokenSymbol: categoryTokenGateTable.tokenSymbol,
-        quantity: categoryTokenGateTable.quantity,
-        network: categoryTokenGateTable.network,
         contractAddress: categoryTokenGateTable.contractAddress,
+        id: categoryTokenGateTable.id,
+        network: categoryTokenGateTable.network,
+        quantity: categoryTokenGateTable.quantity,
+        tokenSymbol: categoryTokenGateTable.tokenSymbol,
       })
       .from(categoryTokenGateTable)
       .where(eq(categoryTokenGateTable.categoryId, id));
 
     const tokenGates = tokenGatesRows.map((r) => ({
-      id: r.id,
-      tokenSymbol: r.tokenSymbol,
-      quantity: r.quantity,
-      network: r.network ?? null,
       contractAddress: r.contractAddress ?? null,
+      id: r.id,
+      network: r.network ?? null,
+      quantity: r.quantity,
+      tokenSymbol: r.tokenSymbol,
     }));
 
     return NextResponse.json({
-      id: updated.id,
-      name: updated.name,
-      slug: updated.slug,
-      title: updated.title,
-      metaDescription: updated.metaDescription,
       description: updated.description,
+      featured: updated.featured,
+      id: updated.id,
       imageUrl: updated.imageUrl,
       level: updated.level,
-      featured: updated.featured,
-      visible: updated.visible ?? true,
-      seoOptimized: updated.seoOptimized,
+      metaDescription: updated.metaDescription,
+      name: updated.name,
       parentId: updated.parentId,
-      tokenGated: tokenGates.length > 0 || updated.tokenGated,
-      tokenGateType: updated.tokenGateType,
-      tokenGateQuantity: updated.tokenGateQuantity,
-      tokenGateNetwork: updated.tokenGateNetwork,
+      seoOptimized: updated.seoOptimized,
+      slug: updated.slug,
+      title: updated.title,
       tokenGateContractAddress: updated.tokenGateContractAddress,
+      tokenGated: tokenGates.length > 0 || updated.tokenGated,
+      tokenGateNetwork: updated.tokenGateNetwork,
+      tokenGateQuantity: updated.tokenGateQuantity,
       tokenGates,
+      tokenGateType: updated.tokenGateType,
       updatedAt: updated.updatedAt,
+      visible: updated.visible ?? true,
     });
   } catch (err) {
     console.error("Admin category update error:", err);
     return NextResponse.json(
       { error: "Failed to update category" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
-
-    const { id } = await params;
-
-    // unlink children so we can delete the category
-    await db
-      .update(categoriesTable)
-      .set({ parentId: null, updatedAt: new Date() })
-      .where(eq(categoriesTable.parentId, id));
-
-    const [deleted] = await db
-      .delete(categoriesTable)
-      .where(eq(categoriesTable.id, id))
-      .returning({ id: categoriesTable.id });
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: "Category not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Admin category delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete category" },
       { status: 500 },
     );
   }

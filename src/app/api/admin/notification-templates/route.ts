@@ -16,8 +16,8 @@ export async function GET(request: NextRequest) {
 
   const templates = getAllNotificationTemplates();
   return NextResponse.json({
-    transactional: templates.filter((t) => t.transactional),
-    marketing: templates.filter((t) => !t.transactional),
     all: templates,
+    marketing: templates.filter((t) => !t.transactional),
+    transactional: templates.filter((t) => t.transactional),
   });
 }

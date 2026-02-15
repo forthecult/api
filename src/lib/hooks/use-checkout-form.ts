@@ -2,12 +2,11 @@
 
 import { useCallback, useState } from "react";
 
-export interface CheckoutFormState {
+export interface BillingFormState {
   apartment: string;
   city: string;
   company: string;
   country: string;
-  email: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -16,11 +15,12 @@ export interface CheckoutFormState {
   zip: string;
 }
 
-export interface BillingFormState {
+export interface CheckoutFormState {
   apartment: string;
   city: string;
   company: string;
   country: string;
+  email: string;
   firstName: string;
   lastName: string;
   phone: string;
@@ -118,7 +118,7 @@ export function useCheckoutForm(options: UseCheckoutFormOptions = {}) {
     return billingForm;
   }, [billingSameAsShipping, shippingForm, billingForm]);
 
-  const validateShipping = useCallback((): string | null => {
+  const validateShipping = useCallback((): null | string => {
     if (!shippingForm.email.trim()) return "Email is required";
     if (!shippingForm.email.includes("@")) return "Invalid email address";
     if (!shippingForm.firstName.trim()) return "First name is required";
@@ -130,7 +130,7 @@ export function useCheckoutForm(options: UseCheckoutFormOptions = {}) {
     return null;
   }, [shippingForm]);
 
-  const validateBilling = useCallback((): string | null => {
+  const validateBilling = useCallback((): null | string => {
     if (billingSameAsShipping) return null;
     if (!billingForm.firstName.trim()) return "Billing first name is required";
     if (!billingForm.lastName.trim()) return "Billing last name is required";
@@ -152,18 +152,18 @@ export function useCheckoutForm(options: UseCheckoutFormOptions = {}) {
   }, [options.initialEmail]);
 
   return {
-    shippingForm,
     billingForm,
     billingSameAsShipping,
-    marketingConsent,
-    updateShipping,
-    updateBilling,
-    setBillingSameAsShipping,
-    setMarketingConsent,
     copyShippingToBilling,
     getEffectiveBilling,
-    validateShipping,
-    validateBilling,
+    marketingConsent,
     reset,
+    setBillingSameAsShipping,
+    setMarketingConsent,
+    shippingForm,
+    updateBilling,
+    updateShipping,
+    validateBilling,
+    validateShipping,
   };
 }

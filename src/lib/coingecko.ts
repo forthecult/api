@@ -8,30 +8,13 @@ const CACHE_TTL_MS = 60 * 1000; // 60s - matches API data freshness
 const RATE_LIMIT_PER_MIN = 10; // per process; keeps total under 30/min with 3+ instances
 const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 
-type CacheEntry = {
+interface CacheEntry {
   data: Record<string, { usd?: number }>;
   fetchedAt: number;
-};
+}
 
 const cache = new Map<string, CacheEntry>();
 const requestTimestamps: number[] = [];
-
-function pruneTimestamps(now: number): void {
-  const cutoff = now - RATE_LIMIT_WINDOW_MS;
-  while (requestTimestamps.length > 0 && requestTimestamps[0]! < cutoff) {
-    requestTimestamps.shift();
-  }
-}
-
-function canMakeRequest(now: number): boolean {
-  pruneTimestamps(now);
-  return requestTimestamps.length < RATE_LIMIT_PER_MIN;
-}
-
-function recordRequest(now: number): void {
-  requestTimestamps.push(now);
-  pruneTimestamps(now);
-}
 
 /**
  * Fetch simple/price from CoinGecko. Cached 60s. Respects 30/min rate limit.
@@ -71,6 +54,23 @@ export async function getCoinGeckoSimplePrice(
     if (hit) return hit.data;
     return undefined;
   }
+}
+
+function canMakeRequest(now: number): boolean {
+  pruneTimestamps(now);
+  return requestTimestamps.length < RATE_LIMIT_PER_MIN;
+}
+
+function pruneTimestamps(now: number): void {
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  while (requestTimestamps.length > 0 && requestTimestamps[0]! < cutoff) {
+    requestTimestamps.shift();
+  }
+}
+
+function recordRequest(now: number): void {
+  requestTimestamps.push(now);
+  pruneTimestamps(now);
 }
 
 const TOKEN_PRICE_CACHE = new Map<string, CacheEntry>();

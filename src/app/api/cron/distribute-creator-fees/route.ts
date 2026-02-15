@@ -15,11 +15,6 @@ import { runDailyDistribution } from "~/lib/creator-fee-distribution";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function getCronSecret(): string | null {
-  const s = process.env.CRON_SECRET?.trim();
-  return s ?? null;
-}
-
 export async function GET(request: Request) {
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ")
@@ -29,14 +24,14 @@ export async function GET(request: Request) {
 
   if (!secret) {
     return NextResponse.json(
-      { ok: false, error: "Cron not configured (CRON_SECRET missing)" },
+      { error: "Cron not configured (CRON_SECRET missing)", ok: false },
       { status: 503 },
     );
   }
 
   if (token !== secret) {
     return NextResponse.json(
-      { ok: false, error: "Unauthorized" },
+      { error: "Unauthorized", ok: false },
       { status: 401 },
     );
   }
@@ -48,10 +43,15 @@ export async function GET(request: Request) {
     console.error("[cron] distribute-creator-fees error:", err);
     return NextResponse.json(
       {
-        ok: false,
         error: err instanceof Error ? err.message : "Distribution failed",
+        ok: false,
       },
       { status: 500 },
     );
   }
+}
+
+function getCronSecret(): null | string {
+  const s = process.env.CRON_SECRET?.trim();
+  return s ?? null;
 }

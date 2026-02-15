@@ -13,49 +13,38 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 const API_BASE = getMainAppUrl();
 
 interface MessageRow {
-  id: string;
-  role: string;
   content: string;
   createdAt: string;
-  staffUser?: { firstName: string; lastName: string; image: string | null };
+  id: string;
+  role: string;
+  staffUser?: { firstName: string; image: null | string; lastName: string };
 }
 
 interface TicketDetail {
-  id: string;
-  subject: string;
-  message: string;
-  status: string;
-  type: string; // "normal" | "urgent" (priority)
   createdAt: string;
-  updatedAt: string;
-  customer: { id: string; name: string; email: string };
+  customer: { email: string; id: string; name: string };
+  id: string;
+  message: string;
   messages?: MessageRow[];
-}
-
-function formatDate(s: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
+  status: string;
+  subject: string;
+  type: string; // "normal" | "urgent" (priority)
+  updatedAt: string;
 }
 
 export default function AdminSupportTicketDetailPage() {
   const params = useParams();
   const id = typeof params?.id === "string" ? params.id : null;
-  const [ticket, setTicket] = useState<TicketDetail | null>(null);
+  const [ticket, setTicket] = useState<null | TicketDetail>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [replyContent, setReplyContent] = useState("");
   const [sending, setSending] = useState(false);
-  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<null | string>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
-  const [statusError, setStatusError] = useState<string | null>(null);
+  const [statusError, setStatusError] = useState<null | string>(null);
   const [updatingPriority, setUpdatingPriority] = useState(false);
-  const [priorityError, setPriorityError] = useState<string | null>(null);
+  const [priorityError, setPriorityError] = useState<null | string>(null);
 
   const fetchTicket = useCallback(async () => {
     if (!id) return;
@@ -96,10 +85,10 @@ export default function AdminSupportTicketDetailPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/support-tickets/${id}/messages`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ content: replyContent.trim() }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         },
       );
       const data = (await res.json().catch(() => ({}))) as {
@@ -120,16 +109,16 @@ export default function AdminSupportTicketDetailPage() {
   }, [id, replyContent, fetchTicket]);
 
   const updateStatus = useCallback(
-    async (status: "open" | "pending" | "closed") => {
+    async (status: "closed" | "open" | "pending") => {
       if (!id) return;
       setUpdatingStatus(true);
       setStatusError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ status }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -161,10 +150,10 @@ export default function AdminSupportTicketDetailPage() {
       setPriorityError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/support-tickets/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ type }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         const data = (await res.json().catch(() => ({}))) as {
           error?: string;
@@ -191,7 +180,12 @@ export default function AdminSupportTicketDetailPage() {
 
   if (!id) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+      <div
+        className={`
+        rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800
+        dark:bg-amber-900/20 dark:text-amber-200
+      `}
+      >
         Missing ticket id.
         <Link className="ml-2 underline" href="/support-tickets">
           Back to Support Tickets
@@ -203,7 +197,12 @@ export default function AdminSupportTicketDetailPage() {
   if (error && !ticket) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
           <Button
             className="mt-2"
@@ -214,7 +213,10 @@ export default function AdminSupportTicketDetailPage() {
           </Button>
         </div>
         <Link
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className={`
+            inline-flex items-center gap-1 text-sm text-muted-foreground
+            hover:text-foreground
+          `}
           href="/support-tickets"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Support Tickets
@@ -225,7 +227,11 @@ export default function AdminSupportTicketDetailPage() {
 
   if (loading && !ticket) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -239,9 +245,12 @@ export default function AdminSupportTicketDetailPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-4">
         <Link
-          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          href="/support-tickets"
           aria-label="Back to Support Tickets"
+          className={`
+            rounded p-1.5 text-muted-foreground
+            hover:bg-muted hover:text-foreground
+          `}
+          href="/support-tickets"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
@@ -256,20 +265,29 @@ export default function AdminSupportTicketDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-lg">{ticket.subject}</CardTitle>
-          <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+          <div
+            className={`
+            flex flex-wrap items-center gap-2 text-sm text-muted-foreground
+          `}
+          >
             <span className="flex items-center gap-2">
-              <label htmlFor="ticket-status" className="sr-only">
+              <label className="sr-only" htmlFor="ticket-status">
                 Ticket status
               </label>
               <select
-                id="ticket-status"
-                className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className={`
+                  rounded-md border border-input bg-background px-2.5 py-1
+                  text-xs font-medium
+                  focus:ring-2 focus:ring-ring focus:outline-none
+                  disabled:opacity-50
+                `}
                 disabled={updatingStatus}
-                value={ticket.status}
+                id="ticket-status"
                 onChange={(e) => {
-                  const v = e.target.value as "open" | "pending" | "closed";
+                  const v = e.target.value as "closed" | "open" | "pending";
                   if (v) void updateStatus(v);
                 }}
+                value={ticket.status}
               >
                 <option value="open">Open</option>
                 <option value="pending">Pending</option>
@@ -277,18 +295,23 @@ export default function AdminSupportTicketDetailPage() {
               </select>
             </span>
             <span className="flex items-center gap-2">
-              <label htmlFor="ticket-priority" className="sr-only">
+              <label className="sr-only" htmlFor="ticket-priority">
                 Priority
               </label>
               <select
-                id="ticket-priority"
-                className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                className={`
+                  rounded-md border border-input bg-background px-2.5 py-1
+                  text-xs font-medium
+                  focus:ring-2 focus:ring-ring focus:outline-none
+                  disabled:opacity-50
+                `}
                 disabled={updatingPriority}
-                value={ticket.type === "urgent" ? "urgent" : "normal"}
+                id="ticket-priority"
                 onChange={(e) => {
                   const v = e.target.value as "normal" | "urgent";
                   void updatePriority(v);
                 }}
+                value={ticket.type === "urgent" ? "urgent" : "normal"}
               >
                 <option value="normal">Normal</option>
                 <option value="urgent">Urgent</option>
@@ -312,16 +335,24 @@ export default function AdminSupportTicketDetailPage() {
               <h3 className="mb-2 text-sm font-medium text-muted-foreground">
                 Conversation
               </h3>
-              <div className="max-h-[400px] space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-3">
+              <div
+                className={`
+                max-h-[400px] space-y-2 overflow-y-auto rounded-md border
+                bg-muted/20 p-3
+              `}
+              >
                 {(ticket.messages ?? []).map((msg) => (
                   <div
-                    key={msg.id}
                     className={cn(
                       "rounded-lg px-3 py-2 text-sm",
                       msg.role === "customer"
                         ? "ml-6 bg-primary/10 text-foreground"
-                        : "mr-6 bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100",
+                        : `
+                          mr-6 bg-blue-100 text-blue-900
+                          dark:bg-blue-900/40 dark:text-blue-100
+                        `,
                     )}
+                    key={msg.id}
                   >
                     <span className="font-medium">
                       {msg.role === "staff" && msg.staffUser
@@ -344,7 +375,11 @@ export default function AdminSupportTicketDetailPage() {
               <h3 className="mb-2 text-sm font-medium text-muted-foreground">
                 Message
               </h3>
-              <p className="whitespace-pre-wrap rounded-md border bg-muted/30 p-4 text-sm">
+              <p
+                className={`
+                rounded-md border bg-muted/30 p-4 text-sm whitespace-pre-wrap
+              `}
+              >
                 {ticket.message}
               </p>
             </div>
@@ -357,11 +392,18 @@ export default function AdminSupportTicketDetailPage() {
               </h3>
               <div className="space-y-2">
                 <textarea
-                  className="min-h-[120px] w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={`
+                    min-h-[120px] w-full resize-y rounded-md border border-input
+                    bg-background px-3 py-2 text-sm ring-offset-background
+                    placeholder:text-muted-foreground
+                    focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:ring-offset-2 focus-visible:outline-none
+                    disabled:cursor-not-allowed disabled:opacity-50
+                  `}
                   disabled={sending}
+                  onChange={(e) => setReplyContent(e.target.value)}
                   placeholder="Type your reply to the customer…"
                   value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
                 />
                 {replyError && (
                   <p className="text-sm text-destructive">{replyError}</p>
@@ -383,8 +425,11 @@ export default function AdminSupportTicketDetailPage() {
             </h3>
             <div className="flex flex-wrap items-center gap-2">
               <Link
+                className={`
+                  font-medium text-primary underline-offset-2
+                  hover:underline
+                `}
                 href={`/customers/${ticket.customer.id}`}
-                className="font-medium text-primary underline-offset-2 hover:underline"
               >
                 {ticket.customer.name || "—"}
               </Link>
@@ -392,8 +437,11 @@ export default function AdminSupportTicketDetailPage() {
                 {ticket.customer.email}
               </span>
               <Link
+                className={`
+                  text-sm text-primary underline-offset-2
+                  hover:underline
+                `}
                 href={`/customers/${ticket.customer.id}`}
-                className="text-sm text-primary underline-offset-2 hover:underline"
               >
                 View customer →
               </Link>
@@ -403,4 +451,15 @@ export default function AdminSupportTicketDetailPage() {
       </Card>
     </div>
   );
+}
+
+function formatDate(s: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
 }

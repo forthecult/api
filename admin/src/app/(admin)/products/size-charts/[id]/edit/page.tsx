@@ -8,8 +8,8 @@ import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 import {
-  SizeChartDataEditor,
   type SizeChartData,
+  SizeChartDataEditor,
 } from "~/ui/size-chart-editor";
 
 const API_BASE = getMainAppUrl();
@@ -17,28 +17,28 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type SizeChart = {
-  id: string;
-  provider: string;
+interface SizeChart {
   brand: string;
-  model: string;
-  displayName: string;
   dataImperial: unknown;
   dataMetric: unknown;
-};
+  displayName: string;
+  id: string;
+  model: string;
+  provider: string;
+}
 
 export default function AdminSizeChartsEditPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params.id === "string" ? params.id : "";
-  const [chart, setChart] = useState<SizeChart | null>(null);
+  const [chart, setChart] = useState<null | SizeChart>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [success, setSuccess] = useState(false);
   const [displayName, setDisplayName] = useState("");
-  const [dataImperial, setDataImperial] = useState<SizeChartData | null>(null);
-  const [dataMetric, setDataMetric] = useState<SizeChartData | null>(null);
+  const [dataImperial, setDataImperial] = useState<null | SizeChartData>(null);
+  const [dataMetric, setDataMetric] = useState<null | SizeChartData>(null);
 
   useEffect(() => {
     if (!id) {
@@ -91,14 +91,14 @@ export default function AdminSizeChartsEditPage() {
       setSuccess(false);
       try {
         const res = await fetch(`${API_BASE}/api/admin/size-charts/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            displayName: displayName.trim(),
             dataImperial: dataImperial ?? null,
             dataMetric: dataMetric ?? null,
+            displayName: displayName.trim(),
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -129,7 +129,7 @@ export default function AdminSizeChartsEditPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/products/size-charts">
-          <Button type="button" variant="ghost" size="sm">
+          <Button size="sm" type="button" variant="ghost">
             ← Size Charts
           </Button>
         </Link>
@@ -138,14 +138,25 @@ export default function AdminSizeChartsEditPage() {
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {error && (
-          <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            className={`
+            rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2
+            text-sm text-destructive
+          `}
+          >
             {error}
           </p>
         )}
         {success && (
-          <p className="rounded-md border border-green-500/50 bg-green-500/10 px-3 py-2 text-sm text-green-700 dark:text-green-400">
+          <p
+            className={`
+            rounded-md border border-green-500/50 bg-green-500/10 px-3 py-2
+            text-sm text-green-700
+            dark:text-green-400
+          `}
+          >
             Size chart saved successfully.
           </p>
         )}
@@ -162,48 +173,53 @@ export default function AdminSizeChartsEditPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-3
+            `}
+            >
               <div>
                 <label className={labelClass}>Provider</label>
                 <input
+                  className={inputClass + "opacity-60"}
+                  disabled
                   type="text"
                   value={chart.provider}
-                  disabled
-                  className={inputClass + " opacity-60"}
                 />
               </div>
               <div>
                 <label className={labelClass}>Brand</label>
                 <input
+                  className={inputClass + "opacity-60"}
+                  disabled
                   type="text"
                   value={chart.brand}
-                  disabled
-                  className={inputClass + " opacity-60"}
                 />
               </div>
               <div>
                 <label className={labelClass}>Model</label>
                 <input
+                  className={inputClass + "opacity-60"}
+                  disabled
                   type="text"
                   value={chart.model}
-                  disabled
-                  className={inputClass + " opacity-60"}
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="displayName" className={labelClass}>
+              <label className={labelClass} htmlFor="displayName">
                 Display name (shown in accordion){" "}
                 <span className="text-destructive">*</span>
               </label>
               <input
+                className={inputClass}
                 id="displayName"
+                onChange={(e) => setDisplayName(e.target.value)}
+                placeholder="e.g. Hoodies"
+                required
                 type="text"
                 value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className={inputClass}
-                required
-                placeholder="e.g. Hoodies"
               />
             </div>
           </CardContent>
@@ -213,8 +229,8 @@ export default function AdminSizeChartsEditPage() {
         <Card>
           <CardContent className="pt-6">
             <SizeChartDataEditor
-              label="Imperial (inches)"
               data={dataImperial}
+              label="Imperial (inches)"
               onChange={setDataImperial}
             />
           </CardContent>
@@ -224,8 +240,8 @@ export default function AdminSizeChartsEditPage() {
         <Card>
           <CardContent className="pt-6">
             <SizeChartDataEditor
-              label="Metric (cm)"
               data={dataMetric}
+              label="Metric (cm)"
               onChange={setDataMetric}
             />
           </CardContent>
@@ -233,7 +249,7 @@ export default function AdminSizeChartsEditPage() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={saving}>
+          <Button disabled={saving} type="submit">
             {saving ? "Saving…" : "Save changes"}
           </Button>
           <Link href="/products/size-charts">

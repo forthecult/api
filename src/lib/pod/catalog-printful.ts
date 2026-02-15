@@ -25,61 +25,21 @@ const PROVIDER: PodProvider = "printful";
 /** Default print area dimensions by product type (pixels at 150 DPI). */
 const DEFAULT_PRINT_SPECS_BY_TYPE: Record<string, PrintSpec[]> = {
   default: [
-    { position: "front", width: 3600, height: 4800, dpi: 150 },
-    { position: "back", width: 3600, height: 4800, dpi: 150 },
-  ],
-  "t-shirt": [
-    { position: "front", width: 3600, height: 4800, dpi: 150 },
-    { position: "back", width: 3600, height: 4800, dpi: 150 },
-    { position: "left_chest", width: 900, height: 900, dpi: 150 },
+    { dpi: 150, height: 4800, position: "front", width: 3600 },
+    { dpi: 150, height: 4800, position: "back", width: 3600 },
   ],
   hoodie: [
-    { position: "front", width: 3600, height: 4800, dpi: 150 },
-    { position: "back", width: 4500, height: 5400, dpi: 150 },
+    { dpi: 150, height: 4800, position: "front", width: 3600 },
+    { dpi: 150, height: 5400, position: "back", width: 4500 },
   ],
-  poster: [{ position: "default", width: 3600, height: 5400, dpi: 150 }],
-  mug: [{ position: "default", width: 2475, height: 1155, dpi: 150 }],
+  mug: [{ dpi: 150, height: 1155, position: "default", width: 2475 }],
+  poster: [{ dpi: 150, height: 5400, position: "default", width: 3600 }],
+  "t-shirt": [
+    { dpi: 150, height: 4800, position: "front", width: 3600 },
+    { dpi: 150, height: 4800, position: "back", width: 3600 },
+    { dpi: 150, height: 900, position: "left_chest", width: 900 },
+  ],
 };
-
-function productTypeKey(type: string | null): string {
-  if (!type) return "default";
-  const t = type.toLowerCase();
-  if (t.includes("t-shirt") || t.includes("tee") || t.includes("shirt"))
-    return "t-shirt";
-  if (t.includes("hoodie") || t.includes("sweatshirt")) return "hoodie";
-  if (t.includes("poster")) return "poster";
-  if (t.includes("mug")) return "mug";
-  return "default";
-}
-
-function getPrintSpecsForProduct(product: PrintfulCatalogProduct): PrintSpec[] {
-  const key = productTypeKey(product.type);
-  return (
-    DEFAULT_PRINT_SPECS_BY_TYPE[key] ?? DEFAULT_PRINT_SPECS_BY_TYPE.default
-  );
-}
-
-/**
- * Fetch Printful catalog products (list) with optional pagination.
- */
-export async function fetchPrintfulCatalogList(params?: {
-  limit?: number;
-  offset?: number;
-}): Promise<CatalogBlueprint[]> {
-  const limit = params?.limit ?? 50;
-  const offset = params?.offset ?? 0;
-  const res = await fetchCatalogProducts({ limit, offset });
-  return res.data.map((p) => ({
-    provider: PROVIDER,
-    id: String(p.id),
-    title: p.name,
-    brand: p.brand ?? "",
-    description: p.description ?? "",
-    images: p.image ? [p.image] : [],
-    printSpecs: getPrintSpecsForProduct(p),
-    variants: [],
-  }));
-}
 
 /**
  * Fetch a single Printful catalog product with variants and print specs.
@@ -110,24 +70,64 @@ export async function fetchPrintfulBlueprintWithSpecs(
         // ignore price fetch errors
       }
       return {
-        id: v.id,
-        title: v.name,
         color: v.color ?? undefined,
-        size: v.size ?? undefined,
+        id: v.id,
         priceCents,
         printSpecs,
+        size: v.size ?? undefined,
+        title: v.name,
       };
     }),
   );
 
   return {
-    provider: PROVIDER,
-    id: String(product.id),
-    title: product.name,
     brand: product.brand ?? "",
     description: product.description ?? "",
+    id: String(product.id),
     images: product.image ? [product.image] : [],
     printSpecs,
+    provider: PROVIDER,
+    title: product.name,
     variants: catalogVariants,
   };
+}
+
+/**
+ * Fetch Printful catalog products (list) with optional pagination.
+ */
+export async function fetchPrintfulCatalogList(params?: {
+  limit?: number;
+  offset?: number;
+}): Promise<CatalogBlueprint[]> {
+  const limit = params?.limit ?? 50;
+  const offset = params?.offset ?? 0;
+  const res = await fetchCatalogProducts({ limit, offset });
+  return res.data.map((p) => ({
+    brand: p.brand ?? "",
+    description: p.description ?? "",
+    id: String(p.id),
+    images: p.image ? [p.image] : [],
+    printSpecs: getPrintSpecsForProduct(p),
+    provider: PROVIDER,
+    title: p.name,
+    variants: [],
+  }));
+}
+
+function getPrintSpecsForProduct(product: PrintfulCatalogProduct): PrintSpec[] {
+  const key = productTypeKey(product.type);
+  return (
+    DEFAULT_PRINT_SPECS_BY_TYPE[key] ?? DEFAULT_PRINT_SPECS_BY_TYPE.default
+  );
+}
+
+function productTypeKey(type: null | string): string {
+  if (!type) return "default";
+  const t = type.toLowerCase();
+  if (t.includes("t-shirt") || t.includes("tee") || t.includes("shirt"))
+    return "t-shirt";
+  if (t.includes("hoodie") || t.includes("sweatshirt")) return "hoodie";
+  if (t.includes("poster")) return "poster";
+  if (t.includes("mug")) return "mug";
+  return "default";
 }

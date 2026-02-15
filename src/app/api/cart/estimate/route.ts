@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { inArray } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { productsTable, productVariantsTable } from "~/db/schema";
@@ -7,17 +7,17 @@ import { apiError, apiSuccess, validateRequired } from "~/lib/api-error";
 
 interface EstimateItem {
   productId: string;
-  variantId?: string;
   quantity: number;
+  variantId?: string;
 }
 
 interface EstimateRequest {
+  currency?: "USD"; // Only USD supported for now
   items: EstimateItem[];
   shipping?: {
     countryCode: string;
     zip?: string;
   };
-  currency?: "USD"; // Only USD supported for now
 }
 
 /**
@@ -75,8 +75,8 @@ export async function POST(request: NextRequest) {
         ? await db
             .select({
               id: productVariantsTable.id,
-              productId: productVariantsTable.productId,
               priceCents: productVariantsTable.priceCents,
+              productId: productVariantsTable.productId,
             })
             .from(productVariantsTable)
             .where(inArray(productVariantsTable.id, variantIds))
@@ -85,14 +85,14 @@ export async function POST(request: NextRequest) {
     const variantMap = new Map(variants.map((v) => [v.id, v]));
 
     // Calculate line items
-    const lineItems: Array<{
-      productId: string;
-      variantId?: string;
+    const lineItems: {
       name: string;
+      productId: string;
       quantity: number;
-      unitPriceCents: number;
       subtotalCents: number;
-    }> = [];
+      unitPriceCents: number;
+      variantId?: string;
+    }[] = [];
 
     let subtotalCents = 0;
 
@@ -118,8 +118,8 @@ export async function POST(request: NextRequest) {
         }
         if (variant.productId !== item.productId) {
           return apiError("VARIANT_NOT_FOUND", {
-            reason: "Variant does not belong to this product",
             productId: item.productId,
+            reason: "Variant does not belong to this product",
             variantId: item.variantId,
           });
         }
@@ -135,8 +135,8 @@ export async function POST(request: NextRequest) {
         ...(item.variantId && { variantId: item.variantId }),
         name: product.name + variantName,
         quantity: item.quantity,
-        unitPriceCents,
         subtotalCents: itemSubtotal,
+        unitPriceCents,
       });
     }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       if (country === "US") {
         shippingCents = subtotalCents >= 5000 ? 0 : 599; // Free shipping over $50
         estimatedDays = "3-5 business days";
-      } else if (["CA", "GB", "AU", "DE", "FR"].includes(country)) {
+      } else if (["AU", "CA", "DE", "FR", "GB"].includes(country)) {
         shippingCents = subtotalCents >= 10000 ? 0 : 1499; // Free shipping over $200
         estimatedDays = "7-14 business days";
       } else {
@@ -171,39 +171,39 @@ export async function POST(request: NextRequest) {
 
     const totalUsd = totalCents / 100;
     const cryptoPrices = {
+      ETH: (totalUsd / ethPrice).toFixed(6),
       SOL: (totalUsd / solPrice).toFixed(4),
       USDC: totalUsd.toFixed(2),
       USDT: totalUsd.toFixed(2),
-      ETH: (totalUsd / ethPrice).toFixed(6),
     };
 
     // Response
     const response = {
+      _actions: {
+        checkout: "POST /api/checkout",
+        getProduct: "GET /api/products/{slug}",
+        searchProducts: "POST /api/products/search",
+      },
+      _note: "Prices are estimates. Final amounts calculated at checkout.",
+      crypto: cryptoPrices,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
       items: lineItems.map((item) => ({
         ...item,
-        unitPrice: { usd: item.unitPriceCents / 100 },
         subtotal: { usd: item.subtotalCents / 100 },
+        unitPrice: { usd: item.unitPriceCents / 100 },
       })),
-      subtotal: { usd: subtotalCents / 100 },
       shipping: {
-        usd: shippingCents / 100,
-        method: shippingMethod,
         estimatedDays,
+        method: shippingMethod,
+        usd: shippingCents / 100,
         ...(body.shipping?.countryCode && {
           countryCode: body.shipping.countryCode,
         }),
       },
-      tax: { usd: 0, note: "Tax calculated at checkout if applicable" },
+      subtotal: { usd: subtotalCents / 100 },
+      tax: { note: "Tax calculated at checkout if applicable", usd: 0 },
       total: { usd: totalUsd },
-      crypto: cryptoPrices,
       validFor: "15 minutes",
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-      _note: "Prices are estimates. Final amounts calculated at checkout.",
-      _actions: {
-        checkout: "POST /api/checkout",
-        searchProducts: "POST /api/products/search",
-        getProduct: "GET /api/products/{slug}",
-      },
     };
 
     return apiSuccess(response);

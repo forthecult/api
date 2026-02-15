@@ -4,11 +4,11 @@
  * Uses Resend when RESEND_API_KEY is set; in development logs the code to console.
  */
 export async function sendVerificationOTPEmail(params: {
-  to: string;
   otp: string;
-  type: "sign-in" | "email-verification" | "forget-password";
+  to: string;
+  type: "email-verification" | "forget-password" | "sign-in";
 }): Promise<void> {
-  const { to, otp, type } = params;
+  const { otp, to, type } = params;
   const appName = "For the Culture";
 
   const subject =
@@ -37,8 +37,6 @@ export async function sendVerificationOTPEmail(params: {
 
       await resend.emails.send({
         from,
-        to,
-        subject,
         html: `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111;">Your verification code</h1>
   <p style="color: #333; font-size: 16px; line-height: 1.6;">Use this code to ${purpose}:</p>
@@ -46,7 +44,9 @@ export async function sendVerificationOTPEmail(params: {
   <p style="color: #666; font-size: 14px;">This code expires in a few minutes. If you didn't request this, you can ignore this email.</p>
   <p style="color: #666; font-size: 14px; margin-top: 32px;">— ${appName}</p>
 </body></html>`,
+        subject,
         text: `Your verification code: ${otp}\n\nUse this code to ${purpose}. This code expires in a few minutes.\n\n— ${appName}`,
+        to,
       });
       if (process.env.NODE_ENV === "development") {
         console.log(

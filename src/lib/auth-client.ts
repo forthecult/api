@@ -58,7 +58,7 @@ export const listUserAccounts = async () => {
     return response;
   } catch (error) {
     console.error("Error listing user accounts:", error);
-    return { error: { message: "Failed to list accounts" }, data: [] };
+    return { data: [], error: { message: "Failed to list accounts" } };
   }
 };
 

@@ -1,16 +1,16 @@
 /** Ambient types for uploadthing (package has no .d.ts). */
 declare module "uploadthing/server" {
+  export class UploadThingError extends Error {
+    code: string;
+  }
   export class UTApi {
     constructor(opts?: { token?: string });
     deleteFiles(keys: string | string[]): Promise<{ success: boolean }>;
     getFileUrls(
       keys: string | string[],
     ): Promise<{ key: string; url: string }[]>;
-    listFiles(opts?: { limit?: number; cursor?: string }): Promise<unknown>;
+    listFiles(opts?: { cursor?: string; limit?: number }): Promise<unknown>;
     uploadFiles(files: File | File[]): Promise<unknown>;
-  }
-  export class UploadThingError extends Error {
-    code: string;
   }
   export function extractRouterConfig(
     router: unknown,
@@ -18,15 +18,13 @@ declare module "uploadthing/server" {
 }
 
 declare module "uploadthing/next" {
-  export interface FileRouter {
-    [key: string]: unknown;
-  }
-  export function createUploadthing(): (config: unknown) => any;
+  export type FileRouter = Record<string, unknown>;
   export function createRouteHandler(opts: {
-    router: unknown;
     config?: unknown;
+    router: unknown;
   }): {
-    GET: (request: Request, context?: unknown) => Response | Promise<Response>;
-    POST: (request: Request, context?: unknown) => Response | Promise<Response>;
+    GET: (request: Request, context?: unknown) => Promise<Response> | Response;
+    POST: (request: Request, context?: unknown) => Promise<Response> | Response;
   };
+  export function createUploadthing(): (config: unknown) => any;
 }

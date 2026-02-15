@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { fetchBlueprints } from "@/lib/pod/catalog";
+
 import { getAdminAuth } from "@/lib/admin-api-auth";
+import { fetchBlueprints } from "@/lib/pod/catalog";
 
 /**
  * GET /api/admin/pod/catalog
@@ -15,9 +16,9 @@ export async function GET(request: NextRequest) {
   }
   const { searchParams } = new URL(request.url);
   const provider = (searchParams.get("provider") ?? "all") as
-    | "printify"
+    | "all"
     | "printful"
-    | "all";
+    | "printify";
   const search = searchParams.get("search") ?? undefined;
   const category = searchParams.get("category") ?? undefined;
   const limit = Math.min(
@@ -30,11 +31,11 @@ export async function GET(request: NextRequest) {
   );
   try {
     const blueprints = await fetchBlueprints({
-      provider,
-      search,
       category,
       limit,
       offset,
+      provider,
+      search,
     });
     return NextResponse.json(blueprints);
   } catch (err) {

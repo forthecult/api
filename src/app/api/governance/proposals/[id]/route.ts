@@ -48,7 +48,7 @@ export async function GET(
     const againstPower = totals.find((t) => t.choice === "against")?.power ?? 0;
     const abstainPower = totals.find((t) => t.choice === "abstain")?.power ?? 0;
 
-    let userVote: { choice: string; votingPower: number } | null = null;
+    let userVote: null | { choice: string; votingPower: number } = null;
     if (wallet) {
       const votes = await db
         .select({
@@ -67,9 +67,9 @@ export async function GET(
     return NextResponse.json({
       proposal,
       totals: {
-        for: Number(forPower),
-        against: Number(againstPower),
         abstain: Number(abstainPower),
+        against: Number(againstPower),
+        for: Number(forPower),
       },
       userVote,
     });

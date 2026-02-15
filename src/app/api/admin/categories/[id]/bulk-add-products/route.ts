@@ -11,8 +11,8 @@ import {
   productsTable,
   productTagsTable,
 } from "~/db/schema";
-import { getWholeWordRegexPattern } from "~/lib/category-auto-assign";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { getWholeWordRegexPattern } from "~/lib/category-auto-assign";
 
 /**
  * POST /api/admin/categories/[id]/bulk-add-products
@@ -31,15 +31,15 @@ export async function POST(
 
     const { id: categoryId } = await params;
     const body = (await request.json().catch(() => ({}))) as {
-      titleContains?: string;
-      createdWithinDays?: number;
       brand?: string;
-      /** Product must have at least one tag containing this (case-insensitive). */
-      tagContains?: string;
+      createdWithinDays?: number;
       /** If true, save these filters as a perpetual rule for new/imported products */
       perpetual?: boolean;
       /** If true, find products matching ANY of this category's saved perpetual rules and add them (backfill). */
       runPerpetualRules?: boolean;
+      /** Product must have at least one tag containing this (case-insensitive). */
+      tagContains?: string;
+      titleContains?: string;
     };
 
     const titleContains =
@@ -68,16 +68,16 @@ export async function POST(
     }
 
     async function findProductIdsMatchingRule(opts: {
+      brand: null | string;
+      createdWithinDays: null | number;
+      tagContains: null | string;
       titleContains: string;
-      createdWithinDays: number | null;
-      brand: string | null;
-      tagContains: string | null;
     }): Promise<string[]> {
       const {
-        titleContains: tc,
-        createdWithinDays: cwd,
         brand: b,
+        createdWithinDays: cwd,
         tagContains: tag,
+        titleContains: tc,
       } = opts;
       const hasFilter = !!tc || cwd !== null || !!b || !!tag;
       if (!hasFilter) return [];
@@ -141,10 +141,10 @@ export async function POST(
           !!rule.tagContains?.trim();
         if (!hasFilter) continue;
         const ids = await findProductIdsMatchingRule({
-          titleContains: rule.titleContains?.trim() ?? "",
-          createdWithinDays: rule.createdWithinDays,
           brand: rule.brand?.trim() ?? null,
+          createdWithinDays: rule.createdWithinDays,
           tagContains: rule.tagContains?.trim() ?? null,
+          titleContains: rule.titleContains?.trim() ?? "",
         });
         ids.forEach((id) => allIds.add(id));
       }
@@ -165,10 +165,10 @@ export async function POST(
         );
       }
       productIds = await findProductIdsMatchingRule({
-        titleContains,
-        createdWithinDays,
         brand,
+        createdWithinDays,
         tagContains,
+        titleContains,
       });
     }
 
@@ -178,10 +178,10 @@ export async function POST(
       const tagVal = tagContains || null;
       const existingRules = await db
         .select({
-          titleContains: categoryAutoAssignRuleTable.titleContains,
-          createdWithinDays: categoryAutoAssignRuleTable.createdWithinDays,
           brand: categoryAutoAssignRuleTable.brand,
+          createdWithinDays: categoryAutoAssignRuleTable.createdWithinDays,
           tagContains: categoryAutoAssignRuleTable.tagContains,
+          titleContains: categoryAutoAssignRuleTable.titleContains,
         })
         .from(categoryAutoAssignRuleTable)
         .where(eq(categoryAutoAssignRuleTable.categoryId, categoryId));
@@ -195,14 +195,14 @@ export async function POST(
       if (!isDuplicate) {
         const now = new Date();
         await db.insert(categoryAutoAssignRuleTable).values({
-          id: createId(),
-          categoryId,
-          titleContains: titleVal,
-          createdWithinDays,
           brand: brandVal,
-          tagContains: tagVal,
-          enabled: true,
+          categoryId,
           createdAt: now,
+          createdWithinDays,
+          enabled: true,
+          id: createId(),
+          tagContains: tagVal,
+          titleContains: titleVal,
           updatedAt: now,
         });
       }
@@ -211,12 +211,12 @@ export async function POST(
     if (productIds.length === 0) {
       return NextResponse.json({
         added: 0,
-        skipped: 0,
-        totalMatched: 0,
-        perpetualSaved: perpetual,
         message: perpetual
           ? "No current products match. Perpetual rule saved—future products matching these filters will be added to this category."
           : "No products match the filters.",
+        perpetualSaved: perpetual,
+        skipped: 0,
+        totalMatched: 0,
       });
     }
 
@@ -232,9 +232,9 @@ export async function POST(
       await db
         .insert(productCategoriesTable)
         .values({
-          productId,
           categoryId,
           isMain: false,
+          productId,
         })
         .onConflictDoNothing({
           target: [
@@ -256,13 +256,13 @@ export async function POST(
 
     return NextResponse.json({
       added: toAdd.length,
-      skipped: productIds.length - toAdd.length,
-      totalMatched: productIds.length,
-      perpetualSaved: perpetual,
       message:
         toAdd.length === 0
           ? "All matching products are already in this category."
           : `Added ${toAdd.length} product${toAdd.length === 1 ? "" : "s"} to the category.`,
+      perpetualSaved: perpetual,
+      skipped: productIds.length - toAdd.length,
+      totalMatched: productIds.length,
     });
   } catch (err) {
     console.error("Bulk add products to category error:", err);

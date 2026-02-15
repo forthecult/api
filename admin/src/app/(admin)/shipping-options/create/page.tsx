@@ -14,24 +14,27 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-const COUNTRY_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "All countries" },
-  { value: "US", label: "United States" },
-  { value: "CA", label: "Canada" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "AU", label: "Australia" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "MX", label: "Mexico" },
-  { value: "OTHER", label: "Other (enter code)" },
+const COUNTRY_OPTIONS: { label: string; value: string }[] = [
+  { label: "All countries", value: "" },
+  { label: "United States", value: "US" },
+  { label: "Canada", value: "CA" },
+  { label: "United Kingdom", value: "GB" },
+  { label: "Australia", value: "AU" },
+  { label: "Germany", value: "DE" },
+  { label: "France", value: "FR" },
+  { label: "Mexico", value: "MX" },
+  { label: "Other (enter code)", value: "OTHER" },
 ];
 
-type BrandOption = { id: string; name: string };
+interface BrandOption {
+  id: string;
+  name: string;
+}
 
 export default function AdminShippingOptionCreatePage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [brands, setBrands] = useState<BrandOption[]>([]);
   const [brandId, setBrandId] = useState("");
   const [name, setName] = useState("");
@@ -43,12 +46,12 @@ export default function AdminShippingOptionCreatePage() {
   const [minWeightGrams, setMinWeightGrams] = useState<string>("");
   const [maxWeightGrams, setMaxWeightGrams] = useState<string>("");
   const [type, setType] = useState<
-    "flat" | "per_item" | "flat_plus_per_item" | "free"
+    "flat" | "flat_plus_per_item" | "free" | "per_item"
   >("flat");
   const [amountCents, setAmountCents] = useState<string>("");
   const [additionalItemCents, setAdditionalItemCents] = useState<string>("");
   const [priority, setPriority] = useState<string>("0");
-  const [speed, setSpeed] = useState<"standard" | "express">("standard");
+  const [speed, setSpeed] = useState<"express" | "standard">("standard");
   const [sourceUrl, setSourceUrl] = useState("");
   const [estimatedDaysText, setEstimatedDaysText] = useState("");
 
@@ -85,15 +88,10 @@ export default function AdminShippingOptionCreatePage() {
         return Number.isFinite(n) ? Math.round(n * 100) : null;
       };
       const body = {
-        name: name.trim(),
-        countryCode: countryCode.trim() || null,
-        minOrderCents: parseDollars(minOrderCents) ?? null,
-        maxOrderCents: parseDollars(maxOrderCents) ?? null,
-        minQuantity: parseNum(minQuantity) ?? null,
-        maxQuantity: parseNum(maxQuantity) ?? null,
-        minWeightGrams: parseNum(minWeightGrams) ?? null,
-        maxWeightGrams: parseNum(maxWeightGrams) ?? null,
-        type,
+        additionalItemCents:
+          type === "flat_plus_per_item"
+            ? (parseDollars(additionalItemCents) ?? 0)
+            : null,
         amountCents:
           type === "free"
             ? null
@@ -102,21 +100,26 @@ export default function AdminShippingOptionCreatePage() {
               : type === "flat" || type === "per_item"
                 ? (parseDollars(amountCents) ?? 0)
                 : null,
-        additionalItemCents:
-          type === "flat_plus_per_item"
-            ? (parseDollars(additionalItemCents) ?? 0)
-            : null,
-        priority: parseNum(priority) ?? 0,
-        speed,
         brandId: brandId.trim() || null,
-        sourceUrl: sourceUrl.trim() || null,
+        countryCode: countryCode.trim() || null,
         estimatedDaysText: estimatedDaysText.trim() || null,
+        maxOrderCents: parseDollars(maxOrderCents) ?? null,
+        maxQuantity: parseNum(maxQuantity) ?? null,
+        maxWeightGrams: parseNum(maxWeightGrams) ?? null,
+        minOrderCents: parseDollars(minOrderCents) ?? null,
+        minQuantity: parseNum(minQuantity) ?? null,
+        minWeightGrams: parseNum(minWeightGrams) ?? null,
+        name: name.trim(),
+        priority: parseNum(priority) ?? 0,
+        sourceUrl: sourceUrl.trim() || null,
+        speed,
+        type,
       };
       const res = await fetch(`${API_BASE}/api/admin/shipping-options`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify(body),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -137,8 +140,11 @@ export default function AdminShippingOptionCreatePage() {
           Create shipping option
         </h2>
         <Link
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/shipping-options"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           ← Back to list
         </Link>
@@ -151,34 +157,44 @@ export default function AdminShippingOptionCreatePage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {error && (
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <div
+                className={`
+                rounded-md border border-destructive/50 bg-destructive/10 px-3
+                py-2 text-sm text-destructive
+              `}
+              >
                 {error}
               </div>
             )}
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="name" className={labelClass}>
+                <label className={labelClass} htmlFor="name">
                   Name
                 </label>
                 <input
-                  id="name"
-                  type="text"
-                  placeholder="e.g. Standard US"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   className={inputClass}
+                  id="name"
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="e.g. Standard US"
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="brand" className={labelClass}>
+                <label className={labelClass} htmlFor="brand">
                   Brand (optional)
                 </label>
                 <select
-                  id="brand"
-                  value={brandId}
-                  onChange={(e) => setBrandId(e.target.value)}
                   className={inputClass}
+                  id="brand"
+                  onChange={(e) => setBrandId(e.target.value)}
+                  value={brandId}
                 >
                   <option value="">Global (all brands)</option>
                   {brands.map((b) => (
@@ -189,14 +205,14 @@ export default function AdminShippingOptionCreatePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="country" className={labelClass}>
+                <label className={labelClass} htmlFor="country">
                   Country
                 </label>
                 <select
-                  id="country"
-                  value={countryCode}
-                  onChange={(e) => setCountryCode(e.target.value)}
                   className={inputClass}
+                  id="country"
+                  onChange={(e) => setCountryCode(e.target.value)}
+                  value={countryCode}
                 >
                   {COUNTRY_OPTIONS.map((opt) => (
                     <option key={opt.value || "all"} value={opt.value}>
@@ -207,117 +223,137 @@ export default function AdminShippingOptionCreatePage() {
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="minOrder" className={labelClass}>
+                <label className={labelClass} htmlFor="minOrder">
                   Min order value ($)
                 </label>
                 <input
-                  id="minOrder"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="e.g. 0"
-                  value={minOrderCents}
-                  onChange={(e) => setMinOrderCents(e.target.value)}
                   className={inputClass}
+                  id="minOrder"
+                  inputMode="decimal"
+                  onChange={(e) => setMinOrderCents(e.target.value)}
+                  placeholder="e.g. 0"
+                  type="text"
+                  value={minOrderCents}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="maxOrder" className={labelClass}>
+                <label className={labelClass} htmlFor="maxOrder">
                   Max order value ($)
                 </label>
                 <input
-                  id="maxOrder"
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="leave empty for no max"
-                  value={maxOrderCents}
-                  onChange={(e) => setMaxOrderCents(e.target.value)}
                   className={inputClass}
+                  id="maxOrder"
+                  inputMode="decimal"
+                  onChange={(e) => setMaxOrderCents(e.target.value)}
+                  placeholder="leave empty for no max"
+                  type="text"
+                  value={maxOrderCents}
                 />
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="minQty" className={labelClass}>
+                <label className={labelClass} htmlFor="minQty">
                   Min quantity
                 </label>
                 <input
-                  id="minQty"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="leave empty for no min"
-                  value={minQuantity}
-                  onChange={(e) => setMinQuantity(e.target.value)}
                   className={inputClass}
+                  id="minQty"
+                  inputMode="numeric"
+                  onChange={(e) => setMinQuantity(e.target.value)}
+                  placeholder="leave empty for no min"
+                  type="text"
+                  value={minQuantity}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="maxQty" className={labelClass}>
+                <label className={labelClass} htmlFor="maxQty">
                   Max quantity
                 </label>
                 <input
-                  id="maxQty"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="leave empty for no max"
-                  value={maxQuantity}
-                  onChange={(e) => setMaxQuantity(e.target.value)}
                   className={inputClass}
+                  id="maxQty"
+                  inputMode="numeric"
+                  onChange={(e) => setMaxQuantity(e.target.value)}
+                  placeholder="leave empty for no max"
+                  type="text"
+                  value={maxQuantity}
                 />
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="minWeight" className={labelClass}>
+                <label className={labelClass} htmlFor="minWeight">
                   Min weight (g)
                 </label>
                 <input
-                  id="minWeight"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="leave empty for no min"
-                  value={minWeightGrams}
-                  onChange={(e) => setMinWeightGrams(e.target.value)}
                   className={inputClass}
+                  id="minWeight"
+                  inputMode="numeric"
+                  onChange={(e) => setMinWeightGrams(e.target.value)}
+                  placeholder="leave empty for no min"
+                  type="text"
+                  value={minWeightGrams}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="maxWeight" className={labelClass}>
+                <label className={labelClass} htmlFor="maxWeight">
                   Max weight (g)
                 </label>
                 <input
-                  id="maxWeight"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="leave empty for no max"
-                  value={maxWeightGrams}
-                  onChange={(e) => setMaxWeightGrams(e.target.value)}
                   className={inputClass}
+                  id="maxWeight"
+                  inputMode="numeric"
+                  onChange={(e) => setMaxWeightGrams(e.target.value)}
+                  placeholder="leave empty for no max"
+                  type="text"
+                  value={maxWeightGrams}
                 />
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="type" className={labelClass}>
+                <label className={labelClass} htmlFor="type">
                   Type
                 </label>
                 <select
+                  className={inputClass}
                   id="type"
-                  value={type}
                   onChange={(e) =>
                     setType(
                       e.target.value as
                         | "flat"
-                        | "per_item"
                         | "flat_plus_per_item"
-                        | "free",
+                        | "free"
+                        | "per_item",
                     )
                   }
-                  className={inputClass}
+                  value={type}
                 >
                   <option value="flat">Flat rate</option>
                   <option value="per_item">Per item</option>
@@ -329,77 +365,77 @@ export default function AdminShippingOptionCreatePage() {
               </div>
               {(type === "flat" || type === "per_item") && (
                 <div className="space-y-2">
-                  <label htmlFor="amount" className={labelClass}>
+                  <label className={labelClass} htmlFor="amount">
                     Amount ($)
                   </label>
                   <input
-                    id="amount"
-                    type="text"
-                    inputMode="decimal"
-                    placeholder="e.g. 5.99"
-                    value={amountCents}
-                    onChange={(e) => setAmountCents(e.target.value)}
                     className={inputClass}
+                    id="amount"
+                    inputMode="decimal"
+                    onChange={(e) => setAmountCents(e.target.value)}
+                    placeholder="e.g. 5.99"
+                    type="text"
+                    value={amountCents}
                   />
                 </div>
               )}
               {type === "flat_plus_per_item" && (
                 <>
                   <div className="space-y-2">
-                    <label htmlFor="amount" className={labelClass}>
+                    <label className={labelClass} htmlFor="amount">
                       First item ($)
                     </label>
                     <input
-                      id="amount"
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="e.g. 5.00"
-                      value={amountCents}
-                      onChange={(e) => setAmountCents(e.target.value)}
                       className={inputClass}
+                      id="amount"
+                      inputMode="decimal"
+                      onChange={(e) => setAmountCents(e.target.value)}
+                      placeholder="e.g. 5.00"
+                      type="text"
+                      value={amountCents}
                     />
                   </div>
                   <div className="space-y-2">
-                    <label htmlFor="additionalItemCents" className={labelClass}>
+                    <label className={labelClass} htmlFor="additionalItemCents">
                       Each additional item ($)
                     </label>
                     <input
-                      id="additionalItemCents"
-                      type="text"
-                      inputMode="decimal"
-                      placeholder="e.g. 1.00"
-                      value={additionalItemCents}
-                      onChange={(e) => setAdditionalItemCents(e.target.value)}
                       className={inputClass}
+                      id="additionalItemCents"
+                      inputMode="decimal"
+                      onChange={(e) => setAdditionalItemCents(e.target.value)}
+                      placeholder="e.g. 1.00"
+                      type="text"
+                      value={additionalItemCents}
                     />
                   </div>
                 </>
               )}
               <div className="space-y-2">
-                <label htmlFor="priority" className={labelClass}>
+                <label className={labelClass} htmlFor="priority">
                   Priority (lower = evaluated first)
                 </label>
                 <input
-                  id="priority"
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="0"
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
                   className={inputClass}
+                  id="priority"
+                  inputMode="numeric"
+                  onChange={(e) => setPriority(e.target.value)}
+                  placeholder="0"
+                  type="text"
+                  value={priority}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="speed" className={labelClass}>
+                <label className={labelClass} htmlFor="speed">
                   Shipping speed
                 </label>
                 <select
-                  id="speed"
-                  value={speed}
-                  onChange={(e) =>
-                    setSpeed(e.target.value as "standard" | "express")
-                  }
                   className={inputClass}
+                  id="speed"
+                  onChange={(e) =>
+                    setSpeed(e.target.value as "express" | "standard")
+                  }
+                  value={speed}
                 >
                   <option value="standard">Standard</option>
                   <option value="express">Express</option>
@@ -407,37 +443,42 @@ export default function AdminShippingOptionCreatePage() {
               </div>
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="sourceUrl" className={labelClass}>
+                <label className={labelClass} htmlFor="sourceUrl">
                   Source URL (optional)
                 </label>
                 <input
-                  id="sourceUrl"
-                  type="url"
-                  placeholder="e.g. https://pacsafe.com/pages/shipping"
-                  value={sourceUrl}
-                  onChange={(e) => setSourceUrl(e.target.value)}
                   className={inputClass}
+                  id="sourceUrl"
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="e.g. https://pacsafe.com/pages/shipping"
+                  type="url"
+                  value={sourceUrl}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="estimatedDaysText" className={labelClass}>
+                <label className={labelClass} htmlFor="estimatedDaysText">
                   Estimated delivery (optional)
                 </label>
                 <input
-                  id="estimatedDaysText"
-                  type="text"
-                  placeholder="e.g. 2-7 business days"
-                  value={estimatedDaysText}
-                  onChange={(e) => setEstimatedDaysText(e.target.value)}
                   className={inputClass}
+                  id="estimatedDaysText"
+                  onChange={(e) => setEstimatedDaysText(e.target.value)}
+                  placeholder="e.g. 2-7 business days"
+                  type="text"
+                  value={estimatedDaysText}
                 />
               </div>
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={submitting}>
+              <Button disabled={submitting} type="submit">
                 {submitting ? "Creating…" : "Create shipping option"}
               </Button>
               <Link href="/shipping-options">

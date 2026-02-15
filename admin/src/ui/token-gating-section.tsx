@@ -12,34 +12,34 @@ const defaultInputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const defaultLabelClass = "mb-1.5 block text-sm font-medium";
 
-type Props = {
-  tokenGated: boolean;
-  tokenGateType: TokenGateType | null;
-  tokenGateQuantity: number | null;
-  tokenGateNetwork: string | null;
-  tokenGateContractAddress: string | null;
-  onTokenGatedChange: (v: boolean) => void;
-  onTokenGateTypeChange: (v: TokenGateType) => void;
-  onTokenGateQuantityChange: (v: number | null) => void;
-  onTokenGateNetworkChange: (v: string | null) => void;
-  onTokenGateContractAddressChange: (v: string | null) => void;
+interface Props {
   inputClass?: string;
   labelClass?: string;
-};
+  onTokenGateContractAddressChange: (v: null | string) => void;
+  onTokenGatedChange: (v: boolean) => void;
+  onTokenGateNetworkChange: (v: null | string) => void;
+  onTokenGateQuantityChange: (v: null | number) => void;
+  onTokenGateTypeChange: (v: TokenGateType) => void;
+  tokenGateContractAddress: null | string;
+  tokenGated: boolean;
+  tokenGateNetwork: null | string;
+  tokenGateQuantity: null | number;
+  tokenGateType: null | TokenGateType;
+}
 
 export function TokenGatingSection({
-  tokenGated,
-  tokenGateType,
-  tokenGateQuantity,
-  tokenGateNetwork,
-  tokenGateContractAddress,
-  onTokenGatedChange,
-  onTokenGateTypeChange,
-  onTokenGateQuantityChange,
-  onTokenGateNetworkChange,
-  onTokenGateContractAddressChange,
   inputClass = defaultInputClass,
   labelClass = defaultLabelClass,
+  onTokenGateContractAddressChange,
+  onTokenGatedChange,
+  onTokenGateNetworkChange,
+  onTokenGateQuantityChange,
+  onTokenGateTypeChange,
+  tokenGateContractAddress,
+  tokenGated,
+  tokenGateNetwork,
+  tokenGateQuantity,
+  tokenGateType,
 }: Props) {
   const quantityInputValue =
     tokenGateQuantity != null ? String(tokenGateQuantity) : "";
@@ -56,12 +56,15 @@ export function TokenGatingSection({
       <CardContent className="space-y-6">
         <label className="flex items-center gap-2">
           <input
-            type="checkbox"
             checked={tokenGated}
-            onChange={(e) => onTokenGatedChange(e.target.checked)}
             className={cn(
-              "size-4 rounded border-input text-primary focus:ring-ring",
+              `
+                size-4 rounded border-input text-primary
+                focus:ring-ring
+              `,
             )}
+            onChange={(e) => onTokenGatedChange(e.target.checked)}
+            type="checkbox"
           />
           <span className="text-sm font-medium">Token gated</span>
         </label>
@@ -73,16 +76,19 @@ export function TokenGatingSection({
               <div className="space-y-2">
                 {TOKEN_GATE_TYPES.map((opt) => (
                   <label
+                    className="flex cursor-pointer items-center gap-2"
                     key={opt.value}
-                    className="flex items-center gap-2 cursor-pointer"
                   >
                     <input
-                      type="radio"
-                      name="tokenGateType"
-                      value={opt.value}
                       checked={(tokenGateType ?? "") === opt.value}
+                      className={`
+                        size-4 border-input text-primary
+                        focus:ring-ring
+                      `}
+                      name="tokenGateType"
                       onChange={() => onTokenGateTypeChange(opt.value)}
-                      className="size-4 border-input text-primary focus:ring-ring"
+                      type="radio"
+                      value={opt.value}
                     />
                     <span className="text-sm">{opt.label}</span>
                   </label>
@@ -92,14 +98,13 @@ export function TokenGatingSection({
 
             {tokenGateType === "cult_custom" && (
               <div className="space-y-2">
-                <label htmlFor="tokenGateQuantity" className={labelClass}>
+                <label className={labelClass} htmlFor="tokenGateQuantity">
                   Minimum CULT quantity
                 </label>
                 <input
+                  className={inputClass}
                   id="tokenGateQuantity"
-                  type="number"
                   min={1}
-                  value={quantityInputValue}
                   onChange={(e) => {
                     const v = e.target.value.trim();
                     if (v === "") {
@@ -111,8 +116,9 @@ export function TokenGatingSection({
                       Number.isNaN(n) || n < 1 ? null : n,
                     );
                   }}
-                  className={inputClass}
                   placeholder="e.g. 1000"
+                  type="number"
+                  value={quantityInputValue}
                 />
               </div>
             )}
@@ -120,18 +126,18 @@ export function TokenGatingSection({
             {tokenGateType === "other" && (
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="tokenGateNetwork" className={labelClass}>
+                  <label className={labelClass} htmlFor="tokenGateNetwork">
                     Network
                   </label>
                   <select
+                    className={inputClass}
                     id="tokenGateNetwork"
-                    value={tokenGateNetwork ?? ""}
                     onChange={(e) =>
                       onTokenGateNetworkChange(
                         e.target.value ? e.target.value : null,
                       )
                     }
-                    className={inputClass}
+                    value={tokenGateNetwork ?? ""}
                   >
                     <option value="">Select network</option>
                     {TOKEN_GATE_NETWORKS.map((n) => (
@@ -143,36 +149,35 @@ export function TokenGatingSection({
                 </div>
                 <div className="space-y-2">
                   <label
-                    htmlFor="tokenGateContractAddress"
                     className={labelClass}
+                    htmlFor="tokenGateContractAddress"
                   >
                     Token contract address
                   </label>
                   <input
+                    className={cn(inputClass, "font-mono text-xs")}
                     id="tokenGateContractAddress"
-                    type="text"
-                    value={tokenGateContractAddress ?? ""}
                     onChange={(e) =>
                       onTokenGateContractAddressChange(
                         e.target.value.trim() || null,
                       )
                     }
-                    className={cn(inputClass, "font-mono text-xs")}
                     placeholder="0x… or base58…"
+                    type="text"
+                    value={tokenGateContractAddress ?? ""}
                   />
                 </div>
                 <div className="space-y-2">
                   <label
-                    htmlFor="tokenGateQuantityOther"
                     className={labelClass}
+                    htmlFor="tokenGateQuantityOther"
                   >
                     Minimum quantity (optional)
                   </label>
                   <input
+                    className={inputClass}
                     id="tokenGateQuantityOther"
-                    type="number"
                     min={1}
-                    value={quantityInputValue}
                     onChange={(e) => {
                       const v = e.target.value.trim();
                       if (v === "") {
@@ -184,8 +189,9 @@ export function TokenGatingSection({
                         Number.isNaN(n) || n < 1 ? null : n,
                       );
                     }}
-                    className={inputClass}
                     placeholder="e.g. 100"
+                    type="number"
+                    value={quantityInputValue}
                   />
                 </div>
               </div>

@@ -10,9 +10,19 @@ export const metadata = {
 
 export default function PrivacyPolicyPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Privacy policy
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
@@ -25,7 +35,12 @@ export default function PrivacyPolicyPage() {
       </header>
 
       <div className="space-y-10">
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Our commitment to you
           </h2>
@@ -38,7 +53,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Information we collect
           </h2>
@@ -48,14 +68,14 @@ export default function PrivacyPolicyPage() {
           <ul className="mt-3 space-y-4 text-muted-foreground" role="list">
             <li className="flex gap-2 leading-relaxed">
               <span
-                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
               <span className="min-w-0">
                 <strong className="block font-medium text-foreground">
                   Contact & account:
                 </strong>
-                <span className="block mt-0.5">
+                <span className="mt-0.5 block">
                   name, email, password (hashed), and optional profile details
                   you provide.
                 </span>
@@ -63,14 +83,14 @@ export default function PrivacyPolicyPage() {
             </li>
             <li className="flex gap-2 leading-relaxed">
               <span
-                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
               <span className="min-w-0">
                 <strong className="block font-medium text-foreground">
                   Orders & shipping:
                 </strong>
-                <span className="block mt-0.5">
+                <span className="mt-0.5 block">
                   billing and shipping addresses, phone (if provided), and order
                   history.
                 </span>
@@ -78,14 +98,14 @@ export default function PrivacyPolicyPage() {
             </li>
             <li className="flex gap-2 leading-relaxed">
               <span
-                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
               <span className="min-w-0">
                 <strong className="block font-medium text-foreground">
                   Usage data:
                 </strong>
-                <span className="block mt-0.5">
+                <span className="mt-0.5 block">
                   basic technical data (e.g. IP, device type) for security,
                   fraud prevention, and making the site work. We do not use this
                   for cross-site tracking or advertising.
@@ -95,7 +115,12 @@ export default function PrivacyPolicyPage() {
           </ul>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             How we use your information
           </h2>
@@ -108,7 +133,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Cookies and similar technologies
           </h2>
@@ -123,8 +153,11 @@ export default function PrivacyPolicyPage() {
             cookie consent banner: we don&apos;t use the kind that require one.
             For more detail, see our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/cookies"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Cookies policy
             </Link>
@@ -132,7 +165,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Sharing and disclosure
           </h2>
@@ -145,7 +183,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Your rights and choices
           </h2>
@@ -161,7 +204,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Security and retention
           </h2>
@@ -173,7 +221,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Children, international use, and changes
           </h2>
@@ -188,7 +241,12 @@ export default function PrivacyPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Contact us
           </h2>
@@ -196,8 +254,11 @@ export default function PrivacyPolicyPage() {
             For privacy questions, to exercise your rights, or to report a
             concern, please use our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/contact"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               contact page
             </Link>

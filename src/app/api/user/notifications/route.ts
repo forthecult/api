@@ -1,23 +1,33 @@
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { db } from "~/db";
-import { accountTable, userTable } from "~/db/schema";
-import { auth } from "~/lib/auth";
-import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
-import {
-  getClientIp,
-  RATE_LIMITS,
-  checkRateLimit,
-  rateLimitResponse,
-} from "~/lib/rate-limit";
 import type {
   ChannelPreferences,
   NotificationPreferences,
 } from "~/lib/user-notification-preferences";
 
+import { db } from "~/db";
+import { accountTable, userTable } from "~/db/schema";
+import { auth } from "~/lib/auth";
+import { csrfFailureResponse, verifyCsrfOrigin } from "~/lib/csrf";
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
+
 const TELEGRAM_PROVIDER_ID = "telegram";
 const DISCORD_PROVIDER_ID = "discord";
+
+// Type for update body
+interface NotificationUpdateBody {
+  marketing?: Partial<ChannelPreferences>;
+  receiveMarketing?: boolean;
+  // Legacy fields
+  receiveOrderNotificationsViaTelegram?: boolean;
+  transactional?: Partial<ChannelPreferences>;
+}
 
 /**
  * GET /api/user/notifications
@@ -36,24 +46,24 @@ export async function GET(request: NextRequest) {
 
   const [user] = await db
     .select({
-      // Transactional preferences
-      transactionalEmail: userTable.transactionalEmail,
-      transactionalWebsite: userTable.transactionalWebsite,
-      transactionalSms: userTable.transactionalSms,
-      transactionalTelegram: userTable.transactionalTelegram,
-      transactionalDiscord: userTable.transactionalDiscord,
-      transactionalAiCompanion: userTable.transactionalAiCompanion,
+      marketingAiCompanion: userTable.marketingAiCompanion,
+      marketingDiscord: userTable.marketingDiscord,
       // Marketing preferences
       marketingEmail: userTable.marketingEmail,
-      marketingWebsite: userTable.marketingWebsite,
       marketingSms: userTable.marketingSms,
       marketingTelegram: userTable.marketingTelegram,
-      marketingDiscord: userTable.marketingDiscord,
-      marketingAiCompanion: userTable.marketingAiCompanion,
+      marketingWebsite: userTable.marketingWebsite,
+      receiveMarketing: userTable.receiveMarketing,
       // Legacy fields
       receiveOrderNotificationsViaTelegram:
         userTable.receiveOrderNotificationsViaTelegram,
-      receiveMarketing: userTable.receiveMarketing,
+      transactionalAiCompanion: userTable.transactionalAiCompanion,
+      transactionalDiscord: userTable.transactionalDiscord,
+      // Transactional preferences
+      transactionalEmail: userTable.transactionalEmail,
+      transactionalSms: userTable.transactionalSms,
+      transactionalTelegram: userTable.transactionalTelegram,
+      transactionalWebsite: userTable.transactionalWebsite,
     })
     .from(userTable)
     .where(eq(userTable.id, userId))
@@ -84,39 +94,30 @@ export async function GET(request: NextRequest) {
   const hasDiscordLinked = Boolean(discordAccount?.accountId);
 
   return NextResponse.json({
-    hasTelegramLinked,
     hasDiscordLinked,
-    transactional: {
-      email: user?.transactionalEmail ?? true,
-      website: user?.transactionalWebsite ?? true,
-      sms: user?.transactionalSms ?? false,
-      telegram: user?.transactionalTelegram ?? false,
-      discord: user?.transactionalDiscord ?? false,
-      aiCompanion: user?.transactionalAiCompanion ?? false,
-    },
+    hasTelegramLinked,
     marketing: {
+      aiCompanion: user?.marketingAiCompanion ?? false,
+      discord: user?.marketingDiscord ?? false,
       email: user?.marketingEmail ?? false,
-      website: user?.marketingWebsite ?? false,
       sms: user?.marketingSms ?? false,
       telegram: user?.marketingTelegram ?? false,
-      discord: user?.marketingDiscord ?? false,
-      aiCompanion: user?.marketingAiCompanion ?? false,
+      website: user?.marketingWebsite ?? false,
     },
+    receiveMarketing: user?.receiveMarketing ?? false,
     // Legacy fields
     receiveOrderNotificationsViaTelegram:
       user?.receiveOrderNotificationsViaTelegram ?? false,
-    receiveMarketing: user?.receiveMarketing ?? false,
+    transactional: {
+      aiCompanion: user?.transactionalAiCompanion ?? false,
+      discord: user?.transactionalDiscord ?? false,
+      email: user?.transactionalEmail ?? true,
+      sms: user?.transactionalSms ?? false,
+      telegram: user?.transactionalTelegram ?? false,
+      website: user?.transactionalWebsite ?? true,
+    },
   } satisfies NotificationPreferences);
 }
-
-// Type for update body
-type NotificationUpdateBody = {
-  transactional?: Partial<ChannelPreferences>;
-  marketing?: Partial<ChannelPreferences>;
-  // Legacy fields
-  receiveOrderNotificationsViaTelegram?: boolean;
-  receiveMarketing?: boolean;
-};
 
 /**
  * PATCH /api/user/notifications

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
+
 import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { sizeChartsTable } from "~/db/schema";
@@ -8,6 +9,30 @@ import { getAdminAuth } from "~/lib/admin-api-auth";
 import { apiError } from "~/lib/api-error";
 
 const PROVIDERS = ["printful", "printify", "manual"] as const;
+
+/**
+ * DELETE /api/admin/size-charts/[id]
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
+
+  const [deleted] = await db
+    .delete(sizeChartsTable)
+    .where(eq(sizeChartsTable.id, id))
+    .returning({ id: sizeChartsTable.id });
+  if (!deleted)
+    return apiError("NOT_FOUND", { message: "Size chart not found" });
+  return new NextResponse(null, { status: 204 });
+}
 
 /**
  * GET /api/admin/size-charts/[id]
@@ -50,9 +75,9 @@ export async function PATCH(
   if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
 
   const body = (await request.json()) as {
-    displayName?: string;
     dataImperial?: unknown;
     dataMetric?: unknown;
+    displayName?: string;
   };
 
   const updates: Record<string, unknown> = { updatedAt: new Date() };
@@ -73,28 +98,4 @@ export async function PATCH(
   if (!updated)
     return apiError("NOT_FOUND", { message: "Size chart not found" });
   return NextResponse.json(updated);
-}
-
-/**
- * DELETE /api/admin/size-charts/[id]
- */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  if (!id) return apiError("MISSING_REQUIRED_FIELD", { field: "id" });
-
-  const [deleted] = await db
-    .delete(sizeChartsTable)
-    .where(eq(sizeChartsTable.id, id))
-    .returning({ id: sizeChartsTable.id });
-  if (!deleted)
-    return apiError("NOT_FOUND", { message: "Size chart not found" });
-  return new NextResponse(null, { status: 204 });
 }

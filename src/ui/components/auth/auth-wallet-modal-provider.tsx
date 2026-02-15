@@ -54,8 +54,8 @@ export function AuthWalletModalProvider({
     <SolanaWalletProvider>
       {children}
       <AuthWalletModal
-        open={open}
         onOpenChange={handleOpenChange}
+        open={open}
         solanaOnly={solanaOnly}
       />
     </SolanaWalletProvider>

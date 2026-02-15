@@ -29,13 +29,57 @@ const ALLOWED_TAGS = [
 
 const ALLOWED_ATTRS: Record<string, string[]> = {
   a: ["href", "title", "target", "rel"],
-  span: ["class"],
   div: ["class"],
-  p: ["class", "dir"],
   h2: ["class"],
   h3: ["class"],
   h4: ["class"],
+  p: ["class", "dir"],
+  span: ["class"],
 };
+
+/**
+ * Sanitize HTML for product description display. Use on the server when
+ * rendering product pages. Allows safe formatting and links only.
+ * Plain-text descriptions with line breaks are converted to <p> and <br />
+ * so paragraph breaks appear on the storefront.
+ */
+export function sanitizeProductDescription(
+  html: null | string | undefined,
+): string {
+  if (html == null || String(html).trim() === "") return "";
+  const raw = String(html).trim();
+  const toSanitize = hasBlockLevelHtml(raw)
+    ? raw
+    : plainTextNewlinesToHtml(raw);
+  return sanitizeHtml(toSanitize, {
+    allowedAttributes: ALLOWED_ATTRS,
+    allowedSchemes: ["http", "https", "mailto"],
+    allowedTags: ALLOWED_TAGS,
+    // Allow target="_blank" but add rel="noopener noreferrer" for security
+    transformTags: {
+      a: (tagName, attribs) => ({
+        attribs: {
+          ...attribs,
+          ...(attribs.target === "_blank"
+            ? { rel: "noopener noreferrer" }
+            : {}),
+        },
+        tagName: "a",
+      }),
+    },
+  });
+}
+
+/**
+ * Strip all HTML tags for use in meta description / plain text (e.g. OG description).
+ */
+export function stripHtmlForMeta(html: null | string | undefined): string {
+  if (html == null || String(html).trim() === "") return "";
+  return String(html)
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 /** Detect if string already contains block-level HTML (e.g. from Printify or admin-edited HTML). */
 function hasBlockLevelHtml(text: string): boolean {
@@ -57,48 +101,4 @@ function plainTextNewlinesToHtml(text: string): string {
   // Single newlines → line break
   const withBreaks = withParagraphs.replace(/\n/g, "<br />");
   return '<p class="mb-3">' + withBreaks + "</p>";
-}
-
-/**
- * Sanitize HTML for product description display. Use on the server when
- * rendering product pages. Allows safe formatting and links only.
- * Plain-text descriptions with line breaks are converted to <p> and <br />
- * so paragraph breaks appear on the storefront.
- */
-export function sanitizeProductDescription(
-  html: string | null | undefined,
-): string {
-  if (html == null || String(html).trim() === "") return "";
-  const raw = String(html).trim();
-  const toSanitize = hasBlockLevelHtml(raw)
-    ? raw
-    : plainTextNewlinesToHtml(raw);
-  return sanitizeHtml(toSanitize, {
-    allowedTags: ALLOWED_TAGS,
-    allowedAttributes: ALLOWED_ATTRS,
-    allowedSchemes: ["http", "https", "mailto"],
-    // Allow target="_blank" but add rel="noopener noreferrer" for security
-    transformTags: {
-      a: (tagName, attribs) => ({
-        tagName: "a",
-        attribs: {
-          ...attribs,
-          ...(attribs.target === "_blank"
-            ? { rel: "noopener noreferrer" }
-            : {}),
-        },
-      }),
-    },
-  });
-}
-
-/**
- * Strip all HTML tags for use in meta description / plain text (e.g. OG description).
- */
-export function stripHtmlForMeta(html: string | null | undefined): string {
-  if (html == null || String(html).trim() === "") return "";
-  return String(html)
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
 }

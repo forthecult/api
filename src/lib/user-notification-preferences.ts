@@ -17,17 +17,15 @@ export const NOTIFICATION_CHANNELS = [
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number];
 
 export const NOTIFICATION_TYPES = ["transactional", "marketing"] as const;
-export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
+export type ChannelPreferences = Record<NotificationChannel, boolean>;
 
-export type ChannelPreferences = {
-  [K in NotificationChannel]: boolean;
-};
-
-export type NotificationPreferences = {
-  hasTelegramLinked: boolean;
+export interface NotificationPreferences {
   hasDiscordLinked: boolean;
-  transactional: ChannelPreferences;
+  hasTelegramLinked: boolean;
   marketing: ChannelPreferences;
-  receiveOrderNotificationsViaTelegram: boolean;
   receiveMarketing: boolean;
-};
+  receiveOrderNotificationsViaTelegram: boolean;
+  transactional: ChannelPreferences;
+}
+
+export type NotificationType = (typeof NOTIFICATION_TYPES)[number];

@@ -5,9 +5,9 @@ import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -37,8 +37,8 @@ export async function POST(
     const body = (await request.json()) as {
       email?: string;
       emailConsent?: boolean;
-      smsConsent?: boolean;
       phone?: string;
+      smsConsent?: boolean;
     };
 
     const email = body.email?.trim().toLowerCase();
@@ -49,8 +49,8 @@ export async function POST(
     // Fetch order and verify email matches
     const [order] = await db
       .select({
-        id: ordersTable.id,
         email: ordersTable.email,
+        id: ordersTable.id,
         userId: ordersTable.userId,
       })
       .from(ordersTable)

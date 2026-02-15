@@ -5,11 +5,12 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { TokenGateRow } from "~/ui/token-gates-list";
+
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import type { TokenGateRow } from "~/ui/token-gates-list";
 import { TokenGatesList } from "~/ui/token-gates-list";
 
 const API_BASE = getMainAppUrl();
@@ -18,24 +19,27 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type Category = {
-  id: string;
-  name: string;
-  slug: string | null;
-  title: string | null;
-  metaDescription: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  level: number;
+interface Category {
+  description: null | string;
   featured: boolean;
-  visible?: boolean;
+  id: string;
+  imageUrl: null | string;
+  level: number;
+  metaDescription: null | string;
+  name: string;
+  parentId: null | string;
   seoOptimized?: boolean;
-  parentId: string | null;
+  slug: null | string;
+  title: null | string;
   tokenGated?: boolean;
   tokenGates?: TokenGateRow[];
-};
+  visible?: boolean;
+}
 
-type CategoryOption = { id: string; name: string };
+interface CategoryOption {
+  id: string;
+  name: string;
+}
 
 export default function AdminCategoryEditPage() {
   const params = useParams();
@@ -45,7 +49,7 @@ export default function AdminCategoryEditPage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [parentOptions, setParentOptions] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -71,22 +75,22 @@ export default function AdminCategoryEditPage() {
   const [bulkAdding, setBulkAdding] = useState(false);
   const [bulkRunningSaved, setBulkRunningSaved] = useState(false);
   const bulkAddAbortRef = useRef<AbortController | null>(null);
-  const [bulkResult, setBulkResult] = useState<{
+  const [bulkResult, setBulkResult] = useState<null | {
     added: number;
+    message: string;
     skipped: number;
     totalMatched: number;
-    message: string;
-  } | null>(null);
-  type AutoAssignRule = {
-    id: string;
-    titleContains: string | null;
-    createdWithinDays: number | null;
-    brand: string | null;
-    tagContains: string | null;
+  }>(null);
+  interface AutoAssignRule {
+    brand: null | string;
+    createdWithinDays: null | number;
     enabled: boolean;
-  };
+    id: string;
+    tagContains: null | string;
+    titleContains: null | string;
+  }
   const [savedRules, setSavedRules] = useState<AutoAssignRule[]>([]);
-  const [deletingRuleId, setDeletingRuleId] = useState<string | null>(null);
+  const [deletingRuleId, setDeletingRuleId] = useState<null | string>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const [imageDropActive, setImageDropActive] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -179,9 +183,9 @@ export default function AdminCategoryEditPage() {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch(`${API_BASE}/api/admin/upload`, {
-        method: "POST",
-        credentials: "include",
         body: form,
+        credentials: "include",
+        method: "POST",
       });
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
@@ -225,24 +229,24 @@ export default function AdminCategoryEditPage() {
       setSaving(true);
       try {
         const res = await fetch(`${API_BASE}/api/admin/categories/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            name: name.trim() || undefined,
-            slug: slug.trim() || null,
-            title: title.trim() || null,
-            metaDescription: metaDescription.trim() || null,
             description: description.trim() || null,
-            seoOptimized,
+            featured,
             imageUrl: imageUrl.trim() || null,
             level,
-            featured,
-            visible,
+            metaDescription: metaDescription.trim() || null,
+            name: name.trim() || undefined,
             parentId: parentId || null,
+            seoOptimized,
+            slug: slug.trim() || null,
+            title: title.trim() || null,
             tokenGated,
             tokenGates,
+            visible,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -288,9 +292,9 @@ export default function AdminCategoryEditPage() {
     if (!titleContains && createdWithinDays == null && !brand && !tagContains) {
       setBulkResult({
         added: 0,
+        message: "Provide at least one filter.",
         skipped: 0,
         totalMatched: 0,
-        message: "Provide at least one filter.",
       });
       return;
     }
@@ -300,9 +304,9 @@ export default function AdminCategoryEditPage() {
     ) {
       setBulkResult({
         added: 0,
+        message: "Created within days must be a positive number.",
         skipped: 0,
         totalMatched: 0,
-        message: "Created within days must be a positive number.",
       });
       return;
     }
@@ -315,35 +319,35 @@ export default function AdminCategoryEditPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/categories/${id}/bulk-add-products`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            titleContains: titleContains || undefined,
-            createdWithinDays: createdWithinDays ?? undefined,
             brand: brand ?? undefined,
-            tagContains: tagContains ?? undefined,
+            createdWithinDays: createdWithinDays ?? undefined,
             perpetual: bulkPerpetual,
+            tagContains: tagContains ?? undefined,
+            titleContains: titleContains || undefined,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
           signal: ac.signal,
         },
       );
       let data: {
         added?: number;
+        error?: string;
+        message?: string;
+        perpetualSaved?: boolean;
         skipped?: number;
         totalMatched?: number;
-        perpetualSaved?: boolean;
-        message?: string;
-        error?: string;
       };
       try {
         data = (await res.json()) as typeof data;
       } catch {
         setBulkResult({
           added: 0,
+          message: "Invalid response from server.",
           skipped: 0,
           totalMatched: 0,
-          message: "Invalid response from server.",
         });
         return;
       }
@@ -359,28 +363,28 @@ export default function AdminCategoryEditPage() {
               : (data.error ?? "Failed to add products");
         setBulkResult({
           added: 0,
+          message: msg,
           skipped: 0,
           totalMatched: 0,
-          message: msg,
         });
         return;
       }
       setBulkResult({
         added: data.added ?? 0,
+        message: data.message ?? "Done.",
         skipped: data.skipped ?? 0,
         totalMatched: data.totalMatched ?? 0,
-        message: data.message ?? "Done.",
       });
       void fetchCategory();
     } catch (err) {
       const isAbort = err instanceof Error && err.name === "AbortError";
       setBulkResult({
         added: 0,
-        skipped: 0,
-        totalMatched: 0,
         message: isAbort
           ? "Request timed out. Try fewer filters or try again."
           : "Request failed. Ensure the main store (e.g. localhost:3000) is running.",
+        skipped: 0,
+        totalMatched: 0,
       });
     } finally {
       clearTimeout(timeoutId);
@@ -404,9 +408,9 @@ export default function AdminCategoryEditPage() {
     setBulkRunningSaved(false);
     setBulkResult({
       added: 0,
+      message: "Cancelled.",
       skipped: 0,
       totalMatched: 0,
-      message: "Cancelled.",
     });
   }, []);
 
@@ -421,28 +425,28 @@ export default function AdminCategoryEditPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/categories/${id}/bulk-add-products`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ runPerpetualRules: true }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
           signal: ac.signal,
         },
       );
       let data: {
         added?: number;
+        error?: string;
+        message?: string;
         skipped?: number;
         totalMatched?: number;
-        message?: string;
-        error?: string;
       };
       try {
         data = (await res.json()) as typeof data;
       } catch {
         setBulkResult({
           added: 0,
+          message: "Invalid response from server.",
           skipped: 0,
           totalMatched: 0,
-          message: "Invalid response from server.",
         });
         return;
       }
@@ -455,28 +459,28 @@ export default function AdminCategoryEditPage() {
               : (data.error ?? "Failed to add products");
         setBulkResult({
           added: 0,
+          message: msg,
           skipped: 0,
           totalMatched: 0,
-          message: msg,
         });
         return;
       }
       setBulkResult({
         added: data.added ?? 0,
+        message: data.message ?? "Done.",
         skipped: data.skipped ?? 0,
         totalMatched: data.totalMatched ?? 0,
-        message: data.message ?? "Done.",
       });
       void fetchCategory();
     } catch (err) {
       const isAbort = err instanceof Error && err.name === "AbortError";
       setBulkResult({
         added: 0,
-        skipped: 0,
-        totalMatched: 0,
         message: isAbort
           ? "Request timed out. Try again."
           : "Request failed. Ensure the main store (e.g. localhost:3000) is running.",
+        skipped: 0,
+        totalMatched: 0,
       });
     } finally {
       clearTimeout(timeoutId);
@@ -492,7 +496,7 @@ export default function AdminCategoryEditPage() {
       try {
         const res = await fetch(
           `${API_BASE}/api/admin/categories/${id}/auto-assign-rule?ruleId=${encodeURIComponent(ruleId)}`,
-          { method: "DELETE", credentials: "include" },
+          { credentials: "include", method: "DELETE" },
         );
         if (res.ok) void fetchAutoAssignRules();
       } finally {
@@ -514,8 +518,8 @@ export default function AdminCategoryEditPage() {
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/categories/${id}`, {
-        method: "DELETE",
         credentials: "include",
+        method: "DELETE",
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -531,7 +535,11 @@ export default function AdminCategoryEditPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -541,12 +549,20 @@ export default function AdminCategoryEditPage() {
     return (
       <div className="space-y-4">
         <Link
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/categories"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           ← Back to list
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       </div>
@@ -561,35 +577,46 @@ export default function AdminCategoryEditPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div className="flex flex-wrap items-center gap-4">
           <h2 className="text-2xl font-semibold tracking-tight">
             Edit Category
           </h2>
           <Link
+            className={`
+              text-sm font-medium text-muted-foreground
+              hover:text-foreground
+            `}
             href="/categories"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             ← Back to list
           </Link>
           {storefrontCategoryUrl ? (
             <a
+              className={`
+                text-sm font-medium text-primary
+                hover:underline
+              `}
               href={storefrontCategoryUrl}
-              target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-primary hover:underline"
+              target="_blank"
             >
               View category ↗
             </a>
           ) : null}
         </div>
         <Button
-          type="button"
-          variant="destructive"
+          aria-label="Delete category"
           className="gap-2"
           disabled={deleting}
           onClick={handleDelete}
-          aria-label="Delete category"
+          type="button"
+          variant="destructive"
         >
           <Trash2 className="size-4" />
           Delete category
@@ -597,7 +624,12 @@ export default function AdminCategoryEditPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
@@ -605,7 +637,7 @@ export default function AdminCategoryEditPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Layers className="size-5" aria-hidden />
+            <Layers aria-hidden className="size-5" />
             Bulk add products
           </CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -616,7 +648,12 @@ export default function AdminCategoryEditPage() {
         <CardContent className="space-y-4">
           {savedRules.length > 0 && (
             <div className="space-y-2">
-              <p className="font-medium text-green-800 dark:text-green-200">
+              <p
+                className={`
+                font-medium text-green-800
+                dark:text-green-200
+              `}
+              >
                 Active perpetual rules ({savedRules.length}) — saved for future
                 products
               </p>
@@ -627,11 +664,11 @@ export default function AdminCategoryEditPage() {
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
                   disabled={bulkRunningSaved || bulkAdding}
                   onClick={handleRunSavedRules}
+                  size="sm"
+                  type="button"
+                  variant="outline"
                 >
                   {bulkRunningSaved
                     ? "Adding…"
@@ -644,8 +681,14 @@ export default function AdminCategoryEditPage() {
               <ul className="space-y-2">
                 {savedRules.map((rule) => (
                   <li
+                    className={`
+                      flex flex-wrap items-center justify-between gap-2
+                      rounded-lg border border-green-200 bg-green-50 p-3 text-sm
+                      text-green-800
+                      dark:border-green-800 dark:bg-green-950/30
+                      dark:text-green-200
+                    `}
                     key={rule.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
                   >
                     <ul className="list-inside list-disc space-y-0.5">
                       {rule.titleContains && (
@@ -664,13 +707,17 @@ export default function AdminCategoryEditPage() {
                       )}
                     </ul>
                     <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
+                      aria-label={`Remove rule ${rule.id}`}
+                      className={`
+                        shrink-0 text-red-600
+                        hover:text-red-700
+                        dark:text-red-400 dark:hover:text-red-300
+                      `}
                       disabled={deletingRuleId === rule.id}
                       onClick={() => handleDeleteRule(rule.id)}
-                      className="shrink-0 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                      aria-label={`Remove rule ${rule.id}`}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
                     >
                       {deletingRuleId === rule.id ? (
                         "Removing…"
@@ -683,58 +730,64 @@ export default function AdminCategoryEditPage() {
               </ul>
             </div>
           )}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={`
+            grid gap-4
+            sm:grid-cols-2
+            lg:grid-cols-4
+          `}
+          >
             <div className="space-y-2">
-              <label htmlFor="bulk-title" className={labelClass}>
+              <label className={labelClass} htmlFor="bulk-title">
                 Product title contains
               </label>
               <input
-                id="bulk-title"
-                type="text"
-                placeholder="e.g. Bitcoin"
-                value={bulkTitleContains}
-                onChange={(e) => setBulkTitleContains(e.target.value)}
                 className={inputClass}
+                id="bulk-title"
+                onChange={(e) => setBulkTitleContains(e.target.value)}
+                placeholder="e.g. Bitcoin"
+                type="text"
+                value={bulkTitleContains}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="bulk-days" className={labelClass}>
+              <label className={labelClass} htmlFor="bulk-days">
                 Created within last (days)
               </label>
               <input
-                id="bulk-days"
-                type="number"
-                min={1}
-                placeholder="e.g. 30"
-                value={bulkCreatedWithinDays}
-                onChange={(e) => setBulkCreatedWithinDays(e.target.value)}
                 className={inputClass}
+                id="bulk-days"
+                min={1}
+                onChange={(e) => setBulkCreatedWithinDays(e.target.value)}
+                placeholder="e.g. 30"
+                type="number"
+                value={bulkCreatedWithinDays}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="bulk-brand" className={labelClass}>
+              <label className={labelClass} htmlFor="bulk-brand">
                 Brand
               </label>
               <input
-                id="bulk-brand"
-                type="text"
-                placeholder="e.g. TechPro"
-                value={bulkBrand}
-                onChange={(e) => setBulkBrand(e.target.value)}
                 className={inputClass}
+                id="bulk-brand"
+                onChange={(e) => setBulkBrand(e.target.value)}
+                placeholder="e.g. TechPro"
+                type="text"
+                value={bulkBrand}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="bulk-tag" className={labelClass}>
+              <label className={labelClass} htmlFor="bulk-tag">
                 Product tag contains
               </label>
               <input
-                id="bulk-tag"
-                type="text"
-                placeholder="e.g. supplement"
-                value={bulkTagContains}
-                onChange={(e) => setBulkTagContains(e.target.value)}
                 className={inputClass}
+                id="bulk-tag"
+                onChange={(e) => setBulkTagContains(e.target.value)}
+                placeholder="e.g. supplement"
+                type="text"
+                value={bulkTagContains}
               />
               <p className="text-xs text-muted-foreground">
                 Products with at least one tag containing this text
@@ -746,18 +799,18 @@ export default function AdminCategoryEditPage() {
             <div className="flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2 text-sm">
                 <input
-                  type="checkbox"
                   checked={bulkPerpetual}
-                  onChange={(e) => setBulkPerpetual(e.target.checked)}
                   className="rounded border-input"
+                  onChange={(e) => setBulkPerpetual(e.target.checked)}
+                  type="checkbox"
                 />
                 Also apply to new/imported products (perpetual rule)
               </label>
               <Button
-                type="button"
-                variant="secondary"
                 disabled={bulkAdding || bulkRunningSaved}
                 onClick={handleBulkAdd}
+                type="button"
+                variant="secondary"
               >
                 {bulkAdding || bulkRunningSaved
                   ? "Adding…"
@@ -765,9 +818,9 @@ export default function AdminCategoryEditPage() {
               </Button>
               {(bulkAdding || bulkRunningSaved) && (
                 <Button
+                  onClick={handleCancelBulkAdd}
                   type="button"
                   variant="outline"
-                  onClick={handleCancelBulkAdd}
                 >
                   Cancel
                 </Button>
@@ -784,7 +837,10 @@ export default function AdminCategoryEditPage() {
               className={cn(
                 "text-sm",
                 bulkResult.added > 0
-                  ? "text-green-700 dark:text-green-400"
+                  ? `
+                    text-green-700
+                    dark:text-green-400
+                  `
                   : "text-muted-foreground",
               )}
             >
@@ -809,30 +865,35 @@ export default function AdminCategoryEditPage() {
             <CardTitle>Category details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="name" className={labelClass}>
+                <label className={labelClass} htmlFor="name">
                   Name
                 </label>
                 <input
-                  id="name"
-                  type="text"
-                  placeholder="Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   className={inputClass}
+                  id="name"
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Name"
                   required
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="parent" className={labelClass}>
+                <label className={labelClass} htmlFor="parent">
                   Parent category
                 </label>
                 <select
-                  id="parent"
-                  value={parentId}
-                  onChange={(e) => setParentId(e.target.value)}
                   className={inputClass}
+                  id="parent"
+                  onChange={(e) => setParentId(e.target.value)}
+                  value={parentId}
                 >
                   <option value="">None</option>
                   {parentOptions.map((c) => (
@@ -845,48 +906,48 @@ export default function AdminCategoryEditPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="imageUrl" className={labelClass}>
+              <label className={labelClass} htmlFor="imageUrl">
                 Image URL
               </label>
               <input
-                ref={imageInputRef}
-                type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
                 aria-hidden
+                className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   e.target.value = "";
                   if (file) uploadImageFile(file);
                 }}
+                ref={imageInputRef}
+                type="file"
               />
               <div
-                onDragOver={handleImageDragOver}
-                onDragLeave={handleImageDragLeave}
-                onDrop={handleImageDrop}
                 className={cn(
                   "rounded-md border-2 border-dashed p-4 transition-colors",
                   imageDropActive
                     ? "border-primary bg-primary/5"
                     : "border-border bg-muted/30",
                 )}
+                onDragLeave={handleImageDragLeave}
+                onDragOver={handleImageDragOver}
+                onDrop={handleImageDrop}
               >
                 <input
-                  id="imageUrl"
-                  type="url"
-                  placeholder="https://… or drop image here"
-                  value={imageUrl}
-                  onChange={(e) => setImageUrl(e.target.value)}
                   className={inputClass}
+                  id="imageUrl"
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://… or drop image here"
+                  type="url"
+                  value={imageUrl}
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-2">
                   <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
                     className="gap-1"
                     disabled={imageUploading}
                     onClick={() => imageInputRef.current?.click()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
                   >
                     <Upload className="h-4 w-4" />
                     {imageUploading ? "Uploading…" : "Upload"}
@@ -899,15 +960,20 @@ export default function AdminCategoryEditPage() {
               </div>
               {imageUrl && (
                 <div className="relative mt-2 flex items-center gap-3">
-                  <div className="relative size-20 shrink-0 overflow-hidden rounded-md border bg-muted">
+                  <div
+                    className={`
+                    relative size-20 shrink-0 overflow-hidden rounded-md border
+                    bg-muted
+                  `}
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={imageUrl}
                       alt=""
                       className="size-full object-cover"
                       onError={(e) => {
                         e.currentTarget.style.display = "none";
                       }}
+                      src={imageUrl}
                     />
                   </div>
                   <span className="text-xs text-muted-foreground">Preview</span>
@@ -915,48 +981,59 @@ export default function AdminCategoryEditPage() {
               )}
             </div>
 
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="level" className={labelClass}>
+                <label className={labelClass} htmlFor="level">
                   Level
                 </label>
                 <input
+                  className={inputClass}
                   id="level"
-                  type="number"
                   min={1}
-                  value={level}
                   onChange={(e) =>
                     setLevel(Number.parseInt(e.target.value, 10) || 1)
                   }
-                  className={inputClass}
+                  type="number"
+                  value={level}
                 />
               </div>
               <div className="flex items-center gap-4 pt-8">
                 <div className="flex items-center gap-2">
                   <input
-                    id="visible"
-                    type="checkbox"
                     checked={visible}
-                    onChange={(e) => setVisible(e.target.checked)}
                     className={cn(
-                      "size-4 rounded border-input text-primary focus:ring-ring",
+                      `
+                        size-4 rounded border-input text-primary
+                        focus:ring-ring
+                      `,
                     )}
+                    id="visible"
+                    onChange={(e) => setVisible(e.target.checked)}
+                    type="checkbox"
                   />
-                  <label htmlFor="visible" className="text-sm font-medium">
+                  <label className="text-sm font-medium" htmlFor="visible">
                     Visible in store
                   </label>
                 </div>
                 <div className="flex items-center gap-2">
                   <input
-                    id="featured"
-                    type="checkbox"
                     checked={featured}
-                    onChange={(e) => setFeatured(e.target.checked)}
                     className={cn(
-                      "size-4 rounded border-input text-primary focus:ring-ring",
+                      `
+                        size-4 rounded border-input text-primary
+                        focus:ring-ring
+                      `,
                     )}
+                    id="featured"
+                    onChange={(e) => setFeatured(e.target.checked)}
+                    type="checkbox"
                   />
-                  <label htmlFor="featured" className="text-sm font-medium">
+                  <label className="text-sm font-medium" htmlFor="featured">
                     Featured category
                   </label>
                 </div>
@@ -964,14 +1041,14 @@ export default function AdminCategoryEditPage() {
             </div>
 
             <TokenGatesList
-              gates={tokenGates}
-              onChange={setTokenGates}
-              tokenGated={tokenGated}
-              onTokenGatedChange={setTokenGated}
-              title="Category token gates"
               description="Require user to hold ≥ quantity of ANY of these tokens to access this category."
+              gates={tokenGates}
               inputClass={inputClass}
               labelClass={labelClass}
+              onChange={setTokenGates}
+              onTokenGatedChange={setTokenGated}
+              title="Category token gates"
+              tokenGated={tokenGated}
             />
 
             <hr className="border-border" />
@@ -985,16 +1062,16 @@ export default function AdminCategoryEditPage() {
               </p>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="title" className={labelClass}>
+                  <label className={labelClass} htmlFor="title">
                     Title
                   </label>
                   <input
-                    id="title"
-                    type="text"
-                    placeholder="SEO / page title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
                     className={inputClass}
+                    id="title"
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="SEO / page title"
+                    type="text"
+                    value={title}
                   />
                   <p className="text-xs text-muted-foreground">
                     Used in &lt;title&gt; and og:title. Defaults to category
@@ -1002,53 +1079,53 @@ export default function AdminCategoryEditPage() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="slug" className={labelClass}>
+                  <label className={labelClass} htmlFor="slug">
                     Slug
                   </label>
                   <input
-                    id="slug"
-                    type="text"
-                    placeholder="e.g. mens-fashion"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
                     className={inputClass}
+                    id="slug"
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="e.g. mens-fashion"
+                    type="text"
+                    value={slug}
                   />
                   <p className="text-xs text-muted-foreground">
                     URL-friendly identifier. Auto-generated from name if empty.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="metaDescription" className={labelClass}>
+                  <label className={labelClass} htmlFor="metaDescription">
                     Meta description
                   </label>
                   <textarea
-                    id="metaDescription"
-                    placeholder="Short summary for search results (e.g. 150–160 chars)"
-                    value={metaDescription}
-                    onChange={(e) => setMetaDescription(e.target.value)}
-                    rows={2}
                     className={cn(inputClass, "resize-y")}
+                    id="metaDescription"
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                    placeholder="Short summary for search results (e.g. 150–160 chars)"
+                    rows={2}
+                    value={metaDescription}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="description" className={labelClass}>
+                  <label className={labelClass} htmlFor="description">
                     Description
                   </label>
                   <textarea
-                    id="description"
-                    placeholder="Longer content for the category page"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
                     className={cn(inputClass, "resize-y")}
+                    id="description"
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Longer content for the category page"
+                    rows={4}
+                    value={description}
                   />
                 </div>
                 <label className="flex items-center gap-2 pt-2">
                   <input
-                    type="checkbox"
                     checked={seoOptimized}
-                    onChange={(e) => setSeoOptimized(e.target.checked)}
                     className="size-4 rounded border-input"
+                    onChange={(e) => setSeoOptimized(e.target.checked)}
+                    type="checkbox"
                   />
                   <span className="text-sm">Optimized</span>
                 </label>
@@ -1059,14 +1136,19 @@ export default function AdminCategoryEditPage() {
             </div>
 
             <div className="flex gap-2 border-t pt-4">
-              <Button type="submit" disabled={saving}>
+              <Button disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save changes"}
               </Button>
               <Link
-                href="/categories"
                 className={cn(
-                  "inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-muted-foreground",
+                  `
+                    inline-flex items-center justify-center rounded-md border
+                    border-input bg-background px-4 py-2 text-sm font-medium
+                    transition-colors
+                    hover:bg-muted hover:text-muted-foreground
+                  `,
                 )}
+                href="/categories"
               >
                 Cancel
               </Link>

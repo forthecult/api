@@ -15,47 +15,47 @@ import {
 
 const API_BASE = getMainAppUrl();
 
-type TokenSweepItem = {
-  mint: string;
-  amount: string;
-  decimals: number;
-  amountFormatted: number;
-  symbol?: string;
-};
+interface SolanaSweepResult {
+  configError?: string;
+  dryRun: boolean;
+  ok: boolean;
+  ordersCount: number;
+  recipient?: string;
+  results: SweepOrderResult[];
+  scope: SweepScope;
+}
 
-type SweepOrderResult = {
-  orderId: string;
+interface SweepOrderResult {
   depositAddress: string;
+  error?: string;
+  orderId: string;
   skipped?: string;
-  solToSweepLamports?: number;
   solToSweepFormatted?: number;
+  solToSweepLamports?: number;
   tokens?: TokenSweepItem[];
   txSignature?: string;
-  error?: string;
-};
+}
 
-type SweepScope = "paid" | "pending" | "all";
+type SweepScope = "all" | "paid" | "pending";
 
-type SolanaSweepResult = {
-  ok: boolean;
-  dryRun: boolean;
-  scope: SweepScope;
-  configError?: string;
-  recipient?: string;
-  ordersCount: number;
-  results: SweepOrderResult[];
-};
+interface TokenSweepItem {
+  amount: string;
+  amountFormatted: number;
+  decimals: number;
+  mint: string;
+  symbol?: string;
+}
 
 export default function AdminSolanaPayPage() {
   const [loading, setLoading] = useState<
     `${SweepScope}-dry` | `${SweepScope}-sweep` | null
   >(null);
-  const [paidResult, setPaidResult] = useState<SolanaSweepResult | null>(null);
-  const [pendingResult, setPendingResult] = useState<SolanaSweepResult | null>(
+  const [paidResult, setPaidResult] = useState<null | SolanaSweepResult>(null);
+  const [pendingResult, setPendingResult] = useState<null | SolanaSweepResult>(
     null,
   );
-  const [paidError, setPaidError] = useState<string | null>(null);
-  const [pendingError, setPendingError] = useState<string | null>(null);
+  const [paidError, setPaidError] = useState<null | string>(null);
+  const [pendingError, setPendingError] = useState<null | string>(null);
 
   const runSweep = useCallback(async (scope: SweepScope, dryRun: boolean) => {
     const setResult = scope === "paid" ? setPaidResult : setPendingResult;
@@ -65,10 +65,10 @@ export default function AdminSolanaPayPage() {
     setLoading(`${scope}-${dryRun ? "dry" : "sweep"}`);
     try {
       const res = await fetch(`${API_BASE}/api/admin/solana-sweep`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ dryRun, scope }),
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const data: SolanaSweepResult = await res.json();
       if (!res.ok) {
@@ -114,9 +114,9 @@ export default function AdminSolanaPayPage() {
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
               disabled={loading !== null}
               onClick={() => void runSweep("paid", true)}
+              variant="outline"
             >
               {loadingPaid && loading?.endsWith("dry") ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -124,9 +124,9 @@ export default function AdminSolanaPayPage() {
               Dry run
             </Button>
             <Button
-              variant="default"
               disabled={loading !== null}
               onClick={() => void runSweep("paid", false)}
+              variant="default"
             >
               {loadingPaid && loading?.endsWith("sweep") ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -136,7 +136,10 @@ export default function AdminSolanaPayPage() {
           </div>
           {paidError && (
             <div
-              className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              className={`
+                rounded-md border border-destructive/50 bg-destructive/10 px-4
+                py-3 text-sm text-destructive
+              `}
               role="alert"
             >
               {paidError}
@@ -157,9 +160,9 @@ export default function AdminSolanaPayPage() {
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
               disabled={loading !== null}
               onClick={() => void runSweep("pending", true)}
+              variant="outline"
             >
               {loadingPending && loading?.endsWith("dry") ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -167,9 +170,9 @@ export default function AdminSolanaPayPage() {
               Dry run
             </Button>
             <Button
-              variant="default"
               disabled={loading !== null}
               onClick={() => void runSweep("pending", false)}
+              variant="default"
             >
               {loadingPending && loading?.endsWith("sweep") ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -179,7 +182,10 @@ export default function AdminSolanaPayPage() {
           </div>
           {pendingError && (
             <div
-              className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+              className={`
+                rounded-md border border-destructive/50 bg-destructive/10 px-4
+                py-3 text-sm text-destructive
+              `}
               role="alert"
             >
               {pendingError}
@@ -197,7 +203,10 @@ function AdminSweepResultBlock({ result }: { result: SolanaSweepResult }) {
     <div className="space-y-3">
       {result.configError && (
         <div
-          className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+          className={`
+            rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3
+            text-sm text-destructive
+          `}
           role="alert"
         >
           {result.configError}
@@ -213,7 +222,7 @@ function AdminSweepResultBlock({ result }: { result: SolanaSweepResult }) {
       {result.results.length > 0 && (
         <ul className="space-y-2 rounded-md border p-3 text-sm">
           {result.results.map((r) => (
-            <SweepResultRow key={r.orderId} row={r} dryRun={result.dryRun} />
+            <SweepResultRow dryRun={result.dryRun} key={r.orderId} row={r} />
           ))}
         </ul>
       )}
@@ -227,11 +236,11 @@ function AdminSweepResultBlock({ result }: { result: SolanaSweepResult }) {
 }
 
 function SweepResultRow({
-  row,
   dryRun,
+  row,
 }: {
-  row: SweepOrderResult;
   dryRun: boolean;
+  row: SweepOrderResult;
 }) {
   const hasWork =
     (row.solToSweepLamports != null && row.solToSweepLamports > 0) ||

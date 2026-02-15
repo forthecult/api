@@ -5,7 +5,9 @@
  *   When link: true and user is logged in, links the Ethereum wallet to the current account instead of signing in.
  */
 import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
+import { setSessionCookie } from "better-auth/cookies";
 import { APIError } from "better-call";
+import { randomBytes } from "node:crypto";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
 import {
@@ -14,9 +16,6 @@ import {
   verifySiweMessage,
 } from "viem/siwe";
 import { z } from "zod";
-
-import { setSessionCookie } from "better-auth/cookies";
-import { randomBytes } from "node:crypto";
 
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
@@ -66,17 +65,24 @@ function isDuplicateUserEmailError(err: unknown): boolean {
 }
 const NONCE_EXPIRY_SEC = 300; // 5 minutes
 
-type VerificationRecord = { id: string; expiresAt: Date; value: string };
-type AccountRecord = { userId: string; id?: string };
-type UserRecord = {
-  id: string;
-  email: string;
-  name: string;
-  image?: string | null;
-  emailVerified: boolean;
+interface AccountRecord {
+  id?: string;
+  userId: string;
+}
+interface UserRecord {
   createdAt: Date;
+  email: string;
+  emailVerified: boolean;
+  id: string;
+  image?: null | string;
+  name: string;
   updatedAt: Date;
-};
+}
+interface VerificationRecord {
+  expiresAt: Date;
+  id: string;
+  value: string;
+}
 
 function ensureProtocol(url: string): string {
   const t = url.trim();
@@ -114,29 +120,18 @@ function getUri(): string {
 }
 
 // Lazy public client for verifySiweMessage (needs a viem Client)
-let _publicClient: ReturnType<typeof createPublicClient> | null = null;
-function getPublicClient() {
-  if (!_publicClient) {
-    _publicClient = createPublicClient({
-      chain: mainnet,
-      transport: http(),
-    });
-  }
-  return _publicClient;
-}
-
+let _publicClient: null | ReturnType<typeof createPublicClient> = null;
 export function ethereumAuthPlugin() {
   return {
-    id: "ethereum-auth",
     endpoints: {
       signInEthereumChallenge: createAuthEndpoint(
         "/sign-in/ethereum/challenge",
         {
-          method: "POST",
           body: z.object({
             address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
             chainId: z.number().optional(),
           }),
+          method: "POST",
         },
         async (ctx) => {
           const address = ctx.body.address.trim() as `0x${string}`;
@@ -144,9 +139,9 @@ export function ethereumAuthPlugin() {
           const nonce = randomBytes(32).toString("hex");
           const expiresAt = new Date(Date.now() + NONCE_EXPIRY_SEC * 1000);
           await ctx.context.internalAdapter.createVerificationValue({
+            expiresAt,
             identifier: `ethereum:${address.toLowerCase()}`,
             value: nonce,
-            expiresAt,
           });
           const domain = getDomain();
           const uri = getUri();
@@ -155,9 +150,9 @@ export function ethereumAuthPlugin() {
             chainId,
             domain,
             nonce,
+            statement: "Sign in to Culture",
             uri,
             version: "1",
-            statement: "Sign in to Culture",
           });
           return ctx.json({ message });
         },
@@ -165,17 +160,17 @@ export function ethereumAuthPlugin() {
       signInEthereumVerify: createAuthEndpoint(
         "/sign-in/ethereum/verify",
         {
-          method: "POST",
           body: z.object({
             address: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
+            link: z.boolean().optional(),
             message: z.string(),
             signature: z.string(), // hex 0x...
-            link: z.boolean().optional(),
           }),
+          method: "POST",
         },
         async (ctx) => {
           try {
-            const { address, message, signature, link } = ctx.body;
+            const { address, link, message, signature } = ctx.body;
             const addressTrim = address.trim() as `0x${string}`;
             const signatureHex = signature.startsWith("0x")
               ? (signature as `0x${string}`)
@@ -208,7 +203,7 @@ export function ethereumAuthPlugin() {
                 },
                 { field: "value", value: nonce },
               ],
-            })) as VerificationRecord | null;
+            })) as null | VerificationRecord;
             if (!verification) {
               console.error(
                 "[ethereum-auth] No verification found for:",
@@ -309,25 +304,25 @@ export function ethereumAuthPlugin() {
               await (
                 ctx.context.internalAdapter as {
                   linkAccount: (data: {
-                    userId: string;
                     accountId: string;
                     providerId: string;
+                    userId: string;
                   }) => Promise<unknown>;
                 }
               ).linkAccount({
-                userId: (session.user as { id: string }).id,
                 accountId: addressTrim.toLowerCase(),
                 providerId: ETHEREUM_PROVIDER_ID,
+                userId: (session.user as { id: string }).id,
               });
               return ctx.json({ linked: true, user: session.user });
             }
 
-            let user: UserRecord | null = null;
+            let user: null | UserRecord = null;
             if (existingAccount) {
               user = (await adapter.findOne({
                 model: "user",
                 where: [{ field: "id", value: existingAccount.userId }],
-              })) as UserRecord | null;
+              })) as null | UserRecord;
             }
 
             if (!user) {
@@ -351,33 +346,33 @@ export function ethereumAuthPlugin() {
               );
               try {
                 await adapter.create({
-                  model: "user",
                   data: {
-                    id: userId,
-                    email,
-                    name: "Ethereum User",
-                    emailVerified: true,
                     createdAt: now,
-                    updatedAt: now,
+                    email,
+                    emailVerified: true,
+                    id: userId,
+                    marketingAiCompanion: false,
+                    marketingDiscord: false,
+                    marketingEmail: true,
+                    marketingSms: false,
+                    marketingTelegram: false,
+                    marketingWebsite: false,
+                    name: "Ethereum User",
+                    receiveMarketing: false,
+                    receiveOrderNotificationsViaTelegram: false,
+                    receiveSmsMarketing: false,
                     // Notification preference defaults (explicit to avoid NOT NULL violations
                     // when databaseHooks.user.create.before does not run for raw adapter calls)
                     role: "user",
+                    transactionalAiCompanion: false,
+                    transactionalDiscord: false,
                     transactionalEmail: true,
-                    transactionalWebsite: true,
                     transactionalSms: false,
                     transactionalTelegram: false,
-                    transactionalDiscord: false,
-                    transactionalAiCompanion: false,
-                    marketingEmail: true,
-                    marketingWebsite: false,
-                    marketingSms: false,
-                    marketingTelegram: false,
-                    marketingDiscord: false,
-                    marketingAiCompanion: false,
-                    receiveMarketing: false,
-                    receiveSmsMarketing: false,
-                    receiveOrderNotificationsViaTelegram: false,
+                    transactionalWebsite: true,
+                    updatedAt: now,
                   },
+                  model: "user",
                 });
               } catch (createUserErr) {
                 console.error(
@@ -392,7 +387,7 @@ export function ethereumAuthPlugin() {
                   const existingUser = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "email", value: email }],
-                  })) as UserRecord | null;
+                  })) as null | UserRecord;
                   if (existingUser) {
                     user = existingUser;
                     const existingAccountForWallet = (await adapter.findOne({
@@ -418,21 +413,21 @@ export function ethereumAuthPlugin() {
                         await (
                           ctx.context.internalAdapter as {
                             createAccount: (data: {
-                              id: string;
-                              userId: string;
                               accountId: string;
-                              providerId: string;
                               createdAt: Date;
+                              id: string;
+                              providerId: string;
                               updatedAt: Date;
+                              userId: string;
                             }) => Promise<unknown>;
                           }
                         ).createAccount({
-                          id: accountRowId,
-                          userId: existingUser.id,
                           accountId: addressTrim.toLowerCase(),
-                          providerId: ETHEREUM_PROVIDER_ID,
                           createdAt: now,
+                          id: accountRowId,
+                          providerId: ETHEREUM_PROVIDER_ID,
                           updatedAt: now,
+                          userId: existingUser.id,
                         });
                       } catch (linkErr) {
                         console.error(
@@ -463,21 +458,21 @@ export function ethereumAuthPlugin() {
                   await (
                     ctx.context.internalAdapter as {
                       createAccount: (data: {
-                        id: string;
-                        userId: string;
                         accountId: string;
-                        providerId: string;
                         createdAt: Date;
+                        id: string;
+                        providerId: string;
                         updatedAt: Date;
+                        userId: string;
                       }) => Promise<unknown>;
                     }
                   ).createAccount({
-                    id: accountRowId,
-                    userId,
                     accountId: addressTrim.toLowerCase(),
-                    providerId: ETHEREUM_PROVIDER_ID,
                     createdAt: now,
+                    id: accountRowId,
+                    providerId: ETHEREUM_PROVIDER_ID,
                     updatedAt: now,
+                    userId,
                   });
                 } catch (createAccountErr) {
                   console.error(
@@ -489,7 +484,7 @@ export function ethereumAuthPlugin() {
                 user = (await adapter.findOne({
                   model: "user",
                   where: [{ field: "id", value: userId }],
-                })) as UserRecord | null;
+                })) as null | UserRecord;
               }
             }
 
@@ -514,7 +509,7 @@ export function ethereumAuthPlugin() {
                   userId: string,
                   request?: Request,
                   cookie?: boolean,
-                ) => Promise<{ id: string; userId: string } | null>;
+                ) => Promise<null | { id: string; userId: string }>;
               }
             ).createSession(user.id, ctx.request as Request | undefined, false);
             if (!session) {
@@ -540,12 +535,12 @@ export function ethereumAuthPlugin() {
             );
             return ctx.json({
               user: {
-                id: user.id,
-                email: user.email,
-                name: user.name,
-                image: user.image,
-                emailVerified: user.emailVerified,
                 createdAt: user.createdAt,
+                email: user.email,
+                emailVerified: user.emailVerified,
+                id: user.id,
+                image: user.image,
+                name: user.name,
                 updatedAt: user.updatedAt,
               },
             });
@@ -564,5 +559,16 @@ export function ethereumAuthPlugin() {
         },
       ),
     },
+    id: "ethereum-auth",
   };
+}
+
+function getPublicClient() {
+  if (!_publicClient) {
+    _publicClient = createPublicClient({
+      chain: mainnet,
+      transport: http(),
+    });
+  }
+  return _publicClient;
 }

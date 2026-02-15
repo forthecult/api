@@ -1,8 +1,6 @@
 import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { deriveDepositAddress } from "~/lib/solana-deposit";
-import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import { auth } from "~/lib/auth";
 import {
   buildOrderErrorMessage,
@@ -14,12 +12,14 @@ import {
   validateAndFetchProducts,
   validateTotal,
 } from "~/lib/checkout/create-order-helpers";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   checkRateLimit,
   getClientIp,
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
+import { deriveDepositAddress } from "~/lib/solana-deposit";
 import { createOrderSchema, validateBody } from "~/lib/validations/checkout";
 
 export async function POST(request: NextRequest) {
@@ -51,34 +51,34 @@ export async function POST(request: NextRequest) {
     }
 
     const {
-      reference,
-      email,
-      orderItems: rawItems,
-      totalCents,
-      shippingFeeCents = 0,
-      taxCents = 0,
-      emailMarketingConsent,
-      smsMarketingConsent,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
       affiliateCode,
       couponCode,
-      wallet,
-      token: tokenFromBody,
+      email,
+      emailMarketingConsent,
+      orderItems: rawItems,
+      reference,
       shipping,
+      shippingFeeCents = 0,
+      smsMarketingConsent,
+      taxCents = 0,
+      telegramFirstName,
+      telegramUserId,
+      telegramUsername,
+      token: tokenFromBody,
+      totalCents,
+      wallet,
     } = validation.data;
 
     // Map frontend token to stored crypto currency (for balance check / UI on payment page)
     const SOLANA_TOKEN_TO_CURRENCY: Record<string, string> = {
-      solana: "SOL",
-      usdc: "USDC",
-      whitewhale: "WHITEWHALE",
       crust: "CRUST",
       pump: "PUMP",
-      troll: "TROLL",
-      soluna: "SOLUNA",
       seeker: "SKR",
+      solana: "SOL",
+      soluna: "SOLUNA",
+      troll: "TROLL",
+      usdc: "USDC",
+      whitewhale: "WHITEWHALE",
     };
     const cryptoCurrency =
       tokenFromBody && SOLANA_TOKEN_TO_CURRENCY[tokenFromBody]
@@ -93,16 +93,16 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { validatedItems, productIds, subtotalCents } = productResult;
+    const { productIds, subtotalCents, validatedItems } = productResult;
 
     // ── Resolve discounts ──────────────────────────────────────────────
-    const TOKEN_TO_PAYMENT_METHOD_KEY: Record<string, string | null> = {
-      solana: "crypto_solana",
+    const TOKEN_TO_PAYMENT_METHOD_KEY: Record<string, null | string> = {
       crust: "crypto_crust",
       pump: "crypto_pump",
-      troll: "crypto_troll",
-      soluna: "crypto_soluna",
       seeker: "crypto_seeker",
+      solana: "crypto_solana",
+      soluna: "crypto_soluna",
+      troll: "crypto_troll",
       usdc: "stablecoin_usdc",
       whitewhale: null,
     };
@@ -115,16 +115,16 @@ export async function POST(request: NextRequest) {
       await resolveDiscounts({
         affiliateCode,
         couponCode,
-        subtotalCents,
-        shippingFeeCents,
-        userId: session?.user?.id,
-        productIds,
-        paymentMethodKey,
         items: validatedItems.map((i) => ({
-          productId: i.productId,
           priceCents: i.priceCents,
+          productId: i.productId,
           quantity: i.quantity,
         })),
+        paymentMethodKey,
+        productIds,
+        shippingFeeCents,
+        subtotalCents,
+        userId: session?.user?.id,
         wallet: wallet ?? undefined,
       });
 
@@ -155,18 +155,18 @@ export async function POST(request: NextRequest) {
     // ── Insert order ───────────────────────────────────────────────────
     await insertOrder(
       {
-        orderId,
+        affiliateResult,
         email,
+        orderId,
         paymentMethod: "solana_pay",
-        totalCents: totalCheck.expectedTotal,
+        reference,
         shippingFeeCents,
         taxCents,
-        userId: userIdVal,
-        reference,
+        telegramFirstName,
         telegramUserId,
         telegramUsername,
-        telegramFirstName,
-        affiliateResult,
+        totalCents: totalCheck.expectedTotal,
+        userId: userIdVal,
       },
       {
         solanaPayDepositAddress: depositAddress,
@@ -193,32 +193,32 @@ export async function POST(request: NextRequest) {
 
     // ── Post-order bookkeeping ─────────────────────────────────────────
     await postOrderBookkeeping({
-      orderId,
-      userId: userIdVal,
       affiliateResult,
       couponResult,
       emailMarketingConsent,
+      orderId,
       smsMarketingConsent,
+      userId: userIdVal,
     });
 
     // ── eSIM order records (for cart items with esimPackageId) ──────────
     await createEsimOrderRecordsForOrder({
-      orderId,
-      userId: userIdVal,
-      paymentMethod: "solana_pay",
       items: validatedItems,
+      orderId,
+      paymentMethod: "solana_pay",
+      userId: userIdVal,
     });
 
     return NextResponse.json({
-      orderId,
-      depositAddress,
-      confirmationToken: generateOrderConfirmationToken(orderId),
-      status: "awaiting_payment",
       _actions: {
-        next: `Poll GET /api/orders/${orderId}/status every 5s until status changes`,
         cancel: `POST /api/orders/${orderId}/cancel (only before payment)`,
         help: "Contact support@forthecult.store",
+        next: `Poll GET /api/orders/${orderId}/status every 5s until status changes`,
       },
+      confirmationToken: generateOrderConfirmationToken(orderId),
+      depositAddress,
+      orderId,
+      status: "awaiting_payment",
     });
   } catch (err) {
     console.error("Solana Pay create-order error:", err);

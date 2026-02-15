@@ -11,18 +11,7 @@ import { redirect } from "next/navigation";
 import type { UserDbType } from "~/lib/auth-types";
 
 import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
-import { ethereumAuthPlugin } from "~/lib/auth-ethereum-plugin";
-import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
-import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
 import { db } from "~/db";
-import { sendResetPasswordEmail } from "~/lib/send-reset-password";
-import { sendVerificationOTPEmail } from "~/lib/send-otp-email";
-import {
-  createUserNotification,
-  userWantsTransactionalWebsite,
-} from "~/lib/create-user-notification";
-import { getNotificationTemplate } from "~/lib/notification-templates";
-import { sendWelcomeEmail } from "~/lib/send-welcome-email";
 import {
   accountTable,
   passkeyTable,
@@ -31,14 +20,23 @@ import {
   userTable,
   verificationTable,
 } from "~/db/schema";
+import { ethereumAuthPlugin } from "~/lib/auth-ethereum-plugin";
+import { solanaAuthPlugin } from "~/lib/auth-solana-plugin";
+import { telegramAuthPlugin } from "~/lib/auth-telegram-plugin";
+import {
+  createUserNotification,
+  userWantsTransactionalWebsite,
+} from "~/lib/create-user-notification";
+import { getNotificationTemplate } from "~/lib/notification-templates";
+import { sendVerificationOTPEmail } from "~/lib/send-otp-email";
+import { sendResetPasswordEmail } from "~/lib/send-reset-password";
+import { sendWelcomeEmail } from "~/lib/send-welcome-email";
 
-/** Ensure URL has a protocol so Better Auth and redirects don't throw Invalid URL (e.g. Railway env without https://). */
-function ensureAbsoluteUrl(value: string | undefined): string | undefined {
-  if (!value || typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  if (!trimmed) return undefined;
-  if (/^https?:\/\//i.test(trimmed)) return trimmed;
-  return `https://${trimmed.replace(/^\/+/, "")}`;
+interface DiscordProfile {
+  [key: string]: unknown;
+  email?: string;
+  global_name?: string;
+  username?: string;
 }
 
 interface GitHubProfile {
@@ -54,29 +52,31 @@ interface GoogleProfile {
   given_name?: string;
 }
 
-interface DiscordProfile {
-  [key: string]: unknown;
-  username?: string;
-  global_name?: string;
-  email?: string;
-}
-
-interface TwitterProfile {
-  [key: string]: unknown;
-  name?: string;
-  username?: string;
-  email?: string;
-}
-
 interface SocialProviderConfig {
   [key: string]: unknown;
   clientId: string;
   clientSecret: string;
   mapProfileToUser: (
-    profile: GitHubProfile | GoogleProfile | DiscordProfile | TwitterProfile,
+    profile: DiscordProfile | GitHubProfile | GoogleProfile | TwitterProfile,
   ) => Record<string, unknown>;
   redirectURI?: string;
   scope: string[];
+}
+
+interface TwitterProfile {
+  [key: string]: unknown;
+  email?: string;
+  name?: string;
+  username?: string;
+}
+
+/** Ensure URL has a protocol so Better Auth and redirects don't throw Invalid URL (e.g. Railway env without https://). */
+function ensureAbsoluteUrl(value: string | undefined): string | undefined {
+  if (!value || typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  return `https://${trimmed.replace(/^\/+/, "")}`;
 }
 
 const hasGithubCredentials =
@@ -188,6 +188,30 @@ export const auth = betterAuth({
       trustedProviders: ["solana", "ethereum", ...Object.keys(socialProviders)],
     },
   },
+  // Cross-subdomain cookie sharing for admin app on different subdomain
+  // In production, both apps should be on same parent domain (e.g., forthecult.store and admin.forthecult.store)
+  // For Railway staging with different subdomains, we need sameSite: "none" with secure: true
+  advanced: {
+    crossSubDomainCookies: {
+      // For same parent domain (e.g., .forthecult.store), set domain here
+      // For Railway staging with different domains, this won't help - use sameSite: "none" instead
+      domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
+      enabled: !!process.env.NEXT_PUBLIC_ADMIN_APP_URL,
+    },
+    defaultCookieAttributes: {
+      // For cross-origin admin app, we need sameSite: "none" (requires secure: true / HTTPS)
+      // Only enable this when admin app is on a different origin
+      // WARNING: [SECURITY] sameSite: "none" disables browser CSRF protection on cookies.
+      // This is required for cross-origin admin app sharing, but means CSRF tokens or a
+      // separate admin auth mechanism should be used to protect state-changing endpoints.
+      ...(process.env.NEXT_PUBLIC_ADMIN_APP_URL &&
+        !process.env.NEXT_PUBLIC_ADMIN_APP_URL.includes("localhost") && {
+          sameSite: "none" as const,
+          secure: true,
+        }),
+    },
+  },
+
   // Links in emails (e.g. password reset) must use the public URL users can open, not the internal server URL.
   // Prefer NEXT_PUBLIC_APP_URL so Railway (NEXT_SERVER_APP_URL=http://localhost:PORT) still gets correct links.
   baseURL: (() => {
@@ -199,6 +223,160 @@ export const auth = betterAuth({
     const server = ensureAbsoluteUrl(process.env.NEXT_SERVER_APP_URL);
     return server ?? undefined;
   })(),
+
+  database: drizzleAdapter(db, {
+    provider: "pg",
+    schema: {
+      account: accountTable,
+      passkey: passkeyTable,
+      session: sessionTable,
+      twoFactor: twoFactorTable,
+      user: userTable,
+      verification: verificationTable,
+    },
+  }),
+
+  // Hooks for lifecycle events
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          // Send welcome email after user is created (only if they have a real email)
+          void sendWelcomeEmail({
+            to: user.email,
+            user: { email: user.email, id: user.id, name: user.name },
+          });
+          // In-app welcome notification for first-time signup (when transactional website is enabled)
+          if (await userWantsTransactionalWebsite(user.id)) {
+            const template = getNotificationTemplate("welcome_email");
+            void createUserNotification({
+              description: template.body,
+              title: template.title,
+              type: "welcome_email",
+              userId: user.id,
+            });
+          }
+        },
+        before: async (user) => {
+          // Ensure notification preference defaults are set for all user creation paths
+          // (email signup, OAuth, wallet auth, etc.)
+          return {
+            data: {
+              ...user,
+              marketingAiCompanion: user.marketingAiCompanion ?? false,
+              marketingDiscord: user.marketingDiscord ?? false,
+              marketingEmail: user.marketingEmail ?? true,
+              marketingSms: user.marketingSms ?? false,
+              marketingTelegram: user.marketingTelegram ?? false,
+              marketingWebsite: user.marketingWebsite ?? false,
+              receiveMarketing: user.receiveMarketing ?? false,
+              receiveOrderNotificationsViaTelegram:
+                user.receiveOrderNotificationsViaTelegram ?? false,
+              receiveSmsMarketing: user.receiveSmsMarketing ?? false,
+              transactionalAiCompanion: user.transactionalAiCompanion ?? false,
+              transactionalDiscord: user.transactionalDiscord ?? false,
+              // Only set defaults if not already provided
+              transactionalEmail: user.transactionalEmail ?? true,
+              transactionalSms: user.transactionalSms ?? false,
+              transactionalTelegram: user.transactionalTelegram ?? false,
+              transactionalWebsite: user.transactionalWebsite ?? true,
+            },
+          };
+        },
+      },
+    },
+  },
+
+  emailAndPassword: {
+    // Auto sign-in after signup so user doesn't have to enter credentials twice
+    autoSignIn: true,
+    enabled: true,
+    sendResetPassword: async ({ url, user }, _request) => {
+      void sendResetPasswordEmail({ to: user.email, url, user });
+    },
+  },
+
+  // Email verification: disabled in dev, enabled in production/staging
+  emailVerification:
+    process.env.NODE_ENV === "development"
+      ? {
+          sendOnSignUp: false,
+          sendVerificationEmail: async () => {
+            /* no-op for local dev */
+          },
+        }
+      : {
+          sendOnSignUp: true,
+          sendVerificationEmail: async ({ url, user }) => {
+            // Production/staging: send verification email via configured provider
+            void sendVerificationOTPEmail({
+              otp: url,
+              to: user.email,
+              type: "email-verification",
+            });
+          },
+        },
+
+  // Email/password sign-in needs credential account; enable when db.query rels work, else get 401
+  experimental: {
+    joins: true,
+  },
+
+  // Configure OAuth behavior
+  oauth: {
+    // Default redirect URL after successful login
+    defaultCallbackUrl: SYSTEM_CONFIG.redirectAfterSignIn,
+    // URL to redirect to on error
+    errorCallbackUrl: "/auth/error",
+    // Whether to link accounts with the same email
+    linkAccountsByEmail: true,
+  },
+
+  plugins: [
+    twoFactor(),
+    passkey({
+      origin:
+        typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
+        process.env.NEXT_PUBLIC_APP_URL.length > 0
+          ? process.env.NEXT_PUBLIC_APP_URL.startsWith("http")
+            ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
+            : `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}`
+          : undefined,
+      rpName: SEO_CONFIG.name ?? "For the Culture",
+    }),
+    emailOTP({
+      disableSignUp: true, // Only existing users (e.g. wallet users who added email) can sign in with email code
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendVerificationOTPEmail({ otp, to: email, type });
+      },
+    }),
+    solanaAuthPlugin(),
+    ethereumAuthPlugin(),
+    telegramAuthPlugin(),
+  ],
+
+  // AUTH_SECRET is required in production for security
+  secret: (() => {
+    const secret = process.env.AUTH_SECRET;
+    if (secret) return secret;
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "AUTH_SECRET environment variable is required in production",
+      );
+    }
+    console.warn("⚠️  Using hardcoded dev secret — never use in production");
+    return "dev-secret-min-32-chars-for-better-auth-local";
+  })(),
+
+  session: {
+    cookieCache: {
+      enabled: true,
+      maxAge: 2 * 60, // 2 minutes; reduces DB lookups on getSession
+    },
+  },
+
+  // Only include social providers if credentials are available
+  socialProviders,
 
   // Trusted origins for CORS/auth - use explicit allowlist for security (never throw)
   trustedOrigins: () => {
@@ -244,133 +422,6 @@ export const auth = betterAuth({
     }
   },
 
-  // Email/password sign-in needs credential account; enable when db.query rels work, else get 401
-  experimental: {
-    joins: true,
-  },
-
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    schema: {
-      account: accountTable,
-      passkey: passkeyTable,
-      session: sessionTable,
-      twoFactor: twoFactorTable,
-      user: userTable,
-      verification: verificationTable,
-    },
-  }),
-
-  session: {
-    cookieCache: {
-      enabled: true,
-      maxAge: 2 * 60, // 2 minutes; reduces DB lookups on getSession
-    },
-  },
-
-  // Cross-subdomain cookie sharing for admin app on different subdomain
-  // In production, both apps should be on same parent domain (e.g., forthecult.store and admin.forthecult.store)
-  // For Railway staging with different subdomains, we need sameSite: "none" with secure: true
-  advanced: {
-    crossSubDomainCookies: {
-      enabled: !!process.env.NEXT_PUBLIC_ADMIN_APP_URL,
-      // For same parent domain (e.g., .forthecult.store), set domain here
-      // For Railway staging with different domains, this won't help - use sameSite: "none" instead
-      domain: process.env.AUTH_COOKIE_DOMAIN || undefined,
-    },
-    defaultCookieAttributes: {
-      // For cross-origin admin app, we need sameSite: "none" (requires secure: true / HTTPS)
-      // Only enable this when admin app is on a different origin
-      // WARNING: [SECURITY] sameSite: "none" disables browser CSRF protection on cookies.
-      // This is required for cross-origin admin app sharing, but means CSRF tokens or a
-      // separate admin auth mechanism should be used to protect state-changing endpoints.
-      ...(process.env.NEXT_PUBLIC_ADMIN_APP_URL &&
-        !process.env.NEXT_PUBLIC_ADMIN_APP_URL.includes("localhost") && {
-          sameSite: "none" as const,
-          secure: true,
-        }),
-    },
-  },
-
-  emailAndPassword: {
-    enabled: true,
-    // Auto sign-in after signup so user doesn't have to enter credentials twice
-    autoSignIn: true,
-    sendResetPassword: async ({ user, url }, _request) => {
-      void sendResetPasswordEmail({ to: user.email, url, user });
-    },
-  },
-
-  // Email verification: disabled in dev, enabled in production/staging
-  emailVerification:
-    process.env.NODE_ENV === "development"
-      ? {
-          sendOnSignUp: false,
-          sendVerificationEmail: async () => {
-            /* no-op for local dev */
-          },
-        }
-      : {
-          sendOnSignUp: true,
-          sendVerificationEmail: async ({ user, url }) => {
-            // Production/staging: send verification email via configured provider
-            void sendVerificationOTPEmail({
-              to: user.email,
-              otp: url,
-              type: "email-verification",
-            });
-          },
-        },
-
-  // Configure OAuth behavior
-  oauth: {
-    // Default redirect URL after successful login
-    defaultCallbackUrl: SYSTEM_CONFIG.redirectAfterSignIn,
-    // URL to redirect to on error
-    errorCallbackUrl: "/auth/error",
-    // Whether to link accounts with the same email
-    linkAccountsByEmail: true,
-  },
-
-  plugins: [
-    twoFactor(),
-    passkey({
-      rpName: SEO_CONFIG.name ?? "For the Culture",
-      origin:
-        typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
-        process.env.NEXT_PUBLIC_APP_URL.length > 0
-          ? process.env.NEXT_PUBLIC_APP_URL.startsWith("http")
-            ? process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")
-            : `https://${process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}`
-          : undefined,
-    }),
-    emailOTP({
-      disableSignUp: true, // Only existing users (e.g. wallet users who added email) can sign in with email code
-      async sendVerificationOTP({ email, otp, type }) {
-        await sendVerificationOTPEmail({ to: email, otp, type });
-      },
-    }),
-    solanaAuthPlugin(),
-    ethereumAuthPlugin(),
-    telegramAuthPlugin(),
-  ],
-
-  // AUTH_SECRET is required in production for security
-  secret: (() => {
-    const secret = process.env.AUTH_SECRET;
-    if (secret) return secret;
-    if (process.env.NODE_ENV === "production") {
-      throw new Error(
-        "AUTH_SECRET environment variable is required in production",
-      );
-    }
-    console.warn("⚠️  Using hardcoded dev secret — never use in production");
-    return "dev-secret-min-32-chars-for-better-auth-local";
-  })(),
-
-  // Only include social providers if credentials are available
-  socialProviders,
-
   user: {
     // Identity/profile fields used by auth (sign-up, OAuth, session).
     // Notification preference fields are also included so Better Auth adapter knows about them.
@@ -390,168 +441,117 @@ export const auth = betterAuth({
         required: false,
         type: "string",
       },
+      marketingAiCompanion: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      marketingDiscord: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      // Notification preferences - marketing (per channel)
+      marketingEmail: {
+        defaultValue: true,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      marketingSms: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      marketingTelegram: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      marketingWebsite: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
       phone: {
         input: true,
         required: false,
         type: "string",
       },
+      // Legacy fields
+      receiveMarketing: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      receiveOrderNotificationsViaTelegram: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      receiveSmsMarketing: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
       /** User role for authorization. "user" (default) or "admin". */
       role: {
+        defaultValue: "user",
         input: false,
         required: false,
         type: "string",
-        defaultValue: "user",
-      },
-      // Notification preferences - transactional (per channel)
-      transactionalEmail: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: true,
-      },
-      transactionalWebsite: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: true,
-      },
-      transactionalSms: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      transactionalTelegram: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      transactionalDiscord: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      transactionalAiCompanion: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      // Notification preferences - marketing (per channel)
-      marketingEmail: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: true,
-      },
-      marketingWebsite: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      marketingSms: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      marketingTelegram: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      marketingDiscord: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      marketingAiCompanion: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      // Legacy fields
-      receiveMarketing: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      receiveSmsMarketing: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
-      },
-      receiveOrderNotificationsViaTelegram: {
-        input: false,
-        required: false,
-        type: "boolean",
-        defaultValue: false,
       },
       /** UI theme: "light" | "dark" | "system". Persisted for logged-in users. */
       theme: {
+        defaultValue: "system",
         input: false,
         required: false,
         type: "string",
-        defaultValue: "system",
       },
-    },
-  },
-
-  // Hooks for lifecycle events
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          // Ensure notification preference defaults are set for all user creation paths
-          // (email signup, OAuth, wallet auth, etc.)
-          return {
-            data: {
-              ...user,
-              // Only set defaults if not already provided
-              transactionalEmail: user.transactionalEmail ?? true,
-              transactionalWebsite: user.transactionalWebsite ?? true,
-              transactionalSms: user.transactionalSms ?? false,
-              transactionalTelegram: user.transactionalTelegram ?? false,
-              transactionalDiscord: user.transactionalDiscord ?? false,
-              transactionalAiCompanion: user.transactionalAiCompanion ?? false,
-              marketingEmail: user.marketingEmail ?? true,
-              marketingWebsite: user.marketingWebsite ?? false,
-              marketingSms: user.marketingSms ?? false,
-              marketingTelegram: user.marketingTelegram ?? false,
-              marketingDiscord: user.marketingDiscord ?? false,
-              marketingAiCompanion: user.marketingAiCompanion ?? false,
-              receiveMarketing: user.receiveMarketing ?? false,
-              receiveSmsMarketing: user.receiveSmsMarketing ?? false,
-              receiveOrderNotificationsViaTelegram:
-                user.receiveOrderNotificationsViaTelegram ?? false,
-            },
-          };
-        },
-        after: async (user) => {
-          // Send welcome email after user is created (only if they have a real email)
-          void sendWelcomeEmail({
-            to: user.email,
-            user: { name: user.name, email: user.email, id: user.id },
-          });
-          // In-app welcome notification for first-time signup (when transactional website is enabled)
-          if (await userWantsTransactionalWebsite(user.id)) {
-            const template = getNotificationTemplate("welcome_email");
-            void createUserNotification({
-              userId: user.id,
-              type: "welcome_email",
-              title: template.title,
-              description: template.body,
-            });
-          }
-        },
+      transactionalAiCompanion: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      transactionalDiscord: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      // Notification preferences - transactional (per channel)
+      transactionalEmail: {
+        defaultValue: true,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      transactionalSms: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      transactionalTelegram: {
+        defaultValue: false,
+        input: false,
+        required: false,
+        type: "boolean",
+      },
+      transactionalWebsite: {
+        defaultValue: true,
+        input: false,
+        required: false,
+        type: "boolean",
       },
     },
   },
@@ -610,7 +610,7 @@ const ADMIN_EMAILS = new Set(
  * Admin check only affects access to /admin routes after login; it does not block sign-in.
  */
 export function isAdminUser(
-  user: { email?: string; role?: string | null } | null,
+  user: null | { email?: string; role?: null | string },
 ): boolean {
   if (!user) return false;
   // Primary: database-backed role column

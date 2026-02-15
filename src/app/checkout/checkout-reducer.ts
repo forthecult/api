@@ -4,17 +4,17 @@
  */
 
 export type CheckoutAction =
-  | { type: "SET_VALIDATION_ERRORS"; errors: string[] }
-  | { type: "SET_NAVIGATING"; navigating: boolean };
+  | { errors: string[]; type: "SET_VALIDATION_ERRORS" }
+  | { navigating: boolean; type: "SET_NAVIGATING" };
 
 export interface CheckoutState {
-  validationErrors: string[];
   navigatingToPay: boolean;
+  validationErrors: string[];
 }
 
 export const initialCheckoutState: CheckoutState = {
-  validationErrors: [],
   navigatingToPay: false,
+  validationErrors: [],
 };
 
 export function checkoutReducer(
@@ -22,10 +22,10 @@ export function checkoutReducer(
   action: CheckoutAction,
 ): CheckoutState {
   switch (action.type) {
-    case "SET_VALIDATION_ERRORS":
-      return { ...state, validationErrors: action.errors };
     case "SET_NAVIGATING":
       return { ...state, navigatingToPay: action.navigating };
+    case "SET_VALIDATION_ERRORS":
+      return { ...state, validationErrors: action.errors };
     default:
       return state;
   }

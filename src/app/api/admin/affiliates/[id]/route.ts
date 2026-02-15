@@ -20,23 +20,23 @@ export async function GET(
 
     const [affiliate] = await db
       .select({
-        id: affiliateTable.id,
-        userId: affiliateTable.userId,
+        adminNote: affiliateTable.adminNote,
+        applicationNote: affiliateTable.applicationNote,
         code: affiliateTable.code,
-        status: affiliateTable.status,
         commissionType: affiliateTable.commissionType,
         commissionValue: affiliateTable.commissionValue,
+        createdAt: affiliateTable.createdAt,
         customerDiscountType: affiliateTable.customerDiscountType,
         customerDiscountValue: affiliateTable.customerDiscountValue,
-        applicationNote: affiliateTable.applicationNote,
-        adminNote: affiliateTable.adminNote,
-        payoutMethod: affiliateTable.payoutMethod,
+        id: affiliateTable.id,
         payoutAddress: affiliateTable.payoutAddress,
+        payoutMethod: affiliateTable.payoutMethod,
+        status: affiliateTable.status,
         totalEarnedCents: affiliateTable.totalEarnedCents,
         totalPaidCents: affiliateTable.totalPaidCents,
-        createdAt: affiliateTable.createdAt,
         updatedAt: affiliateTable.updatedAt,
         userEmail: userTable.email,
+        userId: affiliateTable.userId,
         userName: userTable.name,
       })
       .from(affiliateTable)
@@ -97,15 +97,15 @@ export async function PATCH(
     }
 
     let body: {
-      status?: string;
+      adminNote?: null | string;
       code?: string;
       commissionType?: string;
       commissionValue?: number;
-      customerDiscountType?: string | null;
-      customerDiscountValue?: number | null;
-      adminNote?: string | null;
-      payoutMethod?: string | null;
-      payoutAddress?: string | null;
+      customerDiscountType?: null | string;
+      customerDiscountValue?: null | number;
+      payoutAddress?: null | string;
+      payoutMethod?: null | string;
+      status?: string;
     };
     try {
       body = (await request.json()) as typeof body;
@@ -117,7 +117,7 @@ export async function PATCH(
 
     if (
       typeof body.status === "string" &&
-      ["pending", "approved", "rejected", "suspended"].includes(body.status)
+      ["approved", "pending", "rejected", "suspended"].includes(body.status)
     ) {
       updates.status = body.status;
     }
@@ -126,7 +126,7 @@ export async function PATCH(
     }
     if (
       typeof body.commissionType === "string" &&
-      ["percent", "fixed"].includes(body.commissionType)
+      ["fixed", "percent"].includes(body.commissionType)
     ) {
       updates.commissionType = body.commissionType;
     }
@@ -141,7 +141,7 @@ export async function PATCH(
       updates.customerDiscountValue = null;
     } else if (
       typeof body.customerDiscountType === "string" &&
-      ["percent", "fixed"].includes(body.customerDiscountType)
+      ["fixed", "percent"].includes(body.customerDiscountType)
     ) {
       updates.customerDiscountType = body.customerDiscountType;
       if (

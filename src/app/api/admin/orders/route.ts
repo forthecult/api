@@ -30,32 +30,6 @@ const FULFILLMENT_STATUS_VALUES = [
   "fulfilled",
 ] as const;
 
-function channel(order: {
-  stripeCheckoutSessionId: string | null;
-  solanaPayDepositAddress: string | null;
-  solanaPayReference: string | null;
-}): string {
-  if (order.stripeCheckoutSessionId) return "Stripe";
-  if (order.solanaPayDepositAddress ?? order.solanaPayReference)
-    return "Solana Pay";
-  return "Manual";
-}
-
-/** Derive payment status from legacy status when paymentStatus is null. */
-function paymentStatusFromLegacy(status: string): string {
-  if (status === "refund_pending") return "refund_pending";
-  if (status === "refunded") return "refunded";
-  if (status === "paid" || status === "fulfilled") return "paid";
-  if (status === "cancelled") return "cancelled";
-  return "pending";
-}
-
-/** Derive fulfillment status from legacy status when fulfillmentStatus is null. Orders that haven't shipped are unfulfilled. */
-function fulfillmentStatusFromLegacy(status: string): string {
-  if (status === "fulfilled") return "fulfilled";
-  return "unfulfilled";
-}
-
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
@@ -113,7 +87,7 @@ export async function GET(request: NextRequest) {
         ? (fulfillmentFilter as (typeof FULFILLMENT_STATUS_VALUES)[number])
         : null;
 
-    let orderIdFilter: string[] | null = null;
+    let orderIdFilter: null | string[] = null;
     if (search.length > 0) {
       const term = `%${escapeLike(search)}%`;
       const [byOrder, byUser, byItem] = await Promise.all([
@@ -167,44 +141,44 @@ export async function GET(request: NextRequest) {
 
     const orderByCustomer = sortBy === "customer";
     const baseSelect = {
-      id: ordersTable.id,
       createdAt: ordersTable.createdAt,
       email: ordersTable.email,
-      status: ordersTable.status,
-      paymentStatus: ordersTable.paymentStatus,
       fulfillmentStatus: ordersTable.fulfillmentStatus,
-      totalCents: ordersTable.totalCents,
-      stripeCheckoutSessionId: ordersTable.stripeCheckoutSessionId,
+      id: ordersTable.id,
+      paymentStatus: ordersTable.paymentStatus,
       solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
       solanaPayReference: ordersTable.solanaPayReference,
+      status: ordersTable.status,
+      stripeCheckoutSessionId: ordersTable.stripeCheckoutSessionId,
+      totalCents: ordersTable.totalCents,
       userId: ordersTable.userId,
     };
 
     const itemCountSubquery = db
       .select({
-        orderId: orderItemsTable.orderId,
         itemCount:
           sql<number>`COALESCE(SUM(${orderItemsTable.quantity}), 0)::int`.as(
             "item_count",
           ),
+        orderId: orderItemsTable.orderId,
       })
       .from(orderItemsTable)
       .groupBy(orderItemsTable.orderId)
       .as("item_counts");
 
-    let orders: Array<{
-      id: string;
+    let orders: {
       createdAt: Date;
       email: string;
+      fulfillmentStatus: null | string;
+      id: string;
+      paymentStatus: null | string;
+      solanaPayDepositAddress: null | string;
+      solanaPayReference: null | string;
       status: string;
-      paymentStatus: string | null;
-      fulfillmentStatus: string | null;
+      stripeCheckoutSessionId: null | string;
       totalCents: number;
-      stripeCheckoutSessionId: string | null;
-      solanaPayDepositAddress: string | null;
-      solanaPayReference: string | null;
-      userId: string | null;
-    }>;
+      userId: null | string;
+    }[];
     if (sortBy === "items") {
       const orderByItemCount = sortOrder(
         sql`COALESCE(${itemCountSubquery.itemCount}, 0)`,
@@ -261,9 +235,9 @@ export async function GET(request: NextRequest) {
       orderIds.length > 0
         ? await db
             .select({
-              orderId: orderItemsTable.orderId,
               id: orderItemsTable.id,
               name: orderItemsTable.name,
+              orderId: orderItemsTable.orderId,
               priceCents: orderItemsTable.priceCents,
               quantity: orderItemsTable.quantity,
             })
@@ -278,9 +252,9 @@ export async function GET(request: NextRequest) {
       userIds.length > 0
         ? await db
             .select({
+              email: userTable.email,
               id: userTable.id,
               name: userTable.name,
-              email: userTable.email,
             })
             .from(userTable)
             .where(inArray(userTable.id, userIds))
@@ -309,18 +283,13 @@ export async function GET(request: NextRequest) {
       const fulfillment =
         o.fulfillmentStatus ?? fulfillmentStatusFromLegacy(o.status);
       return {
-        id: o.id,
-        userId: o.userId ?? undefined,
+        channel: channel(o),
         createdAt: o.createdAt.toISOString(),
+        customer: user?.name ?? user?.email ?? o.email,
         date: o.createdAt.toISOString(),
         email: o.email,
-        customer: user?.name ?? user?.email ?? o.email,
-        channel: channel(o),
-        totalCents: o.totalCents,
-        total: o.totalCents,
-        paymentStatus: payment,
         fulfillmentStatus: fulfillment,
-        status: o.status,
+        id: o.id,
         itemCount,
         items: orderItems.map((i) => ({
           id: i.id,
@@ -328,14 +297,19 @@ export async function GET(request: NextRequest) {
           priceCents: i.priceCents,
           quantity: i.quantity,
         })),
+        paymentStatus: payment,
+        status: o.status,
         tags: [] as string[],
+        total: o.totalCents,
+        totalCents: o.totalCents,
+        userId: o.userId ?? undefined,
       };
     });
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });
@@ -357,13 +331,13 @@ export async function POST(request: NextRequest) {
 
     const body = (await request.json()) as {
       email?: string;
-      userId?: string | null;
+      userId?: null | string;
     };
     const email =
       typeof body.email === "string" && body.email.trim()
         ? body.email.trim()
         : "draft@admin.local";
-    let userId: string | null =
+    let userId: null | string =
       typeof body.userId === "string" && body.userId.trim()
         ? body.userId.trim()
         : null;
@@ -381,13 +355,13 @@ export async function POST(request: NextRequest) {
     const orderId = createId();
 
     await db.insert(ordersTable).values({
-      id: orderId,
       createdAt: now,
       discountPercent: 0,
       email,
-      status: "pending",
-      paymentStatus: "pending",
       fulfillmentStatus: "unfulfilled",
+      id: orderId,
+      paymentStatus: "pending",
+      status: "pending",
       totalCents: 0,
       updatedAt: now,
       userId,
@@ -401,4 +375,30 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function channel(order: {
+  solanaPayDepositAddress: null | string;
+  solanaPayReference: null | string;
+  stripeCheckoutSessionId: null | string;
+}): string {
+  if (order.stripeCheckoutSessionId) return "Stripe";
+  if (order.solanaPayDepositAddress ?? order.solanaPayReference)
+    return "Solana Pay";
+  return "Manual";
+}
+
+/** Derive fulfillment status from legacy status when fulfillmentStatus is null. Orders that haven't shipped are unfulfilled. */
+function fulfillmentStatusFromLegacy(status: string): string {
+  if (status === "fulfilled") return "fulfilled";
+  return "unfulfilled";
+}
+
+/** Derive payment status from legacy status when paymentStatus is null. */
+function paymentStatusFromLegacy(status: string): string {
+  if (status === "refund_pending") return "refund_pending";
+  if (status === "refunded") return "refunded";
+  if (status === "paid" || status === "fulfilled") return "paid";
+  if (status === "cancelled") return "cancelled";
+  return "pending";
 }

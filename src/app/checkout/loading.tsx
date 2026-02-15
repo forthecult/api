@@ -9,7 +9,7 @@ export default function CheckoutLoading() {
             <div className="rounded-lg border p-6">
               <div className="mb-4 h-6 w-40 animate-pulse rounded bg-muted" />
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 py-3">
+                <div className="flex items-center gap-4 py-3" key={i}>
                   <div className="h-16 w-16 animate-pulse rounded bg-muted" />
                   <div className="flex-1 space-y-2">
                     <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />

@@ -21,23 +21,23 @@ import {
 } from "~/ui/primitives/card";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
-type StoreStats = {
-  orderCount: number;
+interface StoreStats {
   averageOrderValueCents: number;
-  soldItems: number;
-  mostPopularItem: {
-    name: string;
-    quantity: number;
-    productId?: string;
-    slug?: string | null;
-  } | null;
-  supportTicketsCount: number;
   chatsCount: number;
-};
+  mostPopularItem: null | {
+    name: string;
+    productId?: string;
+    quantity: number;
+    slug?: null | string;
+  };
+  orderCount: number;
+  soldItems: number;
+  supportTicketsCount: number;
+}
 
 export function StatsPageClient() {
-  const [stats, setStats] = useState<StoreStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [stats, setStats] = useState<null | StoreStats>(null);
+  const [error, setError] = useState<null | string>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,7 +66,13 @@ export function StatsPageClient() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div
+        className={`
+        grid gap-4
+        sm:grid-cols-2
+        lg:grid-cols-3
+      `}
+      >
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <Card key={i}>
             <CardHeader className="space-y-2">
@@ -94,54 +100,54 @@ export function StatsPageClient() {
 
   if (!stats) return null;
 
-  const cards: Array<{
-    title: string;
+  const cards: {
     description: string;
-    value: string;
     icon: typeof Package;
     productHref?: string;
-  }> = [
+    title: string;
+    value: string;
+  }[] = [
     {
-      title: "Number of orders",
       description: "Paid or fulfilled orders",
-      value: stats.orderCount.toLocaleString(),
       icon: Package,
+      title: "Number of orders",
+      value: stats.orderCount.toLocaleString(),
     },
     {
-      title: "Average order value",
       description: "Mean order total",
-      value: formatCents(stats.averageOrderValueCents),
       icon: DollarSign,
+      title: "Average order value",
+      value: formatCents(stats.averageOrderValueCents),
     },
     {
-      title: "Sold items",
       description: "Total units sold",
-      value: stats.soldItems.toLocaleString(),
       icon: ShoppingCart,
+      title: "Sold items",
+      value: stats.soldItems.toLocaleString(),
     },
     {
-      title: "Most popular item",
       description: stats.mostPopularItem
         ? `${stats.mostPopularItem.quantity} sold`
         : "No sales yet",
-      value: stats.mostPopularItem?.name ?? "—",
       icon: Star,
       productHref:
         stats.mostPopularItem?.productId || stats.mostPopularItem?.slug
           ? `/${stats.mostPopularItem?.slug ?? stats.mostPopularItem?.productId ?? ""}`
           : undefined,
+      title: "Most popular item",
+      value: stats.mostPopularItem?.name ?? "—",
     },
     {
-      title: "Support tickets",
       description: "Total tickets opened",
-      value: stats.supportTicketsCount.toLocaleString(),
       icon: Ticket,
+      title: "Support tickets",
+      value: stats.supportTicketsCount.toLocaleString(),
     },
     {
-      title: "Chats",
       description: "Support chat conversations",
-      value: stats.chatsCount.toLocaleString(),
       icon: MessageSquare,
+      title: "Chats",
+      value: stats.chatsCount.toLocaleString(),
     },
   ];
 
@@ -157,7 +163,11 @@ export function StatsPageClient() {
         const Icon = card.icon;
         return (
           <Card key={card.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader
+              className={`
+              flex flex-row items-center justify-between space-y-0 pb-2
+            `}
+            >
               <CardTitle className="text-sm font-medium">
                 {card.title}
               </CardTitle>
@@ -169,8 +179,12 @@ export function StatsPageClient() {
               </CardDescription>
               {card.productHref ? (
                 <Link
+                  className={`
+                    text-2xl font-semibold text-primary tabular-nums
+                    underline-offset-4
+                    hover:underline
+                  `}
                   href={card.productHref}
-                  className="text-2xl font-semibold tabular-nums text-primary underline-offset-4 hover:underline"
                 >
                   {card.value}
                 </Link>

@@ -1,13 +1,14 @@
 "use client";
 
-import { loadStripe } from "@stripe/stripe-js";
 import {
   Elements,
   ExpressCheckoutElement,
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import { useCallback, useMemo, useState } from "react";
+
 import type { OrderPayload } from "../checkout-shared";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
 
@@ -15,25 +16,70 @@ const STRIPE_PUBLISHABLE_KEY =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
 export interface ExpressCheckoutProps {
+  buildOrderPayload: () => OrderPayload;
+  setNavigatingToPay: (v: boolean) => void;
+  setValidationErrors: (errors: string[]) => void;
+  shippingFormRef: React.RefObject<null | ShippingAddressFormRef>;
   stripeEnabled: boolean;
   totalCents: number;
-  buildOrderPayload: () => OrderPayload;
-  setValidationErrors: (errors: string[]) => void;
-  shippingFormRef: React.RefObject<ShippingAddressFormRef | null>;
-  setNavigatingToPay: (v: boolean) => void;
+}
+
+export function ExpressCheckout({
+  buildOrderPayload,
+  setNavigatingToPay,
+  setValidationErrors,
+  shippingFormRef,
+  stripeEnabled,
+  totalCents,
+}: ExpressCheckoutProps) {
+  const [stripePromise] = useState(() =>
+    STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null,
+  );
+
+  const elementsOptions = useMemo(
+    () =>
+      totalCents > 0
+        ? {
+            amount: totalCents,
+            currency: "usd",
+            mode: "payment" as const,
+          }
+        : undefined,
+    [totalCents],
+  );
+
+  if (
+    !stripeEnabled ||
+    !STRIPE_PUBLISHABLE_KEY ||
+    !stripePromise ||
+    !elementsOptions
+  ) {
+    return null;
+  }
+
+  return (
+    <Elements options={elementsOptions} stripe={stripePromise}>
+      <ExpressCheckoutInner
+        buildOrderPayload={buildOrderPayload}
+        setNavigatingToPay={setNavigatingToPay}
+        setValidationErrors={setValidationErrors}
+        shippingFormRef={shippingFormRef}
+      />
+    </Elements>
+  );
 }
 
 /** Inner component that has access to useStripe / useElements. */
 function ExpressCheckoutInner({
   buildOrderPayload,
+  setNavigatingToPay,
   setValidationErrors,
   shippingFormRef,
-  setNavigatingToPay,
 }: {
   buildOrderPayload: () => OrderPayload;
-  setValidationErrors: (errors: string[]) => void;
-  shippingFormRef: React.RefObject<ShippingAddressFormRef | null>;
   setNavigatingToPay: (v: boolean) => void;
+  setValidationErrors: (errors: string[]) => void;
+  shippingFormRef: React.RefObject<null | ShippingAddressFormRef>;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -69,34 +115,34 @@ function ExpressCheckoutInner({
         }
 
         const res = await fetch("/api/payments/stripe/create-payment-intent", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            affiliateCode:
+              typeof payload.commonBody?.affiliateCode === "string"
+                ? payload.commonBody.affiliateCode
+                : undefined,
+            email: form.email.trim(),
             lineItems: payload.orderItems.map((item) => ({
               productId: item.productId,
               productVariantId: item.productVariantId,
               quantity: item.quantity,
             })),
-            email: form.email.trim(),
-            userId: (payload.commonBody?.userId as string) ?? undefined,
-            affiliateCode:
-              typeof payload.commonBody?.affiliateCode === "string"
-                ? payload.commonBody.affiliateCode
-                : undefined,
             shipping: form?.street?.trim()
               ? {
-                  firstName: form.firstName?.trim() || undefined,
-                  lastName: form.lastName?.trim() || undefined,
                   address1: form.street?.trim() || undefined,
                   address2: form.apartment?.trim() || undefined,
                   city: form.city?.trim() || undefined,
-                  stateCode: form.state?.trim() || undefined,
                   countryCode: form.country?.trim() || undefined,
-                  zip: form.zip?.trim() || undefined,
+                  firstName: form.firstName?.trim() || undefined,
+                  lastName: form.lastName?.trim() || undefined,
                   phone: form.phone?.trim() || undefined,
+                  stateCode: form.state?.trim() || undefined,
+                  zip: form.zip?.trim() || undefined,
                 }
               : undefined,
+            userId: (payload.commonBody?.userId as string) ?? undefined,
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
 
         if (!res.ok) {
@@ -108,10 +154,10 @@ function ExpressCheckoutInner({
 
         const data = (await res.json()) as {
           clientSecret: string;
-          orderId: string;
           confirmationToken?: string;
+          orderId: string;
         };
-        const { clientSecret, orderId, confirmationToken } = data;
+        const { clientSecret, confirmationToken, orderId } = data;
         if (!clientSecret) {
           setValidationErrors(["Could not start payment."]);
           setNavigatingToPay(false);
@@ -127,11 +173,11 @@ function ExpressCheckoutInner({
         const baseUrl =
           typeof window !== "undefined" ? window.location.origin : "";
         const { error } = await stripe.confirmPayment({
-          elements,
           clientSecret,
           confirmParams: {
             return_url: `${baseUrl}/checkout/success?orderId=${encodeURIComponent(orderId)}`,
           },
+          elements,
         });
 
         if (error) {
@@ -154,49 +200,4 @@ function ExpressCheckoutInner({
   );
 
   return <ExpressCheckoutElement onConfirm={handleConfirm} />;
-}
-
-export function ExpressCheckout({
-  stripeEnabled,
-  totalCents,
-  buildOrderPayload,
-  setValidationErrors,
-  shippingFormRef,
-  setNavigatingToPay,
-}: ExpressCheckoutProps) {
-  const [stripePromise] = useState(() =>
-    STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null,
-  );
-
-  const elementsOptions = useMemo(
-    () =>
-      totalCents > 0
-        ? {
-            mode: "payment" as const,
-            amount: totalCents,
-            currency: "usd",
-          }
-        : undefined,
-    [totalCents],
-  );
-
-  if (
-    !stripeEnabled ||
-    !STRIPE_PUBLISHABLE_KEY ||
-    !stripePromise ||
-    !elementsOptions
-  ) {
-    return null;
-  }
-
-  return (
-    <Elements stripe={stripePromise} options={elementsOptions}>
-      <ExpressCheckoutInner
-        buildOrderPayload={buildOrderPayload}
-        setValidationErrors={setValidationErrors}
-        shippingFormRef={shippingFormRef}
-        setNavigatingToPay={setNavigatingToPay}
-      />
-    </Elements>
-  );
 }

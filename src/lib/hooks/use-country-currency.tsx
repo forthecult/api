@@ -3,53 +3,53 @@
 import * as React from "react";
 
 export type CountryCode =
-  | "US"
-  | "CA"
+  | "AE"
+  | "AR"
+  | "AT"
   | "AU"
-  | "NZ"
+  | "BE"
+  | "BR"
+  | "BZ"
+  | "CA"
+  | "CH"
+  | "CL"
+  | "CR"
   | "DE"
-  | "GB"
+  | "DK"
+  | "EE"
   | "ES"
+  | "FI"
+  | "FJ"
+  | "FR"
+  | "GB"
+  | "HK"
+  | "IE"
+  | "IL"
+  | "IN"
+  | "IS"
   | "IT"
   | "JP"
-  | "HK"
-  | "IL"
-  | "KR"
-  | "SV"
-  | "AE"
-  | "MX"
-  | "PH"
-  | "FR"
-  | "NL"
-  | "IN"
-  | "BR"
-  | "PA"
-  | "AR"
   | "KN"
-  | "CR"
-  | "BZ"
-  | "CL"
-  | "CH"
-  | "SG"
-  | "IS"
-  | "DK"
-  | "ME"
-  | "PT"
-  | "PL"
-  | "FI"
+  | "KR"
+  | "LI"
   | "LT"
   | "LU"
-  | "LI"
-  | "BE"
-  | "SE"
-  | "IE"
-  | "AT"
+  | "ME"
+  | "MX"
+  | "NL"
   | "NO"
-  | "EE"
-  | "SA"
+  | "NZ"
+  | "PA"
+  | "PH"
+  | "PL"
+  | "PT"
   | "QA"
+  | "SA"
+  | "SE"
+  | "SG"
+  | "SV"
   | "TW"
-  | "FJ";
+  | "US";
 
 const STORAGE_KEY = "country-currency";
 const COOKIE_NAME = "country-currency";
@@ -57,52 +57,46 @@ const COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 const DEFAULT_COUNTRY: CountryCode = "US";
 
 const FALLBACK_RATES: Rates = {
-  USD: 1,
-  EUR: 0.92,
-  GBP: 0.79,
-  CAD: 1.36,
+  AED: 3.67,
+  ARS: 1200,
   AUD: 1.53,
-  NZD: 1.66,
-  JPY: 149,
+  BRL: 4.97,
+  BZD: 2,
+  CAD: 1.36,
+  CHF: 0.88,
+  CLP: 950,
+  CRC: 530,
+  DKK: 6.9,
+  EUR: 0.92,
+  FJD: 2.25,
+  GBP: 0.79,
   HKD: 7.82,
   ILS: 3.67,
-  KRW: 1320,
-  AED: 3.67,
-  MXN: 17.1,
-  PHP: 56.2,
   INR: 83,
-  BRL: 4.97,
-  SGD: 1.35,
-  CHF: 0.88,
-  ARS: 1200,
-  XCD: 2.7,
-  CRC: 530,
-  BZD: 2,
-  CLP: 950,
   ISK: 140,
-  DKK: 6.9,
-  PLN: 4,
-  SEK: 10.8,
+  JPY: 149,
+  KRW: 1320,
+  MXN: 17.1,
   NOK: 10.9,
-  SAR: 3.75,
+  NZD: 1.66,
+  PHP: 56.2,
+  PLN: 4,
   QAR: 3.64,
+  SAR: 3.75,
+  SEK: 10.8,
+  SGD: 1.35,
   TWD: 31.5,
-  FJD: 2.25,
+  USD: 1,
+  XCD: 2.7,
 };
-
-function isValidCountryCode(value: unknown): value is CountryCode {
-  return (
-    typeof value === "string" && COUNTRY_OPTIONS.some((o) => o.code === value)
-  );
-}
 
 function getCurrencySymbol(currency: string): string {
   try {
     const formatter = new Intl.NumberFormat(undefined, {
       currency,
-      style: "currency",
-      minimumFractionDigits: 0,
       maximumFractionDigits: 0,
+      minimumFractionDigits: 0,
+      style: "currency",
     });
     const parts = formatter.formatToParts(0);
     const symbolPart = parts.find((p) => p.type === "currency");
@@ -112,341 +106,347 @@ function getCurrencySymbol(currency: string): string {
   }
 }
 
+function isValidCountryCode(value: unknown): value is CountryCode {
+  return (
+    typeof value === "string" && COUNTRY_OPTIONS.some((o) => o.code === value)
+  );
+}
+
 /** Country name only (no currency in label) for Preferences display. */
 export const COUNTRY_OPTIONS: {
   code: CountryCode;
-  label: string;
   countryName: string;
   currency: string;
+  label: string;
   symbol: string;
 }[] = [
   {
     code: "US",
-    label: "United States (USD)",
     countryName: "United States",
     currency: "USD",
+    label: "United States (USD)",
     symbol: getCurrencySymbol("USD"),
   },
   {
     code: "CA",
-    label: "Canada (CAD)",
     countryName: "Canada",
     currency: "CAD",
+    label: "Canada (CAD)",
     symbol: getCurrencySymbol("CAD"),
   },
   {
     code: "AU",
-    label: "Australia (AUD)",
     countryName: "Australia",
     currency: "AUD",
+    label: "Australia (AUD)",
     symbol: getCurrencySymbol("AUD"),
   },
   {
     code: "NZ",
-    label: "New Zealand (NZD)",
     countryName: "New Zealand",
     currency: "NZD",
+    label: "New Zealand (NZD)",
     symbol: getCurrencySymbol("NZD"),
   },
   {
     code: "DE",
-    label: "Germany (EUR)",
     countryName: "Germany",
     currency: "EUR",
+    label: "Germany (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "GB",
-    label: "United Kingdom (GBP)",
     countryName: "United Kingdom",
     currency: "GBP",
+    label: "United Kingdom (GBP)",
     symbol: getCurrencySymbol("GBP"),
   },
   {
     code: "ES",
-    label: "Spain (EUR)",
     countryName: "Spain",
     currency: "EUR",
+    label: "Spain (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "IT",
-    label: "Italy (EUR)",
     countryName: "Italy",
     currency: "EUR",
+    label: "Italy (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "FR",
-    label: "France (EUR)",
     countryName: "France",
     currency: "EUR",
+    label: "France (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "NL",
-    label: "Netherlands (EUR)",
     countryName: "Netherlands",
     currency: "EUR",
+    label: "Netherlands (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "JP",
-    label: "Japan (JPY)",
     countryName: "Japan",
     currency: "JPY",
+    label: "Japan (JPY)",
     symbol: getCurrencySymbol("JPY"),
   },
   {
     code: "HK",
-    label: "Hong Kong (HKD)",
     countryName: "Hong Kong",
     currency: "HKD",
+    label: "Hong Kong (HKD)",
     symbol: getCurrencySymbol("HKD"),
   },
   {
     code: "IL",
-    label: "Israel (ILS)",
     countryName: "Israel",
     currency: "ILS",
+    label: "Israel (ILS)",
     symbol: getCurrencySymbol("ILS"),
   },
   {
     code: "KR",
-    label: "South Korea (KRW)",
     countryName: "South Korea",
     currency: "KRW",
+    label: "South Korea (KRW)",
     symbol: getCurrencySymbol("KRW"),
   },
   {
     code: "SV",
-    label: "El Salvador (USD)",
     countryName: "El Salvador",
     currency: "USD",
+    label: "El Salvador (USD)",
     symbol: getCurrencySymbol("USD"),
   },
   {
     code: "AE",
-    label: "United Arab Emirates (AED)",
     countryName: "United Arab Emirates",
     currency: "AED",
+    label: "United Arab Emirates (AED)",
     symbol: getCurrencySymbol("AED"),
   },
   {
     code: "MX",
-    label: "Mexico (MXN)",
     countryName: "Mexico",
     currency: "MXN",
+    label: "Mexico (MXN)",
     symbol: getCurrencySymbol("MXN"),
   },
   {
     code: "PH",
-    label: "Philippines (PHP)",
     countryName: "Philippines",
     currency: "PHP",
+    label: "Philippines (PHP)",
     symbol: getCurrencySymbol("PHP"),
   },
   {
     code: "IN",
-    label: "India (INR)",
     countryName: "India",
     currency: "INR",
+    label: "India (INR)",
     symbol: getCurrencySymbol("INR"),
   },
   {
     code: "BR",
-    label: "Brazil (BRL)",
     countryName: "Brazil",
     currency: "BRL",
+    label: "Brazil (BRL)",
     symbol: getCurrencySymbol("BRL"),
   },
   {
     code: "PA",
-    label: "Panama (USD)",
     countryName: "Panama",
     currency: "USD",
+    label: "Panama (USD)",
     symbol: getCurrencySymbol("USD"),
   },
   {
     code: "AR",
-    label: "Argentina (ARS)",
     countryName: "Argentina",
     currency: "ARS",
+    label: "Argentina (ARS)",
     symbol: getCurrencySymbol("ARS"),
   },
   {
     code: "KN",
-    label: "Saint Kitts and Nevis (XCD)",
     countryName: "Saint Kitts and Nevis",
     currency: "XCD",
+    label: "Saint Kitts and Nevis (XCD)",
     symbol: getCurrencySymbol("XCD"),
   },
   {
     code: "CR",
-    label: "Costa Rica (CRC)",
     countryName: "Costa Rica",
     currency: "CRC",
+    label: "Costa Rica (CRC)",
     symbol: getCurrencySymbol("CRC"),
   },
   {
     code: "BZ",
-    label: "Belize (BZD)",
     countryName: "Belize",
     currency: "BZD",
+    label: "Belize (BZD)",
     symbol: getCurrencySymbol("BZD"),
   },
   {
     code: "CL",
-    label: "Chile (CLP)",
     countryName: "Chile",
     currency: "CLP",
+    label: "Chile (CLP)",
     symbol: getCurrencySymbol("CLP"),
   },
   {
     code: "CH",
-    label: "Switzerland (CHF)",
     countryName: "Switzerland",
     currency: "CHF",
+    label: "Switzerland (CHF)",
     symbol: getCurrencySymbol("CHF"),
   },
   {
     code: "SG",
-    label: "Singapore (SGD)",
     countryName: "Singapore",
     currency: "SGD",
+    label: "Singapore (SGD)",
     symbol: getCurrencySymbol("SGD"),
   },
   {
     code: "IS",
-    label: "Iceland (ISK)",
     countryName: "Iceland",
     currency: "ISK",
+    label: "Iceland (ISK)",
     symbol: getCurrencySymbol("ISK"),
   },
   {
     code: "DK",
-    label: "Denmark (DKK)",
     countryName: "Denmark",
     currency: "DKK",
+    label: "Denmark (DKK)",
     symbol: getCurrencySymbol("DKK"),
   },
   {
     code: "ME",
-    label: "Montenegro (EUR)",
     countryName: "Montenegro",
     currency: "EUR",
+    label: "Montenegro (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "PT",
-    label: "Portugal (EUR)",
     countryName: "Portugal",
     currency: "EUR",
+    label: "Portugal (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "PL",
-    label: "Poland (PLN)",
     countryName: "Poland",
     currency: "PLN",
+    label: "Poland (PLN)",
     symbol: getCurrencySymbol("PLN"),
   },
   {
     code: "FI",
-    label: "Finland (EUR)",
     countryName: "Finland",
     currency: "EUR",
+    label: "Finland (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "LT",
-    label: "Lithuania (EUR)",
     countryName: "Lithuania",
     currency: "EUR",
+    label: "Lithuania (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "LU",
-    label: "Luxembourg (EUR)",
     countryName: "Luxembourg",
     currency: "EUR",
+    label: "Luxembourg (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "LI",
-    label: "Liechtenstein (CHF)",
     countryName: "Liechtenstein",
     currency: "CHF",
+    label: "Liechtenstein (CHF)",
     symbol: getCurrencySymbol("CHF"),
   },
   {
     code: "BE",
-    label: "Belgium (EUR)",
     countryName: "Belgium",
     currency: "EUR",
+    label: "Belgium (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "SE",
-    label: "Sweden (SEK)",
     countryName: "Sweden",
     currency: "SEK",
+    label: "Sweden (SEK)",
     symbol: getCurrencySymbol("SEK"),
   },
   {
     code: "IE",
-    label: "Ireland (EUR)",
     countryName: "Ireland",
     currency: "EUR",
+    label: "Ireland (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "AT",
-    label: "Austria (EUR)",
     countryName: "Austria",
     currency: "EUR",
+    label: "Austria (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "NO",
-    label: "Norway (NOK)",
     countryName: "Norway",
     currency: "NOK",
+    label: "Norway (NOK)",
     symbol: getCurrencySymbol("NOK"),
   },
   {
     code: "EE",
-    label: "Estonia (EUR)",
     countryName: "Estonia",
     currency: "EUR",
+    label: "Estonia (EUR)",
     symbol: getCurrencySymbol("EUR"),
   },
   {
     code: "SA",
-    label: "Saudi Arabia (SAR)",
     countryName: "Saudi Arabia",
     currency: "SAR",
+    label: "Saudi Arabia (SAR)",
     symbol: getCurrencySymbol("SAR"),
   },
   {
     code: "QA",
-    label: "Qatar (QAR)",
     countryName: "Qatar",
     currency: "QAR",
+    label: "Qatar (QAR)",
     symbol: getCurrencySymbol("QAR"),
   },
   {
     code: "TW",
-    label: "Taiwan (TWD)",
     countryName: "Taiwan",
     currency: "TWD",
+    label: "Taiwan (TWD)",
     symbol: getCurrencySymbol("TWD"),
   },
   {
     code: "FJ",
-    label: "Fiji (FJD)",
     countryName: "Fiji",
     currency: "FJD",
+    label: "Fiji (FJD)",
     symbol: getCurrencySymbol("FJD"),
   },
 ];
@@ -469,37 +469,37 @@ export const CURRENCY_OPTIONS: {
   const seen = new Set<string>();
   const out: { code: string; label: string; symbol: string }[] = [];
   const names: Record<string, string> = {
-    USD: "US Dollar",
-    EUR: "Euro",
-    GBP: "British Pound",
-    CAD: "Canadian Dollar",
+    AED: "UAE Dirham",
+    ARS: "Argentine Peso",
     AUD: "Australian Dollar",
-    NZD: "New Zealand Dollar",
-    JPY: "Japanese Yen",
+    BRL: "Brazilian Real",
+    BZD: "Belize Dollar",
+    CAD: "Canadian Dollar",
+    CHF: "Swiss Franc",
+    CLP: "Chilean Peso",
+    CRC: "Costa Rican Colón",
+    DKK: "Danish Krone",
+    EUR: "Euro",
+    FJD: "Fijian Dollar",
+    GBP: "British Pound",
     HKD: "Hong Kong Dollar",
     ILS: "Israeli Shekel",
-    KRW: "South Korean Won",
-    AED: "UAE Dirham",
-    MXN: "Mexican Peso",
-    PHP: "Philippine Peso",
     INR: "Indian Rupee",
-    BRL: "Brazilian Real",
-    SGD: "Singapore Dollar",
-    CHF: "Swiss Franc",
-    ARS: "Argentine Peso",
-    XCD: "East Caribbean Dollar",
-    CRC: "Costa Rican Colón",
-    BZD: "Belize Dollar",
-    CLP: "Chilean Peso",
     ISK: "Icelandic Króna",
-    DKK: "Danish Krone",
-    PLN: "Polish Złoty",
-    SEK: "Swedish Krona",
+    JPY: "Japanese Yen",
+    KRW: "South Korean Won",
+    MXN: "Mexican Peso",
     NOK: "Norwegian Krone",
-    SAR: "Saudi Riyal",
+    NZD: "New Zealand Dollar",
+    PHP: "Philippine Peso",
+    PLN: "Polish Złoty",
     QAR: "Qatari Riyal",
+    SAR: "Saudi Riyal",
+    SEK: "Swedish Krona",
+    SGD: "Singapore Dollar",
     TWD: "New Taiwan Dollar",
-    FJD: "Fijian Dollar",
+    USD: "US Dollar",
+    XCD: "East Caribbean Dollar",
   };
   for (const o of COUNTRY_OPTIONS) {
     if (seen.has(o.currency)) continue;
@@ -513,6 +513,24 @@ export const CURRENCY_OPTIONS: {
   return out.sort((a, b) => a.label.localeCompare(b.label));
 })();
 
+interface CountryCurrencyContextType {
+  convertUsdToFiat: (usd: number) => null | number;
+  currency: string;
+  formatFiat: (amount: number) => string;
+  rates: Rates;
+  selectedCountry: CountryCode;
+  setCurrency: (code: string) => void;
+  setPreferences: (country: CountryCode, currency: string) => void;
+  setSelectedCountry: (code: CountryCode) => void;
+}
+
+type Rates = Partial<Record<string, number>>;
+
+interface StoredPrefs {
+  country: CountryCode;
+  currency: string;
+}
+
 /** Default currency for a country (used for geo default). */
 export function defaultCurrencyForCountry(countryCode: CountryCode): string {
   return COUNTRY_OPTIONS.find((o) => o.code === countryCode)?.currency ?? "USD";
@@ -522,95 +540,80 @@ export function isValidCurrencyCode(code: string): boolean {
   return CURRENCY_OPTIONS.some((o) => o.code === code);
 }
 
-type Rates = Partial<Record<string, number>>;
-
-type StoredPrefs = { country: CountryCode; currency: string };
-
-type CountryCurrencyContextType = {
-  convertUsdToFiat: (usd: number) => number | null;
-  formatFiat: (amount: number) => string;
-  rates: Rates;
-  selectedCountry: CountryCode;
-  setSelectedCountry: (code: CountryCode) => void;
-  currency: string;
-  setCurrency: (code: string) => void;
-  setPreferences: (country: CountryCode, currency: string) => void;
-};
-
 const CountryCurrencyContext = React.createContext<
   CountryCurrencyContextType | undefined
 >(undefined);
 
 const CURRENCY_DECIMALS: Record<string, number> = {
-  USD: 2,
-  CAD: 2,
+  AED: 2,
+  ARS: 2,
   AUD: 2,
-  NZD: 2,
+  BRL: 2,
+  BZD: 2,
+  CAD: 2,
+  CHF: 2,
+  CLP: 0,
+  CRC: 0,
+  DKK: 2,
   EUR: 2,
+  FJD: 2,
   GBP: 2,
-  JPY: 0,
   HKD: 2,
   ILS: 2,
-  KRW: 0,
-  AED: 2,
-  MXN: 2,
-  PHP: 2,
   INR: 2,
-  BRL: 2,
-  SGD: 2,
-  CHF: 2,
-  ARS: 2,
-  XCD: 2,
-  CRC: 0,
-  BZD: 2,
-  CLP: 0,
   ISK: 0,
-  DKK: 2,
-  PLN: 2,
-  SEK: 2,
+  JPY: 0,
+  KRW: 0,
+  MXN: 2,
   NOK: 2,
-  SAR: 2,
+  NZD: 2,
+  PHP: 2,
+  PLN: 2,
   QAR: 2,
+  SAR: 2,
+  SEK: 2,
+  SGD: 2,
   TWD: 2,
-  FJD: 2,
+  USD: 2,
+  XCD: 2,
 };
 
 const CURRENCY_LOCALE: Record<string, string> = {
-  USD: "en-US",
-  CAD: "en-CA",
+  AED: "ar-AE",
+  ARS: "es-AR",
   AUD: "en-AU",
-  NZD: "en-NZ",
+  BRL: "pt-BR",
+  BZD: "en-BZ",
+  CAD: "en-CA",
+  CHF: "de-CH",
+  CLP: "es-CL",
+  CRC: "es-CR",
+  DKK: "da-DK",
   EUR: "de-DE",
+  FJD: "en-FJ",
   GBP: "en-GB",
-  JPY: "ja-JP",
   HKD: "zh-HK",
   ILS: "he-IL",
-  KRW: "ko-KR",
-  AED: "ar-AE",
-  MXN: "es-MX",
-  PHP: "en-PH",
   INR: "en-IN",
-  BRL: "pt-BR",
-  SGD: "en-SG",
-  CHF: "de-CH",
-  ARS: "es-AR",
-  XCD: "en-US",
-  CRC: "es-CR",
-  BZD: "en-BZ",
-  CLP: "es-CL",
   ISK: "is-IS",
-  DKK: "da-DK",
-  PLN: "pl-PL",
-  SEK: "sv-SE",
+  JPY: "ja-JP",
+  KRW: "ko-KR",
+  MXN: "es-MX",
   NOK: "nb-NO",
-  SAR: "ar-SA",
+  NZD: "en-NZ",
+  PHP: "en-PH",
+  PLN: "pl-PL",
   QAR: "ar-QA",
+  SAR: "ar-SA",
+  SEK: "sv-SE",
+  SGD: "en-SG",
   TWD: "zh-TW",
-  FJD: "en-FJ",
+  USD: "en-US",
+  XCD: "en-US",
 };
 
 type CountryCurrencyProviderProps = React.PropsWithChildren<{
-  initialCountry?: string | null;
+  initialCountry?: null | string;
 }>;
 
 export function CountryCurrencyProvider({
@@ -651,7 +654,7 @@ export function CountryCurrencyProvider({
     // Fetch geo from API to detect user's country
     fetch("/api/geo")
       .then((res) => res.json())
-      .then((data: { country?: string | null }) => {
+      .then((data: { country?: null | string }) => {
         if (data.country && isValidCountryCode(data.country)) {
           const detectedCountry = data.country as CountryCode;
           const detectedCurrency = defaultCurrencyForCountry(detectedCountry);
@@ -808,7 +811,7 @@ export function CountryCurrencyProvider({
   const currency = selectedCurrency;
 
   const convertUsdToFiat = React.useCallback(
-    (usd: number): number | null => {
+    (usd: number): null | number => {
       const rate = rates[currency];
       if (!rate || rate <= 0) return null;
       return usd * rate;
@@ -820,10 +823,10 @@ export function CountryCurrencyProvider({
     (amount: number): string => {
       const locale = CURRENCY_LOCALE[currency] ?? "en-US";
       return new Intl.NumberFormat(locale, {
-        style: "currency",
         currency,
-        minimumFractionDigits: CURRENCY_DECIMALS[currency] ?? 2,
         maximumFractionDigits: CURRENCY_DECIMALS[currency] ?? 2,
+        minimumFractionDigits: CURRENCY_DECIMALS[currency] ?? 2,
+        style: "currency",
       }).format(amount);
     },
     [currency],
@@ -832,13 +835,13 @@ export function CountryCurrencyProvider({
   const value = React.useMemo<CountryCurrencyContextType>(
     () => ({
       convertUsdToFiat,
+      currency,
       formatFiat,
       rates,
       selectedCountry,
-      setSelectedCountry,
-      currency,
       setCurrency,
       setPreferences,
+      setSelectedCountry,
     }),
     [
       convertUsdToFiat,
@@ -853,26 +856,24 @@ export function CountryCurrencyProvider({
   );
 
   return (
-    <CountryCurrencyContext.Provider value={value}>
-      {children}
-    </CountryCurrencyContext.Provider>
+    <CountryCurrencyContext value={value}>{children}</CountryCurrencyContext>
   );
 }
 
 /** SSR-safe fallback when CountryCurrencyProvider is not in the tree. */
 const COUNTRY_CURRENCY_FALLBACK: CountryCurrencyContextType = {
   convertUsdToFiat: () => null,
+  currency: "USD",
   formatFiat: (amount: number) => `$${amount.toFixed(2)}`,
   rates: {},
   selectedCountry: "US",
-  setSelectedCountry: () => {},
-  currency: "USD",
   setCurrency: () => {},
   setPreferences: () => {},
+  setSelectedCountry: () => {},
 };
 
 export function useCountryCurrency(): CountryCurrencyContextType {
-  const ctx = React.useContext(CountryCurrencyContext);
+  const ctx = React.use(CountryCurrencyContext);
   if (!ctx) {
     if (typeof window === "undefined") return COUNTRY_CURRENCY_FALLBACK;
     // On the client, return fallback instead of throwing to survive provider

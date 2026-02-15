@@ -9,23 +9,23 @@ import { db } from "~/db";
 import { memberTierDiscountTable } from "~/db/schema";
 import { productCategoriesTable } from "~/db/schema";
 
-export type TierDiscountItem = {
-  productId: string;
-  priceCents: number;
-  quantity: number;
-};
-
-export type ResolvedTierDiscount = {
-  id: string;
-  label: string | null;
-  scope: string;
+export interface ResolvedTierDiscount {
   discountCents: number;
-};
+  id: string;
+  label: null | string;
+  scope: string;
+}
 
-export type ResolveTierDiscountsResult = {
+export interface ResolveTierDiscountsResult {
   discounts: ResolvedTierDiscount[];
   totalCents: number;
-};
+}
+
+export interface TierDiscountItem {
+  priceCents: number;
+  productId: string;
+  quantity: number;
+}
 
 /**
  * Resolve all tier-based discounts for a given member tier and cart.
@@ -34,12 +34,12 @@ export type ResolveTierDiscountsResult = {
 export async function resolveTierDiscountsForCheckout(
   memberTier: number,
   params: {
-    subtotalCents: number;
-    shippingFeeCents: number;
     items: TierDiscountItem[];
+    shippingFeeCents: number;
+    subtotalCents: number;
   },
 ): Promise<ResolveTierDiscountsResult> {
-  const { subtotalCents, shippingFeeCents, items } = params;
+  const { items, shippingFeeCents, subtotalCents } = params;
 
   const rows = await db
     .select()
@@ -55,8 +55,8 @@ export async function resolveTierDiscountsForCheckout(
   if (productIds.length > 0) {
     const links = await db
       .select({
-        productId: productCategoriesTable.productId,
         categoryId: productCategoriesTable.categoryId,
+        productId: productCategoriesTable.productId,
       })
       .from(productCategoriesTable)
       .where(inArray(productCategoriesTable.productId, productIds));
@@ -114,10 +114,10 @@ export async function resolveTierDiscountsForCheckout(
     if (discountCents <= 0) continue;
 
     discounts.push({
+      discountCents,
       id: row.id,
       label: row.label ?? null,
       scope,
-      discountCents,
     });
     totalCents += discountCents;
   }

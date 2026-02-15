@@ -4,26 +4,26 @@ import * as React from "react";
 
 export type CryptoCode =
   | "BTC"
-  | "ETH"
-  | "SOL"
-  | "DOGE"
   | "CRUST"
+  | "DOGE"
+  | "ETH"
   | "PUMP"
-  | "TROLL"
+  | "SKR"
+  | "SOL"
   | "TON"
-  | "XMR"
-  | "XAU"
+  | "TROLL"
   | "XAG"
-  | "SKR";
+  | "XAU"
+  | "XMR";
 
 const COINGECKO_IDS: Record<
-  Exclude<CryptoCode, "CRUST" | "PUMP" | "TROLL" | "XAU" | "XAG" | "SKR">,
+  Exclude<CryptoCode, "CRUST" | "PUMP" | "SKR" | "TROLL" | "XAG" | "XAU">,
   string
 > = {
   BTC: "bitcoin",
+  DOGE: "dogecoin",
   ETH: "ethereum",
   SOL: "solana",
-  DOGE: "dogecoin",
   TON: "toncoin",
   XMR: "monero",
 };
@@ -33,13 +33,13 @@ const DEFAULT_CRYPTO: CryptoCode = "BTC";
 
 export type Rates = Partial<Record<CryptoCode, number>>;
 
-type CryptoCurrencyContextType = {
-  convertUsdToCrypto: (usd: number) => number | null;
+interface CryptoCurrencyContextType {
+  convertUsdToCrypto: (usd: number) => null | number;
   formatCrypto: (amount: number) => string;
   rates: Rates;
   selectedCrypto: CryptoCode;
   setSelectedCrypto: (code: CryptoCode) => void;
-};
+}
 
 const CryptoCurrencyContext = React.createContext<
   CryptoCurrencyContextType | undefined
@@ -47,33 +47,33 @@ const CryptoCurrencyContext = React.createContext<
 
 const DECIMAL_MAP: Record<CryptoCode, number> = {
   BTC: 6,
-  ETH: 6,
-  SOL: 4,
-  DOGE: 6,
   CRUST: 6,
+  DOGE: 6,
+  ETH: 6,
   PUMP: 6,
-  TROLL: 6,
-  TON: 4,
-  XMR: 6,
-  XAU: 2,
-  XAG: 2,
   SKR: 6,
+  SOL: 4,
+  TON: 4,
+  TROLL: 6,
+  XAG: 2,
+  XAU: 2,
+  XMR: 6,
 };
 
 /** Fallback when API fails; also used as initial state so consumers never see empty rates. */
 const FALLBACK_RATES: Record<CryptoCode, number> = {
   BTC: 70_000,
-  ETH: 2_300,
-  SOL: 100,
-  DOGE: 0.08,
   CRUST: 0,
+  DOGE: 0.08,
+  ETH: 2_300,
   PUMP: 0.01,
-  TROLL: 1,
-  TON: 5.5,
-  XMR: 150,
-  XAU: 2_650,
-  XAG: 31,
   SKR: 0.01,
+  SOL: 100,
+  TON: 5.5,
+  TROLL: 1,
+  XAG: 31,
+  XAU: 2_650,
+  XMR: 150,
 };
 
 export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
@@ -172,7 +172,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   }, []);
 
   const convertUsdToCrypto = React.useCallback(
-    (usd: number): number | null => {
+    (usd: number): null | number => {
       const rate = rates[selectedCrypto];
       if (!rate || rate <= 0) return null;
       return usd / rate;
@@ -186,8 +186,8 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       // Use Intl.NumberFormat for locale-aware thousand separators
       // e.g., 2182.633676 → "2,182.633676" (US) or "2.182,633676" (DE)
       const formatted = new Intl.NumberFormat(undefined, {
-        minimumFractionDigits: 0,
         maximumFractionDigits: decimals,
+        minimumFractionDigits: 0,
       }).format(amount);
       return `${formatted} ${selectedCrypto}`;
     },
@@ -212,9 +212,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
   );
 
   return (
-    <CryptoCurrencyContext.Provider value={value}>
-      {children}
-    </CryptoCurrencyContext.Provider>
+    <CryptoCurrencyContext value={value}>{children}</CryptoCurrencyContext>
   );
 }
 
@@ -228,7 +226,7 @@ const CRYPTO_FALLBACK: CryptoCurrencyContextType = {
 };
 
 export function useCryptoCurrency(): CryptoCurrencyContextType {
-  const ctx = React.useContext(CryptoCurrencyContext);
+  const ctx = React.use(CryptoCurrencyContext);
   if (!ctx) {
     if (typeof window === "undefined") return CRYPTO_FALLBACK;
     console.warn(
@@ -242,53 +240,53 @@ export function useCryptoCurrency(): CryptoCurrencyContextType {
 // Use local assets so logos work offline; external URLs (e.g. cryptologos.cc) fail when network is down
 export const CRYPTO_OPTIONS: {
   code: CryptoCode;
-  label: string;
   iconSrc: string;
+  label: string;
 }[] = [
   {
     code: "BTC",
-    label: "Bitcoin (BTC)",
     iconSrc: "/crypto/bitcoin/bitcoin-logo.svg",
+    label: "Bitcoin (BTC)",
   },
   {
     code: "ETH",
-    label: "Ethereum (ETH)",
     iconSrc: "/crypto/ethereum/ethereum-logo.svg",
+    label: "Ethereum (ETH)",
   },
   {
     code: "SOL",
-    label: "Solana (SOL)",
     iconSrc: "/crypto/solana/solanaLogoMark.svg",
+    label: "Solana (SOL)",
   },
-  { code: "DOGE", label: "Dogecoin (DOGE)", iconSrc: "/payments/doge.svg" },
+  { code: "DOGE", iconSrc: "/payments/doge.svg", label: "Dogecoin (DOGE)" },
   {
     code: "PUMP",
-    label: "Pump (PUMP)",
     iconSrc: "/crypto/pump/pump-logomark.svg",
+    label: "Pump (PUMP)",
   },
   {
     code: "TROLL",
-    label: "Troll (TROLL)",
     iconSrc: "/crypto/troll/troll-logomark.png",
+    label: "Troll (TROLL)",
   },
   {
     code: "SKR",
-    label: "Seeker (SKR)",
     iconSrc: "/crypto/seeker/S_Token_Circle_White.svg",
+    label: "Seeker (SKR)",
   },
   {
     code: "XMR",
-    label: "Monero (XMR)",
     iconSrc: "/crypto/monero/monero-xmr-logo.svg",
+    label: "Monero (XMR)",
   },
   {
     code: "XAU",
-    label: "Gold (XAU)",
     iconSrc: "/crypto/gold/gold-logo.svg",
+    label: "Gold (XAU)",
   },
   {
     code: "XAG",
-    label: "Silver (XAG)",
     iconSrc: "/crypto/silver/silver-logo.svg",
+    label: "Silver (XAG)",
   },
 ];

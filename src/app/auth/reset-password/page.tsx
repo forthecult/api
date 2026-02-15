@@ -8,7 +8,11 @@ export default function ResetPasswordPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
+        <div
+          className={`
+          flex min-h-[40vh] items-center justify-center text-muted-foreground
+        `}
+        >
           Loading…
         </div>
       }

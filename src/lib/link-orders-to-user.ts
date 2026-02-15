@@ -9,13 +9,36 @@ import { and, isNull, sql } from "drizzle-orm";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 
-function normalizeWalletAddress(addr: string | null | undefined): string {
-  return (addr ?? "").trim().toLowerCase();
-}
+/**
+ * Link orders that have no userId to this user, by email.
+ * Only call when user.emailVerified is true (so we don't attach orders to unverified sign-ups).
+ * Safe to call on dashboard load when session user is verified.
+ */
+export async function linkOrdersToUserByEmail(
+  userId: string,
+  email: string,
+): Promise<number> {
+  if (!userId || !email?.trim()) return 0;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized) return 0;
 
-/** Solana addresses are base58 (case-sensitive); compare trimmed only. */
-function normalizeSolanaAddress(addr: string | null | undefined): string {
-  return (addr ?? "").trim();
+  const result = await db
+    .update(ordersTable)
+    .set({ updatedAt: new Date(), userId })
+    .where(
+      and(
+        isNull(ordersTable.userId),
+        sql`lower(trim(${ordersTable.email})) = ${normalized}`,
+      ),
+    );
+
+  const count =
+    result && "rowCount" in result
+      ? (result as { rowCount: number }).rowCount
+      : Array.isArray(result)
+        ? result.length
+        : 0;
+  return typeof count === "number" ? count : 0;
 }
 
 /**
@@ -36,7 +59,7 @@ export async function linkOrdersToUserByWallet(
 
   const result = await db
     .update(ordersTable)
-    .set({ userId, updatedAt: new Date() })
+    .set({ updatedAt: new Date(), userId })
     .where(
       and(
         isNull(ordersTable.userId),
@@ -55,34 +78,11 @@ export async function linkOrdersToUserByWallet(
   return typeof count === "number" ? count : 0;
 }
 
-/**
- * Link orders that have no userId to this user, by email.
- * Only call when user.emailVerified is true (so we don't attach orders to unverified sign-ups).
- * Safe to call on dashboard load when session user is verified.
- */
-export async function linkOrdersToUserByEmail(
-  userId: string,
-  email: string,
-): Promise<number> {
-  if (!userId || !email?.trim()) return 0;
-  const normalized = email.trim().toLowerCase();
-  if (!normalized) return 0;
+/** Solana addresses are base58 (case-sensitive); compare trimmed only. */
+function normalizeSolanaAddress(addr: null | string | undefined): string {
+  return (addr ?? "").trim();
+}
 
-  const result = await db
-    .update(ordersTable)
-    .set({ userId, updatedAt: new Date() })
-    .where(
-      and(
-        isNull(ordersTable.userId),
-        sql`lower(trim(${ordersTable.email})) = ${normalized}`,
-      ),
-    );
-
-  const count =
-    result && "rowCount" in result
-      ? (result as { rowCount: number }).rowCount
-      : Array.isArray(result)
-        ? result.length
-        : 0;
-  return typeof count === "number" ? count : 0;
+function normalizeWalletAddress(addr: null | string | undefined): string {
+  return (addr ?? "").trim().toLowerCase();
 }

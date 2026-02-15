@@ -3,10 +3,10 @@
  * Uses Resend when RESEND_API_KEY is set; in development logs the code to console.
  */
 export async function sendAddEmailVerificationCode(params: {
-  to: string;
   code: string;
+  to: string;
 }): Promise<void> {
-  const { to, code } = params;
+  const { code, to } = params;
   const appName = "For the Culture";
 
   if (process.env.RESEND_API_KEY) {
@@ -21,8 +21,6 @@ export async function sendAddEmailVerificationCode(params: {
 
       await resend.emails.send({
         from,
-        to,
-        subject: `Your verification code ${appName}`,
         html: `<!DOCTYPE html><html><body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
   <h1 style="color: #111;">Verify your email</h1>
   <p style="color: #333; font-size: 16px; line-height: 1.6;">You requested to add this email to your ${appName} account. Use this code to verify you own this address:</p>
@@ -30,7 +28,9 @@ export async function sendAddEmailVerificationCode(params: {
   <p style="color: #666; font-size: 14px;">This code expires in 10 minutes. If you didn't request this, you can ignore this email.</p>
   <p style="color: #666; font-size: 14px; margin-top: 32px;">— ${appName}</p>
 </body></html>`,
+        subject: `Your verification code ${appName}`,
         text: `Verify your email\n\nUse this code to verify you own this address: ${code}\n\nThis code expires in 10 minutes. If you didn't request this, you can ignore this email.\n\n— ${appName}`,
+        to,
       });
       if (process.env.NODE_ENV === "development") {
         console.log("[sendAddEmailVerificationCode] Code sent to:", to);

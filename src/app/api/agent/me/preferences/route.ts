@@ -96,17 +96,17 @@ export async function PATCH(request: NextRequest) {
     await db
       .insert(agentPreferencesTable)
       .values({
-        moltbookAgentId: agentId,
         key: key.trim(),
-        value,
+        moltbookAgentId: agentId,
         updatedAt: now,
+        value,
       })
       .onConflictDoUpdate({
+        set: { updatedAt: now, value },
         target: [
           agentPreferencesTable.moltbookAgentId,
           agentPreferencesTable.key,
         ],
-        set: { value, updatedAt: now },
       });
   }
 
@@ -125,8 +125,8 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json(
     {
-      ok: true,
       agent: { id: result.agent.id, name: result.agent.name },
+      ok: true,
       preferences,
     },
     { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },

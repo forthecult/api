@@ -1,8 +1,9 @@
 "use client";
 
+import type { Wallet } from "@solana/wallet-adapter-react";
+
 import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
-import type { Wallet } from "@solana/wallet-adapter-react";
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -10,26 +11,26 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useConnectors, useSignMessage } from "wagmi";
 
 import { SYSTEM_CONFIG } from "~/app";
+import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
-import { cn } from "~/lib/cn";
 
 /** Ethereum / WalletConnect options shown in the wallet list (wallets-first flow). */
 const ETHEREUM_WALLET_OPTIONS = [
   {
+    icon: "https://avatars.githubusercontent.com/u/37784886?s=200&v=4",
     id: "walletconnect" as const,
     name: "WalletConnect",
-    icon: "https://avatars.githubusercontent.com/u/37784886?s=200&v=4",
   },
   {
+    icon: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg",
     id: "injected" as const,
     name: "MetaMask",
-    icon: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg",
   },
   {
+    icon: "https://www.coinbase.com/img/favicon/favicon-256.png",
     id: "injected" as const,
     name: "Coinbase Wallet",
-    icon: "https://www.coinbase.com/img/favicon/favicon-256.png",
   },
 ] as const;
 
@@ -67,44 +68,62 @@ function isMultiChainWallet(name: string): boolean {
 const SUGGESTED_SOLANA_NAMES = ["Phantom", "Solflare"];
 
 function EthereumOptionButton({
-  name,
+  disabled,
   icon,
   isDetected,
+  name,
   onClick,
-  disabled,
 }: {
-  name: string;
+  disabled: boolean;
   icon: string;
   isDetected?: boolean;
+  name: string;
   onClick: () => void;
-  disabled: boolean;
 }) {
   return (
     <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-        "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+        `
+          flex w-full items-center gap-3 rounded-lg border border-border bg-card
+          px-4 py-3
+        `,
+        `
+          text-left transition-colors
+          hover:bg-muted/50
+          disabled:opacity-50
+        `,
       )}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
     >
-      <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
+      <div
+        className={`
+        flex size-8 shrink-0 items-center justify-center overflow-hidden
+        rounded-md bg-muted/20
+      `}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={icon}
           alt=""
           className="size-8 object-contain"
-          width={32}
           height={32}
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
+          src={icon}
+          width={32}
         />
       </div>
       <span className="flex-1 font-medium">{name}</span>
       {isDetected && (
-        <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+        <span
+          className={`
+          rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
+          text-green-700
+          dark:text-green-400
+        `}
+        >
           Detected
         </span>
       )}
@@ -128,100 +147,56 @@ export const OPEN_LINK_WALLET_MODAL = "open-link-wallet-modal";
 /** Dispatched when a wallet is successfully linked to refresh account lists. */
 export const WALLET_LINKED_EVENT = "wallet-linked";
 
-type AuthWalletModalProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+interface AuthWalletModalProps {
   /** When true, link wallet to current account instead of signing in */
   link?: boolean;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
   /** When true, only show Solana wallets (no EVM options). Used for staking flows. */
   solanaOnly?: boolean;
-};
-
-function WalletOption({
-  wallet,
-  onClick,
-  disabled,
-  isDetected,
-}: {
-  wallet: Wallet;
-  onClick: () => void;
-  disabled: boolean;
-  isDetected: boolean;
-}) {
-  const icon = wallet.adapter.icon;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-        "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
-      )}
-    >
-      {icon && (
-        <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
-          <img
-            src={icon}
-            alt=""
-            className="object-contain"
-            width={32}
-            height={32}
-          />
-        </div>
-      )}
-      <span className="flex-1 font-medium">{wallet.adapter.name}</span>
-      {isDetected && (
-        <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-          Detected
-        </span>
-      )}
-      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-    </button>
-  );
 }
 
 export function AuthWalletModal({
-  open,
-  onOpenChange,
   link = false,
+  onOpenChange,
+  open,
   solanaOnly = false,
 }: AuthWalletModalProps) {
   const router = useRouter();
   const {
-    wallets,
-    wallet: currentWallet,
-    select,
     connect,
-    disconnect,
-    publicKey,
     connected,
     connecting,
+    disconnect,
+    publicKey,
+    select,
     signMessage,
+    wallet: currentWallet,
+    wallets,
   } = useWallet();
 
   const signFlowStarted = useRef(false);
   /** Prevent duplicate connect() when effect re-runs before adapter state updates. */
   const solanaConnectStartedRef = useRef(false);
-  const [step, setStep] = useState<"wallet" | "network" | "signing" | "error">(
+  const [step, setStep] = useState<"error" | "network" | "signing" | "wallet">(
     "wallet",
   );
   const [error, setError] = useState("");
-  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<null | Wallet>(null);
   const [selectedChain, setSelectedChain] = useState<
-    "solana" | "ethereum" | null
+    "ethereum" | "solana" | null
   >(null);
   /** True after select() is called; cleared when the connect effect fires or on modal close. */
   const [pendingSolanaConnect, setPendingSolanaConnect] = useState(false);
   /** When user picks an Ethereum option: "walletconnect" or "injected" (MetaMask/Brave/etc.). */
   const [selectedEthereumOption, setSelectedEthereumOption] = useState<
-    "walletconnect" | "injected" | null
+    "injected" | "walletconnect" | null
   >(null);
   /** Solana: challenge ready; sign is triggered by user click so the wallet shows the sign popup. */
-  const [solanaChallengePending, setSolanaChallengePending] = useState<{
+  const [solanaChallengePending, setSolanaChallengePending] = useState<null | {
     message: string;
     messageBytes: Uint8Array;
-  } | null>(null);
+  }>(null);
   const [solanaSigning, setSolanaSigning] = useState(false);
 
   const [isMetaMaskDetected, setIsMetaMaskDetected] = useState(false);
@@ -248,7 +223,7 @@ export function AuthWalletModal({
   );
 
   const handleSelectEthereumOption = useCallback(
-    (option: "walletconnect" | "injected") => {
+    (option: "injected" | "walletconnect") => {
       setError("");
       setSelectedChain("ethereum");
       setSelectedEthereumOption(option);
@@ -281,7 +256,7 @@ export function AuthWalletModal({
   );
 
   const handleSelectNetwork = useCallback(
-    (chain: "solana" | "ethereum") => {
+    (chain: "ethereum" | "solana") => {
       setError("");
       setSelectedChain(chain);
       const wallet = selectedWallet;
@@ -428,10 +403,10 @@ export function AuthWalletModal({
           const res = await fetch(
             `${API_BASE}/api/auth/sign-in/solana/challenge`,
             {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({ address: publicKey.toBase58() }),
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              method: "POST",
             },
           );
           if (!res.ok) {
@@ -480,18 +455,18 @@ export function AuthWalletModal({
       const rawResult = await signMessage(solanaChallengePending.messageBytes);
 
       // Wallets may return Uint8Array or { signature: Uint8Array } or { signature: string } (base58)
-      const sig: Uint8Array | string =
+      const sig: string | Uint8Array =
         rawResult &&
         typeof rawResult === "object" &&
         "signature" in rawResult &&
         (rawResult as { signature: unknown }).signature !== undefined
-          ? (rawResult as { signature: Uint8Array | string }).signature
+          ? (rawResult as { signature: string | Uint8Array }).signature
           : (rawResult as unknown as Uint8Array);
       const isBase58 =
         typeof sig === "string" &&
         /^[1-9A-HJ-NP-Za-km-z]+$/.test(sig) &&
         sig.length >= 80;
-      const bytes: Uint8Array | null =
+      const bytes: null | Uint8Array =
         typeof sig === "string"
           ? null
           : sig instanceof ArrayBuffer
@@ -519,9 +494,6 @@ export function AuthWalletModal({
       const verifyRes = await fetch(
         `${API_BASE}/api/auth/sign-in/solana/verify`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
             address: publicKey.toBase58(),
             message: solanaChallengePending.message,
@@ -529,6 +501,9 @@ export function AuthWalletModal({
             ...(signatureBase58 ? { signatureBase58 } : {}),
             link: link || undefined,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         },
       );
       if (!verifyRes.ok) {
@@ -652,10 +627,10 @@ export function AuthWalletModal({
         const res = await fetch(
           `${API_BASE}/api/auth/sign-in/ethereum/challenge`,
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({ address: evmAddress }),
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
           },
         );
         if (!res.ok) {
@@ -671,15 +646,15 @@ export function AuthWalletModal({
         const verifyRes = await fetch(
           `${API_BASE}/api/auth/sign-in/ethereum/verify`,
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({
               address: evmAddress,
+              link: link || undefined,
               message,
               signature,
-              link: link || undefined,
             }),
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
           },
         );
         if (!verifyRes.ok) {
@@ -736,12 +711,12 @@ export function AuthWalletModal({
           typeof window !== "undefined"
             ? (window as unknown as {
                 ethereum?: {
+                  isMetaMask?: boolean;
+                  providers?: unknown[];
                   request: (args: {
                     method: string;
                     params?: unknown[];
                   }) => Promise<unknown>;
-                  providers?: unknown[];
-                  isMetaMask?: boolean;
                 };
                 phantom?: { ethereum?: unknown };
               })
@@ -750,7 +725,7 @@ export function AuthWalletModal({
         let eth: typeof raw;
         if (raw) {
           if (Array.isArray(raw.providers) && raw.providers.length > 0) {
-            const providers = raw.providers as Array<{ isMetaMask?: boolean }>;
+            const providers = raw.providers as { isMetaMask?: boolean }[];
             const metaMask = providers.find((p) => p?.isMetaMask);
             const nonPhantom = (raw.providers as unknown[]).find(
               (p) => p !== win?.phantom?.ethereum,
@@ -777,10 +752,10 @@ export function AuthWalletModal({
         const res = await fetch(
           `${API_BASE}/api/auth/sign-in/ethereum/challenge`,
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({ address }),
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
           },
         );
         if (!res.ok) {
@@ -799,15 +774,15 @@ export function AuthWalletModal({
         const verifyRes = await fetch(
           `${API_BASE}/api/auth/sign-in/ethereum/verify`,
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
             body: JSON.stringify({
               address,
+              link: link || undefined,
               message,
               signature,
-              link: link || undefined,
             }),
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
           },
         );
         if (!verifyRes.ok) {
@@ -873,10 +848,13 @@ export function AuthWalletModal({
   }, [selectedWallet, selectedChain]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
-        className="max-w-[400px] gap-0 border-border bg-card p-0 sm:max-w-[400px]"
         aria-describedby={undefined}
+        className={`
+          max-w-[400px] gap-0 border-border bg-card p-0
+          sm:max-w-[400px]
+        `}
       >
         <div className="border-b border-border px-5 py-4">
           <DialogTitle className="text-lg font-semibold">
@@ -889,7 +867,12 @@ export function AuthWalletModal({
         </div>
         <div className="flex flex-col gap-4 px-5 py-4">
           {error && (
-            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              className={`
+              rounded-md border border-destructive/50 bg-destructive/10 px-3
+              py-2 text-sm text-destructive
+            `}
+            >
               {error}
             </p>
           )}
@@ -902,39 +885,64 @@ export function AuthWalletModal({
               </p>
               <div className="flex flex-col gap-2">
                 <button
-                  type="button"
-                  onClick={() => handleSelectNetwork("solana")}
-                  disabled={connecting}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                    "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+                    `
+                      flex w-full items-center gap-3 rounded-lg border
+                      border-border bg-card px-4 py-3
+                    `,
+                    `
+                      text-left transition-colors
+                      hover:bg-muted/50
+                      disabled:opacity-50
+                    `,
                   )}
+                  disabled={connecting}
+                  onClick={() => handleSelectNetwork("solana")}
+                  type="button"
                 >
                   <span className="flex-1 font-medium">Solana</span>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronRight
+                    className={`
+                    size-4 shrink-0 text-muted-foreground
+                  `}
+                  />
                 </button>
                 <button
-                  type="button"
-                  onClick={() => handleSelectNetwork("ethereum")}
-                  disabled={connecting}
                   className={cn(
-                    "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                    "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+                    `
+                      flex w-full items-center gap-3 rounded-lg border
+                      border-border bg-card px-4 py-3
+                    `,
+                    `
+                      text-left transition-colors
+                      hover:bg-muted/50
+                      disabled:opacity-50
+                    `,
                   )}
+                  disabled={connecting}
+                  onClick={() => handleSelectNetwork("ethereum")}
+                  type="button"
                 >
                   <span className="flex-1 font-medium">Ethereum (EVM)</span>
-                  <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                  <ChevronRight
+                    className={`
+                    size-4 shrink-0 text-muted-foreground
+                  `}
+                  />
                 </button>
               </div>
               <button
-                type="button"
+                className={`
+                  text-sm text-muted-foreground
+                  hover:text-foreground hover:underline
+                `}
                 onClick={() => {
                   setStep("wallet");
                   setSelectedWallet(null);
                   setSelectedChain(null);
                   setError("");
                 }}
-                className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+                type="button"
               >
                 ← Back to wallet list
               </button>
@@ -943,7 +951,12 @@ export function AuthWalletModal({
 
           {step === "wallet" && (
             <div className="space-y-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Suggested
               </p>
               <div className="flex flex-col gap-2">
@@ -958,26 +971,31 @@ export function AuthWalletModal({
                   )
                   .map((wallet, index) => (
                     <WalletOption
-                      key={`${wallet.adapter.name}-${index}`}
-                      wallet={wallet}
-                      onClick={() => handleSelectWallet(wallet)}
                       disabled={connecting}
                       isDetected={
                         wallet.readyState === WalletReadyState.Installed
                       }
+                      key={`${wallet.adapter.name}-${index}`}
+                      onClick={() => handleSelectWallet(wallet)}
+                      wallet={wallet}
                     />
                   ))}
                 {!solanaOnly && (
                   <EthereumOptionButton
-                    name="MetaMask"
+                    disabled={connecting}
                     icon={ETHEREUM_WALLET_OPTIONS[1].icon}
                     isDetected={isMetaMaskDetected}
+                    name="MetaMask"
                     onClick={() => handleSelectEthereumOption("injected")}
-                    disabled={connecting}
                   />
                 )}
               </div>
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Others
               </p>
               <div className="flex flex-col gap-2">
@@ -992,13 +1010,13 @@ export function AuthWalletModal({
                   )
                   .map((wallet, index) => (
                     <WalletOption
-                      key={`${wallet.adapter.name}-${index}`}
-                      wallet={wallet}
-                      onClick={() => handleSelectWallet(wallet)}
                       disabled={connecting}
                       isDetected={
                         wallet.readyState === WalletReadyState.Installed
                       }
+                      key={`${wallet.adapter.name}-${index}`}
+                      onClick={() => handleSelectWallet(wallet)}
+                      wallet={wallet}
                     />
                   ))}
                 {!solanaOnly &&
@@ -1008,9 +1026,10 @@ export function AuthWalletModal({
                       !SOLANA_WALLET_NAMES_TO_SKIP.includes(o.name),
                   ).map((opt) => (
                     <EthereumOptionButton
+                      disabled={connecting}
+                      icon={opt.icon}
                       key={opt.name}
                       name={opt.name}
-                      icon={opt.icon}
                       onClick={() =>
                         handleSelectEthereumOption(
                           opt.id === "walletconnect"
@@ -1018,7 +1037,6 @@ export function AuthWalletModal({
                             : "injected",
                         )
                       }
-                      disabled={connecting}
                     />
                   ))}
               </div>
@@ -1044,10 +1062,10 @@ export function AuthWalletModal({
                   {selectedChain === "solana" &&
                     solanaChallengePending != null && (
                       <Button
-                        type="button"
                         className="mt-4"
                         disabled={solanaSigning}
                         onClick={handleSolanaSignClick}
+                        type="button"
                       >
                         {solanaSigning
                           ? "Signing…"
@@ -1058,9 +1076,12 @@ export function AuthWalletModal({
               )}
               {step === "error" && (
                 <button
-                  type="button"
+                  className={`
+                    mt-2 text-sm text-primary
+                    hover:underline
+                  `}
                   onClick={handleTryAgain}
-                  className="mt-2 text-sm text-primary hover:underline"
+                  type="button"
                 >
                   Try again
                 </button>
@@ -1070,5 +1091,67 @@ export function AuthWalletModal({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function WalletOption({
+  disabled,
+  isDetected,
+  onClick,
+  wallet,
+}: {
+  disabled: boolean;
+  isDetected: boolean;
+  onClick: () => void;
+  wallet: Wallet;
+}) {
+  const icon = wallet.adapter.icon;
+  return (
+    <button
+      className={cn(
+        `
+          flex w-full items-center gap-3 rounded-lg border border-border bg-card
+          px-4 py-3
+        `,
+        `
+          text-left transition-colors
+          hover:bg-muted/50
+          disabled:opacity-50
+        `,
+      )}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {icon && (
+        <div
+          className={`
+          flex size-8 shrink-0 items-center justify-center overflow-hidden
+          rounded-md bg-muted/20
+        `}
+        >
+          <img
+            alt=""
+            className="object-contain"
+            height={32}
+            src={icon}
+            width={32}
+          />
+        </div>
+      )}
+      <span className="flex-1 font-medium">{wallet.adapter.name}</span>
+      {isDetected && (
+        <span
+          className={`
+          rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
+          text-green-700
+          dark:text-green-400
+        `}
+        >
+          Detected
+        </span>
+      )}
+      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+    </button>
   );
 }

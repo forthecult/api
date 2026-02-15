@@ -13,7 +13,6 @@ import {
   sql,
 } from "drizzle-orm";
 
-import { sortSubcategories } from "~/lib/category-sort";
 import { db } from "~/db";
 import {
   categoriesTable,
@@ -21,134 +20,35 @@ import {
   productCategoriesTable,
   productsTable,
 } from "~/db/schema";
+import { sortSubcategories } from "~/lib/category-sort";
 
-export type CategoryBySlug = {
+export interface BreadcrumbItem {
+  href: string;
+  name: string;
+}
+
+export interface CategoryBySlug {
+  description: null | string;
   id: string;
+  imageUrl: null | string;
+  metaDescription: null | string;
+  name: string;
+  parentId: null | string;
+  slug: string;
+  title: null | string;
+  tokenGated: boolean;
+}
+
+export interface CategoryWithDisplayImage {
+  /** Category image if set; otherwise product fallback (top-selling or most recent). Not persisted. */
+  image?: null | string;
   name: string;
   slug: string;
-  title: string | null;
-  metaDescription: string | null;
-  description: string | null;
-  imageUrl: string | null;
-  parentId: string | null;
-  tokenGated: boolean;
-};
-
-/**
- * Get a category by slug (for category pages). Returns null if not found.
- */
-export async function getCategoryBySlug(
-  slug: string,
-): Promise<CategoryBySlug | null> {
-  if (!slug?.trim()) return null;
-  const [row] = await db
-    .select({
-      id: categoriesTable.id,
-      name: categoriesTable.name,
-      slug: categoriesTable.slug,
-      title: categoriesTable.title,
-      metaDescription: categoriesTable.metaDescription,
-      description: categoriesTable.description,
-      imageUrl: categoriesTable.imageUrl,
-      parentId: categoriesTable.parentId,
-      tokenGated: categoriesTable.tokenGated,
-    })
-    .from(categoriesTable)
-    .where(eq(categoriesTable.slug, slug.trim()))
-    .limit(1);
-  if (!row?.slug) return null;
-  return {
-    id: row.id,
-    name: row.name,
-    slug: row.slug,
-    title: row.title ?? null,
-    metaDescription: row.metaDescription ?? null,
-    description: row.description ?? null,
-    imageUrl: row.imageUrl ?? null,
-    parentId: row.parentId ?? null,
-    tokenGated: row.tokenGated ?? false,
-  };
 }
 
-/**
- * Get the best product image for a category (for OG/social thumbnails).
- * Priority: most sold product image → newest product image.
- * Returns an absolute image URL or null.
- */
-export async function getCategoryProductImage(
-  categoryId: string,
-): Promise<string | null> {
-  if (!categoryId?.trim()) return null;
-  try {
-    // 1) Most popular (most sold) product in this category
-    const [bestSeller] = await db
-      .select({ imageUrl: productsTable.imageUrl })
-      .from(productsTable)
-      .innerJoin(
-        productCategoriesTable,
-        eq(productsTable.id, productCategoriesTable.productId),
-      )
-      .leftJoin(
-        orderItemsTable,
-        eq(productsTable.id, orderItemsTable.productId),
-      )
-      .where(
-        and(
-          eq(productCategoriesTable.categoryId, categoryId),
-          eq(productsTable.published, true),
-          eq(productsTable.hidden, false),
-          isNotNull(productsTable.imageUrl),
-        ),
-      )
-      .groupBy(productsTable.id, productsTable.imageUrl)
-      .orderBy(
-        desc(sql`coalesce(sum(${orderItemsTable.quantity}), 0)`),
-        desc(productsTable.createdAt),
-      )
-      .limit(1);
-    if (bestSeller?.imageUrl) return bestSeller.imageUrl;
-
-    // 2) Newest product in category (fallback if no sales data)
-    const [newest] = await db
-      .select({ imageUrl: productsTable.imageUrl })
-      .from(productsTable)
-      .innerJoin(
-        productCategoriesTable,
-        eq(productsTable.id, productCategoriesTable.productId),
-      )
-      .where(
-        and(
-          eq(productCategoriesTable.categoryId, categoryId),
-          eq(productsTable.published, true),
-          eq(productsTable.hidden, false),
-          isNotNull(productsTable.imageUrl),
-        ),
-      )
-      .orderBy(desc(productsTable.createdAt))
-      .limit(1);
-    return newest?.imageUrl ?? null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Get a category's slug and name by id (for parent pill on category pages).
- */
-export async function getCategoryParent(
-  parentId: string,
-): Promise<{ slug: string; name: string } | null> {
-  if (!parentId?.trim()) return null;
-  const [row] = await db
-    .select({
-      slug: categoriesTable.slug,
-      name: categoriesTable.name,
-    })
-    .from(categoriesTable)
-    .where(eq(categoriesTable.id, parentId.trim()))
-    .limit(1);
-  if (!row?.slug) return null;
-  return { slug: row.slug, name: row.name };
+export interface SubcategoryOption {
+  name: string;
+  slug: string;
 }
 
 /**
@@ -156,27 +56,20 @@ export async function getCategoryParent(
  * Includes categories with no products so every category has a page.
  */
 export async function getAllCategorySlugsAndNames(): Promise<
-  Array<{ slug: string; name: string }>
+  { name: string; slug: string }[]
 > {
   const rows = await db
     .select({
-      slug: categoriesTable.slug,
       name: categoriesTable.name,
+      slug: categoriesTable.slug,
     })
     .from(categoriesTable)
     .where(isNotNull(categoriesTable.slug))
     .orderBy(asc(categoriesTable.name));
   return rows
-    .filter((r): r is { slug: string; name: string } => r.slug != null)
-    .map((r) => ({ slug: r.slug!, name: r.name }));
+    .filter((r): r is { name: string; slug: string } => r.slug != null)
+    .map((r) => ({ name: r.name, slug: r.slug! }));
 }
-
-export type CategoryWithDisplayImage = {
-  slug: string;
-  name: string;
-  /** Category image if set; otherwise product fallback (top-selling or most recent). Not persisted. */
-  image?: string | null;
-};
 
 /**
  * Categories that have at least one published product, with a display image.
@@ -207,12 +100,12 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
   if (ids.length === 0) return [];
 
   // Try to include the `visible` filter; fall back if the column doesn't exist yet.
-  let categories: Array<{
+  let categories: {
     id: string;
-    slug: string | null;
+    imageUrl: null | string;
     name: string;
-    imageUrl: string | null;
-  }>;
+    slug: null | string;
+  }[];
   try {
     const whereConditions = opts?.topLevelOnly
       ? and(
@@ -227,9 +120,9 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
     categories = await db
       .select({
         id: categoriesTable.id,
-        slug: categoriesTable.slug,
-        name: categoriesTable.name,
         imageUrl: categoriesTable.imageUrl,
+        name: categoriesTable.name,
+        slug: categoriesTable.slug,
       })
       .from(categoriesTable)
       .where(whereConditions)
@@ -241,9 +134,9 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
     categories = await db
       .select({
         id: categoriesTable.id,
-        slug: categoriesTable.slug,
-        name: categoriesTable.name,
         imageUrl: categoriesTable.imageUrl,
+        name: categoriesTable.name,
+        slug: categoriesTable.slug,
       })
       .from(categoriesTable)
       .where(whereConditions)
@@ -316,8 +209,8 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
       const newestPerCategory = await db
         .select({
           categoryId: productCategoriesTable.categoryId,
-          productId: productCategoriesTable.productId,
           createdAt: productsTable.createdAt,
+          productId: productCategoriesTable.productId,
         })
         .from(productCategoriesTable)
         .innerJoin(
@@ -367,20 +260,206 @@ export async function getCategoriesWithProductsAndDisplayImage(opts?: {
   return categories
     .filter((c): c is typeof c & { slug: string } => c.slug != null)
     .map((c) => ({
-      slug: c.slug!,
-      name: c.name,
       image:
         (c.imageUrl?.trim() && c.imageUrl) ||
         fallbackByCategoryId.get(c.id) ||
         undefined,
+      name: c.name,
+      slug: c.slug!,
     }));
 }
 
-export type SubcategoryOption = { slug: string; name: string };
+/**
+ * Get a category by slug (for category pages). Returns null if not found.
+ */
+export async function getCategoryBySlug(
+  slug: string,
+): Promise<CategoryBySlug | null> {
+  if (!slug?.trim()) return null;
+  const [row] = await db
+    .select({
+      description: categoriesTable.description,
+      id: categoriesTable.id,
+      imageUrl: categoriesTable.imageUrl,
+      metaDescription: categoriesTable.metaDescription,
+      name: categoriesTable.name,
+      parentId: categoriesTable.parentId,
+      slug: categoriesTable.slug,
+      title: categoriesTable.title,
+      tokenGated: categoriesTable.tokenGated,
+    })
+    .from(categoriesTable)
+    .where(eq(categoriesTable.slug, slug.trim()))
+    .limit(1);
+  if (!row?.slug) return null;
+  return {
+    description: row.description ?? null,
+    id: row.id,
+    imageUrl: row.imageUrl ?? null,
+    metaDescription: row.metaDescription ?? null,
+    name: row.name,
+    parentId: row.parentId ?? null,
+    slug: row.slug,
+    title: row.title ?? null,
+    tokenGated: row.tokenGated ?? false,
+  };
+}
+
+/**
+ * Get a category's slug and name by id (for parent pill on category pages).
+ */
+export async function getCategoryParent(
+  parentId: string,
+): Promise<null | { name: string; slug: string }> {
+  if (!parentId?.trim()) return null;
+  const [row] = await db
+    .select({
+      name: categoriesTable.name,
+      slug: categoriesTable.slug,
+    })
+    .from(categoriesTable)
+    .where(eq(categoriesTable.id, parentId.trim()))
+    .limit(1);
+  if (!row?.slug) return null;
+  return { name: row.name, slug: row.slug };
+}
 
 // Re-export from the lightweight client-safe module so server callers
 // can keep importing from ~/lib/categories without changing imports.
 export { sortSubcategories } from "~/lib/category-sort";
+
+/**
+ * Get the best product image for a category (for OG/social thumbnails).
+ * Priority: most sold product image → newest product image.
+ * Returns an absolute image URL or null.
+ */
+export async function getCategoryProductImage(
+  categoryId: string,
+): Promise<null | string> {
+  if (!categoryId?.trim()) return null;
+  try {
+    // 1) Most popular (most sold) product in this category
+    const [bestSeller] = await db
+      .select({ imageUrl: productsTable.imageUrl })
+      .from(productsTable)
+      .innerJoin(
+        productCategoriesTable,
+        eq(productsTable.id, productCategoriesTable.productId),
+      )
+      .leftJoin(
+        orderItemsTable,
+        eq(productsTable.id, orderItemsTable.productId),
+      )
+      .where(
+        and(
+          eq(productCategoriesTable.categoryId, categoryId),
+          eq(productsTable.published, true),
+          eq(productsTable.hidden, false),
+          isNotNull(productsTable.imageUrl),
+        ),
+      )
+      .groupBy(productsTable.id, productsTable.imageUrl)
+      .orderBy(
+        desc(sql`coalesce(sum(${orderItemsTable.quantity}), 0)`),
+        desc(productsTable.createdAt),
+      )
+      .limit(1);
+    if (bestSeller?.imageUrl) return bestSeller.imageUrl;
+
+    // 2) Newest product in category (fallback if no sales data)
+    const [newest] = await db
+      .select({ imageUrl: productsTable.imageUrl })
+      .from(productsTable)
+      .innerJoin(
+        productCategoriesTable,
+        eq(productsTable.id, productCategoriesTable.productId),
+      )
+      .where(
+        and(
+          eq(productCategoriesTable.categoryId, categoryId),
+          eq(productsTable.published, true),
+          eq(productsTable.hidden, false),
+          isNotNull(productsTable.imageUrl),
+        ),
+      )
+      .orderBy(desc(productsTable.createdAt))
+      .limit(1);
+    return newest?.imageUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Breadcrumb trail for a product page: Home > category > subcategory > product.
+ * Uses the product's main category and its parent chain. If no category, returns Home > product.
+ */
+export async function getProductBreadcrumbTrail(
+  productId: string,
+  productName: string,
+  productHref: string,
+): Promise<BreadcrumbItem[]> {
+  const [mainPc] = await db
+    .select({ categoryId: productCategoriesTable.categoryId })
+    .from(productCategoriesTable)
+    .where(
+      and(
+        eq(productCategoriesTable.productId, productId),
+        eq(productCategoriesTable.isMain, true),
+      ),
+    )
+    .limit(1);
+
+  const home: BreadcrumbItem = { href: "/", name: "Home" };
+  const productItem: BreadcrumbItem = { href: productHref, name: productName };
+
+  if (!mainPc?.categoryId) {
+    return [home, productItem];
+  }
+
+  const chain: {
+    id: string;
+    name: string;
+    parentId: null | string;
+    slug: null | string;
+  }[] = [];
+  let currentId: null | string = mainPc.categoryId;
+
+  while (currentId) {
+    const [row] = await db
+      .select({
+        id: categoriesTable.id,
+        name: categoriesTable.name,
+        parentId: categoriesTable.parentId,
+        slug: categoriesTable.slug,
+      })
+      .from(categoriesTable)
+      .where(eq(categoriesTable.id, currentId))
+      .limit(1);
+    if (!row) break;
+    chain.push(row);
+    currentId = row.parentId;
+  }
+
+  const ordered = chain.reverse();
+  const rootSlug =
+    ordered[0]?.slug ??
+    ordered[0]?.name?.toLowerCase().replace(/\s+/g, "-") ??
+    "shop";
+
+  const categoryItems: BreadcrumbItem[] = ordered.map((c, i) => {
+    const slug =
+      c.slug ??
+      c.name
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+    const href = i === 0 ? `/${slug}` : `/${rootSlug}?subcategory=${slug}`;
+    return { href, name: c.name };
+  });
+
+  return [home, ...categoryItems, productItem];
+}
 
 /**
  * Child categories of a given parent (for subcategory filter on category pages).
@@ -391,9 +470,9 @@ export async function getSubcategories(
 ): Promise<SubcategoryOption[]> {
   const rows = await db
     .select({
-      slug: categoriesTable.slug,
-      name: categoriesTable.name,
       categoryId: categoriesTable.id,
+      name: categoriesTable.name,
+      slug: categoriesTable.slug,
     })
     .from(categoriesTable)
     .where(eq(categoriesTable.parentId, parentId))
@@ -428,83 +507,10 @@ export async function getSubcategories(
 
   const filtered = rows
     .filter(
-      (r): r is { slug: string; name: string; categoryId: string } =>
+      (r): r is { categoryId: string; name: string; slug: string } =>
         r.slug != null && (countByCategoryId.get(r.categoryId) ?? 0) > 0,
     )
-    .map((r) => ({ slug: r.slug, name: r.name }));
+    .map((r) => ({ name: r.name, slug: r.slug }));
 
   return sortSubcategories(filtered);
-}
-
-export type BreadcrumbItem = { name: string; href: string };
-
-/**
- * Breadcrumb trail for a product page: Home > category > subcategory > product.
- * Uses the product's main category and its parent chain. If no category, returns Home > product.
- */
-export async function getProductBreadcrumbTrail(
-  productId: string,
-  productName: string,
-  productHref: string,
-): Promise<BreadcrumbItem[]> {
-  const [mainPc] = await db
-    .select({ categoryId: productCategoriesTable.categoryId })
-    .from(productCategoriesTable)
-    .where(
-      and(
-        eq(productCategoriesTable.productId, productId),
-        eq(productCategoriesTable.isMain, true),
-      ),
-    )
-    .limit(1);
-
-  const home: BreadcrumbItem = { name: "Home", href: "/" };
-  const productItem: BreadcrumbItem = { name: productName, href: productHref };
-
-  if (!mainPc?.categoryId) {
-    return [home, productItem];
-  }
-
-  const chain: Array<{
-    id: string;
-    name: string;
-    slug: string | null;
-    parentId: string | null;
-  }> = [];
-  let currentId: string | null = mainPc.categoryId;
-
-  while (currentId) {
-    const [row] = await db
-      .select({
-        id: categoriesTable.id,
-        name: categoriesTable.name,
-        slug: categoriesTable.slug,
-        parentId: categoriesTable.parentId,
-      })
-      .from(categoriesTable)
-      .where(eq(categoriesTable.id, currentId))
-      .limit(1);
-    if (!row) break;
-    chain.push(row);
-    currentId = row.parentId;
-  }
-
-  const ordered = chain.reverse();
-  const rootSlug =
-    ordered[0]?.slug ??
-    ordered[0]?.name?.toLowerCase().replace(/\s+/g, "-") ??
-    "shop";
-
-  const categoryItems: BreadcrumbItem[] = ordered.map((c, i) => {
-    const slug =
-      c.slug ??
-      c.name
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, "");
-    const href = i === 0 ? `/${slug}` : `/${rootSlug}?subcategory=${slug}`;
-    return { name: c.name, href };
-  });
-
-  return [home, ...categoryItems, productItem];
 }

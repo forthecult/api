@@ -259,11 +259,11 @@ const GalleryMedia: React.FC<GalleryMediaProps> = React.memo(
             alt={item.title}
             aria-label={item.title}
             className="max-h-full max-w-full cursor-pointer object-contain"
+            fill
             onClick={onClick}
             onError={handleImgError}
-            src={item.url}
-            fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            src={item.url}
             unoptimized
           />
         )}

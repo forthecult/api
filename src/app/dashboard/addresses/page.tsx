@@ -1,8 +1,8 @@
 import { desc, eq } from "drizzle-orm";
 
-import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { db } from "~/db";
 import { addressesTable } from "~/db/schema";
+import { getCurrentUserOrRedirect } from "~/lib/auth";
 
 import { AddressesPageClient } from "./page.client";
 

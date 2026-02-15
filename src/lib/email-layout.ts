@@ -12,18 +12,18 @@
 import { getPublicSiteUrl } from "~/lib/app-url";
 
 export interface EmailLayoutOptions {
-  /** Brand/site name shown in header */
-  siteName?: string;
-  /** Optional logo URL (full URL). If not set, header shows site name as text. */
-  logoUrl?: string;
-  /** Primary CTA URL (e.g. "View order") - optional */
-  ctaUrl?: string;
   /** Primary CTA label (e.g. "View order") - only used if ctaUrl is set */
   ctaLabel?: string;
+  /** Primary CTA URL (e.g. "View order") - optional */
+  ctaUrl?: string;
   /** Footer line 1 (e.g. "© 2025 For the Culture") */
   footerLine1?: string;
   /** Footer line 2 (e.g. "Support: support@example.com") */
   footerLine2?: string;
+  /** Optional logo URL (full URL). If not set, header shows site name as text. */
+  logoUrl?: string;
+  /** Brand/site name shown in header */
+  siteName?: string;
 }
 
 const DEFAULT_SITE_NAME = "For the Culture";
@@ -95,17 +95,6 @@ export function buildEmailHtml(
 }
 
 /**
- * Escape HTML so user/content is safe inside the layout.
- */
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
-
-/**
  * Turn plain text (with newlines) into safe HTML paragraphs/line breaks.
  * Use for template emailBody when you don't need custom HTML.
  */
@@ -115,4 +104,15 @@ export function plainTextToHtml(text: string): string {
     .split(/\n\n+/)
     .map((p) => `<p style="margin:0 0 12px;">${p.replace(/\n/g, "<br/>")}</p>`)
     .join("");
+}
+
+/**
+ * Escape HTML so user/content is safe inside the layout.
+ */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }

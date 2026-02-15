@@ -5,36 +5,35 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import * as React from "react";
 
+import { cn } from "~/lib/cn";
 import { formatDateTime } from "~/lib/format";
-
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
-import { cn } from "~/lib/cn";
 
-type Message = {
-  id: string;
-  role: "customer" | "staff";
+interface Message {
   content: string;
   createdAt: string;
-  staffUser?: { firstName: string; lastName: string; image: string | null };
-};
-
-type Ticket = {
   id: string;
-  subject: string;
-  status: string;
-  type: string;
+  role: "customer" | "staff";
+  staffUser?: { firstName: string; image: null | string; lastName: string };
+}
+
+interface Ticket {
   createdAt: string;
-  updatedAt: string;
+  id: string;
   messages: Message[];
-};
+  status: string;
+  subject: string;
+  type: string;
+  updatedAt: string;
+}
 
 export function SupportTicketDetailClient() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
-  const [ticket, setTicket] = React.useState<Ticket | null>(null);
+  const [ticket, setTicket] = React.useState<null | Ticket>(null);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<null | string>(null);
   const [newMessage, setNewMessage] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [closing, setClosing] = React.useState(false);
@@ -74,10 +73,10 @@ export function SupportTicketDetailClient() {
       if (!content || !id || sending) return;
       setSending(true);
       fetch(`/api/support-tickets/${id}/messages`, {
-        method: "POST",
+        body: JSON.stringify({ content }),
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        method: "POST",
       })
         .then((res) => {
           if (!res.ok)
@@ -116,10 +115,10 @@ export function SupportTicketDetailClient() {
     if (!id || closing) return;
     setClosing(true);
     fetch(`/api/support-tickets/${id}`, {
-      method: "PATCH",
+      body: JSON.stringify({ status: "closed" }),
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "closed" }),
+      method: "PATCH",
     })
       .then((res) => {
         if (!res.ok)
@@ -149,8 +148,8 @@ export function SupportTicketDetailClient() {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2
-          className="h-8 w-8 animate-spin text-muted-foreground"
           aria-hidden
+          className="h-8 w-8 animate-spin text-muted-foreground"
         />
       </div>
     );
@@ -159,7 +158,7 @@ export function SupportTicketDetailClient() {
   if (error || !ticket) {
     return (
       <div className="space-y-6">
-        <Button asChild variant="ghost" size="sm" className="gap-2">
+        <Button asChild className="gap-2" size="sm" variant="ghost">
           <Link href="/dashboard/support-tickets">
             <ChevronLeft className="h-4 w-4" />
             Back to tickets
@@ -176,10 +175,10 @@ export function SupportTicketDetailClient() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button
-          asChild
-          variant="ghost"
-          size="icon"
           aria-label="Back to tickets"
+          asChild
+          size="icon"
+          variant="ghost"
         >
           <Link href="/dashboard/support-tickets">
             <ChevronLeft className="h-5 w-5" />
@@ -192,10 +191,15 @@ export function SupportTicketDetailClient() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <CardHeader
+          className={`
+          flex flex-col gap-2
+          sm:flex-row sm:items-start sm:justify-between
+        `}
+        >
           <div>
             <CardTitle>{ticket.subject}</CardTitle>
-            <p className="text-base text-muted-foreground mt-1">
+            <p className="mt-1 text-base text-muted-foreground">
               Created {formatDateTime(ticket.createdAt)}
               {ticket.updatedAt !== ticket.createdAt && (
                 <> · Updated {formatDateTime(ticket.updatedAt)}</>
@@ -207,9 +211,15 @@ export function SupportTicketDetailClient() {
               className={cn(
                 "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
                 ticket.status === "open" &&
-                  "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
+                  `
+                    bg-green-100 text-green-800
+                    dark:bg-green-900/40 dark:text-green-200
+                  `,
                 ticket.status === "pending" &&
-                  "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+                  `
+                    bg-amber-100 text-amber-800
+                    dark:bg-amber-900/40 dark:text-amber-200
+                  `,
                 ticket.status === "closed" && "bg-muted text-muted-foreground",
               )}
             >
@@ -219,7 +229,10 @@ export function SupportTicketDetailClient() {
               className={cn(
                 "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
                 ticket.type === "urgent"
-                  ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
+                  ? `
+                    bg-red-100 text-red-800
+                    dark:bg-red-900/40 dark:text-red-200
+                  `
                   : "bg-muted text-muted-foreground",
               )}
             >
@@ -232,16 +245,21 @@ export function SupportTicketDetailClient() {
             <h3 className="text-base font-medium text-muted-foreground">
               Conversation
             </h3>
-            <div className="max-h-[400px] space-y-3 overflow-y-auto rounded-md border bg-muted/20 p-3">
+            <div
+              className={`
+              max-h-[400px] space-y-3 overflow-y-auto rounded-md border
+              bg-muted/20 p-3
+            `}
+            >
               {ticket.messages.map((msg) => (
                 <div
-                  key={msg.id}
                   className={cn(
                     "rounded-lg px-3 py-2 text-base",
                     msg.role === "customer"
                       ? "ml-6 bg-primary/10 text-foreground"
                       : "mr-6 bg-muted text-muted-foreground",
                   )}
+                  key={msg.id}
                 >
                   <span className="font-medium">
                     {msg.role === "staff" && msg.staffUser
@@ -264,30 +282,36 @@ export function SupportTicketDetailClient() {
           </div>
 
           {canReply ? (
-            <form onSubmit={handleSendMessage} className="space-y-2">
-              <label htmlFor="new-message" className="text-base font-medium">
+            <form className="space-y-2" onSubmit={handleSendMessage}>
+              <label className="text-base font-medium" htmlFor="new-message">
                 Add a message
               </label>
               <div className="flex gap-2">
                 <textarea
-                  id="new-message"
                   className={cn(
-                    "min-h-[80px] flex-1 resize-y rounded-md border border-input bg-background px-3 py-2 text-sm",
-                    "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+                    `
+                      min-h-[80px] flex-1 resize-y rounded-md border
+                      border-input bg-background px-3 py-2 text-sm
+                    `,
+                    `
+                      placeholder:text-muted-foreground
+                      focus:ring-2 focus:ring-ring focus:outline-none
+                    `,
                   )}
-                  placeholder="Type your message…"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  rows={3}
                   disabled={sending}
+                  id="new-message"
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Type your message…"
+                  rows={3}
+                  value={newMessage}
                 />
                 <Button
-                  type="submit"
+                  className="shrink-0 self-end"
                   disabled={sending || !newMessage.trim()}
                   size="icon"
-                  className="shrink-0 self-end"
+                  type="submit"
                 >
-                  <Send className="h-4 w-4" aria-hidden />
+                  <Send aria-hidden className="h-4 w-4" />
                   <span className="sr-only">Send</span>
                 </Button>
               </div>
@@ -296,11 +320,11 @@ export function SupportTicketDetailClient() {
                 here.
               </p>
               <Button
-                type="button"
-                variant="outline"
-                size="sm"
                 disabled={closing}
                 onClick={() => handleCloseTicket()}
+                size="sm"
+                type="button"
+                variant="outline"
               >
                 {closing ? "Closing…" : "Close ticket"}
               </Button>

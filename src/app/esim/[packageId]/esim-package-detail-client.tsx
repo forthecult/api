@@ -16,24 +16,24 @@ import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { useCurrentUser } from "~/lib/auth-client";
-import { formatEsimPackageName } from "~/lib/esim-format";
-import { useCart } from "~/lib/hooks/use-cart";
-import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
-import {
-  hasAnyCryptoEnabled,
-  hasAnyStablecoinEnabled,
-  visibleCryptoSubFromVisibility,
-  visibleUsdcNetworks,
-  visibleUsdtNetworks,
-  type PaymentVisibility,
-} from "~/lib/checkout-payment-options";
 import {
   CRYPTO_LOGO_SRC,
   ETH_CHAIN_OPTIONS,
   OTHER_SUB_OPTIONS,
   VISIBLE_CRYPTO_SUB_OPTIONS,
 } from "~/app/checkout/checkout-payment-constants";
+import { useCurrentUser } from "~/lib/auth-client";
+import {
+  hasAnyCryptoEnabled,
+  hasAnyStablecoinEnabled,
+  type PaymentVisibility,
+  visibleCryptoSubFromVisibility,
+  visibleUsdcNetworks,
+  visibleUsdtNetworks,
+} from "~/lib/checkout-payment-options";
+import { formatEsimPackageName } from "~/lib/esim-format";
+import { useCart } from "~/lib/hooks/use-cart";
+import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -41,55 +41,55 @@ import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import { Separator } from "~/ui/primitives/separator";
 
-/** Top-level payment method (matches checkout page structure). */
-type PaymentMethodTop = "card" | "crypto" | "stablecoins" | "paypal";
+interface CoverageCountry {
+  id: number;
+  image_url: string;
+  name: string;
+  network_coverage: NetworkCoverage[];
+}
 
 /** Crypto sub-option key (matches checkout page). */
 type CryptoSub =
   | "bitcoin"
+  | "crust"
   | "dogecoin"
   | "eth"
-  | "solana"
   | "monero"
-  | "crust"
+  | "other"
   | "pump"
-  | "troll"
-  | "other";
+  | "solana"
+  | "troll";
 
 // ---------- Types ----------
 
-type NetworkCoverage = {
-  network_name: string;
-  network_code: string;
-  two_g: boolean;
-  three_g: boolean;
-  four_G: boolean;
+interface NetworkCoverage {
   five_G: boolean;
-};
+  four_G: boolean;
+  network_code: string;
+  network_name: string;
+  three_g: boolean;
+  two_g: boolean;
+}
 
-type CoverageCountry = {
-  id: number;
-  name: string;
-  image_url: string;
-  network_coverage: NetworkCoverage[];
-};
-
-type PackageDetail = {
-  id: string;
-  name: string;
-  price: string;
+interface PackageDetail {
+  countries?: CoverageCountry[];
   data_quantity: number;
   data_unit: string;
-  voice_quantity?: number;
-  voice_unit?: string;
-  sms_quantity?: number;
+  id: string;
+  name: string;
+  package_type?: string;
   package_validity: number;
   package_validity_unit: string;
-  package_type?: string;
-  unlimited?: boolean;
-  countries?: CoverageCountry[];
+  price: string;
   romaing_countries?: CoverageCountry[];
-};
+  sms_quantity?: number;
+  unlimited?: boolean;
+  voice_quantity?: number;
+  voice_unit?: string;
+}
+
+/** Top-level payment method (matches checkout page structure). */
+type PaymentMethodTop = "card" | "crypto" | "paypal" | "stablecoins";
 
 // ---------- Component ----------
 
@@ -103,7 +103,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     ? `/esim?${backToStoreQuery}`
     : "/esim";
 
-  const [pkg, setPkg] = useState<PackageDetail | null>(null);
+  const [pkg, setPkg] = useState<null | PackageDetail>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
@@ -200,7 +200,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     setLoading(true);
     fetch(`/api/esim/packages/${packageId}`)
       .then((res) => res.json())
-      .then((data: { status: boolean; data?: PackageDetail }) => {
+      .then((data: { data?: PackageDetail; status: boolean }) => {
         if (data.status && data.data) {
           setPkg(data.data);
         }
@@ -215,60 +215,60 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
    */
   const resolvedPayment = useMemo(() => {
     if (paymentMethod === "card")
-      return { method: "stripe", hash: "" } as const;
+      return { hash: "", method: "stripe" } as const;
     if (paymentMethod === "paypal")
-      return { method: "paypal", hash: "" } as const;
+      return { hash: "", method: "paypal" } as const;
 
     if (paymentMethod === "stablecoins") {
       if (stablecoinChain === "solana") {
         // USDC/USDT on Solana → solana_pay
         return {
-          method: "solana_pay" as const,
-          hash: "#solana",
-          token: stablecoinToken,
           chain: "solana",
+          hash: "#solana",
+          method: "solana_pay" as const,
+          token: stablecoinToken,
         };
       }
       // EVM stablecoins
       return {
-        method: "eth_pay" as const,
-        hash: "#eth",
-        token: stablecoinToken.toUpperCase(),
         chain: stablecoinChain,
+        hash: "#eth",
+        method: "eth_pay" as const,
+        token: stablecoinToken.toUpperCase(),
       };
     }
 
     // Crypto sub-options
     if (cryptoSub === "bitcoin")
-      return { method: "btcpay" as const, hash: "#bitcoin" };
+      return { hash: "#bitcoin", method: "btcpay" as const };
     if (cryptoSub === "dogecoin")
-      return { method: "btcpay" as const, hash: "#dogecoin" };
+      return { hash: "#dogecoin", method: "btcpay" as const };
     if (cryptoSub === "monero")
-      return { method: "btcpay" as const, hash: "#monero" };
+      return { hash: "#monero", method: "btcpay" as const };
     if (cryptoSub === "eth")
       return {
-        method: "eth_pay" as const,
-        hash: "#eth",
-        token: "ETH",
         chain: ethChain,
+        hash: "#eth",
+        method: "eth_pay" as const,
+        token: "ETH",
       };
     if (cryptoSub === "solana")
       return {
-        method: "solana_pay" as const,
         hash: "#solana",
+        method: "solana_pay" as const,
         token: "solana",
       };
     if (cryptoSub === "crust")
-      return { method: "solana_pay" as const, hash: "#solana", token: "crust" };
+      return { hash: "#solana", method: "solana_pay" as const, token: "crust" };
     if (cryptoSub === "pump")
-      return { method: "solana_pay" as const, hash: "#solana", token: "pump" };
+      return { hash: "#solana", method: "solana_pay" as const, token: "pump" };
     if (cryptoSub === "troll")
-      return { method: "solana_pay" as const, hash: "#solana", token: "troll" };
+      return { hash: "#solana", method: "solana_pay" as const, token: "troll" };
     if (cryptoSub === "other" && cryptoOtherSub === "ton")
-      return { method: "ton_pay" as const, hash: "#ton" };
+      return { hash: "#ton", method: "ton_pay" as const };
     if (cryptoSub === "other" && cryptoOtherSub === "sui")
-      return { method: "sui" as const, hash: "#sui" };
-    return { method: "solana_pay" as const, hash: "#solana", token: "solana" };
+      return { hash: "#sui", method: "sui" as const };
+    return { hash: "#solana", method: "solana_pay" as const, token: "solana" };
   }, [
     paymentMethod,
     cryptoSub,
@@ -294,8 +294,6 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     try {
       // 1. Create the order
       const orderRes = await fetch("/api/esim/purchase", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           packageId,
           packageType: pkg.package_type ?? "DATA-ONLY",
@@ -305,6 +303,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
               : resolvedPayment.method,
           ...(user ? {} : { email: guestEmail.trim() }),
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const orderData = await orderRes.json();
       if (!orderData.status) {
@@ -319,12 +319,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       // 2. Card / PayPal → Stripe checkout
       if (paymentMethod === "card" || paymentMethod === "paypal") {
         const checkoutRes = await fetch("/api/esim/checkout", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId,
             paymentMethod: paymentMethod === "paypal" ? "paypal" : "card",
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         const checkoutData = await checkoutRes.json();
         if (!checkoutData.status || !checkoutData.data?.checkoutUrl) {
@@ -358,9 +358,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       }
 
       const cryptoRes = await fetch("/api/esim/crypto-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(cryptoPayload),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const cryptoData = await cryptoRes.json();
       if (!cryptoData.status) {
@@ -379,14 +379,14 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const handleAddToCart = useCallback(() => {
     if (!pkg) return;
     addItem({
-      id: `esim_${pkg.id}`,
-      name: `eSIM: ${formatEsimPackageName(pkg.name)}`,
-      price: parseFloat(pkg.price),
       category: "eSIM",
-      image: "/placeholder.svg",
       digital: true,
       esimPackageId: pkg.id,
       esimPackageType: pkg.package_type ?? "DATA-ONLY",
+      id: `esim_${pkg.id}`,
+      image: "/placeholder.svg",
+      name: `eSIM: ${formatEsimPackageName(pkg.name)}`,
+      price: parseFloat(pkg.price),
     });
     toast.success("eSIM added to cart");
     openCart();
@@ -400,7 +400,13 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
   if (loading) {
     return (
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+      <div
+        className={`
+        container mx-auto max-w-4xl px-4 py-16
+        sm:px-6
+        lg:px-8
+      `}
+      >
         <div className="flex items-center justify-center gap-2 py-24">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
@@ -413,8 +419,14 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
   if (!pkg) {
     return (
-      <div className="container mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center py-24">
+      <div
+        className={`
+        container mx-auto max-w-4xl px-4 py-16
+        sm:px-6
+        lg:px-8
+      `}
+      >
+        <div className="py-24 text-center">
           <h2 className="text-xl font-semibold">Currently unavailable</h2>
           <p className="mt-2 text-muted-foreground">
             This eSIM plan is sold out or no longer available. Check out other
@@ -429,28 +441,47 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   }
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <div
+      className={`
+      container mx-auto max-w-4xl px-4 py-8
+      sm:px-6
+      lg:px-8
+    `}
+    >
       {/* Breadcrumb */}
-      <Button asChild variant="ghost" size="sm" className="mb-6">
+      <Button asChild className="mb-6" size="sm" variant="ghost">
         <Link href={backToStoreHref}>
           <ArrowLeft className="mr-1 h-4 w-4" />
           Back to eSIM Store
         </Link>
       </Button>
 
-      <div className="grid gap-8 lg:grid-cols-5">
+      <div
+        className={`
+        grid gap-8
+        lg:grid-cols-5
+      `}
+      >
         {/* Package Info - Left */}
-        <div className="lg:col-span-3 space-y-6">
+        <div
+          className={`
+          space-y-6
+          lg:col-span-3
+        `}
+        >
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
-            <div className="mt-2 flex flex-wrap gap-2 items-center">
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               {pkg.package_type && (
                 <Badge variant="secondary">{pkg.package_type}</Badge>
               )}
               {pkg.unlimited && <Badge>Unlimited</Badge>}
               {has5g && (
                 <span
-                  className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary"
+                  className={`
+                    inline-flex items-center gap-1 rounded-md bg-primary/10 px-2
+                    py-0.5 text-xs font-medium text-primary
+                  `}
                   title="5G available"
                 >
                   <Signal className="h-3.5 w-3.5" />
@@ -515,7 +546,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           {coverageCountries.length > 0 && (
             <Card>
               <CardHeader>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
+                <h2 className="flex items-center gap-2 text-lg font-semibold">
                   <Globe className="h-5 w-5" />
                   Coverage ({coverageCountries.length}{" "}
                   {coverageCountries.length === 1 ? "country" : "countries"})
@@ -525,16 +556,16 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 <div className="space-y-3">
                   {coverageCountries.map((country) => (
                     <div key={country.id}>
-                      <div className="flex items-center gap-2 mb-2">
+                      <div className="mb-2 flex items-center gap-2">
                         <Image
-                          src={country.image_url}
                           alt={country.name}
-                          width={24}
-                          height={16}
                           className="rounded-sm"
+                          height={16}
+                          src={country.image_url}
                           unoptimized
+                          width={24}
                         />
-                        <span className="font-medium text-sm">
+                        <span className="text-sm font-medium">
                           {country.name}
                         </span>
                       </div>
@@ -542,39 +573,42 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         <div className="ml-8 space-y-1">
                           {country.network_coverage.map((net) => (
                             <div
+                              className={`
+                                flex items-center gap-2 text-xs
+                                text-muted-foreground
+                              `}
                               key={net.network_code}
-                              className="flex items-center gap-2 text-xs text-muted-foreground"
                             >
                               <span>{net.network_name}</span>
                               <div className="flex gap-1">
                                 {net.two_g && (
                                   <Badge
+                                    className="px-1 text-[10px]"
                                     variant="outline"
-                                    className="text-[10px] px-1"
                                   >
                                     2G
                                   </Badge>
                                 )}
                                 {net.three_g && (
                                   <Badge
+                                    className="px-1 text-[10px]"
                                     variant="outline"
-                                    className="text-[10px] px-1"
                                   >
                                     3G
                                   </Badge>
                                 )}
                                 {net.four_G && (
                                   <Badge
+                                    className="px-1 text-[10px]"
                                     variant="outline"
-                                    className="text-[10px] px-1"
                                   >
                                     4G
                                   </Badge>
                                 )}
                                 {net.five_G && (
                                   <Badge
+                                    className="px-1 text-[10px]"
                                     variant="outline"
-                                    className="text-[10px] px-1"
                                   >
                                     5G
                                   </Badge>
@@ -603,7 +637,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   <p className="text-3xl font-bold text-primary">
                     ${pkg.price}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
                   </p>
                 </div>
@@ -654,13 +688,13 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   <div className="space-y-2">
                     <Label htmlFor="esim-guest-email">Email</Label>
                     <Input
-                      id="esim-guest-email"
-                      type="email"
-                      placeholder="your@email.com"
-                      value={guestEmail}
-                      onChange={(e) => setGuestEmail(e.target.value)}
                       autoComplete="email"
                       className="w-full"
+                      id="esim-guest-email"
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="your@email.com"
+                      type="email"
+                      value={guestEmail}
                     />
                   </div>
                 )}
@@ -671,12 +705,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   <div className="flex flex-wrap gap-2">
                     {showCard && (
                       <Button
+                        onClick={() => setPaymentMethod("card")}
+                        size="sm"
                         type="button"
                         variant={
                           paymentMethod === "card" ? "default" : "outline"
                         }
-                        size="sm"
-                        onClick={() => setPaymentMethod("card")}
                       >
                         <CreditCard className="mr-1 h-3.5 w-3.5" />
                         Card
@@ -684,12 +718,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                     )}
                     {showCrypto && (
                       <Button
+                        onClick={() => setPaymentMethod("crypto")}
+                        size="sm"
                         type="button"
                         variant={
                           paymentMethod === "crypto" ? "default" : "outline"
                         }
-                        size="sm"
-                        onClick={() => setPaymentMethod("crypto")}
                       >
                         <Wallet className="mr-1 h-3.5 w-3.5" />
                         Crypto
@@ -697,26 +731,26 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                     )}
                     {showStablecoins && (
                       <Button
+                        onClick={() => setPaymentMethod("stablecoins")}
+                        size="sm"
                         type="button"
                         variant={
                           paymentMethod === "stablecoins"
                             ? "default"
                             : "outline"
                         }
-                        size="sm"
-                        onClick={() => setPaymentMethod("stablecoins")}
                       >
                         Stablecoins
                       </Button>
                     )}
                     {showPaypal && (
                       <Button
+                        onClick={() => setPaymentMethod("paypal")}
+                        size="sm"
                         type="button"
                         variant={
                           paymentMethod === "paypal" ? "default" : "outline"
                         }
-                        size="sm"
-                        onClick={() => setPaymentMethod("paypal")}
                       >
                         PayPal
                       </Button>
@@ -735,21 +769,21 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                               ];
                             return (
                               <Button
+                                className="gap-1.5"
                                 key={opt.value}
+                                onClick={() =>
+                                  setCryptoSub(opt.value as CryptoSub)
+                                }
+                                size="sm"
                                 type="button"
                                 variant={
                                   cryptoSub === opt.value
                                     ? "default"
                                     : "outline"
                                 }
-                                size="sm"
-                                onClick={() =>
-                                  setCryptoSub(opt.value as CryptoSub)
-                                }
-                                className="gap-1.5"
                               >
                                 {logo && (
-                                  <img src={logo} alt="" className="h-4 w-4" />
+                                  <img alt="" className="h-4 w-4" src={logo} />
                                 )}
                                 {opt.label}
                               </Button>
@@ -759,22 +793,31 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
                         {/* Ethereum chain picker */}
                         {cryptoSub === "eth" && (
-                          <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3">
-                            <p className="text-xs font-medium text-muted-foreground">
+                          <div
+                            className={`
+                            space-y-1 rounded-lg border border-border
+                            bg-muted/30 p-3
+                          `}
+                          >
+                            <p
+                              className={`
+                              text-xs font-medium text-muted-foreground
+                            `}
+                            >
                               Network
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {ETH_CHAIN_OPTIONS.map((opt) => (
                                 <Button
                                   key={opt.value}
+                                  onClick={() => setEthChain(opt.value)}
+                                  size="sm"
                                   type="button"
                                   variant={
                                     ethChain === opt.value
                                       ? "default"
                                       : "outline"
                                   }
-                                  size="sm"
-                                  onClick={() => setEthChain(opt.value)}
                                 >
                                   {opt.label}
                                 </Button>
@@ -785,7 +828,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
                         {/* Other sub-options (Sui, TON) */}
                         {cryptoSub === "other" && (
-                          <div className="space-y-1 rounded-lg border border-border bg-muted/30 p-3">
+                          <div
+                            className={`
+                            space-y-1 rounded-lg border border-border
+                            bg-muted/30 p-3
+                          `}
+                          >
                             <div className="flex flex-wrap gap-2">
                               {OTHER_SUB_OPTIONS.map((opt) => {
                                 const logo =
@@ -794,22 +842,22 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                                   ];
                                 return (
                                   <Button
+                                    className="gap-1.5"
                                     key={opt.value}
+                                    onClick={() => setCryptoOtherSub(opt.value)}
+                                    size="sm"
                                     type="button"
                                     variant={
                                       cryptoOtherSub === opt.value
                                         ? "default"
                                         : "outline"
                                     }
-                                    size="sm"
-                                    onClick={() => setCryptoOtherSub(opt.value)}
-                                    className="gap-1.5"
                                   >
                                     {logo && (
                                       <img
-                                        src={logo}
                                         alt=""
                                         className="h-4 w-4"
+                                        src={logo}
                                       />
                                     )}
                                     {opt.label}
@@ -824,7 +872,12 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
                   {/* Stablecoins sub-options */}
                   {paymentMethod === "stablecoins" && (
-                    <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3 mt-2">
+                    <div
+                      className={`
+                      mt-2 space-y-2 rounded-lg border border-border bg-muted/30
+                      p-3
+                    `}
+                    >
                       {/* Token: USDC or USDT */}
                       <div className="space-y-1">
                         <p className="text-xs font-medium text-muted-foreground">
@@ -833,15 +886,15 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                         <div className="flex gap-2">
                           {showUsdc && (
                             <Button
+                              onClick={() =>
+                                handleStablecoinTokenChange("usdc")
+                              }
+                              size="sm"
                               type="button"
                               variant={
                                 stablecoinToken === "usdc"
                                   ? "default"
                                   : "outline"
-                              }
-                              size="sm"
-                              onClick={() =>
-                                handleStablecoinTokenChange("usdc")
                               }
                             >
                               USDC
@@ -849,15 +902,15 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                           )}
                           {showUsdt && (
                             <Button
+                              onClick={() =>
+                                handleStablecoinTokenChange("usdt")
+                              }
+                              size="sm"
                               type="button"
                               variant={
                                 stablecoinToken === "usdt"
                                   ? "default"
                                   : "outline"
-                              }
-                              size="sm"
-                              onClick={() =>
-                                handleStablecoinTokenChange("usdt")
                               }
                             >
                               USDT
@@ -874,14 +927,14 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                           {stablecoinChainOptions.map((opt) => (
                             <Button
                               key={opt.value}
+                              onClick={() => setStablecoinChain(opt.value)}
+                              size="sm"
                               type="button"
                               variant={
                                 stablecoinChain === opt.value
                                   ? "default"
                                   : "outline"
                               }
-                              size="sm"
-                              onClick={() => setStablecoinChain(opt.value)}
                             >
                               {opt.label}
                             </Button>
@@ -894,9 +947,9 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
                 <Button
                   className="w-full"
-                  size="lg"
-                  onClick={handlePurchase}
                   disabled={purchasing}
+                  onClick={handlePurchase}
+                  size="lg"
                 >
                   {purchasing ? (
                     <>
@@ -909,16 +962,21 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                 </Button>
 
                 <Button
-                  variant="outline"
                   className="w-full"
-                  size="lg"
                   onClick={handleAddToCart}
+                  size="lg"
+                  variant="outline"
                 >
                   Add to Cart
                 </Button>
 
-                <div className="rounded-lg bg-muted/50 p-4 text-sm text-muted-foreground space-y-2">
-                  <p className="font-semibold text-base text-foreground">
+                <div
+                  className={`
+                  space-y-2 rounded-lg bg-muted/50 p-4 text-sm
+                  text-muted-foreground
+                `}
+                >
+                  <p className="text-base font-semibold text-foreground">
                     Instant Digital Delivery
                   </p>
                   <p>
@@ -933,15 +991,24 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         </div>
 
         {/* Refund eligibility — full-width section below both columns */}
-        <section className="col-span-full mt-10 rounded-lg border border-muted bg-muted/30 p-6">
-          <h2 className="text-lg font-semibold text-foreground mb-2">
+        <section
+          className={`
+          col-span-full mt-10 rounded-lg border border-muted bg-muted/30 p-6
+        `}
+        >
+          <h2 className="mb-2 text-lg font-semibold text-foreground">
             eSIM refund eligibility
           </h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="mb-4 text-sm text-muted-foreground">
             eSIM plans have different refund rules. Please review before
             purchasing.
           </p>
-          <ul className="text-sm text-muted-foreground space-y-3 list-disc list-outside pl-5 break-words">
+          <ul
+            className={`
+            list-outside list-disc space-y-3 pl-5 text-sm break-words
+            text-muted-foreground
+          `}
+          >
             <li className="leading-relaxed">
               <span className="font-medium text-foreground">Unused eSIMs:</span>{" "}
               If not activated, you may submit a refund request within{" "}

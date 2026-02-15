@@ -16,20 +16,25 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type AssetRow = { id?: string; url: string; type: string; sortOrder?: number };
+interface AssetRow {
+  id?: string;
+  sortOrder?: number;
+  type: string;
+  url: string;
+}
 
-type Brand = {
+interface Brand {
+  assets: { id: string; sortOrder: number; type: string; url: string }[];
+  createdAt: string;
+  description: null | string;
+  featured: boolean;
   id: string;
+  logoUrl: null | string;
   name: string;
   slug: string;
-  logoUrl: string | null;
-  websiteUrl: string | null;
-  description: string | null;
-  featured: boolean;
-  createdAt: string;
   updatedAt: string;
-  assets: Array<{ id: string; url: string; type: string; sortOrder: number }>;
-};
+  websiteUrl: null | string;
+}
 
 export default function AdminBrandEditPage() {
   const params = useParams();
@@ -38,7 +43,7 @@ export default function AdminBrandEditPage() {
 
   const [brand, setBrand] = useState<Brand | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -77,9 +82,9 @@ export default function AdminBrandEditPage() {
       setAssets(
         (data.assets ?? []).map((a) => ({
           id: a.id,
-          url: a.url,
-          type: a.type || "other",
           sortOrder: a.sortOrder,
+          type: a.type || "other",
+          url: a.url,
         })),
       );
     } catch (err) {
@@ -94,7 +99,7 @@ export default function AdminBrandEditPage() {
   }, [fetchBrand]);
 
   const addAsset = useCallback(() => {
-    setAssets((prev) => [...prev, { url: "", type: "other" }]);
+    setAssets((prev) => [...prev, { type: "other", url: "" }]);
   }, []);
 
   const removeAsset = useCallback((index: number) => {
@@ -102,7 +107,7 @@ export default function AdminBrandEditPage() {
   }, []);
 
   const updateAsset = useCallback(
-    (index: number, field: "url" | "type", value: string) => {
+    (index: number, field: "type" | "url", value: string) => {
       setAssets((prev) =>
         prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
       );
@@ -111,7 +116,7 @@ export default function AdminBrandEditPage() {
   );
 
   const uploadAssetInputRef = useRef<HTMLInputElement>(null);
-  const uploadAssetTargetRef = useRef<number | null>(null);
+  const uploadAssetTargetRef = useRef<null | number>(null);
   const [uploadAssetLoading, setUploadAssetLoading] = useState(false);
   const handleUploadAsset = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,9 +130,9 @@ export default function AdminBrandEditPage() {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch(`${API_BASE}/api/admin/upload`, {
-          method: "POST",
-          credentials: "include",
           body: form,
+          credentials: "include",
+          method: "POST",
         });
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as {
@@ -162,25 +167,25 @@ export default function AdminBrandEditPage() {
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/brands/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            name: name.trim(),
-            slug: slug.trim() || undefined,
-            websiteUrl: websiteUrl.trim() || undefined,
-            description: description.trim() || undefined,
-            featured,
-            logoUrl: logoUrl.trim() || undefined,
             assets: assets
               .filter((a) => a.url.trim())
               .map((a, i) => ({
                 id: a.id,
-                url: a.url.trim(),
-                type: a.type || "other",
                 sortOrder: i,
+                type: a.type || "other",
+                url: a.url.trim(),
               })),
+            description: description.trim() || undefined,
+            featured,
+            logoUrl: logoUrl.trim() || undefined,
+            name: name.trim(),
+            slug: slug.trim() || undefined,
+            websiteUrl: websiteUrl.trim() || undefined,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -215,8 +220,8 @@ export default function AdminBrandEditPage() {
     setDeleting(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/brands/${id}`, {
-        method: "DELETE",
         credentials: "include",
+        method: "DELETE",
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -232,7 +237,11 @@ export default function AdminBrandEditPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -241,7 +250,12 @@ export default function AdminBrandEditPage() {
   if (error && !brand) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
         <Link href="/brands">
@@ -259,24 +273,32 @@ export default function AdminBrandEditPage() {
         <div className="flex items-center gap-4">
           <h2 className="text-2xl font-semibold tracking-tight">Edit Brand</h2>
           <Link
+            className={`
+              text-sm font-medium text-muted-foreground
+              hover:text-foreground
+            `}
             href="/brands"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             ← Back to list
           </Link>
         </div>
         <Button
+          disabled={deleting}
+          onClick={handleDelete}
           type="button"
           variant="destructive"
-          onClick={handleDelete}
-          disabled={deleting}
         >
           {deleting ? "Deleting…" : "Delete brand"}
         </Button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
@@ -287,86 +309,91 @@ export default function AdminBrandEditPage() {
             <CardTitle>Brand details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="name" className={labelClass}>
+                <label className={labelClass} htmlFor="name">
                   Name <span className="text-destructive">*</span>
                 </label>
                 <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   className={inputClass}
+                  id="name"
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. PacSafe"
                   required
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="slug" className={labelClass}>
+                <label className={labelClass} htmlFor="slug">
                   Slug
                 </label>
                 <input
+                  className={inputClass}
                   id="slug"
+                  onChange={(e) => setSlug(e.target.value)}
                   type="text"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className={inputClass}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="websiteUrl" className={labelClass}>
+              <label className={labelClass} htmlFor="websiteUrl">
                 Website URL
               </label>
               <input
+                className={inputClass}
                 id="websiteUrl"
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="https://example.com"
                 type="url"
                 value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-                className={inputClass}
-                placeholder="https://example.com"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="description" className={labelClass}>
+              <label className={labelClass} htmlFor="description">
                 Description
               </label>
               <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
                 className={cn(inputClass, "resize-y")}
+                id="description"
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief description of what the brand offers"
+                rows={3}
+                value={description}
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="logoUrl" className={labelClass}>
+              <label className={labelClass} htmlFor="logoUrl">
                 Logo URL
               </label>
               <input
+                className={inputClass}
                 id="logoUrl"
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://…"
                 type="url"
                 value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                className={inputClass}
-                placeholder="https://…"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <input
-                id="featured"
-                type="checkbox"
                 checked={featured}
-                onChange={(e) => setFeatured(e.target.checked)}
                 className="size-4 rounded border-input"
+                id="featured"
+                onChange={(e) => setFeatured(e.target.checked)}
+                type="checkbox"
               />
-              <label htmlFor="featured" className="text-sm font-medium">
+              <label className="text-sm font-medium" htmlFor="featured">
                 Featured Brand
               </label>
             </div>
@@ -377,62 +404,67 @@ export default function AdminBrandEditPage() {
                   Brand assets (logos, banners)
                 </label>
                 <Button
+                  onClick={addAsset}
+                  size="sm"
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={addAsset}
                 >
                   + Add asset
                 </Button>
               </div>
               <input
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                aria-hidden
+                className="hidden"
+                onChange={handleUploadAsset}
                 ref={uploadAssetInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                aria-hidden
-                onChange={handleUploadAsset}
               />
               {assets.length > 0 && (
                 <ul className="space-y-2">
                   {assets.map((a, i) => (
                     <li
+                      className={`
+                        flex flex-wrap items-center gap-2 rounded border p-2
+                      `}
                       key={a.id ?? i}
-                      className="flex flex-wrap items-center gap-2 rounded border p-2"
                     >
                       <input
+                        className={cn(inputClass, "min-w-[200px] flex-1")}
+                        onChange={(e) => updateAsset(i, "url", e.target.value)}
+                        placeholder="Image URL"
                         type="url"
                         value={a.url}
-                        onChange={(e) => updateAsset(i, "url", e.target.value)}
-                        className={cn(inputClass, "min-w-[200px] flex-1")}
-                        placeholder="Image URL"
                       />
                       <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 shrink-0"
+                        className="shrink-0 gap-1"
                         disabled={uploadAssetLoading}
                         onClick={() => triggerUploadAsset(i)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
                       >
                         <Upload className="h-4 w-4" />
                         Upload
                       </Button>
                       <select
-                        value={a.type}
-                        onChange={(e) => updateAsset(i, "type", e.target.value)}
                         className={cn(inputClass, "w-28")}
+                        onChange={(e) => updateAsset(i, "type", e.target.value)}
+                        value={a.type}
                       >
                         <option value="logo">Logo</option>
                         <option value="banner">Banner</option>
                         <option value="other">Other</option>
                       </select>
                       <Button
+                        className={`
+                          text-destructive
+                          hover:text-destructive
+                        `}
+                        onClick={() => removeAsset(i)}
+                        size="sm"
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        onClick={() => removeAsset(i)}
-                        className="text-destructive hover:text-destructive"
                       >
                         Remove
                       </Button>
@@ -443,7 +475,7 @@ export default function AdminBrandEditPage() {
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
+              <Button disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save Brand"}
               </Button>
               <Link href="/brands">

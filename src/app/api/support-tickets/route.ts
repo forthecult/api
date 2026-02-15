@@ -36,12 +36,12 @@ export async function GET(request: NextRequest) {
     const [tickets, countResult] = await Promise.all([
       db
         .select({
+          createdAt: supportTicketTable.createdAt,
           id: supportTicketTable.id,
-          subject: supportTicketTable.subject,
           message: supportTicketTable.message,
           status: supportTicketTable.status,
+          subject: supportTicketTable.subject,
           type: supportTicketTable.type,
-          createdAt: supportTicketTable.createdAt,
           updatedAt: supportTicketTable.updatedAt,
         })
         .from(supportTicketTable)
@@ -59,8 +59,8 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / limit) || 1;
 
     return NextResponse.json({
+      pagination: { limit, page, total, totalPages },
       tickets,
-      pagination: { page, limit, total, totalPages },
     });
   } catch (err) {
     console.error("Support tickets GET error:", err);
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
   const userId = session.user.id;
 
-  let body: { subject?: string; message?: string; type?: string };
+  let body: { message?: string; subject?: string; type?: string };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -147,10 +147,10 @@ export async function POST(request: NextRequest) {
             retryAfterSeconds,
           },
           {
-            status: 429,
             headers: {
               "Retry-After": String(retryAfterSeconds),
             },
+            status: 429,
           },
         );
       }
@@ -168,14 +168,14 @@ export async function POST(request: NextRequest) {
 
   try {
     await db.insert(supportTicketTable).values({
+      createdAt: now,
       id,
-      userId,
-      subject,
       message,
       status: "open",
+      subject,
       type,
-      createdAt: now,
       updatedAt: now,
+      userId,
     });
   } catch (err) {
     console.error("Support ticket create error:", err);
@@ -189,13 +189,13 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
+    createdAt: now.toISOString(),
     id,
-    subject,
     message,
     status: "open",
-    type,
-    createdAt: now.toISOString(),
-    updatedAt: now.toISOString(),
+    subject,
     success: "Ticket created.",
+    type,
+    updatedAt: now.toISOString(),
   });
 }

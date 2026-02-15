@@ -1,4 +1,4 @@
-import { asc, eq, and } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
@@ -14,34 +14,6 @@ const GUEST_ID_HEADER = "x-support-guest-id";
 const GUEST_ID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_CONTENT_LENGTH = 4_000;
-
-async function getConversationAndCheckAccess(
-  request: NextRequest,
-  conversationId: string,
-) {
-  const session = await auth.api.getSession({ headers: request.headers });
-  const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
-
-  const [conv] = await db
-    .select({
-      id: supportChatConversationTable.id,
-      userId: supportChatConversationTable.userId,
-      guestId: supportChatConversationTable.guestId,
-      takenOverBy: supportChatConversationTable.takenOverBy,
-    })
-    .from(supportChatConversationTable)
-    .where(eq(supportChatConversationTable.id, conversationId))
-    .limit(1);
-
-  if (!conv) return { conv: null, error: 404 as const };
-
-  const isOwner =
-    (session?.user?.id && conv.userId === session.user.id) ||
-    (guestId && GUEST_ID_REGEX.test(guestId) && conv.guestId === guestId);
-
-  if (!isOwner) return { conv: null, error: 403 as const };
-  return { conv, error: null };
-}
 
 /**
  * GET /api/support-chat/conversations/[id]/messages
@@ -76,10 +48,10 @@ export async function GET(
   try {
     const messages = await db
       .select({
-        id: supportChatMessageTable.id,
-        role: supportChatMessageTable.role,
         content: supportChatMessageTable.content,
         createdAt: supportChatMessageTable.createdAt,
+        id: supportChatMessageTable.id,
+        role: supportChatMessageTable.role,
       })
       .from(supportChatMessageTable)
       .where(eq(supportChatMessageTable.conversationId, conversationId))
@@ -151,11 +123,11 @@ export async function POST(
 
   try {
     await db.insert(supportChatMessageTable).values({
-      id: messageId,
-      conversationId,
-      role: "customer",
       content,
+      conversationId,
       createdAt: now,
+      id: messageId,
+      role: "customer",
     });
 
     await db
@@ -174,25 +146,25 @@ export async function POST(
         // Don't generate AI reply if rate limited, but still save the user message
         const messagesRateLimited = await db
           .select({
-            id: supportChatMessageTable.id,
-            role: supportChatMessageTable.role,
             content: supportChatMessageTable.content,
             createdAt: supportChatMessageTable.createdAt,
+            id: supportChatMessageTable.id,
+            role: supportChatMessageTable.role,
           })
           .from(supportChatMessageTable)
           .where(eq(supportChatMessageTable.conversationId, conversationId))
           .orderBy(asc(supportChatMessageTable.createdAt));
         return NextResponse.json({
           messages: messagesRateLimited,
-          takenOverBy: conv!.takenOverBy ?? undefined,
           rateLimited: true,
+          takenOverBy: conv!.takenOverBy ?? undefined,
         });
       }
 
       const recentRows = await db
         .select({
-          role: supportChatMessageTable.role,
           content: supportChatMessageTable.content,
+          role: supportChatMessageTable.role,
         })
         .from(supportChatMessageTable)
         .where(eq(supportChatMessageTable.conversationId, conversationId))
@@ -202,22 +174,22 @@ export async function POST(
       const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
 
       const context = {
+        conversationId,
         recentMessages: recentRows.map((r) => ({
-          role: r.role,
           content: r.content,
+          role: r.role,
         })),
         storeName: process.env.NEXT_PUBLIC_APP_NAME ?? "For the Cult",
-        conversationId,
         userId: session?.user?.id ?? guestId ?? undefined,
       };
 
       // Return immediately with current messages (user message only); AI reply will appear when client polls.
       const messagesNow = await db
         .select({
-          id: supportChatMessageTable.id,
-          role: supportChatMessageTable.role,
           content: supportChatMessageTable.content,
           createdAt: supportChatMessageTable.createdAt,
+          id: supportChatMessageTable.id,
+          role: supportChatMessageTable.role,
         })
         .from(supportChatMessageTable)
         .where(eq(supportChatMessageTable.conversationId, conversationId))
@@ -229,11 +201,11 @@ export async function POST(
           const aiMessageId = crypto.randomUUID();
           const aiNow = new Date();
           await db.insert(supportChatMessageTable).values({
-            id: aiMessageId,
-            conversationId,
-            role: "ai",
             content: aiReply,
+            conversationId,
             createdAt: aiNow,
+            id: aiMessageId,
+            role: "ai",
           });
           await db
             .update(supportChatConversationTable)
@@ -252,10 +224,10 @@ export async function POST(
 
     const messages = await db
       .select({
-        id: supportChatMessageTable.id,
-        role: supportChatMessageTable.role,
         content: supportChatMessageTable.content,
         createdAt: supportChatMessageTable.createdAt,
+        id: supportChatMessageTable.id,
+        role: supportChatMessageTable.role,
       })
       .from(supportChatMessageTable)
       .where(eq(supportChatMessageTable.conversationId, conversationId))
@@ -272,4 +244,32 @@ export async function POST(
       { status: 500 },
     );
   }
+}
+
+async function getConversationAndCheckAccess(
+  request: NextRequest,
+  conversationId: string,
+) {
+  const session = await auth.api.getSession({ headers: request.headers });
+  const guestId = request.headers.get(GUEST_ID_HEADER)?.trim();
+
+  const [conv] = await db
+    .select({
+      guestId: supportChatConversationTable.guestId,
+      id: supportChatConversationTable.id,
+      takenOverBy: supportChatConversationTable.takenOverBy,
+      userId: supportChatConversationTable.userId,
+    })
+    .from(supportChatConversationTable)
+    .where(eq(supportChatConversationTable.id, conversationId))
+    .limit(1);
+
+  if (!conv) return { conv: null, error: 404 as const };
+
+  const isOwner =
+    (session?.user?.id && conv.userId === session.user.id) ||
+    (guestId && GUEST_ID_REGEX.test(guestId) && conv.guestId === guestId);
+
+  if (!isOwner) return { conv: null, error: 403 as const };
+  return { conv, error: null };
 }

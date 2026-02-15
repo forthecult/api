@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { auth } from "~/lib/auth";
 import {
   publicApiCorsPreflight,
   withPublicApiCors,
 } from "~/lib/cors-public-api";
-import { auth } from "~/lib/auth";
 import {
   getPublicShippingResponse,
   runShippingCalculate,
@@ -43,17 +43,17 @@ export async function POST(request: NextRequest) {
     // Extract additional address fields for Printful shipping (optional)
     const extendedInput = {
       ...validation.data,
-      stateCode:
-        typeof rawBody.stateCode === "string" ? rawBody.stateCode : undefined,
-      city: typeof rawBody.city === "string" ? rawBody.city : undefined,
-      zip: typeof rawBody.zip === "string" ? rawBody.zip : undefined,
       address1:
         typeof rawBody.address1 === "string" ? rawBody.address1 : undefined,
+      city: typeof rawBody.city === "string" ? rawBody.city : undefined,
       couponCode:
         typeof rawBody.couponCode === "string" && rawBody.couponCode.trim()
           ? rawBody.couponCode.trim()
           : undefined,
+      stateCode:
+        typeof rawBody.stateCode === "string" ? rawBody.stateCode : undefined,
       userId: session?.user?.id ?? undefined,
+      zip: typeof rawBody.zip === "string" ? rawBody.zip : undefined,
     };
 
     const result = await runShippingCalculate(extendedInput);

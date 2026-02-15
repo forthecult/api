@@ -24,12 +24,12 @@ import {
   OPEN_LINK_WALLET_MODAL,
   WALLET_LINKED_EVENT,
 } from "~/ui/components/auth/auth-wallet-modal";
-import { DiscordIcon } from "~/ui/components/icons/discord";
-import { TelegramIcon } from "~/ui/components/icons/telegram";
 import {
   getTelegramBotUsername,
   TelegramLoginWidget,
 } from "~/ui/components/auth/telegram-login-widget";
+import { DiscordIcon } from "~/ui/components/icons/discord";
+import { TelegramIcon } from "~/ui/components/icons/telegram";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
@@ -40,7 +40,11 @@ const getResetPasswordRedirectUrl = () =>
     ? `${window.location.origin}/auth/reset-password`
     : "";
 
-type LinkedAccount = { providerId: string; accountId: string; id?: string };
+interface LinkedAccount {
+  accountId: string;
+  id?: string;
+  providerId: string;
+}
 
 export function SecurityPageClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
@@ -50,21 +54,21 @@ export function SecurityPageClient() {
   const [loading, setLoading] = useState(false);
   // MFA / 2FA state grouped together
   const [mfa, setMfa] = useState({
-    showQrCode: false,
-    qrCodeData: "",
-    qrCodeImageUrl: null as string | null,
-    qrCodeError: null as string | null,
-    secret: "",
     otpCode: "",
+    qrCodeData: "",
+    qrCodeError: null as null | string,
+    qrCodeImageUrl: null as null | string,
+    secret: "",
+    showQrCode: false,
     verifyLoading: false,
   });
   // Shorthand setters for MFA fields
   const setShowQrCode = (v: boolean) =>
     setMfa((p) => ({ ...p, showQrCode: v }));
   const setQrCodeData = (v: string) => setMfa((p) => ({ ...p, qrCodeData: v }));
-  const setQrCodeImageUrl = (v: string | null) =>
+  const setQrCodeImageUrl = (v: null | string) =>
     setMfa((p) => ({ ...p, qrCodeImageUrl: v }));
-  const setQrCodeError = (v: string | null) =>
+  const setQrCodeError = (v: null | string) =>
     setMfa((p) => ({ ...p, qrCodeError: v }));
   const setSecret = (v: string) => setMfa((p) => ({ ...p, secret: v }));
   const setOtpCode = (v: string) => setMfa((p) => ({ ...p, otpCode: v }));
@@ -72,12 +76,12 @@ export function SecurityPageClient() {
     setMfa((p) => ({ ...p, verifyLoading: v }));
   // Aliases for reading MFA state
   const {
-    showQrCode,
-    qrCodeData,
-    qrCodeImageUrl,
-    qrCodeError,
-    secret,
     otpCode,
+    qrCodeData,
+    qrCodeError,
+    qrCodeImageUrl,
+    secret,
+    showQrCode,
     verifyLoading,
   } = mfa;
 
@@ -89,32 +93,32 @@ export function SecurityPageClient() {
   // Linked accounts
   const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
-  const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
+  const [unlinkingId, setUnlinkingId] = useState<null | string>(null);
 
   // Add email flow state grouped together
   const [addEmail, setAddEmail] = useState({
-    password: { email: "", password: "", confirm: "" },
-    step: "email" as "email" | "code" | "choice" | "password",
     code: "",
-    loading: false,
-    sendCodeLoading: false,
-    verifyLoading: false,
     codeOnlyLoading: false,
     error: "",
+    loading: false,
+    password: { confirm: "", email: "", password: "" },
+    sendCodeLoading: false,
+    step: "email" as "choice" | "code" | "email" | "password",
+    verifyLoading: false,
   });
   // Shorthand setters for add-email fields (preserves existing call sites)
   const setAddEmailPassword = (
     v: React.SetStateAction<{
+      confirm: string;
       email: string;
       password: string;
-      confirm: string;
     }>,
   ) =>
     setAddEmail((p) => ({
       ...p,
       password: typeof v === "function" ? v(p.password) : v,
     }));
-  const setAddEmailStep = (v: "email" | "code" | "choice" | "password") =>
+  const setAddEmailStep = (v: "choice" | "code" | "email" | "password") =>
     setAddEmail((p) => ({ ...p, step: v }));
   const setAddEmailCode = (v: string) =>
     setAddEmail((p) => ({ ...p, code: v }));
@@ -140,11 +144,11 @@ export function SecurityPageClient() {
 
   // Passkey state
   const [passkeys, setPasskeys] = useState<
-    { id: string; name?: string | null }[]
+    { id: string; name?: null | string }[]
   >([]);
   const [passkeysLoading, setPasskeysLoading] = useState(true);
   const [passkeyAddLoading, setPasskeyAddLoading] = useState(false);
-  const [passkeyDeleteId, setPasskeyDeleteId] = useState<string | null>(null);
+  const [passkeyDeleteId, setPasskeyDeleteId] = useState<null | string>(null);
 
   const fetchAccounts = useCallback(async () => {
     setAccountsLoading(true);
@@ -155,10 +159,10 @@ export function SecurityPageClient() {
         return;
       }
       const list = (res.data ?? []).map(
-        (a: { providerId: string; accountId: string; id?: string }) => ({
-          providerId: a.providerId,
+        (a: { accountId: string; id?: string; providerId: string }) => ({
           accountId: a.accountId,
           id: a.id,
+          providerId: a.providerId,
         }),
       );
       setAccounts(list);
@@ -177,7 +181,7 @@ export function SecurityPageClient() {
       const res = await authClient.passkey.listUserPasskeys();
       if (res.data && Array.isArray(res.data)) {
         setPasskeys(
-          res.data.map((p: { id: string; name?: string | null }) => ({
+          res.data.map((p: { id: string; name?: null | string }) => ({
             id: p.id,
             name: p.name ?? null,
           })),
@@ -209,9 +213,9 @@ export function SecurityPageClient() {
       .then((QRCodeModule) => {
         const QRCode = QRCodeModule.default;
         return QRCode.toDataURL(qrCodeData.trim(), {
-          width: 192,
-          margin: 1,
           errorCorrectionLevel: "M",
+          margin: 1,
+          width: 192,
         });
       })
       .then((dataUrl) => {
@@ -284,9 +288,9 @@ export function SecurityPageClient() {
     setAddEmailSendCodeLoading(true);
     try {
       const res = await fetch("/api/auth/add-email/send-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: trimmed }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -316,9 +320,9 @@ export function SecurityPageClient() {
     setAddEmailVerifyLoading(true);
     try {
       const res = await fetch("/api/auth/add-email/verify", {
-        method: "POST",
+        body: JSON.stringify({ code, email }),
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, code }),
+        method: "POST",
       });
       const data = (await res.json()) as { error?: string };
       if (!res.ok) {
@@ -338,7 +342,7 @@ export function SecurityPageClient() {
     setAddEmailError("");
     setAddEmailCodeOnlyLoading(true);
     try {
-      setAddEmailPassword({ email: "", password: "", confirm: "" });
+      setAddEmailPassword({ confirm: "", email: "", password: "" });
       setAddEmailStep("email");
       setAddEmailCode("");
       setMessage(
@@ -351,7 +355,7 @@ export function SecurityPageClient() {
   };
 
   const handleAddEmailPassword = async () => {
-    const { email, password, confirm } = addEmailPassword;
+    const { confirm, email, password } = addEmailPassword;
     const trimmed = email.trim();
     if (!trimmed) {
       setAddEmailError("Email is required.");
@@ -390,7 +394,7 @@ export function SecurityPageClient() {
         setAddEmailError(setPassRes.error.message ?? "Failed to set password.");
         return;
       }
-      setAddEmailPassword({ email: "", password: "", confirm: "" });
+      setAddEmailPassword({ confirm: "", email: "", password: "" });
       setAddEmailStep("email");
       setAddEmailCode("");
       setMessage(
@@ -518,8 +522,8 @@ export function SecurityPageClient() {
     setPasskeyAddLoading(true);
     try {
       const result = await authClient.passkey.addPasskey({
-        name: "Security key",
         authenticatorAttachment: "cross-platform",
+        name: "Security key",
       });
       if (result?.error) {
         setError(
@@ -597,11 +601,11 @@ export function SecurityPageClient() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button
+          aria-label="Back"
           asChild
+          className="shrink-0"
           size="icon"
           variant="ghost"
-          className="shrink-0"
-          aria-label="Back"
         >
           <Link href="/dashboard">
             <ChevronLeft className="h-5 w-5" />
@@ -611,12 +615,21 @@ export function SecurityPageClient() {
       </div>
 
       {error && (
-        <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+        <div
+          className={`
+          rounded-md bg-destructive/10 p-4 text-sm text-destructive
+        `}
+        >
           {error}
         </div>
       )}
       {message && (
-        <div className="rounded-md bg-green-50 p-4 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
+        <div
+          className={`
+          rounded-md bg-green-50 p-4 text-sm text-green-700
+          dark:bg-green-950/30 dark:text-green-400
+        `}
+        >
           {message}
         </div>
       )}
@@ -642,12 +655,21 @@ export function SecurityPageClient() {
             </CardHeader>
             <CardContent className="space-y-4">
               {resetError && (
-                <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                <div
+                  className={`
+                  rounded-md bg-destructive/10 p-3 text-sm text-destructive
+                `}
+                >
                   {resetError}
                 </div>
               )}
               {resetEmailSent && (
-                <div className="rounded-md bg-green-50 p-3 text-sm text-green-700 dark:bg-green-950/30 dark:text-green-400">
+                <div
+                  className={`
+                  rounded-md bg-green-50 p-3 text-sm text-green-700
+                  dark:bg-green-950/30 dark:text-green-400
+                `}
+                >
                   Check your inbox (and spam) for a link to change your
                   password. The link expires in 1 hour.
                 </div>
@@ -682,8 +704,11 @@ export function SecurityPageClient() {
             <ul className="space-y-2">
               {accounts.map((acc) => (
                 <li
+                  className={`
+                    flex items-center justify-between gap-2 rounded-lg border
+                    border-border bg-muted/20 px-3 py-2
+                  `}
                   key={acc.id ?? `${acc.providerId}-${acc.accountId}`}
-                  className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/20 px-3 py-2"
                 >
                   <span className="flex items-center gap-2 text-sm">
                     {acc.providerId === "credential" && (
@@ -695,11 +720,11 @@ export function SecurityPageClient() {
                     {acc.providerId === "solana" && (
                       <>
                         <Image
-                          src="/crypto/solana/solanaLogoMark.svg"
                           alt=""
-                          width={18}
-                          height={18}
                           className="rounded object-contain"
+                          height={18}
+                          src="/crypto/solana/solanaLogoMark.svg"
+                          width={18}
                         />
                         <span className="font-mono text-muted-foreground">
                           {acc.accountId.slice(0, 4)}…{acc.accountId.slice(-4)}
@@ -709,11 +734,11 @@ export function SecurityPageClient() {
                     {acc.providerId === "ethereum" && (
                       <>
                         <Image
-                          src="/crypto/ethereum/ethereum-logo.svg"
                           alt=""
-                          width={18}
-                          height={18}
                           className="rounded object-contain"
+                          height={18}
+                          src="/crypto/ethereum/ethereum-logo.svg"
+                          width={18}
                         />
                         <span className="font-mono text-muted-foreground">
                           {acc.accountId.slice(0, 6)}…{acc.accountId.slice(-4)}
@@ -734,9 +759,9 @@ export function SecurityPageClient() {
                     )}
                     {![
                       "credential",
-                      "solana",
-                      "ethereum",
                       "discord",
+                      "ethereum",
+                      "solana",
                       "telegram",
                     ].includes(acc.providerId) && (
                       <span className="font-mono text-muted-foreground">
@@ -745,16 +770,19 @@ export function SecurityPageClient() {
                     )}
                   </span>
                   <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
+                    className={`
+                      text-destructive
+                      hover:text-destructive
+                    `}
                     disabled={
                       !canUnlink || unlinkingId === (acc.id ?? acc.accountId)
                     }
                     onClick={() =>
                       handleUnlink(acc.accountId, acc.providerId, acc.id)
                     }
-                    className="text-destructive hover:text-destructive"
+                    size="sm"
+                    type="button"
+                    variant="ghost"
                   >
                     {unlinkingId === (acc.id ?? acc.accountId)
                       ? "Unlinking…"
@@ -766,25 +794,25 @@ export function SecurityPageClient() {
           )}
           <div className="flex flex-wrap gap-2">
             <Button
+              className="gap-2"
+              onClick={handleOpenLinkWallet}
               type="button"
               variant="outline"
-              onClick={handleOpenLinkWallet}
-              className="gap-2"
             >
               <Wallet className="size-4" />
               Connect wallet (Solana or Ethereum)
             </Button>
             {!accounts.some((a) => a.providerId === "discord") && (
               <Button
-                type="button"
-                variant="outline"
                 className="gap-2"
                 onClick={() => {
                   void authClient.linkSocial({
-                    provider: "discord",
                     callbackURL: "/dashboard/security",
+                    provider: "discord",
                   });
                 }}
+                type="button"
+                variant="outline"
               >
                 <DiscordIcon className="size-4" />
                 Connect Discord
@@ -792,7 +820,12 @@ export function SecurityPageClient() {
             )}
             {!accounts.some((a) => a.providerId === "telegram") &&
               getTelegramBotUsername() && (
-                <div className="flex h-9 min-w-0 items-center [&_iframe]:!h-9 [&_iframe]:!min-h-9">
+                <div
+                  className={`
+                  flex h-9 min-w-0 items-center
+                  [&_iframe]:!h-9 [&_iframe]:!min-h-9
+                `}
+                >
                   <TelegramLoginWidget
                     botUsername={getTelegramBotUsername()}
                     link
@@ -823,7 +856,11 @@ export function SecurityPageClient() {
           </CardHeader>
           <CardContent className="space-y-4">
             {addEmailError && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <div
+                className={`
+                rounded-md bg-destructive/10 p-3 text-sm text-destructive
+              `}
+              >
                 {addEmailError}
               </div>
             )}
@@ -834,8 +871,6 @@ export function SecurityPageClient() {
                   <Label htmlFor="add-email">Email</Label>
                   <Input
                     id="add-email"
-                    type="email"
-                    value={addEmailPassword.email}
                     onChange={(e) =>
                       setAddEmailPassword((prev) => ({
                         ...prev,
@@ -843,6 +878,8 @@ export function SecurityPageClient() {
                       }))
                     }
                     placeholder="satoshi@nakamoto.com"
+                    type="email"
+                    value={addEmailPassword.email}
                   />
                 </div>
                 <Button
@@ -866,16 +903,16 @@ export function SecurityPageClient() {
                   <Label htmlFor="add-code">Verification code</Label>
                   <Input
                     id="add-code"
-                    type="text"
                     inputMode="numeric"
                     maxLength={8}
-                    placeholder="000000"
-                    value={addEmailCode}
                     onChange={(e) =>
                       setAddEmailCode(
                         e.target.value.replace(/\D/g, "").slice(0, 8),
                       )
                     }
+                    placeholder="000000"
+                    type="text"
+                    value={addEmailCode}
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -886,23 +923,23 @@ export function SecurityPageClient() {
                     {addEmailVerifyLoading ? "Verifying…" : "Verify"}
                   </Button>
                   <Button
-                    variant="outline"
                     disabled={addEmailSendCodeLoading}
                     onClick={() => {
                       setAddEmailCode("");
                       setAddEmailError("");
                       void handleSendAddEmailCode();
                     }}
+                    variant="outline"
                   >
                     {addEmailSendCodeLoading ? "Sending…" : "Resend code"}
                   </Button>
                   <Button
-                    variant="ghost"
                     onClick={() => {
                       setAddEmailStep("email");
                       setAddEmailCode("");
                       setAddEmailError("");
                     }}
+                    variant="ghost"
                   >
                     Use a different email
                   </Button>
@@ -916,7 +953,11 @@ export function SecurityPageClient() {
                   How do you want to sign in with{" "}
                   <strong>{addEmailPassword.email}</strong>?
                 </p>
-                <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+                <ul
+                  className={`
+                  list-inside list-disc space-y-2 text-sm text-muted-foreground
+                `}
+                >
                   <li>
                     <strong className="text-foreground">Password:</strong> Enter
                     your email and password each time you sign in.
@@ -937,20 +978,20 @@ export function SecurityPageClient() {
                     Use password
                   </Button>
                   <Button
-                    variant="outline"
                     disabled={addEmailCodeOnlyLoading}
                     onClick={handleAddEmailCodeOnly}
+                    variant="outline"
                   >
                     {addEmailCodeOnlyLoading
                       ? "Adding…"
                       : "Use email code (no password)"}
                   </Button>
                   <Button
-                    variant="ghost"
                     onClick={() => {
                       setAddEmailStep("code");
                       setAddEmailError("");
                     }}
+                    variant="ghost"
                   >
                     Back
                   </Button>
@@ -968,8 +1009,6 @@ export function SecurityPageClient() {
                   <Label htmlFor="add-password">Password</Label>
                   <Input
                     id="add-password"
-                    type="password"
-                    value={addEmailPassword.password}
                     onChange={(e) =>
                       setAddEmailPassword((prev) => ({
                         ...prev,
@@ -977,14 +1016,14 @@ export function SecurityPageClient() {
                       }))
                     }
                     placeholder="At least 8 characters"
+                    type="password"
+                    value={addEmailPassword.password}
                   />
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="add-confirm">Confirm password</Label>
                   <Input
                     id="add-confirm"
-                    type="password"
-                    value={addEmailPassword.confirm}
                     onChange={(e) =>
                       setAddEmailPassword((prev) => ({
                         ...prev,
@@ -992,6 +1031,8 @@ export function SecurityPageClient() {
                       }))
                     }
                     placeholder="Repeat password"
+                    type="password"
+                    value={addEmailPassword.confirm}
                   />
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -1002,16 +1043,16 @@ export function SecurityPageClient() {
                     {addEmailLoading ? "Adding…" : "Add email & password"}
                   </Button>
                   <Button
-                    variant="ghost"
                     onClick={() => {
                       setAddEmailStep("choice");
                       setAddEmailPassword((prev) => ({
                         ...prev,
-                        password: "",
                         confirm: "",
+                        password: "",
                       }));
                       setAddEmailError("");
                     }}
+                    variant="ghost"
                   >
                     Back
                   </Button>
@@ -1032,11 +1073,19 @@ export function SecurityPageClient() {
               {qrCodeImageUrl ? (
                 <img
                   alt="QR Code for Two-Factor Authentication"
-                  className="h-48 w-48 rounded border border-border object-contain"
+                  className={`
+                    h-48 w-48 rounded border border-border object-contain
+                  `}
                   src={qrCodeImageUrl}
                 />
               ) : (
-                <div className="flex h-48 w-48 flex-col items-center justify-center gap-2 rounded border border-dashed border-muted-foreground/30 bg-muted/30 text-center text-sm text-muted-foreground">
+                <div
+                  className={`
+                  flex h-48 w-48 flex-col items-center justify-center gap-2
+                  rounded border border-dashed border-muted-foreground/30
+                  bg-muted/30 text-center text-sm text-muted-foreground
+                `}
+                >
                   {qrCodeError ? (
                     <span className="px-2">{qrCodeError}</span>
                   ) : (
@@ -1051,7 +1100,11 @@ export function SecurityPageClient() {
               {secret && (
                 <div className="mt-4 w-full max-w-md">
                   <p className="text-sm font-medium">Manual entry code:</p>
-                  <p className="mt-2 break-all rounded-md bg-muted p-4 font-mono text-sm">
+                  <p
+                    className={`
+                    mt-2 rounded-md bg-muted p-4 font-mono text-sm break-all
+                  `}
+                  >
                     {secret}
                   </p>
                 </div>
@@ -1078,11 +1131,11 @@ export function SecurityPageClient() {
                   id="otp-code"
                   inputMode="numeric"
                   maxLength={8}
-                  placeholder="000000"
-                  value={otpCode}
                   onChange={(e) =>
                     setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 8))
                   }
+                  placeholder="000000"
+                  value={otpCode}
                 />
               </div>
               <Button
@@ -1119,7 +1172,11 @@ export function SecurityPageClient() {
               when you sign in.
             </p>
             {!accounts.some((a) => a.providerId === "credential") ? (
-              <p className="rounded-md bg-muted/50 p-3 text-sm text-muted-foreground">
+              <p
+                className={`
+                rounded-md bg-muted/50 p-3 text-sm text-muted-foreground
+              `}
+              >
                 To use authenticator app (OTP) 2FA, add an email and password to
                 your account first (in the section above). You can use security
                 key (U2F) below without a password.
@@ -1130,10 +1187,10 @@ export function SecurityPageClient() {
                   <Label htmlFor="security-password">Your Password</Label>
                   <Input
                     id="security-password"
-                    type="password"
-                    value={password}
                     onChange={(e) => setPasswordInput(e.target.value)}
                     placeholder="Enter your password"
+                    type="password"
+                    value={password}
                   />
                   <p className="text-sm text-muted-foreground">
                     Required to enable or disable authenticator app 2FA
@@ -1147,8 +1204,8 @@ export function SecurityPageClient() {
                   </Button>
                   <Button
                     disabled={loading}
-                    variant="destructive"
                     onClick={handleDisableTwoFactor}
+                    variant="destructive"
                   >
                     {loading ? "Processing..." : "Disable authenticator app"}
                   </Button>
@@ -1175,16 +1232,22 @@ export function SecurityPageClient() {
                   <ul className="mb-3 space-y-2">
                     {passkeys.map((p) => (
                       <li
+                        className={`
+                          flex items-center justify-between rounded-md border
+                          bg-muted/30 px-3 py-2 text-sm
+                        `}
                         key={p.id}
-                        className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2 text-sm"
                       >
                         <span>{p.name || "Security key"}</span>
                         <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
+                          className={`
+                            text-destructive
+                            hover:text-destructive
+                          `}
                           disabled={passkeyDeleteId === p.id}
                           onClick={() => handleDeletePasskey(p.id)}
+                          size="sm"
+                          variant="ghost"
                         >
                           {passkeyDeleteId === p.id ? (
                             "Removing…"
@@ -1197,9 +1260,9 @@ export function SecurityPageClient() {
                   </ul>
                 )}
                 <Button
-                  variant="outline"
                   disabled={passkeyAddLoading}
                   onClick={handleAddPasskey}
+                  variant="outline"
                 >
                   {passkeyAddLoading ? "Adding…" : "Add security key"}
                 </Button>

@@ -4,6 +4,7 @@ import { affiliateTable } from "../affiliates/tables";
 import { productCategoriesTable } from "../categories/tables";
 import { productReviewsTable } from "../reviews/tables";
 import { shippingOptionsTable } from "../shipping/tables";
+import { userTable } from "../users/tables";
 import { wishlistTable } from "../wishlist/tables";
 import {
   orderItemsTable,
@@ -15,15 +16,14 @@ import {
   productTokenGateTable,
   productVariantsTable,
 } from "./tables";
-import { userTable } from "../users/tables";
 
 export const productRelations = relations(productsTable, ({ many }) => ({
+  productAvailableCountries: many(productAvailableCountryTable),
   productCategories: many(productCategoriesTable),
   productImages: many(productImagesTable),
   productReviews: many(productReviewsTable),
   productTags: many(productTagsTable),
   productVariants: many(productVariantsTable),
-  productAvailableCountries: many(productAvailableCountryTable),
   tokenGates: many(productTokenGateTable),
   wishlist: many(wishlistTable),
 }));
@@ -67,12 +67,12 @@ export const productTagRelations = relations(productTagsTable, ({ one }) => ({
 
 export const productVariantRelations = relations(
   productVariantsTable,
-  ({ one, many }) => ({
+  ({ many, one }) => ({
+    orderItems: many(orderItemsTable),
     product: one(productsTable, {
       fields: [productVariantsTable.productId],
       references: [productsTable.id],
     }),
-    orderItems: many(orderItemsTable),
   }),
 );
 
@@ -91,12 +91,12 @@ export const orderItemRelations = relations(orderItemsTable, ({ one }) => ({
   }),
 }));
 
-export const orderRelations = relations(ordersTable, ({ one, many }) => ({
-  items: many(orderItemsTable),
+export const orderRelations = relations(ordersTable, ({ many, one }) => ({
   affiliate: one(affiliateTable, {
     fields: [ordersTable.affiliateId],
     references: [affiliateTable.id],
   }),
+  items: many(orderItemsTable),
   shippingOption: one(shippingOptionsTable, {
     fields: [ordersTable.shippingOptionId],
     references: [shippingOptionsTable.id],

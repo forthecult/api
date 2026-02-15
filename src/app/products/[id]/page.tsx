@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+
 import { Star } from "lucide-react";
-import Link from "next/link";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { SEO_CONFIG } from "~/app";
@@ -17,40 +18,33 @@ import {
   stripHtmlForMeta,
 } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
+import { getTokenGateConfig } from "~/lib/token-gate";
+import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
 import {
   BreadcrumbStructuredData,
   ProductStructuredData,
 } from "~/ui/components/structured-data";
+import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
 import { Button } from "~/ui/primitives/button";
 import { Separator } from "~/ui/primitives/separator";
+
+import type { ProductOptionDefinition, ProductVariantOption } from "./types";
+
 import { EstimatedDeliveryTimeline } from "./estimated-delivery-timeline";
 import { ProductDetailAccordion } from "./product-detail-accordion";
 import { ProductImageGallery } from "./product-image-gallery";
+import { ProductReviewsCarousel } from "./product-reviews-carousel";
 import { ProductShare } from "./product-share";
 import { ProductVariantImageProvider } from "./product-variant-image-context";
 import { ProductVariantSection } from "./product-variant-section";
-import { ProductReviewsCarousel } from "./product-reviews-carousel";
-import { RelatedProductsSection } from "./related-products-section";
-import { getTokenGateConfig } from "~/lib/token-gate";
-import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
-import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
-
 /* -------------------------------------------------------------------------- */
 /*                               Type declarations                            */
 /* -------------------------------------------------------------------------- */
-
-import type { ProductOptionDefinition, ProductVariantOption } from "./types";
+import { RelatedProductsSection } from "./related-products-section";
 export type { ProductOptionDefinition, ProductVariantOption };
 
-/** Resolve product by id from DB (no HTTP self-fetch). Uses shared mapper for single source of truth. */
-async function getProductForPage(id: string): Promise<PageProduct | null> {
-  const data = await getProductBySlugOrId(id);
-  if (!data) return null;
-  return mapProductBySlugResultToPageProduct(data);
-}
-
-type RelatedProduct = {
+interface RelatedProduct {
   category: string;
   id: string;
   image: string;
@@ -60,7 +54,7 @@ type RelatedProduct = {
   price: number;
   rating?: number;
   tokenGated?: boolean;
-};
+}
 
 async function fetchRelatedProducts(
   productId: string,
@@ -81,6 +75,13 @@ async function fetchRelatedProducts(
   }
 }
 
+/** Resolve product by id from DB (no HTTP self-fetch). Uses shared mapper for single source of truth. */
+async function getProductForPage(id: string): Promise<null | PageProduct> {
+  const data = await getProductBySlugOrId(id);
+  if (!data) return null;
+  return mapProductBySlugResultToPageProduct(data);
+}
+
 const range = (length: number) => Array.from({ length }, (_, i) => i);
 
 /* -------------------------------------------------------------------------- */
@@ -99,8 +100,8 @@ export async function generateMetadata({
 
   if (!product) {
     return {
-      title: "Product Not Found",
       description: "The requested product could not be found.",
+      title: "Product Not Found",
     };
   }
 
@@ -113,22 +114,22 @@ export async function generateMetadata({
         ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
         : undefined;
   return {
-    title: product.name,
     description: metaDesc,
     openGraph: {
-      title: `${product.name} | ${SEO_CONFIG.name}`,
       description: metaDesc,
+      title: `${product.name} | ${SEO_CONFIG.name}`,
       type: "website",
       ...(imageUrl && {
         images: [
-          { url: imageUrl, alt: product.name, width: 1200, height: 630 },
+          { alt: product.name, height: 630, url: imageUrl, width: 1200 },
         ],
       }),
     },
+    title: product.name,
     twitter: {
       card: "summary_large_image",
-      title: product.name,
       description: metaDesc,
+      title: product.name,
       ...(imageUrl && { images: [imageUrl] }),
     },
   };
@@ -166,7 +167,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   const passed = hasValidTokenGateCookie(tgCookie, "product", product.id);
 
   if (tokenGateConfig.tokenGated && !passed) {
-    return <TokenGateGuard resourceType="product" resourceId={product.id} />;
+    return <TokenGateGuard resourceId={product.id} resourceType="product" />;
   }
 
   const siteUrl = getPublicSiteUrl();
@@ -181,14 +182,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
       {/* Structured data for SEO */}
       <ProductStructuredData
         product={{
-          id: product.id,
-          name: product.name,
+          category: product.category,
           description: stripHtmlForMeta(product.description),
-          price: product.price,
+          id: product.id,
           image: product.image,
           inStock: product.inStock,
+          name: product.name,
+          price: product.price,
           rating: product.rating,
-          category: product.category,
         }}
       />
       <BreadcrumbStructuredData
@@ -200,7 +201,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
       <div className="flex min-h-screen flex-col">
         <main className="flex-1 py-10">
-          <div className="container mx-auto px-4 md:px-6">
+          <div
+            className={`
+            container mx-auto px-4
+            md:px-6
+          `}
+          >
             <Breadcrumbs items={breadcrumbTrail} />
             {/* Back link */}
             <Link href="/products">
@@ -215,12 +221,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             {/* Main grid */}
             <ProductVariantImageProvider>
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <div
+                className={`
+                grid grid-cols-1 gap-8
+                md:grid-cols-2
+              `}
+              >
                 <ProductImageGallery
                   discountPercentage={discountPercentage}
                   images={product.images ?? [product.image]}
-                  productName={product.name}
                   mainImageAlt={product.mainImageAlt}
+                  productName={product.name}
                 />
 
                 {/* Product info */}
@@ -237,13 +248,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
                         >
                           {range(5).map((i) => (
                             <Star
-                              className={`h-5 w-5 ${
-                                i < Math.floor(product.rating)
-                                  ? "fill-primary text-primary"
-                                  : i < product.rating
-                                    ? "fill-primary/50 text-primary"
-                                    : "text-muted-foreground"
-                              }`}
+                              className={`
+                                h-5 w-5
+                                ${
+                                  i < Math.floor(product.rating)
+                                    ? "fill-primary text-primary"
+                                    : i < product.rating
+                                      ? "fill-primary/50 text-primary"
+                                      : "text-muted-foreground"
+                                }
+                              `}
                               key={`star-${i}`}
                             />
                           ))}
@@ -273,7 +287,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     if (!b && !m) return null;
                     if (isProviderBrand) return null;
                     return (
-                      <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <div
+                        className={`
+                        mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm
+                        text-muted-foreground
+                      `}
+                      >
                         {b && (
                           <span>
                             <span className="font-medium text-foreground">
@@ -299,10 +318,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     <ul className="mb-6 space-y-2 text-muted-foreground">
                       {product.features.map((feature) => (
                         <li
-                          key={`feature-${product.id}-${slugify(feature)}`}
                           className="flex items-start"
+                          key={`feature-${product.id}-${slugify(feature)}`}
                         >
-                          <span className="mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                          <span
+                            className={`
+                            mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary
+                          `}
+                          />
                           <span>{feature}</span>
                         </li>
                       ))}
@@ -311,30 +334,30 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
                   {/* Variant options (when present), price, stock, add to cart */}
                   <ProductVariantSection
-                    product={{
-                      id: product.id,
-                      name: product.name,
-                      category: product.category,
-                      image: product.image,
-                      price: product.price,
-                      originalPrice: product.originalPrice,
-                      inStock: product.inStock,
-                      continueSellingWhenOutOfStock:
-                        product.continueSellingWhenOutOfStock,
-                      availableCountryCodes: product.availableCountryCodes,
-                    }}
+                    handlingDaysMax={product.handlingDaysMax}
+                    handlingDaysMin={product.handlingDaysMin}
                     hasVariants={product.hasVariants ?? false}
                     optionDefinitions={product.optionDefinitions ?? []}
+                    product={{
+                      availableCountryCodes: product.availableCountryCodes,
+                      category: product.category,
+                      continueSellingWhenOutOfStock:
+                        product.continueSellingWhenOutOfStock,
+                      id: product.id,
+                      image: product.image,
+                      inStock: product.inStock,
+                      name: product.name,
+                      originalPrice: product.originalPrice,
+                      price: product.price,
+                    }}
                     variants={product.variants ?? []}
-                    handlingDaysMin={product.handlingDaysMin}
-                    handlingDaysMax={product.handlingDaysMax}
                   />
                   <EstimatedDeliveryTimeline
-                    handlingDaysMin={product.handlingDaysMin}
-                    handlingDaysMax={product.handlingDaysMax}
-                    transitDaysMin={product.transitDaysMin}
-                    transitDaysMax={product.transitDaysMax}
                     className="mb-6"
+                    handlingDaysMax={product.handlingDaysMax}
+                    handlingDaysMin={product.handlingDaysMin}
+                    transitDaysMax={product.transitDaysMax}
+                    transitDaysMin={product.transitDaysMin}
                   />
                   <ProductDetailAccordion
                     category={product.category}
@@ -345,9 +368,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
                     sizeChart={product.sizeChart ?? undefined}
                   />
                   <ProductShare
+                    className="mt-6"
                     title={product.name}
                     url={`${siteUrl}/products/${product.id}`}
-                    className="mt-6"
                   />
                 </div>
               </div>
@@ -357,7 +380,12 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
             {/* Specs only (features are shown at top) */}
             {Object.keys(product.specs).length > 0 && (
-              <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+              <div
+                className={`
+                grid grid-cols-1 gap-8
+                md:grid-cols-2
+              `}
+              >
                 {Object.keys(product.specs).length > 0 && (
                   <section>
                     <h2 className="mb-4 text-2xl font-bold">Specifications</h2>

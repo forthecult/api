@@ -4,9 +4,9 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -31,9 +31,9 @@ export async function GET(request: NextRequest) {
     const [order] = await db
       .select({
         id: ordersTable.id,
-        status: ordersTable.status,
-        paymentStatus: ordersTable.paymentStatus,
         paymentMethod: ordersTable.paymentMethod,
+        paymentStatus: ordersTable.paymentStatus,
+        status: ordersTable.status,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
     const settled = order.status === "paid" || order.paymentStatus === "paid";
 
     return NextResponse.json({
-      status: settled ? "paid" : "pending",
-      settled,
       orderStatus: order.status,
+      settled,
+      status: settled ? "paid" : "pending",
     });
   } catch (err) {
     console.error("TON Pay status error:", err);

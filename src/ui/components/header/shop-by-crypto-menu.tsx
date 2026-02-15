@@ -11,18 +11,18 @@ import {
   PopoverTrigger,
 } from "~/ui/primitives/popover";
 
-type CategoryItem = {
+interface CategoryItem {
   id: string;
   name: string;
-  slug?: string;
   productCount?: number;
-  subcategories?: Array<{
+  slug?: string;
+  subcategories?: {
     id: string;
     name: string;
-    slug?: string;
     productCount?: number;
-  }>;
-};
+    slug?: string;
+  }[];
+}
 
 /** Column order: Currency, Network, Application. categories must be in that order (1–3 items). */
 const COLUMN_LABELS = ["Currency", "Network", "Application"] as const;
@@ -38,10 +38,10 @@ export function ShopByCryptoMenu({
   className?: string;
 }) {
   const [open, setOpen] = React.useState(false);
-  const closeTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+  const closeTimeoutRef = React.useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
-  const openTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(
+  const openTimeoutRef = React.useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
 
@@ -98,37 +98,45 @@ export function ShopByCryptoMenu({
   }, [clearCloseTimeout, clearOpenTimeout]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <button
-          type="button"
+          aria-expanded={open}
+          aria-haspopup="true"
           className={cn(
-            "accent-underline inline-flex items-center gap-1 rounded-md bg-transparent py-1.5 text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+            `
+              accent-underline inline-flex items-center gap-1 rounded-md
+              bg-transparent py-1.5 text-base font-medium tracking-wider
+              uppercase transition-colors
+              hover:text-[#C4873A]
+            `,
             "text-[#8A857E]",
             className,
           )}
-          aria-expanded={open}
-          aria-haspopup="true"
           onMouseEnter={handleTriggerEnter}
           onMouseLeave={handleTriggerLeave}
+          type="button"
         >
           Shop by Crypto
           <ChevronDown
-            className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
             aria-hidden
+            className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
           />
         </button>
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        sideOffset={4}
-        className="w-[min(95vw,960px)] max-h-[min(80vh,520px)] overflow-auto rounded-xl border bg-popover p-0 shadow-lg"
+        className={`
+          max-h-[min(80vh,520px)] w-[min(95vw,960px)] overflow-auto rounded-xl
+          border bg-popover p-0 shadow-lg
+        `}
         onMouseEnter={handleContentEnter}
         onMouseLeave={handleContentLeave}
         onOpenAutoFocus={(e) => e.preventDefault()}
+        sideOffset={4}
       >
         <div
-          className="grid gap-x-8 gap-y-4 py-4 px-4"
+          className="grid gap-x-8 gap-y-4 px-4 py-4"
           style={{
             gridTemplateColumns: `repeat(${categories.length}, minmax(160px, 1fr))`,
           }}
@@ -138,15 +146,24 @@ export function ShopByCryptoMenu({
             const href = cat.slug ? `/${cat.slug}` : "/products";
             return (
               <div
+                className="flex min-w-[160px] shrink-0 flex-col"
                 key={cat.id}
-                className="flex min-w-[160px] flex-col shrink-0"
               >
-                <span className="rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  rounded-lg px-3 py-2 text-xs font-semibold tracking-wider
+                  text-muted-foreground uppercase
+                `}
+                >
                   {columnLabel}
                 </span>
                 <Link
+                  className={`
+                    rounded-lg px-3 py-2 text-base font-semibold
+                    transition-colors
+                    hover:bg-accent hover:text-accent-foreground
+                  `}
                   href={href}
-                  className="rounded-lg px-3 py-2 text-base font-semibold transition-colors hover:bg-accent hover:text-accent-foreground"
                   onClick={() => setOpen(false)}
                 >
                   {cat.name}
@@ -158,8 +175,12 @@ export function ShopByCryptoMenu({
                       return (
                         <li key={sub.id}>
                           <Link
+                            className={`
+                              block rounded px-3 py-1.5 text-sm
+                              text-muted-foreground transition-colors
+                              hover:bg-accent hover:text-foreground
+                            `}
                             href={subHref}
-                            className="block rounded px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                             onClick={() => setOpen(false)}
                           >
                             {sub.name}

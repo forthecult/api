@@ -30,53 +30,53 @@ export async function GET(
     // Explicit select to avoid 500 when DB is missing newer columns (e.g. btcpay*, paymentMethod).
     const [order] = await db
       .select({
-        id: ordersTable.id,
+        chainId: ordersTable.chainId,
         createdAt: ordersTable.createdAt,
-        updatedAt: ordersTable.updatedAt,
+        cryptoAmount: ordersTable.cryptoAmount,
+        cryptoCurrency: ordersTable.cryptoCurrency,
+        // Crypto payment details
+        cryptoCurrencyNetwork: ordersTable.cryptoCurrencyNetwork,
+        cryptoTxHash: ordersTable.cryptoTxHash,
         customerNote: ordersTable.customerNote,
+        deliveredAt: ordersTable.deliveredAt,
         discountPercent: ordersTable.discountPercent,
         email: ordersTable.email,
+        estimatedDeliveryFrom: ordersTable.estimatedDeliveryFrom,
+        estimatedDeliveryTo: ordersTable.estimatedDeliveryTo,
         fulfillmentStatus: ordersTable.fulfillmentStatus,
+        id: ordersTable.id,
         internalNotes: ordersTable.internalNotes,
+        payerWalletAddress: ordersTable.payerWalletAddress,
+        paymentMethod: ordersTable.paymentMethod,
         paymentStatus: ordersTable.paymentStatus,
-        status: ordersTable.status,
-        taxCents: ordersTable.taxCents,
-        totalCents: ordersTable.totalCents,
-        shippingFeeCents: ordersTable.shippingFeeCents,
-        userId: ordersTable.userId,
-        shippingName: ordersTable.shippingName,
+        printfulCostShippingCents: ordersTable.printfulCostShippingCents,
+        printfulCostTaxCents: ordersTable.printfulCostTaxCents,
+        printfulCostTotalCents: ordersTable.printfulCostTotalCents,
+        // Printful costs (admin-only)
+        printfulOrderId: ordersTable.printfulOrderId,
+        shippedAt: ordersTable.shippedAt,
         shippingAddress1: ordersTable.shippingAddress1,
         shippingAddress2: ordersTable.shippingAddress2,
         shippingCity: ordersTable.shippingCity,
+        shippingCountryCode: ordersTable.shippingCountryCode,
+        shippingFeeCents: ordersTable.shippingFeeCents,
+        shippingName: ordersTable.shippingName,
+        shippingPhone: ordersTable.shippingPhone,
         shippingStateCode: ordersTable.shippingStateCode,
         shippingZip: ordersTable.shippingZip,
-        shippingCountryCode: ordersTable.shippingCountryCode,
-        shippingPhone: ordersTable.shippingPhone,
-        stripeCheckoutSessionId: ordersTable.stripeCheckoutSessionId,
-        paymentMethod: ordersTable.paymentMethod,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
         solanaPayReference: ordersTable.solanaPayReference,
-        // Crypto payment details
-        cryptoCurrencyNetwork: ordersTable.cryptoCurrencyNetwork,
-        cryptoCurrency: ordersTable.cryptoCurrency,
-        cryptoAmount: ordersTable.cryptoAmount,
-        cryptoTxHash: ordersTable.cryptoTxHash,
-        payerWalletAddress: ordersTable.payerWalletAddress,
-        chainId: ordersTable.chainId,
+        status: ordersTable.status,
+        stripeCheckoutSessionId: ordersTable.stripeCheckoutSessionId,
+        taxCents: ordersTable.taxCents,
+        totalCents: ordersTable.totalCents,
+        trackingCarrier: ordersTable.trackingCarrier,
+        trackingEventsJson: ordersTable.trackingEventsJson,
         // Tracking
         trackingNumber: ordersTable.trackingNumber,
         trackingUrl: ordersTable.trackingUrl,
-        trackingCarrier: ordersTable.trackingCarrier,
-        shippedAt: ordersTable.shippedAt,
-        deliveredAt: ordersTable.deliveredAt,
-        estimatedDeliveryFrom: ordersTable.estimatedDeliveryFrom,
-        estimatedDeliveryTo: ordersTable.estimatedDeliveryTo,
-        trackingEventsJson: ordersTable.trackingEventsJson,
-        // Printful costs (admin-only)
-        printfulOrderId: ordersTable.printfulOrderId,
-        printfulCostTotalCents: ordersTable.printfulCostTotalCents,
-        printfulCostShippingCents: ordersTable.printfulCostShippingCents,
-        printfulCostTaxCents: ordersTable.printfulCostTaxCents,
+        updatedAt: ordersTable.updatedAt,
+        userId: ordersTable.userId,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, id))
@@ -105,12 +105,12 @@ export async function GET(
       ),
     ];
 
-    let allowedCountryCodes: string[] | null = null;
+    let allowedCountryCodes: null | string[] = null;
     if (productIds.length > 0) {
       const restrictions = await db
         .select({
-          productId: productAvailableCountryTable.productId,
           countryCode: productAvailableCountryTable.countryCode,
+          productId: productAvailableCountryTable.productId,
         })
         .from(productAvailableCountryTable)
         .where(inArray(productAvailableCountryTable.productId, productIds));
@@ -143,38 +143,38 @@ export async function GET(
 
     const productMap = new Map<
       string,
-      { id: string; name: string; imageUrl: string | null }
+      { id: string; imageUrl: null | string; name: string }
     >();
     if (productIds.length > 0) {
       const products = await db
         .select({
           id: productsTable.id,
-          name: productsTable.name,
           imageUrl: productsTable.imageUrl,
+          name: productsTable.name,
         })
         .from(productsTable)
         .where(inArray(productsTable.id, productIds));
       for (const p of products) {
-        productMap.set(p.id, { id: p.id, name: p.name, imageUrl: p.imageUrl });
+        productMap.set(p.id, { id: p.id, imageUrl: p.imageUrl, name: p.name });
       }
     }
     const items = orderItems.map((i) => ({
       id: i.id,
+      imageUrl: productMap.get(i.productId ?? "")?.imageUrl ?? null,
       name: i.name,
       priceCents: i.priceCents,
       productId: i.productId,
-      quantity: i.quantity,
-      imageUrl: productMap.get(i.productId ?? "")?.imageUrl ?? null,
       productName: productMap.get(i.productId ?? "")?.name ?? i.name,
+      quantity: i.quantity,
     }));
 
     const user = order.userId
       ? (
           await db
             .select({
+              email: userTable.email,
               id: userTable.id,
               name: userTable.name,
-              email: userTable.email,
             })
             .from(userTable)
             .where(eq(userTable.id, order.userId))
@@ -226,66 +226,66 @@ export async function GET(
     const cryptoPayment =
       order.cryptoTxHash || order.cryptoCurrency || order.payerWalletAddress
         ? {
-            txHash: order.cryptoTxHash ?? null,
-            network: order.cryptoCurrencyNetwork ?? null,
-            currency: order.cryptoCurrency ?? null,
             amount: order.cryptoAmount ?? null,
-            payerWallet: order.payerWalletAddress ?? null,
             chainId: order.chainId ?? null,
+            currency: order.cryptoCurrency ?? null,
+            network: order.cryptoCurrencyNetwork ?? null,
+            payerWallet: order.payerWalletAddress ?? null,
+            txHash: order.cryptoTxHash ?? null,
           }
         : null;
 
     return NextResponse.json({
-      id: order.id,
+      allowedCountryCodes,
       createdAt: order.createdAt.toISOString(),
-      updatedAt: order.updatedAt.toISOString(),
-      email: order.email,
-      status: order.status,
-      paymentStatus,
-      fulfillmentStatus,
-      totalCents: order.totalCents,
+      // Crypto payment details (admin-only)
+      cryptoPayment,
       customerNote: order.customerNote ?? "",
-      internalNotes: order.internalNotes ?? "",
-      shippingFeeCents,
-      taxCents,
       discountPercent,
-      shippingMethod,
-      shippingName: order.shippingName ?? "",
+      email: order.email,
+      fulfillmentStatus,
+      id: order.id,
+      internalNotes: order.internalNotes ?? "",
+      items,
+      paymentMethod,
+      paymentStatus,
+      // Printful costs (admin-only wholesale costs)
+      printfulCosts: order.printfulOrderId
+        ? {
+            shippingCents: order.printfulCostShippingCents ?? null,
+            taxCents: order.printfulCostTaxCents ?? null,
+            totalCents: order.printfulCostTotalCents ?? null,
+          }
+        : null,
       shippingAddress1: order.shippingAddress1 ?? "",
       shippingAddress2: order.shippingAddress2 ?? "",
       shippingCity: order.shippingCity ?? "",
+      shippingCountryCode: order.shippingCountryCode ?? "",
+      shippingFeeCents,
+      shippingMethod,
+      shippingName: order.shippingName ?? "",
+      shippingPhone: order.shippingPhone ?? "",
       shippingStateCode: order.shippingStateCode ?? "",
       shippingZip: order.shippingZip ?? "",
-      shippingCountryCode: order.shippingCountryCode ?? "",
-      shippingPhone: order.shippingPhone ?? "",
-      userId: order.userId,
-      user: user ? { id: user.id, name: user.name, email: user.email } : null,
-      items,
+      status: order.status,
       subtotalCents,
+      taxCents,
+      totalCents: order.totalCents,
       totalComputedCents: Math.round(afterDiscount),
-      paymentMethod,
-      allowedCountryCodes,
-      // Crypto payment details (admin-only)
-      cryptoPayment,
       // Tracking
       tracking: {
-        trackingNumber: order.trackingNumber ?? null,
-        trackingUrl: order.trackingUrl ?? null,
         carrier: order.trackingCarrier ?? null,
-        shippedAt: order.shippedAt?.toISOString() ?? null,
         deliveredAt: order.deliveredAt?.toISOString() ?? null,
         estimatedDeliveryFrom: order.estimatedDeliveryFrom ?? null,
         estimatedDeliveryTo: order.estimatedDeliveryTo ?? null,
         events: order.trackingEventsJson ?? null,
+        shippedAt: order.shippedAt?.toISOString() ?? null,
+        trackingNumber: order.trackingNumber ?? null,
+        trackingUrl: order.trackingUrl ?? null,
       },
-      // Printful costs (admin-only wholesale costs)
-      printfulCosts: order.printfulOrderId
-        ? {
-            totalCents: order.printfulCostTotalCents ?? null,
-            shippingCents: order.printfulCostShippingCents ?? null,
-            taxCents: order.printfulCostTaxCents ?? null,
-          }
-        : null,
+      updatedAt: order.updatedAt.toISOString(),
+      user: user ? { email: user.email, id: user.id, name: user.name } : null,
+      userId: order.userId,
     });
   } catch (err) {
     console.error("Admin order get error:", err);
@@ -324,28 +324,28 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid ID format" }, { status: 400 });
     }
     const body = (await request.json()) as {
-      status?: string;
-      paymentStatus?: string;
-      fulfillmentStatus?: string;
-      customerNote?: string | null;
-      internalNotes?: string | null;
-      shippingFeeCents?: number;
-      taxCents?: number;
+      addItems?: { productId: string; quantity: number }[];
+      customerNote?: null | string;
       discountPercent?: number;
-      shippingName?: string | null;
-      shippingAddress1?: string | null;
-      shippingAddress2?: string | null;
-      shippingCity?: string | null;
-      shippingStateCode?: string | null;
-      shippingZip?: string | null;
-      shippingCountryCode?: string | null;
-      shippingPhone?: string | null;
-      items?: Array<{ id: string; quantity: number }>;
-      addItems?: Array<{ productId: string; quantity: number }>;
+      fulfillmentStatus?: string;
+      internalNotes?: null | string;
+      items?: { id: string; quantity: number }[];
+      paymentStatus?: string;
+      shippingAddress1?: null | string;
+      shippingAddress2?: null | string;
+      shippingCity?: null | string;
+      shippingCountryCode?: null | string;
+      shippingFeeCents?: number;
+      shippingName?: null | string;
+      shippingPhone?: null | string;
+      shippingStateCode?: null | string;
+      shippingZip?: null | string;
+      status?: string;
+      taxCents?: number;
+      trackingCarrier?: null | string;
       // Tracking (admin can manually set these)
-      trackingNumber?: string | null;
-      trackingUrl?: string | null;
-      trackingCarrier?: string | null;
+      trackingNumber?: null | string;
+      trackingUrl?: null | string;
     };
 
     const [existing] = await db
@@ -603,10 +603,10 @@ export async function PATCH(
       (updated.status === "fulfilled" ? "fulfilled" : "unfulfilled");
 
     return NextResponse.json({
-      id: updated.id,
-      status: updated.status,
-      paymentStatus,
       fulfillmentStatus,
+      id: updated.id,
+      paymentStatus,
+      status: updated.status,
       totalCents: updated.totalCents,
       updatedAt: updated.updatedAt.toISOString(),
     });

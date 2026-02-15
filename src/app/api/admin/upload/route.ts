@@ -11,22 +11,6 @@ const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const WEBP_QUALITY = 85;
 const MAX_WIDTH = 1600;
 
-/** Optimize image for web: resize if large, compress to WebP. Preserve GIF as-is for animation. */
-async function optimizeImageForWeb(file: File): Promise<File> {
-  if (file.type === "image/gif") {
-    return file;
-  }
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const optimized = await sharp(buffer)
-    .resize(MAX_WIDTH, undefined, { withoutEnlargement: true })
-    .webp({ quality: WEBP_QUALITY })
-    .toBuffer();
-  const name = file.name.replace(/\.[^.]+$/, "") || "image";
-  return new File([new Uint8Array(optimized)], `${name}.webp`, {
-    type: "image/webp",
-  });
-}
-
 /**
  * POST /api/admin/upload
  *
@@ -145,7 +129,7 @@ export async function POST(request: NextRequest) {
       typeof payload === "object" &&
       (payload as { data?: unknown }).data != null
         ? (payload as { data: Record<string, unknown> }).data
-        : (payload as Record<string, unknown> | null);
+        : (payload as null | Record<string, unknown>);
 
     // Resolve URL: prefer nested data.ufsUrl/data.url, then top-level payload.ufsUrl/payload.url
     const fromData =
@@ -193,4 +177,20 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+/** Optimize image for web: resize if large, compress to WebP. Preserve GIF as-is for animation. */
+async function optimizeImageForWeb(file: File): Promise<File> {
+  if (file.type === "image/gif") {
+    return file;
+  }
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const optimized = await sharp(buffer)
+    .resize(MAX_WIDTH, undefined, { withoutEnlargement: true })
+    .webp({ quality: WEBP_QUALITY })
+    .toBuffer();
+  const name = file.name.replace(/\.[^.]+$/, "") || "image";
+  return new File([new Uint8Array(optimized)], `${name}.webp`, {
+    type: "image/webp",
+  });
 }

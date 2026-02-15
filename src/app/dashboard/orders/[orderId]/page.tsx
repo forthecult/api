@@ -3,9 +3,9 @@ import { CreditCard } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { formatCents, formatDateLong } from "~/lib/format";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -18,35 +18,15 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
   delivered: "Delivered",
   fulfilled: "Shipped",
+  on_hold: "On hold",
   paid: "Processing",
+  partially_fulfilled: "Processing",
   pending: "Unpaid",
   processing: "Processing",
   refunded: "Refunded",
   shipped: "Shipped",
   unfulfilled: "Unpaid",
-  on_hold: "On hold",
-  partially_fulfilled: "Processing",
 };
-
-function getOrderStatusLabel(order: {
-  fulfillmentStatus?: string | null;
-  paymentStatus?: string | null;
-  status?: string | null;
-}): string {
-  const paymentPending = order.paymentStatus?.toLowerCase() === "pending";
-  const paidWithPendingOrder =
-    order.paymentStatus?.toLowerCase() === "paid" &&
-    order.status?.toLowerCase() === "pending";
-  const key = paymentPending
-    ? "pending"
-    : paidWithPendingOrder
-      ? "processing"
-      : (order.fulfillmentStatus?.toLowerCase() ??
-        order.paymentStatus?.toLowerCase() ??
-        order.status?.toLowerCase() ??
-        "pending");
-  return STATUS_LABELS[key] ?? key;
-}
 
 export default async function OrderDetailPage({
   params,
@@ -75,9 +55,9 @@ export default async function OrderDetailPage({
           <span className="font-mono text-muted-foreground">#{order.id}</span>
         </h1>
         {isUnpaid ? (
-          <Button asChild variant="outline" size="sm">
+          <Button asChild size="sm" variant="outline">
             <Link href={`/checkout/${order.id}`}>
-              <CreditCard className="mr-1.5 size-3.5" aria-hidden />
+              <CreditCard aria-hidden className="mr-1.5 size-3.5" />
               Pay Now
             </Link>
           </Button>
@@ -87,8 +67,12 @@ export default async function OrderDetailPage({
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <span className="text-sm font-medium capitalize text-muted-foreground">
+        <CardHeader
+          className={`
+          flex flex-row items-center justify-between space-y-0 pb-2
+        `}
+        >
+          <span className="text-sm font-medium text-muted-foreground capitalize">
             Status
           </span>
           <span>{getOrderStatusLabel(order)}</span>
@@ -113,8 +97,11 @@ export default async function OrderDetailPage({
           <ul className="space-y-3">
             {order.items.map((item) => (
               <li
+                className={`
+                  flex justify-between border-b pb-3
+                  last:border-0 last:pb-0
+                `}
                 key={item.id}
-                className="flex justify-between border-b pb-3 last:border-0 last:pb-0"
               >
                 <div>
                   <p className="font-medium">{item.name}</p>
@@ -142,10 +129,13 @@ export default async function OrderDetailPage({
               <span className="text-muted-foreground">Tracking #</span>
               {order.trackingUrl ? (
                 <a
+                  className={`
+                    font-mono text-blue-600 underline
+                    hover:text-blue-800
+                  `}
                   href={order.trackingUrl}
-                  target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-blue-600 underline hover:text-blue-800"
+                  target="_blank"
                 >
                   {order.trackingNumber}
                 </a>
@@ -185,4 +175,24 @@ export default async function OrderDetailPage({
       )}
     </div>
   );
+}
+
+function getOrderStatusLabel(order: {
+  fulfillmentStatus?: null | string;
+  paymentStatus?: null | string;
+  status?: null | string;
+}): string {
+  const paymentPending = order.paymentStatus?.toLowerCase() === "pending";
+  const paidWithPendingOrder =
+    order.paymentStatus?.toLowerCase() === "paid" &&
+    order.status?.toLowerCase() === "pending";
+  const key = paymentPending
+    ? "pending"
+    : paidWithPendingOrder
+      ? "processing"
+      : (order.fulfillmentStatus?.toLowerCase() ??
+        order.paymentStatus?.toLowerCase() ??
+        order.status?.toLowerCase() ??
+        "pending");
+  return STATUS_LABELS[key] ?? key;
 }

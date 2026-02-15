@@ -3,17 +3,49 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { productsTable } from "~/db/schema";
+import { getAdminAuth } from "~/lib/admin-api-auth";
+import { getPrintfulIfConfigured } from "~/lib/printful";
 import {
+  exportAllPrintfulProducts,
+  exportProductToPrintful,
+  fixSizeChartDisplayNames,
   importAllPrintfulProducts,
   importSinglePrintfulProduct,
   importSizeChartForPrintfulProduct,
   importSizeChartsForAllPrintfulProducts,
-  fixSizeChartDisplayNames,
-  exportProductToPrintful,
-  exportAllPrintfulProducts,
 } from "~/lib/printful-sync";
-import { getPrintfulIfConfigured } from "~/lib/printful";
-import { getAdminAuth } from "~/lib/admin-api-auth";
+
+/**
+ * GET /api/admin/printful/sync
+ *
+ * Get sync status information.
+ */
+export async function GET(request: NextRequest) {
+  const authResult = await getAdminAuth(request);
+  if (!authResult?.ok) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const pf = getPrintfulIfConfigured();
+
+  return NextResponse.json({
+    configured: pf != null,
+    documentation: {
+      export_all:
+        "POST with { action: 'export_all' } - Push prices to Printful",
+      export_single: "POST with { action: 'export_single', productId: 'abc' }",
+      fix_size_chart_names:
+        "POST with { action: 'fix_size_chart_names' } - Fix miscapitalized display names (e.g. HOodies → Hoodies)",
+      import_all:
+        "POST with { action: 'import_all' } - Import all Printful products",
+      import_single:
+        "POST with { action: 'import_single', printfulSyncProductId: 123 } or { action: 'import_single', productId: 'our-id', overwrite: true }",
+      import_size_charts:
+        "POST with { action: 'import_size_charts' } - Backfill size charts for all Printful products",
+    },
+    webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/printful`,
+  });
+}
 
 /**
  * POST /api/admin/printful/sync
@@ -46,9 +78,9 @@ export async function POST(request: NextRequest) {
 
   let body: {
     action: string;
+    overwrite?: boolean;
     printfulSyncProductId?: number;
     productId?: string;
-    overwrite?: boolean;
     syncedOnly?: boolean;
   };
 
@@ -61,35 +93,59 @@ export async function POST(request: NextRequest) {
   const { action } = body;
 
   switch (action) {
+    case "export_all": {
+      console.log("Starting Printful export_all sync...");
+      const result = await exportAllPrintfulProducts();
+
+      return NextResponse.json({
+        errors: result.errors.slice(0, 20),
+        success: result.success,
+        summary: {
+          errors: result.errors.length,
+          skipped: result.skipped,
+          updated: result.updated,
+        },
+      });
+    }
+
+    case "fix_size_chart_names": {
+      console.log("Fixing size chart display names...");
+      const result = await fixSizeChartDisplayNames();
+      return NextResponse.json({
+        success: true,
+        ...result,
+      });
+    }
+
     case "import_all": {
       console.log("Starting Printful import_all sync...");
       const result = await importAllPrintfulProducts({
-        syncedOnly: body.syncedOnly ?? true,
         overwriteExisting: body.overwrite ?? false,
+        syncedOnly: body.syncedOnly ?? true,
       });
 
       // Always backfill size charts for all Printful products in DB (by brand/model).
       // So size charts are imported even when sync returns 0/0/0 or products were skipped.
       const sizeChartsResult =
         await importSizeChartsForAllPrintfulProducts().catch((err) => ({
+          errors: [err instanceof Error ? err.message : String(err)],
           success: false as const,
           upserted: 0,
-          errors: [err instanceof Error ? err.message : String(err)],
         }));
 
       return NextResponse.json({
-        success: result.success,
-        summary: {
-          imported: result.imported,
-          updated: result.updated,
-          skipped: result.skipped,
-          errors: result.errors.length,
-        },
         errors: result.errors.slice(0, 20), // Limit errors in response
         sizeCharts: {
-          upserted: sizeChartsResult.upserted,
-          success: sizeChartsResult.success,
           errors: sizeChartsResult.errors.slice(0, 10),
+          success: sizeChartsResult.success,
+          upserted: sizeChartsResult.upserted,
+        },
+        success: result.success,
+        summary: {
+          errors: result.errors.length,
+          imported: result.imported,
+          skipped: result.skipped,
+          updated: result.updated,
         },
       });
     }
@@ -135,8 +191,8 @@ export async function POST(request: NextRequest) {
         const sizeChartResult = await importSizeChartForPrintfulProduct(
           result.productId,
         ).catch((err) => ({
-          success: false as const,
           error: err instanceof Error ? err.message : String(err),
+          success: false as const,
         }));
         if (!sizeChartResult.success && sizeChartResult.error) {
           console.warn(
@@ -147,10 +203,10 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({
-          success: true,
           action: result.action,
           productId: result.productId,
           sizeChartImported: sizeChartResult.success,
+          success: true,
           ...(sizeChartResult.success
             ? {}
             : { sizeChartError: sizeChartResult.error }),
@@ -158,7 +214,7 @@ export async function POST(request: NextRequest) {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return NextResponse.json(
-          { success: false, error: message },
+          { error: message, success: false },
           { status: 500 },
         );
       }
@@ -177,29 +233,14 @@ export async function POST(request: NextRequest) {
 
       if (!result.success) {
         return NextResponse.json(
-          { success: false, error: result.error },
+          { error: result.error, success: false },
           { status: 400 },
         );
       }
 
       return NextResponse.json({
-        success: true,
         printfulSyncProductId: result.printfulSyncProductId,
-      });
-    }
-
-    case "export_all": {
-      console.log("Starting Printful export_all sync...");
-      const result = await exportAllPrintfulProducts();
-
-      return NextResponse.json({
-        success: result.success,
-        summary: {
-          updated: result.updated,
-          skipped: result.skipped,
-          errors: result.errors.length,
-        },
-        errors: result.errors.slice(0, 20),
+        success: true,
       });
     }
 
@@ -207,18 +248,9 @@ export async function POST(request: NextRequest) {
       console.log("Starting Printful size charts backfill...");
       const result = await importSizeChartsForAllPrintfulProducts();
       return NextResponse.json({
+        errors: result.errors.slice(0, 30),
         success: result.success,
         upserted: result.upserted,
-        errors: result.errors.slice(0, 30),
-      });
-    }
-
-    case "fix_size_chart_names": {
-      console.log("Fixing size chart display names...");
-      const result = await fixSizeChartDisplayNames();
-      return NextResponse.json({
-        success: true,
-        ...result,
       });
     }
 
@@ -230,36 +262,4 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
   }
-}
-
-/**
- * GET /api/admin/printful/sync
- *
- * Get sync status information.
- */
-export async function GET(request: NextRequest) {
-  const authResult = await getAdminAuth(request);
-  if (!authResult?.ok) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const pf = getPrintfulIfConfigured();
-
-  return NextResponse.json({
-    configured: pf != null,
-    webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/printful`,
-    documentation: {
-      import_all:
-        "POST with { action: 'import_all' } - Import all Printful products",
-      import_single:
-        "POST with { action: 'import_single', printfulSyncProductId: 123 } or { action: 'import_single', productId: 'our-id', overwrite: true }",
-      import_size_charts:
-        "POST with { action: 'import_size_charts' } - Backfill size charts for all Printful products",
-      fix_size_chart_names:
-        "POST with { action: 'fix_size_chart_names' } - Fix miscapitalized display names (e.g. HOodies → Hoodies)",
-      export_single: "POST with { action: 'export_single', productId: 'abc' }",
-      export_all:
-        "POST with { action: 'export_all' } - Push prices to Printful",
-    },
-  });
 }

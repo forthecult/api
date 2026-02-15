@@ -45,16 +45,16 @@ export async function POST(request: NextRequest) {
   const expiresAt = new Date(Date.now() + CODE_EXPIRY_MINUTES * 60 * 1000);
 
   await db.insert(verificationTable).values({
+    createdAt: new Date(),
+    expiresAt,
     id: createId(),
     identifier,
-    value: code,
-    expiresAt,
-    createdAt: new Date(),
     updatedAt: new Date(),
+    value: code,
   });
 
   try {
-    await sendAddEmailVerificationCode({ to: email, code });
+    await sendAddEmailVerificationCode({ code, to: email });
   } catch (err) {
     console.error("[add-email/send-code] Failed to send email:", err);
     return NextResponse.json(

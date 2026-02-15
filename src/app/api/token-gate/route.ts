@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 
-import { getTokenGateConfig } from "~/lib/token-gate";
 import { apiError, apiSuccess } from "~/lib/api-error";
+import { getTokenGateConfig } from "~/lib/token-gate";
 
 const RESOURCE_TYPES = ["product", "category", "page"] as const;
 
@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
       !RESOURCE_TYPES.includes(resourceType as (typeof RESOURCE_TYPES)[0])
     ) {
       return apiError("MISSING_REQUIRED_FIELD", {
-        field: "resourceType",
         expected: RESOURCE_TYPES.join(" | "),
+        field: "resourceType",
       });
     }
     if (!resourceId) {
@@ -29,18 +29,18 @@ export async function GET(request: NextRequest) {
     }
 
     const config = await getTokenGateConfig(
-      resourceType as "product" | "category" | "page",
+      resourceType as "category" | "page" | "product",
       resourceId,
     );
 
     return apiSuccess({
-      tokenGated: config.tokenGated,
       gates: config.gates.map((g) => ({
-        tokenSymbol: g.tokenSymbol,
-        quantity: g.quantity,
-        network: g.network,
         gateType: g.gateType,
+        network: g.network,
+        quantity: g.quantity,
+        tokenSymbol: g.tokenSymbol,
       })),
+      tokenGated: config.tokenGated,
     });
   } catch (err) {
     console.error("Token gate config error:", err);

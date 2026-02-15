@@ -5,8 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 import { ConnectWalletModal } from "~/app/checkout/crypto/ConnectWalletModal";
 import {
   OPEN_CONNECT_WALLET_MODAL,
-  openModalRef,
   OpenConnectWalletModalProvider,
+  openModalRef,
 } from "~/app/checkout/crypto/open-wallet-modal";
 import { SolanaWalletProvider } from "~/app/checkout/crypto/SolanaWalletProvider";
 import { SuiWalletProvider } from "~/app/checkout/crypto/SuiWalletProvider";
@@ -41,7 +41,7 @@ export default function LoginLayout({
       <SuiWalletProvider>
         <SolanaWalletProvider>
           {children}
-          <ConnectWalletModal open={open} onOpenChange={setOpen} />
+          <ConnectWalletModal onOpenChange={setOpen} open={open} />
         </SolanaWalletProvider>
       </SuiWalletProvider>
     </OpenConnectWalletModalProvider>

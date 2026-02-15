@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import {
@@ -7,12 +7,12 @@ import {
   productTagsTable,
   productVariantsTable,
 } from "~/db/schema";
-import {
-  listAvailablePrintifyProducts,
-  getPrintifyProductSyncStatus,
-} from "~/lib/printify-sync";
-import { fetchPrintifyProduct, getPrintifyIfConfigured } from "~/lib/printify";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { fetchPrintifyProduct, getPrintifyIfConfigured } from "~/lib/printify";
+import {
+  getPrintifyProductSyncStatus,
+  listAvailablePrintifyProducts,
+} from "~/lib/printify-sync";
 
 /**
  * GET /api/admin/printify/products
@@ -76,23 +76,23 @@ export async function GET(request: NextRequest) {
       productIdsFilter = [...new Set(tagged.map((r) => r.productId))];
       if (productIdsFilter.length === 0) {
         return NextResponse.json({
-          source: "local",
           count: 0,
           products: [],
+          source: "local",
         });
       }
     }
     const products = await db
       .select({
-        id: productsTable.id,
-        name: productsTable.name,
-        slug: productsTable.slug,
-        imageUrl: productsTable.imageUrl,
-        priceCents: productsTable.priceCents,
-        published: productsTable.published,
-        printifyProductId: productsTable.printifyProductId,
-        lastSyncedAt: productsTable.lastSyncedAt,
         createdAt: productsTable.createdAt,
+        id: productsTable.id,
+        imageUrl: productsTable.imageUrl,
+        lastSyncedAt: productsTable.lastSyncedAt,
+        name: productsTable.name,
+        priceCents: productsTable.priceCents,
+        printifyProductId: productsTable.printifyProductId,
+        published: productsTable.published,
+        slug: productsTable.slug,
         updatedAt: productsTable.updatedAt,
       })
       .from(productsTable)
@@ -119,15 +119,15 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      source: "local",
       count: productsWithVariants.length,
       products: productsWithVariants,
+      source: "local",
     });
   }
 
   // List products from Printify API
   if (source === "api") {
-    const { products, error } = await listAvailablePrintifyProducts();
+    const { error, products } = await listAvailablePrintifyProducts();
 
     if (error) {
       return NextResponse.json({ error }, { status: 500 });
@@ -147,21 +147,21 @@ export async function GET(request: NextRequest) {
     }
 
     const productsWithImportStatus = products.map((p) => ({
-      id: p.id,
-      title: p.title,
-      description: p.description?.slice(0, 200),
-      visible: p.visible,
       blueprint_id: p.blueprint_id,
-      variant_count: p.variants.length,
+      description: p.description?.slice(0, 200),
       enabled_variant_count: p.variants.filter((v) => v.is_enabled).length,
+      id: p.id,
       image: p.images[0]?.src || null,
       imported: importedIds.has(p.id),
+      title: p.title,
+      variant_count: p.variants.length,
+      visible: p.visible,
     }));
 
     return NextResponse.json({
-      source: "printify_api",
       count: productsWithImportStatus.length,
       products: productsWithImportStatus,
+      source: "printify_api",
     });
   }
 

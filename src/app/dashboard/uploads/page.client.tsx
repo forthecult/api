@@ -21,17 +21,26 @@ const BentoMediaGallery = dynamic(
       (mod) => mod.BentoMediaGallery,
     ),
   {
-    ssr: false,
     loading: () => (
-      <div className="grid auto-rows-[60px] grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-4">
+      <div
+        className={`
+        grid auto-rows-[60px] grid-cols-1 gap-3
+        sm:grid-cols-3
+        md:grid-cols-4
+      `}
+      >
         {Array.from({ length: 6 }).map((_, i) => (
           <Skeleton
+            className={`
+              h-[120px] w-full rounded-xl
+              md:col-span-1 md:row-span-2
+            `}
             key={i}
-            className="h-[120px] w-full rounded-xl md:col-span-1 md:row-span-2"
           />
         ))}
       </div>
     ),
+    ssr: false,
   },
 );
 

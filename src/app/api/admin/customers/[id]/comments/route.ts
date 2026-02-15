@@ -20,10 +20,10 @@ export async function GET(
     const { id: customerId } = await params;
     const comments = await db
       .select({
-        id: customerCommentsTable.id,
+        authorId: customerCommentsTable.authorId,
         body: customerCommentsTable.body,
         createdAt: customerCommentsTable.createdAt,
-        authorId: customerCommentsTable.authorId,
+        id: customerCommentsTable.id,
       })
       .from(customerCommentsTable)
       .where(eq(customerCommentsTable.customerId, customerId))
@@ -34,9 +34,9 @@ export async function GET(
       authorIds.length > 0
         ? await db
             .select({
+              email: userTable.email,
               id: userTable.id,
               name: userTable.name,
-              email: userTable.email,
             })
             .from(userTable)
             .where(inArray(userTable.id, authorIds))
@@ -44,14 +44,14 @@ export async function GET(
     const authorMap = new Map(authors.map((a) => [a.id, a]));
 
     const result = comments.map((c) => ({
-      id: c.id,
-      body: c.body,
-      createdAt: c.createdAt.toISOString(),
       authorId: c.authorId,
       authorName:
         authorMap.get(c.authorId)?.name ??
         authorMap.get(c.authorId)?.email ??
         "—",
+      body: c.body,
+      createdAt: c.createdAt.toISOString(),
+      id: c.id,
     }));
 
     return NextResponse.json({ comments: result });
@@ -89,19 +89,19 @@ export async function POST(
     const now = new Date();
     const id = createId();
     await db.insert(customerCommentsTable).values({
-      id,
-      customerId,
       authorId: user!.id,
       body: bodyText,
       createdAt: now,
+      customerId,
+      id,
     });
 
     return NextResponse.json({
-      id,
-      body: bodyText,
-      createdAt: now.toISOString(),
       authorId: user!.id,
       authorName: user?.email ?? "—",
+      body: bodyText,
+      createdAt: now.toISOString(),
+      id,
     });
   } catch (err) {
     console.error("Admin customer comments POST error:", err);

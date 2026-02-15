@@ -4,106 +4,117 @@
  */
 
 export const openApiSpec = {
-  openapi: "3.0.3",
-  info: {
-    title: "For the Cult API",
-    description:
-      "AI-agent-friendly eCommerce API. Agents discover products, create orders, and pay with card or cryptocurrency (Solana, Ethereum, Base, and more).",
-    version: "1.0.0",
-    contact: { name: "For the Cult", url: "https://forthecult.store" },
-  },
-  servers: [{ url: "/api", description: "API base (relative)" }],
-  tags: [
-    { name: "Health", description: "API health" },
-    { name: "Chains", description: "Payment chains and tokens" },
-    {
-      name: "Discovery",
-      description:
-        "Agent discovery (categories, brands, featured, suggestions)",
-    },
-    { name: "Products", description: "Product search and details" },
-    { name: "Checkout", description: "Create order and Solana Pay" },
-    { name: "Orders", description: "Order status and details" },
-  ],
-  paths: {
-    "/health": {
-      get: {
-        tags: ["Health"],
-        summary: "Health check",
-        description:
-          "Check if the API is operational. Call this first to verify connectivity before making other requests.",
-        operationId: "getHealth",
-        responses: {
-          "200": {
-            description: "Healthy",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    status: { type: "string", example: "healthy" },
-                    timestamp: { type: "string", format: "date-time" },
-                  },
-                },
-              },
-            },
+  components: {
+    responses: {
+      Error400: {
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
           },
         },
+        description: "Bad request",
+      },
+      Error404: {
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+          },
+        },
+        description: "Not found",
       },
     },
+    schemas: {
+      Error: {
+        properties: {
+          error: {
+            properties: {
+              code: { type: "string" },
+              details: { type: "object" },
+              message: { type: "string" },
+              requestId: { type: "string" },
+            },
+            type: "object",
+          },
+        },
+        type: "object",
+      },
+      FeaturedProduct: {
+        properties: {
+          badge: { type: "string" },
+          category: { type: "string" },
+          id: { type: "string" },
+          name: { type: "string" },
+          price: {
+            properties: { crypto: { type: "object" }, usd: { type: "number" } },
+            type: "object",
+          },
+        },
+        type: "object",
+      },
+      Product: {
+        properties: {
+          category: { type: "string" },
+          description: { type: "string" },
+          id: { type: "string" },
+          imageUrl: { type: "string" },
+          inStock: { type: "boolean" },
+          name: { type: "string" },
+          price: {
+            properties: {
+              crypto: {
+                additionalProperties: { type: "string" },
+                type: "object",
+              },
+              usd: { type: "number" },
+            },
+            type: "object",
+          },
+          slug: { type: "string" },
+        },
+        type: "object",
+      },
+    },
+  },
+  info: {
+    contact: { name: "For the Cult", url: "https://forthecult.store" },
+    description:
+      "AI-agent-friendly eCommerce API. Agents discover products, create orders, and pay with card or cryptocurrency (Solana, Ethereum, Base, and more).",
+    title: "For the Cult API",
+    version: "1.0.0",
+  },
+  openapi: "3.0.3",
+  paths: {
     "/agent/capabilities": {
       get: {
-        tags: ["Health"],
-        summary: "Describe what this API can do",
         description:
           "Returns natural language description of capabilities for AI agents to understand the API's purpose and limitations.",
         operationId: "getCapabilities",
         responses: {
           "200": {
-            description: "Capabilities and limitations",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
                   properties: {
-                    name: { type: "string", example: "For the Cult" },
                     capabilities: {
-                      type: "array",
-                      items: { type: "string" },
                       example: [
                         "Search and browse products",
                         "Filter by category, price, brand",
                         "Create orders with crypto payment (Solana, ETH, Base)",
                         "Track order status and shipping",
                       ],
+                      items: { type: "string" },
+                      type: "array",
                     },
                     limitations: {
-                      type: "array",
-                      items: { type: "string" },
                       example: [
                         "Products do not ship to every country",
                         "No returns 30 days after shipping",
                       ],
-                    },
-                    supportedNetworks: {
-                      type: "array",
                       items: { type: "string" },
-                      example: [
-                        "solana",
-                        "ethereum",
-                        "base",
-                        "arbitrum",
-                        "bnb",
-                        "polygon",
-                        "bitcoin",
-                        "dogecoin",
-                        "monero",
-                        "ton",
-                      ],
+                      type: "array",
                     },
+                    name: { example: "For the Cult", type: "string" },
                     supportedCrypto: {
-                      type: "array",
-                      items: { type: "string" },
                       example: [
                         "SOL",
                         "ETH",
@@ -116,650 +127,350 @@ export const openApiSpec = {
                         "SUI",
                         "TON",
                       ],
+                      items: { type: "string" },
+                      type: "array",
+                    },
+                    supportedNetworks: {
+                      example: [
+                        "solana",
+                        "ethereum",
+                        "base",
+                        "arbitrum",
+                        "bnb",
+                        "polygon",
+                        "bitcoin",
+                        "dogecoin",
+                        "monero",
+                        "ton",
+                      ],
+                      items: { type: "string" },
+                      type: "array",
                     },
                   },
+                  type: "object",
                 },
               },
             },
+            description: "Capabilities and limitations",
           },
         },
+        summary: "Describe what this API can do",
+        tags: ["Health"],
       },
     },
     "/agent/summary": {
       get: {
-        tags: ["Health"],
-        summary: "Machine-readable API summary for agents",
         description:
           "JSON summary of key endpoints and start URL. Use when you prefer a single JSON response instead of parsing the for-agents HTML page.",
         operationId: "getAgentSummary",
         responses: {
           "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    description: { type: "string" },
+                    endpoints: {
+                      items: {
+                        properties: {
+                          href: { type: "string" },
+                          method: { type: "string" },
+                          title: { type: "string" },
+                        },
+                        type: "object",
+                      },
+                      type: "array",
+                    },
+                    name: { type: "string" },
+                    openApiSpec: { type: "string" },
+                    startUrl: { type: "string" },
+                    summaryUrl: { type: "string" },
+                  },
+                  type: "object",
+                },
+              },
+            },
             description:
               "API summary with startUrl, openApiSpec, and endpoints list",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    name: { type: "string" },
-                    description: { type: "string" },
-                    startUrl: { type: "string" },
-                    openApiSpec: { type: "string" },
-                    summaryUrl: { type: "string" },
-                    endpoints: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          title: { type: "string" },
-                          method: { type: "string" },
-                          href: { type: "string" },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
           },
         },
+        summary: "Machine-readable API summary for agents",
+        tags: ["Health"],
       },
     },
-    "/chains": {
+    "/brands": {
       get: {
-        tags: ["Chains"],
-        summary: "Supported chains and tokens",
-        description: "List payment chains and tokens (e.g. SOL, USDC).",
-        operationId: "getChains",
+        description: "Brands with product count and categories they appear in.",
+        operationId: "getBrands",
         responses: {
           "200": {
-            description: "Chains and tokens",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  required: ["chains"],
                   properties: {
-                    chains: {
-                      type: "array",
+                    brands: {
                       items: {
-                        type: "object",
                         properties: {
-                          id: { type: "string", example: "solana" },
-                          name: { type: "string", example: "Solana" },
-                          tokens: {
+                          categories: {
+                            items: { type: "string" },
                             type: "array",
-                            items: {
-                              type: "object",
-                              properties: {
-                                symbol: { type: "string" },
-                                name: { type: "string" },
-                                type: {
-                                  type: "string",
-                                  enum: ["native", "spl"],
-                                },
-                                decimals: { type: "integer" },
-                                mint: { type: "string" },
-                              },
-                            },
                           },
+                          id: { type: "string" },
+                          logo: { nullable: true, type: "string" },
+                          name: { type: "string" },
+                          productCount: { type: "integer" },
                         },
+                        type: "object",
                       },
+                      type: "array",
                     },
                   },
+                  required: ["brands"],
+                  type: "object",
                 },
               },
             },
+            description: "Brands",
           },
         },
+        summary: "List all brands",
+        tags: ["Discovery"],
+      },
+    },
+    "/cart/estimate": {
+      post: {
+        description:
+          "Get itemized totals, shipping estimate, and crypto amounts before checkout. No auth required.",
+        operationId: "postCartEstimate",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  items: {
+                    items: {
+                      properties: {
+                        productId: { type: "string" },
+                        quantity: { type: "integer" },
+                      },
+                      required: ["productId", "quantity"],
+                      type: "object",
+                    },
+                    type: "array",
+                  },
+                },
+                required: ["items"],
+                type: "object",
+              },
+            },
+          },
+          required: true,
+        },
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    crypto: { type: "object" },
+                    expiresAt: { format: "date-time", type: "string" },
+                    items: { items: { type: "object" }, type: "array" },
+                    shipping: { type: "object" },
+                    subtotal: { type: "object" },
+                    tax: { type: "object" },
+                    total: { type: "object" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description:
+              "Cart estimate with subtotal, shipping, tax, total, and crypto amounts",
+          },
+          "400": { description: "Invalid items or product not found" },
+        },
+        summary: "Preview cart totals",
+        tags: ["Checkout"],
       },
     },
     "/categories": {
       get: {
-        tags: ["Discovery"],
-        summary: "List all categories",
         description:
           "Understand store structure. Returns top-level categories with subcategories and product counts.",
         operationId: "getCategories",
         responses: {
           "200": {
-            description: "Categories with subcategories",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
-                  required: ["categories"],
                   properties: {
                     categories: {
-                      type: "array",
                       items: {
-                        type: "object",
                         properties: {
+                          description: { type: "string" },
                           id: { type: "string" },
                           name: { type: "string" },
-                          description: { type: "string" },
-                          slug: { type: "string" },
                           productCount: { type: "integer" },
+                          slug: { type: "string" },
                           subcategories: {
-                            type: "array",
                             items: {
-                              type: "object",
                               properties: {
+                                description: { type: "string" },
                                 id: { type: "string" },
                                 name: { type: "string" },
-                                description: { type: "string" },
                                 productCount: { type: "integer" },
                               },
+                              type: "object",
                             },
+                            type: "array",
                           },
                         },
+                        type: "object",
                       },
+                      type: "array",
                     },
                   },
+                  required: ["categories"],
+                  type: "object",
                 },
               },
             },
+            description: "Categories with subcategories",
           },
         },
+        summary: "List all categories",
+        tags: ["Discovery"],
       },
     },
     "/categories/{categoryId}": {
       get: {
-        tags: ["Discovery"],
-        summary: "Category details with filters",
         description:
           "Learn available filters (brand, price, availability) and popular products for a category.",
         operationId: "getCategoryById",
         parameters: [
           {
-            name: "categoryId",
             in: "path",
+            name: "categoryId",
             required: true,
             schema: { type: "string" },
           },
         ],
         responses: {
           "200": {
-            description: "Category with filters and popular products",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
                   properties: {
+                    availableFilters: {
+                      items: { type: "object" },
+                      type: "array",
+                    },
+                    description: { type: "string" },
                     id: { type: "string" },
                     name: { type: "string" },
-                    description: { type: "string" },
-                    productCount: { type: "integer" },
-                    subcategories: { type: "array", items: { type: "object" } },
-                    availableFilters: {
-                      type: "array",
+                    popularProducts: {
                       items: { type: "object" },
+                      type: "array",
                     },
                     priceRange: {
-                      type: "object",
                       properties: {
-                        min: { type: "number" },
-                        max: { type: "number" },
                         currency: { type: "string" },
+                        max: { type: "number" },
+                        min: { type: "number" },
                       },
+                      type: "object",
                     },
-                    popularProducts: {
-                      type: "array",
-                      items: { type: "object" },
-                    },
+                    productCount: { type: "integer" },
+                    subcategories: { items: { type: "object" }, type: "array" },
                   },
+                  type: "object",
                 },
               },
             },
+            description: "Category with filters and popular products",
           },
           "404": { description: "Category not found" },
         },
-      },
-    },
-    "/brands": {
-      get: {
+        summary: "Category details with filters",
         tags: ["Discovery"],
-        summary: "List all brands",
-        description: "Brands with product count and categories they appear in.",
-        operationId: "getBrands",
-        responses: {
-          "200": {
-            description: "Brands",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  required: ["brands"],
-                  properties: {
-                    brands: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          logo: { type: "string", nullable: true },
-                          productCount: { type: "integer" },
-                          categories: {
-                            type: "array",
-                            items: { type: "string" },
-                          },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
       },
     },
-    "/products/featured": {
+    "/chains": {
       get: {
-        tags: ["Discovery"],
-        summary: "Featured / trending / deals",
-        description: "Featured, trending, best sellers, and deals.",
-        operationId: "getFeaturedProducts",
+        description: "List payment chains and tokens (e.g. SOL, USDC).",
+        operationId: "getChains",
         responses: {
           "200": {
-            description: "Featured, trending, bestSellers, deals",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
                   properties: {
-                    featured: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/FeaturedProduct" },
-                    },
-                    trending: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/FeaturedProduct" },
-                    },
-                    bestSellers: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/FeaturedProduct" },
-                    },
-                    deals: {
-                      type: "array",
-                      items: { $ref: "#/components/schemas/FeaturedProduct" },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    "/products/suggestions": {
-      get: {
-        tags: ["Discovery"],
-        summary: "Search suggestions (autocomplete)",
-        description: "Keyword and product suggestions for query string.",
-        operationId: "getProductSuggestions",
-        parameters: [
-          {
-            name: "q",
-            in: "query",
-            required: true,
-            schema: { type: "string" },
-            description: "Partial query (e.g. headph)",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "Suggestions and matching categories",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    query: { type: "string" },
-                    suggestions: {
-                      type: "array",
+                    chains: {
                       items: {
-                        type: "object",
                         properties: {
-                          text: { type: "string" },
-                          type: {
-                            type: "string",
-                            enum: ["keyword", "product"],
-                          },
-                          resultCount: { type: "integer" },
-                          productId: { type: "string" },
-                          category: { type: "string" },
-                        },
-                      },
-                    },
-                    categories: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          resultCount: { type: "integer" },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    "/products/search": {
-      post: {
-        tags: ["Discovery", "Products"],
-        summary: "Search products (with filters)",
-        description:
-          "Search with category, subcategory, filters (brand, priceRange, inStock), and sort.",
-        operationId: "postProductsSearch",
-        requestBody: {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                properties: {
-                  query: { type: "string" },
-                  category: { type: "string" },
-                  subcategory: { type: "string" },
-                  filters: {
-                    type: "object",
-                    properties: {
-                      brand: { type: "array", items: { type: "string" } },
-                      priceRange: {
-                        type: "object",
-                        properties: {
-                          min: { type: "number" },
-                          max: { type: "number" },
-                        },
-                      },
-                      inStock: { type: "boolean" },
-                      rating: { type: "string" },
-                    },
-                  },
-                  sort: {
-                    type: "string",
-                    enum: [
-                      "price_asc",
-                      "price_desc",
-                      "rating",
-                      "popular",
-                      "newest",
-                    ],
-                  },
-                  limit: { type: "integer", default: 20 },
-                  offset: { type: "integer", default: 0 },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          "200": {
-            description: "Products, total, limit, offset",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    products: {
-                      type: "array",
-                      items: {
-                        type: "object",
-                        properties: {
-                          id: { type: "string" },
-                          name: { type: "string" },
-                          description: { type: "string" },
-                          price: {
-                            type: "object",
-                            properties: {
-                              usd: { type: "number" },
-                              crypto: { type: "object" },
+                          id: { example: "solana", type: "string" },
+                          name: { example: "Solana", type: "string" },
+                          tokens: {
+                            items: {
+                              properties: {
+                                decimals: { type: "integer" },
+                                mint: { type: "string" },
+                                name: { type: "string" },
+                                symbol: { type: "string" },
+                                type: {
+                                  enum: ["native", "spl"],
+                                  type: "string",
+                                },
+                              },
+                              type: "object",
                             },
+                            type: "array",
                           },
-                          imageUrl: { type: "string" },
-                          category: { type: "string" },
-                          inStock: { type: "boolean" },
-                          slug: { type: "string" },
                         },
+                        type: "object",
                       },
+                      type: "array",
                     },
-                    total: { type: "integer" },
-                    limit: { type: "integer" },
-                    offset: { type: "integer" },
                   },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-    "/products/semantic-search": {
-      post: {
-        tags: ["Discovery", "Products"],
-        summary: "Natural language product search",
-        description:
-          "Search using natural language. E.g., 'comfortable hoodie under $60' or 'birthday gift for a friend who likes hiking'.",
-        operationId: "semanticProductSearch",
-        requestBody: {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["query"],
-                properties: {
-                  query: {
-                    type: "string",
-                    example: "cozy winter jacket under $100",
-                  },
-                  limit: { type: "integer", default: 10 },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          "200": {
-            description: "Products matching the natural language query",
-            content: {
-              "application/json": {
-                schema: {
+                  required: ["chains"],
                   type: "object",
-                  properties: {
-                    products: { type: "array", items: { type: "object" } },
-                    total: { type: "integer" },
-                    limit: { type: "integer" },
-                    offset: { type: "integer" },
-                    _parsed: {
-                      type: "object",
-                      description: "Parsed query and price range used",
-                    },
-                  },
                 },
               },
             },
-          },
-          "400": { description: "query is required" },
-        },
-      },
-    },
-    "/products/{slug}": {
-      get: {
-        tags: ["Products"],
-        summary: "Get product by slug",
-        description:
-          "Single product details by slug (e.g. classic-comfort-hoodie). Returns 404 if not found or not published.",
-        operationId: "getProductBySlug",
-        parameters: [
-          {
-            name: "slug",
-            in: "path",
-            required: true,
-            schema: { type: "string" },
-            description: "Product slug, e.g. classic-comfort-hoodie",
-          },
-        ],
-        responses: {
-          "200": {
-            description: "Product",
-            content: {
-              "application/json": {
-                schema: { $ref: "#/components/schemas/Product" },
-              },
-            },
-          },
-          "404": { description: "Product not found" },
-        },
-      },
-    },
-    "/cart/estimate": {
-      post: {
-        tags: ["Checkout"],
-        summary: "Preview cart totals",
-        description:
-          "Get itemized totals, shipping estimate, and crypto amounts before checkout. No auth required.",
-        operationId: "postCartEstimate",
-        requestBody: {
-          required: true,
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["items"],
-                properties: {
-                  items: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      required: ["productId", "quantity"],
-                      properties: {
-                        productId: { type: "string" },
-                        quantity: { type: "integer" },
-                      },
-                    },
-                  },
-                },
-              },
-            },
+            description: "Chains and tokens",
           },
         },
-        responses: {
-          "200": {
-            description:
-              "Cart estimate with subtotal, shipping, tax, total, and crypto amounts",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    items: { type: "array", items: { type: "object" } },
-                    subtotal: { type: "object" },
-                    shipping: { type: "object" },
-                    tax: { type: "object" },
-                    total: { type: "object" },
-                    crypto: { type: "object" },
-                    expiresAt: { type: "string", format: "date-time" },
-                  },
-                },
-              },
-            },
-          },
-          "400": { description: "Invalid items or product not found" },
-        },
-      },
-    },
-    "/shipping/calculate": {
-      post: {
-        tags: ["Checkout"],
-        summary: "Calculate shipping (with optional address)",
-        description:
-          "Calculate shipping for a country and optional line items/address fields. No auth required.",
-        operationId: "postShippingCalculate",
-        requestBody: {
-          content: {
-            "application/json": {
-              schema: {
-                type: "object",
-                required: ["countryCode"],
-                properties: {
-                  countryCode: { type: "string" },
-                  zip: { type: "string" },
-                  stateCode: { type: "string" },
-                  city: { type: "string" },
-                  items: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        productId: { type: "string" },
-                        quantity: { type: "integer" },
-                      },
-                    },
-                  },
-                  orderValueCents: { type: "integer" },
-                },
-              },
-            },
-          },
-        },
-        responses: {
-          "200": {
-            description: "Shipping cost and options",
-            content: {
-              "application/json": {
-                schema: {
-                  type: "object",
-                  properties: {
-                    shippingCents: { type: "integer" },
-                    canShipToCountry: { type: "boolean" },
-                  },
-                },
-              },
-            },
-          },
-        },
+        summary: "Supported chains and tokens",
+        tags: ["Chains"],
       },
     },
     "/checkout": {
       post: {
-        tags: ["Checkout"],
-        summary: "Create checkout order",
         description:
           "Create an order and get payment instructions. Supports card (Stripe), Solana, EVM chains, Bitcoin (BTCPay), and TON. Poll GET /orders/{orderId}/status until paid.",
         operationId: "postCheckout",
         requestBody: {
-          required: true,
           content: {
             "application/json": {
               schema: {
-                type: "object",
-                required: ["items", "email", "payment"],
                 properties: {
+                  email: { format: "email", type: "string" },
                   items: {
-                    type: "array",
                     items: {
-                      type: "object",
-                      required: ["productId", "quantity"],
                       properties: {
                         productId: { type: "string" },
                         quantity: { type: "integer" },
                       },
+                      required: ["productId", "quantity"],
+                      type: "object",
                     },
+                    type: "array",
                   },
-                  email: { type: "string", format: "email" },
                   payment: {
-                    type: "object",
-                    required: ["chain", "token"],
                     properties: {
                       chain: {
-                        type: "string",
+                        description:
+                          "Blockchain network for crypto payment. Use with token.",
                         enum: [
                           "solana",
                           "ethereum",
@@ -768,100 +479,198 @@ export const openApiSpec = {
                           "polygon",
                           "bnb",
                         ],
-                        description:
-                          "Blockchain network for crypto payment. Use with token.",
-                      },
-                      token: {
                         type: "string",
-                        enum: ["SOL", "ETH", "USDC", "USDT", "SPL"],
-                        description:
-                          "Token symbol. Available tokens vary by chain.",
                       },
                       method: {
-                        type: "string",
-                        enum: ["stripe", "btcpay", "ton_pay"],
                         description:
                           "Alternative payment method. Use instead of chain+token for card, Bitcoin, or TON.",
+                        enum: ["stripe", "btcpay", "ton_pay"],
+                        type: "string",
                       },
-                      tokenMint: { type: "string", nullable: true },
+                      token: {
+                        description:
+                          "Token symbol. Available tokens vary by chain.",
+                        enum: ["SOL", "ETH", "USDC", "USDT", "SPL"],
+                        type: "string",
+                      },
+                      tokenMint: { nullable: true, type: "string" },
                     },
+                    required: ["chain", "token"],
+                    type: "object",
                   },
                   shipping: {
-                    type: "object",
                     properties: {
-                      name: { type: "string" },
                       address1: { type: "string" },
                       address2: { type: "string" },
                       city: { type: "string" },
-                      stateCode: {
-                        type: "string",
-                        description: "2-letter state code",
-                      },
-                      zip: { type: "string" },
                       countryCode: {
-                        type: "string",
                         description: "ISO 2-letter country code",
-                      },
-                      phone: {
                         type: "string",
+                      },
+                      name: { type: "string" },
+                      phone: {
                         description:
                           "Required for accurate shipping from some fulfillment providers",
+                        type: "string",
                       },
+                      stateCode: {
+                        description: "2-letter state code",
+                        type: "string",
+                      },
+                      zip: { type: "string" },
                     },
+                    type: "object",
                   },
                 },
+                required: ["items", "email", "payment"],
+                type: "object",
               },
             },
           },
+          required: true,
         },
         responses: {
           "201": {
-            description: "Order and payment details",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
                   properties: {
+                    expiresAt: { format: "date-time", type: "string" },
                     orderId: { type: "string" },
-                    status: { type: "string", example: "awaiting_payment" },
-                    expiresAt: { type: "string", format: "date-time" },
                     payment: { type: "object" },
+                    status: { example: "awaiting_payment", type: "string" },
                     totals: { type: "object" },
                   },
+                  type: "object",
                 },
               },
             },
+            description: "Order and payment details",
           },
           "400": { description: "Validation or stock error" },
         },
+        summary: "Create checkout order",
+        tags: ["Checkout"],
       },
     },
-    "/orders/{orderId}/status": {
+    "/health": {
       get: {
-        tags: ["Orders"],
-        summary: "Get order status (lightweight)",
         description:
-          "Lightweight status endpoint for polling. Returns only order status — no sensitive data. Call every 5 seconds until the order transitions from pending.",
-        operationId: "getOrderStatus",
+          "Check if the API is operational. Call this first to verify connectivity before making other requests.",
+        operationId: "getHealth",
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    status: { example: "healthy", type: "string" },
+                    timestamp: { format: "date-time", type: "string" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Healthy",
+          },
+        },
+        summary: "Health check",
+        tags: ["Health"],
+      },
+    },
+    "/orders/{orderId}": {
+      get: {
+        description:
+          "Full order details: items, shipping address, payment summary, and timeline. Requires authentication (session owner or admin). For unauthenticated status checks, use GET /orders/{orderId}/status instead.",
+        operationId: "getOrderById",
         parameters: [
           {
-            name: "orderId",
             in: "path",
+            name: "orderId",
             required: true,
             schema: { type: "string" },
           },
         ],
         responses: {
           "200": {
-            description: "Order status",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
                   properties: {
+                    _actions: {
+                      description: "Action hints for AI agents",
+                      properties: {
+                        cancel: { type: "string" },
+                        help: { type: "string" },
+                        next: { type: "string" },
+                      },
+                      type: "object",
+                    },
+                    createdAt: { format: "date-time", type: "string" },
+                    email: { type: "string" },
+                    items: { items: { type: "object" }, type: "array" },
                     orderId: { type: "string" },
-                    status: {
+                    paidAt: {
+                      format: "date-time",
+                      nullable: true,
                       type: "string",
+                    },
+                    payment: { type: "object" },
+                    shipping: { type: "object" },
+                    status: { type: "string" },
+                    totals: { type: "object" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Full order",
+          },
+          "401": {
+            description: "Not authorized (must be order owner or admin)",
+          },
+          "404": { description: "Order not found" },
+        },
+        summary: "Get order details",
+        tags: ["Orders"],
+      },
+    },
+    "/orders/{orderId}/status": {
+      get: {
+        description:
+          "Lightweight status endpoint for polling. Returns only order status — no sensitive data. Call every 5 seconds until the order transitions from pending.",
+        operationId: "getOrderStatus",
+        parameters: [
+          {
+            in: "path",
+            name: "orderId",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    _actions: {
+                      description: "Action hints for AI agents",
+                      properties: {
+                        cancel: { type: "string" },
+                        details: { type: "string" },
+                        help: { type: "string" },
+                        next: { type: "string" },
+                      },
+                      type: "object",
+                    },
+                    orderId: { type: "string" },
+                    paidAt: {
+                      format: "date-time",
+                      nullable: true,
+                      type: "string",
+                    },
+                    status: {
                       enum: [
                         "awaiting_payment",
                         "paid",
@@ -871,158 +680,349 @@ export const openApiSpec = {
                         "cancelled",
                         "expired",
                       ],
-                    },
-                    paidAt: {
                       type: "string",
-                      format: "date-time",
-                      nullable: true,
-                    },
-                    _actions: {
-                      type: "object",
-                      description: "Action hints for AI agents",
-                      properties: {
-                        next: { type: "string" },
-                        cancel: { type: "string" },
-                        details: { type: "string" },
-                        help: { type: "string" },
-                      },
                     },
                   },
+                  type: "object",
                 },
               },
             },
+            description: "Order status",
           },
           "404": { description: "Order not found" },
         },
+        summary: "Get order status (lightweight)",
+        tags: ["Orders"],
       },
     },
-    "/orders/{orderId}": {
+    "/products/featured": {
       get: {
-        tags: ["Orders"],
-        summary: "Get order details",
+        description: "Featured, trending, best sellers, and deals.",
+        operationId: "getFeaturedProducts",
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    bestSellers: {
+                      items: { $ref: "#/components/schemas/FeaturedProduct" },
+                      type: "array",
+                    },
+                    deals: {
+                      items: { $ref: "#/components/schemas/FeaturedProduct" },
+                      type: "array",
+                    },
+                    featured: {
+                      items: { $ref: "#/components/schemas/FeaturedProduct" },
+                      type: "array",
+                    },
+                    trending: {
+                      items: { $ref: "#/components/schemas/FeaturedProduct" },
+                      type: "array",
+                    },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Featured, trending, bestSellers, deals",
+          },
+        },
+        summary: "Featured / trending / deals",
+        tags: ["Discovery"],
+      },
+    },
+    "/products/search": {
+      post: {
         description:
-          "Full order details: items, shipping address, payment summary, and timeline. Requires authentication (session owner or admin). For unauthenticated status checks, use GET /orders/{orderId}/status instead.",
-        operationId: "getOrderById",
+          "Search with category, subcategory, filters (brand, priceRange, inStock), and sort.",
+        operationId: "postProductsSearch",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  category: { type: "string" },
+                  filters: {
+                    properties: {
+                      brand: { items: { type: "string" }, type: "array" },
+                      inStock: { type: "boolean" },
+                      priceRange: {
+                        properties: {
+                          max: { type: "number" },
+                          min: { type: "number" },
+                        },
+                        type: "object",
+                      },
+                      rating: { type: "string" },
+                    },
+                    type: "object",
+                  },
+                  limit: { default: 20, type: "integer" },
+                  offset: { default: 0, type: "integer" },
+                  query: { type: "string" },
+                  sort: {
+                    enum: [
+                      "price_asc",
+                      "price_desc",
+                      "rating",
+                      "popular",
+                      "newest",
+                    ],
+                    type: "string",
+                  },
+                  subcategory: { type: "string" },
+                },
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    limit: { type: "integer" },
+                    offset: { type: "integer" },
+                    products: {
+                      items: {
+                        properties: {
+                          category: { type: "string" },
+                          description: { type: "string" },
+                          id: { type: "string" },
+                          imageUrl: { type: "string" },
+                          inStock: { type: "boolean" },
+                          name: { type: "string" },
+                          price: {
+                            properties: {
+                              crypto: { type: "object" },
+                              usd: { type: "number" },
+                            },
+                            type: "object",
+                          },
+                          slug: { type: "string" },
+                        },
+                        type: "object",
+                      },
+                      type: "array",
+                    },
+                    total: { type: "integer" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Products, total, limit, offset",
+          },
+        },
+        summary: "Search products (with filters)",
+        tags: ["Discovery", "Products"],
+      },
+    },
+    "/products/semantic-search": {
+      post: {
+        description:
+          "Search using natural language. E.g., 'comfortable hoodie under $60' or 'birthday gift for a friend who likes hiking'.",
+        operationId: "semanticProductSearch",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  limit: { default: 10, type: "integer" },
+                  query: {
+                    example: "cozy winter jacket under $100",
+                    type: "string",
+                  },
+                },
+                required: ["query"],
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    _parsed: {
+                      description: "Parsed query and price range used",
+                      type: "object",
+                    },
+                    limit: { type: "integer" },
+                    offset: { type: "integer" },
+                    products: { items: { type: "object" }, type: "array" },
+                    total: { type: "integer" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+            description: "Products matching the natural language query",
+          },
+          "400": { description: "query is required" },
+        },
+        summary: "Natural language product search",
+        tags: ["Discovery", "Products"],
+      },
+    },
+    "/products/suggestions": {
+      get: {
+        description: "Keyword and product suggestions for query string.",
+        operationId: "getProductSuggestions",
         parameters: [
           {
-            name: "orderId",
-            in: "path",
+            description: "Partial query (e.g. headph)",
+            in: "query",
+            name: "q",
             required: true,
             schema: { type: "string" },
           },
         ],
         responses: {
           "200": {
-            description: "Full order",
             content: {
               "application/json": {
                 schema: {
-                  type: "object",
                   properties: {
-                    orderId: { type: "string" },
-                    status: { type: "string" },
-                    createdAt: { type: "string", format: "date-time" },
-                    paidAt: {
-                      type: "string",
-                      format: "date-time",
-                      nullable: true,
-                    },
-                    email: { type: "string" },
-                    items: { type: "array", items: { type: "object" } },
-                    shipping: { type: "object" },
-                    totals: { type: "object" },
-                    payment: { type: "object" },
-                    _actions: {
-                      type: "object",
-                      description: "Action hints for AI agents",
-                      properties: {
-                        next: { type: "string" },
-                        cancel: { type: "string" },
-                        help: { type: "string" },
+                    categories: {
+                      items: {
+                        properties: {
+                          id: { type: "string" },
+                          name: { type: "string" },
+                          resultCount: { type: "integer" },
+                        },
+                        type: "object",
                       },
+                      type: "array",
+                    },
+                    query: { type: "string" },
+                    suggestions: {
+                      items: {
+                        properties: {
+                          category: { type: "string" },
+                          productId: { type: "string" },
+                          resultCount: { type: "integer" },
+                          text: { type: "string" },
+                          type: {
+                            enum: ["keyword", "product"],
+                            type: "string",
+                          },
+                        },
+                        type: "object",
+                      },
+                      type: "array",
                     },
                   },
+                  type: "object",
                 },
               },
             },
+            description: "Suggestions and matching categories",
           },
-          "401": {
-            description: "Not authorized (must be order owner or admin)",
-          },
-          "404": { description: "Order not found" },
         },
+        summary: "Search suggestions (autocomplete)",
+        tags: ["Discovery"],
       },
     },
-  },
-  components: {
-    schemas: {
-      Product: {
-        type: "object",
-        properties: {
-          id: { type: "string" },
-          name: { type: "string" },
-          description: { type: "string" },
-          price: {
-            type: "object",
-            properties: {
-              usd: { type: "number" },
-              crypto: {
+    "/products/{slug}": {
+      get: {
+        description:
+          "Single product details by slug (e.g. classic-comfort-hoodie). Returns 404 if not found or not published.",
+        operationId: "getProductBySlug",
+        parameters: [
+          {
+            description: "Product slug, e.g. classic-comfort-hoodie",
+            in: "path",
+            name: "slug",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Product" },
+              },
+            },
+            description: "Product",
+          },
+          "404": { description: "Product not found" },
+        },
+        summary: "Get product by slug",
+        tags: ["Products"],
+      },
+    },
+    "/shipping/calculate": {
+      post: {
+        description:
+          "Calculate shipping for a country and optional line items/address fields. No auth required.",
+        operationId: "postShippingCalculate",
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  city: { type: "string" },
+                  countryCode: { type: "string" },
+                  items: {
+                    items: {
+                      properties: {
+                        productId: { type: "string" },
+                        quantity: { type: "integer" },
+                      },
+                      type: "object",
+                    },
+                    type: "array",
+                  },
+                  orderValueCents: { type: "integer" },
+                  stateCode: { type: "string" },
+                  zip: { type: "string" },
+                },
+                required: ["countryCode"],
                 type: "object",
-                additionalProperties: { type: "string" },
               },
             },
           },
-          imageUrl: { type: "string" },
-          category: { type: "string" },
-          inStock: { type: "boolean" },
-          slug: { type: "string" },
         },
-      },
-      FeaturedProduct: {
-        type: "object",
-        properties: {
-          id: { type: "string" },
-          name: { type: "string" },
-          category: { type: "string" },
-          price: {
-            type: "object",
-            properties: { usd: { type: "number" }, crypto: { type: "object" } },
-          },
-          badge: { type: "string" },
-        },
-      },
-      Error: {
-        type: "object",
-        properties: {
-          error: {
-            type: "object",
-            properties: {
-              code: { type: "string" },
-              message: { type: "string" },
-              details: { type: "object" },
-              requestId: { type: "string" },
+        responses: {
+          "200": {
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    canShipToCountry: { type: "boolean" },
+                    shippingCents: { type: "integer" },
+                  },
+                  type: "object",
+                },
+              },
             },
+            description: "Shipping cost and options",
           },
         },
-      },
-    },
-    responses: {
-      Error400: {
-        description: "Bad request",
-        content: {
-          "application/json": {
-            schema: { $ref: "#/components/schemas/Error" },
-          },
-        },
-      },
-      Error404: {
-        description: "Not found",
-        content: {
-          "application/json": {
-            schema: { $ref: "#/components/schemas/Error" },
-          },
-        },
+        summary: "Calculate shipping (with optional address)",
+        tags: ["Checkout"],
       },
     },
   },
+  servers: [{ description: "API base (relative)", url: "/api" }],
+  tags: [
+    { description: "API health", name: "Health" },
+    { description: "Payment chains and tokens", name: "Chains" },
+    {
+      description:
+        "Agent discovery (categories, brands, featured, suggestions)",
+      name: "Discovery",
+    },
+    { description: "Product search and details", name: "Products" },
+    { description: "Create order and Solana Pay", name: "Checkout" },
+    { description: "Order status and details", name: "Orders" },
+  ],
 } as const;

@@ -9,18 +9,6 @@ const CODE_MIN_LENGTH = 4;
 const CODE_MAX_LENGTH = 24;
 const CODE_REGEX = /^[A-Za-z0-9]+$/;
 
-function generateAffiliateCode(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const bytes = new Uint8Array(8);
-  crypto.getRandomValues(bytes);
-  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
-}
-
-/** Normalize user-chosen code: uppercase, no spaces. */
-function normalizeCode(input: string): string {
-  return input.replace(/\s/g, "").toUpperCase();
-}
-
 /**
  * POST /api/affiliates/apply
  * Body: { code?: string, applicationNote?: string, payoutMethod?: string, payoutAddress?: string }
@@ -37,8 +25,8 @@ export async function POST(request: NextRequest) {
 
   const [existing] = await db
     .select({
-      id: affiliateTable.id,
       code: affiliateTable.code,
+      id: affiliateTable.id,
       status: affiliateTable.status,
     })
     .from(affiliateTable)
@@ -47,18 +35,18 @@ export async function POST(request: NextRequest) {
 
   if (existing) {
     return NextResponse.json({
-      id: existing.id,
       code: existing.code,
-      status: existing.status,
+      id: existing.id,
       message: "You already have an affiliate application.",
+      status: existing.status,
     });
   }
 
   let body: {
-    code?: string;
     applicationNote?: string;
-    payoutMethod?: string;
+    code?: string;
     payoutAddress?: string;
+    payoutMethod?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -140,22 +128,22 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   try {
     await db.insert(affiliateTable).values({
-      id,
-      userId,
+      adminNote: null,
+      applicationNote,
       code,
-      status: "pending",
       commissionType: "percent",
       commissionValue: 10,
+      createdAt: now,
       customerDiscountType: null,
       customerDiscountValue: null,
-      applicationNote,
-      adminNote: null,
-      payoutMethod,
+      id,
       payoutAddress,
+      payoutMethod,
+      status: "pending",
       totalEarnedCents: 0,
       totalPaidCents: 0,
-      createdAt: now,
       updatedAt: now,
+      userId,
     });
   } catch (insertErr: unknown) {
     // Handle unique constraint violation (race condition on code)
@@ -176,10 +164,22 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    id,
     code,
-    status: "pending",
+    id,
     message:
       "Your application has been submitted. We'll review it and get back to you.",
+    status: "pending",
   });
+}
+
+function generateAffiliateCode(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => chars[b % chars.length]).join("");
+}
+
+/** Normalize user-chosen code: uppercase, no spaces. */
+function normalizeCode(input: string): string {
+  return input.replace(/\s/g, "").toUpperCase();
 }

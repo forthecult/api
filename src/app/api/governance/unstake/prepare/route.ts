@@ -10,14 +10,14 @@ import { z } from "zod";
 
 import { getStakingProgramId } from "~/lib/cult-staking";
 import { buildUnstakeTransaction } from "~/lib/cult-staking-instructions";
-import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getCultMintSolana } from "~/lib/token-gate";
 
 const CULT_DECIMALS = 6;
 
 const bodySchema = z.object({
-  wallet: z.string().min(32).max(44),
   amount: z.string().min(1),
+  wallet: z.string().min(32).max(44),
 });
 
 export async function POST(request: Request) {
@@ -37,11 +37,11 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid body", details: parsed.error.flatten() },
+      { details: parsed.error.flatten(), error: "Invalid body" },
       { status: 400 },
     );
   }
-  const { wallet, amount } = parsed.data;
+  const { amount, wallet } = parsed.data;
   const amountNum = Number.parseFloat(amount);
   if (!Number.isFinite(amountNum) || amountNum <= 0) {
     return NextResponse.json(
@@ -62,12 +62,12 @@ export async function POST(request: Request) {
     const owner = new PublicKey(wallet);
 
     const tx = buildUnstakeTransaction({
-      programId,
-      mint,
-      owner,
       amount: amountRaw,
       blockhash,
       lastValidBlockHeight,
+      mint,
+      owner,
+      programId,
     });
 
     const serialized = tx.serialize({

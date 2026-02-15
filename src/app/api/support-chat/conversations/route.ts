@@ -5,8 +5,8 @@ import { db } from "~/db";
 import { supportChatConversationTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 import {
-  getClientIp,
   checkRateLimit,
+  getClientIp,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -41,10 +41,10 @@ export async function GET(request: NextRequest) {
       const [list, countResult] = await Promise.all([
         db
           .select({
+            createdAt: supportChatConversationTable.createdAt,
             id: supportChatConversationTable.id,
             status: supportChatConversationTable.status,
             takenOverBy: supportChatConversationTable.takenOverBy,
-            createdAt: supportChatConversationTable.createdAt,
             updatedAt: supportChatConversationTable.updatedAt,
           })
           .from(supportChatConversationTable)
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       const totalPages = Math.ceil(total / limit) || 1;
       return NextResponse.json({
         conversations: list,
-        pagination: { page, limit, total, totalPages },
+        pagination: { limit, page, total, totalPages },
       });
     }
 
@@ -70,10 +70,10 @@ export async function GET(request: NextRequest) {
       const [list, countResult] = await Promise.all([
         db
           .select({
+            createdAt: supportChatConversationTable.createdAt,
             id: supportChatConversationTable.id,
             status: supportChatConversationTable.status,
             takenOverBy: supportChatConversationTable.takenOverBy,
-            createdAt: supportChatConversationTable.createdAt,
             updatedAt: supportChatConversationTable.updatedAt,
           })
           .from(supportChatConversationTable)
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
       const totalPages = Math.ceil(total / limit) || 1;
       return NextResponse.json({
         conversations: list,
-        pagination: { page, limit, total, totalPages },
+        pagination: { limit, page, total, totalPages },
       });
     }
 
@@ -116,17 +116,17 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     try {
       await db.insert(supportChatConversationTable).values({
-        id,
-        userId: session.user.id,
-        status: "open",
         createdAt: now,
+        id,
+        status: "open",
         updatedAt: now,
+        userId: session.user.id,
       });
       return NextResponse.json({
+        createdAt: now.toISOString(),
         id,
         status: "open",
         takenOverBy: null,
-        createdAt: now.toISOString(),
         updatedAt: now.toISOString(),
       });
     } catch (err) {
@@ -154,17 +154,17 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   try {
     await db.insert(supportChatConversationTable).values({
-      id,
-      guestId,
-      status: "open",
       createdAt: now,
+      guestId,
+      id,
+      status: "open",
       updatedAt: now,
     });
     return NextResponse.json({
+      createdAt: now.toISOString(),
       id,
       status: "open",
       takenOverBy: null,
-      createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
     });
   } catch (err) {

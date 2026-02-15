@@ -32,9 +32,9 @@ export function ProfilePageClient() {
         });
         if (res.ok) {
           const data = (await res.json()) as {
+            email?: string;
             firstName?: string;
             lastName?: string;
-            email?: string;
             phone?: string;
           };
           setFirstName(data.firstName ?? "");
@@ -69,14 +69,14 @@ export function ProfilePageClient() {
     setSaving(true);
     try {
       const res = await fetch("/api/user/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           phone: phone.trim() || null,
         }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
 
       if (!res.ok) {
@@ -96,11 +96,11 @@ export function ProfilePageClient() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button
+          aria-label="Back to profile"
           asChild
+          className="shrink-0"
           size="icon"
           variant="ghost"
-          className="shrink-0"
-          aria-label="Back to profile"
         >
           <Link href="/dashboard/profile">
             <ChevronLeft className="h-5 w-5" />
@@ -112,17 +112,27 @@ export function ProfilePageClient() {
       <form className="space-y-6" onSubmit={handleSubmit}>
         <div className="flex flex-col items-center gap-6">
           <div className="relative">
-            <div className="relative size-24 overflow-hidden rounded-full border-2 border-border bg-muted">
+            <div
+              className={`
+              relative size-24 overflow-hidden rounded-full border-2
+              border-border bg-muted
+            `}
+            >
               {user?.image ? (
                 <Image
-                  src={user.image}
                   alt=""
-                  fill
                   className="object-cover"
+                  fill
                   sizes="96px"
+                  src={user.image}
                 />
               ) : (
-                <span className="flex size-full items-center justify-center text-2xl font-semibold text-muted-foreground">
+                <span
+                  className={`
+                  flex size-full items-center justify-center text-2xl
+                  font-semibold text-muted-foreground
+                `}
+                >
                   {(
                     firstName?.[0] ??
                     lastName?.[0] ??
@@ -133,64 +143,91 @@ export function ProfilePageClient() {
               )}
             </div>
             <button
-              type="button"
-              className="absolute bottom-0 right-0 flex size-8 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow hover:bg-primary/90"
               aria-label="Change profile photo"
+              className={`
+                absolute right-0 bottom-0 flex size-8 items-center
+                justify-center rounded-full border-2 border-background
+                bg-primary text-primary-foreground shadow
+                hover:bg-primary/90
+              `}
+              type="button"
             >
               <Camera className="h-4 w-4" />
             </button>
           </div>
 
-          <div className="grid w-full gap-4 sm:grid-cols-2">
+          <div
+            className={`
+            grid w-full gap-4
+            sm:grid-cols-2
+          `}
+          >
             <div className="space-y-2">
               <Label htmlFor="firstName">First Name</Label>
               <Input
                 id="firstName"
-                value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="First name"
+                value={firstName}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="lastName">Last Name</Label>
               <Input
                 id="lastName"
-                value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="Last name"
+                value={lastName}
               />
             </div>
             {isRealEmail(email) && (
-              <div className="space-y-2 sm:col-span-2">
+              <div
+                className={`
+                space-y-2
+                sm:col-span-2
+              `}
+              >
                 <Label htmlFor="email">Email</Label>
                 <Input
+                  className="bg-muted"
+                  disabled
                   id="email"
+                  placeholder="Email"
+                  readOnly
                   type="email"
                   value={email}
-                  readOnly
-                  disabled
-                  className="bg-muted"
-                  placeholder="Email"
                 />
                 <p className="text-xs text-muted-foreground">
                   Email is read-only. Change it in Security settings.
                 </p>
               </div>
             )}
-            <div className="space-y-2 sm:col-span-2">
+            <div
+              className={`
+              space-y-2
+              sm:col-span-2
+            `}
+            >
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                type="tel"
-                value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="Phone"
+                type="tel"
+                value={phone}
               />
             </div>
           </div>
         </div>
 
-        <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+        <Button
+          className={`
+          w-full
+          sm:w-auto
+        `}
+          disabled={saving}
+          type="submit"
+        >
           {saving ? "Saving…" : "Save Changes"}
         </Button>
       </form>

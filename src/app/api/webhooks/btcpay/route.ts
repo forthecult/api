@@ -1,9 +1,10 @@
-import crypto from "node:crypto";
-import { type NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import crypto from "node:crypto";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
@@ -12,35 +13,11 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 
 /** BTCPay/Bitpay webhook: invoice status change. Confirm order when invoice is paid/settled. */
-const SETTLED_STATUSES = new Set(["paid", "confirmed", "complete", "settled"]);
+const SETTLED_STATUSES = new Set(["complete", "confirmed", "paid", "settled"]);
 
 const BTCPAY_WEBHOOK_SECRET = process.env.BTCPAY_WEBHOOK_SECRET?.trim() ?? "";
-
-/**
- * Verify webhook signature when BTCPAY_WEBHOOK_SECRET is set.
- * Bitpay/BTCPay legacy: X-Bitpay-Signature = "sha256=hexdigest" (HMAC-SHA256 of raw body).
- */
-function verifyBtcpayWebhookSignature(
-  rawBody: string,
-  signatureHeader: string | null,
-  secret: string,
-): boolean {
-  if (!secret || !signatureHeader?.trim()) return false;
-  const match = /^sha256=([a-f0-9]+)$/i.exec(signatureHeader.trim());
-  if (!match) return false;
-  const expectedHex = match[1];
-  const hmac = crypto.createHmac("sha256", secret);
-  hmac.update(rawBody, "utf8");
-  const computedHex = hmac.digest("hex");
-  if (expectedHex.length !== computedHex.length) return false;
-  return crypto.timingSafeEqual(
-    Buffer.from(expectedHex, "hex"),
-    Buffer.from(computedHex, "hex"),
-  );
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -107,7 +84,7 @@ export async function POST(request: NextRequest) {
     const settled = SETTLED_STATUSES.has(status);
 
     if (!settled) {
-      return NextResponse.json({ received: true, action: "none", status });
+      return NextResponse.json({ action: "none", received: true, status });
     }
 
     const [order] = await db
@@ -118,8 +95,8 @@ export async function POST(request: NextRequest) {
 
     if (!order) {
       return NextResponse.json({
-        received: true,
         action: "order_not_found",
+        received: true,
       });
     }
 
@@ -146,7 +123,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!updated) {
-      return NextResponse.json({ received: true, action: "already_processed" });
+      return NextResponse.json({ action: "already_processed", received: true });
     }
 
     const { onOrderCreated } = await import("~/lib/create-user-notification");
@@ -185,4 +162,27 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+/**
+ * Verify webhook signature when BTCPAY_WEBHOOK_SECRET is set.
+ * Bitpay/BTCPay legacy: X-Bitpay-Signature = "sha256=hexdigest" (HMAC-SHA256 of raw body).
+ */
+function verifyBtcpayWebhookSignature(
+  rawBody: string,
+  signatureHeader: null | string,
+  secret: string,
+): boolean {
+  if (!secret || !signatureHeader?.trim()) return false;
+  const match = /^sha256=([a-f0-9]+)$/i.exec(signatureHeader.trim());
+  if (!match) return false;
+  const expectedHex = match[1];
+  const hmac = crypto.createHmac("sha256", secret);
+  hmac.update(rawBody, "utf8");
+  const computedHex = hmac.digest("hex");
+  if (expectedHex.length !== computedHex.length) return false;
+  return crypto.timingSafeEqual(
+    Buffer.from(expectedHex, "hex"),
+    Buffer.from(computedHex, "hex"),
+  );
 }

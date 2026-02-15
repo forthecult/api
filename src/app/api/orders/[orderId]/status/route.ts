@@ -42,12 +42,12 @@ export async function GET(
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
-        paymentStatus: ordersTable.paymentStatus,
         createdAt: ordersTable.createdAt,
-        updatedAt: ordersTable.updatedAt,
         cryptoTxHash: ordersTable.cryptoTxHash,
+        id: ordersTable.id,
+        paymentStatus: ordersTable.paymentStatus,
+        status: ordersTable.status,
+        updatedAt: ordersTable.updatedAt,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -59,13 +59,13 @@ export async function GET(
 
     // Map internal status to API status
     const statusMap: Record<string, string> = {
-      pending: "awaiting_payment",
-      paid: "paid",
-      processing: "processing",
-      fulfilled: "shipped",
-      shipped: "shipped",
-      delivered: "delivered",
       cancelled: "cancelled",
+      delivered: "delivered",
+      fulfilled: "shipped",
+      paid: "paid",
+      pending: "awaiting_payment",
+      processing: "processing",
+      shipped: "shipped",
     };
     let status = statusMap[order.status] ?? order.status;
 
@@ -110,18 +110,18 @@ export async function GET(
     return NextResponse.json(
       {
         orderId: order.id,
-        status,
         paidAt: paidAt ?? null,
+        status,
         ...(order.cryptoTxHash && { txHash: order.cryptoTxHash }),
         ...(expiresAt && status === "awaiting_payment" && { expiresAt }),
         _actions: actions,
       },
       {
-        status: 200,
         headers: getRateLimitHeaders(
           rateLimitResult,
           RATE_LIMITS.orderStatus.limit,
         ),
+        status: 200,
       },
     );
   } catch (err) {

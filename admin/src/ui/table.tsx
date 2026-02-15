@@ -34,7 +34,10 @@ function TableHead({ className, ...props }: React.ComponentProps<"th">) {
   return (
     <th
       className={cn(
-        "h-10 px-2 text-left align-middle font-medium whitespace-nowrap text-foreground",
+        `
+          h-10 px-2 text-left align-middle font-medium whitespace-nowrap
+          text-foreground
+        `,
         className,
       )}
       {...props}
@@ -49,7 +52,13 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
 function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
   return (
     <tr
-      className={cn("border-b transition-colors hover:bg-muted/50", className)}
+      className={cn(
+        `
+        border-b transition-colors
+        hover:bg-muted/50
+      `,
+        className,
+      )}
       {...props}
     />
   );

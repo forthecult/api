@@ -10,9 +10,9 @@ import {
   Connection,
   Keypair,
   PublicKey,
+  sendAndConfirmTransaction,
   SystemProgram,
   Transaction,
-  sendAndConfirmTransaction,
 } from "@solana/web3.js";
 import bs58 from "bs58";
 import { eq, gte } from "drizzle-orm";
@@ -25,8 +25,8 @@ import {
 import { fetchAllStakers, getStakingProgramId } from "~/lib/cult-staking";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
-import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getActiveToken } from "~/lib/token-config";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -47,93 +47,32 @@ const MAX_TRANSFERS_PER_TX = 20;
 // Types
 // ---------------------------------------------------------------------------
 
-export interface Tier1Staker {
-  owner: string;
-  amount: bigint;
-  /** Human-readable token amount. */
-  amountHuman: number;
+export interface DistributionResult {
+  distributionId?: string;
+  error?: string;
+  ok: boolean;
+  recipientCount?: number;
+  skipped?: string;
+  totalLamports?: number;
+  txSignatures?: string[];
 }
 
 export interface ShareEntry {
-  wallet: string;
   lamports: number;
-  stakedTokens: number;
   sharePercent: number;
+  stakedTokens: number;
+  wallet: string;
 }
 
-export interface DistributionResult {
-  ok: boolean;
-  distributionId?: string;
-  skipped?: string;
-  recipientCount?: number;
-  totalLamports?: number;
-  txSignatures?: string[];
-  error?: string;
+export interface Tier1Staker {
+  amount: bigint;
+  /** Human-readable token amount. */
+  amountHuman: number;
+  owner: string;
 }
 
 // ---------------------------------------------------------------------------
 // Keypair
-// ---------------------------------------------------------------------------
-
-function getCreatorFeeKeypair(): Keypair | null {
-  const secret = process.env.CREATOR_FEE_WALLET_SECRET?.trim();
-  if (!secret) return null;
-  try {
-    const bytes = bs58.decode(secret);
-    if (bytes.length !== 64) return null;
-    return Keypair.fromSecretKey(bytes);
-  } catch {
-    return null;
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Tier 1 stakers
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch all stakers who qualify for Tier 1 using live pricing (market cap + staker count).
- */
-export async function fetchTier1Stakers(
-  connection: Connection,
-  programId: PublicKey | null,
-): Promise<Tier1Staker[]> {
-  if (!programId) return [];
-
-  const token = getActiveToken();
-  const allStakers = await fetchAllStakers(connection, programId);
-  if (allStakers.length === 0) return [];
-
-  const market = await fetchTokenMarketData(token.mint);
-  if (!market || market.priceUsd <= 0) return [];
-
-  const pricing = computeTierPricing(
-    token,
-    market.priceUsd,
-    market.marketCapUsd,
-    allStakers.length,
-  );
-  const tier1 = pricing.tiers.find((t) => t.tierId === 1);
-  if (!tier1 || tier1.tokensRaw === 0n) return [];
-
-  const tier1Min = tier1.tokensRaw;
-  const tier1Stakers: Tier1Staker[] = [];
-
-  for (const s of allStakers) {
-    if (s.amount >= tier1Min) {
-      tier1Stakers.push({
-        owner: s.owner,
-        amount: s.amount,
-        amountHuman: Number(s.amount) / 10 ** token.decimals,
-      });
-    }
-  }
-
-  return tier1Stakers;
-}
-
-// ---------------------------------------------------------------------------
-// Pro-rata shares
 // ---------------------------------------------------------------------------
 
 /**
@@ -172,10 +111,10 @@ export function computeShares(
       totalStaked > 0 ? (Number(s.amount) / totalStaked) * 100 : 0;
 
     shares.push({
-      wallet: s.owner,
       lamports,
-      stakedTokens: Number(s.amount),
       sharePercent,
+      stakedTokens: Number(s.amount),
+      wallet: s.owner,
     });
   }
 
@@ -183,76 +122,52 @@ export function computeShares(
 }
 
 // ---------------------------------------------------------------------------
-// Execute distribution (batch SOL transfers)
+// Tier 1 stakers
 // ---------------------------------------------------------------------------
 
 /**
- * Send SOL to each recipient in batches. Returns tx signatures and per-recipient sig mapping.
+ * Fetch all stakers who qualify for Tier 1 using live pricing (market cap + staker count).
  */
-async function executeDistribution(
+export async function fetchTier1Stakers(
   connection: Connection,
-  shares: ShareEntry[],
-  fromKeypair: Keypair,
-): Promise<{ txSignatures: string[]; sigByIndex: Map<number, string> }> {
-  const txSignatures: string[] = [];
-  const sigByIndex = new Map<number, string>();
-  let idx = 0;
+  programId: null | PublicKey,
+): Promise<Tier1Staker[]> {
+  if (!programId) return [];
 
-  for (let i = 0; i < shares.length; i += MAX_TRANSFERS_PER_TX) {
-    const batch = shares.slice(i, i + MAX_TRANSFERS_PER_TX);
-    const tx = new Transaction();
+  const token = getActiveToken();
+  const allStakers = await fetchAllStakers(connection, programId);
+  if (allStakers.length === 0) return [];
 
-    for (const sh of batch) {
-      if (sh.lamports <= 0) continue;
-      tx.add(
-        SystemProgram.transfer({
-          fromPubkey: fromKeypair.publicKey,
-          toPubkey: new PublicKey(sh.wallet),
-          lamports: sh.lamports,
-        }),
-      );
+  const market = await fetchTokenMarketData(token.mint);
+  if (!market || market.priceUsd <= 0) return [];
+
+  const pricing = computeTierPricing(
+    token,
+    market.priceUsd,
+    market.marketCapUsd,
+    allStakers.length,
+  );
+  const tier1 = pricing.tiers.find((t) => t.tierId === 1);
+  if (!tier1 || tier1.tokensRaw === 0n) return [];
+
+  const tier1Min = tier1.tokensRaw;
+  const tier1Stakers: Tier1Staker[] = [];
+
+  for (const s of allStakers) {
+    if (s.amount >= tier1Min) {
+      tier1Stakers.push({
+        amount: s.amount,
+        amountHuman: Number(s.amount) / 10 ** token.decimals,
+        owner: s.owner,
+      });
     }
-
-    if (tx.instructions.length === 0) continue;
-
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-    tx.recentBlockhash = blockhash;
-    tx.feePayer = fromKeypair.publicKey;
-
-    const sig = await sendAndConfirmTransaction(connection, tx, [fromKeypair], {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    });
-
-    txSignatures.push(sig);
-    for (let j = 0; j < batch.length; j++) {
-      sigByIndex.set(idx + j, sig);
-    }
-    idx += batch.length;
   }
 
-  return { txSignatures, sigByIndex };
+  return tier1Stakers;
 }
 
 // ---------------------------------------------------------------------------
-// Idempotency: already ran today?
-// ---------------------------------------------------------------------------
-
-async function distributionAlreadyRanToday(): Promise<boolean> {
-  const todayStart = new Date();
-  todayStart.setUTCHours(0, 0, 0, 0);
-
-  const rows = await db
-    .select({ id: creatorFeeDistributionTable.id })
-    .from(creatorFeeDistributionTable)
-    .where(gte(creatorFeeDistributionTable.createdAt, todayStart))
-    .limit(1);
-
-  return rows.length > 0;
-}
-
-// ---------------------------------------------------------------------------
-// Main orchestrator
+// Pro-rata shares
 // ---------------------------------------------------------------------------
 
 /**
@@ -304,14 +219,14 @@ export async function runDailyDistribution(options?: {
 
   try {
     await db.insert(creatorFeeDistributionTable).values({
-      id: distributionId,
       createdAt: now,
-      updatedAt: now,
-      totalSolLamports: shares.reduce((s, sh) => s + sh.lamports, 0),
+      feeWalletBalance: balance,
+      id: distributionId,
       recipientCount: shares.length,
       status: "pending",
+      totalSolLamports: shares.reduce((s, sh) => s + sh.lamports, 0),
       txSignatures: [],
-      feeWalletBalance: balance,
+      updatedAt: now,
     });
   } catch (e) {
     console.error(
@@ -319,13 +234,13 @@ export async function runDailyDistribution(options?: {
       e,
     );
     return {
-      ok: false,
       error: e instanceof Error ? e.message : String(e),
+      ok: false,
     };
   }
 
   try {
-    const { txSignatures, sigByIndex } = await executeDistribution(
+    const { sigByIndex, txSignatures } = await executeDistribution(
       connection,
       shares,
       keypair,
@@ -343,19 +258,19 @@ export async function runDailyDistribution(options?: {
     for (let i = 0; i < shares.length; i++) {
       const sh = shares[i]!;
       await db.insert(creatorFeePayoutTable).values({
-        id: createId(),
         distributionId,
-        wallet: sh.wallet,
+        id: createId(),
+        sharePercent: sh.sharePercent.toFixed(4),
         solLamports: sh.lamports,
         stakedTokens: sh.stakedTokens,
-        sharePercent: sh.sharePercent.toFixed(4),
         txSignature: sigByIndex.get(i) ?? null,
+        wallet: sh.wallet,
       });
     }
 
     return {
-      ok: true,
       distributionId,
+      ok: true,
       recipientCount: shares.length,
       totalLamports: shares.reduce((s, sh) => s + sh.lamports, 0),
       txSignatures,
@@ -368,9 +283,94 @@ export async function runDailyDistribution(options?: {
 
     console.error("[creator-fee-distribution] Execute failed:", e);
     return {
-      ok: false,
       distributionId,
       error: e instanceof Error ? e.message : String(e),
+      ok: false,
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Execute distribution (batch SOL transfers)
+// ---------------------------------------------------------------------------
+
+async function distributionAlreadyRanToday(): Promise<boolean> {
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+
+  const rows = await db
+    .select({ id: creatorFeeDistributionTable.id })
+    .from(creatorFeeDistributionTable)
+    .where(gte(creatorFeeDistributionTable.createdAt, todayStart))
+    .limit(1);
+
+  return rows.length > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Idempotency: already ran today?
+// ---------------------------------------------------------------------------
+
+/**
+ * Send SOL to each recipient in batches. Returns tx signatures and per-recipient sig mapping.
+ */
+async function executeDistribution(
+  connection: Connection,
+  shares: ShareEntry[],
+  fromKeypair: Keypair,
+): Promise<{ sigByIndex: Map<number, string>; txSignatures: string[] }> {
+  const txSignatures: string[] = [];
+  const sigByIndex = new Map<number, string>();
+  let idx = 0;
+
+  for (let i = 0; i < shares.length; i += MAX_TRANSFERS_PER_TX) {
+    const batch = shares.slice(i, i + MAX_TRANSFERS_PER_TX);
+    const tx = new Transaction();
+
+    for (const sh of batch) {
+      if (sh.lamports <= 0) continue;
+      tx.add(
+        SystemProgram.transfer({
+          fromPubkey: fromKeypair.publicKey,
+          lamports: sh.lamports,
+          toPubkey: new PublicKey(sh.wallet),
+        }),
+      );
+    }
+
+    if (tx.instructions.length === 0) continue;
+
+    const { blockhash } = await connection.getLatestBlockhash("confirmed");
+    tx.recentBlockhash = blockhash;
+    tx.feePayer = fromKeypair.publicKey;
+
+    const sig = await sendAndConfirmTransaction(connection, tx, [fromKeypair], {
+      commitment: "confirmed",
+      preflightCommitment: "confirmed",
+    });
+
+    txSignatures.push(sig);
+    for (let j = 0; j < batch.length; j++) {
+      sigByIndex.set(idx + j, sig);
+    }
+    idx += batch.length;
+  }
+
+  return { sigByIndex, txSignatures };
+}
+
+// ---------------------------------------------------------------------------
+// Main orchestrator
+// ---------------------------------------------------------------------------
+
+function getCreatorFeeKeypair(): Keypair | null {
+  const secret = process.env.CREATOR_FEE_WALLET_SECRET?.trim();
+  if (!secret) return null;
+  try {
+    const bytes = bs58.decode(secret);
+    if (bytes.length !== 64) return null;
+    return Keypair.fromSecretKey(bytes);
+  } catch {
+    return null;
   }
 }

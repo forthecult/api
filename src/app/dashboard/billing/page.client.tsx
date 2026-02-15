@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
+import type { User } from "~/db/schema/users/types";
+
 import { PAYMENT_CONFIG } from "~/app";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -13,10 +15,8 @@ import {
   CardTitle,
 } from "~/ui/primitives/card";
 
-import type { User } from "~/db/schema/users/types";
-
 interface BillingPageClientProps {
-  user: User | null;
+  user: null | User;
 }
 
 export function BillingPageClient({ user }: BillingPageClientProps) {
@@ -58,10 +58,20 @@ export function BillingPageClient({ user }: BillingPageClientProps) {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-md bg-primary/10 px-2 py-1 text-sm font-medium text-primary">
+            <span
+              className={`
+              rounded-md bg-primary/10 px-2 py-1 text-sm font-medium
+              text-primary
+            `}
+            >
               Solana Pay (active)
             </span>
-            <span className="rounded-md border bg-muted/50 px-2 py-1 text-sm text-muted-foreground">
+            <span
+              className={`
+              rounded-md border bg-muted/50 px-2 py-1 text-sm
+              text-muted-foreground
+            `}
+            >
               Stripe (disabled)
             </span>
           </div>

@@ -9,22 +9,7 @@ import { verifyOrderConfirmationToken } from "~/lib/order-confirmation-token";
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
-/** Normalize email for ownership check (lowercase, trim). */
-function normalizeEmail(email: string | null | undefined): string {
-  return (email ?? "").trim().toLowerCase();
-}
-
-/** Redact email: "user@example.com" → "u***@e***.com" */
-function redactEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!local || !domain) return "***@***.***";
-  const domainParts = domain.split(".");
-  const domainName = domainParts[0] ?? "";
-  const tld = domainParts.slice(1).join(".");
-  return `${local[0]}***@${domainName[0]}***.${tld}`;
-}
-
-type AccessLevel = "admin" | "owner" | "first_visit" | "public";
+type AccessLevel = "admin" | "first_visit" | "owner" | "public";
 
 /**
  * Full order details: items, shipping, totals, payment summary.
@@ -48,26 +33,26 @@ export async function GET(
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
         createdAt: ordersTable.createdAt,
-        updatedAt: ordersTable.updatedAt,
-        email: ordersTable.email,
-        userId: ordersTable.userId,
-        totalCents: ordersTable.totalCents,
-        shippingFeeCents: ordersTable.shippingFeeCents,
-        paymentMethod: ordersTable.paymentMethod,
         cryptoCurrency: ordersTable.cryptoCurrency,
-        shippingName: ordersTable.shippingName,
+        email: ordersTable.email,
+        id: ordersTable.id,
+        payerWalletAddress: ordersTable.payerWalletAddress,
+        paymentMethod: ordersTable.paymentMethod,
         shippingAddress1: ordersTable.shippingAddress1,
         shippingAddress2: ordersTable.shippingAddress2,
         shippingCity: ordersTable.shippingCity,
+        shippingCountryCode: ordersTable.shippingCountryCode,
+        shippingFeeCents: ordersTable.shippingFeeCents,
+        shippingName: ordersTable.shippingName,
+        shippingPhone: ordersTable.shippingPhone,
         shippingStateCode: ordersTable.shippingStateCode,
         shippingZip: ordersTable.shippingZip,
-        shippingCountryCode: ordersTable.shippingCountryCode,
-        shippingPhone: ordersTable.shippingPhone,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
-        payerWalletAddress: ordersTable.payerWalletAddress,
+        status: ordersTable.status,
+        totalCents: ordersTable.totalCents,
+        updatedAt: ordersTable.updatedAt,
+        userId: ordersTable.userId,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -141,10 +126,10 @@ export async function GET(
     const canSeePII = accessLevel !== "public";
 
     const statusMap: Record<string, string> = {
-      pending: "awaiting_payment",
-      paid: "paid",
-      fulfilled: "shipped",
       cancelled: "cancelled",
+      fulfilled: "shipped",
+      paid: "paid",
+      pending: "awaiting_payment",
     };
     let status = statusMap[order.status] ?? order.status;
     if (order.status === "pending") {
@@ -154,10 +139,10 @@ export async function GET(
 
     const items = await db
       .select({
-        productId: orderItemsTable.productId,
         name: orderItemsTable.name,
-        quantity: orderItemsTable.quantity,
         priceCents: orderItemsTable.priceCents,
+        productId: orderItemsTable.productId,
+        quantity: orderItemsTable.quantity,
       })
       .from(orderItemsTable)
       .where(eq(orderItemsTable.orderId, order.id));
@@ -182,14 +167,14 @@ export async function GET(
     const shipping = hasShipping
       ? canSeePII
         ? {
-            name: order.shippingName ?? undefined,
             address1: order.shippingAddress1 ?? undefined,
             address2: order.shippingAddress2 ?? undefined,
             city: order.shippingCity ?? undefined,
+            countryCode: order.shippingCountryCode ?? undefined,
+            name: order.shippingName ?? undefined,
+            phone: order.shippingPhone ?? undefined,
             stateCode: order.shippingStateCode ?? undefined,
             zip: order.shippingZip ?? undefined,
-            countryCode: order.shippingCountryCode ?? undefined,
-            phone: order.shippingPhone ?? undefined,
           }
         : {
             // Redacted: only expose country for delivery estimate, nothing else
@@ -198,45 +183,45 @@ export async function GET(
       : undefined;
 
     return NextResponse.json({
-      orderId: order.id,
-      status,
+      _actions: {
+        ...(status === "awaiting_payment" && {
+          cancel: `POST /api/orders/${order.id}/cancel (only before payment)`,
+          next: `Poll GET /api/orders/${order.id}/status every 5s until status changes`,
+        }),
+        help: "Contact support@forthecult.store",
+      },
       createdAt: order.createdAt.toISOString(),
-      paidAt,
+      cryptoCurrency: order.cryptoCurrency ?? undefined,
       email: canSeePII
         ? (order.email ?? undefined)
         : order.email
           ? redactEmail(order.email)
           : undefined,
-      paymentMethod: order.paymentMethod ?? undefined,
-      cryptoCurrency: order.cryptoCurrency ?? undefined,
       // accessLevel omitted from response to avoid leaking internal auth model
       items: items.map((i) => ({
-        productId: i.productId,
         name: i.name,
-        quantity: i.quantity,
         priceUsd: i.priceCents / 100,
+        productId: i.productId,
+        quantity: i.quantity,
         subtotalUsd: (i.priceCents * i.quantity) / 100,
       })),
-      shipping,
-      totals: {
-        subtotalUsd,
-        shippingUsd,
-        totalUsd,
-      },
+      orderId: order.id,
+      paidAt,
       payment: order.solanaPayDepositAddress
         ? {
+            amountUsd: totalUsd,
             chain: "solana",
             token: "USDC",
-            amountUsd: totalUsd,
             transactionSignature: undefined,
           }
         : undefined,
-      _actions: {
-        ...(status === "awaiting_payment" && {
-          next: `Poll GET /api/orders/${order.id}/status every 5s until status changes`,
-          cancel: `POST /api/orders/${order.id}/cancel (only before payment)`,
-        }),
-        help: "Contact support@forthecult.store",
+      paymentMethod: order.paymentMethod ?? undefined,
+      shipping,
+      status,
+      totals: {
+        shippingUsd,
+        subtotalUsd,
+        totalUsd,
       },
     });
   } catch (err) {
@@ -246,4 +231,19 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+/** Normalize email for ownership check (lowercase, trim). */
+function normalizeEmail(email: null | string | undefined): string {
+  return (email ?? "").trim().toLowerCase();
+}
+
+/** Redact email: "user@example.com" → "u***@e***.com" */
+function redactEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***@***.***";
+  const domainParts = domain.split(".");
+  const domainName = domainParts[0] ?? "";
+  const tld = domainParts.slice(1).join(".");
+  return `${local[0]}***@${domainName[0]}***.${tld}`;
 }

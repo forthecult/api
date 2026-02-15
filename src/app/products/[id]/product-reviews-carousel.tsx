@@ -5,83 +5,16 @@ import React, { useEffect, useState } from "react";
 
 import { cn } from "~/lib/cn";
 
-interface ReviewItem {
-  id: string;
-  comment: string;
-  rating: number;
-  displayName: string;
-  productName?: string | null;
-}
-
 interface ProductReviewsCarouselProps {
   className?: string;
 }
 
-/**
- * Review card with product name header (unlike homepage testimonials).
- */
-function ReviewCard({
-  review,
-  className,
-}: {
-  review: ReviewItem;
-  className?: string;
-}) {
-  const stars = Math.min(5, Math.max(0, Math.round(review.rating ?? 0)));
-
-  return (
-    <div
-      className={cn(
-        "flex flex-col rounded-lg border-t",
-        "bg-gradient-to-b from-muted/50 to-muted/10",
-        "p-4 text-start sm:p-6",
-        "hover:from-muted/60 hover:to-muted/20",
-        "max-w-[320px] sm:max-w-[320px]",
-        "transition-colors duration-300",
-        className,
-      )}
-    >
-      {/* Product name header */}
-      {review.productName && (
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground/70">
-          {review.productName}
-        </p>
-      )}
-
-      {/* Author and rating */}
-      <div className="flex items-center gap-3">
-        <div className="flex min-w-0 flex-1 flex-col items-start">
-          <h3 className="text-md font-semibold leading-none">
-            {review.displayName}
-          </h3>
-          {review.rating != null && review.rating > 0 && (
-            <div
-              className="mt-1.5 flex items-center gap-0.5"
-              aria-label={`${stars} out of 5 stars`}
-            >
-              {[1, 2, 3, 4, 5].map((i) => (
-                <Star
-                  key={i}
-                  className={cn(
-                    "h-4 w-4",
-                    i <= stars
-                      ? "fill-amber-400 text-amber-400"
-                      : "text-muted-foreground/40",
-                  )}
-                  aria-hidden
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Review text */}
-      <p className="mt-4 text-sm text-muted-foreground sm:text-md">
-        {review.comment}
-      </p>
-    </div>
-  );
+interface ReviewItem {
+  comment: string;
+  displayName: string;
+  id: string;
+  productName?: null | string;
+  rating: number;
 }
 
 /**
@@ -130,10 +63,16 @@ export function ProductReviewsCarousel({
         className,
       )}
     >
-      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div
+        className={`
+        w-full max-w-7xl px-4
+        sm:px-6
+        lg:px-8
+      `}
+      >
         <h2
-          id="customer-reviews-heading"
           className="mb-2 text-left text-2xl font-bold text-foreground"
+          id="customer-reviews-heading"
         >
           What customers are saying
         </h2>
@@ -145,12 +84,33 @@ export function ProductReviewsCarousel({
 
       {loading ? (
         <div className="flex h-40 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <div
+            className={`
+            h-8 w-8 animate-spin rounded-full border-4 border-primary
+            border-t-transparent
+          `}
+          />
         </div>
       ) : (
-        <div className="relative flex w-full flex-col items-center justify-center overflow-hidden">
-          <div className="group flex flex-row overflow-hidden p-2 [gap:var(--gap)] [--gap:1rem]">
-            <div className="flex shrink-0 flex-row justify-around animate-marquee-testimonials [gap:var(--gap)]">
+        <div
+          className={`
+          relative flex w-full flex-col items-center justify-center
+          overflow-hidden
+        `}
+        >
+          <div
+            className={`
+            group flex flex-row overflow-hidden p-2
+            [gap:var(--gap)]
+            [--gap:1rem]
+          `}
+          >
+            <div
+              className={`
+              animate-marquee-testimonials flex shrink-0 flex-row justify-around
+              [gap:var(--gap)]
+            `}
+            >
               {/* Duplicate reviews 4x for seamless loop */}
               {[...Array(4)].map((_, setIndex) =>
                 reviews.map((review, i) => (
@@ -164,10 +124,105 @@ export function ProductReviewsCarousel({
           </div>
 
           {/* Gradient fades on edges */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/3 bg-gradient-to-r from-background sm:block" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/3 bg-gradient-to-l from-background sm:block" />
+          <div
+            className={`
+            pointer-events-none absolute inset-y-0 left-0 hidden w-1/3
+            bg-gradient-to-r from-background
+            sm:block
+          `}
+          />
+          <div
+            className={`
+            pointer-events-none absolute inset-y-0 right-0 hidden w-1/3
+            bg-gradient-to-l from-background
+            sm:block
+          `}
+          />
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Review card with product name header (unlike homepage testimonials).
+ */
+function ReviewCard({
+  className,
+  review,
+}: {
+  className?: string;
+  review: ReviewItem;
+}) {
+  const stars = Math.min(5, Math.max(0, Math.round(review.rating ?? 0)));
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-lg border-t",
+        "bg-gradient-to-b from-muted/50 to-muted/10",
+        `
+          p-4 text-start
+          sm:p-6
+        `,
+        "hover:from-muted/60 hover:to-muted/20",
+        `
+          max-w-[320px]
+          sm:max-w-[320px]
+        `,
+        "transition-colors duration-300",
+        className,
+      )}
+    >
+      {/* Product name header */}
+      {review.productName && (
+        <p
+          className={`
+          mb-3 text-xs font-medium tracking-wide text-muted-foreground/70
+          uppercase
+        `}
+        >
+          {review.productName}
+        </p>
+      )}
+
+      {/* Author and rating */}
+      <div className="flex items-center gap-3">
+        <div className="flex min-w-0 flex-1 flex-col items-start">
+          <h3 className="text-md leading-none font-semibold">
+            {review.displayName}
+          </h3>
+          {review.rating != null && review.rating > 0 && (
+            <div
+              aria-label={`${stars} out of 5 stars`}
+              className="mt-1.5 flex items-center gap-0.5"
+            >
+              {[1, 2, 3, 4, 5].map((i) => (
+                <Star
+                  aria-hidden
+                  className={cn(
+                    "h-4 w-4",
+                    i <= stars
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-muted-foreground/40",
+                  )}
+                  key={i}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Review text */}
+      <p
+        className={`
+        sm:text-md
+        mt-4 text-sm text-muted-foreground
+      `}
+      >
+        {review.comment}
+      </p>
+    </div>
   );
 }

@@ -12,28 +12,28 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-type Profile = {
-  id: string;
+interface Profile {
+  email: string;
   firstName: string;
+  id: string;
+  image: null | string;
   lastName: string;
   name: string;
-  image: string | null;
-  email: string;
-};
+}
 
 export default function AdminProfilePage() {
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<null | Profile>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [saveLoading, setSaveLoading] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: "success" | "error";
+  const [saveMessage, setSaveMessage] = useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<null | string>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchProfile = useCallback(async () => {
@@ -76,13 +76,13 @@ export default function AdminProfilePage() {
     }
     if (!file.type.startsWith("image/")) {
       setSaveMessage({
-        type: "error",
         text: "Please select an image (JPEG, PNG, WebP, or GIF).",
+        type: "error",
       });
       return;
     }
     if (file.size > 4 * 1024 * 1024) {
-      setSaveMessage({ type: "error", text: "Image must be under 4MB." });
+      setSaveMessage({ text: "Image must be under 4MB.", type: "error" });
       return;
     }
     setAvatarFile(file);
@@ -94,15 +94,15 @@ export default function AdminProfilePage() {
     setSaveMessage(null);
     setSaveLoading(true);
     try {
-      let imageUrl: string | null | undefined;
+      let imageUrl: null | string | undefined;
 
       if (avatarFile) {
         const formData = new FormData();
         formData.append("file", avatarFile);
         const uploadRes = await fetch(`${API_BASE}/api/user/avatar`, {
-          method: "POST",
-          credentials: "include",
           body: formData,
+          credentials: "include",
+          method: "POST",
         });
         if (!uploadRes.ok) {
           const err = (await uploadRes.json().catch(() => ({}))) as {
@@ -115,14 +115,14 @@ export default function AdminProfilePage() {
       }
 
       const res = await fetch(`${API_BASE}/api/user/profile`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           firstName: firstName.trim() || undefined,
           lastName: lastName.trim() || undefined,
           ...(imageUrl !== undefined ? { image: imageUrl } : {}),
         }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
 
       if (!res.ok) {
@@ -131,15 +131,15 @@ export default function AdminProfilePage() {
       }
 
       setSaveMessage({
-        type: "success",
         text: "Profile saved. Your name and photo will appear when you reply in chat and support tickets.",
+        type: "success",
       });
       setAvatarFile(null);
       void fetchProfile();
     } catch (err) {
       setSaveMessage({
-        type: "error",
         text: err instanceof Error ? err.message : "Failed to save profile.",
+        type: "error",
       });
     } finally {
       setSaveLoading(false);
@@ -148,7 +148,11 @@ export default function AdminProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -169,9 +173,12 @@ export default function AdminProfilePage() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Link
-          className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-          href="/dashboard"
           aria-label="Back to Dashboard"
+          className={`
+            rounded p-1.5 text-muted-foreground
+            hover:bg-muted hover:text-foreground
+          `}
+          href="/dashboard"
         >
           <ChevronLeft className="h-5 w-5" />
         </Link>
@@ -193,43 +200,64 @@ export default function AdminProfilePage() {
               className={cn(
                 "rounded-md border px-3 py-2 text-sm",
                 saveMessage.type === "success"
-                  ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                  : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                  ? `
+                    border-green-200 bg-green-50 text-green-800
+                    dark:border-green-800 dark:bg-green-950/30
+                    dark:text-green-200
+                  `
+                  : `
+                    border-red-200 bg-red-50 text-red-800
+                    dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+                  `,
               )}
             >
               {saveMessage.text}
             </p>
           )}
 
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-start">
+          <div
+            className={`
+            flex flex-col gap-6
+            sm:flex-row sm:items-start
+          `}
+          >
             <div className="flex flex-col items-center gap-2">
-              <div className="relative h-24 w-24 overflow-hidden rounded-full border bg-muted">
+              <div
+                className={`
+                relative h-24 w-24 overflow-hidden rounded-full border bg-muted
+              `}
+              >
                 {avatarPreview ? (
                   <Image
-                    src={avatarPreview}
                     alt="Profile"
-                    fill
                     className="object-cover"
+                    fill
+                    src={avatarPreview}
                     unoptimized={avatarPreview.startsWith("blob:")}
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-3xl text-muted-foreground">
+                  <div
+                    className={`
+                    flex h-full w-full items-center justify-center text-3xl
+                    text-muted-foreground
+                  `}
+                  >
                     <User className="h-12 w-12" />
                   </div>
                 )}
               </div>
               <input
-                ref={fileInputRef}
-                type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
                 onChange={handleFileChange}
+                ref={fileInputRef}
+                type="file"
               />
               <Button
+                onClick={() => fileInputRef.current?.click()}
+                size="sm"
                 type="button"
                 variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
               >
                 Change photo
               </Button>
@@ -238,43 +266,55 @@ export default function AdminProfilePage() {
             <div className="flex-1 space-y-4">
               <div>
                 <label
-                  htmlFor="first-name"
                   className="mb-1.5 block text-sm font-medium"
+                  htmlFor="first-name"
                 >
                   First name
                 </label>
                 <input
+                  className={`
+                    w-full rounded-md border border-input bg-background px-3
+                    py-2 text-sm ring-offset-background
+                    placeholder:text-muted-foreground
+                    focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:outline-none
+                  `}
                   id="first-name"
-                  type="text"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder="e.g. Jane"
-                  value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="e.g. Jane"
+                  type="text"
+                  value={firstName}
                 />
               </div>
               <div>
                 <label
-                  htmlFor="last-name"
                   className="mb-1.5 block text-sm font-medium"
+                  htmlFor="last-name"
                 >
                   Last name
                 </label>
                 <input
+                  className={`
+                    w-full rounded-md border border-input bg-background px-3
+                    py-2 text-sm ring-offset-background
+                    placeholder:text-muted-foreground
+                    focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:outline-none
+                  `}
                   id="last-name"
-                  type="text"
-                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  placeholder="e.g. Smith"
-                  value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
+                  placeholder="e.g. Smith"
+                  type="text"
+                  value={lastName}
                 />
               </div>
             </div>
           </div>
 
           <Button
-            type="button"
             disabled={saveLoading}
             onClick={() => void handleSave()}
+            type="button"
           >
             <Save className="mr-2 h-4 w-4" />
             {saveLoading ? "Saving…" : "Save"}

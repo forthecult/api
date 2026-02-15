@@ -11,7 +11,12 @@ const CheckoutClient = dynamic(
       <div className="space-y-6">
         <Skeleton className="h-10 w-48" />
         <Skeleton className="h-64 w-full" />
-        <div className="grid gap-6 md:grid-cols-2">
+        <div
+          className={`
+          grid gap-6
+          md:grid-cols-2
+        `}
+        >
           <Skeleton className="h-96 w-full" />
           <Skeleton className="h-64 w-full" />
         </div>

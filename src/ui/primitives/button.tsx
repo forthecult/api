@@ -43,7 +43,7 @@ const buttonVariants = cva(
       },
       variant: {
         default: `
-          bg-[#C4873A] text-[#111111] shadow-xs font-semibold
+          bg-[#C4873A] font-semibold text-[#111111] shadow-xs
           hover:bg-[#D4A05A] hover:shadow-md hover:shadow-[#C4873A]/20
           focus-visible:ring-2 focus-visible:ring-[#C4873A]/60
           active:bg-[#A8702F]
@@ -64,10 +64,11 @@ const buttonVariants = cva(
           focus-visible:ring-2 focus-visible:ring-primary/40
         `,
         outline: `
-          border border-border bg-transparent shadow-xs
-          text-[#1A1611] dark:text-[#F5F1EB]
-          hover:border-primary/50 hover:bg-muted hover:text-primary hover:shadow-md
+          border border-border bg-transparent text-[#1A1611] shadow-xs
+          hover:border-primary/50 hover:bg-muted hover:text-primary
+          hover:shadow-md
           focus-visible:ring-2 focus-visible:ring-primary/40
+          dark:text-[#F5F1EB]
         `,
         secondary: `
           bg-secondary text-secondary-foreground shadow-xs

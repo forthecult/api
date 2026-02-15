@@ -1,15 +1,15 @@
 "use client";
 
-import { createQR, encodeURL } from "@solana/pay";
-import { PublicKey } from "@solana/web3-compat";
-import Image from "next/image";
-import { Loader2, Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type BigNumber from "bignumber.js";
 
-import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
-import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
+import { createQR, encodeURL } from "@solana/pay";
+import { PublicKey } from "@solana/web3-compat";
+import { Loader2, Lock } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { PAYMENT_CONFIG } from "~/app";
 import {
   getHiddenFromVisibility,
   hasAnyCryptoEnabled,
@@ -18,6 +18,8 @@ import {
   visibleUsdcNetworks,
   visibleUsdtNetworks,
 } from "~/lib/checkout-payment-options";
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
+import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import {
   getSolanaPayLabel,
   getSolanaPayRecipient,
@@ -43,25 +45,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
-import { PAYMENT_CONFIG } from "~/app";
+
 import type { OrderPayload } from "../checkout-shared";
-import {
-  ESIM_REFUND_POPUP_ITEMS,
-  paymentButtonClass,
-  paymentOptionRowClass,
-} from "../checkout-shared";
-import {
-  BillingAddressForm,
-  type BillingAddressFormRef,
-} from "./BillingAddressForm";
-import { ExpressCheckout } from "./ExpressCheckout";
-import { PolicyPopup } from "./PolicyPopup";
-import {
-  StripeCardPayment,
-  type StripeCardPaymentRef,
-} from "./StripeCardPayment";
-import { SolanaPayDialog } from "./solana-pay-dialog";
-import { useSolanaPayCheckout } from "../hooks/useSolanaPayCheckout";
+import type { ShippingAddressFormRef } from "./ShippingAddressForm";
+
 import {
   CRYPTO_LOGO_SRC,
   ETH_CHAIN_OPTIONS,
@@ -74,23 +61,39 @@ import {
   USDT_SUB_OPTIONS,
   VISIBLE_CRYPTO_SUB_OPTIONS,
 } from "../checkout-payment-constants";
-import type { ShippingAddressFormRef } from "./ShippingAddressForm";
+import {
+  ESIM_REFUND_POPUP_ITEMS,
+  paymentButtonClass,
+  paymentOptionRowClass,
+} from "../checkout-shared";
+import { useSolanaPayCheckout } from "../hooks/useSolanaPayCheckout";
+import {
+  BillingAddressForm,
+  type BillingAddressFormRef,
+} from "./BillingAddressForm";
+import { ExpressCheckout } from "./ExpressCheckout";
+import { PolicyPopup } from "./PolicyPopup";
+import { SolanaPayDialog } from "./solana-pay-dialog";
+import {
+  StripeCardPayment,
+  type StripeCardPaymentRef,
+} from "./StripeCardPayment";
 
-type PaymentMethodTop = "credit-card" | "crypto" | "stablecoins" | "paypal";
 type CryptoSub =
   | "bitcoin"
+  | "crust"
   | "dogecoin"
   | "eth"
-  | "solana"
   | "monero"
-  | "crust"
+  | "other"
   | "pump"
-  | "troll"
-  | "soluna"
   | "seeker"
-  | "other";
-type UsdcSub = "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
-type UsdtSub = "ethereum" | "arbitrum" | "bnb" | "polygon";
+  | "solana"
+  | "soluna"
+  | "troll";
+type PaymentMethodTop = "credit-card" | "crypto" | "paypal" | "stablecoins";
+type UsdcSub = "arbitrum" | "base" | "ethereum" | "polygon" | "solana";
+type UsdtSub = "arbitrum" | "bnb" | "ethereum" | "polygon";
 
 const EVM_CHAINS = ["ethereum", "arbitrum", "base", "polygon"] as const;
 const EVM_CHAINS_AND_BNB = [
@@ -102,64 +105,64 @@ const EVM_CHAINS_AND_BNB = [
 ] as const;
 
 export interface PaymentMethodSectionProps {
-  buildOrderPayload: () => OrderPayload;
-  shippingFormRef: React.RefObject<ShippingAddressFormRef | null>;
   billingFormRef: React.RefObject<BillingAddressFormRef | null>;
-  total: number;
-  totalCents: number;
+  buildOrderPayload: () => OrderPayload;
   canShipToCountry: boolean;
-  countryOptions: { value: string; label: string }[];
-  validationErrors: string[];
-  setValidationErrors: (errors: string[]) => void;
-  navigatingToPay: boolean;
-  setNavigatingToPay: (v: boolean) => void;
-  onCryptoTotalLabelChange?: (label: string | null) => void;
+  countryOptions: { label: string; value: string }[];
   /** When true, refund policy popup includes eSIM-specific rules. */
   hasEsimInCart?: boolean;
+  navigatingToPay: boolean;
+  onCryptoTotalLabelChange?: (label: null | string) => void;
   /** Callback when the selected payment method key changes (for discount resolution). */
-  onPaymentMethodKeyChange?: (key: string | null) => void;
+  onPaymentMethodKeyChange?: (key: null | string) => void;
+  setNavigatingToPay: (v: boolean) => void;
+  setValidationErrors: (errors: string[]) => void;
+  shippingFormRef: React.RefObject<null | ShippingAddressFormRef>;
+  total: number;
+  totalCents: number;
+  validationErrors: string[];
 }
 
 export function PaymentMethodSection({
-  buildOrderPayload,
-  shippingFormRef,
   billingFormRef,
-  total,
-  totalCents,
+  buildOrderPayload,
   canShipToCountry,
   countryOptions,
-  validationErrors,
-  setValidationErrors,
-  navigatingToPay,
-  setNavigatingToPay,
-  onCryptoTotalLabelChange,
   hasEsimInCart = false,
+  navigatingToPay,
+  onCryptoTotalLabelChange,
   onPaymentMethodKeyChange,
+  setNavigatingToPay,
+  setValidationErrors,
+  shippingFormRef,
+  total,
+  totalCents,
+  validationErrors,
 }: PaymentMethodSectionProps) {
   const router = useRouter();
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethodTop | "">("");
+  const [paymentMethod, setPaymentMethod] = useState<"" | PaymentMethodTop>("");
   const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">(
     "usdc",
   );
   const [paymentSubOption, setPaymentSubOption] = useState<
-    CryptoSub | UsdcSub | UsdtSub | ""
+    "" | CryptoSub | UsdcSub | UsdtSub
   >(INITIAL_CRYPTO_SUB);
   const [cryptoOtherSubOption, setCryptoOtherSubOption] = useState<
-    "sui" | "ton" | ""
+    "" | "sui" | "ton"
   >("");
   const [cryptoEthChain, setCryptoEthChain] = useState<
-    "ethereum" | "arbitrum" | "base" | "polygon"
+    "arbitrum" | "base" | "ethereum" | "polygon"
   >("ethereum");
   const stripeCardRef = useRef<StripeCardPaymentRef>(null);
   const [cardLogosOpen, setCardLogosOpen] = useState(false);
-  const cardLogosCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+  const cardLogosCloseTimeoutRef = useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
 
   // Compute the payment method key (matching PAYMENT_METHOD_DEFAULTS) and notify parent.
   useEffect(() => {
-    let key: string | null = null;
+    let key: null | string = null;
     if (paymentMethod === "credit-card") {
       key = "stripe";
     } else if (paymentMethod === "paypal") {
@@ -194,26 +197,26 @@ export function PaymentMethodSection({
   ]);
 
   const {
+    amountUsd: solanaPayAmountUsd,
+    closeDialog: closeSolanaPayDialog,
     open: solanaPayOpen,
     openDialog: openSolanaPayDialog,
-    closeDialog: closeSolanaPayDialog,
-    paymentUrl: solanaPayPaymentUrl,
-    status: solanaPayStatus,
     orderId: solanaPayOrderId,
-    amountUsd: solanaPayAmountUsd,
+    paymentUrl: solanaPayPaymentUrl,
     recipientAddress: solanaPayRecipientAddress,
+    status: solanaPayStatus,
   } = useSolanaPayCheckout({
     buildOrderPayload,
     total,
   });
 
   const [cryptoPrices, setCryptoPrices] = useState<{
-    SOL?: number;
     CRUST?: number;
     PUMP?: number;
-    TROLL?: number;
-    SOLUNA?: number;
     SKR?: number;
+    SOL?: number;
+    SOLUNA?: number;
+    TROLL?: number;
   }>({});
 
   const { currency } = useCountryCurrency();
@@ -232,12 +235,12 @@ export function PaymentMethodSection({
       .then((res) => res.json())
       .then(
         (data: {
-          SOL?: number;
           CRUST?: number;
           PUMP?: number;
-          TROLL?: number;
-          SOLUNA?: number;
           SKR?: number;
+          SOL?: number;
+          SOLUNA?: number;
+          TROLL?: number;
         }) => {
           if (data && typeof data === "object") setCryptoPrices(data);
         },
@@ -480,24 +483,24 @@ export function PaymentMethodSection({
     shippingFormRef.current?.persistForm();
 
     try {
-      const { orderItems, commonBody } = buildOrderPayload();
+      const { commonBody, orderItems } = buildOrderPayload();
       const res = await fetch("/api/payments/stripe/create-checkout-session", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          affiliateCode:
+            typeof commonBody.affiliateCode === "string"
+              ? commonBody.affiliateCode
+              : undefined,
           lineItems: orderItems.map((item) => ({
             productId: item.productId,
             productVariantId: item.productVariantId,
             quantity: item.quantity,
           })),
-          userId: commonBody.userId ?? undefined,
-          affiliateCode:
-            typeof commonBody.affiliateCode === "string"
-              ? commonBody.affiliateCode
-              : undefined,
           paymentMethod:
             paymentMethod === "paypal" ? ("paypal" as const) : undefined,
+          userId: commonBody.userId ?? undefined,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
 
       if (!res.ok) {
@@ -512,8 +515,8 @@ export function PaymentMethodSection({
       }
 
       const data = (await res.json()) as {
-        url: string;
         confirmationToken?: string;
+        url: string;
       };
       if (data.url) {
         // Store confirmation token before navigating to Stripe
@@ -583,24 +586,24 @@ export function PaymentMethodSection({
                 : "solana";
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...commonBody,
-          token,
           shipping: form
             ? {
-                name: `${form.firstName} ${form.lastName}`.trim(),
                 address1: form.street,
                 address2: form.apartment,
                 city: form.city,
-                stateCode: form.state,
                 countryCode: form.country,
-                zip: form.zip,
+                name: `${form.firstName} ${form.lastName}`.trim(),
                 phone: form.phone,
+                stateCode: form.state,
+                zip: form.zip,
               }
             : undefined,
+          token,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
@@ -613,8 +616,8 @@ export function PaymentMethodSection({
         return;
       }
       const data = (await createRes.json()) as {
-        orderId: string;
         confirmationToken?: string;
+        orderId: string;
       };
       if (data.confirmationToken) {
         try {
@@ -660,24 +663,24 @@ export function PaymentMethodSection({
           : "monero";
     try {
       const createRes = await fetch("/api/checkout/btcpay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...commonBody,
-          token,
           shipping: form
             ? {
-                name: `${form.firstName} ${form.lastName}`.trim(),
                 address1: form.street,
                 address2: form.apartment,
                 city: form.city,
-                stateCode: form.state,
                 countryCode: form.country,
-                zip: form.zip,
+                name: `${form.firstName} ${form.lastName}`.trim(),
                 phone: form.phone,
+                stateCode: form.state,
+                zip: form.zip,
               }
             : undefined,
+          token,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
@@ -690,8 +693,8 @@ export function PaymentMethodSection({
         return;
       }
       const data = (await createRes.json()) as {
-        orderId: string;
         confirmationToken?: string;
+        orderId: string;
       };
       if (data.confirmationToken) {
         try {
@@ -737,33 +740,33 @@ export function PaymentMethodSection({
     const { commonBody, form } = buildOrderPayload();
     try {
       const res = await fetch("/api/checkout/eth-pay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...commonBody,
           chain,
-          token,
           shipping: form
             ? {
-                name: `${form.firstName} ${form.lastName}`.trim(),
                 address1: form.street,
                 address2: form.apartment,
                 city: form.city,
-                stateCode: form.state,
                 countryCode: form.country,
-                zip: form.zip,
+                name: `${form.firstName} ${form.lastName}`.trim(),
                 phone: form.phone,
+                stateCode: form.state,
+                zip: form.zip,
               }
             : undefined,
+          token,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!res.ok) {
         const data = (await res.json()) as { error?: string };
         throw new Error(data.error ?? "Failed to create order");
       }
-      const { orderId, confirmationToken } = (await res.json()) as {
-        orderId: string;
+      const { confirmationToken, orderId } = (await res.json()) as {
         confirmationToken?: string;
+        orderId: string;
       };
       if (confirmationToken) {
         try {
@@ -800,23 +803,23 @@ export function PaymentMethodSection({
     const { commonBody, form } = buildOrderPayload();
     try {
       const createRes = await fetch("/api/checkout/ton-pay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...commonBody,
           shipping: form
             ? {
-                name: `${form.firstName} ${form.lastName}`.trim(),
                 address1: form.street,
                 address2: form.apartment,
                 city: form.city,
-                stateCode: form.state,
                 countryCode: form.country,
-                zip: form.zip,
+                name: `${form.firstName} ${form.lastName}`.trim(),
                 phone: form.phone,
+                stateCode: form.state,
+                zip: form.zip,
               }
             : undefined,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!createRes.ok) {
         setNavigatingToPay(false);
@@ -829,8 +832,8 @@ export function PaymentMethodSection({
         return;
       }
       const data = (await createRes.json()) as {
-        orderId: string;
         confirmationToken?: string;
+        orderId: string;
       };
       if (data.confirmationToken) {
         try {
@@ -865,18 +868,22 @@ export function PaymentMethodSection({
         </CardHeader>
         <CardContent className="space-y-4">
           <ExpressCheckout
-            stripeEnabled={PAYMENT_CONFIG.stripeEnabled}
-            totalCents={totalCents}
             buildOrderPayload={buildOrderPayload}
+            setNavigatingToPay={setNavigatingToPay}
             setValidationErrors={setValidationErrors}
             shippingFormRef={shippingFormRef}
-            setNavigatingToPay={setNavigatingToPay}
+            stripeEnabled={PAYMENT_CONFIG.stripeEnabled}
+            totalCents={totalCents}
           />
           {PAYMENT_CONFIG.stripeEnabled && totalCents > 0 && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="flex-1 border-t border-border" aria-hidden />
+            <div
+              className={`
+              flex items-center gap-2 text-sm text-muted-foreground
+            `}
+            >
+              <span aria-hidden className="flex-1 border-t border-border" />
               <span>Or pay with</span>
-              <span className="flex-1 border-t border-border" aria-hidden />
+              <span aria-hidden className="flex-1 border-t border-border" />
             </div>
           )}
           {!hiddenOptions.creditCard && (
@@ -884,11 +891,14 @@ export function PaymentMethodSection({
               <label className={paymentOptionRowClass}>
                 <div className="flex items-center gap-3">
                   <input
-                    type="radio"
-                    name="payment"
                     checked={paymentMethod === "credit-card"}
+                    className={`
+                      size-4 border-input text-primary
+                      focus:ring-primary
+                    `}
+                    name="payment"
                     onChange={() => setPaymentTop("credit-card")}
-                    className="size-4 border-input text-primary focus:ring-primary"
+                    type="radio"
                   />
                   <span className="text-sm font-medium">Credit/debit card</span>
                 </div>
@@ -917,7 +927,13 @@ export function PaymentMethodSection({
                   <Popover onOpenChange={setCardLogosOpen} open={cardLogosOpen}>
                     <PopoverTrigger asChild>
                       <button
-                        className="rounded px-1.5 py-0.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        className={`
+                          rounded px-1.5 py-0.5 text-xs font-medium
+                          text-muted-foreground
+                          hover:bg-muted hover:text-foreground
+                          focus-visible:ring-2 focus-visible:ring-ring
+                          focus-visible:outline-none
+                        `}
                         onMouseEnter={() => {
                           if (cardLogosCloseTimeoutRef.current) {
                             clearTimeout(cardLogosCloseTimeoutRef.current);
@@ -938,7 +954,10 @@ export function PaymentMethodSection({
                     </PopoverTrigger>
                     <PopoverContent
                       align="end"
-                      className="flex w-auto gap-2 py-2 bg-popover text-popover-foreground"
+                      className={`
+                        flex w-auto gap-2 bg-popover py-2
+                        text-popover-foreground
+                      `}
                       onMouseEnter={() => {
                         if (cardLogosCloseTimeoutRef.current) {
                           clearTimeout(cardLogosCloseTimeoutRef.current);
@@ -967,21 +986,21 @@ export function PaymentMethodSection({
                 </div>
               </label>
               {paymentMethod === "credit-card" && (
-                <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
+                <div className="space-y-3 border-t border-border px-3 pt-4 pb-3">
                   <StripeCardPayment
-                    ref={stripeCardRef}
-                    totalCents={totalCents}
-                    buildOrderPayload={buildOrderPayload}
-                    shippingFormRef={shippingFormRef}
                     billingFormRef={billingFormRef}
-                    setValidationErrors={setValidationErrors}
+                    buildOrderPayload={buildOrderPayload}
+                    ref={stripeCardRef}
                     setNavigatingToPay={setNavigatingToPay}
+                    setValidationErrors={setValidationErrors}
+                    shippingFormRef={shippingFormRef}
+                    totalCents={totalCents}
                   />
                   <BillingAddressForm
-                    ref={billingFormRef}
                     countryOptions={countryOptions}
-                    validationErrors={validationErrors}
+                    ref={billingFormRef}
                     shippingFormRef={shippingFormRef}
+                    validationErrors={validationErrors}
                   />
                 </div>
               )}
@@ -993,21 +1012,24 @@ export function PaymentMethodSection({
               <label className={paymentOptionRowClass}>
                 <div className="flex items-center gap-3">
                   <input
-                    type="radio"
-                    name="payment"
                     checked={paymentMethod === "crypto"}
+                    className={`
+                      size-4 border-input text-primary
+                      focus:ring-primary
+                    `}
+                    name="payment"
                     onChange={() => setPaymentTop("crypto")}
-                    className="size-4 border-input text-primary focus:ring-primary"
+                    type="radio"
                   />
                   <span className="text-sm font-medium">Crypto</span>
                 </div>
                 <div className="flex shrink-0 items-center gap-1.5">
                   {cryptoRowIcons.map((icon) => (
                     <Image
-                      key={icon.alt}
                       alt={icon.alt}
                       className="size-5 shrink-0 object-contain"
                       height={20}
+                      key={icon.alt}
                       src={icon.src}
                       width={20}
                     />
@@ -1015,21 +1037,31 @@ export function PaymentMethodSection({
                 </div>
               </label>
               {paymentMethod === "crypto" && (
-                <div className="space-y-2 border-t border-border px-3 pb-3 pt-4">
+                <div className="space-y-2 border-t border-border px-3 pt-4 pb-3">
                   {visibleCryptoSubOptions.map((opt) => (
                     <div key={opt.value}>
-                      <label className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20">
+                      <label
+                        className={`
+                        flex cursor-pointer items-center gap-3 rounded-md border
+                        border-border p-2.5
+                        has-[:checked]:border-primary has-[:checked]:ring-1
+                        has-[:checked]:ring-primary/20
+                      `}
+                      >
                         <input
-                          type="radio"
-                          name="payment-crypto"
                           checked={paymentSubOption === opt.value}
+                          className={`
+                            size-4 border-input text-primary
+                            focus:ring-primary
+                          `}
+                          name="payment-crypto"
                           onChange={() => {
                             setPaymentSubOption(opt.value as CryptoSub);
                             setValidationErrors([]);
                             if (opt.value !== "other")
                               setCryptoOtherSubOption("");
                           }}
-                          className="size-4 border-input text-primary focus:ring-primary"
+                          type="radio"
                         />
                         <span className="text-sm">{opt.label}</span>
                         {CRYPTO_LOGO_SRC[
@@ -1049,26 +1081,41 @@ export function PaymentMethodSection({
                         )}
                       </label>
                       {opt.value === "eth" && paymentSubOption === "eth" && (
-                        <div className="ml-5 mt-2 space-y-2 border-l-2 border-muted pl-4">
+                        <div
+                          className={`
+                          mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
+                        `}
+                        >
                           {ETH_CHAIN_OPTIONS.map((chainOpt) => (
                             <label
+                              className={`
+                                flex cursor-pointer items-center gap-3
+                                rounded-md border border-border p-2.5
+                                has-[:checked]:border-primary
+                                has-[:checked]:ring-1
+                                has-[:checked]:ring-primary/20
+                              `}
                               key={chainOpt.value}
-                              className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20"
                             >
                               <input
-                                type="radio"
-                                name="payment-crypto-eth-chain"
                                 checked={cryptoEthChain === chainOpt.value}
+                                className={`
+                                  size-4 border-input text-primary
+                                  focus:ring-primary
+                                `}
+                                name="payment-crypto-eth-chain"
                                 onChange={() => {
                                   setCryptoEthChain(chainOpt.value);
                                   setValidationErrors([]);
                                 }}
-                                className="size-4 border-input text-primary focus:ring-primary"
+                                type="radio"
                               />
                               <span className="text-sm">{chainOpt.label}</span>
                               <Image
                                 alt={chainOpt.label}
-                                className="ml-auto h-7 w-9 shrink-0 object-contain"
+                                className={`
+                                  ml-auto h-7 w-9 shrink-0 object-contain
+                                `}
                                 height={28}
                                 src="/crypto/ethereum/ethereum-logo.svg"
                                 width={36}
@@ -1079,23 +1126,36 @@ export function PaymentMethodSection({
                       )}
                       {opt.value === "other" &&
                         paymentSubOption === "other" && (
-                          <div className="ml-5 mt-2 space-y-2 border-l-2 border-muted pl-4">
+                          <div
+                            className={`
+                            mt-2 ml-5 space-y-2 border-l-2 border-muted pl-4
+                          `}
+                          >
                             {OTHER_SUB_OPTIONS.map((otherOpt) => (
                               <label
+                                className={`
+                                  flex cursor-pointer items-center gap-3
+                                  rounded-md border border-border p-2.5
+                                  has-[:checked]:border-primary
+                                  has-[:checked]:ring-1
+                                  has-[:checked]:ring-primary/20
+                                `}
                                 key={otherOpt.value}
-                                className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20"
                               >
                                 <input
-                                  type="radio"
-                                  name="payment-crypto-other"
                                   checked={
                                     cryptoOtherSubOption === otherOpt.value
                                   }
+                                  className={`
+                                    size-4 border-input text-primary
+                                    focus:ring-primary
+                                  `}
+                                  name="payment-crypto-other"
                                   onChange={() => {
                                     setCryptoOtherSubOption(otherOpt.value);
                                     setValidationErrors([]);
                                   }}
-                                  className="size-4 border-input text-primary focus:ring-primary"
+                                  type="radio"
                                 />
                                 <span className="text-sm">
                                   {otherOpt.label}
@@ -1103,7 +1163,9 @@ export function PaymentMethodSection({
                                 {CRYPTO_LOGO_SRC[otherOpt.value] && (
                                   <Image
                                     alt={otherOpt.label}
-                                    className="ml-auto h-7 w-9 shrink-0 object-contain"
+                                    className={`
+                                      ml-auto h-7 w-9 shrink-0 object-contain
+                                    `}
                                     height={28}
                                     src={CRYPTO_LOGO_SRC[otherOpt.value]!}
                                     width={36}
@@ -1124,11 +1186,14 @@ export function PaymentMethodSection({
               <label className={paymentOptionRowClass}>
                 <div className="flex items-center gap-3">
                   <input
-                    type="radio"
-                    name="payment"
                     checked={paymentMethod === "stablecoins"}
+                    className={`
+                      size-4 border-input text-primary
+                      focus:ring-primary
+                    `}
+                    name="payment"
                     onChange={() => setPaymentTop("stablecoins")}
-                    className="size-4 border-input text-primary focus:ring-primary"
+                    type="radio"
                   />
                   <span className="text-sm font-medium">
                     Stablecoins (
@@ -1162,19 +1227,22 @@ export function PaymentMethodSection({
                 </div>
               </label>
               {paymentMethod === "stablecoins" && (
-                <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
+                <div className="space-y-3 border-t border-border px-3 pt-4 pb-3">
                   <div className="flex gap-2">
                     {showUsdcOption && (
                       <label className="flex cursor-pointer items-center gap-2">
                         <input
-                          type="radio"
-                          name="stablecoin-token"
                           checked={stablecoinToken === "usdc"}
+                          className={`
+                            size-4 border-input text-primary
+                            focus:ring-primary
+                          `}
+                          name="stablecoin-token"
                           onChange={() => {
                             setStablecoinToken("usdc");
                             setPaymentSubOption("solana" as UsdcSub);
                           }}
-                          className="size-4 border-input text-primary focus:ring-primary"
+                          type="radio"
                         />
                         <Image
                           alt="USDC"
@@ -1189,14 +1257,17 @@ export function PaymentMethodSection({
                     {showUsdtOption && (
                       <label className="flex cursor-pointer items-center gap-2">
                         <input
-                          type="radio"
-                          name="stablecoin-token"
                           checked={stablecoinToken === "usdt"}
+                          className={`
+                            size-4 border-input text-primary
+                            focus:ring-primary
+                          `}
+                          name="stablecoin-token"
                           onChange={() => {
                             setStablecoinToken("usdt");
                             setPaymentSubOption("ethereum" as UsdtSub);
                           }}
-                          className="size-4 border-input text-primary focus:ring-primary"
+                          type="radio"
                         />
                         <Image
                           alt="USDT"
@@ -1212,17 +1283,25 @@ export function PaymentMethodSection({
                   {stablecoinToken === "usdc" &&
                     visibleUsdcSubOptions.map((opt) => (
                       <label
+                        className={`
+                          flex cursor-pointer items-center gap-3 rounded-md
+                          border border-border p-2.5
+                          has-[:checked]:border-primary has-[:checked]:ring-1
+                          has-[:checked]:ring-primary/20
+                        `}
                         key={opt.value}
-                        className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20"
                       >
                         <input
-                          type="radio"
-                          name="usdc-network"
                           checked={paymentSubOption === opt.value}
+                          className={`
+                            size-4 border-input text-primary
+                            focus:ring-primary
+                          `}
+                          name="usdc-network"
                           onChange={() =>
                             setPaymentSubOption(opt.value as UsdcSub)
                           }
-                          className="size-4 border-input text-primary focus:ring-primary"
+                          type="radio"
                         />
                         <span className="text-sm">{opt.label}</span>
                         <Image
@@ -1241,17 +1320,25 @@ export function PaymentMethodSection({
                   {stablecoinToken === "usdt" &&
                     visibleUsdtSubOptions.map((opt) => (
                       <label
+                        className={`
+                          flex cursor-pointer items-center gap-3 rounded-md
+                          border border-border p-2.5
+                          has-[:checked]:border-primary has-[:checked]:ring-1
+                          has-[:checked]:ring-primary/20
+                        `}
                         key={opt.value}
-                        className="flex cursor-pointer items-center gap-3 rounded-md border border-border p-2.5 has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary/20"
                       >
                         <input
-                          type="radio"
-                          name="usdt-network"
                           checked={paymentSubOption === opt.value}
+                          className={`
+                            size-4 border-input text-primary
+                            focus:ring-primary
+                          `}
+                          name="usdt-network"
                           onChange={() =>
                             setPaymentSubOption(opt.value as UsdtSub)
                           }
-                          className="size-4 border-input text-primary focus:ring-primary"
+                          type="radio"
                         />
                         <span className="text-sm">{opt.label}</span>
                         <Image
@@ -1278,11 +1365,14 @@ export function PaymentMethodSection({
                 <label className={paymentOptionRowClass}>
                   <div className="flex items-center gap-3">
                     <input
-                      type="radio"
-                      name="payment"
                       checked={paymentMethod === "paypal"}
+                      className={`
+                        size-4 border-input text-primary
+                        focus:ring-primary
+                      `}
+                      name="payment"
                       onChange={() => setPaymentTop("paypal")}
-                      className="size-4 border-input text-primary focus:ring-primary"
+                      type="radio"
                     />
                     <span className="text-sm font-medium">Pay with PayPal</span>
                   </div>
@@ -1295,7 +1385,7 @@ export function PaymentMethodSection({
                   />
                 </label>
               ) : (
-                <div className={paymentOptionRowClass} aria-disabled="true">
+                <div aria-disabled="true" className={paymentOptionRowClass}>
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-muted-foreground">
                       Pay with PayPal
@@ -1306,7 +1396,9 @@ export function PaymentMethodSection({
                   </div>
                   <Image
                     alt="PayPal"
-                    className="ml-auto h-6 w-16 shrink-0 object-contain opacity-50"
+                    className={`
+                      ml-auto h-6 w-16 shrink-0 object-contain opacity-50
+                    `}
                     height={24}
                     src="/payments/paypal.svg"
                     width={64}
@@ -1314,11 +1406,15 @@ export function PaymentMethodSection({
                 </div>
               )}
               {paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled && (
-                <div className="space-y-3 border-t border-border px-3 pb-3 pt-4">
-                  <div className="flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5">
+                <div className="space-y-3 border-t border-border px-3 pt-4 pb-3">
+                  <div
+                    className={`
+                    flex items-center gap-2 rounded-md bg-muted/50 px-3 py-2.5
+                  `}
+                  >
                     <Lock
-                      className="size-4 shrink-0 text-[#C4873A]"
                       aria-hidden
+                      className="size-4 shrink-0 text-[#C4873A]"
                     />
                     <p className="text-sm text-muted-foreground">
                       You&apos;ll be securely redirected to complete your
@@ -1326,10 +1422,10 @@ export function PaymentMethodSection({
                     </p>
                   </div>
                   <BillingAddressForm
-                    ref={billingFormRef}
                     countryOptions={countryOptions}
-                    validationErrors={validationErrors}
+                    ref={billingFormRef}
                     shippingFormRef={shippingFormRef}
+                    validationErrors={validationErrors}
                   />
                 </div>
               )}
@@ -1341,7 +1437,10 @@ export function PaymentMethodSection({
       <div className="space-y-4">
         {validationErrors.length > 0 && (
           <div
-            className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            className={`
+              rounded-md border border-destructive/50 bg-destructive/10 px-4
+              py-3 text-sm text-destructive
+            `}
             role="alert"
           >
             <p className="font-medium">Please fix the following:</p>
@@ -1355,19 +1454,19 @@ export function PaymentMethodSection({
         {paymentMethod === "credit-card" ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay}
             onClick={handleCardPayment}
+            size="lg"
+            type="button"
           >
             {navigatingToPay ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
                 Securing your payment…
               </>
             ) : (
               <>
-                <Lock className="mr-2 size-4" aria-hidden />
+                <Lock aria-hidden className="mr-2 size-4" />
                 Pay securely with card
               </>
             )}
@@ -1375,14 +1474,14 @@ export function PaymentMethodSection({
         ) : paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay}
             onClick={handlePlaceOrder}
+            size="lg"
+            type="button"
           >
             {navigatingToPay ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
                 Redirecting to PayPal…
               </>
             ) : (
@@ -1401,14 +1500,14 @@ export function PaymentMethodSection({
         ) : isBtcPaySupported ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay}
             onClick={handleGoToBtcPay}
+            size="lg"
+            type="button"
           >
             {navigatingToPay ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
                 Creating order…
               </>
             ) : paymentSubOption === "bitcoin" ? (
@@ -1422,14 +1521,14 @@ export function PaymentMethodSection({
         ) : isEvmPaySupported ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay || !canShipToCountry}
             onClick={handleGoToEthPay}
+            size="lg"
+            type="button"
           >
             {navigatingToPay ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                <Loader2 aria-hidden className="mr-2 size-4 animate-spin" />
                 Creating order…
               </>
             ) : paymentMethod === "crypto" ? (
@@ -1444,10 +1543,10 @@ export function PaymentMethodSection({
         ) : isSolanaPaySupported ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay || !canShipToCountry}
             onClick={handleGoToCryptoPay}
+            size="lg"
+            type="button"
           >
             {navigatingToPay
               ? "Redirecting…"
@@ -1472,51 +1571,76 @@ export function PaymentMethodSection({
         ) : isSuiPaySupported ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay || !canShipToCountry}
             onClick={handleGoToCryptoPay}
+            size="lg"
+            type="button"
           >
             {navigatingToPay ? "Redirecting…" : "Pay with SUI"}
           </Button>
         ) : isTonPaySupported ? (
           <Button
             className={paymentButtonClass}
-            size="lg"
-            type="button"
             disabled={navigatingToPay || !canShipToCountry}
             onClick={handleGoToTonPay}
+            size="lg"
+            type="button"
           >
             {navigatingToPay ? "Redirecting…" : "Pay with TON"}
           </Button>
         ) : paymentMethod === "" ? (
-          <p className="rounded-md border border-border bg-muted/50 px-4 py-3.5 text-base text-muted-foreground">
+          <p
+            className={`
+            rounded-md border border-border bg-muted/50 px-4 py-3.5 text-base
+            text-muted-foreground
+          `}
+          >
             Select a payment method above.
           </p>
         ) : paymentMethod === "crypto" && paymentSubOption === "" ? (
-          <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <p
+            className={`
+            rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
+            text-muted-foreground
+          `}
+          >
             Select a crypto option above (e.g. Ethereum, Solana, Crustafarian).
           </p>
         ) : paymentMethod === "stablecoins" ? (
-          <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <p
+            className={`
+            rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
+            text-muted-foreground
+          `}
+          >
             Select USDC or USDT and a network above.
           </p>
         ) : (
-          <p className="rounded-md border border-border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+          <p
+            className={`
+            rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
+            text-muted-foreground
+          `}
+          >
             This payment option is not available yet. Use Credit/debit card,
             Crypto, Stablecoins (USDC/USDT), or PayPal.
           </p>
         )}
         {/* Reassurance messaging */}
-        <div className="flex flex-col gap-2.5 rounded-md border border-[#C4873A]/20 bg-[#C4873A]/5 px-4 py-3.5">
+        <div
+          className={`
+          flex flex-col gap-2.5 rounded-md border border-[#C4873A]/20
+          bg-[#C4873A]/5 px-4 py-3.5
+        `}
+        >
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
             <svg
+              aria-hidden
               className="size-5 shrink-0"
-              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              aria-hidden
+              viewBox="0 0 24 24"
             >
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
@@ -1524,12 +1648,12 @@ export function PaymentMethodSection({
           </div>
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
             <svg
+              aria-hidden
               className="size-5 shrink-0"
-              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              aria-hidden
+              viewBox="0 0 24 24"
             >
               <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
               <path d="m9 12 2 2 4-4" />
@@ -1538,12 +1662,12 @@ export function PaymentMethodSection({
           </div>
           <div className="flex items-center gap-2.5 text-base text-[#C4873A]">
             <svg
+              aria-hidden
               className="size-5 shrink-0"
-              viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              aria-hidden
+              viewBox="0 0 24 24"
             >
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
             </svg>
@@ -1551,19 +1675,28 @@ export function PaymentMethodSection({
           </div>
         </div>
         <div className="border-t border-border pt-4">
-          <p className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-center text-sm text-muted-foreground">
+          <p
+            className={`
+            flex flex-wrap items-center justify-center gap-x-2 gap-y-1
+            text-center text-sm text-muted-foreground
+          `}
+          >
             <PolicyPopup
-              title="Refund policy"
+              fullPolicyHref="/policies/refund"
               richContent={
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3 py-2">
+                  <div
+                    className={`
+                    flex items-center gap-2 rounded-md bg-[#C4873A]/10 px-3 py-2
+                  `}
+                  >
                     <svg
+                      aria-hidden
                       className="size-4 shrink-0 text-[#C4873A]"
-                      viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      aria-hidden
+                      viewBox="0 0 24 24"
                     >
                       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                     </svg>
@@ -1573,27 +1706,52 @@ export function PaymentMethodSection({
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Return any item within{" "}
                       <strong>30 days of delivery</strong> for a full refund
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Items must be unworn/unused, with tags and original
                       packaging
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Contact us first and we&apos;ll provide a{" "}
                       <strong>free return label</strong>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Refunds processed within <strong>10 business days</strong>{" "}
                       after inspection
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       EU/UK customers: 14-day right to cancel for any reason
                     </li>
                   </ul>
@@ -1603,12 +1761,19 @@ export function PaymentMethodSection({
                         <p className="mb-2 text-sm font-medium text-foreground">
                           eSIM plans (in your cart)
                         </p>
-                        <ul className="space-y-1.5 text-sm text-muted-foreground">
+                        <ul
+                          className={`
+                          space-y-1.5 text-sm text-muted-foreground
+                        `}
+                        >
                           {ESIM_REFUND_POPUP_ITEMS.map((item, i) => (
-                            <li key={i} className="flex items-start gap-2">
+                            <li className="flex items-start gap-2" key={i}>
                               <span
-                                className="mt-1 block size-1.5 shrink-0 rounded-full bg-amber-500/60"
                                 aria-hidden
+                                className={`
+                                  mt-1 block size-1.5 shrink-0 rounded-full
+                                  bg-amber-500/60
+                                `}
                               />
                               {item}
                             </li>
@@ -1623,23 +1788,31 @@ export function PaymentMethodSection({
                   </p>
                 </div>
               }
-              fullPolicyHref="/policies/refund"
+              title="Refund policy"
             >
               Refund policy
             </PolicyPopup>
             <span aria-hidden>·</span>
             <PolicyPopup
-              title="Shipping policy"
+              fullPolicyHref="/policies/shipping"
               richContent={
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
+                  <div
+                    className={`
+                    flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
+                    dark:bg-blue-950/30
+                  `}
+                  >
                     <svg
-                      className="size-4 shrink-0 text-blue-600 dark:text-blue-400"
-                      viewBox="0 0 24 24"
+                      aria-hidden
+                      className={`
+                        size-4 shrink-0 text-blue-600
+                        dark:text-blue-400
+                      `}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      aria-hidden
+                      viewBox="0 0 24 24"
                     >
                       <path d="M5 18H3c-.6 0-1-.4-1-1V7c0-.6.4-1 1-1h10c.6 0 1 .4 1 1v11" />
                       <path d="M14 9h4l4 4v4c0 .6-.4 1-1 1h-2" />
@@ -1647,26 +1820,51 @@ export function PaymentMethodSection({
                       <path d="M15 18H9" />
                       <circle cx="17" cy="18" r="2" />
                     </svg>
-                    <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
+                    <span
+                      className={`
+                      text-sm font-medium text-blue-700
+                      dark:text-blue-400
+                    `}
+                    >
                       Most orders ship within 1 business day
                     </span>
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       <strong>Domestic (US):</strong> 2–4 business days delivery
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       <strong>International:</strong> 5–14 business days
                       delivery
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Tracking number sent via email once shipped
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Peak seasons may add up to 1 week
                     </li>
                   </ul>
@@ -1677,47 +1875,80 @@ export function PaymentMethodSection({
                   </p>
                 </div>
               }
-              fullPolicyHref="/policies/shipping"
+              title="Shipping policy"
             >
               Shipping policy
             </PolicyPopup>
             <span aria-hidden>·</span>
             <PolicyPopup
-              title="Privacy policy"
+              fullPolicyHref="/policies/privacy"
               richContent={
                 <div className="space-y-3">
-                  <div className="flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2 dark:bg-purple-950/30">
+                  <div
+                    className={`
+                    flex items-center gap-2 rounded-md bg-purple-50 px-3 py-2
+                    dark:bg-purple-950/30
+                  `}
+                  >
                     <svg
-                      className="size-4 shrink-0 text-purple-600 dark:text-purple-400"
-                      viewBox="0 0 24 24"
+                      aria-hidden
+                      className={`
+                        size-4 shrink-0 text-purple-600
+                        dark:text-purple-400
+                      `}
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
-                      aria-hidden
+                      viewBox="0 0 24 24"
                     >
-                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                      <rect height="11" rx="2" ry="2" width="18" x="3" y="11" />
                       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
-                    <span className="text-sm font-medium text-purple-700 dark:text-purple-400">
+                    <span
+                      className={`
+                      text-sm font-medium text-purple-700
+                      dark:text-purple-400
+                    `}
+                    >
                       We never sell your data
                     </span>
                   </div>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       We collect only what&apos;s needed to fulfill your order
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       <strong>No targeted advertising</strong> — your data stays
                       between us
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Only essential cookies (sign-in, cart, security)
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       You can access, correct, delete, or export your data
                       anytime
                     </li>
@@ -1728,13 +1959,13 @@ export function PaymentMethodSection({
                   </p>
                 </div>
               }
-              fullPolicyHref="/policies/privacy"
+              title="Privacy policy"
             >
               Privacy policy
             </PolicyPopup>
             <span aria-hidden>·</span>
             <PolicyPopup
-              title="Terms of service"
+              fullPolicyHref="/policies/terms"
               richContent={
                 <div className="space-y-3">
                   <p className="text-sm">
@@ -1743,26 +1974,46 @@ export function PaymentMethodSection({
                   </p>
                   <ul className="space-y-2 text-sm">
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       You must be the age of majority in your jurisdiction
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       We may correct pricing errors or limit order quantities
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Questions? Contact us first — we&apos;re happy to help
                       resolve any issue
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                      <span
+                        className={`
+                        mt-1 block size-1.5 shrink-0 rounded-full
+                        bg-foreground/40
+                      `}
+                      />
                       Governing law: United States
                     </li>
                   </ul>
                 </div>
               }
-              fullPolicyHref="/policies/terms"
+              title="Terms of service"
             >
               Terms of service
             </PolicyPopup>
@@ -1771,14 +2022,14 @@ export function PaymentMethodSection({
       </div>
 
       <SolanaPayDialog
-        open={solanaPayOpen}
-        onOpenChange={(open) => !open && closeSolanaPayDialog()}
-        paymentUrl={solanaPayPaymentUrl}
-        status={solanaPayStatus}
         amountUsd={solanaPayAmountUsd}
-        tokenSymbol="USDC"
-        recipientAddress={solanaPayRecipientAddress ?? undefined}
+        onOpenChange={(open) => !open && closeSolanaPayDialog()}
+        open={solanaPayOpen}
         orderId={solanaPayOrderId ?? undefined}
+        paymentUrl={solanaPayPaymentUrl}
+        recipientAddress={solanaPayRecipientAddress ?? undefined}
+        status={solanaPayStatus}
+        tokenSymbol="USDC"
       />
     </>
   );

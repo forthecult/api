@@ -24,18 +24,18 @@ export function formatDeliveryDate(date: Date): string {
  * All days are business days.
  */
 export function getEstimatedDeliveryRanges(options: {
-  handlingDaysMin: number;
-  handlingDaysMax: number;
-  transitDaysMin: number;
-  transitDaysMax: number;
   fromDate?: Date;
+  handlingDaysMax: number;
+  handlingDaysMin: number;
+  transitDaysMax: number;
+  transitDaysMin: number;
 }) {
   const {
-    handlingDaysMin,
-    handlingDaysMax,
-    transitDaysMin,
-    transitDaysMax,
     fromDate = new Date(),
+    handlingDaysMax,
+    handlingDaysMin,
+    transitDaysMax,
+    transitDaysMin,
   } = options;
 
   const orderedStart = fromDate;
@@ -51,21 +51,21 @@ export function getEstimatedDeliveryRanges(options: {
   );
 
   return {
-    orderedDate: orderedStart,
-    shippedStart,
-    shippedEnd,
-    deliveredStart,
     deliveredEnd,
+    deliveredStart,
     formatted: {
+      deliveredRange:
+        deliveredStart.getTime() === deliveredEnd.getTime()
+          ? formatDeliveryDate(deliveredStart)
+          : `${formatDeliveryDate(deliveredStart)} - ${formatDeliveryDate(deliveredEnd)}`,
       ordered: formatDeliveryDate(orderedStart),
       shippedRange:
         shippedStart.getTime() === shippedEnd.getTime()
           ? formatDeliveryDate(shippedStart)
           : `${formatDeliveryDate(shippedStart)} - ${formatDeliveryDate(shippedEnd)}`,
-      deliveredRange:
-        deliveredStart.getTime() === deliveredEnd.getTime()
-          ? formatDeliveryDate(deliveredStart)
-          : `${formatDeliveryDate(deliveredStart)} - ${formatDeliveryDate(deliveredEnd)}`,
     },
+    orderedDate: orderedStart,
+    shippedEnd,
+    shippedStart,
   };
 }

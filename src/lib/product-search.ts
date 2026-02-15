@@ -30,38 +30,38 @@ function escapeLike(s: string): string {
 export const DEFAULT_SEARCH_LIMIT = 20;
 export const MAX_SEARCH_LIMIT = 100;
 
-export type ProductSearchParams = {
-  query?: string;
-  categoryId?: string | null;
-  subcategoryId?: string | null;
+export interface ProductSearchParams {
+  categoryId?: null | string;
   filters?: {
     brand?: string[];
-    priceRange?: { min?: number; max?: number };
     inStock?: boolean;
+    priceRange?: { max?: number; min?: number };
     rating?: string;
   };
-  sort?: "price_asc" | "price_desc" | "rating" | "popular" | "newest";
   limit?: number;
   offset?: number;
-};
+  query?: string;
+  sort?: "newest" | "popular" | "price_asc" | "price_desc" | "rating";
+  subcategoryId?: null | string;
+}
 
-export type ProductSearchResultItem = {
-  id: string;
-  name: string;
-  description?: string;
-  price: { usd: number; crypto: Record<string, string> };
-  imageUrl?: string;
-  category?: string;
-  inStock: boolean;
-  slug?: string;
-};
-
-export type ProductSearchResult = {
-  products: ProductSearchResultItem[];
-  total: number;
+export interface ProductSearchResult {
   limit: number;
   offset: number;
-};
+  products: ProductSearchResultItem[];
+  total: number;
+}
+
+export interface ProductSearchResultItem {
+  category?: string;
+  description?: string;
+  id: string;
+  imageUrl?: string;
+  inStock: boolean;
+  name: string;
+  price: { crypto: Record<string, string>; usd: number };
+  slug?: string;
+}
 
 export async function runProductSearch(
   params: ProductSearchParams,
@@ -148,11 +148,11 @@ export async function runProductSearch(
   const [rows, countResult] = await Promise.all([
     db
       .select({
-        id: productsTable.id,
-        name: productsTable.name,
         description: productsTable.description,
-        priceCents: productsTable.priceCents,
+        id: productsTable.id,
         imageUrl: productsTable.imageUrl,
+        name: productsTable.name,
+        priceCents: productsTable.priceCents,
         slug: productsTable.slug,
       })
       .from(productsTable)
@@ -173,8 +173,8 @@ export async function runProductSearch(
     productIds.length > 0
       ? await db
           .select({
-            productId: productCategoriesTable.productId,
             categoryId: categoriesTable.id,
+            productId: productCategoriesTable.productId,
           })
           .from(productCategoriesTable)
           .innerJoin(
@@ -193,18 +193,18 @@ export async function runProductSearch(
   );
 
   const products: ProductSearchResultItem[] = rows.map((p) => ({
-    id: p.id,
-    name: p.name,
-    description: p.description ?? undefined,
-    price: {
-      usd: p.priceCents / 100,
-      crypto: {} as Record<string, string>,
-    },
-    imageUrl: p.imageUrl ?? undefined,
     category: categoryByProductId.get(p.id),
+    description: p.description ?? undefined,
+    id: p.id,
+    imageUrl: p.imageUrl ?? undefined,
     inStock: true,
+    name: p.name,
+    price: {
+      crypto: {} as Record<string, string>,
+      usd: p.priceCents / 100,
+    },
     slug: p.slug ?? undefined,
   }));
 
-  return { products, total, limit, offset };
+  return { limit, offset, products, total };
 }

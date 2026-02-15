@@ -3,11 +3,11 @@
 import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
 
-import { getCurrentUser } from "~/lib/auth";
 import { db } from "~/db";
 import { addressesTable } from "~/db/schema";
+import { getCurrentUser } from "~/lib/auth";
 
-type CreateInput = {
+interface CreateInput {
   address1: string;
   address2?: string;
   city: string;
@@ -16,7 +16,7 @@ type CreateInput = {
   phone?: string;
   stateCode?: string;
   zip: string;
-};
+}
 
 type UpdateInput = Partial<CreateInput> & { isDefault?: boolean };
 
@@ -48,6 +48,35 @@ export async function createAddress(input: CreateInput) {
     zip: input.zip.trim(),
   });
   return { id };
+}
+
+export async function deleteAddress(id: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Unauthorized" };
+  const [existing] = await db
+    .select()
+    .from(addressesTable)
+    .where(eq(addressesTable.id, id));
+  if (!existing || existing.userId !== user.id) return { error: "Not found" };
+  await db.delete(addressesTable).where(eq(addressesTable.id, id));
+  if (existing.isDefault) {
+    const next = await db
+      .select()
+      .from(addressesTable)
+      .where(eq(addressesTable.userId, user.id))
+      .limit(1);
+    if (next[0]) {
+      await db
+        .update(addressesTable)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(eq(addressesTable.id, next[0].id));
+    }
+  }
+  return {};
+}
+
+export async function setDefaultAddress(id: string) {
+  return updateAddress(id, { isDefault: true });
 }
 
 export async function updateAddress(id: string, input: UpdateInput) {
@@ -82,33 +111,4 @@ export async function updateAddress(id: string, input: UpdateInput) {
     .set(updates as never)
     .where(eq(addressesTable.id, id));
   return {};
-}
-
-export async function deleteAddress(id: string) {
-  const user = await getCurrentUser();
-  if (!user) return { error: "Unauthorized" };
-  const [existing] = await db
-    .select()
-    .from(addressesTable)
-    .where(eq(addressesTable.id, id));
-  if (!existing || existing.userId !== user.id) return { error: "Not found" };
-  await db.delete(addressesTable).where(eq(addressesTable.id, id));
-  if (existing.isDefault) {
-    const next = await db
-      .select()
-      .from(addressesTable)
-      .where(eq(addressesTable.userId, user.id))
-      .limit(1);
-    if (next[0]) {
-      await db
-        .update(addressesTable)
-        .set({ isDefault: true, updatedAt: new Date() })
-        .where(eq(addressesTable.id, next[0].id));
-    }
-  }
-  return {};
-}
-
-export async function setDefaultAddress(id: string) {
-  return updateAddress(id, { isDefault: true });
 }

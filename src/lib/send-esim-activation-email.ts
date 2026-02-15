@@ -8,22 +8,22 @@ import { getPublicSiteUrl } from "~/lib/app-url";
 import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
 
 export interface EsimActivationItem {
+  activationLink: null | string;
   packageName: string;
-  activationLink: string | null;
 }
 
 export interface SendEsimActivationEmailParams {
-  to: string;
-  orderId: string;
-  items: EsimActivationItem[];
   /** When true, include a CTA to create an account (for guest purchasers). */
   isGuest: boolean;
+  items: EsimActivationItem[];
+  orderId: string;
+  to: string;
 }
 
 export async function sendEsimActivationEmail(
   params: SendEsimActivationEmailParams,
 ): Promise<void> {
-  const { to, orderId, items, isGuest } = params;
+  const { isGuest, items, orderId, to } = params;
   const baseUrl = getPublicSiteUrl().replace(/\/$/, "");
   const dashboardEsimUrl = `${baseUrl}/dashboard/esim`;
   const signupUrl = `${baseUrl}/login?callbackUrl=${encodeURIComponent("/dashboard/esim")}`;
@@ -48,7 +48,7 @@ export async function sendEsimActivationEmail(
   const contentHtml = plainTextToHtml(body);
   const ctaUrl = isGuest ? signupUrl : dashboardEsimUrl;
   const ctaLabel = isGuest ? "Create account" : "View my eSIMs";
-  const html = buildEmailHtml(contentHtml, { ctaUrl, ctaLabel });
+  const html = buildEmailHtml(contentHtml, { ctaLabel, ctaUrl });
 
   const subject = "Your eSIM is ready to activate";
 
@@ -63,10 +63,10 @@ export async function sendEsimActivationEmail(
           : "onboarding@resend.dev";
       await resend.emails.send({
         from,
-        to,
+        html,
         subject,
         text: body + `\n\n${ctaLabel}: ${ctaUrl}`,
-        html,
+        to,
       });
     } catch (err) {
       console.error("[sendEsimActivationEmail] Resend send failed:", err);
@@ -76,10 +76,10 @@ export async function sendEsimActivationEmail(
 
   if (process.env.NODE_ENV === "development") {
     console.log("[sendEsimActivationEmail] No RESEND_API_KEY - would send:", {
-      to,
-      subject,
-      items: items.length,
       isGuest,
+      items: items.length,
+      subject,
+      to,
     });
   }
 }

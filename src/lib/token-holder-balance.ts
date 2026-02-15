@@ -16,65 +16,13 @@ import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
 const SOLANA_DECIMALS = 6;
 const EVM_DECIMALS = 18;
 
-function parseMinBalanceHuman(
-  minBalanceStr: string | null | undefined,
-): number {
-  if (!minBalanceStr || minBalanceStr.trim() === "") return 0;
-  const parsed = Number.parseFloat(minBalanceStr.trim());
-  if (!Number.isFinite(parsed) || parsed < 0) return 0;
-  return parsed;
-}
-
-/**
- * Check Solana SPL token balance for a wallet. Returns raw amount (with decimals).
- * Supports both standard SPL tokens (Token Program) and Token-2022 tokens.
- */
-async function getSolanaTokenBalance(
-  connection: Connection,
-  mintAddress: string,
-  walletAddress: string,
-): Promise<bigint> {
-  const result = await getTokenBalanceAnyProgram(
-    connection,
-    mintAddress,
-    walletAddress,
-  );
-  return result?.amount ?? 0n;
-}
-
-/**
- * Check EVM ERC20 balance for a wallet. Returns raw amount (with decimals).
- */
-async function getEvmTokenBalance(
-  chainId: number,
-  tokenAddress: `0x${string}`,
-  walletAddress: `0x${string}`,
-): Promise<bigint> {
-  try {
-    const rpcUrl = process.env.ETHEREUM_RPC_URL ?? "https://rpc.ankr.com/eth";
-    const client = createPublicClient({
-      chain: mainnet, // could map chainId to chain
-      transport: http(rpcUrl),
-    });
-    const balance = await client.readContract({
-      address: tokenAddress,
-      abi: [parseAbiItem("function balanceOf(address) view returns (uint256)")],
-      functionName: "balanceOf",
-      args: [walletAddress],
-    });
-    return balance as bigint;
-  } catch {
-    return 0n;
-  }
-}
-
 /**
  * Returns true if the user has at least minBalance (human-readable, e.g. "1") of the token
  * in any linked wallet on the given chain.
  */
 export async function userMeetsTokenHolderCondition(
   userId: string,
-  chain: "solana" | "evm",
+  chain: "evm" | "solana",
   tokenAddress: string,
   minBalanceStr: string,
 ): Promise<boolean> {
@@ -126,4 +74,56 @@ export async function userMeetsTokenHolderCondition(
   }
 
   return false;
+}
+
+/**
+ * Check EVM ERC20 balance for a wallet. Returns raw amount (with decimals).
+ */
+async function getEvmTokenBalance(
+  chainId: number,
+  tokenAddress: `0x${string}`,
+  walletAddress: `0x${string}`,
+): Promise<bigint> {
+  try {
+    const rpcUrl = process.env.ETHEREUM_RPC_URL ?? "https://rpc.ankr.com/eth";
+    const client = createPublicClient({
+      chain: mainnet, // could map chainId to chain
+      transport: http(rpcUrl),
+    });
+    const balance = await client.readContract({
+      abi: [parseAbiItem("function balanceOf(address) view returns (uint256)")],
+      address: tokenAddress,
+      args: [walletAddress],
+      functionName: "balanceOf",
+    });
+    return balance as bigint;
+  } catch {
+    return 0n;
+  }
+}
+
+/**
+ * Check Solana SPL token balance for a wallet. Returns raw amount (with decimals).
+ * Supports both standard SPL tokens (Token Program) and Token-2022 tokens.
+ */
+async function getSolanaTokenBalance(
+  connection: Connection,
+  mintAddress: string,
+  walletAddress: string,
+): Promise<bigint> {
+  const result = await getTokenBalanceAnyProgram(
+    connection,
+    mintAddress,
+    walletAddress,
+  );
+  return result?.amount ?? 0n;
+}
+
+function parseMinBalanceHuman(
+  minBalanceStr: null | string | undefined,
+): number {
+  if (!minBalanceStr || minBalanceStr.trim() === "") return 0;
+  const parsed = Number.parseFloat(minBalanceStr.trim());
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
+  return parsed;
 }

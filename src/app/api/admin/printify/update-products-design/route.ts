@@ -26,38 +26,14 @@ import {
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchPrintifyProduct,
-  updatePrintifyProduct,
-  publishPrintifyProduct,
   getPrintifyIfConfigured,
+  publishPrintifyProduct,
+  updatePrintifyProduct,
 } from "~/lib/printify";
 import { importSinglePrintifyProduct } from "~/lib/printify-sync";
 import { triggerMockupUploadForProduct } from "~/lib/upload-product-mockups";
 
 const MOCKUP_WAIT_MS = 120_000;
-
-function productLabelFromName(name: string): string {
-  return name.replace(/^SOLUNA\s+/i, "").trim() || name;
-}
-
-function buildFeatures(productLabel: string): string[] {
-  return [
-    `Official SOLUNA (Solana meme) ${productLabel.toLowerCase()} design`,
-    "Vibrant gradient SOLUNA logo — teal, fuchsia, purple",
-    "Premium quality; made to order",
-    "Pay with SOL, USDC, or card",
-  ];
-}
-
-function buildSeo(productLabel: string): {
-  pageTitle: string;
-  metaDescription: string;
-} {
-  const title = `SOLUNA ${productLabel}`;
-  return {
-    pageTitle: `${title} — Solana Meme Merch | Culture`,
-    metaDescription: `${title}. SOLUNA is the meme of Solana. Premium quality, vibrant design. Pay with SOL, USDC, or card. Culture.`,
-  };
-}
 
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -90,7 +66,11 @@ export async function POST(request: NextRequest) {
 
   const tag = body.tag?.trim() || "SOLUNA";
 
-  type ProductRow = { id: string; printifyProductId: string; name: string };
+  interface ProductRow {
+    id: string;
+    name: string;
+    printifyProductId: string;
+  }
   let products: ProductRow[];
 
   const tagged = await db
@@ -108,8 +88,8 @@ export async function POST(request: NextRequest) {
   const rows = await db
     .select({
       id: productsTable.id,
-      printifyProductId: productsTable.printifyProductId,
       name: productsTable.name,
+      printifyProductId: productsTable.printifyProductId,
     })
     .from(productsTable)
     .where(
@@ -123,8 +103,8 @@ export async function POST(request: NextRequest) {
     .filter((r): r is ProductRow => r.printifyProductId != null)
     .map((r) => ({
       id: r.id,
-      printifyProductId: r.printifyProductId!,
       name: r.name,
+      printifyProductId: r.printifyProductId!,
     }));
 
   if (products.length === 0) {
@@ -136,10 +116,10 @@ export async function POST(request: NextRequest) {
 
   const results = {
     designUpdated: 0,
-    synced: 0,
+    errors: [] as string[],
     mockupsUploaded: 0,
     patched: 0,
-    errors: [] as string[],
+    synced: 0,
   };
 
   for (const p of products) {
@@ -149,17 +129,17 @@ export async function POST(request: NextRequest) {
         p.printifyProductId,
       );
       const print_areas = product.print_areas.map((pa) => ({
-        variant_ids: pa.variant_ids,
         placeholders: pa.placeholders.map((ph) => ({
-          position: ph.position,
           images: ph.images.map((img) => ({
+            angle: img.angle,
             id: imageId,
+            scale: img.scale,
             x: img.x,
             y: img.y,
-            scale: img.scale,
-            angle: img.angle,
           })),
+          position: ph.position,
         })),
+        variant_ids: pa.variant_ids,
       }));
       await updatePrintifyProduct(pf.shopId, p.printifyProductId, {
         print_areas,
@@ -200,8 +180,8 @@ export async function POST(request: NextRequest) {
   const categoryRows = await db
     .select({
       id: categoriesTable.id,
-      slug: categoriesTable.slug,
       name: categoriesTable.name,
+      slug: categoriesTable.slug,
     })
     .from(categoriesTable);
   const bySlug = new Map<string, string>();
@@ -240,8 +220,8 @@ export async function POST(request: NextRequest) {
         .update(productsTable)
         .set({
           featuresJson: features.length > 0 ? JSON.stringify(features) : null,
-          pageTitle: seo.pageTitle,
           metaDescription: seo.metaDescription,
+          pageTitle: seo.pageTitle,
           seoOptimized: true,
           updatedAt: new Date(),
         })
@@ -253,9 +233,9 @@ export async function POST(request: NextRequest) {
       if (categoryIds.length > 0) {
         await db.insert(productCategoriesTable).values(
           categoryIds.map((categoryId) => ({
-            productId: p.id,
             categoryId,
             isMain: categoryId === mainCategoryId,
+            productId: p.id,
           })),
         );
       }
@@ -268,9 +248,33 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    ok: true,
     message: "Design updated, synced, mockups uploaded, categories/SEO set.",
+    ok: true,
     products: products.length,
     ...results,
   });
+}
+
+function buildFeatures(productLabel: string): string[] {
+  return [
+    `Official SOLUNA (Solana meme) ${productLabel.toLowerCase()} design`,
+    "Vibrant gradient SOLUNA logo — teal, fuchsia, purple",
+    "Premium quality; made to order",
+    "Pay with SOL, USDC, or card",
+  ];
+}
+
+function buildSeo(productLabel: string): {
+  metaDescription: string;
+  pageTitle: string;
+} {
+  const title = `SOLUNA ${productLabel}`;
+  return {
+    metaDescription: `${title}. SOLUNA is the meme of Solana. Premium quality, vibrant design. Pay with SOL, USDC, or card. Culture.`,
+    pageTitle: `${title} — Solana Meme Merch | Culture`,
+  };
+}
+
+function productLabelFromName(name: string): string {
+  return name.replace(/^SOLUNA\s+/i, "").trim() || name;
 }

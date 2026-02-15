@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const statusParam =
       request.nextUrl.searchParams.get("status")?.trim().toLowerCase() ?? "";
-    const statusFilter: StatusFilter | "" = STATUS_VALUES.includes(
+    const statusFilter: "" | StatusFilter = STATUS_VALUES.includes(
       statusParam as StatusFilter,
     )
       ? (statusParam as StatusFilter)
       : "";
     const typeParam =
       request.nextUrl.searchParams.get("type")?.trim().toLowerCase() ?? "";
-    const typeFilter: TypeFilter | "" = TYPE_VALUES.includes(
+    const typeFilter: "" | TypeFilter = TYPE_VALUES.includes(
       typeParam as TypeFilter,
     )
       ? (typeParam as TypeFilter)
@@ -79,16 +79,16 @@ export async function GET(request: NextRequest) {
     const [rows, countResult] = await Promise.all([
       db
         .select({
+          createdAt: supportTicketTable.createdAt,
           id: supportTicketTable.id,
-          subject: supportTicketTable.subject,
           message: supportTicketTable.message,
           status: supportTicketTable.status,
+          subject: supportTicketTable.subject,
           type: supportTicketTable.type,
-          createdAt: supportTicketTable.createdAt,
           updatedAt: supportTicketTable.updatedAt,
+          userEmail: userTable.email,
           userId: supportTicketTable.userId,
           userName: userTable.name,
-          userEmail: userTable.email,
         })
         .from(supportTicketTable)
         .innerJoin(userTable, eq(supportTicketTable.userId, userTable.id))
@@ -107,21 +107,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       items: rows.map((r) => ({
-        id: r.id,
-        subject: r.subject,
-        message: r.message,
-        status: r.status,
-        type: r.type,
         createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
         customer: {
+          email: r.userEmail ?? "",
           id: r.userId,
           name: r.userName ?? "",
-          email: r.userEmail ?? "",
         },
+        id: r.id,
+        message: r.message,
+        status: r.status,
+        subject: r.subject,
+        type: r.type,
+        updatedAt: r.updatedAt,
       })),
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });

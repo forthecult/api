@@ -6,22 +6,7 @@ import { orderItemsTable, ordersTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
 import { verifyOrderConfirmationToken } from "~/lib/order-confirmation-token";
 
-/** Normalize email for ownership check. */
-function normalizeEmail(email: string | null | undefined): string {
-  return (email ?? "").trim().toLowerCase();
-}
-
-/** Redact email: "user@example.com" → "u***@e***.com" */
-function redactEmail(email: string): string {
-  const [local, domain] = email.split("@");
-  if (!local || !domain) return "***@***.***";
-  const domainParts = domain.split(".");
-  const domainName = domainParts[0] ?? "";
-  const tld = domainParts.slice(1).join(".");
-  return `${local[0]}***@${domainName[0]}***.${tld}`;
-}
-
-type AccessLevel = "owner" | "first_visit" | "public";
+type AccessLevel = "first_visit" | "owner" | "public";
 
 /**
  * GET /api/orders/by-session?session_id=xxx&ct=<confirmationToken>
@@ -40,21 +25,21 @@ export async function GET(request: NextRequest) {
 
   const [order] = await db
     .select({
-      id: ordersTable.id,
-      email: ordersTable.email,
-      userId: ordersTable.userId,
-      paymentMethod: ordersTable.paymentMethod,
-      cryptoCurrency: ordersTable.cryptoCurrency,
-      totalCents: ordersTable.totalCents,
       createdAt: ordersTable.createdAt,
-      shippingName: ordersTable.shippingName,
+      cryptoCurrency: ordersTable.cryptoCurrency,
+      email: ordersTable.email,
+      id: ordersTable.id,
+      paymentMethod: ordersTable.paymentMethod,
       shippingAddress1: ordersTable.shippingAddress1,
       shippingAddress2: ordersTable.shippingAddress2,
       shippingCity: ordersTable.shippingCity,
+      shippingCountryCode: ordersTable.shippingCountryCode,
+      shippingName: ordersTable.shippingName,
+      shippingPhone: ordersTable.shippingPhone,
       shippingStateCode: ordersTable.shippingStateCode,
       shippingZip: ordersTable.shippingZip,
-      shippingCountryCode: ordersTable.shippingCountryCode,
-      shippingPhone: ordersTable.shippingPhone,
+      totalCents: ordersTable.totalCents,
+      userId: ordersTable.userId,
     })
     .from(ordersTable)
     .where(eq(ordersTable.stripeCheckoutSessionId, sessionId))
@@ -97,8 +82,8 @@ export async function GET(request: NextRequest) {
   const items = await db
     .select({
       name: orderItemsTable.name,
-      quantity: orderItemsTable.quantity,
       priceCents: orderItemsTable.priceCents,
+      quantity: orderItemsTable.quantity,
     })
     .from(orderItemsTable)
     .where(eq(orderItemsTable.orderId, order.id));
@@ -112,14 +97,14 @@ export async function GET(request: NextRequest) {
   const shipping = hasShipping
     ? canSeePII
       ? {
-          name: order.shippingName ?? undefined,
           address1: order.shippingAddress1 ?? undefined,
           address2: order.shippingAddress2 ?? undefined,
           city: order.shippingCity ?? undefined,
+          countryCode: order.shippingCountryCode ?? undefined,
+          name: order.shippingName ?? undefined,
+          phone: order.shippingPhone ?? undefined,
           stateCode: order.shippingStateCode ?? undefined,
           zip: order.shippingZip ?? undefined,
-          countryCode: order.shippingCountryCode ?? undefined,
-          phone: order.shippingPhone ?? undefined,
         }
       : {
           countryCode: order.shippingCountryCode ?? undefined,
@@ -127,23 +112,38 @@ export async function GET(request: NextRequest) {
     : undefined;
 
   return NextResponse.json({
-    orderId: order.id,
+    accessLevel,
+    createdAt: order.createdAt.toISOString(),
+    cryptoCurrency: order.cryptoCurrency ?? undefined,
     email: canSeePII
       ? (order.email ?? undefined)
       : order.email
         ? redactEmail(order.email)
         : undefined,
-    paymentMethod: order.paymentMethod ?? "stripe",
-    cryptoCurrency: order.cryptoCurrency ?? undefined,
-    totalCents: order.totalCents,
-    createdAt: order.createdAt.toISOString(),
-    accessLevel,
     items: items.map((i) => ({
       name: i.name,
-      quantity: i.quantity,
       priceUsd: i.priceCents / 100,
+      quantity: i.quantity,
       subtotalUsd: (i.priceCents * i.quantity) / 100,
     })),
+    orderId: order.id,
+    paymentMethod: order.paymentMethod ?? "stripe",
     shipping,
+    totalCents: order.totalCents,
   });
+}
+
+/** Normalize email for ownership check. */
+function normalizeEmail(email: null | string | undefined): string {
+  return (email ?? "").trim().toLowerCase();
+}
+
+/** Redact email: "user@example.com" → "u***@e***.com" */
+function redactEmail(email: string): string {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "***@***.***";
+  const domainParts = domain.split(".");
+  const domainName = domainParts[0] ?? "";
+  const tld = domainParts.slice(1).join(".");
+  return `${local[0]}***@${domainName[0]}***.${tld}`;
 }

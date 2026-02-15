@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
         db
           .select({
             name: orderItemsTable.name,
-            quantity: orderItemsTable.quantity,
             productId: orderItemsTable.productId,
+            quantity: orderItemsTable.quantity,
             slug: productsTable.slug,
           })
           .from(orderItemsTable)
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 
     const byProduct = new Map<
       string,
-      { name: string; quantity: number; slug: string | null }
+      { name: string; quantity: number; slug: null | string }
     >();
     for (const row of orderItemsRows) {
       const id = row.productId ?? `name:${row.name}`;
@@ -84,12 +84,12 @@ export async function GET(request: NextRequest) {
         });
       }
     }
-    let mostPopularItem: {
+    let mostPopularItem: null | {
       name: string;
-      quantity: number;
       productId?: string;
-      slug?: string | null;
-    } | null = null;
+      quantity: number;
+      slug?: null | string;
+    } = null;
     for (const [productId, entry] of byProduct) {
       if (!mostPopularItem || entry.quantity > mostPopularItem.quantity) {
         mostPopularItem = {
@@ -106,12 +106,12 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      orderCount,
       averageOrderValueCents,
-      soldItems,
-      mostPopularItem,
-      supportTicketsCount: supportTicketsRow[0]?.count ?? 0,
       chatsCount: chatsRow[0]?.count ?? 0,
+      mostPopularItem,
+      orderCount,
+      soldItems,
+      supportTicketsCount: supportTicketsRow[0]?.count ?? 0,
     });
   } catch (err) {
     console.error("Store stats error:", err);

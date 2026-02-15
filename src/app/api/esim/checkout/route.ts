@@ -1,15 +1,15 @@
-import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "~/lib/auth";
 import { db } from "~/db";
 import { esimOrdersTable, ordersTable } from "~/db/schema";
+import { getCurrentUser } from "~/lib/auth";
 import { getStripe } from "~/lib/stripe";
 
-type CheckoutBody = {
+interface CheckoutBody {
   orderId: string;
   paymentMethod?: "card" | "paypal";
-};
+}
 
 /**
  * POST /api/esim/checkout
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     if (!orderId) {
       return NextResponse.json(
-        { status: false, message: "orderId is required" },
+        { message: "orderId is required", status: false },
         { status: 400 },
       );
     }
@@ -39,7 +39,7 @@ export async function POST(request: Request) {
 
     if (!order) {
       return NextResponse.json(
-        { status: false, message: "Order not found" },
+        { message: "Order not found", status: false },
         { status: 404 },
       );
     }
@@ -47,14 +47,14 @@ export async function POST(request: Request) {
     // If order is tied to a user, only that user can checkout
     if (order.userId != null && user?.id !== order.userId) {
       return NextResponse.json(
-        { status: false, message: "Order not found" },
+        { message: "Order not found", status: false },
         { status: 404 },
       );
     }
 
     if (order.paymentStatus === "paid") {
       return NextResponse.json(
-        { status: false, message: "Order is already paid" },
+        { message: "Order is already paid", status: false },
         { status: 400 },
       );
     }
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
     if (!esimOrder) {
       return NextResponse.json(
-        { status: false, message: "eSIM order not found" },
+        { message: "eSIM order not found", status: false },
         { status: 404 },
       );
     }
@@ -93,41 +93,41 @@ export async function POST(request: Request) {
       .join(" · ");
 
     const checkoutSession = await stripe.checkout.sessions.create({
+      // Digital product — don't collect shipping or phone.
+      // Stripe still collects email + card billing by default.
+      billing_address_collection: "auto",
+      cancel_url: `${baseUrl}/esim/${esimOrder.packageId}`,
       line_items: [
         {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `eSIM: ${esimOrder.packageName}`,
               description,
+              name: `eSIM: ${esimOrder.packageName}`,
             },
             unit_amount: esimOrder.priceCents,
           },
           quantity: 1,
         },
       ],
-      mode: "payment",
-      success_url: `${baseUrl}/dashboard/esim?purchased=${orderId}`,
-      cancel_url: `${baseUrl}/esim/${esimOrder.packageId}`,
-      // Digital product — don't collect shipping or phone.
-      // Stripe still collects email + card billing by default.
-      billing_address_collection: "auto",
-      shipping_address_collection: undefined,
-      phone_number_collection: { enabled: false },
       metadata: {
-        orderId,
         esimOrderId: esimOrder.id,
+        orderId,
         ...(user?.id ? { userId: user.id } : {}),
         isEsim: "true",
         orderItems: JSON.stringify([
           {
-            productId: `esim_${esimOrder.packageId}`,
             name: `eSIM: ${esimOrder.packageName}`,
             priceCents: esimOrder.priceCents,
+            productId: `esim_${esimOrder.packageId}`,
             quantity: 1,
           },
         ]),
       },
+      mode: "payment",
+      phone_number_collection: { enabled: false },
+      shipping_address_collection: undefined,
+      success_url: `${baseUrl}/dashboard/esim?purchased=${orderId}`,
       ...(paymentMethod === "paypal"
         ? { payment_method_types: ["paypal"] as const }
         : {}),
@@ -143,22 +143,22 @@ export async function POST(request: Request) {
       .where(eq(ordersTable.id, orderId));
 
     return NextResponse.json({
-      status: true,
       data: {
         checkoutUrl: checkoutSession.url,
         sessionId: checkoutSession.id,
       },
+      status: true,
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes("STRIPE_SECRET_KEY")) {
       return NextResponse.json(
-        { status: false, message: "Stripe is not configured" },
+        { message: "Stripe is not configured", status: false },
         { status: 503 },
       );
     }
     console.error("eSIM checkout error:", err);
     return NextResponse.json(
-      { status: false, message: "Failed to create checkout session" },
+      { message: "Failed to create checkout session", status: false },
       { status: 500 },
     );
   }

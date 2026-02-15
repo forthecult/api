@@ -30,39 +30,50 @@ export function TopBanner() {
 
   return (
     <div
+      aria-atomic="true"
+      aria-live="polite"
       className={cn(
-        "relative flex w-full overflow-hidden border-b border-[#2A2A2A] bg-[#C4873A] text-sm font-medium uppercase tracking-[0.1em] text-[#111111] md:py-2",
+        `
+          relative flex w-full overflow-hidden border-b border-[#2A2A2A]
+          bg-[#C4873A] text-sm font-medium tracking-[0.1em] text-[#111111]
+          uppercase
+          md:py-2
+        `,
         mobileCollapsed ? "py-1.5" : "py-2",
       )}
       role="marquee"
-      aria-live="polite"
-      aria-atomic="true"
     >
       <button
-        type="button"
-        className="flex w-full flex-1 items-center justify-center gap-1.5 py-0 md:pointer-events-none md:gap-0"
-        onClick={() => setMobileCollapsed((c) => !c)}
         aria-expanded={!mobileCollapsed}
         aria-label={
           mobileCollapsed ? "Expand announcement" : "Collapse announcement"
         }
+        className={`
+          flex w-full flex-1 items-center justify-center gap-1.5 py-0
+          md:pointer-events-none md:gap-0
+        `}
+        onClick={() => setMobileCollapsed((c) => !c)}
+        type="button"
       >
         <p
-          key={index}
           className={cn(
             "flex-1 text-center",
             !mobileCollapsed && "animate-fade-in",
           )}
+          key={index}
           suppressHydrationWarning
         >
           {BANNER_MESSAGES[index]}
         </p>
         <ChevronDown
+          aria-hidden
           className={cn(
-            "h-4 w-4 shrink-0 opacity-80 transition-transform md:hidden",
+            `
+              h-4 w-4 shrink-0 opacity-80 transition-transform
+              md:hidden
+            `,
             mobileCollapsed && "-rotate-90",
           )}
-          aria-hidden
         />
       </button>
     </div>

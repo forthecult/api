@@ -61,26 +61,26 @@ export async function GET(request: NextRequest) {
 
     const baseQuery = db
       .select({
-        id: shippingOptionsTable.id,
-        name: shippingOptionsTable.name,
-        countryCode: shippingOptionsTable.countryCode,
-        minOrderCents: shippingOptionsTable.minOrderCents,
-        maxOrderCents: shippingOptionsTable.maxOrderCents,
-        minQuantity: shippingOptionsTable.minQuantity,
-        maxQuantity: shippingOptionsTable.maxQuantity,
-        minWeightGrams: shippingOptionsTable.minWeightGrams,
-        maxWeightGrams: shippingOptionsTable.maxWeightGrams,
-        type: shippingOptionsTable.type,
-        amountCents: shippingOptionsTable.amountCents,
         additionalItemCents: shippingOptionsTable.additionalItemCents,
-        priority: shippingOptionsTable.priority,
-        speed: shippingOptionsTable.speed,
-        createdAt: shippingOptionsTable.createdAt,
-        updatedAt: shippingOptionsTable.updatedAt,
+        amountCents: shippingOptionsTable.amountCents,
         brandId: shippingOptionsTable.brandId,
-        sourceUrl: shippingOptionsTable.sourceUrl,
-        estimatedDaysText: shippingOptionsTable.estimatedDaysText,
         brandName: brandTable.name,
+        countryCode: shippingOptionsTable.countryCode,
+        createdAt: shippingOptionsTable.createdAt,
+        estimatedDaysText: shippingOptionsTable.estimatedDaysText,
+        id: shippingOptionsTable.id,
+        maxOrderCents: shippingOptionsTable.maxOrderCents,
+        maxQuantity: shippingOptionsTable.maxQuantity,
+        maxWeightGrams: shippingOptionsTable.maxWeightGrams,
+        minOrderCents: shippingOptionsTable.minOrderCents,
+        minQuantity: shippingOptionsTable.minQuantity,
+        minWeightGrams: shippingOptionsTable.minWeightGrams,
+        name: shippingOptionsTable.name,
+        priority: shippingOptionsTable.priority,
+        sourceUrl: shippingOptionsTable.sourceUrl,
+        speed: shippingOptionsTable.speed,
+        type: shippingOptionsTable.type,
+        updatedAt: shippingOptionsTable.updatedAt,
       })
       .from(shippingOptionsTable)
       .leftJoin(brandTable, eq(shippingOptionsTable.brandId, brandTable.id));
@@ -102,25 +102,25 @@ export async function GET(request: NextRequest) {
     );
 
     const items = rows.map((o) => ({
-      id: o.id,
-      name: o.name,
-      countryCode: o.countryCode,
-      minOrderCents: o.minOrderCents,
-      maxOrderCents: o.maxOrderCents,
-      minQuantity: o.minQuantity,
-      maxQuantity: o.maxQuantity,
-      minWeightGrams: o.minWeightGrams,
-      maxWeightGrams: o.maxWeightGrams,
-      type: o.type,
-      amountCents: o.amountCents,
       additionalItemCents: o.additionalItemCents ?? null,
-      priority: o.priority,
-      createdAt: o.createdAt,
-      updatedAt: o.updatedAt,
+      amountCents: o.amountCents,
       brandId: o.brandId,
       brandName: o.brandName ?? null,
-      sourceUrl: o.sourceUrl ?? null,
+      countryCode: o.countryCode,
+      createdAt: o.createdAt,
       estimatedDaysText: o.estimatedDaysText ?? null,
+      id: o.id,
+      maxOrderCents: o.maxOrderCents,
+      maxQuantity: o.maxQuantity,
+      maxWeightGrams: o.maxWeightGrams,
+      minOrderCents: o.minOrderCents,
+      minQuantity: o.minQuantity,
+      minWeightGrams: o.minWeightGrams,
+      name: o.name,
+      priority: o.priority,
+      sourceUrl: o.sourceUrl ?? null,
+      type: o.type,
+      updatedAt: o.updatedAt,
     }));
 
     return NextResponse.json({ items });
@@ -141,22 +141,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as {
+      additionalItemCents?: null | number;
+      amountCents?: null | number;
+      brandId?: null | string;
+      countryCode?: null | string;
+      estimatedDaysText?: null | string;
+      maxOrderCents?: null | number;
+      maxQuantity?: null | number;
+      maxWeightGrams?: null | number;
+      minOrderCents?: null | number;
+      minQuantity?: null | number;
+      minWeightGrams?: null | number;
       name: string;
-      countryCode?: string | null;
-      minOrderCents?: number | null;
-      maxOrderCents?: number | null;
-      minQuantity?: number | null;
-      maxQuantity?: number | null;
-      minWeightGrams?: number | null;
-      maxWeightGrams?: number | null;
-      type: "flat" | "per_item" | "flat_plus_per_item" | "free";
-      amountCents?: number | null;
-      additionalItemCents?: number | null;
       priority?: number;
-      speed?: "standard" | "express";
-      brandId?: string | null;
-      sourceUrl?: string | null;
-      estimatedDaysText?: string | null;
+      sourceUrl?: null | string;
+      speed?: "express" | "standard";
+      type: "flat" | "flat_plus_per_item" | "free" | "per_item";
     };
 
     if (typeof body.name !== "string" || body.name.trim() === "") {
@@ -248,24 +248,24 @@ export async function POST(request: NextRequest) {
     const speed = body.speed === "express" ? "express" : "standard";
 
     await db.insert(shippingOptionsTable).values({
-      id,
-      name: body.name.trim(),
-      countryCode,
-      minOrderCents: body.minOrderCents ?? null,
-      maxOrderCents: body.maxOrderCents ?? null,
-      minQuantity: body.minQuantity ?? null,
-      maxQuantity: body.maxQuantity ?? null,
-      minWeightGrams: body.minWeightGrams ?? null,
-      maxWeightGrams: body.maxWeightGrams ?? null,
-      type: body.type,
-      amountCents,
       additionalItemCents,
-      priority: typeof body.priority === "number" ? body.priority : 0,
-      speed,
+      amountCents,
       brandId,
-      sourceUrl,
-      estimatedDaysText,
+      countryCode,
       createdAt: now,
+      estimatedDaysText,
+      id,
+      maxOrderCents: body.maxOrderCents ?? null,
+      maxQuantity: body.maxQuantity ?? null,
+      maxWeightGrams: body.maxWeightGrams ?? null,
+      minOrderCents: body.minOrderCents ?? null,
+      minQuantity: body.minQuantity ?? null,
+      minWeightGrams: body.minWeightGrams ?? null,
+      name: body.name.trim(),
+      priority: typeof body.priority === "number" ? body.priority : 0,
+      sourceUrl,
+      speed,
+      type: body.type,
       updatedAt: now,
     });
 
@@ -283,24 +283,24 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      id: inserted.id,
-      name: inserted.name,
-      countryCode: inserted.countryCode,
-      minOrderCents: inserted.minOrderCents,
-      maxOrderCents: inserted.maxOrderCents,
-      minQuantity: inserted.minQuantity,
-      maxQuantity: inserted.maxQuantity,
-      minWeightGrams: inserted.minWeightGrams,
-      maxWeightGrams: inserted.maxWeightGrams,
-      type: inserted.type,
-      amountCents: inserted.amountCents,
-      priority: inserted.priority,
-      speed: inserted.speed ?? "standard",
       additionalItemCents: inserted.additionalItemCents ?? null,
+      amountCents: inserted.amountCents,
       brandId: inserted.brandId,
-      sourceUrl: inserted.sourceUrl,
-      estimatedDaysText: inserted.estimatedDaysText,
+      countryCode: inserted.countryCode,
       createdAt: inserted.createdAt,
+      estimatedDaysText: inserted.estimatedDaysText,
+      id: inserted.id,
+      maxOrderCents: inserted.maxOrderCents,
+      maxQuantity: inserted.maxQuantity,
+      maxWeightGrams: inserted.maxWeightGrams,
+      minOrderCents: inserted.minOrderCents,
+      minQuantity: inserted.minQuantity,
+      minWeightGrams: inserted.minWeightGrams,
+      name: inserted.name,
+      priority: inserted.priority,
+      sourceUrl: inserted.sourceUrl,
+      speed: inserted.speed ?? "standard",
+      type: inserted.type,
       updatedAt: inserted.updatedAt,
     });
   } catch (err) {

@@ -27,36 +27,36 @@ import { userTable } from "../users/tables";
 export const productReviewsTable = pgTable(
   "product_review",
   {
+    author: text("author"), // first name only (e.g. from imported reviews)
+    comment: text("comment").notNull(), // review body
+    createdAt: timestamp("created_at").notNull(),
+    // Reviewer info
+    customerName: text("customer_name").notNull(),
+
     id: text("id").primaryKey(),
+    location: text("location"),
     // Product reference (nullable - reviews persist even if product deleted)
     productId: text("product_id").references(() => productsTable.id, {
       onDelete: "set null",
     }),
-    // Product slug/handle for matching and display (persists after product deletion)
-    productSlug: text("product_slug"),
+
     // Snapshot of product name for display when product is deleted
     productName: text("product_name"),
-
+    // Product slug/handle for matching and display (persists after product deletion)
+    productSlug: text("product_slug"),
     // Review content
     rating: integer("rating").notNull(), // 1–5
-    title: text("title"), // review title
-    comment: text("comment").notNull(), // review body
-
-    // Reviewer info
-    customerName: text("customer_name").notNull(),
-    author: text("author"), // first name only (e.g. from imported reviews)
-    location: text("location"),
     showName: boolean("show_name").notNull().default(true), // if false, display anonymous label
 
+    title: text("title"), // review title
+
+    updatedAt: timestamp("updated_at").notNull(),
     // Optional user account link
     userId: text("user_id").references(() => userTable.id, {
       onDelete: "set null",
     }),
-
     // Visibility and timestamps
     visible: boolean("visible").notNull().default(true),
-    createdAt: timestamp("created_at").notNull(),
-    updatedAt: timestamp("updated_at").notNull(),
   },
   (t) => [
     // Index for product lookups (reviews for a specific product)

@@ -1,8 +1,8 @@
 "use client";
 
 import { LogIn, Moon, Sun, UserIcon, UserPlus, Wallet } from "lucide-react";
-import Link from "next/link";
 import { useTheme } from "next-themes";
+import Link from "next/link";
 import * as React from "react";
 
 import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
@@ -30,7 +30,11 @@ export function HeaderGuestDropdown() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className="h-9 w-9 rounded-full bg-background text-[#1A1611] dark:text-[#F5F1EB] transition-colors hover:bg-muted"
+          className={`
+            h-9 w-9 rounded-full bg-background text-[#1A1611] transition-colors
+            hover:bg-muted
+            dark:text-[#F5F1EB]
+          `}
           size="icon"
           variant="ghost"
         >
@@ -74,21 +78,30 @@ export function HeaderGuestDropdown() {
         {mounted && (
           <>
             <DropdownMenuItem
-              className={`cursor-pointer ${theme === "light" ? "font-medium text-primary" : ""}`}
+              className={`
+                cursor-pointer
+                ${theme === "light" ? `font-medium text-primary` : ""}
+              `}
               onClick={() => setTheme("light")}
             >
               <Sun className="mr-2 h-4 w-4" />
               Light
             </DropdownMenuItem>
             <DropdownMenuItem
-              className={`cursor-pointer ${theme === "dark" ? "font-medium text-primary" : ""}`}
+              className={`
+                cursor-pointer
+                ${theme === "dark" ? `font-medium text-primary` : ""}
+              `}
               onClick={() => setTheme("dark")}
             >
               <Moon className="mr-2 h-4 w-4" />
               Dark
             </DropdownMenuItem>
             <DropdownMenuItem
-              className={`cursor-pointer ${theme === "system" || !theme ? "font-medium text-primary" : ""}`}
+              className={`
+                cursor-pointer
+                ${theme === "system" || !theme ? `font-medium text-primary` : ""}
+              `}
               onClick={() => setTheme("system")}
             >
               <svg

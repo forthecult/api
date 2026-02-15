@@ -26,299 +26,45 @@ import { Input } from "~/ui/primitives/input";
 
 const X_ICON = (
   <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
+    aria-hidden
+    fill="currentColor"
     height="18"
     viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden
+    width="18"
+    xmlns="http://www.w3.org/2000/svg"
   >
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
   </svg>
 );
 
-function paymentMethodLabel(
-  method: string | undefined,
-  cryptoCurrency?: string,
-): string {
-  const m = (method ?? "").toLowerCase();
-  if (m === "stripe") return "Credit / Debit card";
-  if (m === "solana_pay") {
-    const token = (cryptoCurrency ?? "").toUpperCase();
-    if (token === "SOL") return "SOL (Solana)";
-    if (token) return `${token} (Solana)`;
-    return "Solana";
-  }
-  if (m === "eth_pay") {
-    const token = (cryptoCurrency ?? "").toUpperCase();
-    if (token === "ETH") return "ETH (Ethereum)";
-    if (token) return `${token} (Ethereum)`;
-    return "Ethereum";
-  }
-  if (m === "btcpay") return "Bitcoin";
-  if (m === "ton_pay") return "TON";
-  if (m === "crypto") return "Crypto";
-  return method ?? "—";
+type AccessLevel = "admin" | "first_visit" | "owner" | "public";
+
+interface OrderDetails {
+  accessLevel?: AccessLevel;
+  createdAt: string;
+  cryptoCurrency?: string;
+  email?: string;
+  items: {
+    name: string;
+    priceUsd?: number;
+    quantity: number;
+    subtotalUsd?: number;
+  }[];
+  orderId: string;
+  paymentMethod?: string;
+  shipping?: ShippingAddress;
+  totalCents: number;
 }
 
-function formatShippingAddress(s: ShippingAddress): string[] {
-  const lines: string[] = [];
-  if (s.name?.trim()) lines.push(s.name.trim());
-  if (s.address1?.trim()) lines.push(s.address1.trim());
-  if (s.address2?.trim()) lines.push(s.address2.trim());
-  const cityLine = [s.city, s.stateCode, s.zip].filter(Boolean).join(", ");
-  if (cityLine) lines.push(cityLine);
-  if (s.countryCode?.trim()) lines.push(s.countryCode.trim());
-  if (s.phone?.trim()) lines.push(s.phone.trim());
-  return lines;
-}
-
-type ShippingAddress = {
-  name?: string;
+interface ShippingAddress {
   address1?: string;
   address2?: string;
   city?: string;
+  countryCode?: string;
+  name?: string;
+  phone?: string;
   stateCode?: string;
   zip?: string;
-  countryCode?: string;
-  phone?: string;
-};
-
-type AccessLevel = "admin" | "owner" | "first_visit" | "public";
-
-type OrderDetails = {
-  orderId: string;
-  email?: string;
-  paymentMethod?: string;
-  cryptoCurrency?: string;
-  totalCents: number;
-  createdAt: string;
-  accessLevel?: AccessLevel;
-  items: Array<{
-    name: string;
-    quantity: number;
-    priceUsd?: number;
-    subtotalUsd?: number;
-  }>;
-  shipping?: ShippingAddress;
-};
-
-/** Read and consume (delete) the confirmation token from sessionStorage. */
-function consumeConfirmationToken(key: string): string | null {
-  try {
-    const token = sessionStorage.getItem(key);
-    if (token) sessionStorage.removeItem(key);
-    return token;
-  } catch {
-    return null;
-  }
-}
-
-/* ---------- Marketing consent (first visit only) ---------- */
-function MarketingConsent({
-  orderId,
-  email,
-  hasPhone,
-}: {
-  orderId: string;
-  email?: string;
-  hasPhone: boolean;
-}) {
-  const [emailConsent, setEmailConsent] = useState(Boolean(email));
-  const [smsConsent, setSmsConsent] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const showPhoneInput = smsConsent && !hasPhone;
-
-  const handleSave = useCallback(async () => {
-    if (!email) return;
-    setSaving(true);
-    try {
-      const res = await fetch(
-        `/api/orders/${encodeURIComponent(orderId)}/marketing-consent`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email,
-            emailConsent,
-            smsConsent,
-            ...(showPhoneInput && phone.trim() ? { phone: phone.trim() } : {}),
-          }),
-        },
-      );
-      if (res.ok) {
-        setSaved(true);
-        toast.success("Preferences saved");
-      } else {
-        toast.error("Could not save preferences");
-      }
-    } catch {
-      toast.error("Could not save preferences");
-    } finally {
-      setSaving(false);
-    }
-  }, [orderId, email, emailConsent, smsConsent, showPhoneInput, phone]);
-
-  if (saved) {
-    return (
-      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-        <Check className="size-4" />
-        <span>Preferences saved</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <p className="text-sm font-medium">Stay in the loop</p>
-      <label className="flex items-center gap-2 text-sm">
-        <Checkbox
-          checked={emailConsent}
-          onCheckedChange={(v) => setEmailConsent(v === true)}
-        />
-        <span>Email me with news and offers</span>
-      </label>
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm">
-          <Checkbox
-            checked={smsConsent}
-            onCheckedChange={(v) => setSmsConsent(v === true)}
-          />
-          <span>Text me with news and offers</span>
-        </label>
-        {showPhoneInput && (
-          <Input
-            type="tel"
-            placeholder="Phone number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="h-9 max-w-xs"
-            aria-label="Phone number for SMS updates"
-          />
-        )}
-      </div>
-      <Button
-        size="sm"
-        variant="outline"
-        disabled={saving || (!emailConsent && !smsConsent)}
-        onClick={handleSave}
-      >
-        {saving ? (
-          <>
-            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-            Saving…
-          </>
-        ) : (
-          "Save preferences"
-        )}
-      </Button>
-    </div>
-  );
-}
-
-/* ---------- Post-purchase account creation via email verification ---------- */
-function CreateAccountViaEmail({ email }: { email?: string }) {
-  const { user } = useCurrentUser();
-  const [sending, setSending] = useState(false);
-  const [sent, setSent] = useState(false);
-  const [error, setError] = useState("");
-
-  if (user?.email) return null;
-  if (!email) return null;
-
-  if (sent) {
-    return (
-      <div className="rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 dark:border-green-900/50 dark:bg-green-950/20">
-        <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
-          <Check className="size-4 shrink-0" aria-hidden />
-          <span className="font-medium">
-            Check your email! We&apos;ve sent a link to <strong>{email}</strong>{" "}
-            to set up your account.
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-2">
-        <Mail className="size-4 text-primary" aria-hidden />
-        <p className="text-sm font-medium">Save your info for next time</p>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        We&apos;ll send a link to <strong>{email}</strong> so you can set a
-        password and track your orders. Your shipping details are already saved
-        with this order.
-      </p>
-      <Button
-        size="sm"
-        disabled={sending}
-        onClick={async () => {
-          setSending(true);
-          setError("");
-          try {
-            // Create account with a random password; user will set their own via the reset link
-            const tempPassword = crypto.randomUUID() + "Aa1!";
-            const result = await signUp.email({
-              email,
-              password: tempPassword,
-              name: email.split("@")[0] ?? "",
-            });
-            if (result?.error) {
-              // Account may already exist
-              setError(
-                typeof result.error.message === "string"
-                  ? result.error.message
-                  : "Could not create account. You may already have one.",
-              );
-              setSending(false);
-              return;
-            }
-            // Send password reset email so user can set their own password
-            await requestPasswordReset({ email });
-            setSent(true);
-          } catch {
-            setError("Could not send setup email. Please try again.");
-          } finally {
-            setSending(false);
-          }
-        }}
-      >
-        {sending ? (
-          <>
-            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-            Sending…
-          </>
-        ) : (
-          <>
-            <Mail className="mr-1.5 size-3.5" />
-            Send me a setup link
-          </>
-        )}
-      </Button>
-      {error && <p className="text-xs text-destructive">{error}</p>}
-      <p className="text-[11px] text-muted-foreground/70">
-        By creating an account you agree to our Terms of Service and Privacy
-        Policy.
-      </p>
-    </div>
-  );
-}
-
-/* ---------- CreateAccount card wrapper ---------- */
-function CreateAccountCard({ email }: { email?: string }) {
-  const { user } = useCurrentUser();
-  if (user?.email) return null;
-  if (!email) return null;
-  return (
-    <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
-      <CreateAccountViaEmail email={email} />
-    </div>
-  );
 }
 
 /* ---------- Main success page ---------- */
@@ -329,7 +75,7 @@ export function SuccessPageClient() {
   const { clearCart } = useCart();
   const { user } = useCurrentUser();
 
-  const [order, setOrder] = useState<OrderDetails | null>(null);
+  const [order, setOrder] = useState<null | OrderDetails>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -357,18 +103,18 @@ export function SuccessPageClient() {
 
     sessionStorage.removeItem("checkout_save_address");
     fetch("/api/user/addresses", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         address1: s.address1.trim(),
         address2: s.address2?.trim() || undefined,
         city: s.city.trim(),
-        stateCode: s.stateCode?.trim() || undefined,
         countryCode: s.countryCode.trim(),
-        zip: s.zip.trim(),
         phone: s.phone?.trim() || undefined,
+        stateCode: s.stateCode?.trim() || undefined,
+        zip: s.zip.trim(),
       }),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     })
       .then((res) => {
         if (res.ok) toast.success("Address saved for next time");
@@ -403,31 +149,31 @@ export function SuccessPageClient() {
         );
         if (!cancelled && res.ok) {
           const data = (await res.json()) as {
-            orderId: string;
-            email?: string;
-            paymentMethod?: string;
-            cryptoCurrency?: string;
             accessLevel?: AccessLevel;
             createdAt: string;
-            items: Array<{
+            cryptoCurrency?: string;
+            email?: string;
+            items: {
               name: string;
-              quantity: number;
               priceUsd?: number;
+              quantity: number;
               subtotalUsd?: number;
-            }>;
-            totals?: { totalUsd: number };
+            }[];
+            orderId: string;
+            paymentMethod?: string;
             shipping?: ShippingAddress;
+            totals?: { totalUsd: number };
           };
           setOrder({
-            orderId: data.orderId,
-            email: data.email,
-            paymentMethod: data.paymentMethod,
-            cryptoCurrency: data.cryptoCurrency,
             accessLevel: data.accessLevel,
-            totalCents: (data.totals?.totalUsd ?? 0) * 100,
             createdAt: data.createdAt,
+            cryptoCurrency: data.cryptoCurrency,
+            email: data.email,
             items: data.items ?? [],
+            orderId: data.orderId,
+            paymentMethod: data.paymentMethod,
             shipping: data.shipping,
+            totalCents: (data.totals?.totalUsd ?? 0) * 100,
           });
         }
       }
@@ -479,13 +225,35 @@ export function SuccessPageClient() {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-3xl px-4 py-12
+      sm:py-16
+    `}
+    >
       {/* ───── Hero: Success confirmation ───── */}
       <div className="flex flex-col items-center text-center">
-        <div className="mb-5 flex size-16 items-center justify-center rounded-full bg-green-500/15 sm:size-20">
-          <Check className="size-8 text-green-600 dark:text-green-400 sm:size-10" />
+        <div
+          className={`
+          mb-5 flex size-16 items-center justify-center rounded-full
+          bg-green-500/15
+          sm:size-20
+        `}
+        >
+          <Check
+            className={`
+            size-8 text-green-600
+            sm:size-10
+            dark:text-green-400
+          `}
+          />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+        <h1
+          className={`
+          text-2xl font-bold tracking-tight
+          sm:text-3xl
+        `}
+        >
           Order confirmed!
         </h1>
         <p className="mt-2 max-w-md text-muted-foreground">
@@ -494,12 +262,28 @@ export function SuccessPageClient() {
 
         {/* Confirmation email banner — only show when we have the actual email */}
         {canSeePII && order?.email && (
-          <div className="mt-5 w-full max-w-md rounded-lg border border-green-200 bg-green-50/50 px-4 py-3 text-left dark:border-green-900/50 dark:bg-green-950/20">
-            <div className="flex items-start gap-2.5 text-sm text-green-700 dark:text-green-400">
-              <Check className="mt-0.5 size-4 shrink-0" aria-hidden />
+          <div
+            className={`
+            mt-5 w-full max-w-md rounded-lg border border-green-200
+            bg-green-50/50 px-4 py-3 text-left
+            dark:border-green-900/50 dark:bg-green-950/20
+          `}
+          >
+            <div
+              className={`
+              flex items-start gap-2.5 text-sm text-green-700
+              dark:text-green-400
+            `}
+            >
+              <Check aria-hidden className="mt-0.5 size-4 shrink-0" />
               <div>
                 <p className="font-medium">Confirmation email sent</p>
-                <p className="mt-0.5 text-green-600/80 dark:text-green-400/70">
+                <p
+                  className={`
+                  mt-0.5 text-green-600/80
+                  dark:text-green-400/70
+                `}
+                >
                   We&apos;ve sent order details and tracking info to{" "}
                   <span className="font-medium">{order.email}</span>. Most
                   orders ship within 1 business day.
@@ -511,7 +295,12 @@ export function SuccessPageClient() {
 
         {/* Redacted banner for public viewers */}
         {!canSeePII && (
-          <div className="mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50 px-4 py-3 text-left">
+          <div
+            className={`
+            mt-5 w-full max-w-md rounded-lg border border-border bg-muted/50
+            px-4 py-3 text-left
+          `}
+          >
             <p className="text-sm text-muted-foreground">
               Order details have been sent to the buyer&apos;s email. Sign in to
               view full order information.
@@ -522,7 +311,12 @@ export function SuccessPageClient() {
 
       {/* ───── Order details ───── */}
       {order && order.items.length > 0 && (
-        <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div
+          className={`
+          mt-10 rounded-xl border border-border bg-card p-5
+          sm:p-6
+        `}
+        >
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Order details</h2>
             {displayOrderId && (
@@ -536,14 +330,22 @@ export function SuccessPageClient() {
           <div className="mt-5 divide-y divide-border">
             {order.items.map((item) => (
               <div
+                className={`
+                  flex items-center justify-between py-3
+                  first:pt-0
+                  last:pb-0
+                `}
                 key={`${item.name}-${item.quantity}`}
-                className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-md bg-muted">
+                  <div
+                    className={`
+                    flex size-10 items-center justify-center rounded-md bg-muted
+                  `}
+                  >
                     <Package
-                      className="size-4 text-muted-foreground"
                       aria-hidden
+                      className="size-4 text-muted-foreground"
                     />
                   </div>
                   <div>
@@ -573,10 +375,21 @@ export function SuccessPageClient() {
           </div>
 
           {/* Meta: payment, date, shipping */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div
+            className={`
+            mt-5 grid gap-4
+            sm:grid-cols-2
+            lg:grid-cols-3
+          `}
+          >
             {order.paymentMethod && (
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <p
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Payment
                 </p>
                 <p className="mt-0.5 text-sm">
@@ -589,7 +402,12 @@ export function SuccessPageClient() {
             )}
             {order.createdAt && (
               <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <p
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Date
                 </p>
                 <p className="mt-0.5 text-sm">
@@ -601,7 +419,12 @@ export function SuccessPageClient() {
               </div>
             )}
             <div className="rounded-lg bg-muted/50 px-3 py-2.5">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Estimated delivery
               </p>
               <p className="mt-0.5 text-sm">
@@ -615,7 +438,12 @@ export function SuccessPageClient() {
           {/* Shipping address — full when authorized, hidden for public */}
           {hasFullShipping && order.shipping && (
             <div className="mt-5 border-t border-border pt-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Shipping to
               </p>
               <div className="mt-1 text-sm">
@@ -627,7 +455,12 @@ export function SuccessPageClient() {
           )}
           {!hasFullShipping && order.shipping?.countryCode && !canSeePII && (
             <div className="mt-5 border-t border-border pt-4">
-              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Shipping to
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
@@ -640,7 +473,12 @@ export function SuccessPageClient() {
 
       {/* Fallback if no order data loaded */}
       {!order && displayOrderId && (
-        <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div
+          className={`
+          mt-10 rounded-xl border border-border bg-card p-5
+          sm:p-6
+        `}
+        >
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Order #{displayOrderId.slice(0, 8)}. We&apos;ve sent a confirmation
@@ -653,7 +491,12 @@ export function SuccessPageClient() {
       )}
 
       {!order && !displayOrderId && (
-        <div className="mt-10 rounded-xl border border-border bg-card p-5 sm:p-6">
+        <div
+          className={`
+          mt-10 rounded-xl border border-border bg-card p-5
+          sm:p-6
+        `}
+        >
           <h2 className="text-lg font-semibold">Order details</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             Your payment was successful. We&apos;ll send a confirmation email
@@ -670,11 +513,16 @@ export function SuccessPageClient() {
 
           {/* Marketing consent */}
           {(order?.orderId ?? orderIdParam) && (
-            <div className="rounded-xl border border-border bg-card p-5 sm:p-6">
+            <div
+              className={`
+              rounded-xl border border-border bg-card p-5
+              sm:p-6
+            `}
+            >
               <MarketingConsent
-                orderId={order?.orderId ?? orderIdParam ?? ""}
                 email={order?.email}
                 hasPhone={Boolean(order?.shipping?.phone)}
+                orderId={order?.orderId ?? orderIdParam ?? ""}
               />
             </div>
           )}
@@ -682,8 +530,20 @@ export function SuccessPageClient() {
       )}
 
       {/* ───── Actions ───── */}
-      <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-        <Button asChild size="lg" className="w-full sm:w-auto">
+      <div
+        className={`
+        mt-10 flex flex-col items-center gap-4
+        sm:flex-row sm:justify-center
+      `}
+      >
+        <Button
+          asChild
+          className={`
+          w-full
+          sm:w-auto
+        `}
+          size="lg"
+        >
           <Link href="/products">
             <ShoppingBag className="mr-2 size-4" />
             Continue shopping
@@ -691,53 +551,70 @@ export function SuccessPageClient() {
         </Button>
         <Button
           asChild
-          variant="outline"
+          className={`
+            w-full
+            sm:w-auto
+          `}
           size="lg"
-          className="w-full sm:w-auto"
+          variant="outline"
         >
           <Link href="/">Back to home</Link>
         </Button>
       </div>
 
       {/* ───── Share & referral ───── */}
-      <div className="mt-10 flex flex-col items-center border-t border-border pt-8">
+      <div
+        className={`
+        mt-10 flex flex-col items-center border-t border-border pt-8
+      `}
+      >
         <p className="text-sm font-medium text-muted-foreground">
           Share your purchase
         </p>
         <div className="mt-3 flex items-center gap-2">
           <a
-            href={xShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Share on X (Twitter)"
+            className={`
+              inline-flex size-10 items-center justify-center rounded-full
+              border border-input bg-background text-muted-foreground
+              transition-colors
+              hover:bg-muted hover:text-foreground
+            `}
+            href={xShareUrl}
+            rel="noopener noreferrer"
+            target="_blank"
           >
             {X_ICON}
           </a>
           <a
-            href={facebookShareUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex size-10 items-center justify-center rounded-full border border-input bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             aria-label="Share on Facebook"
+            className={`
+              inline-flex size-10 items-center justify-center rounded-full
+              border border-input bg-background text-muted-foreground
+              transition-colors
+              hover:bg-muted hover:text-foreground
+            `}
+            href={facebookShareUrl}
+            rel="noopener noreferrer"
+            target="_blank"
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="18"
+              aria-hidden
+              fill="currentColor"
               height="18"
               viewBox="0 0 24 24"
-              fill="currentColor"
-              aria-hidden
+              width="18"
+              xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
             </svg>
           </a>
           <Button
-            variant="outline"
-            size="icon"
+            aria-label="Copy link"
             className="size-10 rounded-full"
             onClick={copyLink}
-            aria-label="Copy link"
+            size="icon"
+            variant="outline"
           >
             <Link2 className="size-4" />
           </Button>
@@ -748,4 +625,278 @@ export function SuccessPageClient() {
       </div>
     </div>
   );
+}
+
+/** Read and consume (delete) the confirmation token from sessionStorage. */
+function consumeConfirmationToken(key: string): null | string {
+  try {
+    const token = sessionStorage.getItem(key);
+    if (token) sessionStorage.removeItem(key);
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+/* ---------- CreateAccount card wrapper ---------- */
+function CreateAccountCard({ email }: { email?: string }) {
+  const { user } = useCurrentUser();
+  if (user?.email) return null;
+  if (!email) return null;
+  return (
+    <div
+      className={`
+      rounded-xl border border-border bg-card p-5
+      sm:p-6
+    `}
+    >
+      <CreateAccountViaEmail email={email} />
+    </div>
+  );
+}
+
+/* ---------- Post-purchase account creation via email verification ---------- */
+function CreateAccountViaEmail({ email }: { email?: string }) {
+  const { user } = useCurrentUser();
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  if (user?.email) return null;
+  if (!email) return null;
+
+  if (sent) {
+    return (
+      <div
+        className={`
+        rounded-lg border border-green-200 bg-green-50/50 px-4 py-3
+        dark:border-green-900/50 dark:bg-green-950/20
+      `}
+      >
+        <div
+          className={`
+          flex items-center gap-2 text-sm text-green-700
+          dark:text-green-400
+        `}
+        >
+          <Check aria-hidden className="size-4 shrink-0" />
+          <span className="font-medium">
+            Check your email! We&apos;ve sent a link to <strong>{email}</strong>{" "}
+            to set up your account.
+          </span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <Mail aria-hidden className="size-4 text-primary" />
+        <p className="text-sm font-medium">Save your info for next time</p>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        We&apos;ll send a link to <strong>{email}</strong> so you can set a
+        password and track your orders. Your shipping details are already saved
+        with this order.
+      </p>
+      <Button
+        disabled={sending}
+        onClick={async () => {
+          setSending(true);
+          setError("");
+          try {
+            // Create account with a random password; user will set their own via the reset link
+            const tempPassword = crypto.randomUUID() + "Aa1!";
+            const result = await signUp.email({
+              email,
+              name: email.split("@")[0] ?? "",
+              password: tempPassword,
+            });
+            if (result?.error) {
+              // Account may already exist
+              setError(
+                typeof result.error.message === "string"
+                  ? result.error.message
+                  : "Could not create account. You may already have one.",
+              );
+              setSending(false);
+              return;
+            }
+            // Send password reset email so user can set their own password
+            await requestPasswordReset({ email });
+            setSent(true);
+          } catch {
+            setError("Could not send setup email. Please try again.");
+          } finally {
+            setSending(false);
+          }
+        }}
+        size="sm"
+      >
+        {sending ? (
+          <>
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            Sending…
+          </>
+        ) : (
+          <>
+            <Mail className="mr-1.5 size-3.5" />
+            Send me a setup link
+          </>
+        )}
+      </Button>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+      <p className="text-[11px] text-muted-foreground/70">
+        By creating an account you agree to our Terms of Service and Privacy
+        Policy.
+      </p>
+    </div>
+  );
+}
+
+function formatShippingAddress(s: ShippingAddress): string[] {
+  const lines: string[] = [];
+  if (s.name?.trim()) lines.push(s.name.trim());
+  if (s.address1?.trim()) lines.push(s.address1.trim());
+  if (s.address2?.trim()) lines.push(s.address2.trim());
+  const cityLine = [s.city, s.stateCode, s.zip].filter(Boolean).join(", ");
+  if (cityLine) lines.push(cityLine);
+  if (s.countryCode?.trim()) lines.push(s.countryCode.trim());
+  if (s.phone?.trim()) lines.push(s.phone.trim());
+  return lines;
+}
+
+/* ---------- Marketing consent (first visit only) ---------- */
+function MarketingConsent({
+  email,
+  hasPhone,
+  orderId,
+}: {
+  email?: string;
+  hasPhone: boolean;
+  orderId: string;
+}) {
+  const [emailConsent, setEmailConsent] = useState(Boolean(email));
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const showPhoneInput = smsConsent && !hasPhone;
+
+  const handleSave = useCallback(async () => {
+    if (!email) return;
+    setSaving(true);
+    try {
+      const res = await fetch(
+        `/api/orders/${encodeURIComponent(orderId)}/marketing-consent`,
+        {
+          body: JSON.stringify({
+            email,
+            emailConsent,
+            smsConsent,
+            ...(showPhoneInput && phone.trim() ? { phone: phone.trim() } : {}),
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        },
+      );
+      if (res.ok) {
+        setSaved(true);
+        toast.success("Preferences saved");
+      } else {
+        toast.error("Could not save preferences");
+      }
+    } catch {
+      toast.error("Could not save preferences");
+    } finally {
+      setSaving(false);
+    }
+  }, [orderId, email, emailConsent, smsConsent, showPhoneInput, phone]);
+
+  if (saved) {
+    return (
+      <div
+        className={`
+        flex items-center gap-2 text-sm text-green-600
+        dark:text-green-400
+      `}
+      >
+        <Check className="size-4" />
+        <span>Preferences saved</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-sm font-medium">Stay in the loop</p>
+      <label className="flex items-center gap-2 text-sm">
+        <Checkbox
+          checked={emailConsent}
+          onCheckedChange={(v) => setEmailConsent(v === true)}
+        />
+        <span>Email me with news and offers</span>
+      </label>
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm">
+          <Checkbox
+            checked={smsConsent}
+            onCheckedChange={(v) => setSmsConsent(v === true)}
+          />
+          <span>Text me with news and offers</span>
+        </label>
+        {showPhoneInput && (
+          <Input
+            aria-label="Phone number for SMS updates"
+            className="h-9 max-w-xs"
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone number"
+            type="tel"
+            value={phone}
+          />
+        )}
+      </div>
+      <Button
+        disabled={saving || (!emailConsent && !smsConsent)}
+        onClick={handleSave}
+        size="sm"
+        variant="outline"
+      >
+        {saving ? (
+          <>
+            <Loader2 className="mr-1.5 size-3.5 animate-spin" />
+            Saving…
+          </>
+        ) : (
+          "Save preferences"
+        )}
+      </Button>
+    </div>
+  );
+}
+
+function paymentMethodLabel(
+  method: string | undefined,
+  cryptoCurrency?: string,
+): string {
+  const m = (method ?? "").toLowerCase();
+  if (m === "stripe") return "Credit / Debit card";
+  if (m === "solana_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "SOL") return "SOL (Solana)";
+    if (token) return `${token} (Solana)`;
+    return "Solana";
+  }
+  if (m === "eth_pay") {
+    const token = (cryptoCurrency ?? "").toUpperCase();
+    if (token === "ETH") return "ETH (Ethereum)";
+    if (token) return `${token} (Ethereum)`;
+    return "Ethereum";
+  }
+  if (m === "btcpay") return "Bitcoin";
+  if (m === "ton_pay") return "TON";
+  if (m === "crypto") return "Crypto";
+  return method ?? "—";
 }

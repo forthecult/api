@@ -9,14 +9,6 @@
  */
 
 import {
-  Connection,
-  Keypair,
-  PublicKey,
-  Transaction,
-  SystemProgram,
-  sendAndConfirmTransaction,
-} from "@solana/web3.js";
-import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
@@ -24,6 +16,14 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  sendAndConfirmTransaction,
+  SystemProgram,
+  Transaction,
+} from "@solana/web3.js";
 import bs58 from "bs58";
 import { and, eq, isNotNull, or } from "drizzle-orm";
 
@@ -31,10 +31,10 @@ import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { deriveDepositKeypair } from "~/lib/solana-deposit";
 import {
-  USDC_MINT_MAINNET,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
   TROLL_MINT_MAINNET,
+  USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
 
@@ -44,107 +44,55 @@ const RENT_EXEMPT_MIN_LAMPORTS = 890_880;
 
 /** Known mint addresses -> display symbol for sweep UI */
 const KNOWN_MINT_LABELS: Record<string, string> = {
-  [USDC_MINT_MAINNET]: "USDC",
   [CRUST_MINT_MAINNET]: "CRUST",
   [PUMP_MINT_MAINNET]: "PUMP",
   [TROLL_MINT_MAINNET]: "TROLL",
+  [USDC_MINT_MAINNET]: "USDC",
   [WHITEWHALE_MINT_MAINNET]: "WHITEWHALE",
 };
 
-export function getTokenLabel(mint: string): string {
-  return KNOWN_MINT_LABELS[mint] ?? mint.slice(0, 8) + "…";
+export interface SolanaSweepResult {
+  configError?: string;
+  dryRun: boolean;
+  ok: boolean;
+  ordersCount: number;
+  recipient?: string;
+  results: SweepOrderResult[];
+  scope: SweepScope;
 }
 
-export type TokenSweepItem = {
-  mint: string;
-  amount: string;
-  decimals: number;
-  amountFormatted: number;
-  /** Display symbol when mint is known (e.g. USDC, PUMP) */
-  symbol?: string;
-};
-
-export type SweepOrderResult = {
-  orderId: string;
+export interface SweepOrderResult {
   depositAddress: string;
+  error?: string;
+  orderId: string;
   skipped?: string;
-  solToSweepLamports?: number;
   solToSweepFormatted?: number;
+  solToSweepLamports?: number;
   tokens?: TokenSweepItem[];
   txSignature?: string;
-  error?: string;
-};
+}
 
-export type SweepScope = "paid" | "pending" | "all";
+export type SweepScope = "all" | "paid" | "pending";
 
-export type SolanaSweepResult = {
-  ok: boolean;
-  dryRun: boolean;
-  scope: SweepScope;
-  configError?: string;
-  recipient?: string;
-  ordersCount: number;
-  results: SweepOrderResult[];
-};
-
-type TokenAccountInfo = {
-  mint: string;
+export interface TokenSweepItem {
   amount: string;
+  amountFormatted: number;
   decimals: number;
+  mint: string;
+  /** Display symbol when mint is known (e.g. USDC, PUMP) */
+  symbol?: string;
+}
+
+interface TokenAccountInfo {
+  amount: string;
   ata: PublicKey;
+  decimals: number;
+  mint: string;
   programId: PublicKey;
-};
-
-function getRpcUrl(): string {
-  const url =
-    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.SOLANA_RPC_URL || "";
-  return url.trim() || "https://rpc.ankr.com/solana";
 }
 
-function getRecipient(): string | null {
-  const r =
-    process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT ||
-    process.env.SOLANA_PAY_RECIPIENT ||
-    "";
-  return r.trim() || null;
-}
-
-/** Server-only: builds fee-payer keypair from env. Never expose the key or keypair to the client. */
-function getFeePayerKeypair(): Keypair | null {
-  const secret = process.env.SOLANA_SWEEP_FEE_PAYER_SECRET?.trim();
-  if (!secret) return null;
-  try {
-    const bytes = bs58.decode(secret);
-    if (bytes.length !== 64) return null;
-    return Keypair.fromSecretKey(bytes);
-  } catch {
-    return null;
-  }
-}
-
-async function getTokenAccountsWithBalance(
-  connection: Connection,
-  owner: PublicKey,
-  programId: PublicKey,
-): Promise<TokenAccountInfo[]> {
-  const out: TokenAccountInfo[] = [];
-  const resp = await connection.getParsedTokenAccountsByOwner(owner, {
-    programId,
-  });
-  for (const { pubkey, account } of resp.value) {
-    const parsed = account.data.parsed?.info;
-    if (!parsed?.mint || !parsed?.tokenAmount) continue;
-    const amount = parsed.tokenAmount.amount;
-    if (amount === "0" || !amount) continue;
-    out.push({
-      mint: parsed.mint,
-      amount,
-      decimals: parsed.tokenAmount.decimals ?? 0,
-      ata: pubkey,
-      programId,
-    });
-  }
-  return out;
+export function getTokenLabel(mint: string): string {
+  return KNOWN_MINT_LABELS[mint] ?? mint.slice(0, 8) + "…";
 }
 
 /**
@@ -162,24 +110,24 @@ export async function runSolanaSweep(
 
   if (!recipientStr) {
     return {
-      ok: false,
-      dryRun,
-      scope,
       configError:
         "Missing NEXT_PUBLIC_SOLANA_PAY_RECIPIENT or SOLANA_PAY_RECIPIENT",
+      dryRun,
+      ok: false,
       ordersCount: 0,
       results: [],
+      scope,
     };
   }
   if (!feePayer && !dryRun) {
     return {
-      ok: false,
-      dryRun,
-      scope,
       configError:
         "Missing SOLANA_SWEEP_FEE_PAYER_SECRET (base58 secret key of keypair with SOL for fees)",
+      dryRun,
+      ok: false,
       ordersCount: 0,
       results: [],
+      scope,
     };
   }
 
@@ -231,8 +179,8 @@ export async function runSolanaSweep(
     const keypair = deriveDepositKeypair(orderId);
     if (keypair.publicKey.toBase58() !== depositAddr) {
       results.push({
-        orderId,
         depositAddress: depositAddr,
+        orderId,
         skipped: "Derived address does not match stored",
       });
       continue;
@@ -258,8 +206,8 @@ export async function runSolanaSweep(
     const hasWork = solToSweep > 0 || tokenAccounts.length > 0;
     if (!hasWork) {
       results.push({
-        orderId,
         depositAddress: depositAddr,
+        orderId,
         skipped: "No SOL or SPL balance to sweep",
       });
       continue;
@@ -268,20 +216,20 @@ export async function runSolanaSweep(
     const tokensForResult: TokenSweepItem[] = tokenAccounts.map((t) => {
       const amountFormatted = Number(t.amount) / 10 ** t.decimals;
       return {
-        mint: t.mint,
         amount: t.amount,
-        decimals: t.decimals,
         amountFormatted,
+        decimals: t.decimals,
+        mint: t.mint,
         symbol: KNOWN_MINT_LABELS[t.mint],
       };
     });
 
     if (dryRun) {
       results.push({
-        orderId,
         depositAddress: depositAddr,
-        solToSweepLamports: solToSweep,
+        orderId,
         solToSweepFormatted: solToSweep / LAMPORTS_PER_SOL,
+        solToSweepLamports: solToSweep,
         tokens: tokensForResult,
       });
       continue;
@@ -293,8 +241,8 @@ export async function runSolanaSweep(
         tx.add(
           SystemProgram.transfer({
             fromPubkey: keypair.publicKey,
-            toPubkey: recipient,
             lamports: solToSweep,
+            toPubkey: recipient,
           }),
         );
       }
@@ -354,31 +302,83 @@ export async function runSolanaSweep(
       );
 
       results.push({
-        orderId,
         depositAddress: depositAddr,
-        solToSweepLamports: solToSweep,
+        orderId,
         solToSweepFormatted: solToSweep / LAMPORTS_PER_SOL,
+        solToSweepLamports: solToSweep,
         tokens: tokensForResult,
         txSignature: sig,
       });
     } catch (err) {
       results.push({
-        orderId,
         depositAddress: depositAddr,
-        solToSweepLamports: solToSweep,
-        solToSweepFormatted: solToSweep / LAMPORTS_PER_SOL,
-        tokens: tokensForResult,
         error: err instanceof Error ? err.message : String(err),
+        orderId,
+        solToSweepFormatted: solToSweep / LAMPORTS_PER_SOL,
+        solToSweepLamports: solToSweep,
+        tokens: tokensForResult,
       });
     }
   }
 
   return {
-    ok: true,
     dryRun,
-    scope,
-    recipient: recipientStr,
+    ok: true,
     ordersCount: depositAddresses.size,
+    recipient: recipientStr,
     results,
+    scope,
   };
+}
+
+/** Server-only: builds fee-payer keypair from env. Never expose the key or keypair to the client. */
+function getFeePayerKeypair(): Keypair | null {
+  const secret = process.env.SOLANA_SWEEP_FEE_PAYER_SECRET?.trim();
+  if (!secret) return null;
+  try {
+    const bytes = bs58.decode(secret);
+    if (bytes.length !== 64) return null;
+    return Keypair.fromSecretKey(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function getRecipient(): null | string {
+  const r =
+    process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT ||
+    process.env.SOLANA_PAY_RECIPIENT ||
+    "";
+  return r.trim() || null;
+}
+
+function getRpcUrl(): string {
+  const url =
+    process.env.NEXT_PUBLIC_SOLANA_RPC_URL || process.env.SOLANA_RPC_URL || "";
+  return url.trim() || "https://rpc.ankr.com/solana";
+}
+
+async function getTokenAccountsWithBalance(
+  connection: Connection,
+  owner: PublicKey,
+  programId: PublicKey,
+): Promise<TokenAccountInfo[]> {
+  const out: TokenAccountInfo[] = [];
+  const resp = await connection.getParsedTokenAccountsByOwner(owner, {
+    programId,
+  });
+  for (const { account, pubkey } of resp.value) {
+    const parsed = account.data.parsed?.info;
+    if (!parsed?.mint || !parsed?.tokenAmount) continue;
+    const amount = parsed.tokenAmount.amount;
+    if (amount === "0" || !amount) continue;
+    out.push({
+      amount,
+      ata: pubkey,
+      decimals: parsed.tokenAmount.decimals ?? 0,
+      mint: parsed.mint,
+      programId,
+    });
+  }
+  return out;
 }

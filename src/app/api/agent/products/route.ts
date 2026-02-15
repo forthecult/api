@@ -1,17 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  DEFAULT_SEARCH_LIMIT,
+  MAX_SEARCH_LIMIT,
+  runProductSearch,
+} from "~/lib/product-search";
+import {
   checkRateLimit,
   getClientIp,
   getRateLimitHeaders,
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-import {
-  DEFAULT_SEARCH_LIMIT,
-  MAX_SEARCH_LIMIT,
-  runProductSearch,
-} from "~/lib/product-search";
 
 const AGENT_PRODUCTS_MAX_LIMIT = 50;
 const DESCRIPTION_MAX_LENGTH = 200;
@@ -40,31 +40,31 @@ export async function GET(request: NextRequest) {
     const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
 
     const result = await runProductSearch({
-      query: q ?? "",
       limit,
       offset,
+      query: q ?? "",
       sort: "newest",
     });
 
     const products = result.products.map((p) => ({
+      categoryId: p.category ?? null,
+      description: truncateForAgent(p.description),
       id: p.id,
-      slug: p.slug ?? null,
+      imageUrl: p.imageUrl ?? null,
+      inStock: p.inStock,
       name: p.name,
       priceUsd: p.price.usd,
-      inStock: p.inStock,
-      imageUrl: p.imageUrl ?? null,
-      description: truncateForAgent(p.description),
-      categoryId: p.category ?? null,
+      slug: p.slug ?? null,
     }));
 
     return NextResponse.json(
       {
-        products,
-        total: result.total,
-        limit: result.limit,
-        offset: result.offset,
         _hint:
           "Use id or slug with GET /api/products/{slug} for full details and variants.",
+        limit: result.limit,
+        offset: result.offset,
+        products,
+        total: result.total,
       },
       {
         headers: {
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function truncateForAgent(description: string | undefined): string | null {
+function truncateForAgent(description: string | undefined): null | string {
   if (!description || typeof description !== "string") return null;
   const trimmed = description.trim();
   if (!trimmed) return null;

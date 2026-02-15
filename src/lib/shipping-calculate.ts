@@ -11,17 +11,18 @@
 
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
 
+import type { ShippingCalculateInput } from "~/lib/validations/checkout";
+
 import { db } from "~/db";
 import { couponsTable } from "~/db/schema";
-import { resolveCouponForCheckout } from "~/lib/coupon";
 import {
   brandTable,
+  productAvailableCountryTable,
   productsTable,
   productVariantsTable,
-  productAvailableCountryTable,
   shippingOptionsTable,
 } from "~/db/schema";
-import { userMeetsTokenHolderCondition } from "~/lib/token-holder-balance";
+import { resolveCouponForCheckout } from "~/lib/coupon";
 import {
   fetchShippingRates,
   getPrintfulIfConfigured,
@@ -30,29 +31,145 @@ import {
   type PrintfulShippingRateOption,
 } from "~/lib/printful";
 import {
-  calculatePrintifyShipping as fetchPrintifyShippingRates,
   calculatePrintifyOrderShipping,
+  calculatePrintifyShipping as fetchPrintifyShippingRates,
   getPrintifyIfConfigured,
   type PrintifyShippingRateResult,
 } from "~/lib/printify";
-
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
-import type { ShippingCalculateInput } from "~/lib/validations/checkout";
+import { userMeetsTokenHolderCondition } from "~/lib/token-holder-balance";
 
-type ShippingOptionRow = {
-  brandId: string | null;
-  countryCode: string | null;
-  minOrderCents: number | null;
-  maxOrderCents: number | null;
-  minQuantity: number | null;
-  maxQuantity: number | null;
-  minWeightGrams: number | null;
-  maxWeightGrams: number | null;
-  type: "flat" | "per_item" | "flat_plus_per_item" | "free";
-  amountCents: number | null;
-  additionalItemCents: number | null;
+interface ShippingOptionRow {
+  additionalItemCents: null | number;
+  amountCents: null | number;
+  brandId: null | string;
+  countryCode: null | string;
+  maxOrderCents: null | number;
+  maxQuantity: null | number;
+  maxWeightGrams: null | number;
+  minOrderCents: null | number;
+  minQuantity: null | number;
+  minWeightGrams: null | number;
   name: string;
-};
+  type: "flat" | "flat_plus_per_item" | "free" | "per_item";
+}
+
+/**
+ * Estimate sales tax / VAT for checkout display.
+ * Printful and Printify do not provide pre-checkout tax APIs; this gives a best-effort
+ * estimate by destination. Used for US state sales tax and EU/UK/NO VAT.
+ */
+function estimateTaxCents(
+  subtotalCents: number,
+  shippingCents: number,
+  countryCode: string,
+  stateCode?: string,
+): { note: null | string; taxCents: number } {
+  const country = countryCode.toUpperCase();
+  // US: approximate state sales tax (rate × (subtotal + shipping) for most states)
+  if (country === "US") {
+    const state = (stateCode ?? "").trim().toUpperCase().slice(0, 2);
+    // Approximate combined state + local rates (0 = no state sales tax)
+    const US_STATE_TAX_RATE: Record<string, number> = {
+      AL: 0.09,
+      AR: 0.095,
+      AZ: 0.08,
+      CA: 0.0725,
+      CO: 0.076,
+      CT: 0.0635,
+      DC: 0.06,
+      FL: 0.06,
+      GA: 0.07,
+      HI: 0.04,
+      IA: 0.06,
+      ID: 0.06,
+      IL: 0.0625,
+      IN: 0.07,
+      KS: 0.065,
+      KY: 0.06,
+      LA: 0.0445,
+      MA: 0.0625,
+      MD: 0.06,
+      ME: 0.055,
+      MI: 0.06,
+      MN: 0.065,
+      MO: 0.04225,
+      MS: 0.07,
+      NC: 0.0475,
+      ND: 0.05,
+      NE: 0.055,
+      NJ: 0.06625,
+      NM: 0.05125,
+      NV: 0.0685,
+      NY: 0.08,
+      OH: 0.0575,
+      OK: 0.045,
+      PA: 0.06,
+      RI: 0.07,
+      SC: 0.06,
+      SD: 0.045,
+      TN: 0.07,
+      TX: 0.0625,
+      UT: 0.061,
+      VA: 0.053,
+      VT: 0.06,
+      WA: 0.065,
+      WI: 0.05,
+      WV: 0.06,
+      WY: 0.04,
+    };
+    const rate = state ? (US_STATE_TAX_RATE[state] ?? 0.06) : 0.06;
+    if (rate <= 0) return { note: null, taxCents: 0 };
+    const taxBase = subtotalCents + shippingCents;
+    const taxCents = Math.round(taxBase * rate);
+    return {
+      note: "Estimated sales tax. Final amount may vary by jurisdiction.",
+      taxCents,
+    };
+  }
+  // EU, UK, Norway: VAT (approximate; actual rate varies by country)
+  if (
+    country === "GB" ||
+    country === "NO" ||
+    [
+      "AT",
+      "BE",
+      "BG",
+      "CY",
+      "CZ",
+      "DE",
+      "DK",
+      "EE",
+      "ES",
+      "FI",
+      "FR",
+      "GR",
+      "HR",
+      "HU",
+      "IE",
+      "IT",
+      "LT",
+      "LU",
+      "LV",
+      "MT",
+      "NL",
+      "PL",
+      "PT",
+      "RO",
+      "SE",
+      "SI",
+      "SK",
+    ].includes(country)
+  ) {
+    const vatRate = country === "GB" ? 0.2 : country === "NO" ? 0.25 : 0.2;
+    const taxCents = Math.round((subtotalCents + shippingCents) * vatRate);
+    return {
+      note: "Estimated VAT. Final amount may vary.",
+      taxCents,
+    };
+  }
+  return { note: null, taxCents: 0 };
+}
 
 function matches(
   opt: ShippingOptionRow,
@@ -102,164 +219,47 @@ function normalizeThirdPartyShippingLabel(
   return isExpressKeyword ? "Express" : "Standard";
 }
 
-/**
- * Estimate sales tax / VAT for checkout display.
- * Printful and Printify do not provide pre-checkout tax APIs; this gives a best-effort
- * estimate by destination. Used for US state sales tax and EU/UK/NO VAT.
- */
-function estimateTaxCents(
-  subtotalCents: number,
-  shippingCents: number,
-  countryCode: string,
-  stateCode?: string,
-): { taxCents: number; note: string | null } {
-  const country = countryCode.toUpperCase();
-  // US: approximate state sales tax (rate × (subtotal + shipping) for most states)
-  if (country === "US") {
-    const state = (stateCode ?? "").trim().toUpperCase().slice(0, 2);
-    // Approximate combined state + local rates (0 = no state sales tax)
-    const US_STATE_TAX_RATE: Record<string, number> = {
-      AL: 0.09,
-      AZ: 0.08,
-      AR: 0.095,
-      CA: 0.0725,
-      CO: 0.076,
-      CT: 0.0635,
-      DC: 0.06,
-      FL: 0.06,
-      GA: 0.07,
-      HI: 0.04,
-      ID: 0.06,
-      IL: 0.0625,
-      IN: 0.07,
-      IA: 0.06,
-      KS: 0.065,
-      KY: 0.06,
-      LA: 0.0445,
-      ME: 0.055,
-      MD: 0.06,
-      MA: 0.0625,
-      MI: 0.06,
-      MN: 0.065,
-      MS: 0.07,
-      MO: 0.04225,
-      NE: 0.055,
-      NV: 0.0685,
-      NJ: 0.06625,
-      NM: 0.05125,
-      NY: 0.08,
-      NC: 0.0475,
-      ND: 0.05,
-      OH: 0.0575,
-      OK: 0.045,
-      PA: 0.06,
-      RI: 0.07,
-      SC: 0.06,
-      SD: 0.045,
-      TN: 0.07,
-      TX: 0.0625,
-      UT: 0.061,
-      VT: 0.06,
-      VA: 0.053,
-      WA: 0.065,
-      WV: 0.06,
-      WI: 0.05,
-      WY: 0.04,
-    };
-    const rate = state ? (US_STATE_TAX_RATE[state] ?? 0.06) : 0.06;
-    if (rate <= 0) return { taxCents: 0, note: null };
-    const taxBase = subtotalCents + shippingCents;
-    const taxCents = Math.round(taxBase * rate);
-    return {
-      taxCents,
-      note: "Estimated sales tax. Final amount may vary by jurisdiction.",
-    };
-  }
-  // EU, UK, Norway: VAT (approximate; actual rate varies by country)
-  if (
-    country === "GB" ||
-    country === "NO" ||
-    [
-      "AT",
-      "BE",
-      "BG",
-      "HR",
-      "CY",
-      "CZ",
-      "DK",
-      "EE",
-      "FI",
-      "FR",
-      "DE",
-      "GR",
-      "HU",
-      "IE",
-      "IT",
-      "LV",
-      "LT",
-      "LU",
-      "MT",
-      "NL",
-      "PL",
-      "PT",
-      "RO",
-      "SK",
-      "SI",
-      "ES",
-      "SE",
-    ].includes(country)
-  ) {
-    const vatRate = country === "GB" ? 0.2 : country === "NO" ? 0.25 : 0.2;
-    const taxCents = Math.round((subtotalCents + shippingCents) * vatRate);
-    return {
-      taxCents,
-      note: "Estimated VAT. Final amount may vary.",
-    };
-  }
-  return { taxCents: 0, note: null };
-}
-
 export const ZERO_SHIPPING = {
-  shippingCents: 0,
-  label: null as string | null,
-  freeShipping: false,
-  printfulShipping: null as PrintfulShippingRateOption | null,
-  printfulShippingCents: 0,
-  printifyShippingCents: 0,
   adminShippingCents: 0,
   canShipToCountry: true,
-  unavailableProducts: [] as string[],
-  shippingSpeed: "standard" as "standard" | "express",
+  customsDutiesNote: null as null | string,
+  freeShipping: false,
+  label: null as null | string,
+  printfulShipping: null as null | PrintfulShippingRateOption,
+  printfulShippingCents: 0,
+  printifyShippingCents: 0,
+  shippingCents: 0,
+  shippingSpeed: "standard" as "express" | "standard",
   taxCents: 0,
-  taxNote: null as string | null,
-  customsDutiesNote: null as string | null,
+  taxNote: null as null | string,
+  unavailableProducts: [] as string[],
 };
 
 export type ShippingResult =
   | typeof ZERO_SHIPPING
   | {
-      shippingCents: number;
-      label: string | null;
-      freeShipping: boolean;
-      printfulShipping: PrintfulShippingRateOption | null;
-      printfulShippingCents: number;
-      printifyShippingCents: number;
       adminShippingCents: number;
       canShipToCountry: boolean;
-      unavailableProducts: string[];
-      shippingSpeed: "standard" | "express";
+      customsDutiesNote: null | string;
+      freeShipping: boolean;
+      label: null | string;
+      printfulShipping: null | PrintfulShippingRateOption;
+      printfulShippingCents: number;
+      printifyShippingCents: number;
+      shippingCents: number;
+      shippingSpeed: "express" | "standard";
       taxCents: number;
-      taxNote: string | null;
-      customsDutiesNote: string | null;
+      taxNote: null | string;
+      unavailableProducts: string[];
     };
 
 type ExtendedShippingInput = ShippingCalculateInput & {
-  stateCode?: string;
-  city?: string;
-  zip?: string;
   address1?: string;
+  city?: string;
   couponCode?: string;
-  userId?: string | null;
+  stateCode?: string;
+  userId?: null | string;
+  zip?: string;
 };
 
 /**
@@ -270,18 +270,18 @@ async function checkCountryAvailability(
   productIds: string[],
   countryCode: string,
 ): Promise<{
-  unavailableProducts: string[];
   productCountryMap: Map<string, string[]>;
+  unavailableProducts: string[];
 }> {
   if (productIds.length === 0) {
-    return { unavailableProducts: [], productCountryMap: new Map() };
+    return { productCountryMap: new Map(), unavailableProducts: [] };
   }
 
   // Get all country restrictions for these products
   const restrictions = await db
     .select({
-      productId: productAvailableCountryTable.productId,
       countryCode: productAvailableCountryTable.countryCode,
+      productId: productAvailableCountryTable.productId,
     })
     .from(productAvailableCountryTable)
     .where(inArray(productAvailableCountryTable.productId, productIds));
@@ -309,7 +309,7 @@ async function checkCountryAvailability(
     // No restrictions = available everywhere
   }
 
-  return { unavailableProducts, productCountryMap };
+  return { productCountryMap, unavailableProducts };
 }
 
 /** US state/province full name -> 2-letter code for Printful (requires state_code for US, CA, AU). */
@@ -367,150 +367,25 @@ const US_STATE_NAME_TO_CODE: Record<string, string> = {
   wyoming: "WY",
 };
 
-function normalizeStateCodeForPrintful(
-  countryCode: string,
-  stateCode: string | undefined,
-): string | undefined {
-  if (!stateCode?.trim()) return undefined;
-  const s = stateCode.trim();
-  if (s.length === 2 && /^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
-  if (countryCode === "US") {
-    const code = US_STATE_NAME_TO_CODE[s.toLowerCase()];
-    if (code) return code;
-  }
-  return s;
-}
-
-/**
- * Calculate Printful shipping rates for Printful items in the order.
- */
-async function calculatePrintfulShipping(
-  input: ExtendedShippingInput,
-  printfulItems: Array<{ catalogVariantId: number; quantity: number }>,
-): Promise<{ shippingCents: number; rate: PrintfulShippingRateOption | null }> {
-  if (printfulItems.length === 0) {
-    return { shippingCents: 0, rate: null };
-  }
-
-  const pf = getPrintfulIfConfigured();
-  if (!pf) {
-    console.warn(
-      "[Printful shipping] PRINTFUL_API_TOKEN is not set; cannot calculate Printful shipping.",
-    );
-    return { shippingCents: 0, rate: null };
-  }
-
-  const storeIdRaw = process.env.PRINTFUL_STORE_ID?.trim();
-  const storeId =
-    storeIdRaw != null && storeIdRaw !== ""
-      ? Number.parseInt(storeIdRaw, 10)
-      : undefined;
-  const storeIdFinal = Number.isNaN(storeId) ? undefined : storeId;
-
-  try {
-    const orderItems: PrintfulShippingOrderItem[] = printfulItems.map(
-      (item) => ({
-        source: "catalog" as const,
-        catalog_variant_id: item.catalogVariantId,
-        quantity: item.quantity,
-      }),
-    );
-
-    const stateCode = normalizeStateCodeForPrintful(
-      input.countryCode,
-      input.stateCode,
-    );
-    // US, CA, AU require state_code for Printful to return rates
-    const needsState = /^(US|CA|AU)$/i.test(input.countryCode);
-    if (needsState && !stateCode?.trim()) {
-      console.warn(
-        "[Printful shipping] state_code required for US/CA/AU but missing or invalid; request may return no rates.",
-        { countryCode: input.countryCode, stateCode: input.stateCode },
-      );
-    }
-
-    const address1 = (input.address1 ?? "").trim() || undefined;
-    const recipient: PrintfulRecipient = {
-      country_code: input.countryCode,
-      ...(stateCode && { state_code: stateCode }),
-      ...(input.city?.trim() && { city: input.city.trim() }),
-      ...(input.zip?.trim() && { zip: input.zip.trim() }),
-      // Printful needs address1 for accurate rates; omit or use placeholder only when missing
-      address1: address1 || "TBD",
-    };
-
-    const response = await fetchShippingRates(
-      {
-        recipient,
-        order_items: orderItems,
-        currency: "USD",
-      },
-      storeIdFinal,
-    );
-
-    if (response.data.length === 0) {
-      console.warn(
-        "[Printful shipping] No rates returned (check address: US/CA/AU require state_code; use full address when possible).",
-        {
-          country: input.countryCode,
-          stateCode: stateCode ?? input.stateCode,
-          hasAddress1: Boolean(address1),
-        },
-      );
-      return { shippingCents: 0, rate: null };
-    }
-
-    // Get STANDARD rate (cheapest/default), or first available
-    const standardRate = response.data.find((r) => r.shipping === "STANDARD");
-    const selectedRate = standardRate || response.data[0];
-
-    const rateCents = Math.round(Number.parseFloat(selectedRate.rate) * 100);
-
-    return {
-      shippingCents: rateCents,
-      rate: selectedRate,
-    };
-  } catch (error) {
-    console.error(
-      "[Printful shipping] Failed to fetch rates:",
-      error instanceof Error ? error.message : error,
-    );
-    return { shippingCents: 0, rate: null };
-  }
-}
-
-/**
- * Main shipping calculation function.
- * Handles admin shipping options, Printful, and Printify shipping rates.
- * Also checks country-based availability restrictions.
- */
-/** Normalize cart items: cart line id is often "productId__variantId"; if productId looks like that, split so lookups succeed. */
-function normalizeShippingItems(
-  items: Array<{
-    productId: string;
-    productVariantId?: string;
-    quantity: number;
-  }>,
-): Array<{ productId: string; productVariantId?: string; quantity: number }> {
-  return items.map((i) => {
-    const pid = i.productId?.trim();
-    if (!pid) return i;
-    const sep = pid.indexOf("__");
-    if (sep === -1) return i;
-    const productId = pid.slice(0, sep);
-    const variantId = pid.slice(sep + 2);
-    return {
-      productId,
-      productVariantId: i.productVariantId?.trim() || variantId || undefined,
-      quantity: i.quantity,
-    };
-  });
+/** Public API response: same shape without vendor-named fields. */
+export function getPublicShippingResponse(result: ShippingResult) {
+  return {
+    canShipToCountry: result.canShipToCountry,
+    customsDutiesNote: result.customsDutiesNote,
+    freeShipping: result.freeShipping,
+    label: result.label,
+    shippingCents: result.shippingCents,
+    shippingSpeed: result.shippingSpeed,
+    taxCents: result.taxCents,
+    taxNote: result.taxNote,
+    unavailableProducts: result.unavailableProducts,
+  };
 }
 
 export async function runShippingCalculate(
   input: ExtendedShippingInput,
 ): Promise<ShippingResult> {
-  const { countryCode, orderValueCents, items: rawItems } = input;
+  const { countryCode, items: rawItems, orderValueCents } = input;
   const items = normalizeShippingItems(rawItems);
   const productIds = [
     ...new Set(
@@ -524,7 +399,7 @@ export async function runShippingCalculate(
       input.couponCode.trim(),
       orderValueCents,
       0,
-      { userId: input.userId ?? undefined, productIds },
+      { productIds, userId: input.userId ?? undefined },
     );
     if (couponResult?.freeShipping) {
       return {
@@ -541,8 +416,8 @@ export async function runShippingCalculate(
       .select({
         id: couponsTable.id,
         tokenHolderChain: couponsTable.tokenHolderChain,
-        tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
         tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+        tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
       })
       .from(couponsTable)
       .where(
@@ -553,7 +428,7 @@ export async function runShippingCalculate(
         ),
       );
     for (const c of tokenHolderCoupons) {
-      const chain = c.tokenHolderChain as "solana" | "evm" | null;
+      const chain = c.tokenHolderChain as "evm" | "solana" | null;
       const tokenAddress = c.tokenHolderTokenAddress?.trim();
       const minBalance = c.tokenHolderMinBalance?.trim();
       if (
@@ -605,64 +480,63 @@ export async function runShippingCalculate(
   let manualValueCents = 0;
   /** Per-brand totals for manual items (brandId -> valueCents, qty, weight) so we sum shipping per brand. */
   const perBrandManual = new Map<
-    string | null,
-    { valueCents: number; qty: number; weightGrams: number }
+    null | string,
+    { qty: number; valueCents: number; weightGrams: number }
   >();
   function addToBrandBucket(
-    brandId: string | null,
+    brandId: null | string,
     valueCents: number,
     qty: number,
     weightGrams: number,
   ) {
     const cur = perBrandManual.get(brandId) ?? {
-      valueCents: 0,
       qty: 0,
+      valueCents: 0,
       weightGrams: 0,
     };
     perBrandManual.set(brandId, {
-      valueCents: cur.valueCents + valueCents,
       qty: cur.qty + qty,
+      valueCents: cur.valueCents + valueCents,
       weightGrams: cur.weightGrams + weightGrams,
     });
   }
 
   // Items for Printful shipping calculation
-  const printfulItems: Array<{ catalogVariantId: number; quantity: number }> =
-    [];
+  const printfulItems: { catalogVariantId: number; quantity: number }[] = [];
 
   // Items for Printify shipping calculation (requires blueprint/provider info)
   // Printify shipping will be calculated via their catalog shipping profiles (V1)
   // or via POST /orders/shipping.json (direct, more accurate) when product IDs are available.
-  const printifyItems: Array<{
+  const printifyItems: {
     blueprintId: number;
     printProviderId: number;
-    variantId: number;
     quantity: number;
-  }> = [];
+    variantId: number;
+  }[] = [];
   // Direct order shipping items (for POST /orders/shipping.json)
-  const printifyOrderShippingItems: Array<{
+  const printifyOrderShippingItems: {
     printifyProductId: string;
     printifyVariantId: number;
     quantity: number;
-  }> = [];
+  }[] = [];
 
-  type ProductInfo = {
+  interface ProductInfo {
+    brand: null | string;
+    externalId: null | string;
     id: string;
-    brand: string | null;
-    weightGrams: number | null;
+    priceCents: number;
+    printifyPrintProviderId: null | number;
+    printifyProductId: null | string;
     source: string;
-    externalId: string | null;
-    priceCents: number;
-    printifyPrintProviderId: number | null;
-    printifyProductId: string | null;
-  };
+    weightGrams: null | number;
+  }
   let products: ProductInfo[] = [];
-  let variants: Array<{
+  let variants: {
+    externalId: null | string;
     id: string;
-    productId: string;
-    externalId: string | null;
     priceCents: number;
-  }> = [];
+    productId: string;
+  }[] = [];
   let allOptions: (typeof shippingOptionsTable.$inferSelect)[] = [];
   let brandNameToId = new Map<string, string>();
   let printifyDefaultVariantByProductId = new Map<string, string>();
@@ -681,14 +555,14 @@ export async function runShippingCalculate(
       productIds.length > 0
         ? db
             .select({
-              id: productsTable.id,
               brand: productsTable.brand,
-              weightGrams: productsTable.weightGrams,
-              source: productsTable.source,
               externalId: productsTable.externalId,
+              id: productsTable.id,
               priceCents: productsTable.priceCents,
               printifyPrintProviderId: productsTable.printifyPrintProviderId,
               printifyProductId: productsTable.printifyProductId,
+              source: productsTable.source,
+              weightGrams: productsTable.weightGrams,
             })
             .from(productsTable)
             .where(inArray(productsTable.id, productIds))
@@ -696,10 +570,10 @@ export async function runShippingCalculate(
       variantIds.length > 0
         ? db
             .select({
-              id: productVariantsTable.id,
-              productId: productVariantsTable.productId,
               externalId: productVariantsTable.externalId,
+              id: productVariantsTable.id,
               priceCents: productVariantsTable.priceCents,
+              productId: productVariantsTable.productId,
             })
             .from(productVariantsTable)
             .where(inArray(productVariantsTable.id, variantIds))
@@ -707,8 +581,8 @@ export async function runShippingCalculate(
       productIdsWithoutVariant.length > 0
         ? db
             .select({
-              productId: productVariantsTable.productId,
               externalId: productVariantsTable.externalId,
+              productId: productVariantsTable.productId,
             })
             .from(productVariantsTable)
             .where(
@@ -722,8 +596,8 @@ export async function runShippingCalculate(
       productIds.length > 0
         ? db
             .select({
-              productId: productVariantsTable.productId,
               externalId: productVariantsTable.externalId,
+              productId: productVariantsTable.productId,
             })
             .from(productVariantsTable)
             .where(
@@ -773,7 +647,7 @@ export async function runShippingCalculate(
     }
     allOptions = optionsResult;
     brandNameToId = new Map<string, string>(
-      (brandsResult as Array<{ id: string; name: string | null }>)
+      (brandsResult as { id: string; name: null | string }[])
         .filter((b) => (b.name ?? "").trim().length > 0)
         .map((b) => [(b.name ?? "").trim().toLowerCase(), b.id]),
     );
@@ -845,7 +719,7 @@ export async function runShippingCalculate(
     if (product.source === "printful") {
       // Get catalog_variant_id for Printful shipping (required for rate calculation).
       // Variant externalId is set by Printful sync (printful-sync.ts); re-sync fixes missing IDs without any frontend change.
-      let catalogVariantId: number | null = null;
+      let catalogVariantId: null | number = null;
 
       if (item.productVariantId) {
         const variantExternalId = variantExternalIdMap.get(
@@ -889,7 +763,7 @@ export async function runShippingCalculate(
       const hasBlueprintAndProvider =
         !isNaN(blueprintId) && !isNaN(printProviderId) && printProviderId > 0;
 
-      let variantId: number | null = null;
+      let variantId: null | number = null;
       if (item.productVariantId != null) {
         const variantExternalId = variantExternalIdMap.get(
           item.productVariantId,
@@ -914,8 +788,8 @@ export async function runShippingCalculate(
         printifyItems.push({
           blueprintId,
           printProviderId,
-          variantId,
           quantity: qty,
+          variantId,
         });
         // Also collect for direct order shipping API (more accurate)
         const printifyProductId = productById.get(
@@ -987,17 +861,17 @@ export async function runShippingCalculate(
         const directResult = await calculatePrintifyOrderShipping(
           printifyConfig.shopId,
           {
-            line_items: printifyOrderShippingItems.map((i) => ({
-              product_id: i.printifyProductId,
-              variant_id: i.printifyVariantId,
-              quantity: i.quantity,
-            })),
             address_to: {
+              city: input.city ?? undefined,
               country: countryCode,
               region: input.stateCode ?? undefined,
               zip: input.zip ?? undefined,
-              city: input.city ?? undefined,
             },
+            line_items: printifyOrderShippingItems.map((i) => ({
+              product_id: i.printifyProductId,
+              quantity: i.quantity,
+              variant_id: i.printifyVariantId,
+            })),
           },
         );
         // Use standard rate by default
@@ -1044,7 +918,7 @@ export async function runShippingCalculate(
   let adminShippingCents = 0;
   const adminLabels: string[] = [];
   let adminFreeShipping = false;
-  let adminShippingSpeed: "standard" | "express" = "standard";
+  let adminShippingSpeed: "express" | "standard" = "standard";
 
   const hasPODItems = printfulItems.length > 0 || printifyItems.length > 0;
 
@@ -1079,7 +953,7 @@ export async function runShippingCalculate(
           continue;
 
         const isExpress =
-          (opt as { speed?: string | null }).speed === "express";
+          (opt as { speed?: null | string }).speed === "express";
         if (isExpress) {
           adminShippingSpeed = "express";
         }
@@ -1160,44 +1034,169 @@ export async function runShippingCalculate(
   const hasPODProductsInCart = products.some(
     (p) => p.source === "printful" || p.source === "printify",
   );
-  const { taxCents, note: taxNote } = hasPODProductsInCart
+  const { note: taxNote, taxCents } = hasPODProductsInCart
     ? estimateTaxCents(
         input.orderValueCents,
         finalShippingCents,
         input.countryCode,
         input.stateCode,
       )
-    : { taxCents: 0, note: null as string | null };
+    : { note: null as null | string, taxCents: 0 };
   const customsDutiesNote = null; // Hidden from checkout per product request
 
   return {
-    shippingCents: finalShippingCents,
-    label: finalLabel,
+    adminShippingCents: adminFreeShipping ? 0 : adminShippingCents,
+    canShipToCountry: true,
+    customsDutiesNote,
     freeShipping: isFreeShipping,
+    label: finalLabel,
     printfulShipping: printfulResult.rate,
     printfulShippingCents: printfulResult.shippingCents,
     printifyShippingCents,
-    adminShippingCents: adminFreeShipping ? 0 : adminShippingCents,
-    canShipToCountry: true,
-    unavailableProducts: [],
+    shippingCents: finalShippingCents,
     shippingSpeed: adminShippingSpeed,
     taxCents,
     taxNote,
-    customsDutiesNote,
+    unavailableProducts: [],
   };
 }
 
-/** Public API response: same shape without vendor-named fields. */
-export function getPublicShippingResponse(result: ShippingResult) {
-  return {
-    shippingCents: result.shippingCents,
-    label: result.label,
-    freeShipping: result.freeShipping,
-    canShipToCountry: result.canShipToCountry,
-    unavailableProducts: result.unavailableProducts,
-    shippingSpeed: result.shippingSpeed,
-    taxCents: result.taxCents,
-    taxNote: result.taxNote,
-    customsDutiesNote: result.customsDutiesNote,
-  };
+/**
+ * Calculate Printful shipping rates for Printful items in the order.
+ */
+async function calculatePrintfulShipping(
+  input: ExtendedShippingInput,
+  printfulItems: { catalogVariantId: number; quantity: number }[],
+): Promise<{ rate: null | PrintfulShippingRateOption; shippingCents: number }> {
+  if (printfulItems.length === 0) {
+    return { rate: null, shippingCents: 0 };
+  }
+
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    console.warn(
+      "[Printful shipping] PRINTFUL_API_TOKEN is not set; cannot calculate Printful shipping.",
+    );
+    return { rate: null, shippingCents: 0 };
+  }
+
+  const storeIdRaw = process.env.PRINTFUL_STORE_ID?.trim();
+  const storeId =
+    storeIdRaw != null && storeIdRaw !== ""
+      ? Number.parseInt(storeIdRaw, 10)
+      : undefined;
+  const storeIdFinal = Number.isNaN(storeId) ? undefined : storeId;
+
+  try {
+    const orderItems: PrintfulShippingOrderItem[] = printfulItems.map(
+      (item) => ({
+        catalog_variant_id: item.catalogVariantId,
+        quantity: item.quantity,
+        source: "catalog" as const,
+      }),
+    );
+
+    const stateCode = normalizeStateCodeForPrintful(
+      input.countryCode,
+      input.stateCode,
+    );
+    // US, CA, AU require state_code for Printful to return rates
+    const needsState = /^(US|CA|AU)$/i.test(input.countryCode);
+    if (needsState && !stateCode?.trim()) {
+      console.warn(
+        "[Printful shipping] state_code required for US/CA/AU but missing or invalid; request may return no rates.",
+        { countryCode: input.countryCode, stateCode: input.stateCode },
+      );
+    }
+
+    const address1 = (input.address1 ?? "").trim() || undefined;
+    const recipient: PrintfulRecipient = {
+      country_code: input.countryCode,
+      ...(stateCode && { state_code: stateCode }),
+      ...(input.city?.trim() && { city: input.city.trim() }),
+      ...(input.zip?.trim() && { zip: input.zip.trim() }),
+      // Printful needs address1 for accurate rates; omit or use placeholder only when missing
+      address1: address1 || "TBD",
+    };
+
+    const response = await fetchShippingRates(
+      {
+        currency: "USD",
+        order_items: orderItems,
+        recipient,
+      },
+      storeIdFinal,
+    );
+
+    if (response.data.length === 0) {
+      console.warn(
+        "[Printful shipping] No rates returned (check address: US/CA/AU require state_code; use full address when possible).",
+        {
+          country: input.countryCode,
+          hasAddress1: Boolean(address1),
+          stateCode: stateCode ?? input.stateCode,
+        },
+      );
+      return { rate: null, shippingCents: 0 };
+    }
+
+    // Get STANDARD rate (cheapest/default), or first available
+    const standardRate = response.data.find((r) => r.shipping === "STANDARD");
+    const selectedRate = standardRate || response.data[0];
+
+    const rateCents = Math.round(Number.parseFloat(selectedRate.rate) * 100);
+
+    return {
+      rate: selectedRate,
+      shippingCents: rateCents,
+    };
+  } catch (error) {
+    console.error(
+      "[Printful shipping] Failed to fetch rates:",
+      error instanceof Error ? error.message : error,
+    );
+    return { rate: null, shippingCents: 0 };
+  }
+}
+
+/**
+ * Main shipping calculation function.
+ * Handles admin shipping options, Printful, and Printify shipping rates.
+ * Also checks country-based availability restrictions.
+ */
+/** Normalize cart items: cart line id is often "productId__variantId"; if productId looks like that, split so lookups succeed. */
+function normalizeShippingItems(
+  items: {
+    productId: string;
+    productVariantId?: string;
+    quantity: number;
+  }[],
+): { productId: string; productVariantId?: string; quantity: number }[] {
+  return items.map((i) => {
+    const pid = i.productId?.trim();
+    if (!pid) return i;
+    const sep = pid.indexOf("__");
+    if (sep === -1) return i;
+    const productId = pid.slice(0, sep);
+    const variantId = pid.slice(sep + 2);
+    return {
+      productId,
+      productVariantId: i.productVariantId?.trim() || variantId || undefined,
+      quantity: i.quantity,
+    };
+  });
+}
+
+function normalizeStateCodeForPrintful(
+  countryCode: string,
+  stateCode: string | undefined,
+): string | undefined {
+  if (!stateCode?.trim()) return undefined;
+  const s = stateCode.trim();
+  if (s.length === 2 && /^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+  if (countryCode === "US") {
+    const code = US_STATE_NAME_TO_CODE[s.toLowerCase()];
+    if (code) return code;
+  }
+  return s;
 }

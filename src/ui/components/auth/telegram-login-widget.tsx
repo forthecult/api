@@ -18,13 +18,20 @@ const API_BASE =
 
 /** Telegram Login Widget callback payload from https://core.telegram.org/widgets/login */
 interface TelegramAuthUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
   auth_date: number;
+  first_name: string;
   hash: string;
+  id: number;
+  last_name?: string;
+  photo_url?: string;
+  username?: string;
+}
+
+export function getTelegramBotUsername(): string {
+  if (typeof process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME !== "string") {
+    return "";
+  }
+  return process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME.trim();
 }
 
 export function TelegramLoginWidget({
@@ -60,10 +67,10 @@ export function TelegramLoginWidget({
 
       try {
         const res = await fetch(`${API_BASE}/api/auth/sign-in/telegram`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(link ? { ...user, link: true } : user),
           credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
 
         const data = await res.json().catch(() => ({}));
@@ -144,13 +151,19 @@ export function TelegramLoginWidget({
 
   const widgetEl = (
     <div
-      ref={containerRef}
+      aria-hidden={disabled}
       className={
         showFallbackLabel
-          ? "flex items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
-          : "inline-block [&_iframe]:!max-h-10 [&_iframe]:!min-h-[40px]"
+          ? `
+            flex items-center justify-center
+            [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]
+          `
+          : `
+            inline-block
+            [&_iframe]:!max-h-10 [&_iframe]:!min-h-[40px]
+          `
       }
-      aria-hidden={disabled}
+      ref={containerRef}
     />
   );
 
@@ -160,12 +173,15 @@ export function TelegramLoginWidget({
         className={
           widgetReady
             ? "flex h-9 min-w-0 items-center justify-center"
-            : "relative flex h-9 min-w-0 items-center justify-center rounded-md border border-input bg-background px-4 py-2 shadow-sm"
+            : `
+              relative flex h-9 min-w-0 items-center justify-center rounded-md
+              border border-input bg-background px-4 py-2 shadow-sm
+            `
         }
       >
         {/* Fallback: visible only until the Telegram iframe loads; then wrapper loses border/bg */}
         {!widgetReady && (
-          <div className="flex items-center gap-2" aria-hidden={widgetReady}>
+          <div aria-hidden={widgetReady} className="flex items-center gap-2">
             <TelegramIcon className="h-5 w-5 shrink-0" />
             <span className="text-sm font-medium">
               {link ? "Connect Telegram" : "Telegram"}
@@ -176,8 +192,14 @@ export function TelegramLoginWidget({
         <div
           className={
             widgetReady
-              ? "flex flex-1 items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
-              : "absolute inset-0 flex items-center justify-center [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]"
+              ? `
+                flex flex-1 items-center justify-center
+                [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]
+              `
+              : `
+                absolute inset-0 flex items-center justify-center
+                [&_iframe]:!h-9 [&_iframe]:!min-h-9 [&_iframe]:!min-w-[120px]
+              `
           }
         >
           {widgetEl}
@@ -187,11 +209,4 @@ export function TelegramLoginWidget({
   }
 
   return widgetEl;
-}
-
-export function getTelegramBotUsername(): string {
-  if (typeof process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME !== "string") {
-    return "";
-  }
-  return process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME.trim();
 }

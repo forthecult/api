@@ -9,7 +9,7 @@ import { getNotificationTemplate } from "~/lib/notification-templates";
  */
 export async function sendWelcomeEmail(params: {
   to: string;
-  user: { name?: string | null; email: string; id?: string };
+  user: { email: string; id?: string; name?: null | string };
 }): Promise<void> {
   const { to, user } = params;
   const template = getNotificationTemplate("welcome_email");
@@ -29,8 +29,6 @@ export async function sendWelcomeEmail(params: {
 
       await resend.emails.send({
         from,
-        to,
-        subject: template.emailSubject || "Welcome!",
         html: `<!DOCTYPE html>
 <html>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -49,7 +47,9 @@ export async function sendWelcomeEmail(params: {
   </p>
 </body>
 </html>`,
+        subject: template.emailSubject || "Welcome!",
         text: `Welcome, ${userName}!\n\n${template.emailBody}\n\nStart shopping: ${appUrl}/shop\n\nThanks for joining us!\n— For the Culture`,
+        to,
       });
 
       if (process.env.NODE_ENV === "development") {

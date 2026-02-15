@@ -16,7 +16,7 @@ export function TrackOrderForm() {
   const router = useRouter();
   const [orderId, setOrderId] = useState("");
   const [lookupValue, setLookupValue] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [status, setStatus] = useState<"error" | "idle" | "loading">("idle");
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleSubmit = useCallback(
@@ -40,17 +40,17 @@ export function TrackOrderForm() {
       setErrorMessage("");
       try {
         const res = await fetch("/api/orders/track", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            orderId: oid,
             lookupValue: value,
+            orderId: oid,
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         const data = (await res.json().catch(() => ({}))) as {
-          token?: string;
-          orderId?: string;
           error?: { code?: string; message?: string };
+          orderId?: string;
+          token?: string;
         };
         if (!res.ok) {
           setStatus("error");
@@ -88,18 +88,18 @@ export function TrackOrderForm() {
         </p>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
             <Label htmlFor="track-order-id">Order ID</Label>
             <Input
-              id="track-order-id"
-              className={inputClass}
-              type="text"
-              placeholder="e.g. ord_abc123..."
-              value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
               autoComplete="off"
+              className={inputClass}
               disabled={status === "loading"}
+              id="track-order-id"
+              onChange={(e) => setOrderId(e.target.value)}
+              placeholder="e.g. ord_abc123..."
+              type="text"
+              value={orderId}
             />
           </div>
           <div className="space-y-2">
@@ -107,14 +107,14 @@ export function TrackOrderForm() {
               Email, payment address, or postal code
             </Label>
             <Input
-              id="track-lookup"
-              className={inputClass}
-              type="text"
-              placeholder="Billing email, wallet address, or shipping postal code"
-              value={lookupValue}
-              onChange={(e) => setLookupValue(e.target.value)}
               autoComplete="off"
+              className={inputClass}
               disabled={status === "loading"}
+              id="track-lookup"
+              onChange={(e) => setLookupValue(e.target.value)}
+              placeholder="Billing email, wallet address, or shipping postal code"
+              type="text"
+              value={lookupValue}
             />
             <p className="text-xs text-muted-foreground">
               Enter any one of these so we can verify your order.
@@ -126,9 +126,12 @@ export function TrackOrderForm() {
             </p>
           )}
           <Button
-            type="submit"
+            className={`
+              w-full
+              sm:w-auto
+            `}
             disabled={status === "loading"}
-            className="w-full sm:w-auto"
+            type="submit"
           >
             {status === "loading" ? "Looking up…" : "Track"}
           </Button>

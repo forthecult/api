@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getPrintfulIfConfigured, fetchCatalogProducts } from "~/lib/printful";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { fetchCatalogProducts, getPrintfulIfConfigured } from "~/lib/printful";
 
 /**
  * GET /api/admin/printful/status
@@ -30,14 +30,7 @@ export async function GET(request: NextRequest) {
     const response = await fetchCatalogProducts({ limit: 1 });
 
     return NextResponse.json({
-      configured: true,
-      connected: true,
-      webhookSecretConfigured: Boolean(process.env.PRINTFUL_WEBHOOK_SECRET),
-      testProduct: response.data.length > 0 ? response.data[0] : null,
-      message: "Printful API is configured and connected",
       _setup: {
-        webhookUrl:
-          "Configure webhook at Printful dashboard: /api/webhooks/printful",
         events: [
           "shipment_sent",
           "shipment_delivered",
@@ -46,7 +39,14 @@ export async function GET(request: NextRequest) {
           "order_canceled",
           "shipment_returned",
         ],
+        webhookUrl:
+          "Configure webhook at Printful dashboard: /api/webhooks/printful",
       },
+      configured: true,
+      connected: true,
+      message: "Printful API is configured and connected",
+      testProduct: response.data.length > 0 ? response.data[0] : null,
+      webhookSecretConfigured: Boolean(process.env.PRINTFUL_WEBHOOK_SECRET),
     });
   } catch (error) {
     return NextResponse.json({

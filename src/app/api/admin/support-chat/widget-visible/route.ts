@@ -1,5 +1,5 @@
-import { revalidateTag } from "next/cache";
 import { eq } from "drizzle-orm";
+import { revalidateTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";

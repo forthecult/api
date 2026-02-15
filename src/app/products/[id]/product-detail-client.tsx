@@ -13,31 +13,31 @@ import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 
+export interface SelectedVariant {
+  id: string;
+  imageUrl?: string;
+  priceCents: number;
+  stockQuantity?: number;
+}
+
 interface Product {
+  /** When non-empty, product ships only to these countries (ISO 2-letter). */
+  availableCountryCodes?: string[];
   category: string;
+  /** When true, product can be purchased regardless of stock (POD/made-to-order). */
+  continueSellingWhenOutOfStock?: boolean;
   id: string;
   image: string;
   inStock: boolean;
-  /** When true, product can be purchased regardless of stock (POD/made-to-order). */
-  continueSellingWhenOutOfStock?: boolean;
   name: string;
   price: number;
   slug?: string;
-  /** When non-empty, product ships only to these countries (ISO 2-letter). */
-  availableCountryCodes?: string[];
-}
-
-export interface SelectedVariant {
-  id: string;
-  priceCents: number;
-  stockQuantity?: number;
-  imageUrl?: string;
 }
 
 interface ProductActionsProps {
   product: Product;
   /** When present, price/stock/image and add-to-cart use this variant. */
-  selectedVariant?: SelectedVariant | null;
+  selectedVariant?: null | SelectedVariant;
   /** Human-readable variant (e.g. "Medium", "iPhone 16 Pro") for cart/checkout. */
   variantLabel?: string;
   /** When true, Add to Cart is disabled until a variant is selected. */
@@ -45,28 +45,8 @@ interface ProductActionsProps {
 }
 
 interface ProductPriceDisplayProps {
-  price: number;
   originalPrice?: number;
-}
-
-export function ProductPriceDisplay({
-  price,
-  originalPrice,
-}: ProductPriceDisplayProps) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <div className="flex items-center gap-2">
-        <FiatPrice usdAmount={price} className="text-3xl font-bold" />
-        {originalPrice && (
-          <FiatPrice
-            usdAmount={originalPrice}
-            className="text-xl text-muted-foreground line-through"
-          />
-        )}
-      </div>
-      <CryptoPrice className="text-muted-foreground" usdAmount={price} />
-    </div>
-  );
+  price: number;
 }
 
 export function ProductActions({
@@ -78,7 +58,7 @@ export function ProductActions({
   const { addItem } = useCart();
   const { selectedCountry: footerCountry } = useCountryCurrency();
   const { shippingCountry } = useShippingCountry();
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
   const [quantity, setQuantity] = React.useState(1);
   const [isAdding, setIsAdding] = React.useState(false);
@@ -184,8 +164,18 @@ export function ProductActions({
 
   if (unavailableInCountry) {
     return (
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-        <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-center">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center
+      `}
+      >
+        <div
+          className={`
+          flex flex-1 flex-col gap-4
+          sm:flex-row sm:items-center
+        `}
+        >
           {/* Quantity controls shown but disabled for layout consistency */}
           <div className="flex items-center opacity-60">
             <Button
@@ -208,12 +198,18 @@ export function ProductActions({
           </div>
           {/* Unavailability notice in place of Add to cart */}
           <div
-            className="flex min-h-[4.5rem] flex-1 items-center gap-3 rounded-lg border border-border bg-muted/60 px-4 py-3 text-muted-foreground"
+            className={`
+              flex min-h-[4.5rem] flex-1 items-center gap-3 rounded-lg border
+              border-border bg-muted/60 px-4 py-3 text-muted-foreground
+            `}
             role="status"
           >
             <span
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted"
               aria-hidden
+              className={`
+                flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                bg-muted
+              `}
             >
               <X className="h-3.5 w-3.5 text-muted-foreground" />
             </span>
@@ -225,10 +221,10 @@ export function ProductActions({
         <Button
           aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
           aria-pressed={inWishlist}
-          variant="outline"
-          size="icon"
           className="shrink-0"
           onClick={handleWishlistToggle}
+          size="icon"
+          variant="outline"
         >
           <Heart
             className={
@@ -243,7 +239,12 @@ export function ProductActions({
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+    <div
+      className={`
+      flex flex-col gap-4
+      sm:flex-row sm:items-center
+    `}
+    >
       {/* Quantity */}
       <div className="flex items-center">
         <Button
@@ -270,7 +271,7 @@ export function ProductActions({
 
       {/* Add to cart */}
       <Button
-        className="flex-1 min-h-[4.5rem] text-[#111111]"
+        className="min-h-[4.5rem] flex-1 text-[#111111]"
         disabled={
           !inStock || isAdding || (variantRequired && selectedVariant == null)
         }
@@ -288,10 +289,10 @@ export function ProductActions({
       <Button
         aria-label={inWishlist ? "Remove from wishlist" : "Add to wishlist"}
         aria-pressed={inWishlist}
-        variant="outline"
-        size="icon"
         className="shrink-0"
         onClick={handleWishlistToggle}
+        size="icon"
+        variant="outline"
       >
         <Heart
           className={
@@ -299,6 +300,26 @@ export function ProductActions({
           }
         />
       </Button>
+    </div>
+  );
+}
+
+export function ProductPriceDisplay({
+  originalPrice,
+  price,
+}: ProductPriceDisplayProps) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-2">
+        <FiatPrice className="text-3xl font-bold" usdAmount={price} />
+        {originalPrice && (
+          <FiatPrice
+            className="text-xl text-muted-foreground line-through"
+            usdAmount={originalPrice}
+          />
+        )}
+      </div>
+      <CryptoPrice className="text-muted-foreground" usdAmount={price} />
     </div>
   );
 }

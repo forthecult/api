@@ -7,92 +7,46 @@
  *   When link: true and user is logged in, links the Telegram account to the current user.
  */
 import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
-import { APIError } from "better-call";
-import { createHmac, createHash, timingSafeEqual } from "node:crypto";
-import { z } from "zod";
-
 import { setSessionCookie } from "better-auth/cookies";
+import { APIError } from "better-call";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
 
 const TELEGRAM_PROVIDER_ID = "telegram";
 const AUTH_DATE_MAX_AGE_SEC = 300; // 5 minutes
 
-type AccountRecord = { userId: string };
-type UserRecord = {
-  id: string;
-  email: string;
-  name: string;
-  image?: string | null;
-  emailVerified: boolean;
+interface AccountRecord {
+  userId: string;
+}
+interface UserRecord {
   createdAt: Date;
+  email: string;
+  emailVerified: boolean;
+  id: string;
+  image?: null | string;
+  name: string;
   updatedAt: Date;
-};
+}
 
 const telegramPayloadSchema = z.object({
-  id: z.number().int().positive(),
-  first_name: z.string().min(1),
-  last_name: z.string().optional(),
-  username: z.string().optional(),
-  photo_url: z.string().url().optional(),
   auth_date: z.number().int().positive(),
+  first_name: z.string().min(1),
   hash: z.string().min(1),
+  id: z.number().int().positive(),
+  last_name: z.string().optional(),
   link: z.boolean().optional(),
+  photo_url: z.string().url().optional(),
+  username: z.string().optional(),
 });
-
-function getBotToken(): string {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  if (!token?.trim()) {
-    throw new APIError("INTERNAL_SERVER_ERROR", {
-      message: "Telegram login is not configured (TELEGRAM_BOT_TOKEN)",
-    });
-  }
-  return token.trim();
-}
-
-/**
- * Build data-check-string: all received fields except hash, sorted alphabetically by key.
- * https://core.telegram.org/widgets/login#checking-authorization
- */
-function buildDataCheckString(
-  params: Record<string, string | number | undefined>,
-): string {
-  const entries = Object.entries(params)
-    .filter(
-      ([k, v]) => k !== "hash" && k !== "link" && v !== undefined && v !== "",
-    )
-    .map(([k, v]) => [k, String(v)] as [string, string]);
-  entries.sort(([a], [b]) => a.localeCompare(b));
-  return entries.map(([k, v]) => `${k}=${v}`).join("\n");
-}
-
-function verifyTelegramHash(
-  params: Record<string, string | number | boolean | undefined> & {
-    hash: string;
-  },
-): boolean {
-  const token = getBotToken();
-  const dataCheckString = buildDataCheckString(
-    params as Record<string, string | number | undefined> & { hash: string },
-  );
-  // Telegram docs: secret_key = SHA256(bot_token)
-  const secretKey = createHash("sha256").update(token).digest();
-  const computedHash = createHmac("sha256", secretKey)
-    .update(dataCheckString)
-    .digest("hex");
-  const computedBuf = Buffer.from(computedHash, "hex");
-  const hashBuf = Buffer.from(params.hash, "hex");
-  if (computedBuf.length !== hashBuf.length) return false;
-  return timingSafeEqual(computedBuf, hashBuf);
-}
 
 export function telegramAuthPlugin() {
   return {
-    id: "telegram-auth",
     endpoints: {
       signInTelegram: createAuthEndpoint(
         "/sign-in/telegram",
         {
-          method: "POST",
           body: telegramPayloadSchema,
+          method: "POST",
         },
         async (ctx) => {
           const body = ctx.body;
@@ -142,25 +96,25 @@ export function telegramAuthPlugin() {
             await (
               ctx.context.internalAdapter as {
                 linkAccount: (data: {
-                  userId: string;
                   accountId: string;
                   providerId: string;
+                  userId: string;
                 }) => Promise<unknown>;
               }
             ).linkAccount({
-              userId: (session.user as { id: string }).id,
               accountId,
               providerId: TELEGRAM_PROVIDER_ID,
+              userId: (session.user as { id: string }).id,
             });
             return ctx.json({ linked: true, user: session.user });
           }
 
-          let user: UserRecord | null = null;
+          let user: null | UserRecord = null;
           if (existingAccount) {
             user = (await adapter.findOne({
               model: "user",
               where: [{ field: "id", value: existingAccount.userId }],
-            })) as UserRecord | null;
+            })) as null | UserRecord;
           }
 
           if (!user) {
@@ -181,18 +135,18 @@ export function telegramAuthPlugin() {
             const date = new Date();
             try {
               await adapter.create({
-                model: "user",
                 data: {
-                  id: userId,
-                  email,
-                  name,
-                  emailVerified: true,
                   createdAt: date,
-                  updatedAt: date,
+                  email,
+                  emailVerified: true,
                   firstName: body.first_name,
-                  lastName: body.last_name ?? null,
+                  id: userId,
                   image: body.photo_url ?? null,
+                  lastName: body.last_name ?? null,
+                  name,
+                  updatedAt: date,
                 },
+                model: "user",
               });
             } catch (createErr) {
               // Handle duplicate email race condition
@@ -211,7 +165,7 @@ export function telegramAuthPlugin() {
                   user = (await adapter.findOne({
                     model: "user",
                     where: [{ field: "id", value: existing.userId }],
-                  })) as UserRecord | null;
+                  })) as null | UserRecord;
                 }
                 if (!user) throw createErr; // re-throw if we still can't find the user
               } else {
@@ -230,26 +184,26 @@ export function telegramAuthPlugin() {
               await (
                 ctx.context.internalAdapter as {
                   createAccount: (data: {
-                    id: string;
-                    userId: string;
                     accountId: string;
-                    providerId: string;
                     createdAt: Date;
+                    id: string;
+                    providerId: string;
                     updatedAt: Date;
+                    userId: string;
                   }) => Promise<unknown>;
                 }
               ).createAccount({
-                id: newAccountId,
-                userId,
                 accountId,
-                providerId: TELEGRAM_PROVIDER_ID,
                 createdAt: date,
+                id: newAccountId,
+                providerId: TELEGRAM_PROVIDER_ID,
                 updatedAt: date,
+                userId,
               });
               user = (await adapter.findOne({
                 model: "user",
                 where: [{ field: "id", value: userId }],
-              })) as UserRecord | null;
+              })) as null | UserRecord;
             }
           }
 
@@ -265,7 +219,7 @@ export function telegramAuthPlugin() {
                 userId: string,
                 request?: Request,
                 cookie?: boolean,
-              ) => Promise<{ id: string; userId: string } | null>;
+              ) => Promise<null | { id: string; userId: string }>;
             }
           ).createSession(user.id, ctx.request as Request | undefined, false);
           if (!session) {
@@ -281,17 +235,64 @@ export function telegramAuthPlugin() {
           );
           return ctx.json({
             user: {
-              id: user.id,
-              email: user.email,
-              name: user.name,
-              image: user.image,
-              emailVerified: user.emailVerified,
               createdAt: user.createdAt,
+              email: user.email,
+              emailVerified: user.emailVerified,
+              id: user.id,
+              image: user.image,
+              name: user.name,
               updatedAt: user.updatedAt,
             },
           });
         },
       ),
     },
+    id: "telegram-auth",
   };
+}
+
+/**
+ * Build data-check-string: all received fields except hash, sorted alphabetically by key.
+ * https://core.telegram.org/widgets/login#checking-authorization
+ */
+function buildDataCheckString(
+  params: Record<string, number | string | undefined>,
+): string {
+  const entries = Object.entries(params)
+    .filter(
+      ([k, v]) => k !== "hash" && k !== "link" && v !== undefined && v !== "",
+    )
+    .map(([k, v]) => [k, String(v)] as [string, string]);
+  entries.sort(([a], [b]) => a.localeCompare(b));
+  return entries.map(([k, v]) => `${k}=${v}`).join("\n");
+}
+
+function getBotToken(): string {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token?.trim()) {
+    throw new APIError("INTERNAL_SERVER_ERROR", {
+      message: "Telegram login is not configured (TELEGRAM_BOT_TOKEN)",
+    });
+  }
+  return token.trim();
+}
+
+function verifyTelegramHash(
+  params: Record<string, boolean | number | string | undefined> & {
+    hash: string;
+  },
+): boolean {
+  const token = getBotToken();
+  const dataCheckString = buildDataCheckString(
+    params as Record<string, number | string | undefined> & { hash: string },
+  );
+  // Telegram docs: secret_key = SHA256(bot_token)
+  const secretKey = createHash("sha256").update(token).digest();
+  const computedHash = createHmac("sha256", secretKey)
+    .update(dataCheckString)
+    .digest("hex");
+  const computedBuf = Buffer.from(computedHash, "hex");
+  const hashBuf = Buffer.from(params.hash, "hex");
+  if (computedBuf.length !== hashBuf.length) return false;
+  return timingSafeEqual(computedBuf, hashBuf);
 }

@@ -13,31 +13,31 @@ import { esimOrdersTable } from "./tables";
 export const membershipEsimClaimsTable = pgTable(
   "membership_esim_claim",
   {
+    createdAt: timestamp("created_at").notNull(),
+    /** The eSIM order created for this claim. */
+    esimOrderId: text("esim_order_id").references(() => esimOrdersTable.id, {
+      onDelete: "set null",
+    }),
+
     id: text("id").primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
-
-    /** Solana wallet that holds the stake. */
-    wallet: text("wallet").notNull(),
-
-    /** Membership tier at time of claim (1 = best, 4 = entry). */
-    tier: integer("tier").notNull(),
 
     /** Unix timestamp of when the stake was made (from on-chain data).
      *  Used to scope claims to a specific staking period — if the user
      *  unstakes and re-stakes, they get a new staking period. */
     stakePeriodKey: text("stake_period_key").notNull(),
 
-    /** The eSIM order created for this claim. */
-    esimOrderId: text("esim_order_id").references(() => esimOrdersTable.id, {
-      onDelete: "set null",
-    }),
-
     /** Status of the claim. */
     status: text("status").notNull().default("claimed"), // "claimed" | "fulfilled" | "failed"
 
-    createdAt: timestamp("created_at").notNull(),
+    /** Membership tier at time of claim (1 = best, 4 = entry). */
+    tier: integer("tier").notNull(),
+
+    userId: text("user_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+
+    /** Solana wallet that holds the stake. */
+    wallet: text("wallet").notNull(),
   },
   (t) => [
     index("membership_esim_claim_user_idx").on(t.userId),

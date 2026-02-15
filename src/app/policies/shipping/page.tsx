@@ -10,9 +10,19 @@ export const metadata = {
 
 export default function ShippingPolicyPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Shipping policy
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
@@ -25,7 +35,12 @@ export default function ShippingPolicyPage() {
       </header>
 
       <div className="space-y-10">
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Processing and delivery times
           </h2>
@@ -38,7 +53,12 @@ export default function ShippingPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Shipping costs and free shipping
           </h2>
@@ -50,7 +70,12 @@ export default function ShippingPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Where we ship
           </h2>
@@ -63,7 +88,12 @@ export default function ShippingPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Tracking
           </h2>
@@ -73,15 +103,23 @@ export default function ShippingPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Returns and refunds
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             If you are not satisfied with your order, see our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/policies/refund"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Refund policy
             </Link>{" "}
@@ -90,15 +128,23 @@ export default function ShippingPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Questions
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             For shipping questions or issues, use our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/contact"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               contact page
             </Link>

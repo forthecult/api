@@ -10,9 +10,19 @@ export const metadata = {
 
 export default function RefundPolicyPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Refund policy
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
@@ -26,7 +36,12 @@ export default function RefundPolicyPage() {
       </header>
 
       <div className="space-y-10">
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Returns and eligibility
           </h2>
@@ -43,7 +58,12 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Damages and issues
           </h2>
@@ -54,7 +74,12 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Non-returnable items
           </h2>
@@ -67,7 +92,12 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             eSIM refund eligibility
           </h2>
@@ -75,7 +105,12 @@ export default function RefundPolicyPage() {
             eSIM plans have different refund rules. Please review before
             purchasing.
           </p>
-          <ul className="mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed text-muted-foreground">
+          <ul
+            className={`
+            mt-3 list-inside list-disc space-y-2 text-sm leading-relaxed
+            text-muted-foreground
+          `}
+          >
             <li>
               <strong className="font-medium text-foreground">
                 Instant refund:
@@ -128,7 +163,12 @@ export default function RefundPolicyPage() {
           </ul>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Exchanges
           </h2>
@@ -139,7 +179,12 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             EU and UK right to cancel (14 days)
           </h2>
@@ -155,7 +200,12 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Refunds
           </h2>
@@ -172,7 +222,12 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Crypto refunds
           </h2>
@@ -193,22 +248,33 @@ export default function RefundPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Questions
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             To start a return or request a refund, use our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/refund"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               refund request page
             </Link>
             . For questions,{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/contact"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               contact us
             </Link>

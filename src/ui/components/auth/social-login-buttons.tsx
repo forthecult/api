@@ -4,15 +4,15 @@ import { Wallet } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 import { openConnectWalletModal } from "~/app/checkout/crypto/open-wallet-modal";
-import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import { signIn } from "~/lib/auth-client";
-import { DiscordIcon } from "~/ui/components/icons/discord";
-import { GitHubIcon } from "~/ui/components/icons/github";
-import { GoogleIcon } from "~/ui/components/icons/google";
+import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import {
   getTelegramBotUsername,
   TelegramLoginWidget,
 } from "~/ui/components/auth/telegram-login-widget";
+import { DiscordIcon } from "~/ui/components/icons/discord";
+import { GitHubIcon } from "~/ui/components/icons/github";
+import { GoogleIcon } from "~/ui/components/icons/google";
 import { Button } from "~/ui/primitives/button";
 
 interface SocialLoginButtonsProps {
@@ -103,8 +103,8 @@ export function SocialLoginButtons({
             botUsername={telegramBotUsername}
             disabled={disabled}
             onError={onError}
-            size="medium"
             showFallbackLabel
+            size="medium"
           />
         )}
         <Button

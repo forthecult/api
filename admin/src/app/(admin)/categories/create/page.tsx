@@ -4,11 +4,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import type { TokenGateRow } from "~/ui/token-gates-list";
+
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import type { TokenGateRow } from "~/ui/token-gates-list";
 import { TokenGatesList } from "~/ui/token-gates-list";
 
 const API_BASE = getMainAppUrl();
@@ -17,13 +18,16 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type CategoryOption = { id: string; name: string };
+interface CategoryOption {
+  id: string;
+  name: string;
+}
 
 export default function AdminCategoriesCreatePage() {
   const router = useRouter();
   const [parentOptions, setParentOptions] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState("");
@@ -70,24 +74,24 @@ export default function AdminCategoriesCreatePage() {
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/categories`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            name: name.trim(),
-            slug: slug.trim() || null,
-            title: title.trim() || null,
-            metaDescription: metaDescription.trim() || null,
             description: description.trim() || null,
-            seoOptimized,
+            featured,
             imageUrl: imageUrl.trim() || null,
             level,
-            featured,
-            visible,
+            metaDescription: metaDescription.trim() || null,
+            name: name.trim(),
             parentId: parentId || null,
+            seoOptimized,
+            slug: slug.trim() || null,
+            title: title.trim() || null,
             tokenGated,
             tokenGates,
+            visible,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -129,15 +133,23 @@ export default function AdminCategoriesCreatePage() {
           Create Category
         </h2>
         <Link
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/categories"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           ← Back to list
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
@@ -148,31 +160,36 @@ export default function AdminCategoriesCreatePage() {
             <CardTitle>Category details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="name" className={labelClass}>
+                <label className={labelClass} htmlFor="name">
                   Name
                 </label>
                 <input
-                  id="name"
-                  type="text"
-                  placeholder="Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   className={inputClass}
+                  id="name"
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Name"
                   required
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="parent" className={labelClass}>
+                <label className={labelClass} htmlFor="parent">
                   Parent category
                 </label>
                 <select
-                  id="parent"
-                  value={parentId}
-                  onChange={(e) => setParentId(e.target.value)}
                   className={inputClass}
                   disabled={loading}
+                  id="parent"
+                  onChange={(e) => setParentId(e.target.value)}
+                  value={parentId}
                 >
                   <option value="">None</option>
                   {parentOptions.map((c) => (
@@ -185,41 +202,46 @@ export default function AdminCategoriesCreatePage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="imageUrl" className={labelClass}>
+              <label className={labelClass} htmlFor="imageUrl">
                 Image URL
               </label>
               <input
-                id="imageUrl"
-                type="url"
-                placeholder="https://…"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
                 className={inputClass}
+                id="imageUrl"
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://…"
+                type="url"
+                value={imageUrl}
               />
               {imageUrl && (
-                <div className="relative mt-2 size-20 overflow-hidden rounded-md border bg-muted">
+                <div
+                  className={`
+                  relative mt-2 size-20 overflow-hidden rounded-md border
+                  bg-muted
+                `}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={imageUrl}
                     alt=""
                     className="size-full object-cover"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
+                    src={imageUrl}
                   />
                 </div>
               )}
             </div>
 
             <TokenGatesList
-              gates={tokenGates}
-              onChange={setTokenGates}
-              tokenGated={tokenGated}
-              onTokenGatedChange={setTokenGated}
-              title="Category token gates"
               description="Require user to hold ≥ quantity of ANY of these tokens to access this category."
+              gates={tokenGates}
               inputClass={inputClass}
               labelClass={labelClass}
+              onChange={setTokenGates}
+              onTokenGatedChange={setTokenGated}
+              title="Category token gates"
+              tokenGated={tokenGated}
             />
 
             <hr className="border-border" />
@@ -233,16 +255,16 @@ export default function AdminCategoriesCreatePage() {
               </p>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <label htmlFor="title" className={labelClass}>
+                  <label className={labelClass} htmlFor="title">
                     Title
                   </label>
                   <input
-                    id="title"
-                    type="text"
-                    placeholder="SEO / page title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
                     className={inputClass}
+                    id="title"
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="SEO / page title"
+                    type="text"
+                    value={title}
                   />
                   <p className="text-xs text-muted-foreground">
                     Used in &lt;title&gt; and og:title. Defaults to category
@@ -250,56 +272,56 @@ export default function AdminCategoriesCreatePage() {
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="slug" className={labelClass}>
+                  <label className={labelClass} htmlFor="slug">
                     Slug
                   </label>
                   <input
-                    id="slug"
-                    type="text"
-                    placeholder="e.g. mens-fashion"
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
                     className={inputClass}
+                    id="slug"
+                    onChange={(e) => setSlug(e.target.value)}
+                    placeholder="e.g. mens-fashion"
+                    type="text"
+                    value={slug}
                   />
                   <p className="text-xs text-muted-foreground">
                     URL-friendly identifier. Auto-generated from name if empty.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="metaDescription" className={labelClass}>
+                  <label className={labelClass} htmlFor="metaDescription">
                     Meta Description
                   </label>
                   <textarea
-                    id="metaDescription"
-                    placeholder="Short summary for search results (e.g. 150–160 chars)"
-                    value={metaDescription}
-                    onChange={(e) => setMetaDescription(e.target.value)}
-                    rows={2}
                     className={cn(inputClass, "resize-y")}
+                    id="metaDescription"
+                    onChange={(e) => setMetaDescription(e.target.value)}
+                    placeholder="Short summary for search results (e.g. 150–160 chars)"
+                    rows={2}
+                    value={metaDescription}
                   />
                   <p className="text-xs text-muted-foreground">
                     Shown in search snippets. Keep it concise.
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="description" className={labelClass}>
+                  <label className={labelClass} htmlFor="description">
                     Description
                   </label>
                   <textarea
-                    id="description"
-                    placeholder="Longer content for the category page"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
                     className={cn(inputClass, "resize-y")}
+                    id="description"
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Longer content for the category page"
+                    rows={4}
+                    value={description}
                   />
                 </div>
                 <label className="flex items-center gap-2 pt-2">
                   <input
-                    type="checkbox"
                     checked={seoOptimized}
-                    onChange={(e) => setSeoOptimized(e.target.checked)}
                     className="size-4 rounded border-input"
+                    onChange={(e) => setSeoOptimized(e.target.checked)}
+                    type="checkbox"
                   />
                   <span className="text-sm">Optimized</span>
                 </label>
@@ -314,37 +336,48 @@ export default function AdminCategoriesCreatePage() {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <input
-                  id="visible"
-                  type="checkbox"
                   checked={visible}
+                  className={`
+                    size-4 rounded border-input text-primary
+                    focus:ring-ring
+                  `}
+                  id="visible"
                   onChange={(e) => setVisible(e.target.checked)}
-                  className="size-4 rounded border-input text-primary focus:ring-ring"
+                  type="checkbox"
                 />
-                <label htmlFor="visible" className="text-sm font-medium">
+                <label className="text-sm font-medium" htmlFor="visible">
                   Visible in store
                 </label>
               </div>
               <div className="flex items-center gap-2">
                 <input
-                  id="featured"
-                  type="checkbox"
                   checked={featured}
+                  className={`
+                    size-4 rounded border-input text-primary
+                    focus:ring-ring
+                  `}
+                  id="featured"
                   onChange={(e) => setFeatured(e.target.checked)}
-                  className="size-4 rounded border-input text-primary focus:ring-ring"
+                  type="checkbox"
                 />
-                <label htmlFor="featured" className="text-sm font-medium">
+                <label className="text-sm font-medium" htmlFor="featured">
                   Featured Category
                 </label>
               </div>
             </div>
 
             <div className="flex gap-2 pt-2">
-              <Button type="submit" disabled={saving}>
+              <Button disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save Category"}
               </Button>
               <Link
+                className={`
+                  inline-flex items-center justify-center rounded-md border
+                  border-input bg-background px-4 py-2 text-sm font-medium
+                  transition-colors
+                  hover:bg-muted hover:text-muted-foreground
+                `}
                 href="/categories"
-                className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted hover:text-muted-foreground"
               >
                 Cancel
               </Link>

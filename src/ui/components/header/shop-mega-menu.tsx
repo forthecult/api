@@ -5,8 +5,8 @@ import {
   ChevronDown,
   Cpu,
   Home,
-  ShoppingBag,
   Shirt,
+  ShoppingBag,
   Sparkles,
 } from "lucide-react";
 import Link from "next/link";
@@ -25,41 +25,39 @@ import {
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type SubcategoryItem = {
+interface CategoryItem {
   id: string;
   name: string;
-  slug?: string;
   productCount?: number;
-};
-
-type CategoryItem = {
-  id: string;
-  name: string;
   slug?: string;
-  productCount?: number;
   subcategories?: SubcategoryItem[];
-};
+}
+
+interface SectionDef {
+  /** Category slugs that belong in this section (order matters). */
+  categorySlugs: string[];
+  icon: React.ReactNode;
+  label: string;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Section definitions – map categories into organised columns        */
 /* ------------------------------------------------------------------ */
 
-type SectionDef = {
-  label: string;
-  icon: React.ReactNode;
-  /** Category slugs that belong in this section (order matters). */
-  categorySlugs: string[];
-};
+interface SubcategoryItem {
+  id: string;
+  name: string;
+  productCount?: number;
+  slug?: string;
+}
 
 const SECTION_DEFS: SectionDef[] = [
   {
-    label: "Tech & Smart Home",
-    icon: <Cpu className="h-5 w-5" />,
     categorySlugs: ["smart-home", "ai", "hardware-wallets", "iot", "esim"],
+    icon: <Cpu className="h-5 w-5" />,
+    label: "Tech & Smart Home",
   },
   {
-    label: "Clothing & Shoes",
-    icon: <Shirt className="h-5 w-5" />,
     categorySlugs: [
       "mens-clothing",
       "womens-clothing",
@@ -67,16 +65,18 @@ const SECTION_DEFS: SectionDef[] = [
       "sandals",
       "shoes",
     ],
+    icon: <Shirt className="h-5 w-5" />,
+    label: "Clothing & Shoes",
   },
   {
-    label: "Accessories",
-    icon: <ShoppingBag className="h-5 w-5" />,
     categorySlugs: ["accessories"],
+    icon: <ShoppingBag className="h-5 w-5" />,
+    label: "Accessories",
   },
   {
-    label: "Home & Culture",
-    icon: <Home className="h-5 w-5" />,
     categorySlugs: ["meme-novelty", "home-living", "health-wellness"],
+    icon: <Home className="h-5 w-5" />,
+    label: "Home & Culture",
   },
 ];
 
@@ -89,12 +89,12 @@ const MAX_SUBS = 6;
 
 export function ShopMegaMenu({
   categories,
-  isActive,
   className,
+  isActive,
 }: {
   categories: CategoryItem[];
-  isActive: boolean;
   className?: string;
+  isActive: boolean;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -135,30 +135,38 @@ export function ShopMegaMenu({
   }, [categories, catBySlug]);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <button
-          type="button"
+          aria-expanded={open}
+          aria-haspopup="true"
           className={cn(
-            "accent-underline inline-flex items-center gap-1 rounded-md bg-transparent py-1.5 text-base font-medium uppercase tracking-wider transition-colors hover:text-[#C4873A]",
+            `
+              accent-underline inline-flex items-center gap-1 rounded-md
+              bg-transparent py-1.5 text-base font-medium tracking-wider
+              uppercase transition-colors
+              hover:text-[#C4873A]
+            `,
             isActive ? "font-semibold text-[#C4873A]" : "text-[#8A857E]",
             className,
           )}
-          aria-expanded={open}
-          aria-haspopup="true"
+          type="button"
         >
           Shop
           <ChevronDown
-            className={cn("h-5 w-5 transition-transform", open && "rotate-180")}
             aria-hidden
+            className={cn("h-5 w-5 transition-transform", open && "rotate-180")}
           />
         </button>
       </PopoverTrigger>
 
       <PopoverContent
         align="start"
+        className={`
+          w-[min(95vw,1060px)] rounded-lg border border-[#2A2A2A] bg-[#1A1A1A]
+          p-0 shadow-xl
+        `}
         sideOffset={4}
-        className="w-[min(95vw,1060px)] rounded-lg border border-[#2A2A2A] bg-[#1A1A1A] p-0 shadow-xl"
       >
         {/* ── Category grid ── */}
         <div
@@ -168,9 +176,14 @@ export function ShopMegaMenu({
           }}
         >
           {sections.map((section) => (
-            <div key={section.label} className="px-5 pb-5 pt-4">
+            <div className="px-5 pt-4 pb-5" key={section.label}>
               {/* Section header */}
-              <div className="mb-3 flex items-center gap-1.5 text-sm font-bold uppercase tracking-[0.15em] text-[#C4873A]">
+              <div
+                className={`
+                mb-3 flex items-center gap-1.5 text-sm font-bold
+                tracking-[0.15em] text-[#C4873A] uppercase
+              `}
+              >
                 {section.icon}
                 {section.label}
               </div>
@@ -190,12 +203,22 @@ export function ShopMegaMenu({
                   return (
                     <div key={cat.id}>
                       <Link
+                        className={`
+                          group inline-flex items-center gap-1 text-base
+                          leading-snug font-semibold text-[#F5F1EB]
+                          transition-colors
+                          hover:text-[#C4873A]
+                        `}
                         href={href}
-                        className="group inline-flex items-center gap-1 text-base font-semibold leading-snug text-[#F5F1EB] transition-colors hover:text-[#C4873A]"
                         onClick={() => setOpen(false)}
                       >
                         {cat.name}
-                        <ArrowRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+                        <ArrowRight
+                          className={`
+                          h-4 w-4 opacity-0 transition-opacity
+                          group-hover:opacity-100
+                        `}
+                        />
                       </Link>
 
                       {visibleSubs.length > 0 && (
@@ -206,13 +229,21 @@ export function ShopMegaMenu({
                             return (
                               <li key={sub.id}>
                                 <Link
+                                  className={`
+                                    block rounded-md px-2 py-1.5 text-sm
+                                    text-[#8A857E] transition-colors
+                                    hover:bg-[#2A2A2A] hover:text-[#F5F1EB]
+                                  `}
                                   href={subHref}
-                                  className="block rounded-md px-2 py-1.5 text-sm text-[#8A857E] transition-colors hover:bg-[#2A2A2A] hover:text-[#F5F1EB]"
                                   onClick={() => setOpen(false)}
                                 >
                                   {sub.name}
                                   {(sub.productCount ?? 0) > 0 && (
-                                    <span className="ml-1 text-sm tabular-nums opacity-40">
+                                    <span
+                                      className={`
+                                      ml-1 text-sm tabular-nums opacity-40
+                                    `}
+                                    >
                                       ({sub.productCount})
                                     </span>
                                   )}
@@ -223,8 +254,13 @@ export function ShopMegaMenu({
                           {hasMore && (
                             <li>
                               <Link
+                                className={`
+                                  inline-flex items-center gap-0.5 px-2 py-1.5
+                                  text-sm font-medium text-[#C4873A]
+                                  transition-colors
+                                  hover:underline
+                                `}
                                 href={href}
-                                className="inline-flex items-center gap-0.5 px-2 py-1.5 text-sm font-medium text-[#C4873A] transition-colors hover:underline"
                                 onClick={() => setOpen(false)}
                               >
                                 View all
@@ -243,17 +279,36 @@ export function ShopMegaMenu({
         </div>
 
         {/* ── Bottom CTA bar ── */}
-        <div className="flex items-center justify-between border-t border-[#2A2A2A] bg-[#111111] px-5 py-2.5">
+        <div
+          className={`
+          flex items-center justify-between border-t border-[#2A2A2A]
+          bg-[#111111] px-5 py-2.5
+        `}
+        >
           <Link
+            className={`
+              group inline-flex items-center gap-2 text-sm font-semibold
+              text-[#C4873A] transition-colors
+              hover:text-[#D4A05A]
+            `}
             href="/products"
-            className="group inline-flex items-center gap-2 text-sm font-semibold text-[#C4873A] transition-colors hover:text-[#D4A05A]"
             onClick={() => setOpen(false)}
           >
             <Sparkles className="h-4 w-4" />
             Browse All Products
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            <ArrowRight
+              className={`
+              h-4 w-4 transition-transform
+              group-hover:translate-x-0.5
+            `}
+            />
           </Link>
-          <span className="hidden text-xs uppercase tracking-wider text-[#8A857E] sm:inline">
+          <span
+            className={`
+            hidden text-xs tracking-wider text-[#8A857E] uppercase
+            sm:inline
+          `}
+          >
             Free worldwide shipping for CULT Members
           </span>
         </div>

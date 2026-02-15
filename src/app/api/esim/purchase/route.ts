@@ -1,18 +1,18 @@
 import { createId } from "@paralleldrive/cuid2";
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "~/lib/auth";
 import { db } from "~/db";
-import { esimOrdersTable, ordersTable, orderItemsTable } from "~/db/schema";
+import { esimOrdersTable, orderItemsTable, ordersTable } from "~/db/schema";
+import { getCurrentUser } from "~/lib/auth";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 
-type PurchaseBody = {
+interface PurchaseBody {
+  /** Required when not authenticated (guest checkout). */
+  email?: string;
   packageId: string;
   packageType?: "DATA-ONLY" | "DATA-VOICE-SMS";
   paymentMethod: string; // "stripe" | "solana_pay" | "eth_pay" | "btcpay" | "ton_pay"
-  /** Required when not authenticated (guest checkout). */
-  email?: string;
-};
+}
 
 /**
  * POST /api/esim/purchase
@@ -27,15 +27,15 @@ export async function POST(request: Request) {
     const user = await getCurrentUser();
     const body = (await request.json()) as PurchaseBody;
     const {
+      email: bodyEmail,
       packageId,
       packageType = "DATA-ONLY",
       paymentMethod = "stripe",
-      email: bodyEmail,
     } = body;
 
     if (!packageId) {
       return NextResponse.json(
-        { status: false, message: "packageId is required" },
+        { message: "packageId is required", status: false },
         { status: 400 },
       );
     }
@@ -43,13 +43,13 @@ export async function POST(request: Request) {
     const email = (user?.email ?? bodyEmail?.trim()) || null;
     if (!email) {
       return NextResponse.json(
-        { status: false, message: "Email is required for guest checkout" },
+        { message: "Email is required for guest checkout", status: false },
         { status: 400 },
       );
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
-        { status: false, message: "Please enter a valid email address" },
+        { message: "Please enter a valid email address", status: false },
         { status: 400 },
       );
     }
@@ -58,7 +58,7 @@ export async function POST(request: Request) {
     const pkgResult = await getEsimPackageDetail(packageId);
     if (!pkgResult.status || !pkgResult.data) {
       return NextResponse.json(
-        { status: false, message: "Package not found" },
+        { message: "Package not found", status: false },
         { status: 404 },
       );
     }
@@ -90,15 +90,15 @@ export async function POST(request: Request) {
 
     // Create a main order (same pattern as physical product orders)
     await db.insert(ordersTable).values({
-      id: orderId,
       createdAt: now,
       email: email.toLowerCase(),
       fulfillmentStatus: "unfulfilled",
+      id: orderId,
       paymentMethod,
       paymentStatus: "pending",
+      shippingFeeCents: 0,
       status: "pending",
       totalCents: priceCents,
-      shippingFeeCents: 0,
       updatedAt: now,
       userId: user?.id ?? null,
     });
@@ -115,44 +115,44 @@ export async function POST(request: Request) {
 
     // Create the eSIM-specific order record (pending until payment confirmed)
     await db.insert(esimOrdersTable).values({
+      costCents,
+      countryName,
+      createdAt: now,
+      currency: "USD",
+      dataQuantity: Number.isNaN(dataQuantity) ? 0 : dataQuantity,
+      dataUnit,
       id: esimOrderId,
-      userId: user?.id ?? null,
       orderId,
       packageId,
       packageName: String(pkg.name ?? "eSIM"),
       packageType: packageTypeVal,
-      dataQuantity: Number.isNaN(dataQuantity) ? 0 : dataQuantity,
-      dataUnit,
-      validityDays,
-      countryName,
-      costCents,
-      priceCents,
-      currency: "USD",
       paymentMethod,
       paymentStatus: "pending",
+      priceCents,
       status: "pending",
-      createdAt: now,
       updatedAt: now,
+      userId: user?.id ?? null,
+      validityDays,
     });
 
     return NextResponse.json({
-      status: true,
       data: {
-        orderId,
         esimOrderId,
-        priceCents,
-        priceUsd: (priceCents / 100).toFixed(2),
+        orderId,
         packageName: pkg.name,
         paymentMethod,
+        priceCents,
+        priceUsd: (priceCents / 100).toFixed(2),
       },
+      status: true,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.error("eSIM purchase error:", message, error);
     return NextResponse.json(
       {
-        status: false,
         message: "Failed to create eSIM order",
+        status: false,
         ...(process.env.NODE_ENV === "development" && { detail: message }),
       },
       { status: 500 },

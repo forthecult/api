@@ -25,6 +25,55 @@ const APP_ENTROPY =
     : "default-entropy-change-in-production";
 
 /**
+ * Decrypt data using AES-GCM
+ */
+async function decrypt(encryptedData: string): Promise<string> {
+  const key = await getOrCreateSessionKey();
+
+  // Decode from base64
+  const combined = new Uint8Array(
+    atob(encryptedData)
+      .split("")
+      .map((c) => c.charCodeAt(0)),
+  );
+
+  // Extract IV and ciphertext
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+
+  const decrypted = await window.crypto.subtle.decrypt(
+    { iv, name: "AES-GCM" },
+    key,
+    ciphertext,
+  );
+
+  return new TextDecoder().decode(decrypted);
+}
+
+/**
+ * Encrypt data using AES-GCM
+ */
+async function encrypt(data: string): Promise<string> {
+  const key = await getOrCreateSessionKey();
+  const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const encoded = new TextEncoder().encode(data);
+
+  const encrypted = await window.crypto.subtle.encrypt(
+    { iv: iv as BufferSource, name: "AES-GCM" },
+    key,
+    encoded as BufferSource,
+  );
+
+  // Combine IV and ciphertext
+  const combined = new Uint8Array(iv.length + encrypted.byteLength);
+  combined.set(iv);
+  combined.set(new Uint8Array(encrypted), iv.length);
+
+  // Return as base64
+  return btoa(String.fromCharCode(...combined));
+}
+
+/**
  * Generate or retrieve the session encryption key
  * Key is stored in sessionStorage so it's cleared when the tab closes
  */
@@ -38,13 +87,13 @@ async function getOrCreateSessionKey(): Promise<CryptoKey> {
   if (existingKeyData) {
     try {
       const keyData = JSON.parse(existingKeyData) as {
-        key: number[];
         iv: number[];
+        key: number[];
       };
       return await window.crypto.subtle.importKey(
         "raw",
         new Uint8Array(keyData.key),
-        { name: "AES-GCM", length: 256 },
+        { length: 256, name: "AES-GCM" },
         false,
         ["encrypt", "decrypt"],
       );
@@ -71,13 +120,13 @@ async function getOrCreateSessionKey(): Promise<CryptoKey> {
   const saltBuf: BufferSource = salt as unknown as BufferSource;
   const key = await window.crypto.subtle.deriveKey(
     {
+      hash: "SHA-256",
+      iterations: 100000,
       name: "PBKDF2",
       salt: saltBuf,
-      iterations: 100000,
-      hash: "SHA-256",
     },
     keyMaterial,
-    { name: "AES-GCM", length: 256 },
+    { length: 256, name: "AES-GCM" },
     true,
     ["encrypt", "decrypt"],
   );
@@ -96,77 +145,24 @@ async function getOrCreateSessionKey(): Promise<CryptoKey> {
 }
 
 /**
- * Encrypt data using AES-GCM
- */
-async function encrypt(data: string): Promise<string> {
-  const key = await getOrCreateSessionKey();
-  const iv = window.crypto.getRandomValues(new Uint8Array(12));
-  const encoded = new TextEncoder().encode(data);
-
-  const encrypted = await window.crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: iv as BufferSource },
-    key,
-    encoded as BufferSource,
-  );
-
-  // Combine IV and ciphertext
-  const combined = new Uint8Array(iv.length + encrypted.byteLength);
-  combined.set(iv);
-  combined.set(new Uint8Array(encrypted), iv.length);
-
-  // Return as base64
-  return btoa(String.fromCharCode(...combined));
-}
-
-/**
- * Decrypt data using AES-GCM
- */
-async function decrypt(encryptedData: string): Promise<string> {
-  const key = await getOrCreateSessionKey();
-
-  // Decode from base64
-  const combined = new Uint8Array(
-    atob(encryptedData)
-      .split("")
-      .map((c) => c.charCodeAt(0)),
-  );
-
-  // Extract IV and ciphertext
-  const iv = combined.slice(0, 12);
-  const ciphertext = combined.slice(12);
-
-  const decrypted = await window.crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    ciphertext,
-  );
-
-  return new TextDecoder().decode(decrypted);
-}
-
-/**
  * Secure storage interface for sensitive data
  */
 export const secureStorage = {
   /**
-   * Store encrypted data in localStorage
-   * @param key Storage key
-   * @param value Value to encrypt and store
+   * Clear all encrypted storage items
    */
-  async setItem(key: string, value: string): Promise<void> {
+  clear(): void {
     if (typeof window === "undefined") return;
 
-    try {
-      const encrypted = await encrypt(value);
-      localStorage.setItem(ENCRYPTED_PREFIX + key, encrypted);
-    } catch (error) {
-      console.error(
-        "[SecureStorage] Failed to encrypt — data NOT stored to avoid plaintext leak:",
-        error,
-      );
-      // [SECURITY] Do NOT fallback to unencrypted storage; sensitive data must not be stored in plaintext.
-      // Callers should handle the async rejection or missing data gracefully.
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key?.startsWith(ENCRYPTED_PREFIX)) {
+        keysToRemove.push(key);
+      }
     }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    sessionStorage.removeItem(SESSION_KEY_NAME);
   },
 
   /**
@@ -174,7 +170,7 @@ export const secureStorage = {
    * @param key Storage key
    * @returns Decrypted value or null if not found
    */
-  async getItem(key: string): Promise<string | null> {
+  async getItem(key: string): Promise<null | string> {
     if (typeof window === "undefined") return null;
 
     // Try encrypted storage first
@@ -216,20 +212,24 @@ export const secureStorage = {
   },
 
   /**
-   * Clear all encrypted storage items
+   * Store encrypted data in localStorage
+   * @param key Storage key
+   * @param value Value to encrypt and store
    */
-  clear(): void {
+  async setItem(key: string, value: string): Promise<void> {
     if (typeof window === "undefined") return;
 
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(ENCRYPTED_PREFIX)) {
-        keysToRemove.push(key);
-      }
+    try {
+      const encrypted = await encrypt(value);
+      localStorage.setItem(ENCRYPTED_PREFIX + key, encrypted);
+    } catch (error) {
+      console.error(
+        "[SecureStorage] Failed to encrypt — data NOT stored to avoid plaintext leak:",
+        error,
+      );
+      // [SECURITY] Do NOT fallback to unencrypted storage; sensitive data must not be stored in plaintext.
+      // Callers should handle the async rejection or missing data gracefully.
     }
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-    sessionStorage.removeItem(SESSION_KEY_NAME);
   },
 };
 
@@ -242,25 +242,10 @@ const decryptionCache = new Map<string, string>();
 
 export const secureStorageSync = {
   /**
-   * Store data (encrypts asynchronously in background)
-   */
-  setItem(key: string, value: string): void {
-    if (typeof window === "undefined") return;
-
-    // Update cache immediately
-    decryptionCache.set(key, value);
-
-    // Encrypt and store in background
-    secureStorage.setItem(key, value).catch((error) => {
-      console.error("[SecureStorageSync] Background encryption failed:", error);
-    });
-  },
-
-  /**
    * Get data - returns cached value or attempts sync decryption
    * For sensitive data, prefer the async version
    */
-  getItem(key: string): string | null {
+  getItem(key: string): null | string {
     if (typeof window === "undefined") return null;
 
     // Check cache first
@@ -313,6 +298,21 @@ export const secureStorageSync = {
   removeItem(key: string): void {
     decryptionCache.delete(key);
     secureStorage.removeItem(key);
+  },
+
+  /**
+   * Store data (encrypts asynchronously in background)
+   */
+  setItem(key: string, value: string): void {
+    if (typeof window === "undefined") return;
+
+    // Update cache immediately
+    decryptionCache.set(key, value);
+
+    // Encrypt and store in background
+    secureStorage.setItem(key, value).catch((error) => {
+      console.error("[SecureStorageSync] Background encryption failed:", error);
+    });
   },
 };
 

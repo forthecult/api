@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 import { withOptionalX402 } from "~/lib/x402-config";
+import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 
 const CRYPTO_SYMBOLS = [
   "BTC",
@@ -27,8 +27,8 @@ async function getHandler(request: NextRequest) {
       {
         error: "Unsupported crypto or metal",
         from,
-        to,
         supported: CRYPTO_SYMBOLS,
+        to,
       },
       { status: 400 },
     );
@@ -44,11 +44,11 @@ async function getHandler(request: NextRequest) {
   }
   const rate = fromUsd / toUsd;
   return NextResponse.json({
+    _note: "1 unit of 'from' in units of 'to'",
     from,
-    to,
     rate,
     source: "coingecko",
-    _note: "1 unit of 'from' in units of 'to'",
+    to,
   });
 }
 

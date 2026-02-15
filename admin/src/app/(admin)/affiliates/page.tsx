@@ -12,35 +12,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 const API_BASE = getMainAppUrl();
 
 interface AffiliateRow {
-  id: string;
-  userId: string | null;
+  applicationNote: null | string;
   code: string;
-  status: string;
   commissionType: string;
   commissionValue: number;
+  conversionCount: number;
+  createdAt: string;
+  id: string;
+  status: string;
   totalEarnedCents: number;
   totalPaidCents: number;
-  conversionCount: number;
-  userEmail: string | null;
-  userName: string | null;
-  createdAt: string;
-  applicationNote: string | null;
+  userEmail: null | string;
+  userId: null | string;
+  userName: null | string;
 }
 
 interface AffiliatesResponse {
   items: AffiliateRow[];
-  page: number;
   limit: number;
+  page: number;
   totalCount: number;
   totalPages: number;
 }
 
 function formatCents(cents: number): string {
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
   }).format(cents / 100);
 }
 
@@ -56,10 +56,10 @@ function formatDate(s: string): string {
 }
 
 const STATUS_BADGE: Record<string, string> = {
-  pending:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
   approved:
     "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200",
+  pending:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200",
   rejected: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200",
   suspended:
     "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200",
@@ -68,7 +68,7 @@ const STATUS_BADGE: Record<string, string> = {
 export default function AdminAffiliatesPage() {
   const [data, setData] = useState<AffiliatesResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -78,7 +78,7 @@ export default function AdminAffiliatesPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "20" });
+      const params = new URLSearchParams({ limit: "20", page: String(page) });
       if (search.trim()) params.set("search", search.trim());
       if (statusFilter) params.set("status", statusFilter);
       const res = await fetch(
@@ -107,7 +107,12 @@ export default function AdminAffiliatesPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -128,18 +133,32 @@ export default function AdminAffiliatesPage() {
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader
+          className={`
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
+        >
           <CardTitle className="sr-only">Affiliate list</CardTitle>
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative max-w-md flex-1">
+            <Search
+              className={`
+              absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+              text-muted-foreground
+            `}
+            />
             <input
+              aria-label="Search affiliates"
               className={cn(
-                "w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm",
-                "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+                `
+                  w-full rounded-md border border-input bg-background py-2 pr-3
+                  pl-9 text-sm
+                `,
+                `
+                  placeholder:text-muted-foreground
+                  focus:ring-2 focus:ring-ring focus:outline-none
+                `,
               )}
-              placeholder="Search by code, email, name..."
-              type="search"
-              value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -148,21 +167,23 @@ export default function AdminAffiliatesPage() {
                   setPage(1);
                 }
               }}
-              aria-label="Search affiliates"
+              placeholder="Search by code, email, name..."
+              type="search"
+              value={searchInput}
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <select
+              aria-label="Filter by status"
               className={cn(
                 "rounded-md border border-input bg-background px-3 py-2 text-sm",
-                "focus:outline-none focus:ring-2 focus:ring-ring",
+                "focus:ring-2 focus:ring-ring focus:outline-none",
               )}
-              value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value);
                 setPage(1);
               }}
-              aria-label="Filter by status"
+              value={statusFilter}
             >
               <option value="">All statuses</option>
               <option value="pending">Pending</option>
@@ -171,12 +192,12 @@ export default function AdminAffiliatesPage() {
               <option value="suspended">Suspended</option>
             </select>
             <Button
-              type="button"
-              variant="secondary"
               onClick={() => {
                 setSearch(searchInput);
                 setPage(1);
               }}
+              type="button"
+              variant="secondary"
             >
               Search
             </Button>
@@ -184,7 +205,12 @@ export default function AdminAffiliatesPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data ? (
@@ -192,29 +218,51 @@ export default function AdminAffiliatesPage() {
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      <th className="whitespace-nowrap p-4 font-medium">
+                    <tr
+                      className={`
+                      border-b border-border bg-muted/50 text-left text-xs
+                      font-semibold tracking-wider text-muted-foreground
+                      uppercase
+                    `}
+                    >
+                      <th className="p-4 font-medium whitespace-nowrap">
                         Code
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium">
+                      <th className="p-4 font-medium whitespace-nowrap">
                         Status
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium">
+                      <th className="p-4 font-medium whitespace-nowrap">
                         User
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        className={`
+                        p-4 text-right font-medium whitespace-nowrap
+                      `}
+                      >
                         Conversions
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        className={`
+                        p-4 text-right font-medium whitespace-nowrap
+                      `}
+                      >
                         Earned
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        className={`
+                        p-4 text-right font-medium whitespace-nowrap
+                      `}
+                      >
                         Paid
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium">
+                      <th className="p-4 font-medium whitespace-nowrap">
                         Applied
                       </th>
-                      <th className="whitespace-nowrap p-4 font-medium text-right">
+                      <th
+                        className={`
+                        p-4 text-right font-medium whitespace-nowrap
+                      `}
+                      >
                         Action
                       </th>
                     </tr>
@@ -223,8 +271,8 @@ export default function AdminAffiliatesPage() {
                     {data.items.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={8}
                           className="p-8 text-center text-muted-foreground"
+                          colSpan={8}
                         >
                           No affiliates found.
                         </td>
@@ -232,16 +280,26 @@ export default function AdminAffiliatesPage() {
                     ) : (
                       data.items.map((row) => (
                         <tr
+                          className={`
+                            border-b border-border
+                            hover:bg-muted/30
+                          `}
                           key={row.id}
-                          className="border-b border-border hover:bg-muted/30"
                         >
-                          <td className="whitespace-nowrap p-4 font-mono font-medium">
+                          <td
+                            className={`
+                            p-4 font-mono font-medium whitespace-nowrap
+                          `}
+                          >
                             {row.code}
                           </td>
-                          <td className="whitespace-nowrap p-4">
+                          <td className="p-4 whitespace-nowrap">
                             <span
                               className={cn(
-                                "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                `
+                                  inline-flex rounded-full px-2.5 py-0.5 text-xs
+                                  font-medium
+                                `,
                                 STATUS_BADGE[row.status] ??
                                   "bg-muted text-muted-foreground",
                               )}
@@ -252,12 +310,20 @@ export default function AdminAffiliatesPage() {
                           <td className="p-4">
                             {row.userId ? (
                               <Link
+                                className={`
+                                  font-medium text-primary underline-offset-4
+                                  hover:underline
+                                `}
                                 href={`/customers/${row.userId}`}
-                                className="font-medium text-primary underline-offset-4 hover:underline"
                               >
                                 {row.userName ?? row.userEmail ?? "—"}
                                 {row.userEmail && row.userName && (
-                                  <span className="block text-xs font-normal text-muted-foreground">
+                                  <span
+                                    className={`
+                                    block text-xs font-normal
+                                    text-muted-foreground
+                                  `}
+                                  >
                                     {row.userEmail}
                                   </span>
                                 )}
@@ -268,26 +334,46 @@ export default function AdminAffiliatesPage() {
                                   {row.userName ?? row.userEmail ?? "—"}
                                 </span>
                                 {row.userEmail && row.userName && (
-                                  <span className="block text-xs text-muted-foreground">
+                                  <span
+                                    className={`
+                                    block text-xs text-muted-foreground
+                                  `}
+                                  >
                                     {row.userEmail}
                                   </span>
                                 )}
                               </>
                             )}
                           </td>
-                          <td className="whitespace-nowrap p-4 text-right tabular-nums">
+                          <td
+                            className={`
+                            p-4 text-right whitespace-nowrap tabular-nums
+                          `}
+                          >
                             {row.conversionCount}
                           </td>
-                          <td className="whitespace-nowrap p-4 text-right tabular-nums">
+                          <td
+                            className={`
+                            p-4 text-right whitespace-nowrap tabular-nums
+                          `}
+                          >
                             {formatCents(row.totalEarnedCents)}
                           </td>
-                          <td className="whitespace-nowrap p-4 text-right tabular-nums">
+                          <td
+                            className={`
+                            p-4 text-right whitespace-nowrap tabular-nums
+                          `}
+                          >
                             {formatCents(row.totalPaidCents)}
                           </td>
-                          <td className="whitespace-nowrap p-4 text-muted-foreground">
+                          <td
+                            className={`
+                            p-4 whitespace-nowrap text-muted-foreground
+                          `}
+                          >
                             {formatDate(row.createdAt)}
                           </td>
-                          <td className="whitespace-nowrap p-4 text-right">
+                          <td className="p-4 text-right whitespace-nowrap">
                             <Button asChild size="sm" variant="ghost">
                               <Link href={`/affiliates/${row.id}`}>Edit</Link>
                             </Button>
@@ -306,20 +392,20 @@ export default function AdminAffiliatesPage() {
                   </p>
                   <div className="flex gap-2">
                     <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
                       disabled={data.page <= 1}
                       onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      size="sm"
+                      type="button"
+                      variant="outline"
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
                     <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
                       disabled={data.page >= data.totalPages}
                       onClick={() => setPage((p) => p + 1)}
+                      size="sm"
+                      type="button"
+                      variant="outline"
                     >
                       <ChevronRight className="h-4 w-4" />
                     </Button>

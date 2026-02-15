@@ -7,9 +7,9 @@ import { Connection } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
 import { fetchStakedBalance, getStakingProgramId } from "~/lib/cult-staking";
-import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
+import { getCultMintSolana } from "~/lib/token-gate";
 
 const CULT_DECIMALS = 6;
 
@@ -34,11 +34,11 @@ export async function GET(request: Request) {
     const totalRaw = walletRaw + stakedRaw;
     const human = Number(totalRaw) / 10 ** decimals;
     return NextResponse.json({
+      decimals,
+      stakedBalanceRaw: stakedRaw.toString(),
       votingPower: human.toFixed(decimals),
       votingPowerRaw: totalRaw.toString(),
       walletBalanceRaw: walletRaw.toString(),
-      stakedBalanceRaw: stakedRaw.toString(),
-      decimals,
     });
   } catch (e) {
     console.error("[governance] voting-power error:", e);

@@ -28,9 +28,9 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const result = await signIn.email({
+        callbackURL: "/dashboard",
         email,
         password,
-        callbackURL: "/dashboard",
       });
       if (result?.error) {
         setError(
@@ -65,7 +65,11 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+    <div
+      className={`
+      flex min-h-screen items-center justify-center bg-muted/30 px-4
+    `}
+    >
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Admin login</CardTitle>
@@ -74,37 +78,61 @@ export default function AdminLoginPage() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div className="space-y-2">
               <label
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={`
+                  text-sm leading-none font-medium
+                  peer-disabled:cursor-not-allowed peer-disabled:opacity-70
+                `}
                 htmlFor="admin-email"
               >
                 Email
               </label>
               <input
                 autoComplete="email"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`
+                  flex h-10 w-full rounded-md border border-input bg-background
+                  px-3 py-2 text-sm ring-offset-background
+                  file:border-0 file:bg-transparent file:text-sm
+                  file:font-medium
+                  placeholder:text-muted-foreground
+                  focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:ring-offset-2 focus-visible:outline-none
+                  disabled:cursor-not-allowed disabled:opacity-50
+                `}
                 id="admin-email"
+                onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@example.com"
                 required
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <label
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                className={`
+                  text-sm leading-none font-medium
+                  peer-disabled:cursor-not-allowed peer-disabled:opacity-70
+                `}
                 htmlFor="admin-password"
               >
                 Password
               </label>
               <input
                 autoComplete="current-password"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className={`
+                  flex h-10 w-full rounded-md border border-input bg-background
+                  px-3 py-2 text-sm ring-offset-background
+                  file:border-0 file:bg-transparent file:text-sm
+                  file:font-medium
+                  placeholder:text-muted-foreground
+                  focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:ring-offset-2 focus-visible:outline-none
+                  disabled:cursor-not-allowed disabled:opacity-50
+                `}
                 id="admin-password"
+                onChange={(e) => setPassword(e.target.value)}
                 required
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             {error ? (

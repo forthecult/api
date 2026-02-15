@@ -1,7 +1,8 @@
 import type { NextRequest } from "next/server";
-import { NextResponse } from "next/server";
-import { eq, and, desc } from "drizzle-orm";
+
+import { and, desc, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+import { NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { sizeChartsTable } from "~/db/schema";
@@ -62,12 +63,12 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as {
-      provider?: string;
       brand?: string;
-      model?: string;
-      displayName?: string;
       dataImperial?: unknown;
       dataMetric?: unknown;
+      displayName?: string;
+      model?: string;
+      provider?: string;
     };
 
     const provider = body.provider?.trim();
@@ -104,16 +105,16 @@ export async function POST(request: NextRequest) {
     const now = new Date();
 
     await db.insert(sizeChartsTable).values({
-      id,
-      provider,
       brand,
-      model,
-      displayName,
+      createdAt: now,
       dataImperial:
         body.dataImperial != null ? JSON.stringify(body.dataImperial) : null,
       dataMetric:
         body.dataMetric != null ? JSON.stringify(body.dataMetric) : null,
-      createdAt: now,
+      displayName,
+      id,
+      model,
+      provider,
       updatedAt: now,
     });
 
@@ -123,7 +124,7 @@ export async function POST(request: NextRequest) {
       .where(eq(sizeChartsTable.id, id))
       .limit(1);
     return NextResponse.json(
-      created ?? { id, provider, brand, model, displayName: body.displayName },
+      created ?? { brand, displayName: body.displayName, id, model, provider },
     );
   } catch (err) {
     console.error("Admin size chart create error:", err);

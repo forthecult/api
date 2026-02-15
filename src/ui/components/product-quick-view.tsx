@@ -1,8 +1,8 @@
 "use client";
 
 import {
-  Eye,
   ExternalLink,
+  Eye,
   Heart,
   Minus,
   Plus,
@@ -14,17 +14,17 @@ import * as React from "react";
 import { toast } from "sonner";
 
 import { cn } from "~/lib/cn";
+import { useCart } from "~/lib/hooks/use-cart";
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
+import { useWishlist } from "~/lib/hooks/use-wishlist";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import {
   getPhoneBrand,
   groupPhoneModelsByBrand,
   isPhoneModelsOption,
   type PhoneBrand,
 } from "~/lib/sort-phone-models";
-import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
-import { isShippingExcluded } from "~/lib/shipping-restrictions";
-import { useCart } from "~/lib/hooks/use-cart";
-import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
-import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Badge } from "~/ui/primitives/badge";
@@ -36,413 +36,64 @@ import { Skeleton } from "~/ui/primitives/skeleton";
 /*                                   Types                                     */
 /* -------------------------------------------------------------------------- */
 
-interface QuickViewVariant {
-  id: string;
-  size?: string;
-  color?: string;
-  gender?: string;
-  label?: string;
-  priceCents: number;
-  stockQuantity?: number;
-  imageUrl?: string;
-}
-
 interface OptionDefinition {
   name: string;
   values: string[];
 }
 
-interface QuickViewProduct {
-  id: string;
-  name: string;
-  slug?: string;
-  description?: string;
-  category: string;
-  price: { usd: number };
-  compareAtPriceCents?: number;
-  imageUrl?: string;
-  images?: string[];
-  features?: string[];
-  inStock: boolean;
-  hasVariants: boolean;
-  optionDefinitions?: OptionDefinition[];
-  variants?: QuickViewVariant[];
-  availableCountryCodes?: string[];
+interface ProductQuickViewProps {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  /** Slug or ID of the product to preview. */
+  productSlugOrId: null | string;
 }
 
-interface ProductQuickViewProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** Slug or ID of the product to preview. */
-  productSlugOrId: string | null;
+interface QuickViewProduct {
+  availableCountryCodes?: string[];
+  category: string;
+  compareAtPriceCents?: number;
+  description?: string;
+  features?: string[];
+  hasVariants: boolean;
+  id: string;
+  images?: string[];
+  imageUrl?: string;
+  inStock: boolean;
+  name: string;
+  optionDefinitions?: OptionDefinition[];
+  price: { usd: number };
+  slug?: string;
+  variants?: QuickViewVariant[];
+}
+
+interface QuickViewVariant {
+  color?: string;
+  gender?: string;
+  id: string;
+  imageUrl?: string;
+  label?: string;
+  priceCents: number;
+  size?: string;
+  stockQuantity?: number;
 }
 
 /* -------------------------------------------------------------------------- */
 /*                              Mini Gallery                                   */
 /* -------------------------------------------------------------------------- */
 
-function MiniGallery({
-  images,
-  productName,
-}: {
-  images: string[];
-  productName: string;
-}) {
-  const [selectedIndex, setSelectedIndex] = React.useState(0);
-  const [failedUrls, setFailedUrls] = React.useState<Set<string>>(
-    () => new Set(),
-  );
-
-  React.useEffect(() => {
-    setSelectedIndex(0);
-    setFailedUrls(new Set());
-  }, [images]);
-
-  const list = images.length > 0 ? images : ["/placeholder.svg"];
-  const mainSrc = failedUrls.has(list[selectedIndex] ?? "")
-    ? "/placeholder.svg"
-    : (list[selectedIndex] ?? "/placeholder.svg");
-  const isExternal = /^https?:\/\//i.test(mainSrc);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-white">
-        <Image
-          alt={productName}
-          className="object-contain"
-          fill
-          sizes="(max-width: 640px) 100vw, 400px"
-          src={mainSrc}
-          unoptimized={isExternal}
-          onError={() =>
-            setFailedUrls((prev) =>
-              new Set(prev).add(list[selectedIndex] ?? ""),
-            )
-          }
-        />
-      </div>
-      {list.length > 1 && (
-        <div className="flex gap-1.5 overflow-x-auto pb-1">
-          {list.slice(0, 6).map((src, i) => {
-            const thumbSrc = failedUrls.has(src) ? "/placeholder.svg" : src;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSelectedIndex(i)}
-                className={cn(
-                  "relative h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 transition-colors",
-                  selectedIndex === i
-                    ? "border-primary"
-                    : "border-transparent hover:border-muted-foreground/50",
-                )}
-              >
-                <Image
-                  alt=""
-                  className="object-cover"
-                  fill
-                  sizes="56px"
-                  src={thumbSrc}
-                  unoptimized={/^https?:\/\//i.test(thumbSrc)}
-                  onError={() =>
-                    setFailedUrls((prev) => new Set(prev).add(src))
-                  }
-                />
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                         Variant Selector (simplified)                       */
-/* -------------------------------------------------------------------------- */
-
-/** Set of non-empty variant field values. Splits combined values like "Charcoal Heather / L" so they match UI selections. */
-function getVariantValueSet(v: QuickViewVariant): Set<string> {
-  const parts: string[] = [];
-  for (const raw of [v.color, v.size, v.gender, v.label]) {
-    if (raw == null || String(raw).trim() === "") continue;
-    const s = String(raw).trim();
-    for (const p of s.split(/\s*\/\s*/)) {
-      const t = p.trim();
-      if (t) parts.push(t);
-    }
-  }
-  return new Set(parts);
-}
-
-/**
- * Find variant by matching the set of selected option values to the variant's
- * field values. Option names are not tied to specific columns.
- */
-function findVariant(
-  variants: QuickViewVariant[],
-  selectedByIndex: Record<number, string>,
-): QuickViewVariant | null {
-  const selectedSet = new Set(
-    Object.values(selectedByIndex)
-      .filter(Boolean)
-      .map((s) => String(s).trim()),
-  );
-  if (selectedSet.size === 0) return null;
-  const match = variants.find((v) => {
-    const variantSet = getVariantValueSet(v);
-    if (variantSet.size !== selectedSet.size) return false;
-    for (const s of selectedSet) {
-      if (!variantSet.has(s)) return false;
-    }
-    return true;
-  });
-  if (match) return match;
-  let best: QuickViewVariant | null = null;
-  let bestSize = 0;
-  for (const v of variants) {
-    const variantSet = getVariantValueSet(v);
-    if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
-      let allIn = true;
-      for (const x of variantSet) {
-        if (!selectedSet.has(x)) {
-          allIn = false;
-          break;
-        }
-      }
-      if (allIn) {
-        best = v;
-        bestSize = variantSet.size;
-      }
-    }
-  }
-  return best;
-}
-
-function VariantSelector({
-  optionDefinitions,
-  variants,
-  selectedVariant,
-  onSelectVariant,
-}: {
-  optionDefinitions: OptionDefinition[];
-  variants: QuickViewVariant[];
-  selectedVariant: QuickViewVariant | null;
-  onSelectVariant: (v: QuickViewVariant | null) => void;
-}) {
-  const [selectedByIndex, setSelectedByIndex] = React.useState<
-    Record<number, string>
-  >({});
-
-  // Auto-select single-value options; for phone models use first brand's latest model, else first value
-  React.useEffect(() => {
-    const initial: Record<number, string> = {};
-    optionDefinitions.forEach((opt, idx) => {
-      const values = (opt.values ?? []).filter(Boolean);
-      if (values.length < 1) return;
-      if (isPhoneModelsOption(opt.name, values)) {
-        const groups = groupPhoneModelsByBrand(values);
-        const first = groups[0]?.models[0];
-        if (first) initial[idx] = first;
-      } else {
-        initial[idx] = values[0]!;
-      }
-    });
-    if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
-  }, [optionDefinitions]);
-
-  // When selections change, find matching variant by value set (option names not tied to columns)
-  React.useEffect(() => {
-    if (Object.keys(selectedByIndex).length < optionDefinitions.length) {
-      onSelectVariant(null);
-      return;
-    }
-    const match = findVariant(variants, selectedByIndex);
-    onSelectVariant(match);
-  }, [selectedByIndex, optionDefinitions.length, variants, onSelectVariant]);
-
-  // Sync phone option selection when displayed fallback model differs from current (e.g. brand switch)
-  React.useEffect(() => {
-    optionDefinitions.forEach((opt, idx) => {
-      const values = (opt.values ?? []).filter(Boolean);
-      if (values.length <= 1 || !isPhoneModelsOption(opt.name, values)) return;
-      const groups = groupPhoneModelsByBrand(values);
-      const currentVal = selectedByIndex[idx];
-      const currentBrand = currentVal
-        ? getPhoneBrand(currentVal)
-        : groups[0]?.brand;
-      const currentGroup = groups.find((g) => g.brand === currentBrand);
-      const models = currentGroup?.models ?? [];
-      const fallback = models[0];
-      if (
-        fallback &&
-        currentVal !== fallback &&
-        !currentGroup?.models.includes(currentVal ?? "")
-      ) {
-        setSelectedByIndex((prev) => ({ ...prev, [idx]: fallback }));
-      }
-    });
-  }, [optionDefinitions, selectedByIndex]);
-
-  const selectStyles =
-    "w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
-
-  return (
-    <div className="space-y-3">
-      {optionDefinitions.map((opt, idx) => {
-        const values = (opt.values ?? []).filter(Boolean);
-        if (values.length <= 1) return null;
-
-        const isPhoneModels = isPhoneModelsOption(opt.name, values);
-        const groups = isPhoneModels ? groupPhoneModelsByBrand(values) : [];
-
-        if (isPhoneModels && groups.length > 0) {
-          const selectedValue = selectedByIndex[idx];
-          const currentBrand = selectedValue
-            ? getPhoneBrand(selectedValue)
-            : (groups[0]?.brand ?? null);
-          const currentGroup = groups.find((g) => g.brand === currentBrand);
-          const models = currentGroup?.models ?? [];
-          const displayModel =
-            selectedValue && currentGroup?.models.includes(selectedValue)
-              ? selectedValue
-              : (models[0] ?? "");
-
-          return (
-            <div key={opt.name} className="space-y-2">
-              <span className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                {opt.name}
-              </span>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <div className="flex flex-col gap-1 sm:min-w-[8rem]">
-                  <label
-                    htmlFor={`qv-brand-${idx}`}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Brand
-                  </label>
-                  <select
-                    id={`qv-brand-${idx}`}
-                    value={currentBrand ?? ""}
-                    onChange={(e) => {
-                      const brand = e.target.value as PhoneBrand;
-                      const group = groups.find((g) => g.brand === brand);
-                      if (group?.models[0])
-                        setSelectedByIndex((prev) => ({
-                          ...prev,
-                          [idx]: group.models[0],
-                        }));
-                    }}
-                    className={selectStyles}
-                    aria-label="Phone brand"
-                  >
-                    {groups.map((g) => (
-                      <option key={g.brand} value={g.brand}>
-                        {g.brand}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1 sm:min-w-[10rem]">
-                  <label
-                    htmlFor={`qv-model-${idx}`}
-                    className="text-xs text-muted-foreground"
-                  >
-                    Model
-                  </label>
-                  <select
-                    id={`qv-model-${idx}`}
-                    value={displayModel}
-                    onChange={(e) =>
-                      setSelectedByIndex((prev) => ({
-                        ...prev,
-                        [idx]: e.target.value,
-                      }))
-                    }
-                    className={selectStyles}
-                    aria-label="Phone model"
-                  >
-                    {models.map((model) => (
-                      <option key={model} value={model}>
-                        {model}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        const sortedValues =
-          opt.name.toLowerCase() === "size"
-            ? sortClothingSizes([...values])
-            : values;
-        return (
-          <div key={opt.name}>
-            <span className="mb-1.5 block text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              {opt.name}
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {sortedValues.map((val) => (
-                <Button
-                  key={val}
-                  variant={selectedByIndex[idx] === val ? "default" : "outline"}
-                  size="sm"
-                  className="min-w-[2.5rem]"
-                  onClick={() =>
-                    setSelectedByIndex((prev) => ({ ...prev, [idx]: val }))
-                  }
-                >
-                  {val}
-                </Button>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                              Loading Skeleton                               */
-/* -------------------------------------------------------------------------- */
-
-function QuickViewSkeleton() {
-  return (
-    <div className="flex flex-col md:flex-row md:max-h-[85vh]">
-      <div className="w-full md:w-[45%] shrink-0 bg-muted/50">
-        <Skeleton className="aspect-square w-full rounded-none md:rounded-l-lg" />
-      </div>
-      <div className="flex flex-1 flex-col gap-4 p-6 md:p-8">
-        <Skeleton className="h-7 w-3/4" />
-        <Skeleton className="h-6 w-1/4" />
-        <Skeleton className="h-16 w-full" />
-        <Skeleton className="h-24 w-full" />
-        <Skeleton className="h-11 w-full rounded-lg" />
-      </div>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                             Main Component                                  */
-/* -------------------------------------------------------------------------- */
-
 export function ProductQuickView({
-  open,
   onOpenChange,
+  open,
   productSlugOrId,
 }: ProductQuickViewProps) {
   const { addItem } = useCart();
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
-  const [product, setProduct] = React.useState<QuickViewProduct | null>(null);
+  const [product, setProduct] = React.useState<null | QuickViewProduct>(null);
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<null | string>(null);
   const [selectedVariant, setSelectedVariant] =
-    React.useState<QuickViewVariant | null>(null);
+    React.useState<null | QuickViewVariant>(null);
   const [quantity, setQuantity] = React.useState(1);
   const [isAdding, setIsAdding] = React.useState(false);
 
@@ -590,14 +241,23 @@ export function ProductQuickView({
   const productUrl = product ? `/${product.slug ?? product.id}` : "#";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
         aria-describedby={undefined}
         className={cn(
-          "max-w-[calc(100vw-2rem)] p-0 gap-0 overflow-hidden rounded-xl border shadow-2xl",
+          `
+            max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-xl border p-0
+            shadow-2xl
+          `,
           "sm:max-w-4xl",
-          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-          "data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+          `
+            data-[state=open]:animate-in data-[state=open]:fade-in-0
+            data-[state=open]:zoom-in-95
+          `,
+          `
+            data-[state=closed]:animate-out data-[state=closed]:fade-out-0
+            data-[state=closed]:zoom-out-95
+          `,
         )}
       >
         <DialogTitle className="sr-only">
@@ -607,12 +267,17 @@ export function ProductQuickView({
         {loading && <QuickViewSkeleton />}
 
         {error && (
-          <div className="flex flex-col items-center justify-center gap-4 py-16 px-6 text-center">
+          <div
+            className={`
+            flex flex-col items-center justify-center gap-4 px-6 py-16
+            text-center
+          `}
+          >
             <p className="text-sm text-muted-foreground">{error}</p>
             <Button
-              variant="outline"
-              size="sm"
               onClick={() => onOpenChange(false)}
+              size="sm"
+              variant="outline"
             >
               Close
             </Button>
@@ -635,10 +300,25 @@ export function ProductQuickView({
                 ? baseImages
                 : ["/placeholder.svg"];
             return (
-              <div className="flex max-h-[90vh] flex-col md:flex-row">
+              <div
+                className={`
+                flex max-h-[90vh] flex-col
+                md:flex-row
+              `}
+              >
                 {/* Left: image gallery — show selected variant image when it has one */}
-                <div className="w-full shrink-0 md:w-[48%] md:max-h-[90vh] bg-muted/30">
-                  <div className="sticky top-0 p-4 md:p-5">
+                <div
+                  className={`
+                  w-full shrink-0 bg-muted/30
+                  md:max-h-[90vh] md:w-[48%]
+                `}
+                >
+                  <div
+                    className={`
+                    sticky top-0 p-4
+                    md:p-5
+                  `}
+                  >
                     <MiniGallery
                       images={galleryImages}
                       productName={product.name}
@@ -647,11 +327,21 @@ export function ProductQuickView({
                 </div>
 
                 {/* Right: details — scrollable (pr/pt leave room for dialog close button) */}
-                <div className="flex flex-1 flex-col overflow-y-auto pr-14 pt-14 md:max-h-[90vh]">
-                  <div className="flex flex-col gap-4 px-6 pb-6 md:gap-5 md:px-8 md:pb-8">
+                <div
+                  className={`
+                  flex flex-1 flex-col overflow-y-auto pt-14 pr-14
+                  md:max-h-[90vh]
+                `}
+                >
+                  <div
+                    className={`
+                    flex flex-col gap-4 px-6 pb-6
+                    md:gap-5 md:px-8 md:pb-8
+                  `}
+                  >
                     {/* Category + badges */}
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="font-medium">
+                      <Badge className="font-medium" variant="secondary">
                         {product.category}
                       </Badge>
                       {discount > 0 && (
@@ -663,7 +353,12 @@ export function ProductQuickView({
                     </div>
 
                     {/* Product title */}
-                    <h2 className="text-xl font-semibold leading-tight tracking-tight md:text-2xl">
+                    <h2
+                      className={`
+                      text-xl leading-tight font-semibold tracking-tight
+                      md:text-2xl
+                    `}
+                    >
                       {product.name}
                     </h2>
 
@@ -671,13 +366,18 @@ export function ProductQuickView({
                     <div className="flex flex-col gap-1">
                       <div className="flex flex-wrap items-baseline gap-2">
                         <FiatPrice
+                          className={`
+                            text-2xl font-bold
+                            md:text-3xl
+                          `}
                           usdAmount={currentPrice}
-                          className="text-2xl font-bold md:text-3xl"
                         />
                         {originalPrice && originalPrice > currentPrice && (
                           <FiatPrice
+                            className={`
+                              text-base text-muted-foreground line-through
+                            `}
                             usdAmount={originalPrice}
-                            className="text-base text-muted-foreground line-through"
                           />
                         )}
                       </div>
@@ -696,7 +396,12 @@ export function ProductQuickView({
 
                     {/* Description */}
                     {product.description && (
-                      <p className="text-sm leading-relaxed text-muted-foreground line-clamp-4">
+                      <p
+                        className={`
+                        line-clamp-4 text-sm leading-relaxed
+                        text-muted-foreground
+                      `}
+                      >
                         {product.description}
                       </p>
                     )}
@@ -705,8 +410,13 @@ export function ProductQuickView({
                     {product.features && product.features.length > 0 && (
                       <ul className="space-y-1.5 text-sm text-muted-foreground">
                         {product.features.slice(0, 4).map((f, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <span className="mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                          <li className="flex items-start gap-2" key={i}>
+                            <span
+                              className={`
+                              mt-1.5 block h-1.5 w-1.5 shrink-0 rounded-full
+                              bg-primary
+                            `}
+                            />
                             {f}
                           </li>
                         ))}
@@ -718,35 +428,44 @@ export function ProductQuickView({
                       product.optionDefinitions &&
                       product.variants && (
                         <VariantSelector
-                          optionDefinitions={product.optionDefinitions}
-                          variants={product.variants}
-                          selectedVariant={selectedVariant}
                           onSelectVariant={setSelectedVariant}
+                          optionDefinitions={product.optionDefinitions}
+                          selectedVariant={selectedVariant}
+                          variants={product.variants}
                         />
                       )}
 
                     {/* Quantity + Add to Cart row */}
                     <div className="flex flex-wrap items-center gap-3 pt-1">
-                      <div className="flex items-center rounded-lg border border-input">
+                      <div
+                        className={`
+                        flex items-center rounded-lg border border-input
+                      `}
+                      >
                         <Button
                           aria-label="Decrease quantity"
+                          className="h-10 w-10 rounded-r-none"
                           disabled={quantity <= 1}
                           onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                           size="icon"
                           variant="ghost"
-                          className="h-10 w-10 rounded-r-none"
                         >
                           <Minus className="h-4 w-4" />
                         </Button>
-                        <span className="min-w-[2.5rem] text-center text-sm font-medium tabular-nums">
+                        <span
+                          className={`
+                          min-w-[2.5rem] text-center text-sm font-medium
+                          tabular-nums
+                        `}
+                        >
                           {quantity}
                         </span>
                         <Button
                           aria-label="Increase quantity"
+                          className="h-10 w-10 rounded-l-none"
                           onClick={() => setQuantity((q) => q + 1)}
                           size="icon"
                           variant="ghost"
-                          className="h-10 w-10 rounded-l-none"
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
@@ -779,10 +498,10 @@ export function ProductQuickView({
                             ? "Remove from wishlist"
                             : "Add to wishlist"
                         }
-                        variant="outline"
-                        size="icon"
                         className="h-10 w-10 shrink-0"
                         onClick={handleWishlistToggle}
+                        size="icon"
+                        variant="outline"
                       >
                         <Heart
                           className={cn(
@@ -797,8 +516,12 @@ export function ProductQuickView({
 
                     {/* View full details */}
                     <Link
+                      className={`
+                        inline-flex items-center gap-2 text-sm font-medium
+                        text-primary
+                        hover:underline
+                      `}
                       href={productUrl}
-                      className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
                       onClick={() => onOpenChange(false)}
                     >
                       <ExternalLink className="h-4 w-4" />
@@ -815,7 +538,7 @@ export function ProductQuickView({
 }
 
 /* -------------------------------------------------------------------------- */
-/*                          Quick View Trigger Button                          */
+/*                         Variant Selector (simplified)                       */
 /* -------------------------------------------------------------------------- */
 
 /**
@@ -823,16 +546,20 @@ export function ProductQuickView({
  * Accepts onClick handler from parent — prevents card Link navigation.
  */
 export function QuickViewButton({
-  onClick,
   className,
+  onClick,
 }: {
-  onClick: (e: React.MouseEvent) => void;
   className?: string;
+  onClick: (e: React.MouseEvent) => void;
 }) {
   return (
     <Button
+      aria-label="Quick view"
       className={cn(
-        "rounded-full bg-background/80 backdrop-blur-sm transition-opacity duration-300",
+        `
+          rounded-full bg-background/80 backdrop-blur-sm transition-opacity
+          duration-300
+        `,
         className,
       )}
       onClick={(e) => {
@@ -843,9 +570,412 @@ export function QuickViewButton({
       size="icon"
       type="button"
       variant="outline"
-      aria-label="Quick view"
     >
       <Eye className="h-4 w-4 text-muted-foreground" />
     </Button>
+  );
+}
+
+/**
+ * Find variant by matching the set of selected option values to the variant's
+ * field values. Option names are not tied to specific columns.
+ */
+function findVariant(
+  variants: QuickViewVariant[],
+  selectedByIndex: Record<number, string>,
+): null | QuickViewVariant {
+  const selectedSet = new Set(
+    Object.values(selectedByIndex)
+      .filter(Boolean)
+      .map((s) => String(s).trim()),
+  );
+  if (selectedSet.size === 0) return null;
+  const match = variants.find((v) => {
+    const variantSet = getVariantValueSet(v);
+    if (variantSet.size !== selectedSet.size) return false;
+    for (const s of selectedSet) {
+      if (!variantSet.has(s)) return false;
+    }
+    return true;
+  });
+  if (match) return match;
+  let best: null | QuickViewVariant = null;
+  let bestSize = 0;
+  for (const v of variants) {
+    const variantSet = getVariantValueSet(v);
+    if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
+      let allIn = true;
+      for (const x of variantSet) {
+        if (!selectedSet.has(x)) {
+          allIn = false;
+          break;
+        }
+      }
+      if (allIn) {
+        best = v;
+        bestSize = variantSet.size;
+      }
+    }
+  }
+  return best;
+}
+
+/** Set of non-empty variant field values. Splits combined values like "Charcoal Heather / L" so they match UI selections. */
+function getVariantValueSet(v: QuickViewVariant): Set<string> {
+  const parts: string[] = [];
+  for (const raw of [v.color, v.size, v.gender, v.label]) {
+    if (raw == null || String(raw).trim() === "") continue;
+    const s = String(raw).trim();
+    for (const p of s.split(/\s*\/\s*/)) {
+      const t = p.trim();
+      if (t) parts.push(t);
+    }
+  }
+  return new Set(parts);
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              Loading Skeleton                               */
+/* -------------------------------------------------------------------------- */
+
+function MiniGallery({
+  images,
+  productName,
+}: {
+  images: string[];
+  productName: string;
+}) {
+  const [selectedIndex, setSelectedIndex] = React.useState(0);
+  const [failedUrls, setFailedUrls] = React.useState<Set<string>>(
+    () => new Set(),
+  );
+
+  React.useEffect(() => {
+    setSelectedIndex(0);
+    setFailedUrls(new Set());
+  }, [images]);
+
+  const list = images.length > 0 ? images : ["/placeholder.svg"];
+  const mainSrc = failedUrls.has(list[selectedIndex] ?? "")
+    ? "/placeholder.svg"
+    : (list[selectedIndex] ?? "/placeholder.svg");
+  const isExternal = /^https?:\/\//i.test(mainSrc);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div
+        className={`
+        relative aspect-square overflow-hidden rounded-xl bg-white
+      `}
+      >
+        <Image
+          alt={productName}
+          className="object-contain"
+          fill
+          onError={() =>
+            setFailedUrls((prev) =>
+              new Set(prev).add(list[selectedIndex] ?? ""),
+            )
+          }
+          sizes="(max-width: 640px) 100vw, 400px"
+          src={mainSrc}
+          unoptimized={isExternal}
+        />
+      </div>
+      {list.length > 1 && (
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {list.slice(0, 6).map((src, i) => {
+            const thumbSrc = failedUrls.has(src) ? "/placeholder.svg" : src;
+            return (
+              <button
+                className={cn(
+                  `
+                    relative h-14 w-14 shrink-0 overflow-hidden rounded-md
+                    border-2 transition-colors
+                  `,
+                  selectedIndex === i
+                    ? "border-primary"
+                    : `
+                      border-transparent
+                      hover:border-muted-foreground/50
+                    `,
+                )}
+                key={i}
+                onClick={() => setSelectedIndex(i)}
+                type="button"
+              >
+                <Image
+                  alt=""
+                  className="object-cover"
+                  fill
+                  onError={() =>
+                    setFailedUrls((prev) => new Set(prev).add(src))
+                  }
+                  sizes="56px"
+                  src={thumbSrc}
+                  unoptimized={/^https?:\/\//i.test(thumbSrc)}
+                />
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                             Main Component                                  */
+/* -------------------------------------------------------------------------- */
+
+function QuickViewSkeleton() {
+  return (
+    <div
+      className={`
+      flex flex-col
+      md:max-h-[85vh] md:flex-row
+    `}
+    >
+      <div
+        className={`
+        w-full shrink-0 bg-muted/50
+        md:w-[45%]
+      `}
+      >
+        <Skeleton
+          className={`
+          aspect-square w-full rounded-none
+          md:rounded-l-lg
+        `}
+        />
+      </div>
+      <div
+        className={`
+        flex flex-1 flex-col gap-4 p-6
+        md:p-8
+      `}
+      >
+        <Skeleton className="h-7 w-3/4" />
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-16 w-full" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-11 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                          Quick View Trigger Button                          */
+/* -------------------------------------------------------------------------- */
+
+function VariantSelector({
+  onSelectVariant,
+  optionDefinitions,
+  selectedVariant,
+  variants,
+}: {
+  onSelectVariant: (v: null | QuickViewVariant) => void;
+  optionDefinitions: OptionDefinition[];
+  selectedVariant: null | QuickViewVariant;
+  variants: QuickViewVariant[];
+}) {
+  const [selectedByIndex, setSelectedByIndex] = React.useState<
+    Record<number, string>
+  >({});
+
+  // Auto-select single-value options; for phone models use first brand's latest model, else first value
+  React.useEffect(() => {
+    const initial: Record<number, string> = {};
+    optionDefinitions.forEach((opt, idx) => {
+      const values = (opt.values ?? []).filter(Boolean);
+      if (values.length < 1) return;
+      if (isPhoneModelsOption(opt.name, values)) {
+        const groups = groupPhoneModelsByBrand(values);
+        const first = groups[0]?.models[0];
+        if (first) initial[idx] = first;
+      } else {
+        initial[idx] = values[0]!;
+      }
+    });
+    if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
+  }, [optionDefinitions]);
+
+  // When selections change, find matching variant by value set (option names not tied to columns)
+  React.useEffect(() => {
+    if (Object.keys(selectedByIndex).length < optionDefinitions.length) {
+      onSelectVariant(null);
+      return;
+    }
+    const match = findVariant(variants, selectedByIndex);
+    onSelectVariant(match);
+  }, [selectedByIndex, optionDefinitions.length, variants, onSelectVariant]);
+
+  // Sync phone option selection when displayed fallback model differs from current (e.g. brand switch)
+  React.useEffect(() => {
+    optionDefinitions.forEach((opt, idx) => {
+      const values = (opt.values ?? []).filter(Boolean);
+      if (values.length <= 1 || !isPhoneModelsOption(opt.name, values)) return;
+      const groups = groupPhoneModelsByBrand(values);
+      const currentVal = selectedByIndex[idx];
+      const currentBrand = currentVal
+        ? getPhoneBrand(currentVal)
+        : groups[0]?.brand;
+      const currentGroup = groups.find((g) => g.brand === currentBrand);
+      const models = currentGroup?.models ?? [];
+      const fallback = models[0];
+      if (
+        fallback &&
+        currentVal !== fallback &&
+        !currentGroup?.models.includes(currentVal ?? "")
+      ) {
+        setSelectedByIndex((prev) => ({ ...prev, [idx]: fallback }));
+      }
+    });
+  }, [optionDefinitions, selectedByIndex]);
+
+  const selectStyles =
+    "w-full min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2";
+
+  return (
+    <div className="space-y-3">
+      {optionDefinitions.map((opt, idx) => {
+        const values = (opt.values ?? []).filter(Boolean);
+        if (values.length <= 1) return null;
+
+        const isPhoneModels = isPhoneModelsOption(opt.name, values);
+        const groups = isPhoneModels ? groupPhoneModelsByBrand(values) : [];
+
+        if (isPhoneModels && groups.length > 0) {
+          const selectedValue = selectedByIndex[idx];
+          const currentBrand = selectedValue
+            ? getPhoneBrand(selectedValue)
+            : (groups[0]?.brand ?? null);
+          const currentGroup = groups.find((g) => g.brand === currentBrand);
+          const models = currentGroup?.models ?? [];
+          const displayModel =
+            selectedValue && currentGroup?.models.includes(selectedValue)
+              ? selectedValue
+              : (models[0] ?? "");
+
+          return (
+            <div className="space-y-2" key={opt.name}>
+              <span
+                className={`
+                mb-1.5 block text-xs font-medium tracking-wide
+                text-muted-foreground uppercase
+              `}
+              >
+                {opt.name}
+              </span>
+              <div
+                className={`
+                flex flex-col gap-2
+                sm:flex-row sm:items-end
+              `}
+              >
+                <div
+                  className={`
+                  flex flex-col gap-1
+                  sm:min-w-[8rem]
+                `}
+                >
+                  <label
+                    className="text-xs text-muted-foreground"
+                    htmlFor={`qv-brand-${idx}`}
+                  >
+                    Brand
+                  </label>
+                  <select
+                    aria-label="Phone brand"
+                    className={selectStyles}
+                    id={`qv-brand-${idx}`}
+                    onChange={(e) => {
+                      const brand = e.target.value as PhoneBrand;
+                      const group = groups.find((g) => g.brand === brand);
+                      if (group?.models[0])
+                        setSelectedByIndex((prev) => ({
+                          ...prev,
+                          [idx]: group.models[0],
+                        }));
+                    }}
+                    value={currentBrand ?? ""}
+                  >
+                    {groups.map((g) => (
+                      <option key={g.brand} value={g.brand}>
+                        {g.brand}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div
+                  className={`
+                  flex flex-col gap-1
+                  sm:min-w-[10rem]
+                `}
+                >
+                  <label
+                    className="text-xs text-muted-foreground"
+                    htmlFor={`qv-model-${idx}`}
+                  >
+                    Model
+                  </label>
+                  <select
+                    aria-label="Phone model"
+                    className={selectStyles}
+                    id={`qv-model-${idx}`}
+                    onChange={(e) =>
+                      setSelectedByIndex((prev) => ({
+                        ...prev,
+                        [idx]: e.target.value,
+                      }))
+                    }
+                    value={displayModel}
+                  >
+                    {models.map((model) => (
+                      <option key={model} value={model}>
+                        {model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        const sortedValues =
+          opt.name.toLowerCase() === "size"
+            ? sortClothingSizes([...values])
+            : values;
+        return (
+          <div key={opt.name}>
+            <span
+              className={`
+              mb-1.5 block text-xs font-medium tracking-wide
+              text-muted-foreground uppercase
+            `}
+            >
+              {opt.name}
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {sortedValues.map((val) => (
+                <Button
+                  className="min-w-[2.5rem]"
+                  key={val}
+                  onClick={() =>
+                    setSelectedByIndex((prev) => ({ ...prev, [idx]: val }))
+                  }
+                  size="sm"
+                  variant={selectedByIndex[idx] === val ? "default" : "outline"}
+                >
+                  {val}
+                </Button>
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

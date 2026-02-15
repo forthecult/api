@@ -16,16 +16,16 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  fetchPrintifyBlueprints,
-  fetchPrintifyBlueprint,
-  fetchPrintifyPrintProviders,
-  fetchPrintifyVariants,
-  fetchPrintifyShippingInfo,
-  listPrintifyUploads,
-  getPrintifyIfConfigured,
-} from "~/lib/printify";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import {
+  fetchPrintifyBlueprint,
+  fetchPrintifyBlueprints,
+  fetchPrintifyPrintProviders,
+  fetchPrintifyShippingInfo,
+  fetchPrintifyVariants,
+  getPrintifyIfConfigured,
+  listPrintifyUploads,
+} from "~/lib/printify";
 
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     if (wantUploads) {
       const page = Number(searchParams.get("page") || "1");
       const limit = Number(searchParams.get("limit") || "50");
-      const uploads = await listPrintifyUploads({ page, limit });
+      const uploads = await listPrintifyUploads({ limit, page });
       return NextResponse.json(uploads);
     }
 
@@ -61,8 +61,8 @@ export async function GET(request: NextRequest) {
     if (!blueprintId) {
       const blueprints = await fetchPrintifyBlueprints();
       return NextResponse.json({
-        count: blueprints.length,
         blueprints,
+        count: blueprints.length,
       });
     }
 

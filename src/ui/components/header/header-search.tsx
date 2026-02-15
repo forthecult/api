@@ -32,44 +32,55 @@ export function HeaderSearch() {
   return (
     <>
       <Button
-        type="button"
-        size="icon"
-        variant="ghost"
-        onClick={handleOpen}
         aria-label="Search products"
-        className="text-[#1A1611] dark:text-[#F5F1EB]"
+        className={`
+          text-[#1A1611]
+          dark:text-[#F5F1EB]
+        `}
+        onClick={handleOpen}
+        size="icon"
+        type="button"
+        variant="ghost"
       >
-        <Search className="h-5 w-5" aria-hidden />
+        <Search aria-hidden className="h-5 w-5" />
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="gap-0 overflow-hidden p-0 sm:max-w-md">
+      <Dialog onOpenChange={setOpen} open={open}>
+        <DialogContent
+          className={`
+          gap-0 overflow-hidden p-0
+          sm:max-w-md
+        `}
+        >
           <DialogTitle className="sr-only">Search products</DialogTitle>
-          <form onSubmit={handleSubmit} className="flex flex-col">
+          <form className="flex flex-col" onSubmit={handleSubmit}>
             <div className="flex items-center gap-2 border-b px-3 py-2">
               <Search
-                className="h-5 w-5 shrink-0 text-muted-foreground"
                 aria-hidden
+                className="h-5 w-5 shrink-0 text-muted-foreground"
               />
               <Input
-                type="text"
-                placeholder="Search products..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                className="border-0 bg-transparent shadow-none focus-visible:ring-0"
-                autoFocus
                 aria-label="Search"
+                autoFocus
+                className={`
+                  border-0 bg-transparent shadow-none
+                  focus-visible:ring-0
+                `}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search products..."
+                type="text"
+                value={query}
               />
             </div>
             <div className="flex justify-end gap-2 px-3 py-3">
               <Button
+                onClick={() => setOpen(false)}
+                size="sm"
                 type="button"
                 variant="ghost"
-                size="sm"
-                onClick={() => setOpen(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit" size="sm">
+              <Button size="sm" type="submit">
                 Search
               </Button>
             </div>

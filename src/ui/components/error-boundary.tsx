@@ -1,7 +1,7 @@
 "use client";
 
-import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { Button } from "~/ui/primitives/button";
 
@@ -9,16 +9,16 @@ interface ErrorBoundaryProps {
   children: ReactNode;
   /** Custom fallback component */
   fallback?: ReactNode;
-  /** Whether to show the full error message (dev only) */
-  showDetails?: boolean;
   /** Custom error handler */
   onError?: (error: Error, errorInfo: ErrorInfo) => void;
+  /** Whether to show the full error message (dev only) */
+  showDetails?: boolean;
 }
 
 interface ErrorBoundaryState {
-  hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  hasError: boolean;
 }
 
 /**
@@ -31,11 +31,11 @@ export class ErrorBoundary extends Component<
 > {
   constructor(props: ErrorBoundaryProps) {
     super(props);
-    this.state = { hasError: false, error: null, errorInfo: null };
+    this.state = { error: null, errorInfo: null, hasError: false };
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    return { hasError: true, error };
+    return { error, hasError: true };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -45,12 +45,12 @@ export class ErrorBoundary extends Component<
     console.error("ErrorBoundary caught an error:", error, errorInfo);
   }
 
-  handleReset = () => {
-    this.setState({ hasError: false, error: null, errorInfo: null });
-  };
-
   handleReload = () => {
     window.location.reload();
+  };
+
+  handleReset = () => {
+    this.setState({ error: null, errorInfo: null, hasError: false });
   };
 
   render() {
@@ -60,9 +60,18 @@ export class ErrorBoundary extends Component<
       }
 
       return (
-        <div className="flex min-h-[400px] flex-col items-center justify-center p-8">
+        <div
+          className={`
+          flex min-h-[400px] flex-col items-center justify-center p-8
+        `}
+        >
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+            <div
+              className={`
+              flex h-16 w-16 items-center justify-center rounded-full
+              bg-destructive/10
+            `}
+            >
               <AlertTriangle className="h-8 w-8 text-destructive" />
             </div>
             <h2 className="text-xl font-semibold">Something went wrong</h2>
@@ -75,14 +84,18 @@ export class ErrorBoundary extends Component<
                 <summary className="cursor-pointer text-sm font-medium">
                   Error details
                 </summary>
-                <pre className="mt-2 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs">
+                <pre
+                  className={`
+                  mt-2 max-h-40 overflow-auto rounded-md bg-muted p-3 text-xs
+                `}
+                >
                   {this.state.error.message}
                   {this.state.errorInfo?.componentStack}
                 </pre>
               </details>
             )}
             <div className="flex gap-3">
-              <Button variant="outline" onClick={this.handleReset}>
+              <Button onClick={this.handleReset} variant="outline">
                 Try again
               </Button>
               <Button onClick={this.handleReload}>

@@ -2,7 +2,7 @@
  * Maps payment token (URL param) to chain id for wallet filtering.
  * Only wallets that support the current chain are shown in Connect wallet modal.
  */
-export type PaymentChain = "solana" | "ton" | "sui" | "evm";
+export type PaymentChain = "evm" | "solana" | "sui" | "ton";
 
 const SOLANA_TOKENS = [
   "solana",
@@ -15,7 +15,7 @@ const SOLANA_TOKENS = [
   "seeker",
 ] as const;
 
-export function tokenToChain(token: string): PaymentChain | null {
+export function tokenToChain(token: string): null | PaymentChain {
   if (SOLANA_TOKENS.includes(token as (typeof SOLANA_TOKENS)[number]))
     return "solana";
   if (token === "ton") return "ton";
@@ -29,6 +29,14 @@ export function tokenToChain(token: string): PaymentChain | null {
  * Solana: Wallet Adapter names. EVM: WAGMI (injected + WalletConnect).
  */
 export const CHAIN_WALLET_NAMES: Record<PaymentChain, string[]> = {
+  evm: [
+    "MetaMask",
+    "WalletConnect",
+    "Brave",
+    "Rabby",
+    "Trust",
+    "Coinbase Wallet",
+  ],
   solana: [
     "Mobile Wallet Adapter", // MWA: in-app browser / native wallet apps on mobile
     "Phantom",
@@ -44,16 +52,8 @@ export const CHAIN_WALLET_NAMES: Record<PaymentChain, string[]> = {
     "Rabby",
     "WalletConnect",
   ],
-  ton: [],
   sui: [],
-  evm: [
-    "MetaMask",
-    "WalletConnect",
-    "Brave",
-    "Rabby",
-    "Trust",
-    "Coinbase Wallet",
-  ],
+  ton: [],
 };
 
 /** wallets that support EVM + Solana but not Sui (hide Sui network option). */

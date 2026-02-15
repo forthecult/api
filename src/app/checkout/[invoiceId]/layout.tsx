@@ -1,8 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-
 import { useParams } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 
 import { MetaMaskProvider } from "~/lib/metamask-sdk";
 import { WagmiProvider } from "~/lib/wagmi-provider";
@@ -12,16 +11,11 @@ import { CheckoutCryptoHeader } from "../crypto/CheckoutCryptoHeader";
 import { ConnectWalletModal } from "../crypto/ConnectWalletModal";
 import {
   OPEN_CONNECT_WALLET_MODAL,
-  openModalRef,
   OpenConnectWalletModalProvider,
+  openModalRef,
 } from "../crypto/open-wallet-modal";
 import { SolanaWalletProvider } from "../crypto/SolanaWalletProvider";
 import { SuiWalletProvider } from "../crypto/SuiWalletProvider";
-
-function isEvmFromHash(): boolean {
-  if (typeof window === "undefined") return false;
-  return window.location.hash.slice(1).toLowerCase() === "eth";
-}
 
 export default function CheckoutInvoiceLayout({
   children,
@@ -43,7 +37,7 @@ export default function CheckoutInvoiceLayout({
     let cancelled = false;
     fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { paymentType?: string } | null) => {
+      .then((data: null | { paymentType?: string }) => {
         if (!cancelled && data?.paymentType?.toLowerCase() === "eth")
           setIsEvm(true);
       })
@@ -101,7 +95,7 @@ export default function CheckoutInvoiceLayout({
                 <OpenConnectWalletModalProvider openModal={openModal}>
                   <CheckoutCryptoHeader />
                   {children}
-                  <ConnectWalletModal open={open} onOpenChange={setOpen} />
+                  <ConnectWalletModal onOpenChange={setOpen} open={open} />
                 </OpenConnectWalletModalProvider>
               )}
             </SolanaWalletProvider>
@@ -110,4 +104,9 @@ export default function CheckoutInvoiceLayout({
       </MetaMaskProvider>
     </WagmiProvider>
   );
+}
+
+function isEvmFromHash(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.location.hash.slice(1).toLowerCase() === "eth";
 }

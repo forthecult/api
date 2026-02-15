@@ -8,20 +8,20 @@ import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
 import { ProductQuickView } from "~/ui/components/product-quick-view";
 
-export type RelatedProduct = {
+export interface RelatedProduct {
   category: string;
   hasVariants?: boolean;
   id: string;
-  slug?: string;
   image: string;
   inStock?: boolean;
   name: string;
   originalPrice?: number;
   price: number;
   rating?: number;
+  slug?: string;
   tokenGated?: boolean;
   tokenGatePassed?: boolean;
-};
+}
 
 interface RelatedProductsSectionProps {
   products: RelatedProduct[];
@@ -31,10 +31,10 @@ export function RelatedProductsSection({
   products,
 }: RelatedProductsSectionProps) {
   const { addItem } = useCart();
-  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
-  const [quickViewSlug, setQuickViewSlug] = React.useState<string | null>(null);
+  const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
 
   const handleQuickView = React.useCallback((slugOrId: string) => {
     setQuickViewSlug(slugOrId);
@@ -69,10 +69,16 @@ export function RelatedProductsSection({
       aria-labelledby="related-products-heading"
       className="mt-12 flex w-full flex-col items-center pb-14"
     >
-      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div
+        className={`
+        w-full max-w-7xl px-4
+        sm:px-6
+        lg:px-8
+      `}
+      >
         <h2
-          id="related-products-heading"
           className="mb-6 text-left text-2xl font-bold text-foreground"
+          id="related-products-heading"
         >
           Related Products
         </h2>
@@ -81,16 +87,23 @@ export function RelatedProductsSection({
             No related products at the moment.
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-x-8 gap-y-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-x-10 lg:gap-x-12">
+          <div
+            className={`
+            grid grid-cols-1 gap-x-8 gap-y-6
+            sm:grid-cols-2 sm:gap-x-10
+            md:grid-cols-3
+            lg:grid-cols-4 lg:gap-x-12
+          `}
+          >
             {products.map((product) => (
               <ProductCard
-                key={product.id}
                 imageAspect="wide"
                 isInWishlist={isInWishlist(product.id)}
+                key={product.id}
                 onAddToCart={handleAddToCart}
                 onAddToWishlist={addToWishlist}
-                onRemoveFromWishlist={removeFromWishlist}
                 onQuickView={handleQuickView}
+                onRemoveFromWishlist={removeFromWishlist}
                 product={{
                   ...product,
                   inStock: product.inStock ?? true,
@@ -103,8 +116,8 @@ export function RelatedProductsSection({
       </div>
 
       <ProductQuickView
-        open={quickViewOpen}
         onOpenChange={setQuickViewOpen}
+        open={quickViewOpen}
         productSlugOrId={quickViewSlug}
       />
     </section>

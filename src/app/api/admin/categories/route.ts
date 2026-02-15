@@ -22,19 +22,6 @@ type SortBy = (typeof SORT_BY_VALUES)[number];
 const ORDER_VALUES = ["asc", "desc"] as const;
 type Order = (typeof ORDER_VALUES)[number];
 
-function parseSort(
-  sortByParam: string | null,
-  orderParam: string | null,
-): { sortBy: SortBy; order: Order } {
-  const sortBy = SORT_BY_VALUES.includes(sortByParam as SortBy)
-    ? (sortByParam as SortBy)
-    : "createdAt";
-  const order = ORDER_VALUES.includes(orderParam as Order)
-    ? (orderParam as Order)
-    : "desc";
-  return { sortBy, order };
-}
-
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
@@ -57,7 +44,7 @@ export async function GET(request: NextRequest) {
     );
     const offset = (page - 1) * limit;
     const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
-    const { sortBy, order } = parseSort(
+    const { order, sortBy } = parseSort(
       request.nextUrl.searchParams.get("sortBy"),
       request.nextUrl.searchParams.get("order"),
     );
@@ -93,20 +80,20 @@ export async function GET(request: NextRequest) {
 
     const [categories, countResult, productCounts] = await Promise.all([
       db.query.categoriesTable.findMany({
-        where: whereClause,
-        orderBy,
         columns: {
+          featured: true,
           id: true,
-          name: true,
-          slug: true,
           imageUrl: true,
           level: true,
-          featured: true,
-          visible: true,
+          name: true,
           parentId: true,
+          slug: true,
+          visible: true,
         },
         limit,
         offset,
+        orderBy,
+        where: whereClause,
       }),
       whereClause !== undefined
         ? db
@@ -151,22 +138,22 @@ export async function GET(request: NextRequest) {
         ? (parentNames.get(c.parentId) ?? null)
         : null;
       return {
+        featured: c.featured,
         id: c.id,
-        name: c.name,
-        slug: c.slug,
         imageUrl: c.imageUrl,
         level: c.level,
-        featured: c.featured,
-        visible: c.visible ?? true,
-        productCount: countByCategory.get(c.id) ?? 0,
+        name: c.name,
         parentName: parentName ?? undefined,
+        productCount: countByCategory.get(c.id) ?? 0,
+        slug: c.slug,
+        visible: c.visible ?? true,
       };
     });
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });
@@ -185,29 +172,29 @@ export async function POST(request: NextRequest) {
     if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
-      name: string;
-      slug?: string | null;
-      title?: string | null;
-      metaDescription?: string | null;
-      description?: string | null;
-      imageUrl?: string | null;
-      level?: number;
+      description?: null | string;
       featured?: boolean;
-      visible?: boolean;
+      imageUrl?: null | string;
+      level?: number;
+      metaDescription?: null | string;
+      name: string;
+      parentId?: null | string;
       seoOptimized?: boolean;
-      parentId?: string | null;
+      slug?: null | string;
+      title?: null | string;
+      tokenGateContractAddress?: null | string;
       tokenGated?: boolean;
-      tokenGateType?: string | null;
-      tokenGateQuantity?: number | null;
-      tokenGateNetwork?: string | null;
-      tokenGateContractAddress?: string | null;
-      tokenGates?: Array<{
+      tokenGateNetwork?: null | string;
+      tokenGateQuantity?: null | number;
+      tokenGates?: {
+        contractAddress?: null | string;
         id?: string;
-        tokenSymbol: string;
+        network?: null | string;
         quantity: number;
-        network?: string | null;
-        contractAddress?: string | null;
-      }>;
+        tokenSymbol: string;
+      }[];
+      tokenGateType?: null | string;
+      visible?: boolean;
     };
 
     if (typeof body.name !== "string" || !body.name.trim()) {
@@ -223,25 +210,25 @@ export async function POST(request: NextRequest) {
       Array.isArray(body.tokenGates) && body.tokenGates.length > 0;
 
     await db.insert(categoriesTable).values({
-      id,
-      name: body.name.trim(),
-      slug: body.slug?.trim() ?? null,
-      title: body.title?.trim() ?? null,
-      metaDescription: body.metaDescription?.trim() ?? null,
+      createdAt: now,
       description: body.description?.trim() ?? null,
+      featured: body.featured ?? false,
+      id,
       imageUrl: body.imageUrl?.trim() ?? null,
       level: Math.max(1, Math.min(99, body.level ?? 1)),
-      featured: body.featured ?? false,
-      visible: body.visible ?? true,
-      seoOptimized: body.seoOptimized ?? false,
+      metaDescription: body.metaDescription?.trim() ?? null,
+      name: body.name.trim(),
       parentId: body.parentId?.trim() || null,
-      tokenGated: hasTokenGates || (body.tokenGated ?? false),
-      tokenGateType: body.tokenGateType ?? null,
-      tokenGateQuantity: body.tokenGateQuantity ?? null,
-      tokenGateNetwork: body.tokenGateNetwork ?? null,
+      seoOptimized: body.seoOptimized ?? false,
+      slug: body.slug?.trim() ?? null,
+      title: body.title?.trim() ?? null,
       tokenGateContractAddress: body.tokenGateContractAddress ?? null,
-      createdAt: now,
+      tokenGated: hasTokenGates || (body.tokenGated ?? false),
+      tokenGateNetwork: body.tokenGateNetwork ?? null,
+      tokenGateQuantity: body.tokenGateQuantity ?? null,
+      tokenGateType: body.tokenGateType ?? null,
       updatedAt: now,
+      visible: body.visible ?? true,
     });
 
     if (hasTokenGates) {
@@ -252,12 +239,12 @@ export async function POST(request: NextRequest) {
         const qty = Number(gate.quantity);
         if (!symbol || !Number.isInteger(qty) || qty < 1) continue;
         await db.insert(categoryTokenGateTable).values({
-          id: gate.id ?? crypto.randomUUID(),
           categoryId: id,
-          tokenSymbol: symbol,
-          quantity: qty,
-          network: gate.network?.trim() || null,
           contractAddress: gate.contractAddress?.trim() || null,
+          id: gate.id ?? crypto.randomUUID(),
+          network: gate.network?.trim() || null,
+          quantity: qty,
+          tokenSymbol: symbol,
         });
       }
     }
@@ -270,4 +257,17 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function parseSort(
+  sortByParam: null | string,
+  orderParam: null | string,
+): { order: Order; sortBy: SortBy } {
+  const sortBy = SORT_BY_VALUES.includes(sortByParam as SortBy)
+    ? (sortByParam as SortBy)
+    : "createdAt";
+  const order = ORDER_VALUES.includes(orderParam as Order)
+    ? (orderParam as Order)
+    : "desc";
+  return { order, sortBy };
 }

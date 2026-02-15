@@ -7,15 +7,10 @@ import {
   orderItemsTable,
   ordersTable,
   productCategoriesTable,
-  productVariantsTable,
   productsTable,
+  productVariantsTable,
 } from "~/db/schema";
 import { auth } from "~/lib/auth";
-
-/** Normalize email for ownership check. */
-function normalizeEmail(email: string | null | undefined): string {
-  return (email ?? "").trim().toLowerCase();
-}
 
 /**
  * GET /api/orders/[orderId]/reorder
@@ -42,8 +37,8 @@ export async function GET(
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
         email: ordersTable.email,
+        id: ordersTable.id,
         userId: ordersTable.userId,
       })
       .from(ordersTable)
@@ -85,31 +80,31 @@ export async function GET(
       .from(orderItemsTable)
       .where(eq(orderItemsTable.orderId, order.id));
 
-    const result: Array<{
+    const result: {
+      available: boolean;
+      category: string;
+      image: string;
+      name: string;
+      priceUsd: number;
       productId: string;
       productVariantId?: string;
       quantity: number;
-      name: string;
-      image: string;
       slug?: string;
-      category: string;
-      priceUsd: number;
-      available: boolean;
       unavailableReason?: string;
-    }> = [];
+    }[] = [];
 
     for (const item of items) {
       const pid = item.productId;
       if (!pid) {
         result.push({
+          available: false,
+          category: "",
+          image: "",
+          name: "Unknown product",
+          priceUsd: 0,
           productId: "",
           productVariantId: item.productVariantId ?? undefined,
           quantity: item.quantity,
-          name: "Unknown product",
-          image: "",
-          category: "",
-          priceUsd: 0,
-          available: false,
           unavailableReason: "Product no longer available",
         });
         continue;
@@ -117,16 +112,16 @@ export async function GET(
 
       const [product] = await db
         .select({
-          id: productsTable.id,
-          name: productsTable.name,
-          imageUrl: productsTable.imageUrl,
-          slug: productsTable.slug,
-          published: productsTable.published,
-          priceCents: productsTable.priceCents,
           continueSellingWhenOutOfStock:
             productsTable.continueSellingWhenOutOfStock,
-          trackQuantity: productsTable.trackQuantity,
+          id: productsTable.id,
+          imageUrl: productsTable.imageUrl,
+          name: productsTable.name,
+          priceCents: productsTable.priceCents,
+          published: productsTable.published,
           quantity: productsTable.quantity,
+          slug: productsTable.slug,
+          trackQuantity: productsTable.trackQuantity,
         })
         .from(productsTable)
         .where(eq(productsTable.id, pid))
@@ -134,14 +129,14 @@ export async function GET(
 
       if (!product || !product.published) {
         result.push({
+          available: false,
+          category: "",
+          image: "",
+          name: "Unavailable",
+          priceUsd: 0,
           productId: pid,
           productVariantId: item.productVariantId ?? undefined,
           quantity: item.quantity,
-          name: "Unavailable",
-          image: "",
-          category: "",
-          priceUsd: 0,
-          available: false,
           unavailableReason: "Product no longer available",
         });
         continue;
@@ -155,8 +150,8 @@ export async function GET(
         const [variant] = await db
           .select({
             id: productVariantsTable.id,
-            priceCents: productVariantsTable.priceCents,
             imageUrl: productVariantsTable.imageUrl,
+            priceCents: productVariantsTable.priceCents,
             stockQuantity: productVariantsTable.stockQuantity,
           })
           .from(productVariantsTable)
@@ -197,15 +192,15 @@ export async function GET(
         : true;
 
       result.push({
+        available: inStock || product.continueSellingWhenOutOfStock,
+        category,
+        image: imageUrl || "/placeholder.svg",
+        name: product.name,
+        priceUsd,
         productId: pid,
         productVariantId: variantId,
         quantity: item.quantity,
-        name: product.name,
-        image: imageUrl || "/placeholder.svg",
         slug: product.slug ?? undefined,
-        category,
-        priceUsd,
-        available: inStock || product.continueSellingWhenOutOfStock,
         unavailableReason:
           !inStock && !product.continueSellingWhenOutOfStock
             ? "Out of stock"
@@ -226,4 +221,9 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+/** Normalize email for ownership check. */
+function normalizeEmail(email: null | string | undefined): string {
+  return (email ?? "").trim().toLowerCase();
 }

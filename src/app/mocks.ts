@@ -59,27 +59,27 @@ export const featuredProductsHomepage = [
 export const testimonials = [
   {
     author: { name: "Sarah Johnson" },
-    text: "Honestly, I don't even remember how many times I've ordered from here. Never once had a bad experience. Stuff just works, and when I had a question, support was on it in like, five minutes.",
     rating: 5,
+    text: "Honestly, I don't even remember how many times I've ordered from here. Never once had a bad experience. Stuff just works, and when I had a question, support was on it in like, five minutes.",
   },
   {
     author: { name: "Michael Chen" },
-    text: "Wasn't expecting much tbh, but ended up being super impressed. Got a keyboard that feels chef's kiss and arrived faster than other stores. No complaints.",
     rating: 5,
+    text: "Wasn't expecting much tbh, but ended up being super impressed. Got a keyboard that feels chef's kiss and arrived faster than other stores. No complaints.",
   },
   {
     author: { name: "Emily Rodriguez" },
-    text: "I was totally lost picking a laptop for freelance work. Dropped them a message and got a thoughtful reply within the hour. They didn't push the priciest option either, which I respect. Love what I got.",
     rating: 5,
+    text: "I was totally lost picking a laptop for freelance work. Dropped them a message and got a thoughtful reply within the hour. They didn't push the priciest option either, which I respect. Love what I got.",
   },
   {
     author: { name: "David Park" },
-    text: "Site's clean, checkout was quick, and my order showed up two days early. Which never happens. Already eyeing my next upgrade 👀",
     rating: 5,
+    text: "Site's clean, checkout was quick, and my order showed up two days early. Which never happens. Already eyeing my next upgrade 👀",
   },
   {
     author: { name: "Sophia Martinez" },
-    text: "Finally. A tech store that doesn't make me feel dumb. Everything's explained in plain English, and their chat team didn't treat me like I was annoying them. 10/10.",
     rating: 5,
+    text: "Finally. A tech store that doesn't make me feel dumb. Everything's explained in plain English, and their chat team didn't treat me like I was annoying them. 10/10.",
   },
 ];

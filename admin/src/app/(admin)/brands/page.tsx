@@ -2,10 +2,10 @@
 
 import {
   ArrowUpDown,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  ChevronDown,
   Pencil,
   Plus,
   Search,
@@ -22,24 +22,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-type BrandRow = {
-  id: string;
-  name: string;
-  slug: string | null;
-  logoUrl: string | null;
-  websiteUrl: string | null;
-  description: string | null;
-  featured: boolean;
+interface BrandRow {
   createdAt: string;
-};
+  description: null | string;
+  featured: boolean;
+  id: string;
+  logoUrl: null | string;
+  name: string;
+  slug: null | string;
+  websiteUrl: null | string;
+}
 
-type BrandsResponse = {
+interface BrandsResponse {
   items: BrandRow[];
-  page: number;
   limit: number;
+  page: number;
   totalCount: number;
   totalPages: number;
-};
+}
 
 const COLUMNS = [
   { key: "id", label: "ID" },
@@ -50,26 +50,26 @@ const COLUMNS = [
   { key: "action", label: "Action" },
 ] as const;
 
-type SortBy = "name" | "createdAt";
+type SortBy = "createdAt" | "name";
 type SortOrder = "asc" | "desc";
 
 export default function AdminBrandsPage() {
   const [data, setData] = useState<BrandsResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortBy>("name");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
-  const [togglingId, setTogglingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<null | string>(null);
+  const [deletingId, setDeletingId] = useState<null | string>(null);
 
   const fetchBrands = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "10" });
+      const params = new URLSearchParams({ limit: "10", page: String(page) });
       if (search.trim()) params.set("search", search.trim());
       params.set("sortBy", sortBy);
       params.set("order", sortOrder);
@@ -100,10 +100,10 @@ export default function AdminBrandsPage() {
       setTogglingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/brands/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ featured: !current }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -138,8 +138,8 @@ export default function AdminBrandsPage() {
       setDeletingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/brands/${id}`, {
-          method: "DELETE",
           credentials: "include",
+          method: "DELETE",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -175,7 +175,12 @@ export default function AdminBrandsPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -190,26 +195,50 @@ export default function AdminBrandsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <h2 className="text-2xl font-semibold tracking-tight">
           Product Brands
         </h2>
         <Link href="/brands/create">
-          <Button type="button" className="gap-2">
+          <Button className="gap-2" type="button">
             <Plus className="size-4" />+ Add Brand
           </Button>
         </Link>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader
+          className={`
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
+        >
           <CardTitle className="sr-only">Product brands</CardTitle>
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative max-w-md flex-1">
+            <Search
+              className={`
+              absolute top-1/2 left-3 size-4 -translate-y-1/2
+              text-muted-foreground
+            `}
+            />
             <input
-              type="search"
-              placeholder="Search Brand..."
-              value={searchInput}
+              aria-label="Search brands"
+              className={cn(
+                `
+                  w-full rounded-md border border-input bg-background py-2 pr-3
+                  pl-9 text-sm
+                `,
+                `
+                  placeholder:text-muted-foreground
+                  focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:outline-none
+                `,
+              )}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -218,27 +247,30 @@ export default function AdminBrandsPage() {
                   setPage(1);
                 }
               }}
-              className={cn(
-                "w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm",
-                "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              )}
-              aria-label="Search brands"
+              placeholder="Search Brand..."
+              type="search"
+              value={searchInput}
             />
           </div>
           <Button
-            type="button"
-            variant="secondary"
             onClick={() => {
               setSearch(searchInput);
               setPage(1);
             }}
+            type="button"
+            variant="secondary"
           >
             Search
           </Button>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data ? (
@@ -246,7 +278,12 @@ export default function AdminBrandsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <tr
+                      className={`
+                      border-b bg-muted/50 text-left text-xs font-semibold
+                      tracking-wider text-muted-foreground uppercase
+                    `}
+                    >
                       {COLUMNS.map((col) => {
                         const isSortable =
                           "sortable" in col &&
@@ -255,13 +292,22 @@ export default function AdminBrandsPage() {
                         const isActive = isSortable && sortBy === col.key;
                         return (
                           <th
-                            key={col.key}
+                            aria-sort={
+                              isActive
+                                ? sortOrder === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : undefined
+                            }
                             className={cn(
-                              "whitespace-nowrap p-4 font-medium",
+                              "p-4 font-medium whitespace-nowrap",
                               isSortable &&
-                                "cursor-pointer select-none hover:bg-muted/70",
+                                `
+                                  cursor-pointer select-none
+                                  hover:bg-muted/70
+                                `,
                             )}
-                            scope="col"
+                            key={col.key}
                             onClick={() =>
                               isSortable
                                 ? handleSort(col.key as SortBy)
@@ -273,14 +319,8 @@ export default function AdminBrandsPage() {
                               handleSort(col.key as SortBy)
                             }
                             role={isSortable ? "button" : undefined}
+                            scope="col"
                             tabIndex={isSortable ? 0 : undefined}
-                            aria-sort={
-                              isActive
-                                ? sortOrder === "asc"
-                                  ? "ascending"
-                                  : "descending"
-                                : undefined
-                            }
                           >
                             <span className="inline-flex items-center gap-1">
                               {col.label}
@@ -288,19 +328,25 @@ export default function AdminBrandsPage() {
                                 isActive ? (
                                   sortOrder === "asc" ? (
                                     <ChevronUp
-                                      className="size-4 shrink-0 text-foreground"
                                       aria-hidden
+                                      className={`
+                                        size-4 shrink-0 text-foreground
+                                      `}
                                     />
                                   ) : (
                                     <ChevronDown
-                                      className="size-4 shrink-0 text-foreground"
                                       aria-hidden
+                                      className={`
+                                        size-4 shrink-0 text-foreground
+                                      `}
                                     />
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="size-4 shrink-0 text-muted-foreground"
                                     aria-hidden
+                                    className={`
+                                      size-4 shrink-0 text-muted-foreground
+                                    `}
                                   />
                                 )
                               ) : null}
@@ -324,42 +370,64 @@ export default function AdminBrandsPage() {
                       </tr>
                     ) : (
                       data.items.map((row) => (
-                        <tr key={row.id} className="border-b last:border-0">
+                        <tr
+                          className={`
+                          border-b
+                          last:border-0
+                        `}
+                          key={row.id}
+                        >
                           <td className="p-4 font-mono text-muted-foreground">
                             #{row.id.slice(0, 8)}
                           </td>
                           <td className="p-4 font-medium">
                             <Link
+                              className={`
+                                text-primary underline-offset-4
+                                hover:underline
+                              `}
                               href={`/brands/${row.id}`}
-                              className="text-primary underline-offset-4 hover:underline"
                             >
                               {row.name}
                             </Link>
                           </td>
                           <td className="p-4">
-                            <div className="relative size-10 overflow-hidden rounded-md border bg-muted">
+                            <div
+                              className={`
+                              relative size-10 overflow-hidden rounded-md border
+                              bg-muted
+                            `}
+                            >
                               {row.logoUrl ? (
                                 <Image
-                                  src={row.logoUrl}
                                   alt=""
-                                  fill
                                   className="object-contain"
+                                  fill
                                   sizes="40px"
+                                  src={row.logoUrl}
                                 />
                               ) : (
-                                <div className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                                <div
+                                  className={`
+                                  flex size-full items-center justify-center
+                                  text-xs text-muted-foreground
+                                `}
+                                >
                                   —
                                 </div>
                               )}
                             </div>
                           </td>
-                          <td className="p-4 max-w-[180px] truncate">
+                          <td className="max-w-[180px] truncate p-4">
                             {row.websiteUrl ? (
                               <a
+                                className={`
+                                  text-primary
+                                  hover:underline
+                                `}
                                 href={row.websiteUrl}
-                                target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-primary hover:underline"
+                                target="_blank"
                               >
                                 {row.websiteUrl}
                               </a>
@@ -369,21 +437,33 @@ export default function AdminBrandsPage() {
                           </td>
                           <td className="p-4">
                             <button
-                              type="button"
-                              role="switch"
                               aria-checked={row.featured}
+                              className={cn(
+                                `
+                                  relative inline-flex h-6 w-11 shrink-0
+                                  cursor-pointer rounded-full border-2
+                                  border-transparent transition-colors
+                                  focus-visible:ring-2 focus-visible:ring-ring
+                                  focus-visible:ring-offset-2
+                                  focus-visible:outline-none
+                                  disabled:opacity-50
+                                `,
+                                row.featured ? "bg-primary" : "bg-muted",
+                              )}
                               disabled={togglingId === row.id}
                               onClick={() =>
                                 handleToggleFeatured(row.id, row.featured)
                               }
-                              className={cn(
-                                "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50",
-                                row.featured ? "bg-primary" : "bg-muted",
-                              )}
+                              role="switch"
+                              type="button"
                             >
                               <span
                                 className={cn(
-                                  "pointer-events-none inline-block size-5 translate-y-0.5 rounded-full bg-white shadow ring-0 transition-transform",
+                                  `
+                                    pointer-events-none inline-block size-5
+                                    translate-y-0.5 rounded-full bg-white shadow
+                                    ring-0 transition-transform
+                                  `,
                                   row.featured
                                     ? "translate-x-6"
                                     : "translate-x-0.5",
@@ -394,18 +474,25 @@ export default function AdminBrandsPage() {
                           <td className="p-4">
                             <div className="flex items-center gap-2">
                               <Link
-                                href={`/brands/${row.id}`}
-                                className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
                                 aria-label={`Edit ${row.name}`}
+                                className={`
+                                  rounded p-1.5 text-muted-foreground
+                                  hover:bg-muted hover:text-foreground
+                                `}
+                                href={`/brands/${row.id}`}
                               >
                                 <Pencil className="size-4" />
                               </Link>
                               <button
-                                type="button"
+                                aria-label={`Delete ${row.name}`}
+                                className={`
+                                  rounded p-1.5 text-muted-foreground
+                                  hover:bg-destructive/10 hover:text-destructive
+                                  disabled:opacity-50
+                                `}
                                 disabled={deletingId === row.id}
                                 onClick={() => handleDelete(row.id, row.name)}
-                                className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
-                                aria-label={`Delete ${row.name}`}
+                                type="button"
                               >
                                 <Trash2 className="size-4" />
                               </button>
@@ -418,15 +505,19 @@ export default function AdminBrandsPage() {
                 </table>
               </div>
               {data.items.length > 0 && (
-                <div className="flex items-center justify-center gap-2 border-t p-4">
+                <div
+                  className={`
+                  flex items-center justify-center gap-2 border-t p-4
+                `}
+                >
                   <Button
+                    aria-label="Previous page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Previous page"
                   >
                     <ChevronLeft className="size-4" />
                   </Button>
@@ -440,17 +531,23 @@ export default function AdminBrandsPage() {
                       const isCurrent = pageNum === data.page;
                       return (
                         <button
-                          key={pageNum}
-                          type="button"
-                          onClick={() => setPage(pageNum)}
+                          aria-current={isCurrent ? "page" : undefined}
+                          aria-label={`Page ${pageNum}`}
                           className={cn(
-                            "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
+                            `
+                              flex h-8 w-8 items-center justify-center
+                              rounded-full text-sm font-medium transition-colors
+                            `,
                             isCurrent
                               ? "bg-primary text-primary-foreground"
-                              : "text-muted-foreground hover:bg-muted",
+                              : `
+                                text-muted-foreground
+                                hover:bg-muted
+                              `,
                           )}
-                          aria-label={`Page ${pageNum}`}
-                          aria-current={isCurrent ? "page" : undefined}
+                          key={pageNum}
+                          onClick={() => setPage(pageNum)}
+                          type="button"
                         >
                           {pageNum}
                         </button>
@@ -458,6 +555,8 @@ export default function AdminBrandsPage() {
                     })}
                   </span>
                   <Button
+                    aria-label="Next page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page >= data.totalPages}
                     onClick={() =>
                       setPage((p) => Math.min(data.totalPages, p + 1))
@@ -465,8 +564,6 @@ export default function AdminBrandsPage() {
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Next page"
                   >
                     <ChevronRight className="size-4" />
                   </Button>

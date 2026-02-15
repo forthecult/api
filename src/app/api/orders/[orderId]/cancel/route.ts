@@ -8,20 +8,10 @@ import { auth } from "~/lib/auth";
 import { cancelPrintfulOrder } from "~/lib/printful-orders";
 import { cancelPrintifyOrder } from "~/lib/printify-orders";
 import {
-  getClientIp,
   checkRateLimit,
+  getClientIp,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-
-function normalizeEmail(email: string | null | undefined): string {
-  return (email ?? "").trim().toLowerCase();
-}
-function normalizePaymentAddress(addr: string | null | undefined): string {
-  return (addr ?? "").trim().toLowerCase();
-}
-function normalizePostal(postal: string | null | undefined): string {
-  return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
-}
 
 /**
  * POST /api/orders/{orderId}/cancel
@@ -55,16 +45,16 @@ export async function POST(
     // Get the order (include fields needed for ownership verification)
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
+        email: ordersTable.email,
         fulfillmentStatus: ordersTable.fulfillmentStatus,
+        id: ordersTable.id,
+        payerWalletAddress: ordersTable.payerWalletAddress,
+        paymentStatus: ordersTable.paymentStatus,
         printfulOrderId: ordersTable.printfulOrderId,
         printifyOrderId: ordersTable.printifyOrderId,
-        paymentStatus: ordersTable.paymentStatus,
-        email: ordersTable.email,
-        userId: ordersTable.userId,
-        payerWalletAddress: ordersTable.payerWalletAddress,
         shippingZip: ordersTable.shippingZip,
+        status: ordersTable.status,
+        userId: ordersTable.userId,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -142,9 +132,9 @@ export async function POST(
     // Check if order can be cancelled
     if (order.status === "cancelled") {
       return NextResponse.json({
+        message: "Order is already cancelled",
         orderId: order.id,
         status: "cancelled",
-        message: "Order is already cancelled",
       });
     }
 
@@ -177,7 +167,7 @@ export async function POST(
     }
 
     // Try to cancel Printful order if one exists
-    let printfulCancelResult: { success: boolean; error?: string } = {
+    let printfulCancelResult: { error?: string; success: boolean } = {
       success: true,
     };
     if (order.printfulOrderId) {
@@ -210,7 +200,7 @@ export async function POST(
     }
 
     // Try to cancel Printify order if one exists
-    let printifyCancelResult: { success: boolean; error?: string } = {
+    let printifyCancelResult: { error?: string; success: boolean } = {
       success: true,
     };
     if (order.printifyOrderId) {
@@ -246,8 +236,8 @@ export async function POST(
     await db
       .update(ordersTable)
       .set({
-        status: "cancelled",
         fulfillmentStatus: "unfulfilled",
+        status: "cancelled",
         updatedAt: new Date(),
         // Clear printfulOrderId if we successfully cancelled
         ...(printfulCancelResult.success && order.printfulOrderId
@@ -267,9 +257,9 @@ export async function POST(
       .filter(Boolean)
       .join("; ");
     return NextResponse.json({
+      message: "Order cancelled successfully",
       orderId: order.id,
       status: "cancelled",
-      message: "Order cancelled successfully",
       ...(fulfillmentError && { fulfillmentError }),
       _actions: {
         refund:
@@ -285,4 +275,14 @@ export async function POST(
       { status: 500 },
     );
   }
+}
+function normalizeEmail(email: null | string | undefined): string {
+  return (email ?? "").trim().toLowerCase();
+}
+function normalizePaymentAddress(addr: null | string | undefined): string {
+  return (addr ?? "").trim().toLowerCase();
+}
+
+function normalizePostal(postal: null | string | undefined): string {
+  return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
 }

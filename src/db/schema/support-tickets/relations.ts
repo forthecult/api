@@ -1,16 +1,16 @@
 import { relations } from "drizzle-orm";
 
-import { supportTicketMessageTable, supportTicketTable } from "./tables";
 import { userTable } from "../users/tables";
+import { supportTicketMessageTable, supportTicketTable } from "./tables";
 
 export const supportTicketRelations = relations(
   supportTicketTable,
-  ({ one, many }) => ({
+  ({ many, one }) => ({
+    messages: many(supportTicketMessageTable),
     user: one(userTable, {
       fields: [supportTicketTable.userId],
       references: [userTable.id],
     }),
-    messages: many(supportTicketMessageTable),
   }),
 );
 

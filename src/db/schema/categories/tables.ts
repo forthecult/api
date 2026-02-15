@@ -14,26 +14,26 @@ import { productsTable } from "../orders/tables";
 export const categoriesTable = pgTable(
   "category",
   {
-    id: text("id").primaryKey(),
-    name: text("name").notNull(),
-    slug: text("slug").unique(),
-    title: text("title"),
-    metaDescription: text("meta_description"),
+    createdAt: timestamp("created_at").notNull(),
     description: text("description"),
+    featured: boolean("featured").notNull().default(false),
+    id: text("id").primaryKey(),
     imageUrl: text("image_url"),
     level: integer("level").notNull().default(1),
-    featured: boolean("featured").notNull().default(false),
+    metaDescription: text("meta_description"),
+    name: text("name").notNull(),
+    parentId: text("parent_id"),
+    seoOptimized: boolean("seo_optimized").notNull().default(false),
+    slug: text("slug").unique(),
+    title: text("title"),
+    tokenGateContractAddress: text("token_gate_contract_address"),
+    tokenGated: boolean("token_gated").notNull().default(false),
+    tokenGateNetwork: text("token_gate_network"),
+    tokenGateQuantity: integer("token_gate_quantity"),
+    tokenGateType: text("token_gate_type"), // legacy single-gate
+    updatedAt: timestamp("updated_at").notNull(),
     /** When false, category is hidden from the mega menu and public browsing. */
     visible: boolean("visible").notNull().default(true),
-    seoOptimized: boolean("seo_optimized").notNull().default(false),
-    parentId: text("parent_id"),
-    tokenGated: boolean("token_gated").notNull().default(false),
-    tokenGateType: text("token_gate_type"), // legacy single-gate
-    tokenGateQuantity: integer("token_gate_quantity"),
-    tokenGateNetwork: text("token_gate_network"),
-    tokenGateContractAddress: text("token_gate_contract_address"),
-    createdAt: timestamp("created_at").notNull(),
-    updatedAt: timestamp("updated_at").notNull(),
   },
   (t) => [
     // L15: ON DELETE set null so child categories survive parent removal
@@ -49,13 +49,13 @@ export const categoriesTable = pgTable(
 export const productCategoriesTable = pgTable(
   "product_category",
   {
-    productId: text("product_id")
-      .notNull()
-      .references(() => productsTable.id, { onDelete: "cascade" }),
     categoryId: text("category_id")
       .notNull()
       .references(() => categoriesTable.id, { onDelete: "cascade" }),
     isMain: boolean("is_main").notNull().default(false),
+    productId: text("product_id")
+      .notNull()
+      .references(() => productsTable.id, { onDelete: "cascade" }),
     /** Admin-controlled display order within a category. Lower = first. NULL = unordered (sorted after explicit entries). */
     sortOrder: integer("sort_order"),
   },
@@ -70,14 +70,14 @@ export const productCategoriesTable = pgTable(
 
 /** Multiple token gates per category: access if user holds >= quantity of ANY token (OR). */
 export const categoryTokenGateTable = pgTable("category_token_gate", {
-  id: text("id").primaryKey(),
   categoryId: text("category_id")
     .notNull()
     .references(() => categoriesTable.id, { onDelete: "cascade" }),
-  tokenSymbol: text("token_symbol").notNull(), // e.g. CULT, PUMP, WHALE
-  quantity: integer("quantity").notNull(), // min amount (manual quantity per token)
-  network: text("network"), // solana | ethereum | base | etc. for custom tokens
   contractAddress: text("contract_address"), // for custom tokens
+  id: text("id").primaryKey(),
+  network: text("network"), // solana | ethereum | base | etc. for custom tokens
+  quantity: integer("quantity").notNull(), // min amount (manual quantity per token)
+  tokenSymbol: text("token_symbol").notNull(), // e.g. CULT, PUMP, WHALE
 });
 
 /**
@@ -87,17 +87,17 @@ export const categoryTokenGateTable = pgTable("category_token_gate", {
 export const categoryAutoAssignRuleTable = pgTable(
   "category_auto_assign_rule",
   {
-    id: text("id").primaryKey(),
+    brand: text("brand"),
     categoryId: text("category_id")
       .notNull()
       .references(() => categoriesTable.id, { onDelete: "cascade" }),
-    titleContains: text("title_contains"),
+    createdAt: timestamp("created_at").notNull(),
     createdWithinDays: integer("created_within_days"),
-    brand: text("brand"),
+    enabled: boolean("enabled").notNull().default(true),
+    id: text("id").primaryKey(),
     /** Product must have at least one tag containing this (ilike). */
     tagContains: text("tag_contains"),
-    enabled: boolean("enabled").notNull().default(true),
-    createdAt: timestamp("created_at").notNull(),
+    titleContains: text("title_contains"),
     updatedAt: timestamp("updated_at").notNull(),
   },
   (t) => [index("category_auto_assign_rule_category_id_idx").on(t.categoryId)],

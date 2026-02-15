@@ -10,23 +10,19 @@ import {
   runProductSearch,
 } from "~/lib/product-search";
 
-type SearchBody = {
-  query?: string;
+interface SearchBody {
   category?: string;
-  subcategory?: string;
   filters?: {
     brand?: string[];
-    priceRange?: { min?: number; max?: number };
     inStock?: boolean;
+    priceRange?: { max?: number; min?: number };
     rating?: string;
   };
-  sort?: "price_asc" | "price_desc" | "rating" | "popular" | "newest";
   limit?: number;
   offset?: number;
-};
-
-export async function OPTIONS() {
-  return publicApiCorsPreflight();
+  query?: string;
+  sort?: "newest" | "popular" | "price_asc" | "price_desc" | "rating";
+  subcategory?: string;
 }
 
 /**
@@ -45,11 +41,11 @@ export async function GET(request: NextRequest) {
     );
     const offset = Math.max(0, Number(searchParams.get("offset")) || 0);
     const sort = (searchParams.get("sort")?.trim() || "newest") as
+      | "newest"
+      | "popular"
       | "price_asc"
       | "price_desc"
-      | "rating"
-      | "popular"
-      | "newest";
+      | "rating";
     const inStockParam = searchParams.get("inStock");
     const filters =
       inStockParam !== null && inStockParam !== undefined
@@ -57,17 +53,17 @@ export async function GET(request: NextRequest) {
         : undefined;
 
     const result = await runProductSearch({
-      query: q,
       categoryId: category ?? undefined,
-      subcategoryId: subcategory ?? undefined,
       filters,
-      sort: ["price_asc", "price_desc", "rating", "popular", "newest"].includes(
+      limit,
+      offset,
+      query: q,
+      sort: ["newest", "popular", "price_asc", "price_desc", "rating"].includes(
         sort,
       )
         ? sort
         : "newest",
-      limit,
-      offset,
+      subcategoryId: subcategory ?? undefined,
     });
 
     return withPublicApiCors(NextResponse.json(result));
@@ -80,6 +76,10 @@ export async function GET(request: NextRequest) {
       ),
     );
   }
+}
+
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
 }
 
 /**
@@ -115,13 +115,13 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await runProductSearch({
-      query: body.query,
       categoryId: categoryId ?? undefined,
-      subcategoryId: subcategoryId ?? undefined,
       filters: body.filters,
-      sort: body.sort ?? "newest",
       limit,
       offset,
+      query: body.query,
+      sort: body.sort ?? "newest",
+      subcategoryId: subcategoryId ?? undefined,
     });
 
     return withPublicApiCors(NextResponse.json(result));

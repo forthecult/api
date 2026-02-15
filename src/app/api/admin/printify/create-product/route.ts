@@ -32,14 +32,14 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   createPrintifyProduct,
-  publishPrintifyProduct,
   fetchPrintifyVariants,
   getPrintifyIfConfigured,
   type PrintifyCreateProductBody,
+  publishPrintifyProduct,
 } from "~/lib/printify";
-import { getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function POST(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -85,13 +85,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     const {
-      title,
-      description,
       blueprint_id,
-      print_provider_id,
+      description,
       image_id,
-      tags,
+      print_provider_id,
       publish: shouldPublish,
+      tags,
+      title,
     } = body;
 
     if (!title || !blueprint_id || !print_provider_id) {
@@ -112,8 +112,8 @@ export async function POST(request: NextRequest) {
       variants = catalogVariants.variants.map(
         (v: { id: number; title: string }) => ({
           id: v.id,
-          price: 100, // placeholder, should be overridden
           is_enabled: true,
+          price: 100, // placeholder, should be overridden
         }),
       );
     }
@@ -124,33 +124,33 @@ export async function POST(request: NextRequest) {
       const allVariantIds = variants.map((v: { id: number }) => v.id);
       print_areas = [
         {
-          variant_ids: allVariantIds,
           placeholders: [
             {
-              position: "front",
               images: [
                 {
+                  angle: 0,
                   id: image_id,
+                  scale: 1,
                   x: 0.5,
                   y: 0.5,
-                  scale: 1,
-                  angle: 0,
                 },
               ],
+              position: "front",
             },
           ],
+          variant_ids: allVariantIds,
         },
       ];
     }
 
     const createBody: PrintifyCreateProductBody = {
-      title,
-      description: description || "",
       blueprint_id,
-      print_provider_id,
-      variants,
+      description: description || "",
       print_areas: print_areas || [],
+      print_provider_id,
       tags: tags || [],
+      title,
+      variants,
     };
 
     const product = await createPrintifyProduct(pf.shopId, createBody);
@@ -163,11 +163,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       action: "created",
+      images_count: product.images.length,
       product_id: product.id,
+      published: shouldPublish ? publishResult : null,
       title: product.title,
       variants_count: product.variants.length,
-      images_count: product.images.length,
-      published: shouldPublish ? publishResult : null,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

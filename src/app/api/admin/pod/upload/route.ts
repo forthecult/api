@@ -1,12 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { uploadToPrintify, uploadToPrintful } from "@/lib/pod/upload";
+
+import type { PodProvider } from "@/lib/pod/types";
+
+import { getAdminAuth } from "@/lib/admin-api-auth";
 import {
   analyzeImage,
-  validateForPrint,
   makeBackgroundTransparent,
+  validateForPrint,
 } from "@/lib/pod/image-processor";
-import { getAdminAuth } from "@/lib/admin-api-auth";
-import type { PodProvider } from "@/lib/pod/types";
+import { uploadToPrintful, uploadToPrintify } from "@/lib/pod/upload";
 
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -23,7 +25,7 @@ export async function POST(request: NextRequest) {
   }
   const provider = request.nextUrl.searchParams.get(
     "provider",
-  ) as PodProvider | null;
+  ) as null | PodProvider;
   if (!provider || (provider !== "printify" && provider !== "printful")) {
     return NextResponse.json(
       { error: "Query provider is required: printify or printful" },
@@ -73,7 +75,7 @@ export async function POST(request: NextRequest) {
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       return NextResponse.json(
-        { error: "makeTransparent failed", detail: message },
+        { detail: message, error: "makeTransparent failed" },
         { status: 400 },
       );
     }
@@ -85,17 +87,17 @@ export async function POST(request: NextRequest) {
     analysis = await analyzeImage(buffer);
     if (process) {
       const validation = await validateForPrint(buffer, {
+        dpi: 150,
+        height: 4800,
         position: "front",
         width: 3600,
-        height: 4800,
-        dpi: 150,
       });
       warnings.push(...validation.warnings);
     }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     return NextResponse.json(
-      { error: "Image analysis failed", detail: message },
+      { detail: message, error: "Image analysis failed" },
       { status: 400 },
     );
   }
@@ -103,12 +105,12 @@ export async function POST(request: NextRequest) {
     if (provider === "printify") {
       const result = await uploadToPrintify(buffer, filename);
       return NextResponse.json({
+        analysis,
+        height: result.height,
         imageId: result.imageId,
         imageUrl: result.imageUrl,
-        width: result.width,
-        height: result.height,
-        analysis,
         warnings,
+        width: result.width,
       });
     }
     return NextResponse.json(

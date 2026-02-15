@@ -8,30 +8,33 @@ import { getMainAppUrl } from "~/lib/env";
 
 const API_BASE = getMainAppUrl();
 
-export type BrandOption = { id: string; name: string };
+export interface BrandOption {
+  id: string;
+  name: string;
+}
 
 interface BrandSelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  id?: string;
   className?: string;
+  disabled?: boolean;
+  id?: string;
   inputClass?: string;
   labelClass?: string;
-  disabled?: boolean;
+  onChange: (value: string) => void;
   placeholder?: string;
+  value: string;
 }
 
 const MAX_VISIBLE = 100;
 
 export function BrandSelect({
-  value,
-  onChange,
-  id = "brand",
   className,
+  disabled = false,
+  id = "brand",
   inputClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
   labelClass,
-  disabled = false,
+  onChange,
   placeholder = "Search or select brand…",
+  value,
 }: BrandSelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,7 +49,7 @@ export function BrandSelect({
     setLoading(true);
     fetch(`${API_BASE}/api/admin/brands?limit=500`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { items?: BrandOption[] } | null) => {
+      .then((data: null | { items?: BrandOption[] }) => {
         if (cancelled || !data?.items) return;
         setOptions(data.items.map((b) => ({ id: b.id, name: b.name })));
       })
@@ -149,15 +152,24 @@ export function BrandSelect({
   return (
     <div className={cn("space-y-2", className)} ref={containerRef}>
       {labelClass ? (
-        <label htmlFor={id} className={labelClass}>
+        <label className={labelClass} htmlFor={id}>
           Brand
         </label>
       ) : null}
       <div className="relative">
         <input
+          aria-activedescendant={
+            open && visible[focusedIndex]
+              ? `${id}-option-${focusedIndex}`
+              : undefined
+          }
+          aria-autocomplete="list"
+          aria-controls={open ? `${id}-listbox` : undefined}
+          aria-expanded={open}
+          autoComplete="off"
+          className={inputClass}
+          disabled={disabled}
           id={id}
-          type="text"
-          value={open ? searchQuery : value}
           onChange={(e) => {
             const v = e.target.value;
             if (open) {
@@ -169,32 +181,31 @@ export function BrandSelect({
           }}
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
-          disabled={disabled}
           placeholder={loading ? "Loading brands…" : placeholder}
-          className={inputClass}
-          autoComplete="off"
           role="combobox"
-          aria-expanded={open}
-          aria-autocomplete="list"
-          aria-controls={open ? `${id}-listbox` : undefined}
-          aria-activedescendant={
-            open && visible[focusedIndex]
-              ? `${id}-option-${focusedIndex}`
-              : undefined
-          }
+          type="text"
+          value={open ? searchQuery : value}
         />
-        <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+        <span
+          className={`
+          pointer-events-none absolute top-1/2 right-2 -translate-y-1/2
+          text-muted-foreground
+        `}
+        >
           <ChevronDown
-            className={cn("size-4 transition-transform", open && "rotate-180")}
             aria-hidden
+            className={cn("size-4 transition-transform", open && "rotate-180")}
           />
         </span>
         {open && (
           <ul
+            className={`
+              absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border
+              border-input bg-background py-1 shadow-md
+            `}
             id={`${id}-listbox`}
             ref={listRef}
             role="listbox"
-            className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-input bg-background py-1 shadow-md"
           >
             {visible.length === 0 ? (
               <li className="px-3 py-2 text-sm text-muted-foreground">
@@ -205,9 +216,6 @@ export function BrandSelect({
             ) : (
               visible.map((b, i) => (
                 <li
-                  key={b.id}
-                  id={`${id}-option-${i}`}
-                  role="option"
                   aria-selected={b.name === value}
                   className={cn(
                     "cursor-pointer px-3 py-2 text-sm",
@@ -215,12 +223,15 @@ export function BrandSelect({
                       ? "bg-primary/10 text-primary"
                       : "hover:bg-muted",
                   )}
-                  onMouseEnter={() => setFocusedIndex(i)}
+                  id={`${id}-option-${i}`}
+                  key={b.id}
                   onMouseDown={(e) => {
                     e.preventDefault();
                     onChange(b.name);
                     close();
                   }}
+                  onMouseEnter={() => setFocusedIndex(i)}
+                  role="option"
                 >
                   {b.name}
                 </li>

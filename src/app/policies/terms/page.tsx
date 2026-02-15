@@ -10,9 +10,19 @@ export const metadata = {
 
 export default function TermsOfServicePage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Terms of service
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
@@ -26,7 +36,12 @@ export default function TermsOfServicePage() {
       </header>
 
       <div className="space-y-10">
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Agreement and acceptance
           </h2>
@@ -37,22 +52,31 @@ export default function TermsOfServicePage() {
             site, creating an account, or making a purchase, you agree to these
             Terms and to our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/policies/privacy"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Privacy policy
             </Link>
             ,{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/policies/refund"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Refund policy
             </Link>
             , and{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/policies/shipping"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Shipping policy
             </Link>
@@ -61,7 +85,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Eligibility and acceptable use
           </h2>
@@ -76,7 +105,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Orders and products
           </h2>
@@ -89,8 +123,11 @@ export default function TermsOfServicePage() {
             may correct errors and cancel orders affected by them. Returns and
             refunds are governed by our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/policies/refund"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Refund policy
             </Link>
@@ -98,7 +135,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Pricing and payment
           </h2>
@@ -110,7 +152,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Third-party tools and links
           </h2>
@@ -124,7 +171,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             User content and feedback
           </h2>
@@ -138,7 +190,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Personal information
           </h2>
@@ -146,8 +203,11 @@ export default function TermsOfServicePage() {
             Your submission of personal information through the Service is
             governed by our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/policies/privacy"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               Privacy policy
             </Link>
@@ -155,7 +215,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Prohibited uses
           </h2>
@@ -170,7 +235,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Disclaimers and limitation of liability
           </h2>
@@ -188,7 +258,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Indemnification
           </h2>
@@ -201,7 +276,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Termination and survival
           </h2>
@@ -214,7 +294,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Governing law and disputes
           </h2>
@@ -229,7 +314,12 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Severability and entire agreement
           </h2>
@@ -242,15 +332,23 @@ export default function TermsOfServicePage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Contact
           </h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">
             Questions about these Terms? Use our{" "}
             <Link
+              className={`
+                font-medium text-primary underline-offset-4
+                hover:underline
+              `}
               href="/contact"
-              className="font-medium text-primary underline-offset-4 hover:underline"
             >
               contact page
             </Link>

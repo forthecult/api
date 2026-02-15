@@ -1,44 +1,75 @@
 import type { Metadata } from "next";
+
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { Button } from "~/ui/primitives/button";
 
 export const metadata: Metadata = {
-  title: `Affiliate Program | ${SEO_CONFIG.name}`,
   description:
     "Partner with Culture. Earn by sharing products that protect health, privacy, and autonomy. Premium lifestyle brand since 2015. Apply to join our affiliate program.",
   openGraph: {
-    title: `Affiliate Program | ${SEO_CONFIG.name}`,
     description:
       "Earn by sharing Culture. Premium products, 90-day cookie, payouts in PayPal or crypto (BTC, stablecoins, CULT). Join our affiliate program.",
+    title: `Affiliate Program | ${SEO_CONFIG.name}`,
     type: "website",
   },
+  title: `Affiliate Program | ${SEO_CONFIG.name}`,
 };
 
 export default function AffiliateProgramPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative overflow-hidden border-b border-border bg-gradient-to-b from-muted/50 via-muted/20 to-background">
+      <section
+        className={`
+        relative overflow-hidden border-b border-border bg-gradient-to-b
+        from-muted/50 via-muted/20 to-background
+      `}
+      >
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
             backgroundImage: `radial-gradient(circle at 30% 20%, var(--primary) 0%, transparent 50%), radial-gradient(circle at 70% 80%, var(--primary) 0%, transparent 40%)`,
           }}
         />
-        <div className="container relative mx-auto max-w-4xl px-4 py-20 sm:py-28">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+        <div
+          className={`
+          relative container mx-auto max-w-4xl px-4 py-20
+          sm:py-28
+        `}
+        >
+          <p
+            className={`
+            text-xs font-semibold tracking-[0.2em] text-primary uppercase
+          `}
+          >
             Partner with us
           </p>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl lg:text-6xl">
+          <h1
+            className={`
+            mt-3 text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+            md:text-5xl
+            lg:text-6xl
+          `}
+          >
             Share what you believe in.
             <br />
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <span
+              className={`
+              bg-gradient-to-r from-primary to-primary/70 bg-clip-text
+              text-transparent
+            `}
+            >
               Earn with Culture.
             </span>
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+          <p
+            className={`
+            mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground
+          `}
+          >
             We're a lifestyle brand built on decentralization—premium products
             that protect health, privacy, and autonomy. If that's what you stand
             for too, join our affiliate program. Apply once, get a unique link,
@@ -56,18 +87,45 @@ export default function AffiliateProgramPage() {
       </section>
 
       {/* How it works — 3 steps */}
-      <section className="border-b border-border py-16 sm:py-20">
+      <section
+        className={`
+        border-b border-border py-16
+        sm:py-20
+      `}
+      >
         <div className="container mx-auto max-w-5xl px-4">
-          <h2 className="text-center text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h2
+            className={`
+            text-center text-2xl font-semibold tracking-tight text-foreground
+            sm:text-3xl
+          `}
+          >
             How it works
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-center text-muted-foreground">
             Simple, transparent, built for creators and publishers who care what
             they promote.
           </p>
-          <div className="mt-12 grid gap-6 sm:grid-cols-3">
-            <div className="group rounded-2xl border border-border bg-card/50 p-6 text-center shadow-sm transition-shadow hover:shadow-md">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary ring-2 ring-primary/20">
+          <div
+            className={`
+            mt-12 grid gap-6
+            sm:grid-cols-3
+          `}
+          >
+            <div
+              className={`
+              group rounded-2xl border border-border bg-card/50 p-6 text-center
+              shadow-sm transition-shadow
+              hover:shadow-md
+            `}
+            >
+              <span
+                className={`
+                inline-flex h-12 w-12 items-center justify-center rounded-full
+                bg-primary/10 text-base font-bold text-primary ring-2
+                ring-primary/20
+              `}
+              >
                 1
               </span>
               <h3 className="mt-4 font-semibold text-foreground">Apply</h3>
@@ -76,8 +134,20 @@ export default function AffiliateProgramPage() {
                 applications and approve partners who align with our values.
               </p>
             </div>
-            <div className="group rounded-2xl border border-border bg-card/50 p-6 text-center shadow-sm transition-shadow hover:shadow-md">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary ring-2 ring-primary/20">
+            <div
+              className={`
+              group rounded-2xl border border-border bg-card/50 p-6 text-center
+              shadow-sm transition-shadow
+              hover:shadow-md
+            `}
+            >
+              <span
+                className={`
+                inline-flex h-12 w-12 items-center justify-center rounded-full
+                bg-primary/10 text-base font-bold text-primary ring-2
+                ring-primary/20
+              `}
+              >
                 2
               </span>
               <h3 className="mt-4 font-semibold text-foreground">Share</h3>
@@ -86,8 +156,20 @@ export default function AffiliateProgramPage() {
                 newsletter. When someone clicks, we remember them for 90 days.
               </p>
             </div>
-            <div className="group rounded-2xl border border-border bg-card/50 p-6 text-center shadow-sm transition-shadow hover:shadow-md">
-              <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary ring-2 ring-primary/20">
+            <div
+              className={`
+              group rounded-2xl border border-border bg-card/50 p-6 text-center
+              shadow-sm transition-shadow
+              hover:shadow-md
+            `}
+            >
+              <span
+                className={`
+                inline-flex h-12 w-12 items-center justify-center rounded-full
+                bg-primary/10 text-base font-bold text-primary ring-2
+                ring-primary/20
+              `}
+              >
                 3
               </span>
               <h3 className="mt-4 font-semibold text-foreground">Earn</h3>
@@ -102,12 +184,26 @@ export default function AffiliateProgramPage() {
       </section>
 
       {/* Why Culture — ethos */}
-      <section className="border-b border-border bg-muted/20 py-16 sm:py-20">
+      <section
+        className={`
+        border-b border-border bg-muted/20 py-16
+        sm:py-20
+      `}
+      >
         <div className="container mx-auto max-w-4xl px-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+          <p
+            className={`
+            text-xs font-semibold tracking-[0.2em] text-primary uppercase
+          `}
+          >
             What you&apos;re promoting
           </p>
-          <h2 className="mt-1 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h2
+            className={`
+            mt-1 text-2xl font-semibold tracking-tight text-foreground
+            sm:text-3xl
+          `}
+          >
             Not just another store. A brand that stands for something.
           </h2>
           <p className="mt-4 leading-relaxed text-muted-foreground">
@@ -125,17 +221,19 @@ export default function AffiliateProgramPage() {
               "Privacy-first: no mandatory sign-up, no third-party trackers, data delete on request.",
               "Quality over quantity. We'd rather carry less and stand behind every item.",
             ].map((item, i) => (
-              <li key={i} className="flex gap-3 text-muted-foreground">
+              <li className="flex gap-3 text-muted-foreground" key={i}>
                 <span
-                  className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                   aria-hidden
+                  className={`
+                    mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary
+                  `}
                 />
                 <span>{item}</span>
               </li>
             ))}
           </ul>
           <div className="mt-10">
-            <Button asChild variant="outline" size="sm">
+            <Button asChild size="sm" variant="outline">
               <Link href="/about">Read our story</Link>
             </Button>
           </div>
@@ -143,13 +241,32 @@ export default function AffiliateProgramPage() {
       </section>
 
       {/* Program details */}
-      <section className="border-b border-border py-16 sm:py-20">
+      <section
+        className={`
+        border-b border-border py-16
+        sm:py-20
+      `}
+      >
         <div className="container mx-auto max-w-4xl px-4">
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h2
+            className={`
+            text-2xl font-semibold tracking-tight text-foreground
+            sm:text-3xl
+          `}
+          >
             Program details
           </h2>
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
-            <div className="rounded-xl border border-border bg-card/50 px-5 py-5">
+          <div
+            className={`
+            mt-8 grid gap-6
+            sm:grid-cols-2
+          `}
+          >
+            <div
+              className={`
+              rounded-xl border border-border bg-card/50 px-5 py-5
+            `}
+            >
               <h3 className="font-semibold text-foreground">
                 Cookie & attribution
               </h3>
@@ -159,7 +276,11 @@ export default function AffiliateProgramPage() {
                 orders in that window.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm">
+            <div
+              className={`
+              rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm
+            `}
+            >
               <h3 className="font-semibold text-foreground">Payouts</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Bitcoin, stablecoins (e.g. USDT), or PayPal. We process payouts
@@ -167,7 +288,11 @@ export default function AffiliateProgramPage() {
                 You're promoting a crypto-native brand—we pay like one.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm">
+            <div
+              className={`
+              rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm
+            `}
+            >
               <h3 className="font-semibold text-foreground">Commission</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Percentage or fixed amount per sale, set when you're approved.
@@ -175,7 +300,11 @@ export default function AffiliateProgramPage() {
                 audience something extra.
               </p>
             </div>
-            <div className="rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm">
+            <div
+              className={`
+              rounded-2xl border border-border bg-card/50 px-5 py-5 shadow-sm
+            `}
+            >
               <h3 className="font-semibold text-foreground">Who can join</h3>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 Anyone can apply. We approve based on fit—audience, values, how
@@ -194,29 +323,75 @@ export default function AffiliateProgramPage() {
           <h2 className="text-center text-lg font-semibold text-foreground">
             Quick facts
           </h2>
-          <dl className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-border bg-background px-4 py-3 text-center shadow-sm">
-              <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <dl
+            className={`
+            mt-8 grid gap-4
+            sm:grid-cols-2
+            lg:grid-cols-4
+          `}
+          >
+            <div
+              className={`
+              rounded-xl border border-border bg-background px-4 py-3
+              text-center shadow-sm
+            `}
+            >
+              <dt
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Cookie
               </dt>
               <dd className="mt-1 font-semibold text-foreground">90 days</dd>
             </div>
-            <div className="rounded-xl border border-border bg-background px-4 py-3 text-center shadow-sm">
-              <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div
+              className={`
+              rounded-xl border border-border bg-background px-4 py-3
+              text-center shadow-sm
+            `}
+            >
+              <dt
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Payout options
               </dt>
               <dd className="mt-1 font-semibold text-foreground">
                 BTC, stablecoins, CULT, PayPal
               </dd>
             </div>
-            <div className="rounded-xl border border-border bg-background px-4 py-3 text-center shadow-sm">
-              <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div
+              className={`
+              rounded-xl border border-border bg-background px-4 py-3
+              text-center shadow-sm
+            `}
+            >
+              <dt
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Sign up
               </dt>
               <dd className="mt-1 font-semibold text-foreground">Free</dd>
             </div>
-            <div className="rounded-xl border border-border bg-background px-4 py-3 text-center shadow-sm">
-              <dt className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            <div
+              className={`
+              rounded-xl border border-border bg-background px-4 py-3
+              text-center shadow-sm
+            `}
+            >
+              <dt
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Where to promote
               </dt>
               <dd className="mt-1 font-semibold text-foreground">
@@ -228,7 +403,12 @@ export default function AffiliateProgramPage() {
       </section>
 
       {/* FAQ */}
-      <section className="py-16 sm:py-20">
+      <section
+        className={`
+        py-16
+        sm:py-20
+      `}
+      >
         <div className="container mx-auto max-w-2xl px-4">
           <h2 className="text-2xl font-semibold tracking-tight text-foreground">
             Frequently asked questions
@@ -282,9 +462,19 @@ export default function AffiliateProgramPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-border bg-primary/5 py-16 sm:py-20">
+      <section
+        className={`
+        border-t border-border bg-primary/5 py-16
+        sm:py-20
+      `}
+      >
         <div className="container mx-auto max-w-2xl px-4 text-center">
-          <h2 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
+          <h2
+            className={`
+            text-2xl font-semibold tracking-tight text-foreground
+            sm:text-3xl
+          `}
+          >
             Ready to partner?
           </h2>
           <p className="mt-4 text-muted-foreground">

@@ -15,32 +15,32 @@
 // ---------------------------------------------------------------------------
 
 export interface TokenDef {
+  /** Number of on-chain decimals. */
+  decimals: number;
   /** Unique key used across the codebase. */
-  key: "SOLUNA" | "CULT";
+  key: "CULT" | "SOLUNA";
+  /** SPL token mint address on Solana. */
+  mint: string;
   /** Human-readable name. */
   name: string;
   /** Ticker symbol (displayed in UI). */
   symbol: string;
-  /** SPL token mint address on Solana. */
-  mint: string;
-  /** Number of on-chain decimals. */
-  decimals: number;
 }
 
 const SOLUNA: TokenDef = {
+  decimals: 6, // pump.fun tokens are 6 decimals
   key: "SOLUNA",
+  mint: "2qT8JVotQ2C1gKbqpuqNatkpSBWxiKHbXkCyTqH9pump",
   name: "SOLUNA",
   symbol: "SOLUNA",
-  mint: "2qT8JVotQ2C1gKbqpuqNatkpSBWxiKHbXkCyTqH9pump",
-  decimals: 6, // pump.fun tokens are 6 decimals
 };
 
 const CULT: TokenDef = {
+  decimals: 6,
   key: "CULT",
+  mint: "", // Set when launched on pump.fun
   name: "CULT",
   symbol: "CULT",
-  mint: "", // Set when launched on pump.fun
-  decimals: 6,
 };
 
 // ---------------------------------------------------------------------------
@@ -51,9 +51,9 @@ const CULT: TokenDef = {
  * Change this to "CULT" when the CULT token launches on pump.fun.
  * Everything downstream reads from `getActiveToken()`.
  */
-const ACTIVE_TOKEN: "SOLUNA" | "CULT" = "SOLUNA";
+const ACTIVE_TOKEN: "CULT" | "SOLUNA" = "SOLUNA";
 
-const TOKEN_MAP = { SOLUNA, CULT } as const;
+const TOKEN_MAP = { CULT, SOLUNA } as const;
 
 /** Returns the currently active membership token config. */
 export function getActiveToken(): TokenDef {
@@ -62,21 +62,21 @@ export function getActiveToken(): TokenDef {
     typeof process.env.MEMBERSHIP_TOKEN === "string"
       ? process.env.MEMBERSHIP_TOKEN.trim()
       : ""
-  ) as "SOLUNA" | "CULT" | "";
+  ) as "" | "CULT" | "SOLUNA";
   if (envOverride && TOKEN_MAP[envOverride]) {
     return TOKEN_MAP[envOverride];
   }
   return TOKEN_MAP[ACTIVE_TOKEN];
 }
 
-/** Shorthand: active token mint address. */
-export function getActiveTokenMint(): string {
-  return getActiveToken().mint;
-}
-
 /** Shorthand: active token decimals. */
 export function getActiveTokenDecimals(): number {
   return getActiveToken().decimals;
+}
+
+/** Shorthand: active token mint address. */
+export function getActiveTokenMint(): string {
+  return getActiveToken().mint;
 }
 
 /** Shorthand: active token symbol. */

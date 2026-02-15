@@ -21,49 +21,6 @@ import type {
 
 const PROVIDER: PodProvider = "printify";
 
-function placeholderToPrintSpec(placeholder: {
-  position: string;
-  width: number;
-  height: number;
-}): PrintSpec {
-  return {
-    position: placeholder.position,
-    width: placeholder.width,
-    height: placeholder.height,
-    dpi: 150,
-  };
-}
-
-function variantToCatalogVariant(
-  v: PrintifyVariant,
-  costCents: number,
-): CatalogVariant {
-  const printSpecs = v.placeholders.map(placeholderToPrintSpec);
-  const color = v.options?.color;
-  const size = v.options?.size;
-  return {
-    id: v.id,
-    title: v.title,
-    color,
-    size,
-    priceCents: costCents,
-    printSpecs,
-  };
-}
-
-function blueprintToCatalogBlueprint(
-  b: PrintifyBlueprint,
-): Omit<CatalogBlueprint, "variants" | "printSpecs"> {
-  return {
-    provider: PROVIDER,
-    id: String(b.id),
-    title: b.title,
-    brand: b.brand ?? "",
-    description: b.description ?? "",
-    images: b.images ?? [],
-  };
-}
-
 /**
  * Fetch all Printify blueprints (list only, no variants/specs).
  */
@@ -73,8 +30,8 @@ export async function fetchPrintifyBlueprintsList(): Promise<
   const raw = await fetchPrintifyBlueprints();
   return raw.map((b) => ({
     ...blueprintToCatalogBlueprint(b),
-    variants: [],
     printSpecs: [],
+    variants: [],
   }));
 }
 
@@ -119,4 +76,47 @@ export async function getPrintifyPrintProviders(blueprintId: string) {
   const id = parseInt(blueprintId, 10);
   if (Number.isNaN(id)) return [];
   return fetchPrintifyPrintProviders(id);
+}
+
+function blueprintToCatalogBlueprint(
+  b: PrintifyBlueprint,
+): Omit<CatalogBlueprint, "printSpecs" | "variants"> {
+  return {
+    brand: b.brand ?? "",
+    description: b.description ?? "",
+    id: String(b.id),
+    images: b.images ?? [],
+    provider: PROVIDER,
+    title: b.title,
+  };
+}
+
+function placeholderToPrintSpec(placeholder: {
+  height: number;
+  position: string;
+  width: number;
+}): PrintSpec {
+  return {
+    dpi: 150,
+    height: placeholder.height,
+    position: placeholder.position,
+    width: placeholder.width,
+  };
+}
+
+function variantToCatalogVariant(
+  v: PrintifyVariant,
+  costCents: number,
+): CatalogVariant {
+  const printSpecs = v.placeholders.map(placeholderToPrintSpec);
+  const color = v.options?.color;
+  const size = v.options?.size;
+  return {
+    color,
+    id: v.id,
+    priceCents: costCents,
+    printSpecs,
+    size,
+    title: v.title,
+  };
 }

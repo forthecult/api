@@ -1,25 +1,25 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { getBtcpayInvoiceStatus, isInvoiceSettled } from "~/lib/btcpay";
-import {
-  getClientIp,
-  RATE_LIMITS,
-  checkRateLimit,
-  rateLimitResponse,
-} from "~/lib/rate-limit";
+import { onOrderCreated } from "~/lib/create-user-notification";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
 } from "~/lib/printful-orders";
-import { onOrderCreated } from "~/lib/create-user-notification";
 import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 /** Mark order as paid only after BTCPay invoice is verified settled (prevents spoofing). */
 export async function POST(request: NextRequest) {
@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
         btcpayInvoiceId: ordersTable.btcpayInvoiceId,
+        id: ordersTable.id,
         paymentMethod: ordersTable.paymentMethod,
+        status: ordersTable.status,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
     if (order.status !== "pending") {
-      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+      return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
     // Only use the server-stored invoice ID — never trust client-provided invoiceId
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!updated) {
-      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+      return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
     void onOrderCreated(order.id);

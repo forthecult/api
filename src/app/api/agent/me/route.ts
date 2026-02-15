@@ -29,13 +29,12 @@ export async function GET(request: NextRequest) {
   const { agent } = result;
   return NextResponse.json(
     {
-      success: true,
       agent: {
-        id: agent.id,
-        name: agent.name,
-        karma: agent.karma,
         avatar_url: agent.avatar_url,
+        id: agent.id,
         is_claimed: agent.is_claimed,
+        karma: agent.karma,
+        name: agent.name,
         owner: agent.owner
           ? {
               x_handle: agent.owner.x_handle,
@@ -43,6 +42,7 @@ export async function GET(request: NextRequest) {
             }
           : undefined,
       },
+      success: true,
     },
     { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
   );

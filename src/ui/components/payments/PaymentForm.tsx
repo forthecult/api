@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
+import { Alert, AlertDescription, AlertTitle } from "~/ui/primitives/alert";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -12,28 +13,27 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import { Alert, AlertDescription, AlertTitle } from "~/ui/primitives/alert";
 
 interface PaymentFormProps {
-  productSlug?: string;
-  productId?: string;
   buttonText?: string;
-  title?: string;
   description?: string;
   onSuccess?: () => void;
+  productId?: string;
+  productSlug?: string;
+  title?: string;
 }
 
 export function PaymentForm({
-  productSlug = "pro",
-  productId,
   buttonText = "Subscribe",
-  title = "Upgrade to Pro",
   description = "Get access to all premium features and support the project.",
   onSuccess,
+  productId,
+  productSlug = "pro",
+  title = "Upgrade to Pro",
 }: PaymentFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const handleCheckout = async () => {
     setIsLoading(true);
@@ -68,7 +68,7 @@ export function PaymentForm({
       </CardHeader>
       <CardContent>
         {error && (
-          <Alert variant="destructive" className="mb-4">
+          <Alert className="mb-4" variant="destructive">
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
@@ -76,9 +76,9 @@ export function PaymentForm({
       </CardContent>
       <CardFooter>
         <Button
-          onClick={handleCheckout}
-          disabled={isLoading}
           className="w-full"
+          disabled={isLoading}
+          onClick={handleCheckout}
         >
           {isLoading ? "Loading..." : buttonText}
         </Button>

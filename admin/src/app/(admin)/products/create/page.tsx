@@ -14,18 +14,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import type { TokenGateRow } from "~/ui/token-gates-list";
+
+import { cn } from "~/lib/cn";
 import {
   COUNTRIES_BY_CONTINENT,
   COUNTRY_ORIGIN_OPTIONS,
 } from "~/lib/countries-by-continent";
-import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { BrandSelect } from "~/ui/brand-select";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import { BrandSelect } from "~/ui/brand-select";
 import { CategorySelect } from "~/ui/category-select";
-import type { TokenGateRow } from "~/ui/token-gates-list";
 import { TokenGatesList } from "~/ui/token-gates-list";
 
 const API_BASE = getMainAppUrl();
@@ -37,113 +38,41 @@ const labelClass = "mb-1.5 block text-sm font-medium";
 // Common option names for the dropdown
 const OPTION_NAME_SUGGESTIONS = ["Size", "Color", "Material", "Style"];
 
-type ProductImage = {
-  id?: string;
-  url: string;
+interface CategoryOption {
+  id: string;
+  name: string;
+  parentName?: null | string;
+  slug?: null | string;
+}
+interface OptionDef {
+  isExpanded?: boolean;
+  name: string;
+  values: string[];
+}
+interface ProductImage {
   alt?: string;
-  title?: string;
-  sortOrder?: number;
-};
-type ProductVariant = {
   id?: string;
-  size?: string;
+  sortOrder?: number;
+  title?: string;
+  url: string;
+}
+interface ProductVariant {
   color?: string;
-  sku?: string;
-  stockQuantity?: number;
-  priceCents: number;
+  id?: string;
   imageUrl?: string;
   // For multi-option support, store all option values
   optionValues?: Record<string, string>;
-};
-type OptionDef = { name: string; values: string[]; isExpanded?: boolean };
-type CategoryOption = {
-  id: string;
-  name: string;
-  parentName?: string | null;
-  slug?: string | null;
-};
-
-function slugFromName(name: string): string {
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-}
-
-/** Generate all variant combinations from option definitions */
-function generateVariantsFromOptions(
-  optionDefinitions: OptionDef[],
-  basePriceCents: number,
-  existingVariants: ProductVariant[] = [],
-): ProductVariant[] {
-  const validOptions = optionDefinitions.filter(
-    (o) => o.name?.trim() && o.values.some((v) => v.trim()),
-  );
-
-  if (validOptions.length === 0) return [];
-
-  // Build all combinations
-  const combinations: Record<string, string>[] = [{}];
-
-  for (const option of validOptions) {
-    const cleanValues = option.values.filter((v) => v.trim());
-    const newCombinations: Record<string, string>[] = [];
-
-    for (const combo of combinations) {
-      for (const value of cleanValues) {
-        newCombinations.push({ ...combo, [option.name]: value.trim() });
-      }
-    }
-    combinations.length = 0;
-    combinations.push(...newCombinations);
-  }
-
-  // Create variants from combinations, preserving existing data where possible
-  return combinations.map((combo) => {
-    // Try to find existing variant with same options
-    const existing = existingVariants.find((v) => {
-      const vSize = v.size || v.optionValues?.Size || "";
-      const vColor = v.color || v.optionValues?.Color || "";
-      const comboSize = combo.Size || "";
-      const comboColor = combo.Color || "";
-      return vSize === comboSize && vColor === comboColor;
-    });
-
-    return {
-      id: existing?.id,
-      size: combo.Size || undefined,
-      color: combo.Color || undefined,
-      sku: existing?.sku || "",
-      stockQuantity: existing?.stockQuantity ?? 0,
-      priceCents: existing?.priceCents ?? basePriceCents,
-      imageUrl: existing?.imageUrl || "",
-      optionValues: combo,
-    };
-  });
-}
-
-/** Get variant display label from option values */
-function getVariantLabel(
-  variant: ProductVariant,
-  optionDefinitions: OptionDef[],
-): string {
-  const parts: string[] = [];
-  for (const opt of optionDefinitions) {
-    const value =
-      variant.optionValues?.[opt.name] ||
-      (opt.name.toLowerCase() === "size" ? variant.size : undefined) ||
-      (opt.name.toLowerCase() === "color" ? variant.color : undefined);
-    if (value) parts.push(value);
-  }
-  return parts.join(" / ") || "Default";
+  priceCents: number;
+  size?: string;
+  sku?: string;
+  stockQuantity?: number;
 }
 
 export default function AdminProductsCreatePage() {
   const router = useRouter();
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState("");
@@ -183,7 +112,7 @@ export default function AdminProductsCreatePage() {
   const [hasVariants, setHasVariants] = useState(false);
   const [optionDefinitions, setOptionDefinitions] = useState<OptionDef[]>([]);
   const [variants, setVariants] = useState<ProductVariant[]>([]);
-  const [editingVariantIndex, setEditingVariantIndex] = useState<number | null>(
+  const [editingVariantIndex, setEditingVariantIndex] = useState<null | number>(
     null,
   );
   const [tokenGated, setTokenGated] = useState(false);
@@ -191,7 +120,7 @@ export default function AdminProductsCreatePage() {
   const [availableCountryCodes, setAvailableCountryCodes] = useState<string[]>(
     [],
   );
-  const [expandedImageUrl, setExpandedImageUrl] = useState<string | null>(null);
+  const [expandedImageUrl, setExpandedImageUrl] = useState<null | string>(null);
 
   const availableCountrySet = useMemo(
     () => new Set(availableCountryCodes),
@@ -288,7 +217,7 @@ export default function AdminProductsCreatePage() {
   const addImage = useCallback(() => {
     setImages((prev) => [
       ...prev,
-      { url: "", alt: "", title: "", sortOrder: prev.length },
+      { alt: "", sortOrder: prev.length, title: "", url: "" },
     ]);
   }, []);
   const updateImage = useCallback(
@@ -306,7 +235,7 @@ export default function AdminProductsCreatePage() {
   }, []);
 
   const uploadImageInputRef = useRef<HTMLInputElement>(null);
-  const uploadImageTargetRef = useRef<null | "primary" | number>(null);
+  const uploadImageTargetRef = useRef<"primary" | null | number>(null);
   const [uploadImageLoading, setUploadImageLoading] = useState(false);
   const handleUploadImage = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -320,9 +249,9 @@ export default function AdminProductsCreatePage() {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch(`${API_BASE}/api/admin/upload`, {
-          method: "POST",
-          credentials: "include",
           body: form,
+          credentials: "include",
+          method: "POST",
         });
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as {
@@ -351,7 +280,7 @@ export default function AdminProductsCreatePage() {
   const addOption = useCallback(() => {
     setOptionDefinitions((prev) => [
       ...prev,
-      { name: "", values: [""], isExpanded: true },
+      { isExpanded: true, name: "", values: [""] },
     ]);
   }, []);
 
@@ -423,8 +352,8 @@ export default function AdminProductsCreatePage() {
       const cleanedValues = next[index]!.values.filter((v) => v.trim());
       next[index] = {
         ...next[index]!,
-        values: cleanedValues.length > 0 ? cleanedValues : [""],
         isExpanded: false,
+        values: cleanedValues.length > 0 ? cleanedValues : [""],
       };
       return next;
     });
@@ -451,7 +380,7 @@ export default function AdminProductsCreatePage() {
     (
       index: number,
       field: keyof ProductVariant,
-      value: string | number | undefined,
+      value: number | string | undefined,
     ) => {
       setVariants((prev) => {
         const next = [...prev];
@@ -470,7 +399,7 @@ export default function AdminProductsCreatePage() {
         setError("Price must be a valid non-negative number.");
         return;
       }
-      let weightGrams: number | null = null;
+      let weightGrams: null | number = null;
       if (weightValue.trim()) {
         const w = Number.parseFloat(weightValue);
         if (!Number.isNaN(w) && w >= 0) {
@@ -484,42 +413,38 @@ export default function AdminProductsCreatePage() {
       setError(null);
       try {
         const payload = {
-          name: name.trim(),
-          description: description.trim() || null,
-          features: features.filter((f) => f.trim() !== ""),
-          imageUrl: imageUrl.trim() || null,
-          metaDescription: metaDescription.trim() || null,
-          pageTitle: pageTitle.trim() || null,
-          seoOptimized,
-          priceCents: cents,
+          availableCountryCodes:
+            availableCountryCodes.length > 0
+              ? availableCountryCodes.filter((c) => !isShippingExcluded(c))
+              : undefined,
+          barcode: barcode.trim() || null,
+          brand: brand.trim() || null,
+          categoryId: categoryId || null,
           compareAtPriceCents: compareAtPriceCents.trim()
             ? Number.parseInt(compareAtPriceCents, 10)
             : null,
+          continueSellingWhenOutOfStock,
           costPerItemCents: costPerItemCents.trim()
             ? Number.parseInt(costPerItemCents, 10)
             : null,
-          published,
-          hidden,
-          brand: brand.trim() || null,
-          vendor: vendor.trim() || null,
-          slug: slug.trim() || null,
-          sku: sku.trim() || null,
-          barcode: barcode.trim() || null,
-          weightGrams,
-          weightUnit,
-          physicalProduct,
-          trackQuantity,
-          continueSellingWhenOutOfStock,
-          quantity: quantity.trim() ? Number.parseInt(quantity, 10) : null,
-          hsCode: hsCode.trim() || null,
           countryOfOrigin: countryOfOrigin.trim() || null,
-          shipsFromDisplay: shipsFromDisplay.trim() || null,
-          shipsFromCountry: shipsFromCountry.trim() || null,
-          shipsFromRegion: shipsFromRegion.trim() || null,
-          shipsFromCity: shipsFromCity.trim() || null,
-          shipsFromPostalCode: shipsFromPostalCode.trim() || null,
-          categoryId: categoryId || null,
+          description: description.trim() || null,
+          features: features.filter((f) => f.trim() !== ""),
           hasVariants,
+          hidden,
+          hsCode: hsCode.trim() || null,
+          images: images
+            .filter((i) => i.url.trim())
+            .map((img, i) => ({
+              alt: img.alt?.trim() || null,
+              id: img.id,
+              sortOrder: i,
+              title: img.title?.trim() || null,
+              url: img.url.trim(),
+            })),
+          imageUrl: imageUrl.trim() || null,
+          metaDescription: metaDescription.trim() || null,
+          name: name.trim(),
           optionDefinitionsJson:
             hasVariants && optionDefinitions.length > 0
               ? JSON.stringify(
@@ -529,42 +454,46 @@ export default function AdminProductsCreatePage() {
                   })),
                 )
               : null,
-          images: images
-            .filter((i) => i.url.trim())
-            .map((img, i) => ({
-              id: img.id,
-              url: img.url.trim(),
-              alt: img.alt?.trim() || null,
-              title: img.title?.trim() || null,
-              sortOrder: i,
-            })),
+          pageTitle: pageTitle.trim() || null,
+          physicalProduct,
+          priceCents: cents,
+          published,
+          quantity: quantity.trim() ? Number.parseInt(quantity, 10) : null,
+          seoOptimized,
+          shipsFromCity: shipsFromCity.trim() || null,
+          shipsFromCountry: shipsFromCountry.trim() || null,
+          shipsFromDisplay: shipsFromDisplay.trim() || null,
+          shipsFromPostalCode: shipsFromPostalCode.trim() || null,
+          shipsFromRegion: shipsFromRegion.trim() || null,
+          sku: sku.trim() || null,
+          slug: slug.trim() || null,
           tags: tagsInput
             .split(",")
             .map((t) => t.trim())
             .filter(Boolean),
-          variants: hasVariants
-            ? variants.map((v) => ({
-                id: v.id,
-                size: v.size ?? null,
-                color: v.color ?? null,
-                sku: v.sku ?? null,
-                stockQuantity: v.stockQuantity ?? null,
-                priceCents: v.priceCents,
-                imageUrl: v.imageUrl ?? null,
-              }))
-            : undefined,
           tokenGated,
           tokenGates,
-          availableCountryCodes:
-            availableCountryCodes.length > 0
-              ? availableCountryCodes.filter((c) => !isShippingExcluded(c))
-              : undefined,
+          trackQuantity,
+          variants: hasVariants
+            ? variants.map((v) => ({
+                color: v.color ?? null,
+                id: v.id,
+                imageUrl: v.imageUrl ?? null,
+                priceCents: v.priceCents,
+                size: v.size ?? null,
+                sku: v.sku ?? null,
+                stockQuantity: v.stockQuantity ?? null,
+              }))
+            : undefined,
+          vendor: vendor.trim() || null,
+          weightGrams,
+          weightUnit,
         };
         const res = await fetch(`${API_BASE}/api/admin/products`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify(payload),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -628,76 +557,89 @@ export default function AdminProductsCreatePage() {
           Create Product
         </h2>
         <Link
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/products"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           ← Back to list
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {/* Basic */}
         <Card>
           <CardHeader>
             <CardTitle>Basic info</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="name" className={labelClass}>
+                <label className={labelClass} htmlFor="name">
                   Name
                 </label>
                 <input
-                  id="name"
-                  type="text"
-                  placeholder="Product name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   className={inputClass}
+                  id="name"
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Product name"
                   required
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
                 <label
-                  id="categoryId-label"
-                  htmlFor="categoryId"
                   className={labelClass}
+                  htmlFor="categoryId"
+                  id="categoryId-label"
                 >
                   Category
                 </label>
                 <CategorySelect
+                  className={inputClass}
+                  disabled={loading}
                   id="categoryId"
-                  value={categoryId}
+                  labelClass={labelClass}
                   onChange={setCategoryId}
                   options={categoryOptions}
-                  className={inputClass}
-                  labelClass={labelClass}
-                  disabled={loading}
                   placeholder="Search categories…"
+                  value={categoryId}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="features" className={labelClass}>
+              <label className={labelClass} htmlFor="features">
                 Features
               </label>
               <textarea
+                className={cn(inputClass, "resize-y")}
                 id="features"
-                placeholder="One bullet point per line (e.g. Premium cotton, Machine washable)"
-                value={features.join("\n")}
                 onChange={(e) =>
                   setFeatures(
                     e.target.value.split("\n").map((line) => line.trimEnd()),
                   )
                 }
+                placeholder="One bullet point per line (e.g. Premium cotton, Machine washable)"
                 rows={5}
-                className={cn(inputClass, "resize-y")}
+                value={features.join("\n")}
               />
               <p className="text-xs text-muted-foreground">
                 Shown as bullet points on the product page. Add one feature per
@@ -705,16 +647,16 @@ export default function AdminProductsCreatePage() {
               </p>
             </div>
             <div className="border-t border-border pt-4">
-              <label htmlFor="description" className={labelClass}>
+              <label className={labelClass} htmlFor="description">
                 Description
               </label>
               <textarea
-                id="description"
-                placeholder="Product description (HTML supported: e.g. <p>, <strong>, <a>)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={4}
                 className={cn(inputClass, "mt-2 resize-y")}
+                id="description"
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Product description (HTML supported: e.g. <p>, <strong>, <a>)"
+                rows={4}
+                value={description}
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Shown in the Description accordion on the storefront. Printify
@@ -730,17 +672,20 @@ export default function AdminProductsCreatePage() {
             <CardTitle>Pricing</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-3
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="priceCents" className={labelClass}>
+                <label className={labelClass} htmlFor="priceCents">
                   Price (USD)
                 </label>
                 <input
+                  className={inputClass}
                   id="priceCents"
-                  type="number"
                   min={0}
-                  step={0.01}
-                  value={priceCents === "" ? "" : Number(priceCents) / 100}
                   onChange={(e) => {
                     const v = e.target.value;
                     if (v === "") setPriceCents("");
@@ -750,24 +695,20 @@ export default function AdminProductsCreatePage() {
                         setPriceCents(String(Math.round(n * 100)));
                     }
                   }}
-                  className={inputClass}
                   required
+                  step={0.01}
+                  type="number"
+                  value={priceCents === "" ? "" : Number(priceCents) / 100}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="compareAtPriceCents" className={labelClass}>
+                <label className={labelClass} htmlFor="compareAtPriceCents">
                   Compare at price (USD)
                 </label>
                 <input
+                  className={inputClass}
                   id="compareAtPriceCents"
-                  type="number"
                   min={0}
-                  step={0.01}
-                  value={
-                    compareAtPriceCents === ""
-                      ? ""
-                      : Number(compareAtPriceCents) / 100
-                  }
                   onChange={(e) => {
                     const v = e.target.value;
                     setCompareAtPriceCents(
@@ -776,23 +717,23 @@ export default function AdminProductsCreatePage() {
                         : String(Math.round(Number.parseFloat(v) * 100)),
                     );
                   }}
-                  className={inputClass}
+                  step={0.01}
+                  type="number"
+                  value={
+                    compareAtPriceCents === ""
+                      ? ""
+                      : Number(compareAtPriceCents) / 100
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="costPerItemCents" className={labelClass}>
+                <label className={labelClass} htmlFor="costPerItemCents">
                   Cost per item (USD)
                 </label>
                 <input
+                  className={inputClass}
                   id="costPerItemCents"
-                  type="number"
                   min={0}
-                  step={0.01}
-                  value={
-                    costPerItemCents === ""
-                      ? ""
-                      : Number(costPerItemCents) / 100
-                  }
                   onChange={(e) => {
                     const v = e.target.value;
                     setCostPerItemCents(
@@ -801,7 +742,13 @@ export default function AdminProductsCreatePage() {
                         : String(Math.round(Number.parseFloat(v) * 100)),
                     );
                   }}
-                  className={inputClass}
+                  step={0.01}
+                  type="number"
+                  value={
+                    costPerItemCents === ""
+                      ? ""
+                      : Number(costPerItemCents) / 100
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
                   Customers won&apos;t see this.
@@ -817,50 +764,55 @@ export default function AdminProductsCreatePage() {
             <CardTitle>Inventory</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="sku" className={labelClass}>
+                <label className={labelClass} htmlFor="sku">
                   SKU
                 </label>
                 <input
+                  className={inputClass}
                   id="sku"
+                  onChange={(e) => setSku(e.target.value)}
                   type="text"
                   value={sku}
-                  onChange={(e) => setSku(e.target.value)}
-                  className={inputClass}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="barcode" className={labelClass}>
+                <label className={labelClass} htmlFor="barcode">
                   Barcode (ISBN, UPC, GTIN)
                 </label>
                 <input
+                  className={inputClass}
                   id="barcode"
+                  onChange={(e) => setBarcode(e.target.value)}
                   type="text"
                   value={barcode}
-                  onChange={(e) => setBarcode(e.target.value)}
-                  className={inputClass}
                 />
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <label className="flex items-center gap-2">
                 <input
-                  type="checkbox"
                   checked={trackQuantity}
-                  onChange={(e) => setTrackQuantity(e.target.checked)}
                   className="size-4 rounded border-input"
+                  onChange={(e) => setTrackQuantity(e.target.checked)}
+                  type="checkbox"
                 />
                 <span className="text-sm">Track quantity</span>
               </label>
               <label className="flex items-center gap-2">
                 <input
-                  type="checkbox"
                   checked={continueSellingWhenOutOfStock}
+                  className="size-4 rounded border-input"
                   onChange={(e) =>
                     setContinueSellingWhenOutOfStock(e.target.checked)
                   }
-                  className="size-4 rounded border-input"
+                  type="checkbox"
                 />
                 <span className="text-sm">
                   Continue selling when out of stock
@@ -869,16 +821,16 @@ export default function AdminProductsCreatePage() {
             </div>
             {trackQuantity && !hasVariants && (
               <div className="max-w-xs space-y-2">
-                <label htmlFor="quantity" className={labelClass}>
+                <label className={labelClass} htmlFor="quantity">
                   Quantity
                 </label>
                 <input
-                  id="quantity"
-                  type="number"
-                  min={0}
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
                   className={inputClass}
+                  id="quantity"
+                  min={0}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  type="number"
+                  value={quantity}
                 />
               </div>
             )}
@@ -893,40 +845,40 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <label className="flex items-center gap-2">
               <input
-                type="checkbox"
                 checked={physicalProduct}
-                onChange={(e) => setPhysicalProduct(e.target.checked)}
                 className="size-4 rounded border-input"
+                onChange={(e) => setPhysicalProduct(e.target.checked)}
+                type="checkbox"
               />
               <span className="text-sm">This is a physical product</span>
             </label>
             {physicalProduct && (
               <div className="flex items-end gap-2">
                 <div className="max-w-[120px] flex-1 space-y-2">
-                  <label htmlFor="weightValue" className={labelClass}>
+                  <label className={labelClass} htmlFor="weightValue">
                     Weight
                   </label>
                   <input
-                    id="weightValue"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={weightValue}
-                    onChange={(e) => setWeightValue(e.target.value)}
                     className={inputClass}
+                    id="weightValue"
+                    min={0}
+                    onChange={(e) => setWeightValue(e.target.value)}
+                    step={0.01}
+                    type="number"
+                    value={weightValue}
                   />
                 </div>
                 <div className="w-20 space-y-2">
-                  <label htmlFor="weightUnit" className={labelClass}>
+                  <label className={labelClass} htmlFor="weightUnit">
                     Unit
                   </label>
                   <select
+                    className={inputClass}
                     id="weightUnit"
-                    value={weightUnit}
                     onChange={(e) =>
                       setWeightUnit(e.target.value as "kg" | "lb")
                     }
-                    className={inputClass}
+                    value={weightUnit}
                   >
                     <option value="kg">kg</option>
                     <option value="lb">lb</option>
@@ -934,29 +886,34 @@ export default function AdminProductsCreatePage() {
                 </div>
               </div>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="hsCode" className={labelClass}>
+                <label className={labelClass} htmlFor="hsCode">
                   HS Code (international shipping)
                 </label>
                 <input
+                  className={inputClass}
                   id="hsCode"
+                  onChange={(e) => setHsCode(e.target.value)}
+                  placeholder="e.g. 6110.20"
                   type="text"
                   value={hsCode}
-                  onChange={(e) => setHsCode(e.target.value)}
-                  className={inputClass}
-                  placeholder="e.g. 6110.20"
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="countryOfOrigin" className={labelClass}>
+                <label className={labelClass} htmlFor="countryOfOrigin">
                   Country of origin
                 </label>
                 <select
-                  id="countryOfOrigin"
-                  value={countryOfOrigin}
-                  onChange={(e) => setCountryOfOrigin(e.target.value)}
                   className={inputClass}
+                  id="countryOfOrigin"
+                  onChange={(e) => setCountryOfOrigin(e.target.value)}
+                  value={countryOfOrigin}
                 >
                   {COUNTRY_ORIGIN_OPTIONS.map((c) => (
                     <option key={c || "empty"} value={c}>
@@ -972,85 +929,90 @@ export default function AdminProductsCreatePage() {
                   Optional. Full address or city/region/postal/country. Shown on
                   product pages and used for shipping-time estimates.
                 </p>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div
+                  className={`
+                  grid gap-3
+                  sm:grid-cols-2
+                `}
+                >
                   <div className="sm:col-span-2">
                     <label
-                      htmlFor="shipsFromDisplay"
                       className="mb-1 block text-xs font-medium"
+                      htmlFor="shipsFromDisplay"
                     >
                       Full address (optional)
                     </label>
                     <input
-                      id="shipsFromDisplay"
-                      type="text"
-                      placeholder="e.g. 123 Main St, Austin, TX 78701, United States"
-                      value={shipsFromDisplay}
-                      onChange={(e) => setShipsFromDisplay(e.target.value)}
                       className={inputClass}
+                      id="shipsFromDisplay"
+                      onChange={(e) => setShipsFromDisplay(e.target.value)}
+                      placeholder="e.g. 123 Main St, Austin, TX 78701, United States"
+                      type="text"
+                      value={shipsFromDisplay}
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="shipsFromCity"
                       className="mb-1 block text-xs font-medium"
+                      htmlFor="shipsFromCity"
                     >
                       City
                     </label>
                     <input
-                      id="shipsFromCity"
-                      type="text"
-                      placeholder="Austin"
-                      value={shipsFromCity}
-                      onChange={(e) => setShipsFromCity(e.target.value)}
                       className={inputClass}
+                      id="shipsFromCity"
+                      onChange={(e) => setShipsFromCity(e.target.value)}
+                      placeholder="Austin"
+                      type="text"
+                      value={shipsFromCity}
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="shipsFromRegion"
                       className="mb-1 block text-xs font-medium"
+                      htmlFor="shipsFromRegion"
                     >
                       State / Region
                     </label>
                     <input
-                      id="shipsFromRegion"
-                      type="text"
-                      placeholder="TX"
-                      value={shipsFromRegion}
-                      onChange={(e) => setShipsFromRegion(e.target.value)}
                       className={inputClass}
+                      id="shipsFromRegion"
+                      onChange={(e) => setShipsFromRegion(e.target.value)}
+                      placeholder="TX"
+                      type="text"
+                      value={shipsFromRegion}
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="shipsFromPostalCode"
                       className="mb-1 block text-xs font-medium"
+                      htmlFor="shipsFromPostalCode"
                     >
                       Postal code
                     </label>
                     <input
-                      id="shipsFromPostalCode"
-                      type="text"
-                      placeholder="78701"
-                      value={shipsFromPostalCode}
-                      onChange={(e) => setShipsFromPostalCode(e.target.value)}
                       className={inputClass}
+                      id="shipsFromPostalCode"
+                      onChange={(e) => setShipsFromPostalCode(e.target.value)}
+                      placeholder="78701"
+                      type="text"
+                      value={shipsFromPostalCode}
                     />
                   </div>
                   <div>
                     <label
-                      htmlFor="shipsFromCountry"
                       className="mb-1 block text-xs font-medium"
+                      htmlFor="shipsFromCountry"
                     >
                       Country
                     </label>
                     <input
-                      id="shipsFromCountry"
-                      type="text"
-                      placeholder="United States"
-                      value={shipsFromCountry}
-                      onChange={(e) => setShipsFromCountry(e.target.value)}
                       className={inputClass}
+                      id="shipsFromCountry"
+                      onChange={(e) => setShipsFromCountry(e.target.value)}
+                      placeholder="United States"
+                      type="text"
+                      value={shipsFromCountry}
                     />
                   </div>
                 </div>
@@ -1061,12 +1023,12 @@ export default function AdminProductsCreatePage() {
 
         {/* Media */}
         <input
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          aria-hidden
+          className="hidden"
+          onChange={handleUploadImage}
           ref={uploadImageInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-          className="hidden"
-          aria-hidden
-          onChange={handleUploadImage}
         />
         <Card>
           <CardHeader>
@@ -1078,39 +1040,44 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <label htmlFor="imageUrl" className={labelClass}>
+                <label className={labelClass} htmlFor="imageUrl">
                   Primary image URL
                 </label>
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
                   className="gap-1"
                   disabled={uploadImageLoading}
                   onClick={() => triggerUploadImage("primary")}
+                  size="sm"
+                  type="button"
+                  variant="outline"
                 >
                   <Upload className="h-4 w-4" />
                   {uploadImageLoading ? "Uploading…" : "Upload"}
                 </Button>
               </div>
               <input
-                id="imageUrl"
-                type="url"
-                placeholder="https://…"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
                 className={inputClass}
+                id="imageUrl"
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://…"
+                type="url"
+                value={imageUrl}
               />
               {imageUrl && (
-                <div className="relative mt-2 size-24 overflow-hidden rounded-md border bg-muted">
+                <div
+                  className={`
+                  relative mt-2 size-24 overflow-hidden rounded-md border
+                  bg-muted
+                `}
+                >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={imageUrl}
                     alt=""
                     className="size-full object-cover"
                     onError={(e) => {
                       e.currentTarget.style.display = "none";
                     }}
+                    src={imageUrl}
                   />
                 </div>
               )}
@@ -1121,76 +1088,83 @@ export default function AdminProductsCreatePage() {
                   Additional images (with Image SEO: alt, title)
                 </span>
                 <Button
+                  className="gap-1"
+                  onClick={addImage}
+                  size="sm"
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={addImage}
-                  className="gap-1"
                 >
                   <Plus className="h-4 w-4" /> Add image
                 </Button>
               </div>
               {images.map((img, i) => (
                 <div
+                  className={`
+                    flex flex-wrap items-start gap-2 rounded border p-2
+                  `}
                   key={i}
-                  className="flex flex-wrap items-start gap-2 rounded border p-2"
                 >
                   {img.url && (
                     <button
-                      type="button"
+                      className={`
+                        relative size-16 shrink-0 overflow-hidden rounded border
+                        bg-muted transition-opacity
+                        hover:opacity-90
+                        focus:ring-2 focus:ring-ring focus:outline-none
+                      `}
                       onClick={() => setExpandedImageUrl(img.url)}
-                      className="relative size-16 shrink-0 overflow-hidden rounded border bg-muted transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring"
                       title="Click to expand"
+                      type="button"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={img.url}
                         alt=""
                         className="size-full object-cover"
                         onError={(e) => {
                           e.currentTarget.style.display = "none";
                         }}
+                        src={img.url}
                       />
                     </button>
                   )}
                   <input
-                    type="url"
-                    placeholder="Image URL"
-                    value={img.url}
-                    onChange={(e) => updateImage(i, "url", e.target.value)}
                     className={cn(inputClass, "min-w-[200px] flex-1")}
+                    onChange={(e) => updateImage(i, "url", e.target.value)}
+                    placeholder="Image URL"
+                    type="url"
+                    value={img.url}
                   />
                   <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="gap-1 shrink-0"
+                    className="shrink-0 gap-1"
                     disabled={uploadImageLoading}
                     onClick={() => triggerUploadImage(i)}
+                    size="sm"
+                    type="button"
+                    variant="outline"
                   >
                     <Upload className="h-4 w-4" />
                     Upload
                   </Button>
                   <input
-                    type="text"
-                    placeholder="Alt text (SEO)"
-                    value={img.alt ?? ""}
-                    onChange={(e) => updateImage(i, "alt", e.target.value)}
                     className={cn(inputClass, "min-w-[120px] flex-1")}
+                    onChange={(e) => updateImage(i, "alt", e.target.value)}
+                    placeholder="Alt text (SEO)"
+                    type="text"
+                    value={img.alt ?? ""}
                   />
                   <input
-                    type="text"
-                    placeholder="Title (SEO)"
-                    value={img.title ?? ""}
-                    onChange={(e) => updateImage(i, "title", e.target.value)}
                     className={cn(inputClass, "min-w-[120px] flex-1")}
+                    onChange={(e) => updateImage(i, "title", e.target.value)}
+                    placeholder="Title (SEO)"
+                    type="text"
+                    value={img.title ?? ""}
                   />
                   <Button
+                    aria-label="Remove image"
+                    onClick={() => removeImage(i)}
+                    size="icon"
                     type="button"
                     variant="ghost"
-                    size="icon"
-                    onClick={() => removeImage(i)}
-                    aria-label="Remove image"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -1206,40 +1180,45 @@ export default function AdminProductsCreatePage() {
             <CardTitle>Organization</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div>
                 <BrandSelect
                   id="brand"
-                  value={brand}
-                  onChange={setBrand}
-                  labelClass={labelClass}
                   inputClass={inputClass}
+                  labelClass={labelClass}
+                  onChange={setBrand}
+                  value={brand}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="vendor" className={labelClass}>
+                <label className={labelClass} htmlFor="vendor">
                   Vendor
                 </label>
                 <input
+                  className={inputClass}
                   id="vendor"
+                  onChange={(e) => setVendor(e.target.value)}
                   type="text"
                   value={vendor}
-                  onChange={(e) => setVendor(e.target.value)}
-                  className={inputClass}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="tagsInput" className={labelClass}>
+              <label className={labelClass} htmlFor="tagsInput">
                 Tags (comma-separated; act as extra categories)
               </label>
               <input
-                id="tagsInput"
-                type="text"
-                placeholder="tag1, tag2, tag3"
-                value={tagsInput}
-                onChange={(e) => setTagsInput(e.target.value)}
                 className={inputClass}
+                id="tagsInput"
+                onChange={(e) => setTagsInput(e.target.value)}
+                placeholder="tag1, tag2, tag3"
+                type="text"
+                value={tagsInput}
               />
             </div>
           </CardContent>
@@ -1253,17 +1232,17 @@ export default function AdminProductsCreatePage() {
           <CardContent className="space-y-4">
             <label className="flex items-center gap-2">
               <input
-                type="checkbox"
                 checked={hasVariants}
+                className="size-4 rounded border-input"
                 onChange={(e) => {
                   setHasVariants(e.target.checked);
                   if (e.target.checked && optionDefinitions.length === 0) {
                     setOptionDefinitions([
-                      { name: "Size", values: [""], isExpanded: true },
+                      { isExpanded: true, name: "Size", values: [""] },
                     ]);
                   }
                 }}
-                className="size-4 rounded border-input"
+                type="checkbox"
               />
               <span className="text-sm">
                 This product has options, like size or color
@@ -1275,13 +1254,17 @@ export default function AdminProductsCreatePage() {
                 {/* Option Definitions */}
                 <div className="space-y-3">
                   {optionDefinitions.map((opt, oi) => (
-                    <div key={oi} className="rounded-lg border bg-card">
+                    <div className="rounded-lg border bg-card" key={oi}>
                       {/* Collapsed view */}
                       {!opt.isExpanded ? (
                         <div className="flex items-center gap-3 p-3">
-                          <GripVertical className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <GripVertical
+                            className={`
+                            h-4 w-4 shrink-0 text-muted-foreground
+                          `}
+                          />
                           <div className="flex-1">
-                            <div className="font-medium text-sm">
+                            <div className="text-sm font-medium">
                               {opt.name || "Unnamed option"}
                             </div>
                             <div className="mt-1 flex flex-wrap gap-1">
@@ -1289,8 +1272,11 @@ export default function AdminProductsCreatePage() {
                                 .filter((v) => v.trim())
                                 .map((val, vi) => (
                                   <span
+                                    className={`
+                                      inline-flex items-center rounded-md
+                                      bg-muted px-2 py-0.5 text-xs font-medium
+                                    `}
                                     key={vi}
-                                    className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium"
                                   >
                                     {val}
                                   </span>
@@ -1298,10 +1284,10 @@ export default function AdminProductsCreatePage() {
                             </div>
                           </div>
                           <Button
+                            onClick={() => toggleOptionExpanded(oi)}
+                            size="sm"
                             type="button"
                             variant="outline"
-                            size="sm"
-                            onClick={() => toggleOptionExpanded(oi)}
                           >
                             Edit
                           </Button>
@@ -1310,22 +1296,30 @@ export default function AdminProductsCreatePage() {
                         /* Expanded view */
                         <div className="space-y-3 p-3">
                           <div className="flex items-start gap-3">
-                            <GripVertical className="mt-2.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                            <GripVertical
+                              className={`
+                              mt-2.5 h-4 w-4 shrink-0 text-muted-foreground
+                            `}
+                            />
                             <div className="flex-1 space-y-3">
                               <div>
-                                <label className="mb-1 block text-sm font-medium">
+                                <label
+                                  className={`
+                                  mb-1 block text-sm font-medium
+                                `}
+                                >
                                   Option name
                                 </label>
                                 <div className="relative">
                                   <input
-                                    type="text"
-                                    placeholder="Size"
-                                    value={opt.name}
+                                    className={inputClass}
+                                    list={`option-names-${oi}`}
                                     onChange={(e) =>
                                       updateOptionName(oi, e.target.value)
                                     }
-                                    list={`option-names-${oi}`}
-                                    className={inputClass}
+                                    placeholder="Size"
+                                    type="text"
+                                    value={opt.name}
                                   />
                                   <datalist id={`option-names-${oi}`}>
                                     {OPTION_NAME_SUGGESTIONS.filter(
@@ -1344,25 +1338,21 @@ export default function AdminProductsCreatePage() {
                               </div>
 
                               <div>
-                                <label className="mb-1 block text-sm font-medium">
+                                <label
+                                  className={`
+                                  mb-1 block text-sm font-medium
+                                `}
+                                >
                                   Option values
                                 </label>
                                 <div className="space-y-2">
                                   {opt.values.map((val, vi) => (
                                     <div
-                                      key={vi}
                                       className="flex items-center gap-2"
+                                      key={vi}
                                     >
                                       <input
-                                        type="text"
-                                        placeholder={
-                                          opt.name === "Size"
-                                            ? "Medium"
-                                            : opt.name === "Color"
-                                              ? "Blue"
-                                              : "Value"
-                                        }
-                                        value={val}
+                                        className={cn(inputClass, "flex-1")}
                                         onChange={(e) =>
                                           updateOptionValue(
                                             oi,
@@ -1376,16 +1366,24 @@ export default function AdminProductsCreatePage() {
                                             addOptionValue(oi);
                                           }
                                         }}
-                                        className={cn(inputClass, "flex-1")}
+                                        placeholder={
+                                          opt.name === "Size"
+                                            ? "Medium"
+                                            : opt.name === "Color"
+                                              ? "Blue"
+                                              : "Value"
+                                        }
+                                        type="text"
+                                        value={val}
                                       />
                                       {opt.values.length > 1 && (
                                         <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
                                           onClick={() =>
                                             removeOptionValue(oi, vi)
                                           }
+                                          size="icon"
+                                          type="button"
+                                          variant="ghost"
                                         >
                                           <X className="h-4 w-4" />
                                         </Button>
@@ -1395,28 +1393,32 @@ export default function AdminProductsCreatePage() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center justify-between pt-2">
+                              <div
+                                className={`
+                                flex items-center justify-between pt-2
+                              `}
+                              >
                                 <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
                                   onClick={() => {
                                     markOptionDone(oi);
                                     regenerateVariants();
                                   }}
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
                                 >
                                   Done
                                 </Button>
                               </div>
                             </div>
                             <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
                               onClick={() => {
                                 removeOption(oi);
                                 regenerateVariants();
                               }}
+                              size="icon"
+                              type="button"
+                              variant="ghost"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -1427,9 +1429,12 @@ export default function AdminProductsCreatePage() {
                   ))}
 
                   <button
-                    type="button"
+                    className={`
+                      flex items-center gap-2 text-sm font-medium text-primary
+                      hover:underline
+                    `}
                     onClick={addOption}
-                    className="flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+                    type="button"
                   >
                     <Plus className="h-4 w-4" /> Add another option
                   </button>
@@ -1440,23 +1445,33 @@ export default function AdminProductsCreatePage() {
                   <div className="mt-6">
                     <div className="mb-3 flex items-center justify-between">
                       <h4 className="font-medium">Variants</h4>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <div
+                        className={`
+                        flex items-center gap-2 text-sm text-muted-foreground
+                      `}
+                      >
                         <span>Select</span>
                         <button
-                          type="button"
-                          className="text-primary hover:underline"
+                          className={`
+                            text-primary
+                            hover:underline
+                          `}
                           onClick={() => {
                             /* Select all */
                           }}
+                          type="button"
                         >
                           All
                         </button>
                         <button
-                          type="button"
-                          className="text-primary hover:underline"
+                          className={`
+                            text-primary
+                            hover:underline
+                          `}
                           onClick={() => {
                             /* Select none */
                           }}
+                          type="button"
                         >
                           None
                         </button>
@@ -1469,8 +1484,8 @@ export default function AdminProductsCreatePage() {
                           <tr className="border-b bg-muted/50">
                             <th className="w-10 p-2">
                               <input
-                                type="checkbox"
                                 className="size-4 rounded border-input"
+                                type="checkbox"
                               />
                             </th>
                             <th className="p-2 text-left">Variant</th>
@@ -1482,35 +1497,59 @@ export default function AdminProductsCreatePage() {
                         </thead>
                         <tbody>
                           {variants.map((v, vi) => (
-                            <tr key={vi} className="border-b last:border-0">
+                            <tr
+                              className={`
+                              border-b
+                              last:border-0
+                            `}
+                              key={vi}
+                            >
                               <td className="p-2">
                                 <input
-                                  type="checkbox"
                                   className="size-4 rounded border-input"
+                                  type="checkbox"
                                 />
                               </td>
                               <td className="p-2">
                                 <div className="flex items-center gap-3">
-                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded border border-dashed bg-muted/30">
+                                  <div
+                                    className={`
+                                    flex h-10 w-10 shrink-0 items-center
+                                    justify-center overflow-hidden rounded
+                                    border border-dashed bg-muted/30
+                                  `}
+                                  >
                                     {v.imageUrl ? (
                                       <button
-                                        type="button"
+                                        className={`
+                                          flex h-full w-full items-center
+                                          justify-center transition-opacity
+                                          hover:opacity-90
+                                          focus:ring-2 focus:ring-ring
+                                          focus:outline-none focus:ring-inset
+                                        `}
                                         onClick={() =>
                                           setExpandedImageUrl(
                                             v.imageUrl ?? null,
                                           )
                                         }
-                                        className="flex h-full w-full items-center justify-center transition-opacity hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-inset"
                                         title="Click to expand"
+                                        type="button"
                                       >
                                         <img
-                                          src={v.imageUrl}
                                           alt=""
-                                          className="h-full w-full rounded object-cover"
+                                          className={`
+                                            h-full w-full rounded object-cover
+                                          `}
+                                          src={v.imageUrl}
                                         />
                                       </button>
                                     ) : (
-                                      <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                      <ImageIcon
+                                        className={`
+                                        h-4 w-4 text-muted-foreground
+                                      `}
+                                      />
                                     )}
                                   </div>
                                   <span className="font-medium">
@@ -1524,10 +1563,8 @@ export default function AdminProductsCreatePage() {
                                     $
                                   </span>
                                   <input
-                                    type="number"
+                                    className={cn(inputClass, "w-24")}
                                     min={0}
-                                    step={0.01}
-                                    value={(v.priceCents / 100).toFixed(2)}
                                     onChange={(e) => {
                                       const n = Number.parseFloat(
                                         e.target.value,
@@ -1540,15 +1577,16 @@ export default function AdminProductsCreatePage() {
                                           : Math.round(n * 100),
                                       );
                                     }}
-                                    className={cn(inputClass, "w-24")}
+                                    step={0.01}
+                                    type="number"
+                                    value={(v.priceCents / 100).toFixed(2)}
                                   />
                                 </div>
                               </td>
                               <td className="p-2">
                                 <input
-                                  type="number"
+                                  className={cn(inputClass, "w-20")}
                                   min={0}
-                                  value={v.stockQuantity ?? 0}
                                   onChange={(e) => {
                                     const n = Number.parseInt(
                                       e.target.value,
@@ -1560,26 +1598,27 @@ export default function AdminProductsCreatePage() {
                                       Number.isNaN(n) ? 0 : n,
                                     );
                                   }}
-                                  className={cn(inputClass, "w-20")}
+                                  type="number"
+                                  value={v.stockQuantity ?? 0}
                                 />
                               </td>
                               <td className="p-2">
                                 <input
-                                  type="text"
-                                  placeholder="SKU"
-                                  value={v.sku ?? ""}
+                                  className={cn(inputClass, "w-28")}
                                   onChange={(e) =>
                                     updateVariant(vi, "sku", e.target.value)
                                   }
-                                  className={cn(inputClass, "w-28")}
+                                  placeholder="SKU"
+                                  type="text"
+                                  value={v.sku ?? ""}
                                 />
                               </td>
                               <td className="p-2">
                                 <Button
+                                  onClick={() => setEditingVariantIndex(vi)}
+                                  size="sm"
                                   type="button"
                                   variant="outline"
-                                  size="sm"
-                                  onClick={() => setEditingVariantIndex(vi)}
                                 >
                                   Edit
                                 </Button>
@@ -1610,17 +1649,25 @@ export default function AdminProductsCreatePage() {
         {/* Image expand modal */}
         {expandedImageUrl && (
           <div
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+            aria-label="Expanded image"
+            aria-modal="true"
+            className={`
+              fixed inset-0 z-[100] flex items-center justify-center bg-black/80
+              p-4
+            `}
             onClick={() => setExpandedImageUrl(null)}
             role="dialog"
-            aria-modal="true"
-            aria-label="Expanded image"
           >
             <button
-              type="button"
-              onClick={() => setExpandedImageUrl(null)}
-              className="absolute right-4 top-4 rounded-md bg-black/50 p-2 text-white transition hover:bg-black/70 focus:outline-none focus:ring-2 focus:ring-white"
               aria-label="Close"
+              className={`
+                absolute top-4 right-4 rounded-md bg-black/50 p-2 text-white
+                transition
+                hover:bg-black/70
+                focus:ring-2 focus:ring-white focus:outline-none
+              `}
+              onClick={() => setExpandedImageUrl(null)}
+              type="button"
             >
               <X className="h-6 w-6" />
             </button>
@@ -1630,10 +1677,12 @@ export default function AdminProductsCreatePage() {
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={expandedImageUrl}
                 alt="Expanded view"
-                className="max-h-[90vh] max-w-full rounded object-contain shadow-2xl"
+                className={`
+                  max-h-[90vh] max-w-full rounded object-contain shadow-2xl
+                `}
                 onClick={(e) => e.stopPropagation()}
+                src={expandedImageUrl}
               />
             </div>
           </div>
@@ -1641,8 +1690,16 @@ export default function AdminProductsCreatePage() {
 
         {/* Variant Edit Modal */}
         {editingVariantIndex !== null && variants[editingVariantIndex] && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-lg bg-background p-6 shadow-lg">
+          <div
+            className={`
+            fixed inset-0 z-50 flex items-center justify-center bg-black/50
+          `}
+          >
+            <div
+              className={`
+              w-full max-w-md rounded-lg bg-background p-6 shadow-lg
+            `}
+            >
               <h3 className="mb-4 text-lg font-semibold">
                 Edit Variant:{" "}
                 {getVariantLabel(
@@ -1654,12 +1711,8 @@ export default function AdminProductsCreatePage() {
                 <div>
                   <label className={labelClass}>Price ($)</label>
                   <input
-                    type="number"
+                    className={inputClass}
                     min={0}
-                    step={0.01}
-                    value={(
-                      variants[editingVariantIndex]!.priceCents / 100
-                    ).toFixed(2)}
                     onChange={(e) => {
                       const n = Number.parseFloat(e.target.value);
                       updateVariant(
@@ -1668,15 +1721,18 @@ export default function AdminProductsCreatePage() {
                         Number.isNaN(n) ? 0 : Math.round(n * 100),
                       );
                     }}
-                    className={inputClass}
+                    step={0.01}
+                    type="number"
+                    value={(
+                      variants[editingVariantIndex]!.priceCents / 100
+                    ).toFixed(2)}
                   />
                 </div>
                 <div>
                   <label className={labelClass}>Quantity</label>
                   <input
-                    type="number"
+                    className={inputClass}
                     min={0}
-                    value={variants[editingVariantIndex]!.stockQuantity ?? 0}
                     onChange={(e) => {
                       const n = Number.parseInt(e.target.value, 10);
                       updateVariant(
@@ -1685,26 +1741,25 @@ export default function AdminProductsCreatePage() {
                         Number.isNaN(n) ? 0 : n,
                       );
                     }}
-                    className={inputClass}
+                    type="number"
+                    value={variants[editingVariantIndex]!.stockQuantity ?? 0}
                   />
                 </div>
                 <div>
                   <label className={labelClass}>SKU</label>
                   <input
-                    type="text"
-                    value={variants[editingVariantIndex]!.sku ?? ""}
+                    className={inputClass}
                     onChange={(e) =>
                       updateVariant(editingVariantIndex, "sku", e.target.value)
                     }
-                    className={inputClass}
+                    type="text"
+                    value={variants[editingVariantIndex]!.sku ?? ""}
                   />
                 </div>
                 <div>
                   <label className={labelClass}>Image URL</label>
                   <input
-                    type="url"
-                    placeholder="https://..."
-                    value={variants[editingVariantIndex]!.imageUrl ?? ""}
+                    className={inputClass}
                     onChange={(e) =>
                       updateVariant(
                         editingVariantIndex,
@@ -1712,15 +1767,17 @@ export default function AdminProductsCreatePage() {
                         e.target.value,
                       )
                     }
-                    className={inputClass}
+                    placeholder="https://..."
+                    type="url"
+                    value={variants[editingVariantIndex]!.imageUrl ?? ""}
                   />
                 </div>
               </div>
               <div className="mt-6 flex justify-end gap-2">
                 <Button
+                  onClick={() => setEditingVariantIndex(null)}
                   type="button"
                   variant="outline"
-                  onClick={() => setEditingVariantIndex(null)}
                 >
                   Close
                 </Button>
@@ -1745,48 +1802,58 @@ export default function AdminProductsCreatePage() {
           </CardHeader>
           <CardContent className="space-y-6">
             {COUNTRIES_BY_CONTINENT.map((entry, continentIndex) => (
-              <div key={entry.continent} className="space-y-2">
+              <div className="space-y-2" key={entry.continent}>
                 <label className="flex items-center gap-2 font-medium">
                   <input
-                    type="checkbox"
                     checked={isContinentFullySelected(continentIndex)}
-                    ref={(el) => {
-                      continentCheckboxRefs.current[continentIndex] = el;
-                    }}
+                    className="size-4 rounded border-input"
                     onChange={(e) =>
                       setContinent(continentIndex, e.target.checked)
                     }
-                    className="size-4 rounded border-input"
+                    ref={(el) => {
+                      continentCheckboxRefs.current[continentIndex] = el;
+                    }}
+                    type="checkbox"
                   />
                   <span>{entry.continent}</span>
                 </label>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3 md:grid-cols-4">
+                <div
+                  className={`
+                  grid grid-cols-2 gap-x-4 gap-y-1
+                  sm:grid-cols-3
+                  md:grid-cols-4
+                `}
+                >
                   {entry.countries.map((country) => {
                     const noShip = isShippingExcluded(country.code);
                     return (
                       <label
-                        key={country.code}
                         className={cn(
-                          "flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground",
+                          `
+                            flex items-center gap-2 text-sm
+                            text-muted-foreground
+                            hover:text-foreground
+                          `,
                           noShip && "cursor-not-allowed opacity-60",
                         )}
+                        key={country.code}
                       >
                         <input
-                          type="checkbox"
                           checked={
                             !noShip && availableCountrySet.has(country.code)
                           }
+                          className="size-4 rounded border-input"
                           disabled={noShip}
                           onChange={(e) =>
                             !noShip &&
                             setCountry(country.code, e.target.checked)
                           }
-                          className="size-4 rounded border-input"
                           title={
                             noShip
                               ? "We do not ship to this country"
                               : undefined
                           }
+                          type="checkbox"
                         />
                         <span>
                           {country.name}
@@ -1803,14 +1870,14 @@ export default function AdminProductsCreatePage() {
 
         {/* Token gating */}
         <TokenGatesList
-          gates={tokenGates}
-          onChange={setTokenGates}
-          tokenGated={tokenGated}
-          onTokenGatedChange={setTokenGated}
-          title="Product token gates"
           description="Require user to hold ≥ quantity of ANY of these tokens to view this product."
+          gates={tokenGates}
           inputClass={inputClass}
           labelClass={labelClass}
+          onChange={setTokenGates}
+          onTokenGatedChange={setTokenGated}
+          title="Product token gates"
+          tokenGated={tokenGated}
         />
 
         {/* SEO */}
@@ -1820,35 +1887,35 @@ export default function AdminProductsCreatePage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="pageTitle" className={labelClass}>
+              <label className={labelClass} htmlFor="pageTitle">
                 Page title
               </label>
               <input
-                id="pageTitle"
-                type="text"
-                placeholder="Defaults to product name"
-                value={pageTitle}
-                onChange={(e) => setPageTitle(e.target.value)}
                 className={inputClass}
+                id="pageTitle"
+                onChange={(e) => setPageTitle(e.target.value)}
+                placeholder="Defaults to product name"
+                type="text"
+                value={pageTitle}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="slug" className={labelClass}>
+              <label className={labelClass} htmlFor="slug">
                 Slug (URL)
               </label>
               <div className="flex gap-2">
                 <input
-                  id="slug"
-                  type="text"
-                  placeholder="url-slug"
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
                   className={inputClass}
+                  id="slug"
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="url-slug"
+                  type="text"
+                  value={slug}
                 />
                 <Button
+                  onClick={handleSlugFromName}
                   type="button"
                   variant="outline"
-                  onClick={handleSlugFromName}
                 >
                   From name
                 </Button>
@@ -1858,24 +1925,24 @@ export default function AdminProductsCreatePage() {
               </p>
             </div>
             <div className="space-y-2">
-              <label htmlFor="metaDescription" className={labelClass}>
+              <label className={labelClass} htmlFor="metaDescription">
                 Meta description
               </label>
               <textarea
-                id="metaDescription"
-                placeholder="Short summary for search results"
-                value={metaDescription}
-                onChange={(e) => setMetaDescription(e.target.value)}
-                rows={2}
                 className={cn(inputClass, "resize-y")}
+                id="metaDescription"
+                onChange={(e) => setMetaDescription(e.target.value)}
+                placeholder="Short summary for search results"
+                rows={2}
+                value={metaDescription}
               />
             </div>
             <label className="flex items-center gap-2 pt-2">
               <input
-                type="checkbox"
                 checked={seoOptimized}
-                onChange={(e) => setSeoOptimized(e.target.checked)}
                 className="size-4 rounded border-input"
+                onChange={(e) => setSeoOptimized(e.target.checked)}
+                type="checkbox"
               />
               <span className="text-sm">Optimized</span>
             </label>
@@ -1888,10 +1955,10 @@ export default function AdminProductsCreatePage() {
         <div className="flex flex-wrap items-center gap-4">
           <label className="flex items-center gap-2">
             <input
-              type="checkbox"
               checked={published}
-              onChange={(e) => setPublished(e.target.checked)}
               className="size-4 rounded border-input"
+              onChange={(e) => setPublished(e.target.checked)}
+              type="checkbox"
             />
             <span className="text-sm font-medium">
               Published (visible on storefront)
@@ -1899,10 +1966,10 @@ export default function AdminProductsCreatePage() {
           </label>
           <label className="flex items-center gap-2">
             <input
-              type="checkbox"
               checked={hidden}
-              onChange={(e) => setHidden(e.target.checked)}
               className="size-4 rounded border-input"
+              onChange={(e) => setHidden(e.target.checked)}
+              type="checkbox"
             />
             <span className="text-sm font-medium">
               Hidden (only reachable by direct link; not listed in categories)
@@ -1911,13 +1978,13 @@ export default function AdminProductsCreatePage() {
         </div>
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={saving}>
+          <Button disabled={saving} type="submit">
             {saving ? "Creating…" : "Create product"}
           </Button>
           <Button
+            onClick={() => router.push("/products")}
             type="button"
             variant="outline"
-            onClick={() => router.push("/products")}
           >
             Cancel
           </Button>
@@ -1925,4 +1992,80 @@ export default function AdminProductsCreatePage() {
       </form>
     </div>
   );
+}
+
+/** Generate all variant combinations from option definitions */
+function generateVariantsFromOptions(
+  optionDefinitions: OptionDef[],
+  basePriceCents: number,
+  existingVariants: ProductVariant[] = [],
+): ProductVariant[] {
+  const validOptions = optionDefinitions.filter(
+    (o) => o.name?.trim() && o.values.some((v) => v.trim()),
+  );
+
+  if (validOptions.length === 0) return [];
+
+  // Build all combinations
+  const combinations: Record<string, string>[] = [{}];
+
+  for (const option of validOptions) {
+    const cleanValues = option.values.filter((v) => v.trim());
+    const newCombinations: Record<string, string>[] = [];
+
+    for (const combo of combinations) {
+      for (const value of cleanValues) {
+        newCombinations.push({ ...combo, [option.name]: value.trim() });
+      }
+    }
+    combinations.length = 0;
+    combinations.push(...newCombinations);
+  }
+
+  // Create variants from combinations, preserving existing data where possible
+  return combinations.map((combo) => {
+    // Try to find existing variant with same options
+    const existing = existingVariants.find((v) => {
+      const vSize = v.size || v.optionValues?.Size || "";
+      const vColor = v.color || v.optionValues?.Color || "";
+      const comboSize = combo.Size || "";
+      const comboColor = combo.Color || "";
+      return vSize === comboSize && vColor === comboColor;
+    });
+
+    return {
+      color: combo.Color || undefined,
+      id: existing?.id,
+      imageUrl: existing?.imageUrl || "",
+      optionValues: combo,
+      priceCents: existing?.priceCents ?? basePriceCents,
+      size: combo.Size || undefined,
+      sku: existing?.sku || "",
+      stockQuantity: existing?.stockQuantity ?? 0,
+    };
+  });
+}
+
+/** Get variant display label from option values */
+function getVariantLabel(
+  variant: ProductVariant,
+  optionDefinitions: OptionDef[],
+): string {
+  const parts: string[] = [];
+  for (const opt of optionDefinitions) {
+    const value =
+      variant.optionValues?.[opt.name] ||
+      (opt.name.toLowerCase() === "size" ? variant.size : undefined) ||
+      (opt.name.toLowerCase() === "color" ? variant.color : undefined);
+    if (value) parts.push(value);
+  }
+  return parts.join(" / ") || "Default";
+}
+
+function slugFromName(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
 }

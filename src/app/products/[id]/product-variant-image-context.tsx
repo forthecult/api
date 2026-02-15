@@ -2,10 +2,10 @@
 
 import * as React from "react";
 
-export type SelectedVariantForImage = {
+export type SelectedVariantForImage = null | {
   id: string;
   imageUrl?: string;
-} | null;
+};
 
 const ProductVariantImageContext = React.createContext<{
   selectedVariant: SelectedVariantForImage;
@@ -14,10 +14,6 @@ const ProductVariantImageContext = React.createContext<{
   selectedVariant: null,
   setSelectedVariant: () => {},
 });
-
-export function useProductVariantImage() {
-  return React.useContext(ProductVariantImageContext);
-}
 
 export function ProductVariantImageProvider({
   children,
@@ -31,8 +27,12 @@ export function ProductVariantImageProvider({
     [selectedVariant],
   );
   return (
-    <ProductVariantImageContext.Provider value={value}>
+    <ProductVariantImageContext value={value}>
       {children}
-    </ProductVariantImageContext.Provider>
+    </ProductVariantImageContext>
   );
+}
+
+export function useProductVariantImage() {
+  return React.use(ProductVariantImageContext);
 }

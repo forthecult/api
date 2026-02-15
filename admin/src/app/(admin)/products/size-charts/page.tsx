@@ -11,25 +11,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-type SizeChartRow = {
-  id: string;
-  provider: string;
+interface SizeChartRow {
   brand: string;
-  model: string;
-  displayName: string;
   dataImperial: unknown;
   dataMetric: unknown;
+  displayName: string;
+  id: string;
+  model: string;
+  provider: string;
   updatedAt: string;
-};
+}
 
 export default function AdminSizeChartsPage() {
   const [items, setItems] = useState<SizeChartRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [search, setSearch] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<null | string>(null);
   const [fixingNames, setFixingNames] = useState(false);
-  const [fixResult, setFixResult] = useState<string | null>(null);
+  const [fixResult, setFixResult] = useState<null | string>(null);
 
   const fetchCharts = useCallback(async () => {
     setLoading(true);
@@ -67,8 +67,8 @@ export default function AdminSizeChartsPage() {
       setDeletingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/size-charts/${id}`, {
-          method: "DELETE",
           credentials: "include",
+          method: "DELETE",
         });
         if (!res.ok) throw new Error("Failed to delete");
         setItems((prev) => prev.filter((r) => r.id !== id));
@@ -86,10 +86,10 @@ export default function AdminSizeChartsPage() {
     setFixResult(null);
     try {
       const res = await fetch(`${API_BASE}/api/admin/printful/sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ action: "fix_size_chart_names" }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!res.ok) throw new Error("Failed");
       const data = (await res.json()) as { fixed: number; total: number };
@@ -104,15 +104,20 @@ export default function AdminSizeChartsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <h2 className="text-2xl font-semibold tracking-tight">Size Charts</h2>
         <div className="flex items-center gap-2">
           <Button
+            className="gap-2"
+            disabled={fixingNames}
+            onClick={handleFixNames}
             type="button"
             variant="outline"
-            className="gap-2"
-            onClick={handleFixNames}
-            disabled={fixingNames}
           >
             <RefreshCw
               className={cn("size-4", fixingNames && "animate-spin")}
@@ -120,7 +125,7 @@ export default function AdminSizeChartsPage() {
             Fix Names
           </Button>
           <Link href="/products/size-charts/create">
-            <Button type="button" className="gap-2">
+            <Button className="gap-2" type="button">
               <Plus className="size-4" /> Add Size Chart
             </Button>
           </Link>
@@ -140,7 +145,10 @@ export default function AdminSizeChartsPage() {
             "rounded-md border px-3 py-2 text-sm",
             fixResult.startsWith("Failed")
               ? "border-destructive/50 bg-destructive/10 text-destructive"
-              : "border-green-500/50 bg-green-500/10 text-green-700 dark:text-green-400",
+              : `
+                border-green-500/50 bg-green-500/10 text-green-700
+                dark:text-green-400
+              `,
           )}
         >
           {fixResult}
@@ -148,28 +156,50 @@ export default function AdminSizeChartsPage() {
       )}
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader
+          className={`
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
+        >
           <CardTitle className="flex items-center gap-2 text-lg">
             <Ruler className="size-5" /> All size charts
           </CardTitle>
           <div className="relative max-w-xs">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Search
+              className={`
+              absolute top-1/2 left-3 size-4 -translate-y-1/2
+              text-muted-foreground
+            `}
+            />
             <input
-              type="search"
-              placeholder="Filter by provider, brand or model..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className={cn(
-                "w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm",
-                "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-              )}
               aria-label="Filter size charts"
+              className={cn(
+                `
+                  w-full rounded-md border border-input bg-background py-2 pr-3
+                  pl-9 text-sm
+                `,
+                `
+                  placeholder:text-muted-foreground
+                  focus-visible:ring-2 focus-visible:ring-ring
+                  focus-visible:outline-none
+                `,
+              )}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter by provider, brand or model..."
+              type="search"
+              value={search}
             />
           </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : error ? (
@@ -177,9 +207,9 @@ export default function AdminSizeChartsPage() {
               {error}
               <Button
                 className="mt-2"
-                variant="outline"
                 onClick={() => void fetchCharts()}
                 type="button"
+                variant="outline"
               >
                 Retry
               </Button>
@@ -207,7 +237,12 @@ export default function AdminSizeChartsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                      <tr
+                        className={`
+                        border-b bg-muted/50 text-left text-xs font-semibold
+                        tracking-wider text-muted-foreground uppercase
+                      `}
+                      >
                         <th className="p-4 font-medium" scope="col">
                           Provider
                         </th>
@@ -236,7 +271,13 @@ export default function AdminSizeChartsPage() {
                     </thead>
                     <tbody>
                       {filtered.map((row) => (
-                        <tr key={row.id} className="border-b last:border-0">
+                        <tr
+                          className={`
+                          border-b
+                          last:border-0
+                        `}
+                          key={row.id}
+                        >
                           <td className="p-4 capitalize">{row.provider}</td>
                           <td className="p-4 font-medium">{row.brand}</td>
                           <td className="p-4 font-mono text-muted-foreground">
@@ -260,19 +301,19 @@ export default function AdminSizeChartsPage() {
                                 href={`/products/size-charts/${row.id}/edit`}
                               >
                                 <Button
+                                  className="gap-1"
+                                  size="sm"
                                   type="button"
                                   variant="ghost"
-                                  size="sm"
-                                  className="gap-1"
                                 >
                                   <Pencil className="size-3" /> Edit
                                 </Button>
                               </Link>
                               <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                className="gap-1 text-destructive hover:text-destructive"
+                                className={`
+                                  gap-1 text-destructive
+                                  hover:text-destructive
+                                `}
                                 disabled={deletingId === row.id}
                                 onClick={() =>
                                   handleDelete(
@@ -280,6 +321,9 @@ export default function AdminSizeChartsPage() {
                                     `${row.brand} ${row.model}`,
                                   )
                                 }
+                                size="sm"
+                                type="button"
+                                variant="ghost"
                               >
                                 <Trash2 className="size-3" /> Delete
                               </Button>

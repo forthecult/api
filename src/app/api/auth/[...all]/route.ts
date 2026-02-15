@@ -1,5 +1,6 @@
-import { toNextJsHandler } from "better-auth/next-js";
 import type { NextRequest } from "next/server";
+
+import { toNextJsHandler } from "better-auth/next-js";
 
 import { auth } from "~/lib/auth";
 import {
@@ -31,13 +32,52 @@ function withCorsIfAllowed(request: NextRequest, res: Response): Response {
   headers.append("Vary", "Origin");
 
   return new Response(res.body, {
+    headers,
     status: res.status,
     statusText: res.statusText,
-    headers,
   });
 }
 
 const isDev = process.env.NODE_ENV === "development";
+
+export async function GET(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const result = await checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
+  if (!result.success) {
+    return rateLimitResponse(result);
+  }
+  return handleAuth(request, authGet);
+}
+
+// CORS preflight: allow admin app (localhost:3001) to send credentialed requests
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  const allowed = getAllowedAuthOrigins();
+  const headers = new Headers();
+  if (origin && allowed.includes(origin)) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Credentials", "true");
+    headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    headers.set("Access-Control-Max-Age", "86400");
+  }
+  headers.append("Vary", "Origin");
+  return new Response(null, { headers, status: 204 });
+}
+
+export async function POST(request: NextRequest) {
+  const ip = getClientIp(request.headers);
+  const result = await checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
+  if (!result.success) {
+    return rateLimitResponse(result);
+  }
+  return handleAuth(request, authPost);
+}
+
+// Use a higher limit when IP is unknown so one shared bucket doesn't block all prod users (e.g. when proxy doesn't send X-Forwarded-For)
+function getAuthRateLimitConfig(ip: string) {
+  return ip === "unknown" ? RATE_LIMITS.authUnknownIp : RATE_LIMITS.auth;
+}
 
 async function handleAuth(
   request: NextRequest,
@@ -56,11 +96,11 @@ async function handleAuth(
           return withCorsIfAllowed(
             request,
             new Response(body, {
-              status: res.status,
               headers: {
                 "Content-Type": "application/json",
                 ...Object.fromEntries(res.headers.entries()),
               },
+              status: res.status,
             }),
           );
         }
@@ -88,49 +128,10 @@ async function handleAuth(
           stack && { _devStack: stack }),
       }),
       {
-        status: 500,
         headers: { "Content-Type": "application/json" },
+        status: 500,
       },
     );
     return withCorsIfAllowed(request, res);
   }
-}
-
-// CORS preflight: allow admin app (localhost:3001) to send credentialed requests
-export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const allowed = getAllowedAuthOrigins();
-  const headers = new Headers();
-  if (origin && allowed.includes(origin)) {
-    headers.set("Access-Control-Allow-Origin", origin);
-    headers.set("Access-Control-Allow-Credentials", "true");
-    headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-    headers.set("Access-Control-Max-Age", "86400");
-  }
-  headers.append("Vary", "Origin");
-  return new Response(null, { status: 204, headers });
-}
-
-// Use a higher limit when IP is unknown so one shared bucket doesn't block all prod users (e.g. when proxy doesn't send X-Forwarded-For)
-function getAuthRateLimitConfig(ip: string) {
-  return ip === "unknown" ? RATE_LIMITS.authUnknownIp : RATE_LIMITS.auth;
-}
-
-export async function GET(request: NextRequest) {
-  const ip = getClientIp(request.headers);
-  const result = await checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
-  if (!result.success) {
-    return rateLimitResponse(result);
-  }
-  return handleAuth(request, authGet);
-}
-
-export async function POST(request: NextRequest) {
-  const ip = getClientIp(request.headers);
-  const result = await checkRateLimit(`auth:${ip}`, getAuthRateLimitConfig(ip));
-  if (!result.success) {
-    return rateLimitResponse(result);
-  }
-  return handleAuth(request, authPost);
 }

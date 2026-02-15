@@ -10,18 +10,18 @@
 // ---------------------------------------------------------------------------
 
 export interface TokenMarketData {
-  /** Token price in USD. */
-  priceUsd: number;
-  /** Fully diluted market cap in USD. */
-  marketCapUsd: number;
-  /** 24h volume in USD. */
-  volume24hUsd: number;
-  /** Liquidity in USD. */
-  liquidityUsd: number;
   /** DEX where this pair was found (e.g. "raydium", "pump.fun"). */
   dexId: string;
   /** When this data was fetched. */
   fetchedAt: number; // epoch ms
+  /** Liquidity in USD. */
+  liquidityUsd: number;
+  /** Fully diluted market cap in USD. */
+  marketCapUsd: number;
+  /** Token price in USD. */
+  priceUsd: number;
+  /** 24h volume in USD. */
+  volume24hUsd: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -37,11 +37,11 @@ const cache = new Map<string, { data: TokenMarketData; expiresAt: number }>();
 
 interface DexScreenerPair {
   baseToken: { address: string; symbol: string };
-  priceUsd: string;
-  fdv: number;
-  volume: { h24: number };
-  liquidity: { usd: number };
   dexId: string;
+  fdv: number;
+  liquidity: { usd: number };
+  priceUsd: string;
+  volume: { h24: number };
 }
 
 interface DexScreenerResponse {
@@ -58,7 +58,7 @@ interface DexScreenerResponse {
  */
 export async function fetchTokenMarketData(
   mintAddress: string,
-): Promise<TokenMarketData | null> {
+): Promise<null | TokenMarketData> {
   // Check cache first
   const cached = cache.get(mintAddress);
   if (cached && Date.now() < cached.expiresAt) {
@@ -90,12 +90,12 @@ export async function fetchTokenMarketData(
     );
 
     const data: TokenMarketData = {
-      priceUsd: parseFloat(best.priceUsd) || 0,
-      marketCapUsd: best.fdv ?? 0,
-      volume24hUsd: best.volume?.h24 ?? 0,
-      liquidityUsd: best.liquidity?.usd ?? 0,
       dexId: best.dexId ?? "unknown",
       fetchedAt: Date.now(),
+      liquidityUsd: best.liquidity?.usd ?? 0,
+      marketCapUsd: best.fdv ?? 0,
+      priceUsd: parseFloat(best.priceUsd) || 0,
+      volume24hUsd: best.volume?.h24 ?? 0,
     };
 
     // Store in cache
@@ -116,7 +116,7 @@ export function usdToTokens(
   usdAmount: number,
   priceUsd: number,
   decimals: number,
-): { human: number; raw: bigint } | null {
+): null | { human: number; raw: bigint } {
   if (!priceUsd || priceUsd <= 0) return null;
   const human = usdAmount / priceUsd;
   const raw = BigInt(Math.floor(human * 10 ** decimals));

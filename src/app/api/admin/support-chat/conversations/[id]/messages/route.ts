@@ -71,12 +71,12 @@ export async function POST(
         : null;
 
     await db.insert(supportChatMessageTable).values({
-      id: messageId,
+      content,
       conversationId,
+      createdAt: now,
+      id: messageId,
       role: "staff",
       userId: staffUserId,
-      content,
-      createdAt: now,
     });
 
     await db
@@ -86,11 +86,11 @@ export async function POST(
 
     const messages = await db
       .select({
+        content: supportChatMessageTable.content,
+        createdAt: supportChatMessageTable.createdAt,
         id: supportChatMessageTable.id,
         role: supportChatMessageTable.role,
         userId: supportChatMessageTable.userId,
-        content: supportChatMessageTable.content,
-        createdAt: supportChatMessageTable.createdAt,
       })
       .from(supportChatMessageTable)
       .where(eq(supportChatMessageTable.conversationId, conversationId))

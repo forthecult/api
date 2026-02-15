@@ -14,53 +14,53 @@
  * }
  */
 
-import { NextResponse } from "next/server";
 import { createId } from "@paralleldrive/cuid2";
+import { NextResponse } from "next/server";
 
 export type ApiErrorCode =
   // Product errors
-  | "PRODUCT_NOT_FOUND"
-  | "PRODUCT_UNAVAILABLE"
-  | "INSUFFICIENT_STOCK"
-  | "VARIANT_NOT_FOUND"
-  | "VARIANT_REQUIRED"
-  // Category errors
   | "CATEGORY_NOT_FOUND"
-  // Order errors
-  | "ORDER_NOT_FOUND"
-  | "ORDER_EXPIRED"
-  | "ORDER_ALREADY_PAID"
-  | "ORDER_CANCELLED"
-  // Checkout errors
-  | "INVALID_CART"
+  | "DATABASE_ERROR"
   | "EMPTY_CART"
-  | "SHIPPING_REQUIRED"
-  | "SHIPPING_UNAVAILABLE"
-  | "PAYMENT_METHOD_UNSUPPORTED"
-  | "PAYMENT_FAILED"
-  | "PAYMENT_EXPIRED"
-  // Validation errors
-  | "INVALID_REQUEST"
-  | "MISSING_REQUIRED_FIELD"
+  | "FORBIDDEN"
+  | "INSUFFICIENT_STOCK"
+  // Category errors
+  | "INTERNAL_ERROR"
+  // Order errors
+  | "INVALID_ADDRESS"
+  | "INVALID_CART"
   | "INVALID_EMAIL"
   | "INVALID_PHONE"
-  | "INVALID_ADDRESS"
-  // Auth errors
-  | "UNAUTHORIZED"
-  | "FORBIDDEN"
-  // Generic resource not found
+  // Checkout errors
+  | "INVALID_REQUEST"
+  | "MISSING_REQUIRED_FIELD"
   | "NOT_FOUND"
-  // Rate limiting
+  | "ORDER_ALREADY_PAID"
+  | "ORDER_CANCELLED"
+  | "ORDER_EXPIRED"
+  | "ORDER_NOT_FOUND"
+  // Validation errors
+  | "PAYMENT_EXPIRED"
+  | "PAYMENT_FAILED"
+  | "PAYMENT_METHOD_UNSUPPORTED"
+  | "PRODUCT_NOT_FOUND"
+  | "PRODUCT_UNAVAILABLE"
+  // Auth errors
   | "RATE_LIMIT_EXCEEDED"
-  // Server errors
-  | "INTERNAL_ERROR"
   | "SERVICE_UNAVAILABLE"
-  | "DATABASE_ERROR";
+  // Generic resource not found
+  | "SHIPPING_REQUIRED"
+  // Rate limiting
+  | "SHIPPING_UNAVAILABLE"
+  // Server errors
+  | "UNAUTHORIZED"
+  | "VARIANT_NOT_FOUND"
+  | "VARIANT_REQUIRED";
 
 interface ApiErrorDetails {
   code: ApiErrorCode;
-  message: string;
   httpStatus: number;
+  message: string;
   suggestions?: string[];
 }
 
@@ -68,10 +68,165 @@ interface ApiErrorDetails {
  * Error code definitions with messages and suggestions
  */
 const ERROR_DEFINITIONS: Record<ApiErrorCode, Omit<ApiErrorDetails, "code">> = {
+  // Category errors
+  CATEGORY_NOT_FOUND: {
+    httpStatus: 404,
+    message: "The requested category does not exist.",
+    suggestions: [
+      "List all categories: GET /api/categories",
+      "Check the category ID or slug is correct",
+    ],
+  },
+  DATABASE_ERROR: {
+    httpStatus: 500,
+    message: "A database error occurred. Please try again.",
+    suggestions: [
+      "Retry your request",
+      "If the problem persists, contact support with the requestId",
+    ],
+  },
+  EMPTY_CART: {
+    httpStatus: 400,
+    message: "Cannot checkout with an empty cart.",
+    suggestions: [
+      "Add items to your request",
+      "Search for products: POST /api/products/search",
+    ],
+  },
+  FORBIDDEN: {
+    httpStatus: 403,
+    message: "You do not have permission to access this resource.",
+    suggestions: [
+      "Check your API key permissions",
+      "Contact support if you believe this is an error",
+    ],
+  },
+  INSUFFICIENT_STOCK: {
+    httpStatus: 400,
+    message: "Not enough stock available for the requested quantity.",
+    suggestions: [
+      "Reduce the quantity",
+      "Check current stock: GET /api/products/{slug}",
+    ],
+  },
+
+  // Server errors
+  INTERNAL_ERROR: {
+    httpStatus: 500,
+    message: "An unexpected error occurred. Please try again.",
+    suggestions: [
+      "Retry your request",
+      "If the problem persists, contact support with the requestId",
+    ],
+  },
+
+  INVALID_ADDRESS: {
+    httpStatus: 400,
+    message: "The provided address is invalid or incomplete.",
+    suggestions: [
+      "Include: name, address1, city, stateCode, zip, countryCode",
+      "Use ISO 2-letter country codes (US, GB, CA, etc.)",
+    ],
+  },
+  // Checkout errors
+  INVALID_CART: {
+    httpStatus: 400,
+    message: "The cart contains invalid items.",
+    suggestions: [
+      "Verify all product IDs exist",
+      "Check quantities are positive integers",
+    ],
+  },
+  INVALID_EMAIL: {
+    httpStatus: 400,
+    message: "The provided email address is invalid.",
+    suggestions: ["Provide a valid email format: user@example.com"],
+  },
+  INVALID_PHONE: {
+    httpStatus: 400,
+    message: "The provided phone number is invalid.",
+    suggestions: ["Provide phone in international format: +1234567890"],
+  },
+
+  // Validation errors
+  INVALID_REQUEST: {
+    httpStatus: 400,
+    message: "The request body is invalid or malformed.",
+    suggestions: [
+      "Check the request format matches the API documentation",
+      "Ensure all required fields are present",
+    ],
+  },
+  MISSING_REQUIRED_FIELD: {
+    httpStatus: 400,
+    message: "A required field is missing from the request.",
+    suggestions: ["Check the API documentation for required fields"],
+  },
+  NOT_FOUND: {
+    httpStatus: 404,
+    message: "The requested resource was not found.",
+    suggestions: ["Verify the resource ID or path is correct"],
+  },
+  ORDER_ALREADY_PAID: {
+    httpStatus: 400,
+    message: "This order has already been paid.",
+    suggestions: [
+      "Check order status: GET /api/orders/{orderId}/status",
+      "View order details: GET /api/orders/{orderId}",
+    ],
+  },
+  ORDER_CANCELLED: {
+    httpStatus: 400,
+    message: "This order has been cancelled.",
+    suggestions: ["Create a new order: POST /api/checkout"],
+  },
+  ORDER_EXPIRED: {
+    httpStatus: 400,
+    message: "This order has expired. Payment window has closed.",
+    suggestions: [
+      "Create a new order: POST /api/checkout",
+      "Orders expire 1 hour after creation",
+    ],
+  },
+  // Order errors
+  ORDER_NOT_FOUND: {
+    httpStatus: 404,
+    message: "The requested order does not exist.",
+    suggestions: [
+      "Verify the order ID is correct",
+      "Create a new order: POST /api/checkout",
+    ],
+  },
+
+  PAYMENT_EXPIRED: {
+    httpStatus: 400,
+    message: "The payment window has expired.",
+    suggestions: [
+      "Create a new order: POST /api/checkout",
+      "Payment windows are typically 1 hour",
+    ],
+  },
+  PAYMENT_FAILED: {
+    httpStatus: 400,
+    message: "Payment could not be processed.",
+    suggestions: [
+      "Verify sufficient balance in wallet",
+      "Check the transaction was sent to the correct address",
+      "Try again: POST /api/checkout",
+    ],
+  },
+  PAYMENT_METHOD_UNSUPPORTED: {
+    httpStatus: 400,
+    message: "The requested payment method is not supported.",
+    suggestions: [
+      "Check supported payment methods: GET /api/chains",
+      "Supported: SOL, USDC, ETH, USDT on various chains",
+    ],
+  },
   // Product errors
   PRODUCT_NOT_FOUND: {
-    message: "The requested product does not exist or is not published.",
     httpStatus: 404,
+    message: "The requested product does not exist or is not published.",
     suggestions: [
       "Verify the product ID is correct",
       "Search for products: POST /api/products/search",
@@ -79,237 +234,82 @@ const ERROR_DEFINITIONS: Record<ApiErrorCode, Omit<ApiErrorDetails, "code">> = {
     ],
   },
   PRODUCT_UNAVAILABLE: {
-    message: "This product is currently unavailable for purchase.",
     httpStatus: 400,
+    message: "This product is currently unavailable for purchase.",
     suggestions: [
       "Check product availability: GET /api/products/{productId}",
       "Search for similar products: POST /api/products/search",
     ],
   },
-  INSUFFICIENT_STOCK: {
-    message: "Not enough stock available for the requested quantity.",
-    httpStatus: 400,
-    suggestions: [
-      "Reduce the quantity",
-      "Check current stock: GET /api/products/{slug}",
-    ],
-  },
-  VARIANT_NOT_FOUND: {
-    message: "The requested product variant does not exist.",
-    httpStatus: 404,
-    suggestions: [
-      "Get available variants: GET /api/products/{productId}",
-      "Check the variantId is correct",
-    ],
-  },
-  VARIANT_REQUIRED: {
-    message: "This product has variants. Please specify a variantId.",
-    httpStatus: 400,
-    suggestions: [
-      "Get available variants: GET /api/products/{slug}/variants",
-      "Include variantId in your request",
-    ],
-  },
-
-  // Category errors
-  CATEGORY_NOT_FOUND: {
-    message: "The requested category does not exist.",
-    httpStatus: 404,
-    suggestions: [
-      "List all categories: GET /api/categories",
-      "Check the category ID or slug is correct",
-    ],
-  },
-
-  // Order errors
-  ORDER_NOT_FOUND: {
-    message: "The requested order does not exist.",
-    httpStatus: 404,
-    suggestions: [
-      "Verify the order ID is correct",
-      "Create a new order: POST /api/checkout",
-    ],
-  },
-  ORDER_EXPIRED: {
-    message: "This order has expired. Payment window has closed.",
-    httpStatus: 400,
-    suggestions: [
-      "Create a new order: POST /api/checkout",
-      "Orders expire 1 hour after creation",
-    ],
-  },
-  ORDER_ALREADY_PAID: {
-    message: "This order has already been paid.",
-    httpStatus: 400,
-    suggestions: [
-      "Check order status: GET /api/orders/{orderId}/status",
-      "View order details: GET /api/orders/{orderId}",
-    ],
-  },
-  ORDER_CANCELLED: {
-    message: "This order has been cancelled.",
-    httpStatus: 400,
-    suggestions: ["Create a new order: POST /api/checkout"],
-  },
-
-  // Checkout errors
-  INVALID_CART: {
-    message: "The cart contains invalid items.",
-    httpStatus: 400,
-    suggestions: [
-      "Verify all product IDs exist",
-      "Check quantities are positive integers",
-    ],
-  },
-  EMPTY_CART: {
-    message: "Cannot checkout with an empty cart.",
-    httpStatus: 400,
-    suggestions: [
-      "Add items to your request",
-      "Search for products: POST /api/products/search",
-    ],
-  },
-  SHIPPING_REQUIRED: {
-    message: "Shipping address is required for physical products.",
-    httpStatus: 400,
-    suggestions: [
-      "Include shipping object with: name, address1, city, stateCode, zip, countryCode",
-    ],
-  },
-  SHIPPING_UNAVAILABLE: {
-    message: "We cannot ship to the specified address.",
-    httpStatus: 400,
-    suggestions: [
-      "Check supported countries: GET /api/agent/capabilities",
-      "Verify the country code is correct (ISO 2-letter)",
-    ],
-  },
-  PAYMENT_METHOD_UNSUPPORTED: {
-    message: "The requested payment method is not supported.",
-    httpStatus: 400,
-    suggestions: [
-      "Check supported payment methods: GET /api/chains",
-      "Supported: SOL, USDC, ETH, USDT on various chains",
-    ],
-  },
-  PAYMENT_FAILED: {
-    message: "Payment could not be processed.",
-    httpStatus: 400,
-    suggestions: [
-      "Verify sufficient balance in wallet",
-      "Check the transaction was sent to the correct address",
-      "Try again: POST /api/checkout",
-    ],
-  },
-  PAYMENT_EXPIRED: {
-    message: "The payment window has expired.",
-    httpStatus: 400,
-    suggestions: [
-      "Create a new order: POST /api/checkout",
-      "Payment windows are typically 1 hour",
-    ],
-  },
-
-  // Validation errors
-  INVALID_REQUEST: {
-    message: "The request body is invalid or malformed.",
-    httpStatus: 400,
-    suggestions: [
-      "Check the request format matches the API documentation",
-      "Ensure all required fields are present",
-    ],
-  },
-  MISSING_REQUIRED_FIELD: {
-    message: "A required field is missing from the request.",
-    httpStatus: 400,
-    suggestions: ["Check the API documentation for required fields"],
-  },
-  INVALID_EMAIL: {
-    message: "The provided email address is invalid.",
-    httpStatus: 400,
-    suggestions: ["Provide a valid email format: user@example.com"],
-  },
-  INVALID_PHONE: {
-    message: "The provided phone number is invalid.",
-    httpStatus: 400,
-    suggestions: ["Provide phone in international format: +1234567890"],
-  },
-  INVALID_ADDRESS: {
-    message: "The provided address is invalid or incomplete.",
-    httpStatus: 400,
-    suggestions: [
-      "Include: name, address1, city, stateCode, zip, countryCode",
-      "Use ISO 2-letter country codes (US, GB, CA, etc.)",
-    ],
-  },
-
-  // Auth errors
-  UNAUTHORIZED: {
-    message: "Authentication required.",
-    httpStatus: 401,
-    suggestions: ["Include Authorization header: Bearer YOUR_API_KEY"],
-  },
-  FORBIDDEN: {
-    message: "You do not have permission to access this resource.",
-    httpStatus: 403,
-    suggestions: [
-      "Check your API key permissions",
-      "Contact support if you believe this is an error",
-    ],
-  },
-
-  NOT_FOUND: {
-    message: "The requested resource was not found.",
-    httpStatus: 404,
-    suggestions: ["Verify the resource ID or path is correct"],
-  },
 
   // Rate limiting
   RATE_LIMIT_EXCEEDED: {
-    message: "Too many requests. Please slow down.",
     httpStatus: 429,
+    message: "Too many requests. Please slow down.",
     suggestions: [
       "Wait before retrying (see Retry-After header)",
       "Reduce request frequency",
       "Contact support for higher limits",
     ],
   },
-
-  // Server errors
-  INTERNAL_ERROR: {
-    message: "An unexpected error occurred. Please try again.",
-    httpStatus: 500,
-    suggestions: [
-      "Retry your request",
-      "If the problem persists, contact support with the requestId",
-    ],
-  },
   SERVICE_UNAVAILABLE: {
-    message: "The service is temporarily unavailable.",
     httpStatus: 503,
+    message: "The service is temporarily unavailable.",
     suggestions: [
       "Wait a few minutes and retry",
       "Check GET /api/health for service status",
     ],
   },
-  DATABASE_ERROR: {
-    message: "A database error occurred. Please try again.",
-    httpStatus: 500,
+
+  SHIPPING_REQUIRED: {
+    httpStatus: 400,
+    message: "Shipping address is required for physical products.",
     suggestions: [
-      "Retry your request",
-      "If the problem persists, contact support with the requestId",
+      "Include shipping object with: name, address1, city, stateCode, zip, countryCode",
+    ],
+  },
+
+  SHIPPING_UNAVAILABLE: {
+    httpStatus: 400,
+    message: "We cannot ship to the specified address.",
+    suggestions: [
+      "Check supported countries: GET /api/agent/capabilities",
+      "Verify the country code is correct (ISO 2-letter)",
+    ],
+  },
+
+  // Auth errors
+  UNAUTHORIZED: {
+    httpStatus: 401,
+    message: "Authentication required.",
+    suggestions: ["Include Authorization header: Bearer YOUR_API_KEY"],
+  },
+  VARIANT_NOT_FOUND: {
+    httpStatus: 404,
+    message: "The requested product variant does not exist.",
+    suggestions: [
+      "Get available variants: GET /api/products/{productId}",
+      "Check the variantId is correct",
+    ],
+  },
+  VARIANT_REQUIRED: {
+    httpStatus: 400,
+    message: "This product has variants. Please specify a variantId.",
+    suggestions: [
+      "Get available variants: GET /api/products/{slug}/variants",
+      "Include variantId in your request",
     ],
   },
 };
 
 export interface ApiError {
   error: {
+    _suggestions: string[];
     code: ApiErrorCode;
-    message: string;
     details?: Record<string, unknown>;
+    message: string;
     requestId: string;
     timestamp: string;
-    _suggestions: string[];
   };
 }
 
@@ -329,9 +329,9 @@ export function apiError(
       code,
       message: customMessage || definition.message,
       ...(details && Object.keys(details).length > 0 && { details }),
+      _suggestions: definition.suggestions || [],
       requestId,
       timestamp: new Date().toISOString(),
-      _suggestions: definition.suggestions || [],
     },
   };
 
@@ -362,6 +362,31 @@ export function apiErrorFromException(
 }
 
 /**
+ * Simple success response helper with consistent structure
+ */
+export function apiSuccess<T>(data: T, status = 200): NextResponse<T> {
+  return NextResponse.json(data, { status });
+}
+
+/**
+ * Success with _actions helper for AI agents
+ */
+export function apiSuccessWithActions<T>(
+  data: T,
+  actions: Record<string, string>,
+  status = 200,
+): NextResponse<T & { _actions: Record<string, string> }> {
+  return NextResponse.json({ ...data, _actions: actions }, { status });
+}
+
+/**
+ * Validate email format
+ */
+export function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/**
  * Validation helper - returns error response if validation fails
  */
 export function validateRequired(
@@ -383,29 +408,4 @@ export function validateRequired(
   }
 
   return null;
-}
-
-/**
- * Validate email format
- */
-export function validateEmail(email: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-/**
- * Simple success response helper with consistent structure
- */
-export function apiSuccess<T>(data: T, status = 200): NextResponse<T> {
-  return NextResponse.json(data, { status });
-}
-
-/**
- * Success with _actions helper for AI agents
- */
-export function apiSuccessWithActions<T>(
-  data: T,
-  actions: Record<string, string>,
-  status = 200,
-): NextResponse<T & { _actions: Record<string, string> }> {
-  return NextResponse.json({ ...data, _actions: actions }, { status });
 }

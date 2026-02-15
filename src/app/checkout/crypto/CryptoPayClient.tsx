@@ -1,17 +1,16 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { encodeURL } from "@solana/pay";
-import QRCode from "qrcode";
 import {
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
-  getAccount as getTokenAccount,
   getAssociatedTokenAddressSync,
   getMint,
-  TOKEN_PROGRAM_ID,
+  getAccount as getTokenAccount,
   TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Keypair, PublicKey } from "@solana/web3-compat";
 import {
   type PublicKey as PublicKeyType,
@@ -30,81 +29,80 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { useIsMobile } from "~/lib/hooks/use-mobile";
-import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
-
 import {
-  getSuiPayLabel,
-  getSuiPayRecipient,
-  createSuiPayUri,
-  MIST_PER_SUI,
-} from "~/lib/sui-pay";
-import {
-  getSolanaPayLabel,
-  CRUST_MINT_MAINNET,
-  PUMP_MINT_MAINNET,
-  SKR_MINT_MAINNET,
-  SOLUNA_MINT_MAINNET,
-  TROLL_MINT_MAINNET,
-  USDC_MINT_MAINNET,
-  WHITEWHALE_MINT_MAINNET,
-  usdcAmountFromUsd,
-  tokenAmountFromUsd,
-  tokenAmountFromUsdWithPrice,
-} from "~/lib/solana-pay";
-import { useCurrentUser } from "~/lib/auth-client";
-import { Button } from "~/ui/primitives/button";
-
-import { openConnectWalletModal } from "./open-wallet-modal";
-
-import {
-  useCryptoOrder,
   type OrderPaymentInfo,
+  useCryptoOrder,
 } from "~/hooks/use-crypto-order";
 import { useCryptoPrices } from "~/hooks/use-crypto-prices";
 import { usePaymentCountdown } from "~/hooks/use-payment-countdown";
+import { useCurrentUser } from "~/lib/auth-client";
+import { useIsMobile } from "~/lib/hooks/use-mobile";
+import {
+  CRUST_MINT_MAINNET,
+  getSolanaPayLabel,
+  PUMP_MINT_MAINNET,
+  SKR_MINT_MAINNET,
+  SOLUNA_MINT_MAINNET,
+  tokenAmountFromUsd,
+  tokenAmountFromUsdWithPrice,
+  TROLL_MINT_MAINNET,
+  USDC_MINT_MAINNET,
+  usdcAmountFromUsd,
+  WHITEWHALE_MINT_MAINNET,
+} from "~/lib/solana-pay";
+import {
+  createSuiPayUri,
+  getSuiPayLabel,
+  getSuiPayRecipient,
+  MIST_PER_SUI,
+} from "~/lib/sui-pay";
+import { Button } from "~/ui/primitives/button";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
+
+import { openConnectWalletModal } from "./open-wallet-modal";
 
 const SOL_USD_FALLBACK = 200;
 
-const PAYMENT_LOGO: Record<string, { src: string; alt: string }> = {
-  solana: { src: "/crypto/solana/solanaLogoMark.svg", alt: "Solana" },
-  usdc: { src: "/crypto/usdc/usdc-logo.svg", alt: "USDC" },
-  whitewhale: { src: "/crypto/solana/solanaLogoMark.svg", alt: "WhiteWhale" },
-  crust: { src: "/crypto/solana/solanaLogoMark.svg", alt: "CRUST" },
-  pump: { src: "/crypto/pump/pump-logomark.svg", alt: "Pump" },
-  troll: { src: "/crypto/troll/troll-logomark.png", alt: "TROLL" },
-  soluna: { src: "/crypto/soluna/soluna-logo.png", alt: "SOLUNA" },
+const PAYMENT_LOGO: Record<string, { alt: string; src: string }> = {
+  crust: { alt: "CRUST", src: "/crypto/solana/solanaLogoMark.svg" },
+  pump: { alt: "Pump", src: "/crypto/pump/pump-logomark.svg" },
   seeker: {
-    src: "/crypto/seeker/S_Token_Circle_White.svg",
     alt: "Seeker (SKR)",
+    src: "/crypto/seeker/S_Token_Circle_White.svg",
   },
-  sui: { src: "/crypto/sui/sui-logo.svg", alt: "Sui" },
+  solana: { alt: "Solana", src: "/crypto/solana/solanaLogoMark.svg" },
+  soluna: { alt: "SOLUNA", src: "/crypto/soluna/soluna-logo.png" },
+  sui: { alt: "Sui", src: "/crypto/sui/sui-logo.svg" },
+  troll: { alt: "TROLL", src: "/crypto/troll/troll-logomark.png" },
+  usdc: { alt: "USDC", src: "/crypto/usdc/usdc-logo.svg" },
+  whitewhale: { alt: "WhiteWhale", src: "/crypto/solana/solanaLogoMark.svg" },
 };
 
 const PAYMENT_TITLE: Record<string, string> = {
-  solana: "Pay with SOL (Solana)",
-  usdc: "Pay with USDC (Solana)",
-  whitewhale: "Pay with WhiteWhale (Solana)",
   crust: "Pay with CRUST (Solana)",
   pump: "Pay with Pump (Solana)",
-  troll: "Pay with TROLL (Solana)",
-  soluna: "Pay with SOLUNA (Solana)",
   seeker: "Pay with Seeker (SKR) (Solana)",
+  solana: "Pay with SOL (Solana)",
+  soluna: "Pay with SOLUNA (Solana)",
   sui: "Pay with SUI (Sui Network)",
+  troll: "Pay with TROLL (Solana)",
+  usdc: "Pay with USDC (Solana)",
+  whitewhale: "Pay with WhiteWhale (Solana)",
 };
 
 /** Short label for the payment token (for error messages). */
 const TOKEN_LABEL: Record<string, string> = {
-  solana: "SOL",
-  usdc: "USDC",
-  whitewhale: "WhiteWhale",
   crust: "CRUST",
   pump: "PUMP",
-  troll: "TROLL",
-  soluna: "SOLUNA",
   seeker: "SKR",
+  solana: "SOL",
+  soluna: "SOLUNA",
+  troll: "TROLL",
+  usdc: "USDC",
+  whitewhale: "WhiteWhale",
 };
 
 const LAMPORTS_PER_SOL = 1e9;
@@ -113,45 +111,17 @@ const TX_FEE_BUFFER_LAMPORTS = 10_000;
 const MIN_SOL_FOR_TOKEN_TX_LAMPORTS = 50_000;
 
 type PayStatus =
-  | "idle"
   | "checking"
+  | "error"
+  | "idle"
   | "insufficient"
-  | "sufficient"
   | "sending"
   | "sent"
-  | "error";
-
-function truncateAddress(address: string): string {
-  if (address.length <= 12) return address;
-  return `${address.slice(0, 6)}.....${address.slice(-4)}`;
-}
-
-// Parse URL hash synchronously (component is ssr:false, window is always available)
-function parseSuiHash(): {
-  token: "sui";
-  suiFromHash: { amountUsd: number; expiresAt: string } | null;
-} | null {
-  if (typeof window === "undefined") return null;
-  const raw = window.location.hash.slice(1);
-  if (!raw.toLowerCase().startsWith("sui-")) return null;
-  const parts = raw.split("-");
-  const amount = Number.parseFloat(parts[1] ?? "0");
-  const expiresTs = Number(parts[2] ?? "0");
-  if (Number.isFinite(amount) && amount >= 0 && Number.isFinite(expiresTs)) {
-    return {
-      token: "sui",
-      suiFromHash: {
-        amountUsd: amount,
-        expiresAt: new Date(expiresTs).toISOString(),
-      },
-    };
-  }
-  return { token: "sui", suiFromHash: null };
-}
+  | "sufficient";
 
 export function CryptoPayClient() {
   const { connection } = useConnection();
-  const { connected, publicKey, wallet, disconnect, sendTransaction } =
+  const { connected, disconnect, publicKey, sendTransaction, wallet } =
     useWallet();
   const params = useParams();
   const router = useRouter();
@@ -160,49 +130,49 @@ export function CryptoPayClient() {
   // Parse hash synchronously on first render — no useEffect cascade
   const [suiParsed] = useState(() => parseSuiHash());
   const [token, setToken] = useState<
-    | "solana"
-    | "usdc"
-    | "whitewhale"
     | "crust"
     | "pump"
-    | "troll"
-    | "soluna"
     | "seeker"
+    | "solana"
+    | "soluna"
     | "sui"
+    | "troll"
+    | "usdc"
+    | "whitewhale"
   >(() => (suiParsed ? "sui" : "usdc"));
   const [suiFromHash] = useState(() => suiParsed?.suiFromHash ?? null);
 
   const [copied, setCopied] = useState<"address" | "amount" | null>(null);
-  const [paymentUrl, setPaymentUrl] = useState<URL | null>(null);
-  const [suiPaymentUri, setSuiPaymentUri] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<null | URL>(null);
+  const [suiPaymentUri, setSuiPaymentUri] = useState<null | string>(null);
   const [paymentAddress, setPaymentAddress] = useState<string>("");
   const [payStatus, setPayStatus] = useState<PayStatus>("idle");
-  const [payError, setPayError] = useState<string | null>(null);
+  const [payError, setPayError] = useState<null | string>(null);
   /** When insufficient: was it SOL for fees or the payment token? */
   const [insufficientReason, setInsufficientReason] = useState<
     "sol_for_fees" | "token" | null
   >(null);
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<null | string>(null);
   const [showQrDialog, setShowQrDialog] = useState(false);
   const isMobile = useIsMobile();
 
   const {
-    order,
-    loading: orderLoading,
     error: orderError,
+    loading: orderLoading,
+    order,
   } = useCryptoOrder({
-    orderId: pathId,
-    token,
     enabled: true,
+    orderId: pathId,
     suiFromHash,
+    token,
   });
   const {
-    solUsdRate,
-    suiUsdRate,
     crustPriceUsd,
     pumpPriceUsd,
-    solunaPriceUsd,
     seekerPriceUsd,
+    solunaPriceUsd,
+    solUsdRate,
+    suiUsdRate,
   } = useCryptoPrices();
 
   // Sync token from order when available so balance check matches selected payment method
@@ -236,7 +206,7 @@ export function CryptoPayClient() {
       ? suiFromHash.expiresAt
       : (order?.expiresAt ?? null);
 
-  const { isExpired, formattedTime } = usePaymentCountdown({ expiresAt });
+  const { formattedTime, isExpired } = usePaymentCountdown({ expiresAt });
 
   const rate = solUsdRate ?? SOL_USD_FALLBACK;
   const crustSolPerToken =
@@ -305,20 +275,20 @@ export function CryptoPayClient() {
   const amountSuiStr = amountSui.toFixed(6);
   const rateLabel =
     token === "crust" && crustTokenPriceUsd > 0
-      ? `1 CRUST ≈ ${crustTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
+      ? `1 CRUST ≈ ${crustTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
       : token === "pump" && pumpTokenPriceUsd > 0
-        ? `1 PUMP ≈ ${pumpTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
+        ? `1 PUMP ≈ ${pumpTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
         : token === "soluna" && solunaTokenPriceUsd > 0
-          ? `1 SOLUNA ≈ ${solunaTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
+          ? `1 SOLUNA ≈ ${solunaTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
           : token === "seeker" && seekerTokenPriceUsd > 0
-            ? `1 SKR ≈ ${seekerTokenPriceUsd.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 6 })} USD`
+            ? `1 SKR ≈ ${seekerTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
             : token === "usdc"
               ? "1 USDC = 1 USD"
               : token === "whitewhale"
                 ? "1 WhiteWhale ≈ 1 USD"
                 : token === "troll"
                   ? "1 TROLL ≈ 1 USD"
-                  : `1 SOL = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+                  : `1 SOL = ${rate.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} USD`;
 
   const { user } = useCurrentUser();
   const email = user?.email ?? order?.email ?? "";
@@ -353,11 +323,11 @@ export function CryptoPayClient() {
         Math.ceil((amountUsd / suiUsdRate) * Number(MIST_PER_SUI)),
       );
       const uri = createSuiPayUri({
-        receiverAddress: recipient,
         amountMist,
-        nonce: pathId || crypto.randomUUID(),
         label: getSuiPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
+        nonce: pathId || crypto.randomUUID(),
+        receiverAddress: recipient,
       });
       setSuiPaymentUri(uri);
       setPaymentAddress(recipient);
@@ -377,12 +347,12 @@ export function CryptoPayClient() {
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        recipient: new PublicKey(recipient),
         amount,
-        splToken: new PublicKey(CRUST_MINT_MAINNET),
-        reference: keypair.publicKey,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
+        recipient: new PublicKey(recipient),
+        reference: keypair.publicKey,
+        splToken: new PublicKey(CRUST_MINT_MAINNET),
       });
       setPaymentUrl(url);
       setPaymentAddress(recipient);
@@ -398,12 +368,12 @@ export function CryptoPayClient() {
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        recipient: new PublicKey(recipient),
         amount,
-        splToken: new PublicKey(PUMP_MINT_MAINNET),
-        reference: keypair.publicKey,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
+        recipient: new PublicKey(recipient),
+        reference: keypair.publicKey,
+        splToken: new PublicKey(PUMP_MINT_MAINNET),
       });
       setPaymentUrl(url);
       setPaymentAddress(recipient);
@@ -418,12 +388,12 @@ export function CryptoPayClient() {
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        recipient: new PublicKey(recipient),
         amount,
-        splToken: new PublicKey(SOLUNA_MINT_MAINNET),
-        reference: keypair.publicKey,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
+        recipient: new PublicKey(recipient),
+        reference: keypair.publicKey,
+        splToken: new PublicKey(SOLUNA_MINT_MAINNET),
       });
       setPaymentUrl(url);
       setPaymentAddress(recipient);
@@ -438,12 +408,12 @@ export function CryptoPayClient() {
       );
       const keypair = Keypair.generate();
       const url = encodeURL({
-        recipient: new PublicKey(recipient),
         amount,
-        splToken: new PublicKey(SKR_MINT_MAINNET),
-        reference: keypair.publicKey,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
+        recipient: new PublicKey(recipient),
+        reference: keypair.publicKey,
+        splToken: new PublicKey(SKR_MINT_MAINNET),
       });
       setPaymentUrl(url);
       setPaymentAddress(recipient);
@@ -456,11 +426,11 @@ export function CryptoPayClient() {
       const amountSol = new BigNumber(amountUsd).dividedBy(r);
       const keypair = Keypair.generate();
       const url = encodeURL({
-        recipient: new PublicKey(recipient),
         amount: amountSol,
-        reference: keypair.publicKey,
         label: getSolanaPayLabel(),
         message: `Order total: $${amountUsd.toFixed(2)}`,
+        recipient: new PublicKey(recipient),
+        reference: keypair.publicKey,
       });
       setPaymentUrl(url);
       setPaymentAddress(recipient);
@@ -479,12 +449,12 @@ export function CryptoPayClient() {
     // encodeURL expects amount in token units (human-readable), not base units
     const amount = new BigNumber(amountUsd);
     const url = encodeURL({
-      recipient: new PublicKey(recipient),
       amount,
-      splToken: new PublicKey(splTokenMint),
-      reference,
       label: getSolanaPayLabel(),
       message: `Order total: $${amountUsd.toFixed(2)}`,
+      recipient: new PublicKey(recipient),
+      reference,
+      splToken: new PublicKey(splTokenMint),
     });
     setPaymentUrl(url);
     setPaymentAddress(recipient);
@@ -509,7 +479,7 @@ export function CryptoPayClient() {
     let cancelled = false;
     QRCode.toDataURL(
       qrUrlString,
-      { width: 320, margin: 2, color: { dark: "#000000", light: "#ffffff" } },
+      { color: { dark: "#000000", light: "#ffffff" }, margin: 2, width: 320 },
       (err, url) => {
         if (cancelled) return;
         if (err) {
@@ -529,7 +499,7 @@ export function CryptoPayClient() {
   }, [connected]);
 
   // poll for Solana Pay confirmation when user pays to dynamic deposit address (solana/usdc/crust/whitewhale)
-  const solanaPayPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const solanaPayPollRef = useRef<null | ReturnType<typeof setInterval>>(null);
   useEffect(() => {
     if (
       token === "sui" ||
@@ -594,8 +564,8 @@ export function CryptoPayClient() {
                   .toString()
               : String(amountUsd);
     const params = new URLSearchParams({
-      depositAddress: order.depositAddress,
       amount: amountStr,
+      depositAddress: order.depositAddress,
       splToken: splTokenMint,
     });
     const interval = setInterval(async () => {
@@ -604,8 +574,8 @@ export function CryptoPayClient() {
           `/api/payments/solana-pay/status?${params.toString()}`,
         );
         const data = (await res.json()) as {
-          status: string;
           signature?: string;
+          status: string;
         };
         if (data.status === "confirmed") {
           if (solanaPayPollRef.current) {
@@ -614,18 +584,18 @@ export function CryptoPayClient() {
           }
           try {
             await fetch("/api/checkout/solana-pay/confirm", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                amount: amountStr,
                 depositAddress: order.depositAddress,
                 orderId: order.orderId,
                 signature: data.signature,
-                amount: amountStr,
                 splToken: splTokenMint,
                 ...(publicKey
                   ? { payerWalletAddress: publicKey.toBase58() }
                   : {}),
               }),
+              headers: { "Content-Type": "application/json" },
+              method: "POST",
             });
           } catch {
             // order stays pending; can be reconciled later
@@ -723,8 +693,8 @@ export function CryptoPayClient() {
         transaction.add(
           SystemProgram.transfer({
             fromPubkey: publicKey,
-            toPubkey: recipient,
             lamports: requiredLamports,
+            toPubkey: recipient,
           }),
         );
       } else {
@@ -907,8 +877,8 @@ export function CryptoPayClient() {
 
       // Send the transaction
       await sendTransaction(transaction, connection, {
-        skipPreflight: false,
         preflightCommitment: "confirmed",
+        skipPreflight: false,
       });
       setPayStatus("sent");
       // Existing polling will detect the transfer at the deposit address
@@ -955,22 +925,22 @@ export function CryptoPayClient() {
 
   /** Check if wallet has sufficient balance before sending. Used to show "insufficient" flow instead of prompting to sign. */
   const checkBalanceSufficient = useCallback(async (): Promise<{
-    sufficient: boolean;
     reason?: "sol_for_fees" | "token";
+    sufficient: boolean;
   }> => {
     if (!publicKey || !connection)
-      return { sufficient: false, reason: "token" };
+      return { reason: "token", sufficient: false };
     try {
       const solBalance = await connection.getBalance(publicKey);
       if (token === "solana") {
         return {
-          sufficient: solBalance >= requiredLamports,
           reason: solBalance >= requiredLamports ? undefined : "token",
+          sufficient: solBalance >= requiredLamports,
         };
       }
       // SPL token: need enough SOL for fees first, then enough token balance
       if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS)
-        return { sufficient: false, reason: "sol_for_fees" };
+        return { reason: "sol_for_fees", sufficient: false };
       let splTokenMint: PublicKeyType;
       // amountBaseUnits: the amount already in smallest token units (e.g. 1 USDC = 1_000_000)
       // These helper functions (usdcAmountFromUsd, tokenAmountFromUsd, tokenAmountFromUsdWithPrice)
@@ -978,7 +948,7 @@ export function CryptoPayClient() {
       let amountBaseUnits: BigNumber;
       if (token === "crust") {
         if (crustSolPerToken == null || crustSolPerToken <= 0 || rate <= 0)
-          return { sufficient: false, reason: "token" };
+          return { reason: "token", sufficient: false };
         amountBaseUnits = tokenAmountFromUsdWithPrice(
           amountUsd,
           crustSolPerToken,
@@ -988,7 +958,7 @@ export function CryptoPayClient() {
         splTokenMint = new PublicKey(CRUST_MINT_MAINNET);
       } else if (token === "pump") {
         if (pumpSolPerToken == null || pumpSolPerToken <= 0 || rate <= 0)
-          return { sufficient: false, reason: "token" };
+          return { reason: "token", sufficient: false };
         amountBaseUnits = tokenAmountFromUsdWithPrice(
           amountUsd,
           pumpSolPerToken,
@@ -998,7 +968,7 @@ export function CryptoPayClient() {
         splTokenMint = new PublicKey(PUMP_MINT_MAINNET);
       } else if (token === "soluna") {
         if (solunaSolPerToken == null || solunaSolPerToken <= 0 || rate <= 0)
-          return { sufficient: false, reason: "token" };
+          return { reason: "token", sufficient: false };
         amountBaseUnits = tokenAmountFromUsdWithPrice(
           amountUsd,
           solunaSolPerToken,
@@ -1008,7 +978,7 @@ export function CryptoPayClient() {
         splTokenMint = new PublicKey(SOLUNA_MINT_MAINNET);
       } else if (token === "seeker") {
         if (seekerSolPerToken == null || seekerSolPerToken <= 0 || rate <= 0)
-          return { sufficient: false, reason: "token" };
+          return { reason: "token", sufficient: false };
         amountBaseUnits = tokenAmountFromUsdWithPrice(
           amountUsd,
           seekerSolPerToken,
@@ -1026,7 +996,7 @@ export function CryptoPayClient() {
         amountBaseUnits = tokenAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(TROLL_MINT_MAINNET);
       } else {
-        return { sufficient: false, reason: "token" };
+        return { reason: "token", sufficient: false };
       }
       let tokenProgramId = TOKEN_PROGRAM_ID;
       try {
@@ -1041,7 +1011,7 @@ export function CryptoPayClient() {
           );
           tokenProgramId = TOKEN_2022_PROGRAM_ID;
         } catch {
-          return { sufficient: false, reason: "token" };
+          return { reason: "token", sufficient: false };
         }
       }
       const senderATA = getAssociatedTokenAddressSync(
@@ -1067,11 +1037,11 @@ export function CryptoPayClient() {
       const requiredTokens = amountBaseUnits.integerValue(BigNumber.ROUND_CEIL);
       const tokenSufficient = BigInt(requiredTokens.toString()) <= balance;
       return {
-        sufficient: tokenSufficient,
         reason: tokenSufficient ? undefined : "token",
+        sufficient: tokenSufficient,
       };
     } catch {
-      return { sufficient: false, reason: "token" };
+      return { reason: "token", sufficient: false };
     }
   }, [
     connection,
@@ -1123,14 +1093,26 @@ export function CryptoPayClient() {
 
   if (!pathId?.trim()) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6 text-center">
+      <div
+        className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+      >
+        <div
+          className={`
+          flex flex-col gap-4 rounded-lg border border-border bg-card p-6
+          text-center
+        `}
+        >
           <p className="text-sm text-muted-foreground">
             Missing order. Start checkout from your cart.
           </p>
           <Link
+            className={`
+              text-primary underline
+              hover:underline
+            `}
             href="/checkout"
-            className="text-primary underline hover:underline"
           >
             Back to checkout
           </Link>
@@ -1141,7 +1123,11 @@ export function CryptoPayClient() {
 
   if (orderLoading) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
+      <div
+        className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+      >
         <p className="text-sm text-muted-foreground">Loading order…</p>
       </div>
     );
@@ -1150,16 +1136,28 @@ export function CryptoPayClient() {
   const isSuiFlow = token === "sui";
   if (isSuiFlow ? !suiFromHash : orderError || !order) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-background">
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-6 text-center">
+      <div
+        className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+      >
+        <div
+          className={`
+          flex flex-col gap-4 rounded-lg border border-border bg-card p-6
+          text-center
+        `}
+        >
           <p className="text-sm text-muted-foreground">
             {isSuiFlow
               ? (orderError ?? "Invalid Sui link")
               : (orderError ?? "Order not found")}
           </p>
           <Link
+            className={`
+              text-primary underline
+              hover:underline
+            `}
             href="/checkout"
-            className="text-primary underline hover:underline"
           >
             Back to checkout
           </Link>
@@ -1170,10 +1168,25 @@ export function CryptoPayClient() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-5">
-        <div className="flex min-w-0 flex-col gap-6 min-[560px]:flex-row min-[560px]:items-start">
+      <div
+        className={`
+        mx-auto w-full max-w-6xl px-4 py-8
+        sm:px-5
+      `}
+      >
+        <div
+          className={`
+          flex min-w-0 flex-col gap-6
+          min-[560px]:flex-row min-[560px]:items-start
+        `}
+        >
           {/* Left: payment box */}
-          <div className="min-w-0 flex-1 rounded-xl border border-border bg-card p-6 min-[560px]:min-w-[560px]">
+          <div
+            className={`
+            min-w-0 flex-1 rounded-xl border border-border bg-card p-6
+            min-[560px]:min-w-[560px]
+          `}
+          >
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <Image
@@ -1183,20 +1196,38 @@ export function CryptoPayClient() {
                   src={logo.src}
                   width={40}
                 />
-                <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                <h1
+                  className={`
+                  text-2xl font-semibold tracking-tight
+                  md:text-3xl
+                `}
+                >
                   {title}
                 </h1>
               </div>
 
               {token === "sui" && !getSuiPayRecipient() ? (
-                <div className="flex flex-col gap-6 rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                <div
+                  className={`
+                  flex flex-col gap-6 rounded-lg border border-amber-500/40
+                  bg-amber-500/10 p-4
+                `}
+                >
+                  <p
+                    className={`
+                    text-sm font-medium text-amber-800
+                    dark:text-amber-200
+                  `}
+                  >
                     Sui Payment Kit is not configured. Set
                     NEXT_PUBLIC_SUI_PAY_RECIPIENT in .env.
                   </p>
                   <Link
+                    className={`
+                      text-primary underline
+                      hover:underline
+                    `}
                     href="/checkout"
-                    className="text-primary underline hover:underline"
                   >
                     Back to checkout
                   </Link>
@@ -1206,8 +1237,8 @@ export function CryptoPayClient() {
                   <div>
                     <div className="mb-2 flex items-center gap-2">
                       <Clock
-                        className="size-5 shrink-0 text-muted-foreground"
                         aria-hidden
+                        className="size-5 shrink-0 text-muted-foreground"
                       />
                       <h2 className="text-lg font-semibold">
                         Payment not received in time
@@ -1221,18 +1252,23 @@ export function CryptoPayClient() {
                   </div>
                   <div className="flex justify-center">
                     <Button
-                      variant="secondary"
+                      onClick={handleRecreateOrder}
                       size="lg"
                       type="button"
-                      onClick={handleRecreateOrder}
+                      variant="secondary"
                     >
                       Recreate order
                     </Button>
                   </div>
-                  <div className="flex items-start gap-3 rounded-lg border border-border bg-muted/30 p-4">
+                  <div
+                    className={`
+                    flex items-start gap-3 rounded-lg border border-border
+                    bg-muted/30 p-4
+                  `}
+                  >
                     <Info
-                      className="size-5 shrink-0 text-muted-foreground"
                       aria-hidden
+                      className="size-5 shrink-0 text-muted-foreground"
                     />
                     <div>
                       <p className="font-semibold">
@@ -1249,24 +1285,55 @@ export function CryptoPayClient() {
                 <>
                   <div className="flex justify-center">
                     {token === "crust" && crustSolPerToken === null ? (
-                      <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] items-center
+                        justify-center rounded-lg border border-border bg-muted
+                        p-8 text-center text-sm text-muted-foreground
+                      `}
+                      >
                         Loading CRUST price from pump.fun…
                       </div>
                     ) : token === "pump" && pumpSolPerToken === null ? (
-                      <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] items-center
+                        justify-center rounded-lg border border-border bg-muted
+                        p-8 text-center text-sm text-muted-foreground
+                      `}
+                      >
                         Loading Pump price from pump.fun…
                       </div>
                     ) : token === "soluna" && solunaSolPerToken === null ? (
-                      <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] items-center
+                        justify-center rounded-lg border border-border bg-muted
+                        p-8 text-center text-sm text-muted-foreground
+                      `}
+                      >
                         Loading SOLUNA price from pump.fun…
                       </div>
                     ) : token === "seeker" && seekerSolPerToken === null ? (
-                      <div className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg border border-border bg-muted p-8 text-center text-sm text-muted-foreground">
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] items-center
+                        justify-center rounded-lg border border-border bg-muted
+                        p-8 text-center text-sm text-muted-foreground
+                      `}
+                      >
                         Loading Seeker (SKR) price…
                       </div>
                     ) : token === "crust" && crustSolPerToken === 0 ? (
-                      <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
-                        <AlertCircle className="size-10 shrink-0" aria-hidden />
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] flex-col items-center
+                        justify-center gap-2 rounded-lg border
+                        border-destructive/40 bg-destructive/10 p-8 text-center
+                        text-sm text-destructive
+                      `}
+                      >
+                        <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">CRUST price unavailable</p>
                         <p className="text-muted-foreground">
                           We couldn&apos;t load the CRUST price. Check your
@@ -1274,8 +1341,15 @@ export function CryptoPayClient() {
                         </p>
                       </div>
                     ) : token === "pump" && pumpSolPerToken === 0 ? (
-                      <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
-                        <AlertCircle className="size-10 shrink-0" aria-hidden />
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] flex-col items-center
+                        justify-center gap-2 rounded-lg border
+                        border-destructive/40 bg-destructive/10 p-8 text-center
+                        text-sm text-destructive
+                      `}
+                      >
+                        <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">Pump price unavailable</p>
                         <p className="text-muted-foreground">
                           We couldn&apos;t load the Pump price. Check your
@@ -1283,8 +1357,15 @@ export function CryptoPayClient() {
                         </p>
                       </div>
                     ) : token === "soluna" && solunaSolPerToken === 0 ? (
-                      <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
-                        <AlertCircle className="size-10 shrink-0" aria-hidden />
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] flex-col items-center
+                        justify-center gap-2 rounded-lg border
+                        border-destructive/40 bg-destructive/10 p-8 text-center
+                        text-sm text-destructive
+                      `}
+                      >
+                        <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">SOLUNA price unavailable</p>
                         <p className="text-muted-foreground">
                           We couldn&apos;t load the SOLUNA price. Check your
@@ -1292,8 +1373,15 @@ export function CryptoPayClient() {
                         </p>
                       </div>
                     ) : token === "seeker" && seekerSolPerToken === 0 ? (
-                      <div className="flex min-h-[320px] min-w-[320px] flex-col items-center justify-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-8 text-center text-sm text-destructive">
-                        <AlertCircle className="size-10 shrink-0" aria-hidden />
+                      <div
+                        className={`
+                        flex min-h-[320px] min-w-[320px] flex-col items-center
+                        justify-center gap-2 rounded-lg border
+                        border-destructive/40 bg-destructive/10 p-8 text-center
+                        text-sm text-destructive
+                      `}
+                      >
+                        <AlertCircle aria-hidden className="size-10 shrink-0" />
                         <p className="font-medium">
                           Seeker (SKR) price unavailable
                         </p>
@@ -1305,77 +1393,114 @@ export function CryptoPayClient() {
                     ) : isMobile && token !== "sui" ? null : qrDataUrl ? (
                       <div className="relative inline-block">
                         <img
-                          src={qrDataUrl}
                           alt="Payment QR code"
-                          width={320}
-                          height={320}
                           className="rounded-lg"
+                          height={320}
+                          src={qrDataUrl}
+                          width={320}
                         />
                         {/* Logo overlay in the center of the QR code */}
-                        <div className="absolute inset-0 flex items-center justify-center">
+                        <div
+                          className={`
+                          absolute inset-0 flex items-center justify-center
+                        `}
+                        >
                           <div className="rounded-full bg-white p-1.5 shadow-sm">
                             <img
-                              src={logo.src}
                               alt=""
-                              width={36}
-                              height={36}
                               className="size-9 object-contain"
+                              height={36}
+                              src={logo.src}
+                              width={36}
                             />
                           </div>
                         </div>
                       </div>
                     ) : (
                       <div
-                        className="flex min-h-[320px] min-w-[320px] items-center justify-center rounded-lg bg-white p-2"
                         aria-hidden
+                        className={`
+                          flex min-h-[320px] min-w-[320px] items-center
+                          justify-center rounded-lg bg-white p-2
+                        `}
                       >
-                        <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                          <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                        <div
+                          className={`
+                          flex flex-col items-center gap-3 text-muted-foreground
+                        `}
+                        >
+                          <div
+                            className={`
+                            size-6 animate-spin rounded-full border-2
+                            border-muted-foreground/30 border-t-muted-foreground
+                          `}
+                          />
                           <span className="text-sm">Loading QR code…</span>
                         </div>
                       </div>
                     )}
                   </div>
                   {isMobile && token !== "sui" && qrDataUrl && (
-                    <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
-                      <DialogContent className="flex max-w-[min(360px,100vw)] flex-col items-center gap-4 p-6">
+                    <Dialog onOpenChange={setShowQrDialog} open={showQrDialog}>
+                      <DialogContent
+                        className={`
+                        flex max-w-[min(360px,100vw)] flex-col items-center
+                        gap-4 p-6
+                      `}
+                      >
                         <DialogTitle className="sr-only">
                           Payment QR code
                         </DialogTitle>
                         <p className="text-center text-sm text-muted-foreground">
                           Scan this QR code with another device to pay
                         </p>
-                        <div className="relative inline-block rounded-lg bg-white p-2">
+                        <div
+                          className={`
+                          relative inline-block rounded-lg bg-white p-2
+                        `}
+                        >
                           <img
-                            src={qrDataUrl}
                             alt="Payment QR code"
-                            width={280}
-                            height={280}
                             className="rounded-lg"
+                            height={280}
+                            src={qrDataUrl}
+                            width={280}
                           />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="rounded-full bg-white p-1.5 shadow-sm">
+                          <div
+                            className={`
+                            absolute inset-0 flex items-center justify-center
+                          `}
+                          >
+                            <div
+                              className={`
+                              rounded-full bg-white p-1.5 shadow-sm
+                            `}
+                            >
                               <img
-                                src={logo.src}
                                 alt=""
-                                width={32}
-                                height={32}
                                 className="size-8 object-contain"
+                                height={32}
+                                src={logo.src}
+                                width={32}
                               />
                             </div>
                           </div>
                         </div>
                         <Button
+                          onClick={() => setShowQrDialog(false)}
                           type="button"
                           variant="outline"
-                          onClick={() => setShowQrDialog(false)}
                         >
                           Close
                         </Button>
                       </DialogContent>
                     </Dialog>
                   )}
-                  <div className="rounded-lg border border-border bg-muted/30 p-5">
+                  <div
+                    className={`
+                    rounded-lg border border-border bg-muted/30 p-5
+                  `}
+                  >
                     <h2 className="mb-5 text-lg font-semibold">
                       Payment details
                     </h2>
@@ -1385,15 +1510,20 @@ export function CryptoPayClient() {
                           Payment unique address
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
-                          <code className="break-all rounded bg-background px-3 py-1.5 font-mono text-sm">
+                          <code
+                            className={`
+                            rounded bg-background px-3 py-1.5 font-mono text-sm
+                            break-all
+                          `}
+                          >
                             {paymentAddress || "—"}
                           </code>
                           <Button
+                            className="shrink-0 gap-1.5 text-sm"
+                            disabled={!paymentAddress}
+                            onClick={copyAddress}
                             size="sm"
                             variant="ghost"
-                            className="shrink-0 gap-1.5 text-sm"
-                            onClick={copyAddress}
-                            disabled={!paymentAddress}
                           >
                             {copied === "address" ? (
                               <Check className="size-4 text-green-600" />
@@ -1413,10 +1543,7 @@ export function CryptoPayClient() {
                             {amountDisplayStr} {amountUnit}
                           </span>
                           <Button
-                            size="sm"
-                            variant="ghost"
                             className="shrink-0 gap-1.5 text-sm"
-                            onClick={copyAmount}
                             disabled={
                               (token === "crust" && crustSolPerToken == null) ||
                               (token === "pump" && pumpSolPerToken == null) ||
@@ -1424,6 +1551,9 @@ export function CryptoPayClient() {
                                 solunaSolPerToken == null) ||
                               (token === "seeker" && seekerSolPerToken == null)
                             }
+                            onClick={copyAmount}
+                            size="sm"
+                            variant="ghost"
                           >
                             {copied === "amount" ? (
                               <Check className="size-4 text-green-600" />
@@ -1438,7 +1568,11 @@ export function CryptoPayClient() {
                         <p className="mb-1.5 text-sm text-muted-foreground">
                           Expires in
                         </p>
-                        <p className="text-lg font-mono font-semibold tabular-nums">
+                        <p
+                          className={`
+                          font-mono text-lg font-semibold tabular-nums
+                        `}
+                        >
                           {formattedTime}
                         </p>
                       </div>
@@ -1446,16 +1580,21 @@ export function CryptoPayClient() {
                   </div>
                 </>
               ) : (
-                <div className="flex flex-col gap-6 rounded-lg border border-border bg-muted/30 p-6">
+                <div
+                  className={`
+                  flex flex-col gap-6 rounded-lg border border-border
+                  bg-muted/30 p-6
+                `}
+                >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
                       {wallet?.adapter.icon && (
                         <img
-                          src={wallet.adapter.icon}
                           alt=""
                           className="size-8 rounded object-contain"
-                          width={32}
                           height={32}
+                          src={wallet.adapter.icon}
+                          width={32}
                         />
                       )}
                       <span className="font-mono text-base">
@@ -1465,9 +1604,12 @@ export function CryptoPayClient() {
                       </span>
                     </div>
                     <button
-                      type="button"
-                      className="cursor-pointer text-sm text-destructive hover:underline"
+                      className={`
+                        cursor-pointer text-sm text-destructive
+                        hover:underline
+                      `}
                       onClick={() => disconnect()}
+                      type="button"
                     >
                       Disconnect
                     </button>
@@ -1484,9 +1626,24 @@ export function CryptoPayClient() {
                   )}
                   {payStatus === "sent" && (
                     <div className="flex flex-col gap-4">
-                      <div className="flex items-center gap-2 rounded-md border border-green-500/40 bg-green-500/10 p-4">
-                        <Check className="size-5 shrink-0 text-green-600 dark:text-green-500" />
-                        <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                      <div
+                        className={`
+                        flex items-center gap-2 rounded-md border
+                        border-green-500/40 bg-green-500/10 p-4
+                      `}
+                      >
+                        <Check
+                          className={`
+                          size-5 shrink-0 text-green-600
+                          dark:text-green-500
+                        `}
+                        />
+                        <p
+                          className={`
+                          text-sm font-medium text-green-800
+                          dark:text-green-200
+                        `}
+                        >
                           Transaction sent. Waiting for confirmation…
                         </p>
                       </div>
@@ -1498,43 +1655,56 @@ export function CryptoPayClient() {
                   )}
                   {payStatus === "error" && (
                     <div className="flex flex-col gap-6">
-                      <div className="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-4">
-                        <AlertCircle className="size-5 shrink-0 text-destructive" />
+                      <div
+                        className={`
+                        flex items-start gap-3 rounded-md border
+                        border-destructive/40 bg-destructive/10 p-4
+                      `}
+                      >
+                        <AlertCircle
+                          className={`
+                          size-5 shrink-0 text-destructive
+                        `}
+                        />
                         <p className="text-sm font-medium text-destructive">
                           {payError ?? "Transaction failed. Please try again."}
                         </p>
                       </div>
                       <Button
                         className="w-full gap-2"
+                        onClick={handlePayWithWalletClick}
                         size="lg"
                         type="button"
-                        onClick={handlePayWithWalletClick}
                       >
                         {wallet?.adapter.icon && (
                           <img
-                            src={wallet.adapter.icon}
                             alt=""
                             className="size-5 object-contain"
-                            width={20}
                             height={20}
+                            src={wallet.adapter.icon}
+                            width={20}
                           />
                         )}
                         Try again with {wallet?.adapter.name ?? "wallet"}
                       </Button>
                       <div className="flex items-center gap-3">
                         <span className="h-px flex-1 bg-border" />
-                        <span className="text-sm font-medium text-muted-foreground">
+                        <span
+                          className={`
+                          text-sm font-medium text-muted-foreground
+                        `}
+                        >
                           or
                         </span>
                         <span className="h-px flex-1 bg-border" />
                       </div>
                       <div className="flex justify-center">
                         <Button
-                          variant="secondary"
                           className="w-1/2 min-w-0"
+                          onClick={handlePayManually}
                           size="lg"
                           type="button"
-                          onClick={handlePayManually}
+                          variant="secondary"
                         >
                           Pay manually
                         </Button>
@@ -1543,9 +1713,24 @@ export function CryptoPayClient() {
                   )}
                   {payStatus === "insufficient" && (
                     <div className="flex flex-col gap-6">
-                      <div className="flex items-start gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 p-4">
-                        <AlertCircle className="size-5 shrink-0 text-amber-600 dark:text-amber-500" />
-                        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                      <div
+                        className={`
+                        flex items-start gap-3 rounded-md border
+                        border-amber-500/40 bg-amber-500/10 p-4
+                      `}
+                      >
+                        <AlertCircle
+                          className={`
+                          size-5 shrink-0 text-amber-600
+                          dark:text-amber-500
+                        `}
+                        />
+                        <p
+                          className={`
+                          text-sm font-medium text-amber-800
+                          dark:text-amber-200
+                        `}
+                        >
                           {insufficientReason === "sol_for_fees"
                             ? `You have enough ${TOKEN_LABEL[token] ?? "funds"} for this order, but you need a small amount of SOL in your wallet for network fees (e.g. ~0.00005 SOL). Add a little SOL and try again, or pay manually below.`
                             : `You don't have enough ${TOKEN_LABEL[token] ?? "funds"} in your wallet for this order${token !== "solana" ? " (you also need a small amount of SOL for network fees)" : ""}. Add funds or pay manually below.`}
@@ -1553,28 +1738,28 @@ export function CryptoPayClient() {
                       </div>
                       <Button
                         className="w-full gap-2"
+                        onClick={handlePayWithWalletClick}
                         size="lg"
                         type="button"
-                        onClick={handlePayWithWalletClick}
                       >
                         {wallet?.adapter.icon && (
                           <img
-                            src={wallet.adapter.icon}
                             alt=""
                             className="size-5 object-contain"
-                            width={20}
                             height={20}
+                            src={wallet.adapter.icon}
+                            width={20}
                           />
                         )}
                         Try again with {wallet?.adapter.name ?? "wallet"}
                       </Button>
                       <div className="flex justify-center">
                         <Button
-                          variant="secondary"
                           className="w-1/2 min-w-0"
+                          onClick={handlePayManually}
                           size="lg"
                           type="button"
-                          onClick={handlePayManually}
+                          variant="secondary"
                         >
                           Pay manually
                         </Button>
@@ -1586,7 +1771,7 @@ export function CryptoPayClient() {
 
               {!isExpired && token === "sui" && suiPaymentUri && (
                 <div className="flex justify-center">
-                  <Button className="min-w-[12rem]" size="lg" asChild>
+                  <Button asChild className="min-w-[12rem]" size="lg">
                     <a
                       href={suiPaymentUri}
                       rel="noopener noreferrer"
@@ -1604,18 +1789,18 @@ export function CryptoPayClient() {
                     {!connected ? (
                       <Button
                         className="min-w-[12rem]"
-                        size="lg"
                         onClick={openConnectWalletModal}
+                        size="lg"
                       >
                         Connect wallet
                       </Button>
                     ) : (
                       <Button
                         className="min-w-[12rem]"
-                        size="lg"
-                        variant="secondary"
-                        type="button"
                         onClick={handlePayWithWalletClick}
+                        size="lg"
+                        type="button"
+                        variant="secondary"
                       >
                         Pay with your wallet
                       </Button>
@@ -1630,18 +1815,27 @@ export function CryptoPayClient() {
                   <div className="flex justify-center">
                     {qrDataUrl ? (
                       <Button
-                        type="button"
-                        variant="secondary"
-                        size="lg"
                         className="gap-2"
                         onClick={() => setShowQrDialog(true)}
+                        size="lg"
+                        type="button"
+                        variant="secondary"
                       >
-                        <QrCode className="size-5" aria-hidden />
+                        <QrCode aria-hidden className="size-5" />
                         Scan QR with another device
                       </Button>
                     ) : (
-                      <div className="flex flex-col items-center gap-3 text-muted-foreground">
-                        <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                      <div
+                        className={`
+                        flex flex-col items-center gap-3 text-muted-foreground
+                      `}
+                      >
+                        <div
+                          className={`
+                          size-6 animate-spin rounded-full border-2
+                          border-muted-foreground/30 border-t-muted-foreground
+                        `}
+                        />
                         <span className="text-sm">Loading QR code…</span>
                       </div>
                     )}
@@ -1651,53 +1845,86 @@ export function CryptoPayClient() {
           </div>
 
           {/* Right: Order details box */}
-          <div className="min-w-0 shrink-0 min-[560px]:w-[510px] min-[560px]:sticky min-[560px]:top-8 min-[560px]:self-start">
+          <div
+            className={`
+            min-w-0 shrink-0
+            min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
+            min-[560px]:self-start
+          `}
+          >
             <div className="rounded-xl border border-border bg-card px-6 py-5">
               <h2 className="mb-4 text-xl font-semibold">Order details</h2>
               <dl className="space-y-3 text-base">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2
+                `}
+                >
                   <dt className="text-muted-foreground">Email address</dt>
                   <dd className="flex items-center gap-2">
                     <span>{email || "—"}</span>
                     {!user?.email && (
                       <button
-                        type="button"
+                        className={`
+                          text-primary underline
+                          hover:underline
+                        `}
                         onClick={() => router.push("/checkout")}
-                        className="text-primary underline hover:underline"
+                        type="button"
                       >
                         Change
                       </button>
                     )}
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2
+                `}
+                >
                   <dt className="text-muted-foreground">Payment method</dt>
                   <dd className="flex items-center gap-2">
                     <span>{paymentMethodLabel}</span>
                     <button
-                      type="button"
+                      className={`
+                        text-primary underline
+                        hover:underline
+                      `}
                       onClick={() => router.push("/checkout")}
-                      className="text-primary underline hover:underline"
+                      type="button"
                     >
                       Change
                     </button>
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2
+                `}
+                >
                   <dt className="text-muted-foreground">Order ID</dt>
                   <dd>
-                    <code className="break-all font-mono text-xs">
+                    <code className="font-mono text-xs break-all">
                       {pathId || "—"}
                     </code>
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2 border-t
+                  border-border pt-3
+                `}
+                >
                   <dt className="text-muted-foreground">Fiat value</dt>
                   <dd className="font-medium">
                     USD {amountUsd > 0 ? amountUsd.toFixed(2) : "0.00"}
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-lg">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2 text-lg
+                `}
+                >
                   <dt className="font-medium">Total</dt>
                   <dd className="font-semibold">
                     {token === "sui"
@@ -1720,10 +1947,14 @@ export function CryptoPayClient() {
                   </dd>
                 </div>
               </dl>
-              <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <p
+                className={`
+                mt-4 flex items-center gap-2 text-sm text-muted-foreground
+              `}
+              >
                 <ArrowLeftRight
-                  className="size-4 shrink-0 text-muted-foreground"
                   aria-hidden
+                  className="size-4 shrink-0 text-muted-foreground"
                 />
                 {token === "sui"
                   ? `We've converted this price from USD to SUI at our rate of approximately ${rateLabel}. Uses the Sui Payment Kit (sui:pay).`
@@ -1754,18 +1985,46 @@ export function CryptoPayClient() {
 function CopyIcon() {
   return (
     <svg
+      aria-hidden
       className="size-4"
       fill="none"
       stroke="currentColor"
       strokeWidth={2}
       viewBox="0 0 24 24"
-      aria-hidden
     >
       <path
+        d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.369.022.739.15 1.027.331l.962.562c.1.06.153.166.153.278 0 .16-.13.29-.29.29h-.962a.704.704 0 01-.332-.027 6.57 6.57 0 01-1.027-.331m-7.332 0A2.251 2.251 0 0112 2.25h3a2.25 2.25 0 012.166 1.638m-7.332 0c.369.022.739.15 1.027.331l.962.562c.1.06.153.166.153.278 0 .16-.13.29-.29.29h-.962a.704.704 0 01-.332-.027 6.57 6.57 0 01-1.027-.331M7.5 4.5v12.75a2.25 2.25 0 002.25 2.25h6.75a2.25 2.25 0 002.25-2.25V4.5m-9 0h9"
         strokeLinecap="round"
         strokeLinejoin="round"
-        d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.369.022.739.15 1.027.331l.962.562c.1.06.153.166.153.278 0 .16-.13.29-.29.29h-.962a.704.704 0 01-.332-.027 6.57 6.57 0 01-1.027-.331m-7.332 0A2.251 2.251 0 0112 2.25h3a2.25 2.25 0 012.166 1.638m-7.332 0c.369.022.739.15 1.027.331l.962.562c.1.06.153.166.153.278 0 .16-.13.29-.29.29h-.962a.704.704 0 01-.332-.027 6.57 6.57 0 01-1.027-.331M7.5 4.5v12.75a2.25 2.25 0 002.25 2.25h6.75a2.25 2.25 0 002.25-2.25V4.5m-9 0h9"
       />
     </svg>
   );
+}
+
+// Parse URL hash synchronously (component is ssr:false, window is always available)
+function parseSuiHash(): null | {
+  suiFromHash: null | { amountUsd: number; expiresAt: string };
+  token: "sui";
+} {
+  if (typeof window === "undefined") return null;
+  const raw = window.location.hash.slice(1);
+  if (!raw.toLowerCase().startsWith("sui-")) return null;
+  const parts = raw.split("-");
+  const amount = Number.parseFloat(parts[1] ?? "0");
+  const expiresTs = Number(parts[2] ?? "0");
+  if (Number.isFinite(amount) && amount >= 0 && Number.isFinite(expiresTs)) {
+    return {
+      suiFromHash: {
+        amountUsd: amount,
+        expiresAt: new Date(expiresTs).toISOString(),
+      },
+      token: "sui",
+    };
+  }
+  return { suiFromHash: null, token: "sui" };
+}
+
+function truncateAddress(address: string): string {
+  if (address.length <= 12) return address;
+  return `${address.slice(0, 6)}.....${address.slice(-4)}`;
 }

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code")?.trim();
   if (!code || code.length === 0) {
     return NextResponse.json(
-      { valid: false, error: "Code is required" },
+      { error: "Code is required", valid: false },
       { status: 400 },
     );
   }
@@ -21,11 +21,11 @@ export async function GET(request: NextRequest) {
 
   const [affiliate] = await db
     .select({
-      id: affiliateTable.id,
       code: affiliateTable.code,
-      status: affiliateTable.status,
       customerDiscountType: affiliateTable.customerDiscountType,
       customerDiscountValue: affiliateTable.customerDiscountValue,
+      id: affiliateTable.id,
+      status: affiliateTable.status,
     })
     .from(affiliateTable)
     .where(eq(affiliateTable.code, normalizedCode))
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
   }
 
   const response: {
-    valid: true;
     code: string;
-    discountType?: "percent" | "fixed";
+    discountType?: "fixed" | "percent";
     discountValue?: number;
+    valid: true;
   } = {
-    valid: true,
     code: affiliate.code,
+    valid: true,
   };
 
   if (

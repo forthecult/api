@@ -7,177 +7,121 @@ import { and, asc, eq, ilike, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
-import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 import {
   categoriesTable,
   productAvailableCountryTable,
   productCategoriesTable,
   productImagesTable,
-  productVariantsTable,
   productsTable,
+  productVariantsTable,
   sizeChartsTable,
 } from "~/db/schema";
+import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
 
-type OptionDefinition = { name: string; values: string[] };
-
-/**
- * Create variant rows from option definitions (Cartesian product) when a product has options
- * (e.g. from Printful) but no variant rows — so the storefront shows size/color like the admin.
- * Returns true if any rows were inserted.
- */
-async function createVariantRowsFromOptionDefinitions(
-  productId: string,
-  priceCents: number,
-  optionDefinitions: OptionDefinition[],
-): Promise<boolean> {
-  const valid = optionDefinitions.filter(
-    (o) =>
-      o.name?.trim() && o.values?.length && o.values.some((v) => v?.trim()),
-  );
-  if (valid.length === 0) return false;
-
-  const combinations: Record<string, string>[] = [{}];
-  for (const opt of valid) {
-    const next: Record<string, string>[] = [];
-    const name = opt.name.trim();
-    const values = opt.values.map((v) => v?.trim()).filter(Boolean);
-    for (const combo of combinations) {
-      for (const value of values) {
-        next.push({ ...combo, [name]: value });
-      }
-    }
-    combinations.length = 0;
-    combinations.push(...next);
-  }
-
-  if (combinations.length === 0) return false;
-
-  const now = new Date();
-
-  for (const combo of combinations) {
-    const size = combo["Size"] ?? combo["size"] ?? null;
-    const color = combo["Color"] ?? combo["color"] ?? null;
-    const gender = combo["Gender"] ?? combo["gender"] ?? null;
-    const label =
-      Object.entries(combo)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(" / ") || null;
-
-    await db.insert(productVariantsTable).values({
-      id: nanoid(),
-      productId,
-      size,
-      color,
-      gender,
-      label,
-      priceCents,
-      createdAt: now,
-      updatedAt: now,
-    });
-  }
-
-  return true;
-}
-
-export type ProductBySlugResult = {
-  id: string;
-  name: string;
-  description?: string;
-  price: { usd: number; crypto: Record<string, string> };
-  compareAtPriceCents?: number;
-  imageUrl?: string;
-  mainImageAlt?: string | null;
-  images?: string[];
+export interface ProductBySlugResult {
+  availableCountryCodes: string[];
+  /** Blank product brand (for size chart lookup). */
+  brand?: null | string;
   category: string;
-  inStock: boolean;
-  stockStatus: "in_stock" | "low_stock" | "out_of_stock";
+  compareAtPriceCents?: number;
   /** When true, product can be purchased regardless of stock (POD/made-to-order). */
   continueSellingWhenOutOfStock: boolean;
-  slug?: string;
-  availableCountryCodes: string[];
+  description?: string;
   /** Bullet-point features for product page. */
   features?: string[];
+  handlingDaysMax?: null | number;
+  /** Fulfillment (handling) days min/max from Printify, Printful, or manual. Used for estimated delivery timeline. */
+  handlingDaysMin?: null | number;
   hasVariants: boolean;
+  id: string;
+  images?: string[];
+  imageUrl?: string;
+  inStock: boolean;
+  mainImageAlt?: null | string;
+  metaDescription?: null | string;
+  /** Blank product model (for size chart lookup). */
+  model?: null | string;
+  name: string;
   optionDefinitions?: OptionDefinition[];
+  /** Product page layout: "default" or "long-form". */
+  pageLayout?: null | string;
+  pageTitle?: null | string;
+  price: { crypto: Record<string, string>; usd: number };
   /** Ships from: full display string or composed from city/region/postal/country. Used for display and future shipping-time estimates. */
   shipsFrom?: string;
-  /** Fulfillment (handling) days min/max from Printify, Printful, or manual. Used for estimated delivery timeline. */
-  handlingDaysMin?: number | null;
-  handlingDaysMax?: number | null;
-  /** Transit (shipping) days min/max. Fallback used in UI if null. */
-  transitDaysMin?: number | null;
-  transitDaysMax?: number | null;
-  /** Blank product brand (for size chart lookup). */
-  brand?: string | null;
-  /** Blank product model (for size chart lookup). */
-  model?: string | null;
-  /** Product source: printful | printify | manual. */
-  source?: string;
-  metaDescription?: string | null;
-  pageTitle?: string | null;
   /** When product has brand+model and a size chart exists, for accordion "Size Guide". */
-  sizeChart?: {
-    displayName: string;
+  sizeChart?: null | {
     dataImperial: unknown;
     dataMetric: unknown;
-  } | null;
-  /** Product page layout: "default" or "long-form". */
-  pageLayout?: string | null;
-  variants?: Array<{
-    id: string;
-    size?: string;
+    displayName: string;
+  };
+  slug?: string;
+  /** Product source: printful | printify | manual. */
+  source?: string;
+  stockStatus: "in_stock" | "low_stock" | "out_of_stock";
+  transitDaysMax?: null | number;
+  /** Transit (shipping) days min/max. Fallback used in UI if null. */
+  transitDaysMin?: null | number;
+  variants?: {
     color?: string;
     gender?: string;
+    id: string;
+    imageUrl?: string;
     label?: string;
     priceCents: number;
+    size?: string;
     stockQuantity?: number;
-    imageUrl?: string;
-  }>;
-};
+  }[];
+}
+
+interface OptionDefinition {
+  name: string;
+  values: string[];
+}
 
 /**
  * Look up a published product by slug or id. Returns null if not found or not published.
  */
 export async function getProductBySlugOrId(
   slugOrId: string,
-): Promise<ProductBySlugResult | null> {
+): Promise<null | ProductBySlugResult> {
   const slug = slugOrId?.trim();
   if (!slug) return null;
 
   const [product] = await db
     .select({
-      id: productsTable.id,
-      name: productsTable.name,
+      brand: productsTable.brand,
+      compareAtPriceCents: productsTable.compareAtPriceCents,
+      continueSellingWhenOutOfStock:
+        productsTable.continueSellingWhenOutOfStock,
       description: productsTable.description,
       featuresJson: productsTable.featuresJson,
-      priceCents: productsTable.priceCents,
-      compareAtPriceCents: productsTable.compareAtPriceCents,
+      handlingDaysMax: productsTable.handlingDaysMax,
+      handlingDaysMin: productsTable.handlingDaysMin,
+      hasVariants: productsTable.hasVariants,
+      id: productsTable.id,
       imageUrl: productsTable.imageUrl,
       mainImageAlt: productsTable.mainImageAlt,
-      slug: productsTable.slug,
-      published: productsTable.published,
-      hasVariants: productsTable.hasVariants,
-      optionDefinitionsJson: productsTable.optionDefinitionsJson,
-      shipsFromDisplay: productsTable.shipsFromDisplay,
-      shipsFromCountry: productsTable.shipsFromCountry,
-      shipsFromRegion: productsTable.shipsFromRegion,
-      shipsFromCity: productsTable.shipsFromCity,
-      shipsFromPostalCode: productsTable.shipsFromPostalCode,
-      handlingDaysMin: productsTable.handlingDaysMin,
-      handlingDaysMax: productsTable.handlingDaysMax,
-      transitDaysMin: productsTable.transitDaysMin,
-      transitDaysMax: productsTable.transitDaysMax,
-      brand: productsTable.brand,
-      model: productsTable.model,
       metaDescription: productsTable.metaDescription,
-      pageTitle: productsTable.pageTitle,
+      model: productsTable.model,
+      name: productsTable.name,
+      optionDefinitionsJson: productsTable.optionDefinitionsJson,
       pageLayout: productsTable.pageLayout,
+      pageTitle: productsTable.pageTitle,
+      priceCents: productsTable.priceCents,
+      published: productsTable.published,
+      quantity: productsTable.quantity,
+      shipsFromCity: productsTable.shipsFromCity,
+      shipsFromCountry: productsTable.shipsFromCountry,
+      shipsFromDisplay: productsTable.shipsFromDisplay,
+      shipsFromPostalCode: productsTable.shipsFromPostalCode,
+      shipsFromRegion: productsTable.shipsFromRegion,
+      slug: productsTable.slug,
       source: productsTable.source,
       // Stock management fields
       trackQuantity: productsTable.trackQuantity,
-      continueSellingWhenOutOfStock:
-        productsTable.continueSellingWhenOutOfStock,
-      quantity: productsTable.quantity,
+      transitDaysMax: productsTable.transitDaysMax,
+      transitDaysMin: productsTable.transitDaysMin,
     })
     .from(productsTable)
     .where(or(eq(productsTable.id, slug), eq(productsTable.slug, slug)))
@@ -211,14 +155,14 @@ export async function getProductBySlugOrId(
       // Always fetch variant rows so we show variants even if hasVariants flag was wrong (e.g. Printful sync)
       db
         .select({
-          id: productVariantsTable.id,
-          size: productVariantsTable.size,
           color: productVariantsTable.color,
           gender: productVariantsTable.gender,
+          id: productVariantsTable.id,
+          imageUrl: productVariantsTable.imageUrl,
           label: productVariantsTable.label,
           priceCents: productVariantsTable.priceCents,
+          size: productVariantsTable.size,
           stockQuantity: productVariantsTable.stockQuantity,
-          imageUrl: productVariantsTable.imageUrl,
         })
         .from(productVariantsTable)
         .where(eq(productVariantsTable.productId, id)),
@@ -300,14 +244,14 @@ export async function getProductBySlugOrId(
 
   const variants = hasVariantRows
     ? variantsRows.map((v) => ({
-        id: v.id,
-        size: v.size ?? undefined,
         color: v.color ?? undefined,
         gender: v.gender ?? undefined,
+        id: v.id,
+        imageUrl: v.imageUrl ?? undefined,
         label: v.label ?? undefined,
         priceCents: v.priceCents,
+        size: v.size ?? undefined,
         stockQuantity: v.stockQuantity ?? undefined,
-        imageUrl: v.imageUrl ?? undefined,
       }))
     : undefined;
 
@@ -357,11 +301,11 @@ export async function getProductBySlugOrId(
     .filter((u): u is string => Boolean(u));
 
   // Size chart for accordion when product has brand+model (printful, printify, or manual)
-  let sizeChart: {
-    displayName: string;
+  let sizeChart: null | {
     dataImperial: unknown;
     dataMetric: unknown;
-  } | null = null;
+    displayName: string;
+  } = null;
   if (product.brand?.trim() && product.model?.trim()) {
     const provider =
       product.source === "printful" || product.source === "printify"
@@ -371,9 +315,9 @@ export async function getProductBySlugOrId(
     const modelTrim = product.model.trim();
     let [chartRow] = await db
       .select({
-        displayName: sizeChartsTable.displayName,
         dataImperial: sizeChartsTable.dataImperial,
         dataMetric: sizeChartsTable.dataMetric,
+        displayName: sizeChartsTable.displayName,
       })
       .from(sizeChartsTable)
       .where(
@@ -388,9 +332,9 @@ export async function getProductBySlugOrId(
     if (!chartRow) {
       [chartRow] = await db
         .select({
-          displayName: sizeChartsTable.displayName,
           dataImperial: sizeChartsTable.dataImperial,
           dataMetric: sizeChartsTable.dataMetric,
+          displayName: sizeChartsTable.displayName,
         })
         .from(sizeChartsTable)
         .where(
@@ -407,9 +351,9 @@ export async function getProductBySlugOrId(
       (chartRow.dataImperial != null || chartRow.dataMetric != null)
     ) {
       sizeChart = {
-        displayName: chartRow.displayName,
         dataImperial: chartRow.dataImperial as unknown,
         dataMetric: chartRow.dataMetric as unknown,
+        displayName: chartRow.displayName,
       };
     }
   }
@@ -441,36 +385,95 @@ export async function getProductBySlugOrId(
   }
 
   return {
-    id: product.id,
-    name: product.name,
-    description: product.description ?? undefined,
-    price: { usd: basePriceUsd, crypto: {} },
-    compareAtPriceCents: product.compareAtPriceCents ?? undefined,
-    imageUrl: product.imageUrl ?? undefined,
-    mainImageAlt: product.mainImageAlt ?? undefined,
-    images: imageUrls.length > 0 ? imageUrls : undefined,
-    category: mainCat?.[0]?.categoryName ?? "Uncategorized",
-    inStock,
-    stockStatus,
-    continueSellingWhenOutOfStock,
-    slug: product.slug ?? undefined,
     availableCountryCodes,
+    brand: product.brand ?? undefined,
+    category: mainCat?.[0]?.categoryName ?? "Uncategorized",
+    compareAtPriceCents: product.compareAtPriceCents ?? undefined,
+    continueSellingWhenOutOfStock,
+    description: product.description ?? undefined,
     features: features.length > 0 ? features : undefined,
+    handlingDaysMax: product.handlingDaysMax ?? undefined,
+    handlingDaysMin: product.handlingDaysMin ?? undefined,
     hasVariants: hasVariantRows || (product.hasVariants ?? false),
+    id: product.id,
+    images: imageUrls.length > 0 ? imageUrls : undefined,
+    imageUrl: product.imageUrl ?? undefined,
+    inStock,
+    mainImageAlt: product.mainImageAlt ?? undefined,
+    metaDescription: product.metaDescription ?? undefined,
+    model: product.model ?? undefined,
+    name: product.name,
     optionDefinitions:
       optionDefinitions.length > 0 ? optionDefinitions : undefined,
-    shipsFrom,
-    handlingDaysMin: product.handlingDaysMin ?? undefined,
-    handlingDaysMax: product.handlingDaysMax ?? undefined,
-    transitDaysMin: product.transitDaysMin ?? undefined,
-    transitDaysMax: product.transitDaysMax ?? undefined,
-    brand: product.brand ?? undefined,
-    model: product.model ?? undefined,
-    metaDescription: product.metaDescription ?? undefined,
-    pageTitle: product.pageTitle ?? undefined,
     pageLayout: product.pageLayout ?? undefined,
-    source: product.source ?? undefined,
+    pageTitle: product.pageTitle ?? undefined,
+    price: { crypto: {}, usd: basePriceUsd },
+    shipsFrom,
     sizeChart: sizeChart ?? undefined,
+    slug: product.slug ?? undefined,
+    source: product.source ?? undefined,
+    stockStatus,
+    transitDaysMax: product.transitDaysMax ?? undefined,
+    transitDaysMin: product.transitDaysMin ?? undefined,
     variants,
   };
+}
+
+/**
+ * Create variant rows from option definitions (Cartesian product) when a product has options
+ * (e.g. from Printful) but no variant rows — so the storefront shows size/color like the admin.
+ * Returns true if any rows were inserted.
+ */
+async function createVariantRowsFromOptionDefinitions(
+  productId: string,
+  priceCents: number,
+  optionDefinitions: OptionDefinition[],
+): Promise<boolean> {
+  const valid = optionDefinitions.filter(
+    (o) =>
+      o.name?.trim() && o.values?.length && o.values.some((v) => v?.trim()),
+  );
+  if (valid.length === 0) return false;
+
+  const combinations: Record<string, string>[] = [{}];
+  for (const opt of valid) {
+    const next: Record<string, string>[] = [];
+    const name = opt.name.trim();
+    const values = opt.values.map((v) => v?.trim()).filter(Boolean);
+    for (const combo of combinations) {
+      for (const value of values) {
+        next.push({ ...combo, [name]: value });
+      }
+    }
+    combinations.length = 0;
+    combinations.push(...next);
+  }
+
+  if (combinations.length === 0) return false;
+
+  const now = new Date();
+
+  for (const combo of combinations) {
+    const size = combo["Size"] ?? combo["size"] ?? null;
+    const color = combo["Color"] ?? combo["color"] ?? null;
+    const gender = combo["Gender"] ?? combo["gender"] ?? null;
+    const label =
+      Object.entries(combo)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(" / ") || null;
+
+    await db.insert(productVariantsTable).values({
+      color,
+      createdAt: now,
+      gender,
+      id: nanoid(),
+      label,
+      priceCents,
+      productId,
+      size,
+      updatedAt: now,
+    });
+  }
+
+  return true;
 }

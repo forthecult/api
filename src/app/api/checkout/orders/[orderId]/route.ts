@@ -23,19 +23,19 @@ export async function GET(
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        createdAt: ordersTable.createdAt,
-        email: ordersTable.email,
-        status: ordersTable.status,
-        totalCents: ordersTable.totalCents,
-        solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
-        paymentMethod: ordersTable.paymentMethod,
-        cryptoCurrencyNetwork: ordersTable.cryptoCurrencyNetwork,
-        cryptoCurrency: ordersTable.cryptoCurrency,
-        cryptoAmount: ordersTable.cryptoAmount,
-        chainId: ordersTable.chainId,
         btcpayInvoiceId: ordersTable.btcpayInvoiceId,
         btcpayInvoiceUrl: ordersTable.btcpayInvoiceUrl,
+        chainId: ordersTable.chainId,
+        createdAt: ordersTable.createdAt,
+        cryptoAmount: ordersTable.cryptoAmount,
+        cryptoCurrency: ordersTable.cryptoCurrency,
+        cryptoCurrencyNetwork: ordersTable.cryptoCurrencyNetwork,
+        email: ordersTable.email,
+        id: ordersTable.id,
+        paymentMethod: ordersTable.paymentMethod,
+        solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        status: ordersTable.status,
+        totalCents: ordersTable.totalCents,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -75,13 +75,13 @@ export async function GET(
         order.cryptoCurrencyNetwork?.toLowerCase() === "polygon" ||
         ["eth"].includes(order.cryptoCurrency?.toLowerCase() ?? ""));
     const SOLANA_CURRENCY_TO_TOKEN: Record<string, string> = {
-      SOL: "solana",
-      USDC: "usdc",
-      WHITEWHALE: "whitewhale",
       CRUST: "crust",
       PUMP: "pump",
-      TROLL: "troll",
+      SOL: "solana",
       SOLUNA: "soluna",
+      TROLL: "troll",
+      USDC: "usdc",
+      WHITEWHALE: "whitewhale",
     };
     const solanaPayToken =
       isSolanaPay && order.cryptoCurrency
@@ -90,44 +90,44 @@ export async function GET(
         : undefined;
 
     return NextResponse.json({
-      orderId: order.id,
       depositAddress: order.solanaPayDepositAddress ?? undefined,
-      totalCents: order.totalCents,
       email: order.email
         ? order.email.replace(/^(.{2})(.*)(@.*)$/, "$1***$3")
         : undefined,
       expiresAt,
+      orderId: order.id,
+      totalCents: order.totalCents,
       // Solana Pay: routing and balance check (paymentType when URL has no hash)
       ...(isSolanaPay && { paymentType: "solana" as const }),
       ...(solanaPayToken && { token: solanaPayToken }),
       // ETH-specific fields
       ...(isEthPayment && {
-        paymentType: "eth",
         chain: order.cryptoCurrencyNetwork?.toLowerCase() ?? "ethereum",
-        token: order.cryptoCurrency?.toLowerCase() ?? "eth",
         chainId: order.chainId ?? 1,
+        paymentType: "eth",
+        token: order.cryptoCurrency?.toLowerCase() ?? "eth",
       }),
       // BTCPay (Bitcoin, Dogecoin, Monero)
       ...(isBtcpay && {
+        btcpayInvoiceId: order.btcpayInvoiceId ?? undefined,
+        btcpayInvoiceUrl: order.btcpayInvoiceUrl ?? undefined,
         paymentType: "btcpay",
         token: (order.cryptoCurrency?.toLowerCase() ?? "bitcoin") as
           | "bitcoin"
           | "doge"
           | "monero",
-        btcpayInvoiceId: order.btcpayInvoiceId ?? undefined,
-        btcpayInvoiceUrl: order.btcpayInvoiceUrl ?? undefined,
       }),
       // TON (Toncoin)
       ...(isTonPay && {
-        paymentType: "ton",
-        depositAddress: order.solanaPayDepositAddress ?? undefined,
-        tonAmount: order.cryptoAmount ?? undefined,
         comment: order.id,
+        depositAddress: order.solanaPayDepositAddress ?? undefined,
+        paymentType: "ton",
+        tonAmount: order.cryptoAmount ?? undefined,
       }),
       _actions: {
-        next: `Poll GET /api/orders/${order.id}/status every 5s until status changes`,
         cancel: `POST /api/orders/${order.id}/cancel (only before payment)`,
         help: "Contact support@forthecult.store",
+        next: `Poll GET /api/orders/${order.id}/status every 5s until status changes`,
       },
     });
   } catch (err) {

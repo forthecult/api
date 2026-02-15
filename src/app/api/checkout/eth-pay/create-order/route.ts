@@ -2,7 +2,6 @@ import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
-import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   buildOrderErrorMessage,
   createEsimOrderRecordsForOrder,
@@ -14,14 +13,15 @@ import {
   validateTotal,
 } from "~/lib/checkout/create-order-helpers";
 import {
+  FACTORY_ADDRESSES,
   getPaymentReceiverAddress,
+  getTokenAddress,
   isFactoryDeployed,
   isTokenSupportedOnChain,
-  usdCentsToTokenAmount,
-  getTokenAddress,
   orderIdToBytes32,
-  FACTORY_ADDRESSES,
+  usdCentsToTokenAmount,
 } from "~/lib/contracts/evm-payment";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   checkRateLimit,
   getClientIp,
@@ -33,58 +33,44 @@ import { normalizeCountryCode } from "~/lib/validations/checkout";
 
 // Map chain names to chain IDs
 const CHAIN_IDS: Record<string, number> = {
-  ethereum: 1,
   arbitrum: 42161,
   base: 8453,
-  polygon: 137,
   bnb: 56,
+  ethereum: 1,
   optimism: 10,
+  polygon: 137,
 };
 
-/**
- * Get the deterministic payment receiver address for an order.
- * Uses CREATE2 to compute the address where a minimal proxy will be deployed.
- * The address is deterministic and can receive payments before deployment.
- */
-function deriveEthDepositAddress(
-  orderId: string,
-  chainId: number,
-): string | null {
-  // Use the CREATE2 deterministic address from our factory contract
-  const address = getPaymentReceiverAddress(chainId, orderId);
-  return address;
-}
-
 interface CreateEthOrderBody {
+  affiliateCode?: string;
+  chain: string;
+  couponCode?: string;
   email: string;
-  orderItems: Array<{
+  emailMarketingConsent?: boolean;
+  orderItems: {
     productId: string;
     productVariantId?: string;
     quantity: number;
-  }>;
-  totalCents: number;
-  shippingFeeCents?: number;
-  taxCents?: number;
-  chain: string;
-  token: string;
-  userId?: string;
-  affiliateCode?: string;
-  couponCode?: string;
-  emailMarketingConsent?: boolean;
-  smsMarketingConsent?: boolean;
-  telegramUserId?: string;
-  telegramUsername?: string;
-  telegramFirstName?: string;
+  }[];
   shipping?: {
-    name?: string;
     address1?: string;
     address2?: string;
     city?: string;
-    stateCode?: string;
     countryCode?: string;
-    zip?: string;
+    name?: string;
     phone?: string;
+    stateCode?: string;
+    zip?: string;
   };
+  shippingFeeCents?: number;
+  smsMarketingConsent?: boolean;
+  taxCents?: number;
+  telegramFirstName?: string;
+  telegramUserId?: string;
+  telegramUsername?: string;
+  token: string;
+  totalCents: number;
+  userId?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -103,21 +89,21 @@ export async function POST(request: NextRequest) {
     const body = (await request.json()) as CreateEthOrderBody;
 
     const {
-      email,
-      orderItems: rawItems,
-      totalCents,
-      shippingFeeCents = 0,
-      taxCents = 0,
-      chain,
-      token,
       affiliateCode,
+      chain,
       couponCode,
-      shipping,
+      email,
       emailMarketingConsent,
+      orderItems: rawItems,
+      shipping,
+      shippingFeeCents = 0,
       smsMarketingConsent,
+      taxCents = 0,
+      telegramFirstName,
       telegramUserId,
       telegramUsername,
-      telegramFirstName,
+      token,
+      totalCents,
     } = body;
 
     // Validate required fields (custom validation, not createOrderSchema)
@@ -155,7 +141,7 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { validatedItems, productIds, subtotalCents } = productResult;
+    const { productIds, subtotalCents, validatedItems } = productResult;
 
     // ── Server-side shipping calculation ───────────────────────────────
     const rawCountry = shipping?.countryCode?.trim();
@@ -178,11 +164,11 @@ export async function POST(request: NextRequest) {
     if (countryCode && countryCode.length >= 2) {
       const serverShipping = await runShippingCalculate({
         countryCode,
-        orderValueCents: subtotalCents,
         items: rawItems.map((i) => ({
           productId: i.productId,
           quantity: i.quantity,
         })),
+        orderValueCents: subtotalCents,
       });
       shippingCentsForTotal =
         "shippingCents" in serverShipping ? serverShipping.shippingCents : 0;
@@ -205,16 +191,16 @@ export async function POST(request: NextRequest) {
       await resolveDiscounts({
         affiliateCode,
         couponCode,
-        subtotalCents,
-        shippingFeeCents: shippingRounded,
-        userId: session?.user?.id,
-        productIds,
-        paymentMethodKey,
         items: validatedItems.map((i) => ({
-          productId: i.productId,
           priceCents: i.priceCents,
+          productId: i.productId,
           quantity: i.quantity,
         })),
+        paymentMethodKey,
+        productIds,
+        shippingFeeCents: shippingRounded,
+        subtotalCents,
+        userId: session?.user?.id,
       });
 
     // ── Validate client total ($5 tolerance for crypto price drift) ───
@@ -229,11 +215,11 @@ export async function POST(request: NextRequest) {
           "[eth-pay create-order] totalCents mismatch:",
           JSON.stringify(
             {
-              receivedTotalCents: totalCents,
               expectedTotalCents: expectedTotal,
-              subtotalCents,
-              shippingCents: shippingRounded,
               itemCount: validatedItems.length,
+              receivedTotalCents: totalCents,
+              shippingCents: shippingRounded,
+              subtotalCents,
             },
             null,
             2,
@@ -242,8 +228,8 @@ export async function POST(request: NextRequest) {
       }
       return NextResponse.json(
         {
-          error: "Order total does not match. Please refresh and try again.",
           code: "TOTAL_MISMATCH",
+          error: "Order total does not match. Please refresh and try again.",
         },
         { status: 400 },
       );
@@ -287,8 +273,8 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate crypto amount
-    let cryptoAmount: string | null = null;
-    let tokenAddress: string | null = null;
+    let cryptoAmount: null | string = null;
+    let tokenAddress: null | string = null;
 
     if (tokenUpper === "ETH") {
       // For ETH, we'll fetch price on frontend; store null for now
@@ -310,24 +296,24 @@ export async function POST(request: NextRequest) {
     // ── Insert order ───────────────────────────────────────────────────
     await insertOrder(
       {
-        orderId,
+        affiliateResult,
         email,
+        orderId,
         paymentMethod: "eth_pay",
-        totalCents: totalCheck.expectedTotal,
         shippingFeeCents: shippingRounded,
         taxCents,
-        userId: userIdVal,
+        telegramFirstName,
         telegramUserId,
         telegramUsername,
-        telegramFirstName,
-        affiliateResult,
+        totalCents: totalCheck.expectedTotal,
+        userId: userIdVal,
       },
       {
-        solanaPayDepositAddress: depositAddress, // Reuse this field for all crypto deposit addresses
-        cryptoCurrencyNetwork: chain.toLowerCase(),
-        cryptoCurrency: tokenUpper,
-        cryptoAmount,
         chainId,
+        cryptoAmount,
+        cryptoCurrency: tokenUpper,
+        cryptoCurrencyNetwork: chain.toLowerCase(),
+        solanaPayDepositAddress: depositAddress, // Reuse this field for all crypto deposit addresses
         // Shipping fields
         ...(shipping?.name && { shippingName: shipping.name }),
         ...(shipping?.address1 && { shippingAddress1: shipping.address1 }),
@@ -347,45 +333,45 @@ export async function POST(request: NextRequest) {
 
     // ── Post-order bookkeeping ─────────────────────────────────────────
     await postOrderBookkeeping({
-      orderId,
-      userId: userIdVal,
       affiliateResult,
       couponResult,
       emailMarketingConsent,
+      orderId,
       smsMarketingConsent,
+      userId: userIdVal,
     });
 
     // ── eSIM order records (for cart items with esimPackageId) ──────────
     await createEsimOrderRecordsForOrder({
-      orderId,
-      userId: userIdVal,
-      paymentMethod: "eth_pay",
       items: validatedItems,
+      orderId,
+      paymentMethod: "eth_pay",
+      userId: userIdVal,
     });
 
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
     return NextResponse.json({
-      orderId,
-      confirmationToken: generateOrderConfirmationToken(orderId),
-      depositAddress,
-      chain: chain.toLowerCase(),
-      token: tokenUpper,
-      chainId,
-      totalCents: totalCheck.expectedTotal,
-      // Include crypto amount for USDC/USDT (null for ETH - calculated on frontend)
-      cryptoAmount,
-      tokenAddress,
-      // Factory address for contract interaction
-      factoryAddress: FACTORY_ADDRESSES[chainId],
-      orderIdBytes32,
-      expiresAt,
-      status: "awaiting_payment",
       _actions: {
+        cancel: `POST /api/checkout/eth-pay/cancel (only before payment confirmed)`,
         pay: "Send payment to depositAddress using connected wallet",
         status: `GET /api/checkout/eth-pay/status?orderId=${orderId}`,
-        cancel: `POST /api/checkout/eth-pay/cancel (only before payment confirmed)`,
       },
+      chain: chain.toLowerCase(),
+      chainId,
+      confirmationToken: generateOrderConfirmationToken(orderId),
+      // Include crypto amount for USDC/USDT (null for ETH - calculated on frontend)
+      cryptoAmount,
+      depositAddress,
+      expiresAt,
+      // Factory address for contract interaction
+      factoryAddress: FACTORY_ADDRESSES[chainId],
+      orderId,
+      orderIdBytes32,
+      status: "awaiting_payment",
+      token: tokenUpper,
+      tokenAddress,
+      totalCents: totalCheck.expectedTotal,
     });
   } catch (err) {
     console.error("ETH Pay create-order error:", err);
@@ -394,4 +380,18 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+/**
+ * Get the deterministic payment receiver address for an order.
+ * Uses CREATE2 to compute the address where a minimal proxy will be deployed.
+ * The address is deterministic and can receive payments before deployment.
+ */
+function deriveEthDepositAddress(
+  orderId: string,
+  chainId: number,
+): null | string {
+  // Use the CREATE2 deterministic address from our factory contract
+  const address = getPaymentReceiverAddress(chainId, orderId);
+  return address;
 }

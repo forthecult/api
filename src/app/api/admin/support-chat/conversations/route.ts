@@ -75,15 +75,15 @@ export async function GET(request: NextRequest) {
 
     const conversations = await db
       .select({
-        id: supportChatConversationTable.id,
-        userId: supportChatConversationTable.userId,
+        createdAt: supportChatConversationTable.createdAt,
         guestId: supportChatConversationTable.guestId,
+        id: supportChatConversationTable.id,
         status: supportChatConversationTable.status,
         takenOverBy: supportChatConversationTable.takenOverBy,
-        createdAt: supportChatConversationTable.createdAt,
         updatedAt: supportChatConversationTable.updatedAt,
-        userName: userTable.name,
         userEmail: userTable.email,
+        userId: supportChatConversationTable.userId,
+        userName: userTable.name,
       })
       .from(supportChatConversationTable)
       .leftJoin(
@@ -109,8 +109,8 @@ export async function GET(request: NextRequest) {
         ? await db
             .select({
               conversationId: supportChatMessageTable.conversationId,
-              role: supportChatMessageTable.role,
               createdAt: supportChatMessageTable.createdAt,
+              role: supportChatMessageTable.role,
             })
             .from(supportChatMessageTable)
             .where(inArray(supportChatMessageTable.conversationId, convIds))
@@ -120,12 +120,12 @@ export async function GET(request: NextRequest) {
             )
         : [];
 
-    const latestByConv = new Map<string, { role: string; createdAt: Date }>();
+    const latestByConv = new Map<string, { createdAt: Date; role: string }>();
     for (const m of latestMessages) {
       if (!latestByConv.has(m.conversationId)) {
         latestByConv.set(m.conversationId, {
-          role: m.role,
           createdAt: m.createdAt,
+          role: m.role,
         });
       }
     }
@@ -133,24 +133,24 @@ export async function GET(request: NextRequest) {
     const items = conversations.map((c) => {
       const last = latestByConv.get(c.id);
       return {
+        createdAt: c.createdAt,
+        customer: c.userId
+          ? { email: c.userEmail ?? "", id: c.userId, name: c.userName ?? "" }
+          : { email: null, id: null, name: "Guest" },
+        guestId: c.guestId ?? undefined,
         id: c.id,
+        lastMessageAt: last?.createdAt?.toISOString() ?? null,
+        lastMessageRole: last?.role ?? null,
         status: c.status,
         takenOverBy: c.takenOverBy ?? undefined,
-        createdAt: c.createdAt,
         updatedAt: c.updatedAt,
-        lastMessageRole: last?.role ?? null,
-        lastMessageAt: last?.createdAt?.toISOString() ?? null,
-        customer: c.userId
-          ? { id: c.userId, name: c.userName ?? "", email: c.userEmail ?? "" }
-          : { id: null, name: "Guest", email: null },
-        guestId: c.guestId ?? undefined,
       };
     });
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount: total,
       totalPages,
     });

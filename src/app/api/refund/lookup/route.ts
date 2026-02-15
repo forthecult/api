@@ -4,21 +4,21 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
-function normalizeEmail(email: string | null | undefined): string {
+function normalizeEmail(email: null | string | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }
 
-function normalizePaymentAddress(addr: string | null | undefined): string {
+function normalizePaymentAddress(addr: null | string | undefined): string {
   return (addr ?? "").trim().toLowerCase();
 }
 
-function normalizePostal(postal: string | null | undefined): string {
+function normalizePostal(postal: null | string | undefined): string {
   return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
 }
 
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json().catch(() => ({}))) as {
-      orderId?: string;
       lookupValue?: string;
+      orderId?: string;
     };
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
     const lookupValue =
@@ -68,12 +68,12 @@ export async function POST(request: NextRequest) {
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
         email: ordersTable.email,
+        id: ordersTable.id,
         payerWalletAddress: ordersTable.payerWalletAddress,
-        shippingZip: ordersTable.shippingZip,
         paymentMethod: ordersTable.paymentMethod,
         paymentStatus: ordersTable.paymentStatus,
+        shippingZip: ordersTable.shippingZip,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))

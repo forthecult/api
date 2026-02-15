@@ -2,12 +2,12 @@ import { desc, eq } from "drizzle-orm";
 import { CreditCard, Package } from "lucide-react";
 import Link from "next/link";
 
-import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { db } from "~/db";
+import { ordersTable } from "~/db/schema";
+import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { formatCents, formatDateShort } from "~/lib/format";
 import { isRealEmail } from "~/lib/is-real-email";
 import { linkOrdersToUserByEmail } from "~/lib/link-orders-to-user";
-import { ordersTable } from "~/db/schema";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 
@@ -20,14 +20,14 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: "Cancelled",
   delivered: "Delivered",
   fulfilled: "Shipped",
+  on_hold: "On hold",
   paid: "Processing",
+  partially_fulfilled: "Processing",
   pending: "Unpaid",
   processing: "Processing",
   refunded: "Refunded",
   shipped: "Shipped",
   unfulfilled: "Pending",
-  on_hold: "On hold",
-  partially_fulfilled: "Processing",
 };
 
 const STATUS_CLASS: Record<string, string> = {
@@ -36,18 +36,18 @@ const STATUS_CLASS: Record<string, string> = {
     "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   fulfilled:
     "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
-  shipped:
-    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  on_hold:
+    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
   paid: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  partially_fulfilled:
+    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   pending: "bg-muted text-muted-foreground",
   processing:
     "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
   refunded: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  shipped:
+    "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
   unfulfilled: "bg-muted text-muted-foreground",
-  on_hold:
-    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
-  partially_fulfilled:
-    "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
 };
 
 export default async function OrdersPage() {
@@ -74,7 +74,11 @@ export default async function OrdersPage() {
 
       {orders.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+          <CardContent
+            className={`
+            flex flex-col items-center justify-center py-12
+          `}
+          >
             <p className="text-muted-foreground">
               You haven&apos;t placed any orders yet.
             </p>
@@ -112,14 +116,24 @@ export default async function OrdersPage() {
                 return (
                   <li key={order.id}>
                     <div
-                      className="flex flex-wrap items-center gap-3 px-4 py-4 sm:flex-nowrap sm:gap-4"
+                      className={`
+                        flex flex-wrap items-center gap-3 px-4 py-4
+                        sm:flex-nowrap sm:gap-4
+                      `}
                       data-testid="order-row"
                     >
-                      <span className="font-mono text-base text-muted-foreground">
+                      <span
+                        className={`
+                        font-mono text-base text-muted-foreground
+                      `}
+                      >
                         #{order.id.slice(0, 8)}
                       </span>
                       <span
-                        className={`rounded-full px-2.5 py-0.5 text-sm font-medium ${statusClass}`}
+                        className={`
+                          rounded-full px-2.5 py-0.5 text-sm font-medium
+                          ${statusClass}
+                        `}
                       >
                         {label}
                       </span>
@@ -135,8 +149,8 @@ export default async function OrdersPage() {
                             <Button asChild size="sm" variant="outline">
                               <Link href={`/checkout/${order.id}`}>
                                 <CreditCard
-                                  className="mr-1.5 size-3.5"
                                   aria-hidden
+                                  className="mr-1.5 size-3.5"
                                 />
                                 Pay Now
                                 <span className="sr-only">

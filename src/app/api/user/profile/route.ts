@@ -4,11 +4,11 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { userTable } from "~/db/schema/users/tables";
 import { auth } from "~/lib/auth";
-import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
+import { csrfFailureResponse, verifyCsrfOrigin } from "~/lib/csrf";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -27,12 +27,12 @@ export async function GET(request: NextRequest) {
 
   const [user] = await db
     .select({
-      id: userTable.id,
+      email: userTable.email,
       firstName: userTable.firstName,
+      id: userTable.id,
+      image: userTable.image,
       lastName: userTable.lastName,
       name: userTable.name,
-      image: userTable.image,
-      email: userTable.email,
       phone: userTable.phone,
       theme: userTable.theme,
     })
@@ -50,12 +50,12 @@ export async function GET(request: NextRequest) {
       : "system";
 
   return NextResponse.json({
-    id: user.id,
+    email: user.email ?? "",
     firstName: user.firstName ?? "",
+    id: user.id,
+    image: user.image ?? null,
     lastName: user.lastName ?? "",
     name: user.name ?? "",
-    image: user.image ?? null,
-    email: user.email ?? "",
     phone: user.phone ?? "",
     theme,
   });
@@ -79,10 +79,10 @@ export async function PATCH(request: NextRequest) {
 
   let body: {
     firstName?: string;
+    image?: null | string;
     lastName?: string;
-    image?: string | null;
-    phone?: string | null;
-    theme?: "light" | "dark" | "system";
+    phone?: null | string;
+    theme?: "dark" | "light" | "system";
   };
   try {
     body = (await request.json()) as typeof body;
@@ -90,7 +90,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const updates: Record<string, string | null> = {};
+  const updates: Record<string, null | string> = {};
   if (typeof body.firstName === "string") {
     updates.firstName = body.firstName.trim() || null;
   }
@@ -149,11 +149,11 @@ export async function PATCH(request: NextRequest) {
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(userTable.id, session.user.id))
     .returning({
-      id: userTable.id,
       firstName: userTable.firstName,
+      id: userTable.id,
+      image: userTable.image,
       lastName: userTable.lastName,
       name: userTable.name,
-      image: userTable.image,
       theme: userTable.theme,
     });
 
@@ -170,9 +170,9 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json({
     firstName: updated.firstName ?? "",
+    image: updated.image ?? null,
     lastName: updated.lastName ?? "",
     name: updated.name ?? "",
-    image: updated.image ?? null,
     theme,
   });
 }

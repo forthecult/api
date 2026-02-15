@@ -1,5 +1,6 @@
 "use client";
 
+import { KeyRound } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -8,14 +9,13 @@ import { SEO_CONFIG, SYSTEM_CONFIG } from "~/app";
 import { authClient, signIn } from "~/lib/auth-client";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { GoogleIcon } from "~/ui/components/icons/google";
-import { KeyRound } from "lucide-react";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import { Separator } from "~/ui/primitives/separator";
 
-type EmailSignInMethod = "password" | "code";
+type EmailSignInMethod = "code" | "password";
 
 export function SignInPageClient() {
   const [method, setMethod] = useState<EmailSignInMethod>("password");
@@ -162,12 +162,12 @@ export function SignInPageClient() {
     try {
       const result = await authClient.signIn.passkey({
         fetchOptions: {
-          onSuccess: () => {
-            window.location.href = SYSTEM_CONFIG.redirectAfterSignIn;
-          },
           onError: (_ctx) => {
             setError("Sign in with security key failed or was cancelled.");
             setPasskeyLoading(false);
+          },
+          onSuccess: () => {
+            window.location.href = SYSTEM_CONFIG.redirectAfterSignIn;
           },
         },
       });
@@ -231,7 +231,7 @@ export function SignInPageClient() {
           md:p-8
         `}
       >
-        <div className="w-full min-w-0 max-w-md space-y-4">
+        <div className="w-full max-w-md min-w-0 space-y-4">
           <div
             className={`
               space-y-4 text-center
@@ -248,34 +248,48 @@ export function SignInPageClient() {
             <CardContent className="pt-2">
               <div className="mb-4 flex gap-2 rounded-lg bg-muted/50 p-1">
                 <button
-                  type="button"
-                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    method === "password"
-                      ? "bg-background text-foreground shadow"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`
+                    flex-1 rounded-md px-3 py-2 text-sm font-medium
+                    transition-colors
+                    ${
+                      method === "password"
+                        ? "bg-background text-foreground shadow"
+                        : `
+                        text-muted-foreground
+                        hover:text-foreground
+                      `
+                    }
+                  `}
                   onClick={() => {
                     setMethod("password");
                     setError("");
                     setOtpSent(false);
                     setOtpCode("");
                   }}
+                  type="button"
                 >
                   Password
                 </button>
                 <button
-                  type="button"
-                  className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                    method === "code"
-                      ? "bg-background text-foreground shadow"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
+                  className={`
+                    flex-1 rounded-md px-3 py-2 text-sm font-medium
+                    transition-colors
+                    ${
+                      method === "code"
+                        ? "bg-background text-foreground shadow"
+                        : `
+                        text-muted-foreground
+                        hover:text-foreground
+                      `
+                    }
+                  `}
                   onClick={() => {
                     setMethod("code");
                     setError("");
                     setOtpSent(false);
                     setOtpCode("");
                   }}
+                  type="button"
                 >
                   Email code
                 </button>
@@ -304,7 +318,10 @@ export function SignInPageClient() {
                     <div className="flex items-center justify-between">
                       <Label htmlFor="password">Password</Label>
                       <Link
-                        className="text-sm text-muted-foreground hover:underline"
+                        className={`
+                          text-sm text-muted-foreground
+                          hover:underline
+                        `}
                         href="/auth/forgot-password"
                       >
                         Forgot password?
@@ -341,12 +358,12 @@ export function SignInPageClient() {
                   <div className="grid gap-2">
                     <Label htmlFor="email-otp">Email</Label>
                     <Input
-                      id="email-otp"
-                      type="email"
-                      placeholder="satoshi@nakamoto.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
                       disabled={otpSent}
+                      id="email-otp"
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="satoshi@nakamoto.com"
+                      type="email"
+                      value={email}
                     />
                   </div>
                   {otpSent && (
@@ -354,16 +371,16 @@ export function SignInPageClient() {
                       <Label htmlFor="otp">Verification code</Label>
                       <Input
                         id="otp"
-                        type="text"
                         inputMode="numeric"
                         maxLength={8}
-                        placeholder="000000"
-                        value={otpCode}
                         onChange={(e) =>
                           setOtpCode(
                             e.target.value.replace(/\D/g, "").slice(0, 8),
                           )
                         }
+                        placeholder="000000"
+                        type="text"
+                        value={otpCode}
                       />
                       <p className="text-xs text-muted-foreground">
                         Check your inbox for the 6-digit code.
@@ -395,8 +412,6 @@ export function SignInPageClient() {
                   </Button>
                   {otpSent && (
                     <Button
-                      type="button"
-                      variant="ghost"
                       className="w-full text-sm"
                       disabled={sendCodeLoading}
                       onClick={(e) => {
@@ -405,6 +420,8 @@ export function SignInPageClient() {
                         setOtpCode("");
                         setError("");
                       }}
+                      type="button"
+                      variant="ghost"
                     >
                       Use a different email
                     </Button>

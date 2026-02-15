@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { AlertTriangle, RefreshCw, LayoutDashboard } from "lucide-react";
+import { AlertTriangle, LayoutDashboard, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import { Button } from "~/ui/primitives/button";
 
@@ -20,9 +20,18 @@ export default function DashboardError({ error, reset }: ErrorPageProps) {
   }, [error]);
 
   return (
-    <div className="flex min-h-[60vh] flex-col items-center justify-center px-4 py-16">
+    <div
+      className={`
+      flex min-h-[60vh] flex-col items-center justify-center px-4 py-16
+    `}
+    >
       <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+        <div
+          className={`
+          flex h-16 w-16 items-center justify-center rounded-full
+          bg-destructive/10
+        `}
+        >
           <AlertTriangle className="h-8 w-8 text-destructive" />
         </div>
 
@@ -40,7 +49,12 @@ export default function DashboardError({ error, reset }: ErrorPageProps) {
           </p>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div
+          className={`
+          flex flex-col gap-3
+          sm:flex-row
+        `}
+        >
           <Button onClick={reset} variant="default">
             <RefreshCw className="mr-2 h-4 w-4" />
             Try again

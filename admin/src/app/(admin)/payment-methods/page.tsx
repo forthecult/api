@@ -3,46 +3,46 @@
 import { ChevronDown, ChevronRight, CreditCard } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
-import { getMainAppUrl } from "~/lib/env";
 import { cn } from "~/lib/cn";
+import { getMainAppUrl } from "~/lib/env";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-type PaymentMethodRow = {
-  methodKey: string;
-  label: string;
-  enabled: boolean;
-  enabledNetworks?: string[] | null;
+interface PaymentMethodRow {
   displayOrder: number;
-};
+  enabled: boolean;
+  enabledNetworks?: null | string[];
+  label: string;
+  methodKey: string;
+}
 
 /** Networks that can be toggled per method (stablecoins). */
-const METHOD_NETWORKS: Record<string, { value: string; label: string }[]> = {
+const METHOD_NETWORKS: Record<string, { label: string; value: string }[]> = {
   stablecoin_usdc: [
-    { value: "solana", label: "Solana" },
-    { value: "ethereum", label: "Ethereum" },
-    { value: "arbitrum", label: "Arbitrum" },
-    { value: "base", label: "Base" },
-    { value: "polygon", label: "Polygon" },
+    { label: "Solana", value: "solana" },
+    { label: "Ethereum", value: "ethereum" },
+    { label: "Arbitrum", value: "arbitrum" },
+    { label: "Base", value: "base" },
+    { label: "Polygon", value: "polygon" },
   ],
   stablecoin_usdt: [
-    { value: "ethereum", label: "Ethereum" },
-    { value: "arbitrum", label: "Arbitrum" },
-    { value: "bnb", label: "BNB Smart Chain" },
-    { value: "polygon", label: "Polygon" },
+    { label: "Ethereum", value: "ethereum" },
+    { label: "Arbitrum", value: "arbitrum" },
+    { label: "BNB Smart Chain", value: "bnb" },
+    { label: "Polygon", value: "polygon" },
   ],
 };
 
 export default function AdminPaymentMethodsPage() {
   const [methods, setMethods] = useState<PaymentMethodRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [toggling, setToggling] = useState<string | null>(null);
-  const [networkSaving, setNetworkSaving] = useState<string | null>(null);
+  const [toggling, setToggling] = useState<null | string>(null);
+  const [networkSaving, setNetworkSaving] = useState<null | string>(null);
   const [expandedNetworks, setExpandedNetworks] = useState<Set<string>>(
     new Set(),
   );
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const fetchMethods = useCallback(async () => {
     setLoading(true);
@@ -75,10 +75,10 @@ export default function AdminPaymentMethodsPage() {
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/payment-methods`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabled, methodKey }),
           credentials: "include",
-          body: JSON.stringify({ methodKey, enabled }),
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -99,15 +99,15 @@ export default function AdminPaymentMethodsPage() {
   );
 
   const setEnabledNetworks = useCallback(
-    async (methodKey: string, enabledNetworks: string[] | null) => {
+    async (methodKey: string, enabledNetworks: null | string[]) => {
       setNetworkSaving(methodKey);
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/payment-methods`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ enabledNetworks, methodKey }),
           credentials: "include",
-          body: JSON.stringify({ methodKey, enabledNetworks }),
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -162,7 +162,12 @@ export default function AdminPaymentMethodsPage() {
       </div>
 
       {error && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+        <div
+          className={`
+          rounded-md border border-destructive/50 bg-destructive/10 px-4 py-3
+          text-sm text-destructive
+        `}
+        >
           {error}
         </div>
       )}
@@ -197,20 +202,27 @@ export default function AdminPaymentMethodsPage() {
                     : (networks?.map((n) => n.value) ?? []);
                 return (
                   <li
-                    key={m.methodKey}
                     className={cn(
                       "rounded-lg border",
                       m.enabled
                         ? "border-border bg-card"
                         : "border-border/60 bg-muted/30",
                     )}
+                    key={m.methodKey}
                   >
-                    <div className="flex items-center justify-between gap-4 px-4 py-3">
+                    <div
+                      className={`
+                      flex items-center justify-between gap-4 px-4 py-3
+                    `}
+                    >
                       <div className="flex min-w-0 items-center gap-2">
                         {hasNetworks && (
                           <button
-                            type="button"
                             aria-expanded={expanded}
+                            className={`
+                              shrink-0 rounded p-0.5 text-muted-foreground
+                              hover:bg-muted hover:text-foreground
+                            `}
                             onClick={() =>
                               setExpandedNetworks((prev) => {
                                 const next = new Set(prev);
@@ -220,7 +232,7 @@ export default function AdminPaymentMethodsPage() {
                                 return next;
                               })
                             }
-                            className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                            type="button"
                           >
                             {expanded ? (
                               <ChevronDown className="h-4 w-4" />
@@ -245,19 +257,31 @@ export default function AdminPaymentMethodsPage() {
                           {m.enabled ? "Enabled" : "Disabled"}
                         </span>
                         <button
-                          type="button"
-                          role="switch"
                           aria-checked={m.enabled}
-                          disabled={toggling === m.methodKey}
-                          onClick={() => setEnabled(m.methodKey, !m.enabled)}
                           className={cn(
-                            "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                            `
+                              relative inline-flex h-6 w-11 shrink-0
+                              cursor-pointer items-center rounded-full border-2
+                              border-transparent transition-colors
+                              focus-visible:ring-2 focus-visible:ring-ring
+                              focus-visible:ring-offset-2
+                              focus-visible:outline-none
+                              disabled:pointer-events-none disabled:opacity-50
+                            `,
                             m.enabled ? "bg-primary" : "bg-input",
                           )}
+                          disabled={toggling === m.methodKey}
+                          onClick={() => setEnabled(m.methodKey, !m.enabled)}
+                          role="switch"
+                          type="button"
                         >
                           <span
                             className={cn(
-                              "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition",
+                              `
+                                pointer-events-none inline-block h-5 w-5
+                                transform rounded-full bg-white shadow ring-0
+                                transition
+                              `,
                               m.enabled ? "translate-x-5" : "translate-x-1",
                             )}
                           />
@@ -265,8 +289,16 @@ export default function AdminPaymentMethodsPage() {
                       </div>
                     </div>
                     {hasNetworks && expanded && (
-                      <div className="border-t border-border bg-muted/20 px-4 py-3">
-                        <p className="mb-2 text-xs font-medium text-muted-foreground">
+                      <div
+                        className={`
+                        border-t border-border bg-muted/20 px-4 py-3
+                      `}
+                      >
+                        <p
+                          className={`
+                          mb-2 text-xs font-medium text-muted-foreground
+                        `}
+                        >
                           Enabled networks (uncheck to hide from checkout)
                         </p>
                         <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -276,12 +308,17 @@ export default function AdminPaymentMethodsPage() {
                             );
                             return (
                               <label
+                                className={`
+                                  flex cursor-pointer items-center gap-2 text-sm
+                                `}
                                 key={n.value}
-                                className="flex cursor-pointer items-center gap-2 text-sm"
                               >
                                 <input
-                                  type="checkbox"
                                   checked={isChecked}
+                                  className={`
+                                    h-4 w-4 rounded border-input text-primary
+                                    focus:ring-primary
+                                  `}
                                   disabled={
                                     networkSaving === m.methodKey || !m.enabled
                                   }
@@ -292,7 +329,7 @@ export default function AdminPaymentMethodsPage() {
                                       e.target.checked,
                                     )
                                   }
-                                  className="h-4 w-4 rounded border-input text-primary focus:ring-primary"
+                                  type="checkbox"
                                 />
                                 <span>{n.label}</span>
                               </label>

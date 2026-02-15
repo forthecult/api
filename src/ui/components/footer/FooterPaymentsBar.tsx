@@ -10,13 +10,13 @@ const ICON_WIDTH = 38;
 const ICON_HEIGHT = 24;
 
 const CARD_OR_PAYPAL_NAMES = new Set([
-  "PayPal",
   "American Express",
   "Apple Pay",
   "Diners Club",
   "Discover",
   "Google Pay",
   "Mastercard",
+  "PayPal",
   "Visa",
 ]);
 
@@ -30,26 +30,26 @@ export function FooterPaymentsBar() {
     CARD_OR_PAYPAL_NAMES.has(item.name),
   );
 
-  const renderItem = (item: { name: string; title?: string; src: string }) => (
-    <li key={item.name} className="shrink-0" role="listitem">
+  const renderItem = (item: { name: string; src: string; title?: string }) => (
+    <li className="shrink-0" key={item.name} role="listitem">
       <span
         className="flex items-center justify-center overflow-hidden"
         style={{
-          width: ICON_WIDTH,
           height: ICON_HEIGHT,
-          minWidth: ICON_WIDTH,
           minHeight: ICON_HEIGHT,
+          minWidth: ICON_WIDTH,
+          width: ICON_WIDTH,
         }}
       >
         <Image
           alt={item.name}
+          className="block max-h-full max-w-full object-contain object-center"
           height={ICON_HEIGHT}
           role="img"
           src={item.src}
           title={item.title ?? item.name}
           unoptimized
           width={ICON_WIDTH}
-          className="block max-h-full max-w-full object-contain object-center"
         />
       </span>
     </li>
@@ -60,18 +60,18 @@ export function FooterPaymentsBar() {
       <span className="sr-only">Payment methods</span>
       {cryptoItems.length > 0 && (
         <ul
+          aria-label="Crypto payment options"
           className="flex flex-wrap items-center justify-center gap-1.5"
           role="list"
-          aria-label="Crypto payment options"
         >
           {cryptoItems.map(renderItem)}
         </ul>
       )}
       {cardItems.length > 0 && (
         <ul
+          aria-label="Card and wallet payment options"
           className="flex flex-wrap items-center justify-center gap-2"
           role="list"
-          aria-label="Card and wallet payment options"
         >
           {cardItems.map(renderItem)}
         </ul>

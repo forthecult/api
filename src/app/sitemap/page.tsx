@@ -36,20 +36,10 @@ const POLICY_LINKS: { href: string; label: string }[] = [
   { href: "/cookies", label: "Cookies" },
 ];
 
-type CategoryItem = { id: string; slug?: string; name: string };
-
-async function getCategories(): Promise<CategoryItem[]> {
-  try {
-    const siteUrl = getPublicSiteUrl();
-    const res = await fetch(`${siteUrl}/api/categories`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return [];
-    const data = (await res.json()) as { categories?: CategoryItem[] };
-    return data.categories ?? [];
-  } catch {
-    return [];
-  }
+interface CategoryItem {
+  id: string;
+  name: string;
+  slug?: string;
 }
 
 export default async function SitemapPage() {
@@ -59,17 +49,30 @@ export default async function SitemapPage() {
     .map((c) => ({ href: `/${c.slug}`, label: c.name }));
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-10 border-b border-border pb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Sitemap
         </h1>
         <p className="mt-3 text-muted-foreground">
           Main pages and sections of {SEO_CONFIG.name}. For the full list
           including all product URLs, use the{" "}
           <Link
+            className={`
+              font-medium text-foreground underline
+              hover:no-underline
+            `}
             href="/sitemap.xml"
-            className="font-medium text-foreground underline hover:no-underline"
           >
             XML sitemap
           </Link>{" "}
@@ -77,17 +80,24 @@ export default async function SitemapPage() {
         </p>
       </header>
 
-      <nav className="space-y-8" aria-label="Sitemap">
+      <nav aria-label="Sitemap" className="space-y-8">
         <section>
           <h2 className="mb-3 text-lg font-semibold text-foreground">
             Main pages
           </h2>
-          <ul className="list-inside list-disc space-y-1.5 text-muted-foreground">
+          <ul
+            className={`
+            list-inside list-disc space-y-1.5 text-muted-foreground
+          `}
+          >
             {STATIC_LINKS.map(({ href, label }) => (
               <li key={href}>
                 <Link
+                  className={`
+                    text-foreground underline
+                    hover:no-underline
+                  `}
                   href={href}
-                  className="text-foreground underline hover:no-underline"
                 >
                   {label}
                 </Link>
@@ -101,12 +111,19 @@ export default async function SitemapPage() {
             <h2 className="mb-3 text-lg font-semibold text-foreground">
               Shop by category
             </h2>
-            <ul className="list-inside list-disc space-y-1.5 text-muted-foreground">
+            <ul
+              className={`
+              list-inside list-disc space-y-1.5 text-muted-foreground
+            `}
+            >
               {categoryLinks.map(({ href, label }) => (
                 <li key={href}>
                   <Link
+                    className={`
+                      text-foreground underline
+                      hover:no-underline
+                    `}
                     href={href}
-                    className="text-foreground underline hover:no-underline"
                   >
                     {label}
                   </Link>
@@ -120,12 +137,19 @@ export default async function SitemapPage() {
           <h2 className="mb-3 text-lg font-semibold text-foreground">
             Policies &amp; legal
           </h2>
-          <ul className="list-inside list-disc space-y-1.5 text-muted-foreground">
+          <ul
+            className={`
+            list-inside list-disc space-y-1.5 text-muted-foreground
+          `}
+          >
             {POLICY_LINKS.map(({ href, label }) => (
               <li key={href}>
                 <Link
+                  className={`
+                    text-foreground underline
+                    hover:no-underline
+                  `}
                   href={href}
-                  className="text-foreground underline hover:no-underline"
                 >
                   {label}
                 </Link>
@@ -134,12 +158,19 @@ export default async function SitemapPage() {
           </ul>
         </section>
 
-        <section className="rounded-lg border border-border bg-muted/30 px-4 py-3">
+        <section
+          className={`
+          rounded-lg border border-border bg-muted/30 px-4 py-3
+        `}
+        >
           <p className="text-sm text-muted-foreground">
             <strong className="text-foreground">XML sitemap:</strong>{" "}
             <Link
+              className={`
+                text-foreground underline
+                hover:no-underline
+              `}
               href="/sitemap.xml"
-              className="text-foreground underline hover:no-underline"
             >
               /sitemap.xml
             </Link>{" "}
@@ -149,4 +180,18 @@ export default async function SitemapPage() {
       </nav>
     </div>
   );
+}
+
+async function getCategories(): Promise<CategoryItem[]> {
+  try {
+    const siteUrl = getPublicSiteUrl();
+    const res = await fetch(`${siteUrl}/api/categories`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) return [];
+    const data = (await res.json()) as { categories?: CategoryItem[] };
+    return data.categories ?? [];
+  } catch {
+    return [];
+  }
 }

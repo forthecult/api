@@ -1,26 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
-import { resolveCouponForCheckout, type CartLineItem } from "~/lib/coupon";
+import { type CartLineItem, resolveCouponForCheckout } from "~/lib/coupon";
 import {
-  getClientIp,
   checkRateLimit,
+  getClientIp,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
 const validateSchema = {
   code: (v: unknown) =>
     typeof v === "string" && v.trim().length > 0 ? v.trim() : null,
-  subtotalCents: (v: unknown) =>
-    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
-  productIds: (v: unknown) =>
-    Array.isArray(v)
-      ? (v as unknown[]).filter(
-          (id): id is string => typeof id === "string" && id.length > 0,
-        )
-      : [],
-  paymentMethodKey: (v: unknown) =>
-    typeof v === "string" && v.length > 0 ? v : undefined,
   items: (v: unknown): CartLineItem[] => {
     if (!Array.isArray(v)) return [];
     return (v as unknown[])
@@ -28,8 +18,8 @@ const validateSchema = {
         (
           item,
         ): item is {
-          productId: string;
           priceCents: number;
+          productId: string;
           quantity: number;
         } =>
           typeof item === "object" &&
@@ -39,11 +29,21 @@ const validateSchema = {
           typeof (item as Record<string, unknown>).quantity === "number",
       )
       .map((item) => ({
-        productId: item.productId,
         priceCents: Math.round(item.priceCents),
+        productId: item.productId,
         quantity: Math.max(1, Math.round(item.quantity)),
       }));
   },
+  paymentMethodKey: (v: unknown) =>
+    typeof v === "string" && v.length > 0 ? v : undefined,
+  productIds: (v: unknown) =>
+    Array.isArray(v)
+      ? (v as unknown[]).filter(
+          (id): id is string => typeof id === "string" && id.length > 0,
+        )
+      : [],
+  subtotalCents: (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
 };
 
 /**
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     const code = validateSchema.code(body?.code);
     if (!code) {
       return NextResponse.json(
-        { valid: false, error: "Discount code is required." },
+        { error: "Discount code is required.", valid: false },
         { status: 400 },
       );
     }
@@ -85,17 +85,17 @@ export async function POST(request: NextRequest) {
       subtotalCents,
       shippingFeeCents,
       {
-        userId: session?.user?.id ?? undefined,
-        productIds: productIds.length > 0 ? productIds : undefined,
-        paymentMethodKey,
         items: items.length > 0 ? items : undefined,
+        paymentMethodKey,
+        productIds: productIds.length > 0 ? productIds : undefined,
+        userId: session?.user?.id ?? undefined,
       },
     );
 
     if (!result) {
       return NextResponse.json({
-        valid: false,
         error: "This discount code is invalid or expired.",
+        valid: false,
       });
     }
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
   } catch (err) {
     console.error("Coupon validate error:", err);
     return NextResponse.json(
-      { valid: false, error: "Failed to validate discount code." },
+      { error: "Failed to validate discount code.", valid: false },
       { status: 500 },
     );
   }

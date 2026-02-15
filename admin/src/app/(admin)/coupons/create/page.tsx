@@ -15,14 +15,20 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type CategoryOption = { id: string; name: string };
-type ProductOption = { id: string; name: string };
-
+interface CategoryOption {
+  id: string;
+  name: string;
+}
 type DiscountKind =
-  | "amount_off_products"
   | "amount_off_order"
+  | "amount_off_products"
   | "buy_x_get_y"
   | "free_shipping";
+
+interface ProductOption {
+  id: string;
+  name: string;
+}
 
 /** Payment method keys from the main app's PAYMENT_METHOD_DEFAULTS. */
 const PAYMENT_METHOD_OPTIONS: { key: string; label: string }[] = [
@@ -48,7 +54,7 @@ export default function AdminDiscountCreatePage() {
   const router = useRouter();
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
 
@@ -59,20 +65,20 @@ export default function AdminDiscountCreatePage() {
   const [dateEnd, setDateEnd] = useState("");
   const [discountKind, setDiscountKind] =
     useState<DiscountKind>("amount_off_order");
-  const [discountType, setDiscountType] = useState<"percent" | "fixed">(
+  const [discountType, setDiscountType] = useState<"fixed" | "percent">(
     "percent",
   );
   const [discountValue, setDiscountValue] = useState("");
   const [buyQuantity, setBuyQuantity] = useState("");
   const [getQuantity, setGetQuantity] = useState("");
-  const [getDiscountType, setGetDiscountType] = useState<"percent" | "fixed">(
+  const [getDiscountType, setGetDiscountType] = useState<"fixed" | "percent">(
     "percent",
   );
   const [getDiscountValue, setGetDiscountValue] = useState("");
   const [maxUses, setMaxUses] = useState("");
   const [maxUsesPerCustomer, setMaxUsesPerCustomer] = useState("");
   const [maxUsesPerCustomerType, setMaxUsesPerCustomerType] = useState<
-    "account" | "phone" | "shipping_address" | ""
+    "" | "account" | "phone" | "shipping_address"
   >("");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [productIds, setProductIds] = useState<string[]>([]);
@@ -174,26 +180,26 @@ export default function AdminDiscountCreatePage() {
       setSaving(true);
       try {
         const body: Record<string, unknown> = {
-          label: label.trim() || null,
-          method,
-          code: codeTrim || undefined,
-          dateStart: dateStart ? new Date(dateStart).toISOString() : null,
-          dateEnd: dateEnd ? new Date(dateEnd).toISOString() : null,
-          discountKind,
-          discountType,
-          discountValue: val,
           appliesTo:
             discountKind === "free_shipping"
               ? "shipping"
               : discountKind === "amount_off_products"
                 ? "product"
                 : "subtotal",
+          categoryIds,
+          code: codeTrim || undefined,
+          dateEnd: dateEnd ? new Date(dateEnd).toISOString() : null,
+          dateStart: dateStart ? new Date(dateStart).toISOString() : null,
+          discountKind,
+          discountType,
+          discountValue: val,
+          label: label.trim() || null,
           maxUses: maxUses.trim() ? Number.parseInt(maxUses, 10) : null,
           maxUsesPerCustomer: maxUsesPerCustomer.trim()
             ? Number.parseInt(maxUsesPerCustomer, 10)
             : null,
           maxUsesPerCustomerType: maxUsesPerCustomerType || null,
-          categoryIds,
+          method,
           productIds,
           ruleAppliesToEsim: ruleAppliesToEsim ? 1 : null,
         };
@@ -234,10 +240,10 @@ export default function AdminDiscountCreatePage() {
               : Math.round(Number.parseFloat(getDiscountValue || "0") * 100);
         }
         const res = await fetch(`${API_BASE}/api/admin/coupons`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify(body),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as {
@@ -308,63 +314,76 @@ export default function AdminDiscountCreatePage() {
       <div className="flex items-center gap-4">
         <h2 className="text-2xl font-semibold tracking-tight">New discount</h2>
         <Link
+          className={`
+            text-sm text-muted-foreground
+            hover:text-foreground
+          `}
           href="/coupons"
-          className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Back to discounts
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Discount</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="label" className={labelClass}>
+              <label className={labelClass} htmlFor="label">
                 Label
               </label>
               <input
+                className={inputClass}
                 id="label"
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="e.g. 10% off eSIMs with CULT"
                 type="text"
                 value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                className={inputClass}
-                placeholder="e.g. 10% off eSIMs with CULT"
               />
               <p className="text-xs text-muted-foreground">
                 Internal label to help admins identify this discount. Not shown
                 to customers.
               </p>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
                 <label className={labelClass}>Apply</label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2">
                     <input
-                      type="radio"
-                      name="method"
                       checked={method === "automatic"}
-                      onChange={() => setMethod("automatic")}
                       className="size-4 border-input"
+                      name="method"
+                      onChange={() => setMethod("automatic")}
+                      type="radio"
                     />
                     <span className="text-sm">Automatic</span>
                   </label>
                   <label className="flex items-center gap-2">
                     <input
-                      type="radio"
-                      name="method"
                       checked={method === "code"}
-                      onChange={() => setMethod("code")}
                       className="size-4 border-input"
+                      name="method"
+                      onChange={() => setMethod("code")}
+                      type="radio"
                     />
                     <span className="text-sm">Requires code</span>
                   </label>
@@ -376,17 +395,17 @@ export default function AdminDiscountCreatePage() {
               </div>
               {method === "code" && (
                 <div className="space-y-2">
-                  <label htmlFor="code" className={labelClass}>
+                  <label className={labelClass} htmlFor="code">
                     Discount code
                   </label>
                   <input
-                    id="code"
-                    type="text"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
                     className={inputClass}
+                    id="code"
+                    onChange={(e) => setCode(e.target.value.toUpperCase())}
                     placeholder="e.g. SAVE20"
                     required
+                    type="text"
+                    value={code}
                   />
                 </div>
               )}
@@ -399,18 +418,23 @@ export default function AdminDiscountCreatePage() {
                 </div>
               )}
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="discountKind" className={labelClass}>
+                <label className={labelClass} htmlFor="discountKind">
                   Discount type
                 </label>
                 <select
+                  className={inputClass}
                   id="discountKind"
-                  value={discountKind}
                   onChange={(e) =>
                     handleDiscountKindChange(e.target.value as DiscountKind)
                   }
-                  className={inputClass}
+                  value={discountKind}
                 >
                   <option value="amount_off_products">
                     Amount of products
@@ -428,32 +452,37 @@ export default function AdminDiscountCreatePage() {
                 )}
               </div>
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="dateStart" className={labelClass}>
+                <label className={labelClass} htmlFor="dateStart">
                   Date start
                 </label>
                 <input
+                  className={inputClass}
                   id="dateStart"
+                  onChange={(e) => setDateStart(e.target.value)}
                   type="datetime-local"
                   value={dateStart}
-                  onChange={(e) => setDateStart(e.target.value)}
-                  className={inputClass}
                 />
                 <p className="text-xs text-muted-foreground">
                   Leave empty for no start.
                 </p>
               </div>
               <div className="space-y-2">
-                <label htmlFor="dateEnd" className={labelClass}>
+                <label className={labelClass} htmlFor="dateEnd">
                   Date end
                 </label>
                 <input
+                  className={inputClass}
                   id="dateEnd"
+                  onChange={(e) => setDateEnd(e.target.value)}
                   type="datetime-local"
                   value={dateEnd}
-                  onChange={(e) => setDateEnd(e.target.value)}
-                  className={inputClass}
                 />
                 <p className="text-xs text-muted-foreground">
                   Leave empty for no end.
@@ -463,53 +492,58 @@ export default function AdminDiscountCreatePage() {
             {(discountKind === "amount_off_products" ||
               discountKind === "amount_off_order" ||
               discountKind === "free_shipping") && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+              `}
+              >
                 <div className="space-y-2">
                   <label className={labelClass}>Amount type</label>
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2">
                       <input
-                        type="radio"
-                        name="discountType"
                         checked={discountType === "percent"}
-                        onChange={() => setDiscountType("percent")}
                         className="size-4 border-input"
+                        name="discountType"
+                        onChange={() => setDiscountType("percent")}
+                        type="radio"
                       />
                       <span className="text-sm">Percent (%)</span>
                     </label>
                     <label className="flex items-center gap-2">
                       <input
-                        type="radio"
-                        name="discountType"
                         checked={discountType === "fixed"}
-                        onChange={() => setDiscountType("fixed")}
                         className="size-4 border-input"
+                        name="discountType"
+                        onChange={() => setDiscountType("fixed")}
+                        type="radio"
                       />
                       <span className="text-sm">Fixed ($)</span>
                     </label>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="discountValue" className={labelClass}>
+                  <label className={labelClass} htmlFor="discountValue">
                     {discountType === "percent"
                       ? `Discount %${discountKind === "free_shipping" ? " off shipping" : ""}`
                       : `Discount ($)${discountKind === "free_shipping" ? " off shipping" : ""}`}
                   </label>
                   <input
-                    id="discountValue"
-                    type="number"
-                    min={0}
-                    max={discountType === "percent" ? 100 : undefined}
-                    step={discountType === "percent" ? 1 : 0.01}
-                    value={discountValue}
-                    onChange={(e) => setDiscountValue(e.target.value)}
                     className={inputClass}
+                    id="discountValue"
+                    max={discountType === "percent" ? 100 : undefined}
+                    min={0}
+                    onChange={(e) => setDiscountValue(e.target.value)}
                     placeholder={
                       discountType === "percent"
                         ? "e.g. 100 for free shipping"
                         : "e.g. 10.00"
                     }
                     required
+                    step={discountType === "percent" ? 1 : 0.01}
+                    type="number"
+                    value={discountValue}
                   />
                   {discountKind === "free_shipping" && (
                     <p className="text-xs text-muted-foreground">
@@ -522,33 +556,38 @@ export default function AdminDiscountCreatePage() {
             )}
 
             {discountKind === "buy_x_get_y" && (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+              `}
+              >
                 <div className="space-y-2">
-                  <label htmlFor="buyQuantity" className={labelClass}>
+                  <label className={labelClass} htmlFor="buyQuantity">
                     Buy quantity (X)
                   </label>
                   <input
-                    id="buyQuantity"
-                    type="number"
-                    min={1}
-                    value={buyQuantity}
-                    onChange={(e) => setBuyQuantity(e.target.value)}
                     className={inputClass}
+                    id="buyQuantity"
+                    min={1}
+                    onChange={(e) => setBuyQuantity(e.target.value)}
                     placeholder="e.g. 2"
+                    type="number"
+                    value={buyQuantity}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="getQuantity" className={labelClass}>
+                  <label className={labelClass} htmlFor="getQuantity">
                     Get quantity (Y)
                   </label>
                   <input
-                    id="getQuantity"
-                    type="number"
-                    min={1}
-                    value={getQuantity}
-                    onChange={(e) => setGetQuantity(e.target.value)}
                     className={inputClass}
+                    id="getQuantity"
+                    min={1}
+                    onChange={(e) => setGetQuantity(e.target.value)}
                     placeholder="e.g. 1"
+                    type="number"
+                    value={getQuantity}
                   />
                 </div>
                 <div className="space-y-2">
@@ -556,41 +595,41 @@ export default function AdminDiscountCreatePage() {
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2">
                       <input
-                        type="radio"
-                        name="getDiscountType"
                         checked={getDiscountType === "percent"}
-                        onChange={() => setGetDiscountType("percent")}
                         className="size-4 border-input"
+                        name="getDiscountType"
+                        onChange={() => setGetDiscountType("percent")}
+                        type="radio"
                       />
                       <span className="text-sm">Percent</span>
                     </label>
                     <label className="flex items-center gap-2">
                       <input
-                        type="radio"
-                        name="getDiscountType"
                         checked={getDiscountType === "fixed"}
-                        onChange={() => setGetDiscountType("fixed")}
                         className="size-4 border-input"
+                        name="getDiscountType"
+                        onChange={() => setGetDiscountType("fixed")}
+                        type="radio"
                       />
                       <span className="text-sm">Fixed ($)</span>
                     </label>
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="getDiscountValue" className={labelClass}>
+                  <label className={labelClass} htmlFor="getDiscountValue">
                     Get discount value (
                     {getDiscountType === "percent" ? "%" : "$"})
                   </label>
                   <input
-                    id="getDiscountValue"
-                    type="number"
-                    min={0}
-                    max={getDiscountType === "percent" ? 100 : undefined}
-                    step={getDiscountType === "percent" ? 1 : 0.01}
-                    value={getDiscountValue}
-                    onChange={(e) => setGetDiscountValue(e.target.value)}
                     className={inputClass}
+                    id="getDiscountValue"
+                    max={getDiscountType === "percent" ? 100 : undefined}
+                    min={0}
+                    onChange={(e) => setGetDiscountValue(e.target.value)}
                     placeholder={getDiscountType === "percent" ? "100" : "0"}
+                    step={getDiscountType === "percent" ? 1 : 0.01}
+                    type="number"
+                    value={getDiscountValue}
                   />
                 </div>
               </div>
@@ -606,7 +645,12 @@ export default function AdminDiscountCreatePage() {
                 All set conditions must be met for this automatic discount to
                 apply. Leave a field empty for no limit. Amounts in $.
               </p>
-              <div className="rounded-md border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+              <div
+                className={`
+                rounded-md border border-border bg-muted/50 p-3 text-sm
+                text-muted-foreground
+              `}
+              >
                 <p className="mb-2 font-medium text-foreground">
                   Cart must contain (optional)
                 </p>
@@ -627,14 +671,14 @@ export default function AdminDiscountCreatePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="rulePaymentMethodKey" className={labelClass}>
+                <label className={labelClass} htmlFor="rulePaymentMethodKey">
                   Payment method restriction
                 </label>
                 <select
-                  id="rulePaymentMethodKey"
-                  value={rulePaymentMethodKey}
-                  onChange={(e) => setRulePaymentMethodKey(e.target.value)}
                   className={inputClass}
+                  id="rulePaymentMethodKey"
+                  onChange={(e) => setRulePaymentMethodKey(e.target.value)}
+                  value={rulePaymentMethodKey}
                 >
                   <option value="">Any payment method</option>
                   {PAYMENT_METHOD_OPTIONS.map((pm) => (
@@ -650,133 +694,145 @@ export default function AdminDiscountCreatePage() {
                   buyers in that category.
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+                md:grid-cols-4
+              `}
+              >
                 <div className="space-y-2">
-                  <label htmlFor="ruleSubtotalMin" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleSubtotalMin">
                     Subtotal min ($)
                   </label>
                   <input
-                    id="ruleSubtotalMin"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={ruleSubtotalMin}
-                    onChange={(e) => setRuleSubtotalMin(e.target.value)}
                     className={inputClass}
+                    id="ruleSubtotalMin"
+                    min={0}
+                    onChange={(e) => setRuleSubtotalMin(e.target.value)}
                     placeholder="e.g. 50"
+                    step={0.01}
+                    type="number"
+                    value={ruleSubtotalMin}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="ruleSubtotalMax" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleSubtotalMax">
                     Subtotal max ($)
                   </label>
                   <input
-                    id="ruleSubtotalMax"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={ruleSubtotalMax}
-                    onChange={(e) => setRuleSubtotalMax(e.target.value)}
                     className={inputClass}
+                    id="ruleSubtotalMax"
+                    min={0}
+                    onChange={(e) => setRuleSubtotalMax(e.target.value)}
                     placeholder="No max"
+                    step={0.01}
+                    type="number"
+                    value={ruleSubtotalMax}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="ruleShippingMin" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleShippingMin">
                     Shipping min ($)
                   </label>
                   <input
-                    id="ruleShippingMin"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={ruleShippingMin}
-                    onChange={(e) => setRuleShippingMin(e.target.value)}
                     className={inputClass}
+                    id="ruleShippingMin"
+                    min={0}
+                    onChange={(e) => setRuleShippingMin(e.target.value)}
                     placeholder="No min"
+                    step={0.01}
+                    type="number"
+                    value={ruleShippingMin}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="ruleShippingMax" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleShippingMax">
                     Shipping max ($)
                   </label>
                   <input
-                    id="ruleShippingMax"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={ruleShippingMax}
-                    onChange={(e) => setRuleShippingMax(e.target.value)}
                     className={inputClass}
+                    id="ruleShippingMax"
+                    min={0}
+                    onChange={(e) => setRuleShippingMax(e.target.value)}
                     placeholder="No max"
+                    step={0.01}
+                    type="number"
+                    value={ruleShippingMax}
                   />
                 </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+                md:grid-cols-4
+              `}
+              >
                 <div className="space-y-2">
-                  <label htmlFor="ruleProductCountMin" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleProductCountMin">
                     Product count min
                   </label>
                   <input
-                    id="ruleProductCountMin"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={ruleProductCountMin}
-                    onChange={(e) => setRuleProductCountMin(e.target.value)}
                     className={inputClass}
+                    id="ruleProductCountMin"
+                    min={0}
+                    onChange={(e) => setRuleProductCountMin(e.target.value)}
                     placeholder="e.g. 2"
+                    step={1}
+                    type="number"
+                    value={ruleProductCountMin}
                   />
                   <p className="text-xs text-muted-foreground">
                     Total quantity of items
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="ruleProductCountMax" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleProductCountMax">
                     Product count max
                   </label>
                   <input
-                    id="ruleProductCountMax"
-                    type="number"
-                    min={0}
-                    step={1}
-                    value={ruleProductCountMax}
-                    onChange={(e) => setRuleProductCountMax(e.target.value)}
                     className={inputClass}
+                    id="ruleProductCountMax"
+                    min={0}
+                    onChange={(e) => setRuleProductCountMax(e.target.value)}
                     placeholder="No max"
+                    step={1}
+                    type="number"
+                    value={ruleProductCountMax}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="ruleOrderTotalMin" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleOrderTotalMin">
                     Order total min ($)
                   </label>
                   <input
-                    id="ruleOrderTotalMin"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={ruleOrderTotalMin}
-                    onChange={(e) => setRuleOrderTotalMin(e.target.value)}
                     className={inputClass}
+                    id="ruleOrderTotalMin"
+                    min={0}
+                    onChange={(e) => setRuleOrderTotalMin(e.target.value)}
                     placeholder="e.g. 75"
+                    step={0.01}
+                    type="number"
+                    value={ruleOrderTotalMin}
                   />
                   <p className="text-xs text-muted-foreground">
                     Subtotal + shipping
                   </p>
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="ruleOrderTotalMax" className={labelClass}>
+                  <label className={labelClass} htmlFor="ruleOrderTotalMax">
                     Order total max ($)
                   </label>
                   <input
-                    id="ruleOrderTotalMax"
-                    type="number"
-                    min={0}
-                    step={0.01}
-                    value={ruleOrderTotalMax}
-                    onChange={(e) => setRuleOrderTotalMax(e.target.value)}
                     className={inputClass}
+                    id="ruleOrderTotalMax"
+                    min={0}
+                    onChange={(e) => setRuleOrderTotalMax(e.target.value)}
                     placeholder="No max"
+                    step={0.01}
+                    type="number"
+                    value={ruleOrderTotalMax}
                   />
                 </div>
               </div>
@@ -792,53 +848,58 @@ export default function AdminDiscountCreatePage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="maxUses" className={labelClass}>
+                <label className={labelClass} htmlFor="maxUses">
                   Total times the code can be used
                 </label>
                 <input
-                  id="maxUses"
-                  type="number"
-                  min={1}
-                  value={maxUses}
-                  onChange={(e) => setMaxUses(e.target.value)}
                   className={inputClass}
+                  id="maxUses"
+                  min={1}
+                  onChange={(e) => setMaxUses(e.target.value)}
                   placeholder="e.g. 1000"
+                  type="number"
+                  value={maxUses}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="maxUsesPerCustomer" className={labelClass}>
+                <label className={labelClass} htmlFor="maxUsesPerCustomer">
                   Times per customer (limit)
                 </label>
                 <input
-                  id="maxUsesPerCustomer"
-                  type="number"
-                  min={1}
-                  value={maxUsesPerCustomer}
-                  onChange={(e) => setMaxUsesPerCustomer(e.target.value)}
                   className={inputClass}
+                  id="maxUsesPerCustomer"
+                  min={1}
+                  onChange={(e) => setMaxUsesPerCustomer(e.target.value)}
                   placeholder="Unlimited"
+                  type="number"
+                  value={maxUsesPerCustomer}
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="maxUsesPerCustomerType" className={labelClass}>
+              <label className={labelClass} htmlFor="maxUsesPerCustomerType">
                 Per-customer is identified by
               </label>
               <select
+                className={inputClass}
                 id="maxUsesPerCustomerType"
-                value={maxUsesPerCustomerType}
                 onChange={(e) =>
                   setMaxUsesPerCustomerType(
                     e.target.value as
+                      | ""
                       | "account"
                       | "phone"
-                      | "shipping_address"
-                      | "",
+                      | "shipping_address",
                   )
                 }
-                className={inputClass}
+                value={maxUsesPerCustomerType}
               >
                 <option value="">—</option>
                 <option value="account">Account (logged-in user)</option>
@@ -859,16 +920,21 @@ export default function AdminDiscountCreatePage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="tokenHolderChain" className={labelClass}>
+                <label className={labelClass} htmlFor="tokenHolderChain">
                   Chain
                 </label>
                 <select
-                  id="tokenHolderChain"
-                  value={tokenHolderChain}
-                  onChange={(e) => setTokenHolderChain(e.target.value)}
                   className={inputClass}
+                  id="tokenHolderChain"
+                  onChange={(e) => setTokenHolderChain(e.target.value)}
+                  value={tokenHolderChain}
                 >
                   <option value="">—</option>
                   <option value="solana">Solana</option>
@@ -876,30 +942,30 @@ export default function AdminDiscountCreatePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="tokenHolderMinBalance" className={labelClass}>
+                <label className={labelClass} htmlFor="tokenHolderMinBalance">
                   Min balance
                 </label>
                 <input
+                  className={inputClass}
                   id="tokenHolderMinBalance"
+                  onChange={(e) => setTokenHolderMinBalance(e.target.value)}
+                  placeholder="e.g. 1000"
                   type="text"
                   value={tokenHolderMinBalance}
-                  onChange={(e) => setTokenHolderMinBalance(e.target.value)}
-                  className={inputClass}
-                  placeholder="e.g. 1000"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <label htmlFor="tokenHolderTokenAddress" className={labelClass}>
+              <label className={labelClass} htmlFor="tokenHolderTokenAddress">
                 Token mint / contract address
               </label>
               <input
+                className={cn(inputClass, "font-mono text-xs")}
                 id="tokenHolderTokenAddress"
+                onChange={(e) => setTokenHolderTokenAddress(e.target.value)}
+                placeholder="Solana mint or ERC20 contract"
                 type="text"
                 value={tokenHolderTokenAddress}
-                onChange={(e) => setTokenHolderTokenAddress(e.target.value)}
-                className={cn(inputClass, "font-mono text-xs")}
-                placeholder="Solana mint or ERC20 contract"
               />
             </div>
           </CardContent>
@@ -923,12 +989,12 @@ export default function AdminDiscountCreatePage() {
             ) : (
               <div className="flex flex-wrap gap-4">
                 {categoryOptions.map((c) => (
-                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2 text-sm" key={c.id}>
                     <input
-                      type="checkbox"
                       checked={categoryIds.includes(c.id)}
-                      onChange={() => toggleCategory(c.id)}
                       className="size-4 rounded border-input"
+                      onChange={() => toggleCategory(c.id)}
+                      type="checkbox"
                     />
                     <span>{c.name}</span>
                   </label>
@@ -949,10 +1015,10 @@ export default function AdminDiscountCreatePage() {
           <CardContent className="space-y-4">
             <label className="flex items-center gap-2 text-sm">
               <input
-                type="checkbox"
                 checked={ruleAppliesToEsim}
-                onChange={(e) => setRuleAppliesToEsim(e.target.checked)}
                 className="size-4 rounded border-input"
+                onChange={(e) => setRuleAppliesToEsim(e.target.checked)}
+                type="checkbox"
               />
               <span>Applies to eSIM products</span>
             </label>
@@ -971,14 +1037,14 @@ export default function AdminDiscountCreatePage() {
                 <div className="flex flex-wrap gap-4">
                   {productOptions.map((p) => (
                     <label
-                      key={p.id}
                       className="flex items-center gap-2 text-sm"
+                      key={p.id}
                     >
                       <input
-                        type="checkbox"
                         checked={productIds.includes(p.id)}
-                        onChange={() => toggleProduct(p.id)}
                         className="size-4 rounded border-input"
+                        onChange={() => toggleProduct(p.id)}
+                        type="checkbox"
                       />
                       <span>{p.name}</span>
                     </label>
@@ -990,13 +1056,13 @@ export default function AdminDiscountCreatePage() {
         </Card>
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={saving}>
+          <Button disabled={saving} type="submit">
             {saving ? "Creating…" : "Create discount"}
           </Button>
           <Button
+            onClick={() => router.push("/coupons")}
             type="button"
             variant="outline"
-            onClick={() => router.push("/coupons")}
           >
             Cancel
           </Button>

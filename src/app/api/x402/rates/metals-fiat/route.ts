@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 import { withOptionalX402 } from "~/lib/x402-config";
+import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 
 const METALS = ["XAU", "XAG"];
 
@@ -21,7 +21,7 @@ async function getHandler(request: NextRequest) {
   }
   if (fiat !== "USD") {
     return NextResponse.json(
-      { error: "Only fiat=USD supported for metals", metal, fiat },
+      { error: "Only fiat=USD supported for metals", fiat, metal },
       { status: 400 },
     );
   }
@@ -29,17 +29,17 @@ async function getHandler(request: NextRequest) {
   const rate = prices[metal];
   if (rate == null) {
     return NextResponse.json(
-      { error: "Rate temporarily unavailable", metal, fiat },
+      { error: "Rate temporarily unavailable", fiat, metal },
       { status: 503 },
     );
   }
   return NextResponse.json({
-    metal,
-    fiat,
-    rate,
-    source: "coingecko",
     _note:
       "XAU = USD per troy oz (PAX Gold); XAG = USD per troy oz (Kinesis Silver)",
+    fiat,
+    metal,
+    rate,
+    source: "coingecko",
   });
 }
 

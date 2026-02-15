@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+
 import { headers } from "next/headers";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
-import { getAgentApiSummary, getAgentApiLinks } from "~/lib/agent-api-summary";
+import { getAgentApiLinks, getAgentApiSummary } from "~/lib/agent-api-summary";
 import {
   getAgentBaseUrl,
   getRequestBaseUrl,
@@ -21,25 +22,38 @@ import {
 const agentBase = getAgentBaseUrl();
 
 export const metadata: Metadata = {
-  title: `For AI Agents | ${SEO_CONFIG.name}`,
-  description:
-    "API-first store for AI agents. Sign in with Moltbook, browse products, my orders, preferences, and complete checkout with crypto. Start with GET /api/agent/capabilities.",
-  openGraph: {
-    title: `For AI Agents | ${SEO_CONFIG.name}`,
-    description:
-      "API-first store for AI agents. Sign in with Moltbook, browse products, checkout with crypto.",
-    type: "website",
-  },
   alternates: {
     canonical: agentBase ? `${agentBase}/for-agents` : undefined,
   },
+  description:
+    "API-first store for AI agents. Sign in with Moltbook, browse products, my orders, preferences, and complete checkout with crypto. Start with GET /api/agent/capabilities.",
+  openGraph: {
+    description:
+      "API-first store for AI agents. Sign in with Moltbook, browse products, checkout with crypto.",
+    title: `For AI Agents | ${SEO_CONFIG.name}`,
+    type: "website",
+  },
+  title: `For AI Agents | ${SEO_CONFIG.name}`,
 };
+
+export default async function ForAgentsPage() {
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "";
+  const useAgentFormat = isAgentSubdomain(host);
+  const apiBaseUrl = getRequestBaseUrl(host);
+
+  return useAgentFormat ? (
+    <ForAgentsPageAgentView apiBaseUrl={apiBaseUrl} />
+  ) : (
+    <ForAgentsPageHumanView apiBaseUrl={apiBaseUrl} />
+  );
+}
 
 /** Machine-readable summary for agents that parse the HTML. */
 function AgentApiSummaryScript({ apiBaseUrl }: { apiBaseUrl: string }) {
   const summary = getAgentApiSummary(apiBaseUrl);
   return (
-    <script type="application/json" id="agent-api-summary">
+    <script id="agent-api-summary" type="application/json">
       {JSON.stringify(summary)}
     </script>
   );
@@ -52,19 +66,39 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
   return (
     <article className="mx-auto max-w-3xl px-4 py-8 font-mono text-sm">
       <AgentApiSummaryScript apiBaseUrl={apiBaseUrl} />
-      <h1 className="mb-2 text-xl font-semibold text-neutral-900 dark:text-neutral-100">
+      <h1
+        className={`
+        mb-2 text-xl font-semibold text-neutral-900
+        dark:text-neutral-100
+      `}
+      >
         For the Cult — API for AI agents
       </h1>
-      <p className="mb-6 text-neutral-600 dark:text-neutral-400">
+      <p
+        className={`
+        mb-6 text-neutral-600
+        dark:text-neutral-400
+      `}
+      >
         API-first store. Browse products, optional Sign in with Moltbook,
         checkout with crypto. Start with GET /api/agent/capabilities.
       </p>
 
       <section className="mb-8">
-        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+        <h2
+          className={`
+          mb-2 text-base font-semibold text-neutral-800
+          dark:text-neutral-200
+        `}
+        >
           Quick start
         </h2>
-        <ol className="list-inside list-decimal space-y-1 text-neutral-700 dark:text-neutral-300">
+        <ol
+          className={`
+          list-inside list-decimal space-y-1 text-neutral-700
+          dark:text-neutral-300
+        `}
+        >
           <li>
             GET /api/agent/capabilities — endpoints, payment options, limits.
           </li>
@@ -81,10 +115,20 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       </section>
 
       <section className="mb-8">
-        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+        <h2
+          className={`
+          mb-2 text-base font-semibold text-neutral-800
+          dark:text-neutral-200
+        `}
+        >
           Checkout flow
         </h2>
-        <ol className="list-inside list-decimal space-y-1 text-neutral-700 dark:text-neutral-300">
+        <ol
+          className={`
+          list-inside list-decimal space-y-1 text-neutral-700
+          dark:text-neutral-300
+        `}
+        >
           <li>
             Discover products: GET /api/agent/products or POST
             /api/products/semantic-search (JSON body: &#123;&quot;query&quot;:
@@ -102,11 +146,19 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       </section>
 
       <section className="mb-8">
-        <h2 className="mb-3 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+        <h2
+          className={`
+          mb-3 text-base font-semibold text-neutral-800
+          dark:text-neutral-200
+        `}
+        >
           Endpoints (one per line)
         </h2>
         <pre
-          className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900"
+          className={`
+            overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4
+            dark:border-neutral-700 dark:bg-neutral-900
+          `}
           data-endpoints
         >
           {apiLinks.map((l) => `${l.method ?? "LINK"} ${l.href}`).join("\n")}
@@ -114,14 +166,27 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       </section>
 
       <section className="mb-8">
-        <h2 className="mb-3 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+        <h2
+          className={`
+          mb-3 text-base font-semibold text-neutral-800
+          dark:text-neutral-200
+        `}
+        >
           Endpoint reference
         </h2>
-        <dl className="space-y-3 text-neutral-700 dark:text-neutral-300">
+        <dl
+          className={`
+          space-y-3 text-neutral-700
+          dark:text-neutral-300
+        `}
+        >
           {apiLinks.map((l) => (
             <div
+              className={`
+                border-b border-neutral-100 pb-2
+                dark:border-neutral-800
+              `}
               key={l.href}
-              className="border-b border-neutral-100 pb-2 dark:border-neutral-800"
             >
               <dt className="font-semibold">
                 {l.title}
@@ -132,8 +197,13 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
                 ) : null}
               </dt>
               <dd className="mt-0.5">{l.description}</dd>
-              <dd className="mt-1 break-all text-xs text-blue-600 dark:text-blue-400">
-                <a href={l.href} target="_blank" rel="noopener noreferrer">
+              <dd
+                className={`
+                mt-1 text-xs break-all text-blue-600
+                dark:text-blue-400
+              `}
+              >
+                <a href={l.href} rel="noopener noreferrer" target="_blank">
                   {l.href}
                 </a>
               </dd>
@@ -143,12 +213,27 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       </section>
 
       <section className="mb-8">
-        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+        <h2
+          className={`
+          mb-2 text-base font-semibold text-neutral-800
+          dark:text-neutral-200
+        `}
+        >
           Error handling
         </h2>
-        <p className="text-neutral-700 dark:text-neutral-300">
+        <p
+          className={`
+          text-neutral-700
+          dark:text-neutral-300
+        `}
+        >
           API error responses (4xx/5xx) may include a{" "}
-          <code className="rounded bg-neutral-100 px-1 dark:bg-neutral-800">
+          <code
+            className={`
+            rounded bg-neutral-100 px-1
+            dark:bg-neutral-800
+          `}
+          >
             _suggestions
           </code>{" "}
           array with recommended next steps for agents.
@@ -156,42 +241,65 @@ function ForAgentsPageAgentView({ apiBaseUrl }: { apiBaseUrl: string }) {
       </section>
 
       <section>
-        <h2 className="mb-2 text-base font-semibold text-neutral-800 dark:text-neutral-200">
+        <h2
+          className={`
+          mb-2 text-base font-semibold text-neutral-800
+          dark:text-neutral-200
+        `}
+        >
           Links
         </h2>
-        <pre className="overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4 text-xs dark:border-neutral-700 dark:bg-neutral-900">
+        <pre
+          className={`
+          overflow-x-auto rounded border border-neutral-200 bg-neutral-50 p-4
+          text-xs
+          dark:border-neutral-700 dark:bg-neutral-900
+        `}
+        >
           <a
+            className={`
+              text-blue-600
+              dark:text-blue-400
+            `}
             href={summary.summaryUrl}
-            target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400"
+            target="_blank"
           >
             {summary.summaryUrl}
           </a>
           {"\n"}
           <a
+            className={`
+              text-blue-600
+              dark:text-blue-400
+            `}
             href={`${apiBaseUrl}/api/agent/capabilities`}
-            target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400"
+            target="_blank"
           >
             {apiBaseUrl}/api/agent/capabilities
           </a>
           {"\n"}
           <a
+            className={`
+              text-blue-600
+              dark:text-blue-400
+            `}
             href={`${apiBaseUrl}/api/openapi.json`}
-            target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400"
+            target="_blank"
           >
             {apiBaseUrl}/api/openapi.json
           </a>
           {"\n"}
           <a
+            className={`
+              text-blue-600
+              dark:text-blue-400
+            `}
             href={`${apiBaseUrl}/api/docs`}
-            target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 dark:text-blue-400"
+            target="_blank"
           >
             {apiBaseUrl}/api/docs
           </a>
@@ -206,18 +314,31 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
   const apiLinks = getAgentApiLinks(apiBaseUrl);
   const agentBase = getAgentBaseUrl();
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-3xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-10 border-b border-border pb-8">
-        <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1
+          className={`
+          font-heading text-3xl font-bold tracking-tight
+          sm:text-4xl
+        `}
+        >
           For AI agents
         </h1>
         <p className="mt-3 text-muted-foreground">
           This store is API-first. Bots can browse products, sign in with{" "}
           <a
+            className={`
+              underline
+              hover:no-underline
+            `}
             href="https://moltbook.com/developers.md"
-            target="_blank"
             rel="noopener noreferrer"
-            className="underline hover:no-underline"
+            target="_blank"
           >
             Moltbook
           </a>
@@ -285,7 +406,12 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
                 <CardTitle className="flex items-center gap-2 text-base">
                   {link.title}
                   {link.method && (
-                    <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs font-normal">
+                    <span
+                      className={`
+                      rounded bg-muted px-1.5 py-0.5 font-mono text-xs
+                      font-normal
+                    `}
+                    >
                       {link.method}
                     </span>
                   )}
@@ -294,10 +420,13 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
               </CardHeader>
               <CardContent>
                 <a
+                  className={`
+                    font-mono text-sm break-all text-primary underline
+                    hover:no-underline
+                  `}
                   href={link.href}
-                  target="_blank"
                   rel="noopener noreferrer"
-                  className="break-all font-mono text-sm text-primary underline hover:no-underline"
+                  target="_blank"
                 >
                   {link.href}
                 </a>
@@ -308,26 +437,13 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
       </section>
 
       <footer className="mt-12 flex flex-wrap gap-4 border-t border-border pt-8">
-        <Button variant="outline" asChild>
+        <Button asChild variant="outline">
           <Link href="/api/docs">API docs (Swagger)</Link>
         </Button>
-        <Button variant="ghost" asChild>
+        <Button asChild variant="ghost">
           <Link href="/">Back to store</Link>
         </Button>
       </footer>
     </div>
-  );
-}
-
-export default async function ForAgentsPage() {
-  const headersList = await headers();
-  const host = headersList.get("host") ?? "";
-  const useAgentFormat = isAgentSubdomain(host);
-  const apiBaseUrl = getRequestBaseUrl(host);
-
-  return useAgentFormat ? (
-    <ForAgentsPageAgentView apiBaseUrl={apiBaseUrl} />
-  ) : (
-    <ForAgentsPageHumanView apiBaseUrl={apiBaseUrl} />
   );
 }

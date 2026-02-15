@@ -14,30 +14,36 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type CategoryOption = { id: string; name: string };
-type ProductOption = { id: string; name: string };
+interface CategoryOption {
+  id: string;
+  name: string;
+}
+interface ProductOption {
+  id: string;
+  name: string;
+}
 
 const SCOPES = [
-  { value: "shipping", label: "Shipping" },
-  { value: "order", label: "Order (subtotal)" },
-  { value: "category", label: "Category" },
-  { value: "product", label: "Product / eSIM" },
+  { label: "Shipping", value: "shipping" },
+  { label: "Order (subtotal)", value: "order" },
+  { label: "Category", value: "category" },
+  { label: "Product / eSIM", value: "product" },
 ] as const;
 
 export default function AdminTierDiscountCreatePage() {
   const router = useRouter();
   const [optionsLoading, setOptionsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [categoryOptions, setCategoryOptions] = useState<CategoryOption[]>([]);
   const [productOptions, setProductOptions] = useState<ProductOption[]>([]);
 
   const [memberTier, setMemberTier] = useState(3);
   const [label, setLabel] = useState("");
   const [scope, setScope] = useState<
-    "shipping" | "order" | "category" | "product"
+    "category" | "order" | "product" | "shipping"
   >("order");
-  const [discountType, setDiscountType] = useState<"percent" | "fixed">(
+  const [discountType, setDiscountType] = useState<"fixed" | "percent">(
     "percent",
   );
   const [discountValue, setDiscountValue] = useState("");
@@ -106,23 +112,23 @@ export default function AdminTierDiscountCreatePage() {
       setSaving(true);
       try {
         const body: Record<string, unknown> = {
-          memberTier,
-          label: label.trim() || null,
-          scope,
+          appliesToEsim: scope === "product" && appliesToEsim ? 1 : null,
+          categoryId: scope === "category" ? categoryId.trim() || null : null,
           discountType,
           discountValue: val,
-          categoryId: scope === "category" ? categoryId.trim() || null : null,
+          label: label.trim() || null,
+          memberTier,
           productId:
             scope === "product" && !appliesToEsim
               ? productId.trim() || null
               : null,
-          appliesToEsim: scope === "product" && appliesToEsim ? 1 : null,
+          scope,
         };
         const res = await fetch(`${API_BASE}/api/admin/tier-discounts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify(body),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as {
@@ -157,20 +163,28 @@ export default function AdminTierDiscountCreatePage() {
           New tier discount
         </h2>
         <Link
+          className={`
+            text-sm text-muted-foreground
+            hover:text-foreground
+          `}
           href="/tier-discounts"
-          className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Back to tier discounts
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
             <CardTitle>Tier discount</CardTitle>
@@ -180,16 +194,21 @@ export default function AdminTierDiscountCreatePage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="memberTier" className={labelClass}>
+                <label className={labelClass} htmlFor="memberTier">
                   Member tier
                 </label>
                 <select
-                  id="memberTier"
-                  value={memberTier}
-                  onChange={(e) => setMemberTier(Number(e.target.value))}
                   className={inputClass}
+                  id="memberTier"
+                  onChange={(e) => setMemberTier(Number(e.target.value))}
+                  value={memberTier}
                 >
                   {[1, 2, 3, 4].map((t) => (
                     <option key={t} value={t}>
@@ -199,29 +218,29 @@ export default function AdminTierDiscountCreatePage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="label" className={labelClass}>
+                <label className={labelClass} htmlFor="label">
                   Label (optional)
                 </label>
                 <input
+                  className={inputClass}
                   id="label"
+                  onChange={(e) => setLabel(e.target.value)}
+                  placeholder="e.g. Tier 3: 20% off shipping"
                   type="text"
                   value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  className={inputClass}
-                  placeholder="e.g. Tier 3: 20% off shipping"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="scope" className={labelClass}>
+              <label className={labelClass} htmlFor="scope">
                 Scope
               </label>
               <select
-                id="scope"
-                value={scope}
-                onChange={(e) => setScope(e.target.value as typeof scope)}
                 className={inputClass}
+                id="scope"
+                onChange={(e) => setScope(e.target.value as typeof scope)}
+                value={scope}
               >
                 {SCOPES.map((s) => (
                   <option key={s.value} value={s.value}>
@@ -233,15 +252,15 @@ export default function AdminTierDiscountCreatePage() {
 
             {scope === "category" && (
               <div className="space-y-2">
-                <label htmlFor="categoryId" className={labelClass}>
+                <label className={labelClass} htmlFor="categoryId">
                   Category
                 </label>
                 <select
-                  id="categoryId"
-                  value={categoryId}
-                  onChange={(e) => setCategoryId(e.target.value)}
                   className={inputClass}
                   disabled={optionsLoading}
+                  id="categoryId"
+                  onChange={(e) => setCategoryId(e.target.value)}
+                  value={categoryId}
                 >
                   <option value="">Select category</option>
                   {categoryOptions.map((c) => (
@@ -258,10 +277,10 @@ export default function AdminTierDiscountCreatePage() {
                 <div className="space-y-2">
                   <label className="flex items-center gap-2">
                     <input
-                      type="checkbox"
                       checked={appliesToEsim}
-                      onChange={(e) => setAppliesToEsim(e.target.checked)}
                       className="size-4 rounded border-input"
+                      onChange={(e) => setAppliesToEsim(e.target.checked)}
+                      type="checkbox"
                     />
                     <span className="text-sm">Apply to all eSIMs</span>
                   </label>
@@ -272,15 +291,15 @@ export default function AdminTierDiscountCreatePage() {
                 </div>
                 {!appliesToEsim && (
                   <div className="space-y-2">
-                    <label htmlFor="productId" className={labelClass}>
+                    <label className={labelClass} htmlFor="productId">
                       Product
                     </label>
                     <select
-                      id="productId"
-                      value={productId}
-                      onChange={(e) => setProductId(e.target.value)}
                       className={inputClass}
                       disabled={optionsLoading}
+                      id="productId"
+                      onChange={(e) => setProductId(e.target.value)}
+                      value={productId}
                     >
                       <option value="">Select product</option>
                       {productOptions.map((p) => (
@@ -294,40 +313,45 @@ export default function AdminTierDiscountCreatePage() {
               </>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="discountType" className={labelClass}>
+                <label className={labelClass} htmlFor="discountType">
                   Discount type
                 </label>
                 <select
-                  id="discountType"
-                  value={discountType}
-                  onChange={(e) =>
-                    setDiscountType(e.target.value as "percent" | "fixed")
-                  }
                   className={inputClass}
+                  id="discountType"
+                  onChange={(e) =>
+                    setDiscountType(e.target.value as "fixed" | "percent")
+                  }
+                  value={discountType}
                 >
                   <option value="percent">Percent</option>
                   <option value="fixed">Fixed amount ($)</option>
                 </select>
               </div>
               <div className="space-y-2">
-                <label htmlFor="discountValue" className={labelClass}>
+                <label className={labelClass} htmlFor="discountValue">
                   Value {discountType === "percent" ? "(0–100)" : "($)"}
                 </label>
                 <input
-                  id="discountValue"
-                  type={discountType === "percent" ? "number" : "number"}
-                  min={0}
-                  max={discountType === "percent" ? 100 : undefined}
-                  step={discountType === "fixed" ? "0.01" : 1}
-                  value={discountValue}
-                  onChange={(e) => setDiscountValue(e.target.value)}
                   className={inputClass}
+                  id="discountValue"
+                  max={discountType === "percent" ? 100 : undefined}
+                  min={0}
+                  onChange={(e) => setDiscountValue(e.target.value)}
                   placeholder={
                     discountType === "percent" ? "e.g. 20" : "e.g. 5.00"
                   }
                   required
+                  step={discountType === "fixed" ? "0.01" : 1}
+                  type={discountType === "percent" ? "number" : "number"}
+                  value={discountValue}
                 />
               </div>
             </div>
@@ -335,7 +359,7 @@ export default function AdminTierDiscountCreatePage() {
         </Card>
 
         <div className="flex gap-2">
-          <Button type="submit" disabled={saving}>
+          <Button disabled={saving} type="submit">
             {saving ? "Creating…" : "Create tier discount"}
           </Button>
           <Link href="/tier-discounts">

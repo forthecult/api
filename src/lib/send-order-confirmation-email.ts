@@ -9,14 +9,14 @@ import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderConfirmationEmailParams {
-  to: string;
   orderId: string;
+  to: string;
 }
 
 export async function sendOrderConfirmationEmail(
   params: SendOrderConfirmationEmailParams,
 ): Promise<void> {
-  const { to, orderId } = params;
+  const { orderId, to } = params;
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("order_placed");
   const subject = template.emailSubject ?? "Order confirmed";
@@ -29,8 +29,8 @@ export async function sendOrderConfirmationEmail(
 
   const contentHtml = plainTextToHtml(body);
   const html = buildEmailHtml(contentHtml, {
-    ctaUrl: orderStatusUrl,
     ctaLabel: "View order",
+    ctaUrl: orderStatusUrl,
   });
 
   if (process.env.RESEND_API_KEY) {
@@ -44,10 +44,10 @@ export async function sendOrderConfirmationEmail(
           : "onboarding@resend.dev";
       await resend.emails.send({
         from,
-        to,
+        html,
         subject,
         text: body + `\n\nView order status: ${orderStatusUrl}`,
-        html,
+        to,
       });
     } catch (err) {
       console.error("[sendOrderConfirmationEmail] Resend send failed:", err);
@@ -59,9 +59,9 @@ export async function sendOrderConfirmationEmail(
     console.log(
       "[sendOrderConfirmationEmail] No RESEND_API_KEY - would send:",
       {
-        to,
-        subject,
         body: body.slice(0, 200),
+        subject,
+        to,
       },
     );
   }

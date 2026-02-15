@@ -1,8 +1,9 @@
 "use client";
 
+import type { Wallet } from "@solana/wallet-adapter-react";
+
 import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
-import type { Wallet } from "@solana/wallet-adapter-react";
 import { Lock, Wallet as WalletIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -18,89 +19,46 @@ const API_BASE =
       ? process.env.NEXT_PUBLIC_APP_URL
       : "";
 
-export type TokenGateResourceType = "product" | "category" | "page";
+export type TokenGateResourceType = "category" | "page" | "product";
 
-type TokenGateConfig = {
-  tokenGated: boolean;
-  gates: Array<{
-    tokenSymbol: string;
-    quantity: number;
-    network: string | null;
+interface TokenGateConfig {
+  gates: {
     gateType: string;
-  }>;
-};
+    network: null | string;
+    quantity: number;
+    tokenSymbol: string;
+  }[];
+  tokenGated: boolean;
+}
 
-type TokenGateGuardProps = {
-  resourceType: TokenGateResourceType;
-  resourceId: string;
+interface TokenGateGuardProps {
   /** When omitted or null, only the gate UI is shown (e.g. product page when not passed). */
   children?: React.ReactNode;
   /** Optional class for the gated overlay container */
   className?: string;
   /** When provided and user validates with no children, called instead of router.refresh (e.g. close modal and navigate). */
   onValidated?: () => void;
-};
-
-function WalletOption({
-  wallet,
-  onClick,
-  disabled,
-  isDetected,
-}: {
-  wallet: Wallet;
-  onClick: () => void;
-  disabled: boolean;
-  isDetected: boolean;
-}) {
-  const icon = wallet.adapter.icon;
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-        "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
-      )}
-    >
-      {icon && (
-        <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
-          <img
-            src={icon}
-            alt=""
-            className="object-contain"
-            width={32}
-            height={32}
-          />
-        </div>
-      )}
-      <span className="flex-1 font-medium">{wallet.adapter.name}</span>
-      {isDetected && (
-        <span className="rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-          Detected
-        </span>
-      )}
-    </button>
-  );
+  resourceId: string;
+  resourceType: TokenGateResourceType;
 }
 
 export function TokenGateGuard({
-  resourceType,
-  resourceId,
   children,
   className,
   onValidated,
+  resourceId,
+  resourceType,
 }: TokenGateGuardProps) {
   const router = useRouter();
-  const [config, setConfig] = useState<TokenGateConfig | null>(null);
+  const [config, setConfig] = useState<null | TokenGateConfig>(null);
   const [validated, setValidated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<"connect" | "signing" | "error">("connect");
+  const [step, setStep] = useState<"connect" | "error" | "signing">("connect");
   const [error, setError] = useState("");
   const signFlowStarted = useRef(false);
   const hasChildren = React.Children.count(children) > 0;
 
-  const { wallets, select, connect, publicKey, connected, signMessage } =
+  const { connect, connected, publicKey, select, signMessage, wallets } =
     useWallet();
 
   const solanaWallets = wallets.filter(
@@ -121,7 +79,7 @@ export function TokenGateGuard({
         const gateConfig = data.data ?? (data as unknown as TokenGateConfig);
         if (!cancelled) setConfig(gateConfig);
       } catch (e) {
-        if (!cancelled) setConfig({ tokenGated: false, gates: [] });
+        if (!cancelled) setConfig({ gates: [], tokenGated: false });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -166,13 +124,13 @@ export function TokenGateGuard({
         const challengeRes = await fetch(
           `${API_BASE}/api/token-gate/challenge`,
           {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               address,
-              resourceType,
               resourceId,
+              resourceType,
             }),
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
           },
         );
         if (!challengeRes.ok) throw new Error("Failed to get challenge");
@@ -183,18 +141,18 @@ export function TokenGateGuard({
         const rawResult = await signMessage(messageBytes);
         if (cancelled) return;
 
-        const sig: Uint8Array | string =
+        const sig: string | Uint8Array =
           rawResult &&
           typeof rawResult === "object" &&
           "signature" in rawResult &&
           (rawResult as { signature: unknown }).signature !== undefined
-            ? (rawResult as { signature: Uint8Array | string }).signature
+            ? (rawResult as { signature: string | Uint8Array }).signature
             : (rawResult as unknown as Uint8Array);
         const isBase58 =
           typeof sig === "string" &&
           /^[1-9A-HJ-NP-Za-km-z]+$/.test(sig) &&
           sig.length >= 80;
-        const bytes: Uint8Array | null =
+        const bytes: null | Uint8Array =
           typeof sig === "string"
             ? null
             : sig instanceof ArrayBuffer
@@ -223,20 +181,20 @@ export function TokenGateGuard({
         }
 
         const validateRes = await fetch(`${API_BASE}/api/token-gate/validate`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             address,
             message,
             ...(signatureBase64 ? { signature: signatureBase64 } : {}),
             ...(signatureBase58 ? { signatureBase58 } : {}),
-            resourceType,
             resourceId,
+            resourceType,
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         const validateData = (await validateRes.json()) as {
-          valid?: boolean;
           error?: string;
+          valid?: boolean;
         };
         if (cancelled) return;
 
@@ -290,7 +248,12 @@ export function TokenGateGuard({
           className,
         )}
       >
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+        <div
+          className={`
+          h-8 w-8 animate-spin rounded-full border-4 border-primary
+          border-t-transparent
+        `}
+        />
       </div>
     );
   }
@@ -301,7 +264,12 @@ export function TokenGateGuard({
       router.refresh();
       return (
         <div className="flex min-h-[280px] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+          <div
+            className={`
+            h-8 w-8 animate-spin rounded-full border-4 border-primary
+            border-t-transparent
+          `}
+          />
         </div>
       );
     }
@@ -309,24 +277,24 @@ export function TokenGateGuard({
   }
 
   /** Format network for display: "the Solana network", "the Ethereum network", or "EVM (Ethereum, Base, …)". */
-  function formatNetwork(network: string | null): string {
+  function formatNetwork(network: null | string): string {
     const n = (network ?? "solana").toLowerCase();
     switch (n) {
-      case "solana":
-        return "the Solana network";
-      case "ethereum":
-        return "the Ethereum network";
-      case "base":
-        return "the Base network";
       case "arbitrum":
         return "the Arbitrum network";
+      case "avalanche":
+        return "the Avalanche network";
+      case "base":
+        return "the Base network";
       case "bnb":
       case "bsc":
         return "the BNB Chain network";
+      case "ethereum":
+        return "the Ethereum network";
       case "polygon":
         return "the Polygon network";
-      case "avalanche":
-        return "the Avalanche network";
+      case "solana":
+        return "the Solana network";
       default:
         return n ? `the ${n} network` : "the required network";
     }
@@ -352,9 +320,17 @@ export function TokenGateGuard({
         className,
       )}
     >
-      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm">
+      <div
+        className={`
+        w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm
+      `}
+      >
         <div className="mb-6 flex flex-col items-center gap-3 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-primary/10">
+          <div
+            className={`
+            flex size-14 items-center justify-center rounded-full bg-primary/10
+          `}
+          >
             <Lock className="h-7 w-7 text-primary" />
           </div>
           <h2 className="text-2xl font-semibold">Token-gated content</h2>
@@ -365,7 +341,12 @@ export function TokenGateGuard({
         </div>
 
         {error && (
-          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <div
+            className={`
+            mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3
+            py-2 text-sm text-destructive
+          `}
+          >
             {error}
           </div>
         )}
@@ -389,13 +370,13 @@ export function TokenGateGuard({
                   )
                   .map((wallet) => (
                     <WalletOption
-                      key={wallet.adapter.name}
-                      wallet={wallet}
-                      onClick={() => handleSelectWallet(wallet)}
                       disabled={false}
                       isDetected={
                         wallet.readyState === WalletReadyState.Installed
                       }
+                      key={wallet.adapter.name}
+                      onClick={() => handleSelectWallet(wallet)}
+                      wallet={wallet}
                     />
                   ))}
               </div>
@@ -415,14 +396,14 @@ export function TokenGateGuard({
 
         {step === "error" && (
           <Button
-            type="button"
-            variant="outline"
             className="w-full"
             onClick={() => {
               setStep("connect");
               setError("");
               signFlowStarted.current = false;
             }}
+            type="button"
+            variant="outline"
           >
             <WalletIcon className="mr-2 h-4 w-4" />
             Try again
@@ -430,5 +411,66 @@ export function TokenGateGuard({
         )}
       </div>
     </div>
+  );
+}
+
+function WalletOption({
+  disabled,
+  isDetected,
+  onClick,
+  wallet,
+}: {
+  disabled: boolean;
+  isDetected: boolean;
+  onClick: () => void;
+  wallet: Wallet;
+}) {
+  const icon = wallet.adapter.icon;
+  return (
+    <button
+      className={cn(
+        `
+          flex w-full items-center gap-3 rounded-lg border border-border bg-card
+          px-4 py-3
+        `,
+        `
+          text-left transition-colors
+          hover:bg-muted/50
+          disabled:opacity-50
+        `,
+      )}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {icon && (
+        <div
+          className={`
+          flex size-8 shrink-0 items-center justify-center overflow-hidden
+          rounded-md bg-muted/20
+        `}
+        >
+          <img
+            alt=""
+            className="object-contain"
+            height={32}
+            src={icon}
+            width={32}
+          />
+        </div>
+      )}
+      <span className="flex-1 font-medium">{wallet.adapter.name}</span>
+      {isDetected && (
+        <span
+          className={`
+          rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium
+          text-green-700
+          dark:text-green-400
+        `}
+        >
+          Detected
+        </span>
+      )}
+    </button>
   );
 }

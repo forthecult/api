@@ -16,10 +16,10 @@ export function RefundRequestForm() {
   const [lookupValue, setLookupValue] = useState("");
   const [refundAddress, setRefundAddress] = useState("");
   const [lookupStatus, setLookupStatus] = useState<
-    "idle" | "loading" | "success" | "error"
+    "error" | "idle" | "loading" | "success"
   >("idle");
   const [submitStatus, setSubmitStatus] = useState<
-    "idle" | "loading" | "success" | "error"
+    "error" | "idle" | "loading" | "success"
   >("idle");
   const [isCrypto, setIsCrypto] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -45,13 +45,13 @@ export function RefundRequestForm() {
       setErrorMessage("");
       try {
         const res = await fetch("/api/refund/lookup", {
-          method: "POST",
+          body: JSON.stringify({ lookupValue: value, orderId: oid }),
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId: oid, lookupValue: value }),
+          method: "POST",
         });
         const data = (await res.json().catch(() => ({}))) as {
-          isCrypto?: boolean;
           error?: { code?: string; message?: string };
+          isCrypto?: boolean;
         };
         if (!res.ok) {
           setLookupStatus("error");
@@ -100,13 +100,13 @@ export function RefundRequestForm() {
       setErrorMessage("");
       try {
         const res = await fetch("/api/refund/request", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            orderId: oid,
             lookupValue: value,
+            orderId: oid,
             ...(isCrypto && refundAddr && { refundAddress: refundAddr }),
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         const data = (await res.json().catch(() => ({}))) as {
           error?: { code?: string; message?: string };
@@ -147,25 +147,25 @@ export function RefundRequestForm() {
       </CardHeader>
       <CardContent className="space-y-6">
         <form
-          onSubmit={lookupStatus !== "success" ? handleLookup : handleSubmit}
           className="space-y-4"
+          onSubmit={lookupStatus !== "success" ? handleLookup : handleSubmit}
         >
           <div className="space-y-2">
             <Label htmlFor="refund-order-id">Order ID</Label>
             <Input
-              id="refund-order-id"
+              autoComplete="off"
               className={inputClass}
-              type="text"
-              placeholder="e.g. ord_abc123..."
-              value={orderId}
+              disabled={
+                submitStatus === "loading" || submitStatus === "success"
+              }
+              id="refund-order-id"
               onChange={(e) => {
                 setOrderId(e.target.value);
                 if (lookupStatus !== "idle") setLookupStatus("idle");
               }}
-              autoComplete="off"
-              disabled={
-                submitStatus === "loading" || submitStatus === "success"
-              }
+              placeholder="e.g. ord_abc123..."
+              type="text"
+              value={orderId}
             />
           </div>
           <div className="space-y-2">
@@ -173,19 +173,19 @@ export function RefundRequestForm() {
               Email, payment address, or postal code
             </Label>
             <Input
-              id="refund-lookup"
+              autoComplete="off"
               className={inputClass}
-              type="text"
-              placeholder="Billing email, wallet address, or shipping postal code"
-              value={lookupValue}
+              disabled={
+                submitStatus === "loading" || submitStatus === "success"
+              }
+              id="refund-lookup"
               onChange={(e) => {
                 setLookupValue(e.target.value);
                 if (lookupStatus !== "idle") setLookupStatus("idle");
               }}
-              autoComplete="off"
-              disabled={
-                submitStatus === "loading" || submitStatus === "success"
-              }
+              placeholder="Billing email, wallet address, or shipping postal code"
+              type="text"
+              value={lookupValue}
             />
             <p className="text-xs text-muted-foreground">
               Enter any one of these so we can verify your order.
@@ -194,16 +194,23 @@ export function RefundRequestForm() {
 
           {lookupStatus !== "success" && (
             <Button
-              type="submit"
+              className={`
+                w-full
+                sm:w-auto
+              `}
               disabled={lookupStatus === "loading"}
-              className="w-full sm:w-auto"
+              type="submit"
             >
               {lookupStatus === "loading" ? "Looking up…" : "Look up order"}
             </Button>
           )}
 
           {showRefundAddressField && (
-            <div className="rounded-md border border-border bg-muted/30 p-4 space-y-2">
+            <div
+              className={`
+              space-y-2 rounded-md border border-border bg-muted/30 p-4
+            `}
+            >
               <p className="text-sm font-medium text-foreground">
                 This order was paid with crypto
               </p>
@@ -216,16 +223,16 @@ export function RefundRequestForm() {
                   Refund wallet address (stablecoin)
                 </Label>
                 <Input
-                  id="refund-address"
-                  className={inputClass}
-                  type="text"
-                  placeholder="Your wallet address for USDC or other stablecoin"
-                  value={refundAddress}
-                  onChange={(e) => setRefundAddress(e.target.value)}
                   autoComplete="off"
+                  className={inputClass}
                   disabled={
                     submitStatus === "loading" || submitStatus === "success"
                   }
+                  id="refund-address"
+                  onChange={(e) => setRefundAddress(e.target.value)}
+                  placeholder="Your wallet address for USDC or other stablecoin"
+                  type="text"
+                  value={refundAddress}
                 />
               </div>
             </div>
@@ -233,9 +240,12 @@ export function RefundRequestForm() {
 
           {lookupStatus === "success" && (
             <Button
-              type="submit"
+              className={`
+                w-full
+                sm:w-auto
+              `}
               disabled={submitStatus === "loading" || !canSubmit}
-              className="w-full sm:w-auto"
+              type="submit"
             >
               {submitStatus === "loading"
                 ? "Submitting…"
@@ -250,7 +260,12 @@ export function RefundRequestForm() {
           )}
 
           {submitStatus === "success" && (
-            <p className="rounded-md bg-green-50 p-3 text-sm text-green-800 dark:bg-green-950/30 dark:text-green-400">
+            <p
+              className={`
+              rounded-md bg-green-50 p-3 text-sm text-green-800
+              dark:bg-green-950/30 dark:text-green-400
+            `}
+            >
               Your refund request has been submitted. We’ll process it and
               notify you on the channels you’ve selected for transactional
               updates.

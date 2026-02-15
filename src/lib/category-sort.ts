@@ -34,7 +34,7 @@ const SUBCATEGORY_DISPLAY_ORDER: string[] = [
  * Sort subcategories by the preferred display order defined above.
  * Items not in the map are sorted alphabetically after mapped items.
  */
-export function sortSubcategories<T extends { slug: string; name: string }>(
+export function sortSubcategories<T extends { name: string; slug: string }>(
   items: T[],
 ): T[] {
   const orderMap = new Map(SUBCATEGORY_DISPLAY_ORDER.map((s, i) => [s, i]));

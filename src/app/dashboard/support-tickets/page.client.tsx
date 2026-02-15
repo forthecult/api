@@ -4,8 +4,9 @@ import { ChevronRight, Headphones, Loader2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import * as React from "react";
 
-import { formatDate } from "~/lib/format";
 import { useCurrentUser } from "~/lib/auth-client";
+import { cn } from "~/lib/cn";
+import { formatDate } from "~/lib/format";
 import { DASHBOARD_COUNTS_INVALIDATE } from "~/ui/components/dashboard-sidebar";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -15,19 +16,18 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import { cn } from "~/lib/cn";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
-type Ticket = {
+interface Ticket {
+  createdAt: string;
   id: string;
-  subject: string;
   message: string;
   status: string;
+  subject: string;
   type: string;
-  createdAt: string;
   updatedAt: string;
-};
+}
 
 export function SupportTicketsPageClient() {
   const { user } = useCurrentUser();
@@ -38,9 +38,9 @@ export function SupportTicketsPageClient() {
   const [newMessage, setNewMessage] = React.useState("");
   const [newType, setNewType] = React.useState<"normal" | "urgent">("normal");
   const [submitting, setSubmitting] = React.useState(false);
-  const [submitError, setSubmitError] = React.useState<string | null>(null);
-  const [submitSuccess, setSubmitSuccess] = React.useState<string | null>(null);
-  const [deletingId, setDeletingId] = React.useState<string | null>(null);
+  const [submitError, setSubmitError] = React.useState<null | string>(null);
+  const [submitSuccess, setSubmitSuccess] = React.useState<null | string>(null);
+  const [deletingId, setDeletingId] = React.useState<null | string>(null);
 
   const fetchTickets = React.useCallback(async () => {
     if (!user) return;
@@ -70,14 +70,14 @@ export function SupportTicketsPageClient() {
     setSubmitting(true);
     try {
       const res = await fetch("/api/support-tickets", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          subject: newSubject.trim(),
           message: newMessage.trim(),
+          subject: newSubject.trim(),
           type: newType,
         }),
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const json = (await res.json().catch(() => ({}))) as {
         error?: string;
@@ -114,8 +114,8 @@ export function SupportTicketsPageClient() {
     setDeletingId(ticketId);
     try {
       const res = await fetch(`/api/support-tickets/${ticketId}`, {
-        method: "DELETE",
         credentials: "include",
+        method: "DELETE",
       });
       if (!res.ok) {
         const json = (await res.json().catch(() => ({}))) as { error?: string };
@@ -141,7 +141,12 @@ export function SupportTicketsPageClient() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div className="flex items-center gap-2">
           <Headphones className="h-7 w-7" />
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -149,14 +154,14 @@ export function SupportTicketsPageClient() {
           </h1>
         </div>
         <Button
-          type="button"
+          className="gap-2"
           onClick={() => {
             setShowNewForm((v) => !v);
             setSubmitError(null);
             setSubmitSuccess(null);
           }}
+          type="button"
           variant={showNewForm ? "secondary" : "default"}
-          className="gap-2"
         >
           <Plus className="h-4 w-4" />
           {showNewForm ? "Cancel" : "New ticket"}
@@ -172,31 +177,38 @@ export function SupportTicketsPageClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleCreate} className="space-y-4">
+            <form className="space-y-4" onSubmit={handleCreate}>
               <div className="space-y-2">
                 <Label htmlFor="subject">Subject</Label>
                 <Input
                   id="subject"
-                  type="text"
-                  value={newSubject}
+                  maxLength={500}
                   onChange={(e) => setNewSubject(e.target.value)}
                   placeholder="e.g. Order not arrived"
-                  maxLength={500}
                   required
+                  type="text"
+                  value={newSubject}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="type">Priority</Label>
                 <select
+                  className={cn(
+                    `
+                      flex h-10 w-full rounded-md border border-input
+                      bg-background px-3 py-2 text-sm
+                    `,
+                    `
+                      ring-offset-background
+                      focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:outline-none
+                    `,
+                  )}
                   id="type"
-                  value={newType}
                   onChange={(e) =>
                     setNewType(e.target.value as "normal" | "urgent")
                   }
-                  className={cn(
-                    "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-                    "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  )}
+                  value={newType}
                 >
                   <option value="normal">Normal</option>
                   <option value="urgent">Urgent</option>
@@ -205,18 +217,25 @@ export function SupportTicketsPageClient() {
               <div className="space-y-2">
                 <Label htmlFor="message">Message</Label>
                 <textarea
-                  id="message"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Describe your issue in detail..."
-                  rows={4}
-                  maxLength={10000}
-                  required
                   className={cn(
-                    "flex min-h-[100px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm",
-                    "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    `
+                      flex min-h-[100px] w-full rounded-md border border-input
+                      bg-transparent px-3 py-2 text-sm
+                    `,
+                    `
+                      placeholder:text-muted-foreground
+                      focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:outline-none
+                    `,
                     "resize-none",
                   )}
+                  id="message"
+                  maxLength={10000}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  placeholder="Describe your issue in detail..."
+                  required
+                  rows={4}
+                  value={newMessage}
                 />
               </div>
               {submitError && (
@@ -226,13 +245,16 @@ export function SupportTicketsPageClient() {
               )}
               {submitSuccess && (
                 <p
-                  className="text-sm text-green-600 dark:text-green-400"
+                  className={`
+                    text-sm text-green-600
+                    dark:text-green-400
+                  `}
                   role="status"
                 >
                   {submitSuccess}
                 </p>
               )}
-              <Button type="submit" disabled={submitting}>
+              <Button disabled={submitting} type="submit">
                 {submitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -256,8 +278,13 @@ export function SupportTicketsPageClient() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex min-h-[120px] items-center justify-center text-muted-foreground">
-              <Loader2 className="h-6 w-6 animate-spin" aria-hidden />
+            <div
+              className={`
+              flex min-h-[120px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
+              <Loader2 aria-hidden className="h-6 w-6 animate-spin" />
             </div>
           ) : tickets.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
@@ -269,16 +296,20 @@ export function SupportTicketsPageClient() {
                 <li key={ticket.id}>
                   <div
                     className={cn(
-                      "flex flex-wrap items-center gap-3 py-4 pr-2 transition-colors hover:bg-muted/50",
+                      `
+                        flex flex-wrap items-center gap-3 py-4 pr-2
+                        transition-colors
+                        hover:bg-muted/50
+                      `,
                       "sm:flex-nowrap",
                     )}
                   >
                     <Link
-                      href={`/dashboard/support-tickets/${ticket.id}`}
                       className="min-w-0 flex-1"
+                      href={`/dashboard/support-tickets/${ticket.id}`}
                     >
-                      <p className="font-medium truncate">{ticket.subject}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                      <p className="truncate font-medium">{ticket.subject}</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         {formatDate(ticket.createdAt)}
                         <span className="mx-2">·</span>
                         {ticket.type === "urgent" ? "Urgent" : "Normal"}
@@ -286,11 +317,20 @@ export function SupportTicketsPageClient() {
                     </Link>
                     <span
                       className={cn(
-                        "inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium",
+                        `
+                          inline-flex shrink-0 rounded-full px-2.5 py-0.5
+                          text-xs font-medium
+                        `,
                         ticket.status === "open" &&
-                          "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200",
+                          `
+                            bg-green-100 text-green-800
+                            dark:bg-green-900/40 dark:text-green-200
+                          `,
                         ticket.status === "pending" &&
-                          "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+                          `
+                            bg-amber-100 text-amber-800
+                            dark:bg-amber-900/40 dark:text-amber-200
+                          `,
                         ticket.status === "closed" &&
                           "bg-muted text-muted-foreground",
                       )}
@@ -299,26 +339,32 @@ export function SupportTicketsPageClient() {
                         ticket.status.slice(1)}
                     </span>
                     <Button
+                      aria-label={`Delete ticket ${ticket.subject}`}
+                      className={`
+                        h-8 w-8 shrink-0 text-muted-foreground
+                        hover:text-destructive
+                      `}
+                      disabled={deletingId === ticket.id}
+                      onClick={(e) => void handleDelete(e, ticket.id)}
+                      size="icon"
                       type="button"
                       variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
-                      onClick={(e) => void handleDelete(e, ticket.id)}
-                      disabled={deletingId === ticket.id}
-                      aria-label={`Delete ticket ${ticket.subject}`}
                     >
                       {deletingId === ticket.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
                       ) : (
-                        <Trash2 className="h-4 w-4" aria-hidden />
+                        <Trash2 aria-hidden className="h-4 w-4" />
                       )}
                     </Button>
                     <Link
-                      href={`/dashboard/support-tickets/${ticket.id}`}
-                      className="shrink-0 text-muted-foreground hover:text-foreground"
                       aria-label={`View ticket ${ticket.subject}`}
+                      className={`
+                        shrink-0 text-muted-foreground
+                        hover:text-foreground
+                      `}
+                      href={`/dashboard/support-tickets/${ticket.id}`}
                     >
-                      <ChevronRight className="h-4 w-4" aria-hidden />
+                      <ChevronRight aria-hidden className="h-4 w-4" />
                     </Link>
                   </div>
                 </li>

@@ -1,13 +1,14 @@
+import type Stripe from "stripe";
+
 import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-import type Stripe from "stripe";
 
 import { db } from "~/db";
 import { affiliateTable, orderItemsTable, ordersTable } from "~/db/schema";
 import { resolveAffiliateForOrder } from "~/lib/affiliate";
 import { onOrderCreated } from "~/lib/create-user-notification";
-import { getStripe, getStripeWebhookSecret } from "~/lib/stripe";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
@@ -16,7 +17,7 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
+import { getStripe, getStripeWebhookSecret } from "~/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,14 +64,14 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ received: true });
       }
       if (order.status === "paid") {
-        return NextResponse.json({ received: true, duplicate: true });
+        return NextResponse.json({ duplicate: true, received: true });
       }
 
       await db
         .update(ordersTable)
         .set({
-          status: "paid",
           paymentStatus: "paid",
+          status: "paid",
           updatedAt: new Date(),
         })
         .where(eq(ordersTable.id, orderId));
@@ -78,10 +79,10 @@ export async function POST(request: NextRequest) {
       const now = new Date();
       const [updatedOrder] = await db
         .select({
-          affiliateId: ordersTable.affiliateId,
           affiliateCode: ordersTable.affiliateCode,
           affiliateCommissionCents: ordersTable.affiliateCommissionCents,
           affiliateDiscountCents: ordersTable.affiliateDiscountCents,
+          affiliateId: ordersTable.affiliateId,
         })
         .from(ordersTable)
         .where(eq(ordersTable.id, orderId))
@@ -100,9 +101,9 @@ export async function POST(request: NextRequest) {
         await db
           .update(affiliateTable)
           .set({
-            updatedAt: now,
             totalEarnedCents:
               current + (updatedOrder.affiliateCommissionCents ?? 0),
+            updatedAt: now,
           })
           .where(eq(affiliateTable.id, updatedOrder.affiliateId));
       }
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
         console.error("Error processing eSIM order:", esimError);
       }
 
-      return NextResponse.json({ received: true, orderId });
+      return NextResponse.json({ orderId, received: true });
     }
 
     if (event.type !== "checkout.session.completed") {
@@ -164,13 +165,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    type OrderItemMeta = {
-      productId: string;
-      productVariantId?: string;
+    interface OrderItemMeta {
       name: string;
       priceCents: number;
+      productId: string;
+      productVariantId?: string;
       quantity: number;
-    };
+    }
     let orderItems: OrderItemMeta[];
     try {
       orderItems = JSON.parse(orderItemsJson) as OrderItemMeta[];
@@ -239,8 +240,8 @@ export async function POST(request: NextRequest) {
     const [existingOrder] = await db
       .select({
         id: ordersTable.id,
-        status: ordersTable.status,
         paymentStatus: ordersTable.paymentStatus,
+        status: ordersTable.status,
       })
       .from(ordersTable)
       .where(eq(ordersTable.stripeCheckoutSessionId, session.id))
@@ -249,15 +250,15 @@ export async function POST(request: NextRequest) {
     if (existingOrder) {
       // If already paid, this is a duplicate webhook — skip
       if (existingOrder.paymentStatus === "paid") {
-        return NextResponse.json({ received: true, duplicate: true });
+        return NextResponse.json({ duplicate: true, received: true });
       }
 
       // Pre-created order (e.g. eSIM) — update status to paid and run fulfillment
       await db
         .update(ordersTable)
         .set({
-          status: "paid",
           paymentStatus: "paid",
+          status: "paid",
           updatedAt: new Date(),
         })
         .where(eq(ordersTable.id, existingOrder.id));
@@ -282,14 +283,14 @@ export async function POST(request: NextRequest) {
         console.error("Error processing eSIM order:", esimError);
       }
 
-      return NextResponse.json({ received: true, orderId: existingOrder.id });
+      return NextResponse.json({ orderId: existingOrder.id, received: true });
     }
 
     await db.insert(ordersTable).values({
-      id: orderId,
       createdAt: now,
       email,
       fulfillmentStatus: "unfulfilled",
+      id: orderId,
       paymentMethod: "stripe",
       paymentStatus: "paid",
       status: "paid",
@@ -299,10 +300,10 @@ export async function POST(request: NextRequest) {
       userId,
       ...shippingFromSession,
       ...(affiliateResult && {
-        affiliateId: affiliateResult.affiliate.affiliateId,
         affiliateCode: affiliateResult.affiliate.affiliateCode,
         affiliateCommissionCents: affiliateResult.affiliate.commissionCents,
         affiliateDiscountCents: affiliateResult.affiliate.discountCents,
+        affiliateId: affiliateResult.affiliate.affiliateId,
       }),
     });
 
@@ -330,8 +331,8 @@ export async function POST(request: NextRequest) {
       await db
         .update(affiliateTable)
         .set({
-          updatedAt: now,
           totalEarnedCents: current + affiliateResult.affiliate.commissionCents,
+          updatedAt: now,
         })
         .where(eq(affiliateTable.id, affiliateResult.affiliate.affiliateId));
     }
@@ -403,7 +404,7 @@ export async function POST(request: NextRequest) {
       // Don't fail the webhook - order is created, eSIM can be retried
     }
 
-    return NextResponse.json({ received: true, orderId });
+    return NextResponse.json({ orderId, received: true });
   } catch (err) {
     if (
       err instanceof Error &&

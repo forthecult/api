@@ -6,10 +6,10 @@ import { z } from "zod";
 
 // --- Order Item Schema ---
 export const orderItemSchema = z.object({
-  productId: z.string().min(1, "Product ID is required"),
-  productVariantId: z.string().optional(),
   name: z.string().optional(),
   priceCents: z.number().int().nonnegative().optional(),
+  productId: z.string().min(1, "Product ID is required"),
+  productVariantId: z.string().optional(),
   quantity: z.number().int().min(1, "Quantity must be at least 1"),
 });
 
@@ -17,31 +17,40 @@ export type OrderItemInput = z.infer<typeof orderItemSchema>;
 
 // --- Create Order Schema ---
 export const createOrderSchema = z.object({
-  reference: z.string().optional(),
+  // Affiliate referral code (from cookie or manual entry)
+  affiliateCode: z.string().trim().max(64).optional(),
+  // Discount (coupon) code — applied at checkout; backend validates and records redemption
+  couponCode: z.string().trim().max(64).optional(),
   email: z
     .string()
     .min(1, "Email is required")
     .email("Invalid email address")
     .transform((e) => e.trim().toLowerCase()),
+  emailMarketingConsent: z.boolean().optional(),
   orderItems: z
     .array(orderItemSchema)
     .min(1, "At least one order item is required"),
-  totalCents: z.number().int().nonnegative("Total must be non-negative"),
+  reference: z.string().optional(),
+  // Shipping address (optional). Only required for physical goods; digital-only orders often omit it.
+  shipping: z
+    .object({
+      address1: z.string().max(500).optional(),
+      address2: z.string().max(200).optional(),
+      city: z.string().max(100).optional(),
+      countryCode: z.string().max(10).optional(),
+      name: z.string().max(200).optional(),
+      phone: z.string().max(30).optional(),
+      stateCode: z.string().max(20).optional(),
+      zip: z.string().max(20).optional(),
+    })
+    .optional(),
   shippingFeeCents: z.number().int().nonnegative().optional().default(0),
-  taxCents: z.number().int().nonnegative().optional().default(0),
-  userId: z.string().nullable().optional(),
-  emailMarketingConsent: z.boolean().optional(),
   smsMarketingConsent: z.boolean().optional(),
+  taxCents: z.number().int().nonnegative().optional().default(0),
+  telegramFirstName: z.string().optional(),
   // Telegram Mini App — when order is placed from Telegram
   telegramUserId: z.string().optional(),
   telegramUsername: z.string().optional(),
-  telegramFirstName: z.string().optional(),
-  // Affiliate referral code (from cookie or manual entry)
-  affiliateCode: z.string().trim().max(64).optional(),
-  // Discount (coupon) code — applied at checkout; backend validates and records redemption
-  couponCode: z.string().trim().max(64).optional(),
-  // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).
-  wallet: z.string().trim().max(64).optional(),
   // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna | seeker)
   token: z
     .enum([
@@ -55,19 +64,10 @@ export const createOrderSchema = z.object({
       "seeker",
     ])
     .optional(),
-  // Shipping address (optional). Only required for physical goods; digital-only orders often omit it.
-  shipping: z
-    .object({
-      name: z.string().max(200).optional(),
-      address1: z.string().max(500).optional(),
-      address2: z.string().max(200).optional(),
-      city: z.string().max(100).optional(),
-      stateCode: z.string().max(20).optional(),
-      zip: z.string().max(20).optional(),
-      countryCode: z.string().max(10).optional(),
-      phone: z.string().max(30).optional(),
-    })
-    .optional(),
+  totalCents: z.number().int().nonnegative("Total must be non-negative"),
+  userId: z.string().nullable().optional(),
+  // Staking wallet for CULT member tier discounts (stacked with coupon/affiliate).
+  wallet: z.string().trim().max(64).optional(),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -75,53 +75,53 @@ export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 // Map full country names (uppercase) to ISO 2-letter codes for shipping API resilience.
 // Used when client sends country name instead of code (e.g. address autocomplete, persisted form).
 const COUNTRY_NAME_TO_CODE: Record<string, string> = {
-  "UNITED STATES": "US",
-  CANADA: "CA",
-  AUSTRALIA: "AU",
-  "NEW ZEALAND": "NZ",
-  GERMANY: "DE",
-  "UNITED KINGDOM": "GB",
-  SPAIN: "ES",
-  ITALY: "IT",
-  FRANCE: "FR",
-  NETHERLANDS: "NL",
-  JAPAN: "JP",
-  "HONG KONG": "HK",
-  ISRAEL: "IL",
-  "SOUTH KOREA": "KR",
-  "EL SALVADOR": "SV",
-  "UNITED ARAB EMIRATES": "AE",
-  MEXICO: "MX",
-  PHILIPPINES: "PH",
-  INDIA: "IN",
-  BRAZIL: "BR",
-  PANAMA: "PA",
   ARGENTINA: "AR",
-  "SAINT KITTS AND NEVIS": "KN",
-  "COSTA RICA": "CR",
+  AUSTRALIA: "AU",
+  AUSTRIA: "AT",
+  BELGIUM: "BE",
   BELIZE: "BZ",
+  BRAZIL: "BR",
+  CANADA: "CA",
   CHILE: "CL",
-  SWITZERLAND: "CH",
-  SINGAPORE: "SG",
-  ICELAND: "IS",
+  "COSTA RICA": "CR",
   DENMARK: "DK",
-  MONTENEGRO: "ME",
-  PORTUGAL: "PT",
-  POLAND: "PL",
+  "EL SALVADOR": "SV",
+  ESTONIA: "EE",
+  FIJI: "FJ",
   FINLAND: "FI",
+  FRANCE: "FR",
+  GERMANY: "DE",
+  "HONG KONG": "HK",
+  ICELAND: "IS",
+  INDIA: "IN",
+  IRELAND: "IE",
+  ISRAEL: "IL",
+  ITALY: "IT",
+  JAPAN: "JP",
+  LIECHTENSTEIN: "LI",
   LITHUANIA: "LT",
   LUXEMBOURG: "LU",
-  LIECHTENSTEIN: "LI",
-  BELGIUM: "BE",
-  SWEDEN: "SE",
-  IRELAND: "IE",
-  AUSTRIA: "AT",
+  MEXICO: "MX",
+  MONTENEGRO: "ME",
+  NETHERLANDS: "NL",
+  "NEW ZEALAND": "NZ",
   NORWAY: "NO",
-  ESTONIA: "EE",
-  "SAUDI ARABIA": "SA",
+  PANAMA: "PA",
+  PHILIPPINES: "PH",
+  POLAND: "PL",
+  PORTUGAL: "PT",
   QATAR: "QA",
+  "SAINT KITTS AND NEVIS": "KN",
+  "SAUDI ARABIA": "SA",
+  SINGAPORE: "SG",
+  "SOUTH KOREA": "KR",
+  SPAIN: "ES",
+  SWEDEN: "SE",
+  SWITZERLAND: "CH",
   TAIWAN: "TW",
-  FIJI: "FJ",
+  "UNITED ARAB EMIRATES": "AE",
+  "UNITED KINGDOM": "GB",
+  "UNITED STATES": "US",
 };
 
 /** Normalize country input to 2–3 letter ISO code. Safe to use for shipping/address. */
@@ -141,7 +141,7 @@ export const shippingCalculateSchema = z.object({
     .refine((c) => c.length >= 2 && c.length <= 3, {
       message: "Country code must be 2–3 characters or a valid country name",
     }),
-  orderValueCents: z.number().int().nonnegative().default(0),
+  couponCode: z.string().trim().min(1).optional(),
   items: z
     .array(
       z.object({
@@ -151,23 +151,23 @@ export const shippingCalculateSchema = z.object({
       }),
     )
     .default([]),
-  couponCode: z.string().trim().min(1).optional(),
+  orderValueCents: z.number().int().nonnegative().default(0),
 });
 
 export type ShippingCalculateInput = z.infer<typeof shippingCalculateSchema>;
 
 // --- Address Schema (for shipping/billing) ---
 export const addressSchema = z.object({
-  firstName: z.string().min(1, "First name is required").max(100),
-  lastName: z.string().min(1, "Last name is required").max(100),
-  company: z.string().max(200).optional(),
-  street: z.string().min(1, "Street address is required").max(500),
   apartment: z.string().max(100).optional(),
   city: z.string().min(1, "City is required").max(100),
-  state: z.string().max(100).optional(),
-  zip: z.string().min(1, "ZIP/Postal code is required").max(20),
+  company: z.string().max(200).optional(),
   country: z.string().min(2, "Country is required").max(100),
+  firstName: z.string().min(1, "First name is required").max(100),
+  lastName: z.string().min(1, "Last name is required").max(100),
   phone: z.string().max(30).optional(),
+  state: z.string().max(100).optional(),
+  street: z.string().min(1, "Street address is required").max(500),
+  zip: z.string().min(1, "ZIP/Postal code is required").max(20),
 });
 
 export type AddressInput = z.infer<typeof addressSchema>;
@@ -179,34 +179,19 @@ export const productIdSchema = z.object({
 
 // --- Pagination Schema ---
 export const paginationSchema = z.object({
-  page: z
-    .string()
-    .optional()
-    .transform((v) => Math.max(1, Number.parseInt(v || "1", 10))),
   limit: z
     .string()
     .optional()
     .transform((v) =>
       Math.min(100, Math.max(1, Number.parseInt(v || "20", 10))),
     ),
+  page: z
+    .string()
+    .optional()
+    .transform((v) => Math.max(1, Number.parseInt(v || "1", 10))),
 });
 
 export type PaginationInput = z.infer<typeof paginationSchema>;
-
-// --- Helper: Safe parse with error response ---
-export function validateOrThrow<T>(
-  schema: z.ZodType<T>,
-  data: unknown,
-): T | { error: string; details?: z.ZodIssue[] } {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    return {
-      error: "Validation failed",
-      details: result.error.issues,
-    };
-  }
-  return result.data;
-}
 
 /**
  * Validate request body and return parsed data or error response.
@@ -216,15 +201,30 @@ export function validateBody<T>(
   schema: z.ZodType<T>,
   body: unknown,
 ):
-  | { success: true; data: T }
-  | { success: false; error: string; issues: z.ZodIssue[] } {
+  | { data: T; success: true }
+  | { error: string; issues: z.ZodIssue[]; success: false } {
   const result = schema.safeParse(body);
   if (!result.success) {
     return {
-      success: false,
       error: result.error.issues.map((i) => i.message).join(", "),
       issues: result.error.issues,
+      success: false,
     };
   }
-  return { success: true, data: result.data };
+  return { data: result.data, success: true };
+}
+
+// --- Helper: Safe parse with error response ---
+export function validateOrThrow<T>(
+  schema: z.ZodType<T>,
+  data: unknown,
+): T | { details?: z.ZodIssue[]; error: string } {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    return {
+      details: result.error.issues,
+      error: "Validation failed",
+    };
+  }
+  return result.data;
 }

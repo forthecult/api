@@ -1,14 +1,14 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { productsTable, productVariantsTable } from "~/db/schema";
-import {
-  listAvailablePrintfulProducts,
-  getProductSyncStatus,
-} from "~/lib/printful-sync";
-import { fetchSyncProduct, getPrintfulIfConfigured } from "~/lib/printful";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { fetchSyncProduct, getPrintfulIfConfigured } from "~/lib/printful";
+import {
+  getProductSyncStatus,
+  listAvailablePrintfulProducts,
+} from "~/lib/printful-sync";
 
 /**
  * GET /api/admin/printful/products
@@ -61,15 +61,15 @@ export async function GET(request: NextRequest) {
   if (source === "printful" || !source) {
     const products = await db
       .select({
-        id: productsTable.id,
-        name: productsTable.name,
-        slug: productsTable.slug,
-        imageUrl: productsTable.imageUrl,
-        priceCents: productsTable.priceCents,
-        published: productsTable.published,
-        printfulSyncProductId: productsTable.printfulSyncProductId,
-        lastSyncedAt: productsTable.lastSyncedAt,
         createdAt: productsTable.createdAt,
+        id: productsTable.id,
+        imageUrl: productsTable.imageUrl,
+        lastSyncedAt: productsTable.lastSyncedAt,
+        name: productsTable.name,
+        priceCents: productsTable.priceCents,
+        printfulSyncProductId: productsTable.printfulSyncProductId,
+        published: productsTable.published,
+        slug: productsTable.slug,
         updatedAt: productsTable.updatedAt,
       })
       .from(productsTable)
@@ -88,15 +88,15 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      source: "local",
       count: productsWithVariants.length,
       products: productsWithVariants,
+      source: "local",
     });
   }
 
   // List products from Printful API
   if (source === "api") {
-    const { products, error } = await listAvailablePrintfulProducts();
+    const { error, products } = await listAvailablePrintfulProducts();
 
     if (error) {
       return NextResponse.json({ error }, { status: 500 });
@@ -121,9 +121,9 @@ export async function GET(request: NextRequest) {
     }));
 
     return NextResponse.json({
-      source: "printful_api",
       count: productsWithImportStatus.length,
       products: productsWithImportStatus,
+      source: "printful_api",
     });
   }
 

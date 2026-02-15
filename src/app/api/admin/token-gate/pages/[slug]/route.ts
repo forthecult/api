@@ -25,24 +25,24 @@ export async function GET(
 
     const rows = await db
       .select({
-        id: pageTokenGateTable.id,
-        tokenSymbol: pageTokenGateTable.tokenSymbol,
-        quantity: pageTokenGateTable.quantity,
-        network: pageTokenGateTable.network,
         contractAddress: pageTokenGateTable.contractAddress,
+        id: pageTokenGateTable.id,
+        network: pageTokenGateTable.network,
+        quantity: pageTokenGateTable.quantity,
+        tokenSymbol: pageTokenGateTable.tokenSymbol,
       })
       .from(pageTokenGateTable)
       .where(eq(pageTokenGateTable.pageSlug, pageSlug));
 
     const gates = rows.map((r) => ({
-      id: r.id,
-      tokenSymbol: r.tokenSymbol,
-      quantity: r.quantity,
-      network: r.network ?? null,
       contractAddress: r.contractAddress ?? null,
+      id: r.id,
+      network: r.network ?? null,
+      quantity: r.quantity,
+      tokenSymbol: r.tokenSymbol,
     }));
 
-    return NextResponse.json({ pageSlug, gates });
+    return NextResponse.json({ gates, pageSlug });
   } catch (err) {
     console.error("Admin page token gates get error:", err);
     return NextResponse.json(
@@ -72,13 +72,13 @@ export async function PATCH(
     }
 
     const body = (await request.json()) as {
-      gates?: Array<{
+      gates?: {
+        contractAddress?: null | string;
         id?: string;
-        tokenSymbol: string;
+        network?: null | string;
         quantity: number;
-        network?: string | null;
-        contractAddress?: string | null;
-      }>;
+        tokenSymbol: string;
+      }[];
     };
 
     const gates = Array.isArray(body.gates) ? body.gates : [];
@@ -94,35 +94,35 @@ export async function PATCH(
       const qty = Number(gate.quantity);
       if (!symbol || !Number.isInteger(qty) || qty < 1) continue;
       await db.insert(pageTokenGateTable).values({
-        id: gate.id ?? crypto.randomUUID(),
-        pageSlug,
-        tokenSymbol: symbol,
-        quantity: qty,
-        network: gate.network?.trim() || null,
         contractAddress: gate.contractAddress?.trim() || null,
+        id: gate.id ?? crypto.randomUUID(),
+        network: gate.network?.trim() || null,
+        pageSlug,
+        quantity: qty,
+        tokenSymbol: symbol,
       });
     }
 
     const rows = await db
       .select({
-        id: pageTokenGateTable.id,
-        tokenSymbol: pageTokenGateTable.tokenSymbol,
-        quantity: pageTokenGateTable.quantity,
-        network: pageTokenGateTable.network,
         contractAddress: pageTokenGateTable.contractAddress,
+        id: pageTokenGateTable.id,
+        network: pageTokenGateTable.network,
+        quantity: pageTokenGateTable.quantity,
+        tokenSymbol: pageTokenGateTable.tokenSymbol,
       })
       .from(pageTokenGateTable)
       .where(eq(pageTokenGateTable.pageSlug, pageSlug));
 
     const updatedGates = rows.map((r) => ({
-      id: r.id,
-      tokenSymbol: r.tokenSymbol,
-      quantity: r.quantity,
-      network: r.network ?? null,
       contractAddress: r.contractAddress ?? null,
+      id: r.id,
+      network: r.network ?? null,
+      quantity: r.quantity,
+      tokenSymbol: r.tokenSymbol,
     }));
 
-    return NextResponse.json({ pageSlug, gates: updatedGates });
+    return NextResponse.json({ gates: updatedGates, pageSlug });
   } catch (err) {
     console.error("Admin page token gates patch error:", err);
     return NextResponse.json(

@@ -3,22 +3,23 @@
  * POST: create a new proposal (optional: restrict to admin later).
  */
 
+import type { NextRequest } from "next/server";
+
 import { createId } from "@paralleldrive/cuid2";
 import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { z } from "zod";
 
 import { db } from "~/db";
 import { governanceProposalTable } from "~/db/schema";
-import { getAdminAuth, adminAuthFailureResponse } from "~/lib/admin-api-auth";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 const createProposalSchema = z.object({
-  title: z.string().min(1).max(500),
-  description: z.string().min(1).max(10000),
-  startAt: z.string().datetime(),
-  endAt: z.string().datetime(),
   createdBy: z.string().optional(),
+  description: z.string().min(1).max(10000),
+  endAt: z.string().datetime(),
+  startAt: z.string().datetime(),
+  title: z.string().min(1).max(500),
 });
 
 export async function GET(request: NextRequest) {
@@ -59,7 +60,7 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .offset(offset);
 
-    return NextResponse.json({ proposals, page, limit });
+    return NextResponse.json({ limit, page, proposals });
   } catch (e) {
     console.error("[governance] list proposals error:", e);
     return NextResponse.json(
@@ -78,11 +79,11 @@ export async function POST(request: NextRequest) {
     const parsed = createProposalSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: "Invalid body", details: parsed.error.flatten() },
+        { details: parsed.error.flatten(), error: "Invalid body" },
         { status: 400 },
       );
     }
-    const { title, description, startAt, endAt, createdBy } = parsed.data;
+    const { createdBy, description, endAt, startAt, title } = parsed.data;
     const start = new Date(startAt);
     const end = new Date(endAt);
     if (end <= start) {
@@ -96,15 +97,15 @@ export async function POST(request: NextRequest) {
     const status = start > now ? "draft" : end < now ? "ended" : "active";
 
     await db.insert(governanceProposalTable).values({
-      id,
-      title,
-      description,
-      status,
-      startAt: start,
-      endAt: end,
       createdAt: now,
-      updatedAt: now,
       createdBy: createdBy ?? null,
+      description,
+      endAt: end,
+      id,
+      startAt: start,
+      status,
+      title,
+      updatedAt: now,
     });
 
     return NextResponse.json({ id, status });

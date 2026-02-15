@@ -15,7 +15,12 @@ export default function NotFound() {
             moved.
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div
+          className={`
+          flex flex-col gap-3
+          sm:flex-row
+        `}
+        >
           <Link href="/products">
             <Button variant="default">
               <ShoppingBag className="mr-2 h-4 w-4" />

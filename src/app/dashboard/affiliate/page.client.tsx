@@ -3,10 +3,10 @@
 import { Link2, Loader2, Share2 } from "lucide-react";
 import * as React from "react";
 
-import { formatCents } from "~/lib/format";
-
 import { SEO_CONFIG } from "~/app";
 import { useCurrentUser } from "~/lib/auth-client";
+import { cn } from "~/lib/cn";
+import { formatCents } from "~/lib/format";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -15,73 +15,32 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import { cn } from "~/lib/cn";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
-type AffiliateStatus = "pending" | "approved" | "rejected" | "suspended";
-
-function XLogo({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className={className}
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
-
-function SnippetBlock({ label, text }: { label: string; text: string }) {
-  const [copied, setCopied] = React.useState(false);
-  const copy = () => {
-    void navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
-  return (
-    <div className="rounded-md border bg-muted/30 p-3">
-      <p className="mb-1.5 text-sm font-medium text-muted-foreground">
-        {label}
-      </p>
-      <p className="mb-2 break-all text-sm">{text}</p>
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={copy}
-        className="h-8 text-xs"
-      >
-        {copied ? "Copied!" : "Copy"}
-      </Button>
-    </div>
-  );
-}
-
-type AffiliateMe = {
-  id: string;
+interface AffiliateMe {
+  applicationNote: null | string;
   code: string;
-  status: AffiliateStatus;
   commissionType: string;
   commissionValue: number;
+  conversionCount: number;
+  createdAt: string;
+  id: string;
+  payoutAddress: null | string;
+  payoutMethod: null | string;
+  referralUrl: null | string;
+  status: AffiliateStatus;
   totalEarnedCents: number;
   totalPaidCents: number;
-  applicationNote: string | null;
-  payoutMethod: string | null;
-  payoutAddress: string | null;
-  createdAt: string;
-  conversionCount: number;
-  referralUrl: string | null;
-};
+}
+
+type AffiliateStatus = "approved" | "pending" | "rejected" | "suspended";
 
 export function AffiliatePageClient() {
   const { user } = useCurrentUser();
-  const [data, setData] = React.useState<{
+  const [data, setData] = React.useState<null | {
     affiliate: AffiliateMe | null;
-  } | null>(null);
+  }>(null);
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState(false);
   const [applying, setApplying] = React.useState(false);
@@ -89,23 +48,23 @@ export function AffiliatePageClient() {
   const [applyPayoutMethod, setApplyPayoutMethod] = React.useState("");
   const [applyPayoutAddress, setApplyPayoutAddress] = React.useState("");
   const [applyNote, setApplyNote] = React.useState("");
-  const [applySuccess, setApplySuccess] = React.useState<string | null>(null);
-  const [applyError, setApplyError] = React.useState<string | null>(null);
+  const [applySuccess, setApplySuccess] = React.useState<null | string>(null);
+  const [applyError, setApplyError] = React.useState<null | string>(null);
 
   const [payoutMethod, setPayoutMethod] = React.useState("");
   const [payoutAddress, setPayoutAddress] = React.useState("");
   const [payoutSaving, setPayoutSaving] = React.useState(false);
-  const [payoutMessage, setPayoutMessage] = React.useState<{
-    type: "success" | "error";
+  const [payoutMessage, setPayoutMessage] = React.useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
 
   const [codeEdit, setCodeEdit] = React.useState("");
   const [codeSaving, setCodeSaving] = React.useState(false);
-  const [codeMessage, setCodeMessage] = React.useState<{
-    type: "success" | "error";
+  const [codeMessage, setCodeMessage] = React.useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
 
   React.useEffect(() => {
     if (!user) return;
@@ -113,7 +72,7 @@ export function AffiliatePageClient() {
     setLoadError(false);
     fetch("/api/affiliates/me", { credentials: "include", signal: ac.signal })
       .then((res) => (res.ok ? res.json() : null))
-      .then((d: { affiliate: AffiliateMe | null } | null) => d && setData(d))
+      .then((d: null | { affiliate: AffiliateMe | null }) => d && setData(d))
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setLoadError(true);
@@ -144,15 +103,15 @@ export function AffiliatePageClient() {
     setApplying(true);
     try {
       const res = await fetch("/api/affiliates/apply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          code: applyCode.trim() || undefined,
           applicationNote: applyNote.trim() || undefined,
-          payoutMethod: applyPayoutMethod.trim() || undefined,
+          code: applyCode.trim() || undefined,
           payoutAddress: applyPayoutAddress.trim() || undefined,
+          payoutMethod: applyPayoutMethod.trim() || undefined,
         }),
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -162,19 +121,19 @@ export function AffiliatePageClient() {
       setApplySuccess(json.message ?? "Application submitted.");
       setData({
         affiliate: {
-          id: json.id,
+          applicationNote: applyNote.trim() || null,
           code: json.code,
-          status: "pending",
           commissionType: "percent",
           commissionValue: 10,
+          conversionCount: 0,
+          createdAt: new Date().toISOString(),
+          id: json.id,
+          payoutAddress: applyPayoutAddress.trim() || null,
+          payoutMethod: applyPayoutMethod.trim() || null,
+          referralUrl: null,
+          status: "pending",
           totalEarnedCents: 0,
           totalPaidCents: 0,
-          applicationNote: applyNote.trim() || null,
-          payoutMethod: applyPayoutMethod.trim() || null,
-          payoutAddress: applyPayoutAddress.trim() || null,
-          createdAt: new Date().toISOString(),
-          conversionCount: 0,
-          referralUrl: null,
         },
       });
       setApplyCode("");
@@ -195,22 +154,22 @@ export function AffiliatePageClient() {
     setCodeSaving(true);
     try {
       const res = await fetch("/api/affiliates/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: newCode }),
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         setCodeMessage({
-          type: "error",
           text: json.error ?? "Failed to update code.",
+          type: "error",
         });
         return;
       }
       setCodeMessage({
-        type: "success",
         text: json.message ?? "Code updated.",
+        type: "success",
       });
       const baseUrl =
         typeof process.env.NEXT_PUBLIC_APP_URL === "string"
@@ -243,31 +202,31 @@ export function AffiliatePageClient() {
     setPayoutSaving(true);
     try {
       const res = await fetch("/api/affiliates/me", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          payoutMethod: payoutMethod.trim() || null,
           payoutAddress: payoutAddress.trim() || null,
+          payoutMethod: payoutMethod.trim() || null,
         }),
         credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
         setPayoutMessage({
-          type: "error",
           text: json.error ?? "Failed to save.",
+          type: "error",
         });
         return;
       }
-      setPayoutMessage({ type: "success", text: "Payout settings saved." });
+      setPayoutMessage({ text: "Payout settings saved.", type: "success" });
       setData((prev) =>
         prev?.affiliate
           ? {
               ...prev,
               affiliate: {
                 ...prev.affiliate,
-                payoutMethod: payoutMethod.trim() || null,
                 payoutAddress: payoutAddress.trim() || null,
+                payoutMethod: payoutMethod.trim() || null,
               },
             }
           : prev,
@@ -286,8 +245,8 @@ export function AffiliatePageClient() {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2
-          className="h-8 w-8 animate-spin text-muted-foreground"
           aria-hidden
+          className="h-8 w-8 animate-spin text-muted-foreground"
         />
       </div>
     );
@@ -300,9 +259,9 @@ export function AffiliatePageClient() {
           Failed to load affiliate data. Please try again.
         </p>
         <button
-          type="button"
           className="text-sm text-primary underline"
           onClick={() => window.location.reload()}
+          type="button"
         >
           Refresh
         </button>
@@ -335,38 +294,50 @@ export function AffiliatePageClient() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleApply} className="space-y-4">
+            <form className="space-y-4" onSubmit={handleApply}>
               <div className="space-y-2">
                 <Label htmlFor="applyCode">
                   Your affiliate code (optional)
                 </Label>
                 <Input
+                  aria-describedby="applyCodeHint"
+                  className="font-mono uppercase"
                   id="applyCode"
+                  maxLength={24}
+                  onChange={(e) => setApplyCode(e.target.value)}
                   placeholder="e.g. MYCODE"
                   value={applyCode}
-                  onChange={(e) => setApplyCode(e.target.value)}
-                  maxLength={24}
-                  className="font-mono uppercase"
-                  aria-describedby="applyCodeHint"
                 />
-                <p id="applyCodeHint" className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground" id="applyCodeHint">
                   Letters and numbers only, 4–24 characters. Leave blank for a
                   random code.
                 </p>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+              `}
+              >
                 <div className="space-y-2">
                   <Label htmlFor="applyPayoutMethod">
                     Payout method (optional)
                   </Label>
                   <select
-                    id="applyPayoutMethod"
-                    value={applyPayoutMethod}
-                    onChange={(e) => setApplyPayoutMethod(e.target.value)}
                     className={cn(
-                      "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-                      "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                      `
+                        flex h-10 w-full rounded-md border border-input
+                        bg-background px-3 py-2 text-sm
+                      `,
+                      `
+                        ring-offset-background
+                        focus-visible:ring-2 focus-visible:ring-ring
+                        focus-visible:outline-none
+                      `,
                     )}
+                    id="applyPayoutMethod"
+                    onChange={(e) => setApplyPayoutMethod(e.target.value)}
+                    value={applyPayoutMethod}
                   >
                     <option value="">—</option>
                     <option value="paypal">PayPal</option>
@@ -381,14 +352,14 @@ export function AffiliatePageClient() {
                   </Label>
                   <Input
                     id="applyPayoutAddress"
+                    maxLength={500}
+                    onChange={(e) => setApplyPayoutAddress(e.target.value)}
                     placeholder={
                       applyPayoutMethod === "paypal"
                         ? "satoshi@nakamoto.com"
                         : "Wallet address"
                     }
                     value={applyPayoutAddress}
-                    onChange={(e) => setApplyPayoutAddress(e.target.value)}
-                    maxLength={500}
                   />
                 </div>
               </div>
@@ -397,16 +368,24 @@ export function AffiliatePageClient() {
                   Why do you want to be an affiliate? (optional)
                 </Label>
                 <textarea
-                  id="applicationNote"
-                  placeholder="Tell us a bit about yourself and how you plan to promote us."
-                  value={applyNote}
-                  onChange={(e) => setApplyNote(e.target.value)}
-                  rows={4}
                   className={cn(
-                    "flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs",
-                    "placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50",
+                    `
+                      flex min-h-[80px] w-full rounded-md border border-input
+                      bg-transparent px-3 py-2 text-sm shadow-xs
+                    `,
+                    `
+                      placeholder:text-muted-foreground
+                      focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:outline-none
+                      disabled:cursor-not-allowed disabled:opacity-50
+                    `,
                     "resize-none",
                   )}
+                  id="applicationNote"
+                  onChange={(e) => setApplyNote(e.target.value)}
+                  placeholder="Tell us a bit about yourself and how you plan to promote us."
+                  rows={4}
+                  value={applyNote}
                 />
               </div>
               {applyError && (
@@ -416,13 +395,16 @@ export function AffiliatePageClient() {
               )}
               {applySuccess && (
                 <p
-                  className="text-sm text-green-600 dark:text-green-400"
+                  className={`
+                    text-sm text-green-600
+                    dark:text-green-400
+                  `}
                   role="status"
                 >
                   {applySuccess}
                 </p>
               )}
-              <Button type="submit" disabled={applying}>
+              <Button disabled={applying} type="submit">
                 {applying ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -439,12 +421,27 @@ export function AffiliatePageClient() {
         <>
           {isPending && (
             <>
-              <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-950/20">
+              <Card
+                className={`
+                border-amber-200 bg-amber-50/50
+                dark:border-amber-900/50 dark:bg-amber-950/20
+              `}
+              >
                 <CardContent className="pt-6">
-                  <p className="font-medium text-amber-800 dark:text-amber-200">
+                  <p
+                    className={`
+                    font-medium text-amber-800
+                    dark:text-amber-200
+                  `}
+                  >
                     Your application is under review.
                   </p>
-                  <p className="mt-1 text-sm text-amber-700 dark:text-amber-300">
+                  <p
+                    className={`
+                    mt-1 text-sm text-amber-700
+                    dark:text-amber-300
+                  `}
+                  >
                     We&apos;ll notify you once it&apos;s approved; you&apos;ll
                     get your referral link after approval.
                   </p>
@@ -459,12 +456,13 @@ export function AffiliatePageClient() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleCodeSave} className="space-y-2">
+                  <form className="space-y-2" onSubmit={handleCodeSave}>
                     <div className="flex gap-2">
                       <Input
+                        aria-describedby="codeEditPendingHint"
+                        className="max-w-[180px] font-mono uppercase"
                         id="codeEditPending"
-                        type="text"
-                        value={codeEdit}
+                        maxLength={24}
                         onChange={(e) =>
                           setCodeEdit(
                             e.target.value
@@ -473,18 +471,17 @@ export function AffiliatePageClient() {
                           )
                         }
                         placeholder="e.g. MYCODE"
-                        maxLength={24}
-                        className="font-mono uppercase max-w-[180px]"
-                        aria-describedby="codeEditPendingHint"
+                        type="text"
+                        value={codeEdit}
                       />
                       <Button
-                        type="submit"
                         disabled={
                           codeSaving ||
                           codeEdit.trim().toUpperCase().replace(/\s/g, "") ===
                             affiliate.code ||
                           codeEdit.trim().length < 4
                         }
+                        type="submit"
                       >
                         {codeSaving ? (
                           <>
@@ -497,8 +494,8 @@ export function AffiliatePageClient() {
                       </Button>
                     </div>
                     <p
-                      id="codeEditPendingHint"
                       className="text-sm text-muted-foreground"
+                      id="codeEditPendingHint"
                     >
                       Letters and numbers only, 4–24 characters.
                     </p>
@@ -507,7 +504,10 @@ export function AffiliatePageClient() {
                         className={cn(
                           "text-sm",
                           codeMessage.type === "success"
-                            ? "text-green-600 dark:text-green-400"
+                            ? `
+                              text-green-600
+                              dark:text-green-400
+                            `
                             : "text-destructive",
                         )}
                       >
@@ -521,9 +521,19 @@ export function AffiliatePageClient() {
           )}
 
           {isRejected && (
-            <Card className="border-red-200 dark:border-red-900/50">
+            <Card
+              className={`
+              border-red-200
+              dark:border-red-900/50
+            `}
+            >
               <CardContent className="pt-6">
-                <p className="font-medium text-red-800 dark:text-red-200">
+                <p
+                  className={`
+                  font-medium text-red-800
+                  dark:text-red-200
+                `}
+                >
                   Your application was not approved.
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -545,25 +555,26 @@ export function AffiliatePageClient() {
               <CardContent className="space-y-4">
                 <div className="flex gap-2">
                   <Input
+                    className="font-mono text-sm"
                     readOnly
                     value={affiliate.referralUrl ?? ""}
-                    className="font-mono text-sm"
                   />
                   <Button
+                    onClick={copyReferralUrl}
                     type="button"
                     variant="outline"
-                    onClick={copyReferralUrl}
                   >
                     Copy
                   </Button>
                 </div>
-                <form onSubmit={handleCodeSave} className="space-y-2">
+                <form className="space-y-2" onSubmit={handleCodeSave}>
                   <Label htmlFor="codeEdit">Your referral code</Label>
                   <div className="flex gap-2">
                     <Input
+                      aria-describedby="codeEditHint"
+                      className="max-w-[180px] font-mono uppercase"
                       id="codeEdit"
-                      type="text"
-                      value={codeEdit}
+                      maxLength={24}
                       onChange={(e) =>
                         setCodeEdit(
                           e.target.value
@@ -572,18 +583,17 @@ export function AffiliatePageClient() {
                         )
                       }
                       placeholder="e.g. MYCODE"
-                      maxLength={24}
-                      className="font-mono uppercase max-w-[180px]"
-                      aria-describedby="codeEditHint"
+                      type="text"
+                      value={codeEdit}
                     />
                     <Button
-                      type="submit"
                       disabled={
                         codeSaving ||
                         codeEdit.trim().toUpperCase().replace(/\s/g, "") ===
                           affiliate.code ||
                         codeEdit.trim().length < 4
                       }
+                      type="submit"
                     >
                       {codeSaving ? (
                         <>
@@ -596,8 +606,8 @@ export function AffiliatePageClient() {
                     </Button>
                   </div>
                   <p
-                    id="codeEditHint"
                     className="text-sm text-muted-foreground"
+                    id="codeEditHint"
                   >
                     Letters and numbers only, 4–24 characters. Changing your
                     code invalidates your previous referral link.
@@ -607,7 +617,10 @@ export function AffiliatePageClient() {
                       className={cn(
                         "text-sm",
                         codeMessage.type === "success"
-                          ? "text-green-600 dark:text-green-400"
+                          ? `
+                            text-green-600
+                            dark:text-green-400
+                          `
                           : "text-destructive",
                       )}
                     >
@@ -628,9 +641,18 @@ export function AffiliatePageClient() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <dl className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <dl
+                  className={`
+                  grid grid-cols-2 gap-4
+                  sm:grid-cols-4
+                `}
+                >
                   <div>
-                    <dt className="text-sm font-medium uppercase text-muted-foreground">
+                    <dt
+                      className={`
+                      text-sm font-medium text-muted-foreground uppercase
+                    `}
+                    >
                       Conversions
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -638,7 +660,11 @@ export function AffiliatePageClient() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium uppercase text-muted-foreground">
+                    <dt
+                      className={`
+                      text-sm font-medium text-muted-foreground uppercase
+                    `}
+                    >
                       Total earned
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -646,7 +672,11 @@ export function AffiliatePageClient() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium uppercase text-muted-foreground">
+                    <dt
+                      className={`
+                      text-sm font-medium text-muted-foreground uppercase
+                    `}
+                    >
                       Paid out
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -654,7 +684,11 @@ export function AffiliatePageClient() {
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-sm font-medium uppercase text-muted-foreground">
+                    <dt
+                      className={`
+                      text-sm font-medium text-muted-foreground uppercase
+                    `}
+                    >
                       Pending
                     </dt>
                     <dd className="mt-1 text-2xl font-semibold tabular-nums">
@@ -696,18 +730,30 @@ export function AffiliatePageClient() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handlePayoutSave} className="space-y-4">
-                  <div className="grid gap-4 sm:grid-cols-2">
+                <form className="space-y-4" onSubmit={handlePayoutSave}>
+                  <div
+                    className={`
+                    grid gap-4
+                    sm:grid-cols-2
+                  `}
+                  >
                     <div className="space-y-2">
                       <Label htmlFor="payoutMethod">Payout method</Label>
                       <select
-                        id="payoutMethod"
-                        value={payoutMethod}
-                        onChange={(e) => setPayoutMethod(e.target.value)}
                         className={cn(
-                          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm",
-                          "ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                          `
+                            flex h-10 w-full rounded-md border border-input
+                            bg-background px-3 py-2 text-sm
+                          `,
+                          `
+                            ring-offset-background
+                            focus-visible:ring-2 focus-visible:ring-ring
+                            focus-visible:outline-none
+                          `,
                         )}
+                        id="payoutMethod"
+                        onChange={(e) => setPayoutMethod(e.target.value)}
+                        value={payoutMethod}
                       >
                         <option value="">—</option>
                         <option value="paypal">PayPal</option>
@@ -724,15 +770,15 @@ export function AffiliatePageClient() {
                       </Label>
                       <Input
                         id="payoutAddress"
-                        type={payoutMethod === "paypal" ? "email" : "text"}
+                        maxLength={500}
+                        onChange={(e) => setPayoutAddress(e.target.value)}
                         placeholder={
                           payoutMethod === "paypal"
                             ? "satoshi@nakamoto.com"
                             : "Wallet address"
                         }
+                        type={payoutMethod === "paypal" ? "email" : "text"}
                         value={payoutAddress}
-                        onChange={(e) => setPayoutAddress(e.target.value)}
-                        maxLength={500}
                       />
                     </div>
                   </div>
@@ -741,14 +787,17 @@ export function AffiliatePageClient() {
                       className={cn(
                         "text-sm",
                         payoutMessage.type === "success"
-                          ? "text-green-600 dark:text-green-400"
+                          ? `
+                            text-green-600
+                            dark:text-green-400
+                          `
                           : "text-destructive",
                       )}
                     >
                       {payoutMessage.text}
                     </p>
                   )}
-                  <Button type="submit" disabled={payoutSaving}>
+                  <Button disabled={payoutSaving} type="submit">
                     {payoutSaving ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -775,37 +824,37 @@ export function AffiliatePageClient() {
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   <Button
+                    asChild
+                    className="gap-2"
+                    size="sm"
                     type="button"
                     variant="outline"
-                    size="sm"
-                    className="gap-2"
-                    asChild
                   >
                     <a
+                      aria-label="Share on X (Twitter)"
                       href={`https://twitter.com/intent/tweet?${new URLSearchParams(
                         {
                           text: `Shop ${SEO_CONFIG.name} — quality apparel & essentials. Use my link:`,
                           url: affiliate.referralUrl,
                         },
                       ).toString()}`}
-                      target="_blank"
                       rel="noopener noreferrer"
-                      aria-label="Share on X (Twitter)"
+                      target="_blank"
                     >
                       <XLogo className="h-4 w-4" />
                       Share on X
                     </a>
                   </Button>
                   <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
+                    aria-label="Copy tweet to clipboard"
                     className="gap-2"
                     onClick={() => {
                       const tweet = `Shop ${SEO_CONFIG.name} — quality apparel & essentials. Use my link: ${affiliate.referralUrl}`;
                       void navigator.clipboard.writeText(tweet);
                     }}
-                    aria-label="Copy tweet to clipboard"
+                    size="sm"
+                    type="button"
+                    variant="outline"
                   >
                     <Share2 className="h-4 w-4" />
                     Copy tweet
@@ -836,5 +885,45 @@ export function AffiliatePageClient() {
         </>
       )}
     </div>
+  );
+}
+
+function SnippetBlock({ label, text }: { label: string; text: string }) {
+  const [copied, setCopied] = React.useState(false);
+  const copy = () => {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+  return (
+    <div className="rounded-md border bg-muted/30 p-3">
+      <p className="mb-1.5 text-sm font-medium text-muted-foreground">
+        {label}
+      </p>
+      <p className="mb-2 text-sm break-all">{text}</p>
+      <Button
+        className="h-8 text-xs"
+        onClick={copy}
+        size="sm"
+        type="button"
+        variant="ghost"
+      >
+        {copied ? "Copied!" : "Copy"}
+      </Button>
+    </div>
+  );
+}
+
+function XLogo({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+    >
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
   );
 }

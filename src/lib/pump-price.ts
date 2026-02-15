@@ -3,11 +3,11 @@
  * Uses @pump-fun/pump-swap-sdk; no third-party price APIs.
  */
 
-import { type Connection, PublicKey } from "@solana/web3.js";
 import {
-  OnlinePumpAmmSdk,
   canonicalPumpPoolPda,
+  OnlinePumpAmmSdk,
 } from "@pump-fun/pump-swap-sdk";
+import { type Connection, PublicKey } from "@solana/web3.js";
 
 /** Dummy user used only to fetch pool state (we only need poolBaseAmount / poolQuoteAmount). */
 const DUMMY_USER = new PublicKey("11111111111111111111111111111111");
@@ -24,7 +24,7 @@ export async function getPumpTokenPriceInSol(
     const sdk = new OnlinePumpAmmSdk(connection);
     const poolKey = canonicalPumpPoolPda(baseMint);
     const state = await sdk.swapSolanaState(poolKey, DUMMY_USER);
-    const { poolBaseAmount, poolQuoteAmount, baseMintAccount } = state;
+    const { baseMintAccount, poolBaseAmount, poolQuoteAmount } = state;
     if (poolBaseAmount.isZero()) return 0;
     const baseDecimals = baseMintAccount.decimals;
     const baseDivisor = 10 ** baseDecimals;

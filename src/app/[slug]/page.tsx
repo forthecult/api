@@ -1,11 +1,27 @@
 import type { Metadata } from "next";
+
 import { Star } from "lucide-react";
-import Link from "next/link";
 import { cookies } from "next/headers";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import type {
+  ProductOptionDefinition,
+  ProductVariantOption,
+} from "~/app/products/[id]/types";
+
 import { SEO_CONFIG } from "~/app";
+import { LongFormProductPage } from "~/app/[slug]/long-form-product-page";
+import { EstimatedDeliveryTimeline } from "~/app/products/[id]/estimated-delivery-timeline";
+import { ProductDetailAccordion } from "~/app/products/[id]/product-detail-accordion";
+import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
+import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
+import { ProductShare } from "~/app/products/[id]/product-share";
+import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
+import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
+import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
+import { ProductsClient } from "~/app/products/products-client";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import {
   getCategoryBySlug,
@@ -24,32 +40,18 @@ import {
   stripHtmlForMeta,
 } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
+import { getTokenGateConfig } from "~/lib/token-gate";
+import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
 import {
   BreadcrumbStructuredData,
   CollectionPageStructuredData,
   ProductStructuredData,
 } from "~/ui/components/structured-data";
-import { Button } from "~/ui/primitives/button";
-import { PageLoadingFallback } from "~/ui/primitives/spinner";
-import { Separator } from "~/ui/primitives/separator";
-import { EstimatedDeliveryTimeline } from "~/app/products/[id]/estimated-delivery-timeline";
-import { ProductDetailAccordion } from "~/app/products/[id]/product-detail-accordion";
-import { ProductImageGallery } from "~/app/products/[id]/product-image-gallery";
-import { ProductShare } from "~/app/products/[id]/product-share";
-import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant-image-context";
-import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
-import { ProductReviewsCarousel } from "~/app/products/[id]/product-reviews-carousel";
-import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
-import type {
-  ProductOptionDefinition,
-  ProductVariantOption,
-} from "~/app/products/[id]/types";
-import { ProductsClient } from "~/app/products/products-client";
-import { LongFormProductPage } from "~/app/[slug]/long-form-product-page";
-import { getTokenGateConfig } from "~/lib/token-gate";
-import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
+import { Button } from "~/ui/primitives/button";
+import { Separator } from "~/ui/primitives/separator";
+import { PageLoadingFallback } from "~/ui/primitives/spinner";
 
 /** Always fetch product/category data from DB so variants match admin (no stale cache). */
 export const dynamic = "force-dynamic";
@@ -58,40 +60,43 @@ export const dynamic = "force-dynamic";
 /*                               Types                                        */
 /* -------------------------------------------------------------------------- */
 
-type CategoryOption = { slug: string; name: string };
-
-interface ProductListResponse {
-  items?: Array<{
-    id: string;
-    slug?: string;
-    name: string;
-    hasVariants?: boolean;
-    image: string;
-    category: string;
-    price: number;
-    originalPrice?: number;
-    inStock: boolean;
-    rating: number;
-    /** When true, show gated thumbnail on listing pages (lock overlay, no add-to-cart). */
-    tokenGated?: boolean;
-  }>;
-  total?: number;
-  totalPages?: number;
-  categories?: CategoryOption[];
+interface CategoryOption {
+  name: string;
+  slug: string;
 }
 
-type RelatedProduct = {
+interface ProductListResponse {
+  categories?: CategoryOption[];
+  items?: {
+    category: string;
+    hasVariants?: boolean;
+    id: string;
+    image: string;
+    inStock: boolean;
+    name: string;
+    originalPrice?: number;
+    price: number;
+    rating: number;
+    slug?: string;
+    /** When true, show gated thumbnail on listing pages (lock overlay, no add-to-cart). */
+    tokenGated?: boolean;
+  }[];
+  total?: number;
+  totalPages?: number;
+}
+
+interface RelatedProduct {
   category: string;
   id: string;
-  slug?: string;
   image: string;
   inStock?: boolean;
   name: string;
   originalPrice?: number;
   price: number;
   rating?: number;
+  slug?: string;
   tokenGated?: boolean;
-};
+}
 
 /* -------------------------------------------------------------------------- */
 /*                               Fetch helpers                                */
@@ -99,13 +104,33 @@ type RelatedProduct = {
 
 const baseUrl = () => getServerBaseUrl();
 
-/** Resolve product by slug from DB; uses shared mapper (single source of truth). */
-async function getProductForPageBySlug(
+async function fetchCategoryPage(
   slug: string,
-): Promise<PageProduct | null> {
-  const data = await getProductBySlugOrId(slug);
-  if (!data) return null;
-  return mapProductBySlugResultToPageProduct(data);
+  page: number,
+  limit: number,
+  sort?: string,
+  subcategory?: string,
+  q?: string,
+  cookieHeader?: string,
+): Promise<ProductListResponse> {
+  const params = new URLSearchParams({
+    category: slug,
+    limit: String(limit),
+    page: String(page),
+  });
+  if (sort) params.set("sort", sort);
+  if (subcategory) params.set("subcategory", subcategory);
+  if (q?.trim()) params.set("q", q.trim());
+  try {
+    const res = await fetch(`${baseUrl()}/api/products?${params}`, {
+      next: { revalidate: 60 },
+      ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
+    });
+    if (!res.ok) return { categories: [], items: [], total: 0, totalPages: 1 };
+    return res.json();
+  } catch {
+    return { categories: [], items: [], total: 0, totalPages: 1 };
+  }
 }
 
 async function fetchRelatedProducts(
@@ -128,33 +153,13 @@ async function fetchRelatedProducts(
   }
 }
 
-async function fetchCategoryPage(
+/** Resolve product by slug from DB; uses shared mapper (single source of truth). */
+async function getProductForPageBySlug(
   slug: string,
-  page: number,
-  limit: number,
-  sort?: string,
-  subcategory?: string,
-  q?: string,
-  cookieHeader?: string,
-): Promise<ProductListResponse> {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-    category: slug,
-  });
-  if (sort) params.set("sort", sort);
-  if (subcategory) params.set("subcategory", subcategory);
-  if (q?.trim()) params.set("q", q.trim());
-  try {
-    const res = await fetch(`${baseUrl()}/api/products?${params}`, {
-      next: { revalidate: 60 },
-      ...(cookieHeader ? { headers: { Cookie: cookieHeader } } : {}),
-    });
-    if (!res.ok) return { items: [], total: 0, totalPages: 1, categories: [] };
-    return res.json();
-  } catch {
-    return { items: [], total: 0, totalPages: 1, categories: [] };
-  }
+): Promise<null | PageProduct> {
+  const data = await getProductBySlugOrId(slug);
+  if (!data) return null;
+  return mapProductBySlugResultToPageProduct(data);
 }
 
 const range = (length: number) => Array.from({ length }, (_, i) => i);
@@ -191,32 +196,32 @@ export async function generateMetadata({
           ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
           : undefined;
     return {
-      title: pageTitle,
+      alternates: {
+        canonical: canonicalUrl,
+      },
       description: metaDesc,
       openGraph: {
-        title: ogTitle,
         description: metaDesc,
-        url: canonicalUrl,
+        title: ogTitle,
         type: "website",
+        url: canonicalUrl,
         ...(imageUrl && {
           images: [
             {
-              url: imageUrl,
               alt: product.mainImageAlt ?? product.name,
-              width: 1200,
               height: 630,
+              url: imageUrl,
+              width: 1200,
             },
           ],
         }),
       },
+      title: pageTitle,
       twitter: {
         card: "summary_large_image",
-        title: ogTitle,
         description: metaDesc,
+        title: ogTitle,
         ...(imageUrl && { images: [imageUrl] }),
-      },
-      alternates: {
-        canonical: canonicalUrl,
       },
     };
   }
@@ -241,31 +246,31 @@ export async function generateMetadata({
   }
 
   return {
-    title,
+    alternates: {
+      canonical: `${siteUrl}/${slug}`,
+    },
     description,
     openGraph: {
-      title,
       description,
+      title,
       type: "website",
       ...(categoryImageUrl && {
         images: [
           {
-            url: categoryImageUrl,
             alt: categoryName,
-            width: 1200,
             height: 630,
+            url: categoryImageUrl,
+            width: 1200,
           },
         ],
       }),
     },
+    title,
     twitter: {
       card: "summary_large_image",
-      title,
       description,
+      title,
       ...(categoryImageUrl && { images: [categoryImageUrl] }),
-    },
-    alternates: {
-      canonical: `${siteUrl}/${slug}`,
     },
   };
 }
@@ -292,7 +297,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
 
     if (tokenGateConfig.tokenGated && !passed) {
       return (
-        <TokenGateGuard resourceType="product" resourceId={canonicalSlug} />
+        <TokenGateGuard resourceId={canonicalSlug} resourceType="product" />
       );
     }
 
@@ -323,14 +328,14 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         <>
           <ProductStructuredData
             product={{
-              id: product.id,
-              name: product.name,
+              category: product.category,
               description: stripHtmlForMeta(product.description),
-              price: product.price,
+              id: product.id,
               image: product.image,
               inStock: product.inStock,
+              name: product.name,
+              price: product.price,
               rating: product.rating,
-              category: product.category,
               slug: canonicalSlug,
             }}
           />
@@ -341,11 +346,11 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
             }))}
           />
           <LongFormProductPage
-            product={product}
             breadcrumbTrail={breadcrumbTrail}
             discountPercentage={discountPercentage}
-            siteUrl={siteUrl}
+            product={product}
             relatedProducts={relatedProducts}
+            siteUrl={siteUrl}
           />
         </>
       );
@@ -355,14 +360,14 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
       <>
         <ProductStructuredData
           product={{
-            id: product.id,
-            name: product.name,
+            category: product.category,
             description: stripHtmlForMeta(product.description),
-            price: product.price,
+            id: product.id,
             image: product.image,
             inStock: product.inStock,
+            name: product.name,
+            price: product.price,
             rating: product.rating,
-            category: product.category,
             slug: canonicalSlug,
           }}
         />
@@ -374,7 +379,12 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
         />
         <div className="flex min-h-screen flex-col">
           <main className="flex-1 py-10">
-            <div className="container mx-auto px-4 md:px-6">
+            <div
+              className={`
+              container mx-auto px-4
+              md:px-6
+            `}
+            >
               <Breadcrumbs items={breadcrumbTrail} />
               <Link href="/products">
                 <Button
@@ -386,12 +396,17 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                 </Button>
               </Link>
               <ProductVariantImageProvider>
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <div
+                  className={`
+                  grid grid-cols-1 gap-8
+                  md:grid-cols-2
+                `}
+                >
                   <ProductImageGallery
                     discountPercentage={discountPercentage}
                     images={product.images ?? [product.image]}
-                    productName={product.name}
                     mainImageAlt={product.mainImageAlt}
+                    productName={product.name}
                   />
                   <div className="flex flex-col">
                     <div className="mb-6">
@@ -404,13 +419,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                           >
                             {range(5).map((i) => (
                               <Star
-                                className={`h-5 w-5 ${
-                                  i < Math.floor(product.rating)
-                                    ? "fill-primary text-primary"
-                                    : i < product.rating
-                                      ? "fill-primary/50 text-primary"
-                                      : "text-muted-foreground"
-                                }`}
+                                className={`
+                                  h-5 w-5
+                                  ${
+                                    i < Math.floor(product.rating)
+                                      ? "fill-primary text-primary"
+                                      : i < product.rating
+                                        ? "fill-primary/50 text-primary"
+                                        : "text-muted-foreground"
+                                  }
+                                `}
                                 key={`star-${i}`}
                               />
                             ))}
@@ -436,7 +454,12 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       if (!b && !m) return null;
                       if (isProviderBrand) return null;
                       return (
-                        <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <div
+                          className={`
+                          mb-4 flex flex-wrap items-center gap-x-4 gap-y-1
+                          text-sm text-muted-foreground
+                        `}
+                        >
                           {b && (
                             <span>
                               <span className="font-medium text-foreground">
@@ -461,41 +484,45 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       <ul className="mb-6 space-y-2 text-muted-foreground">
                         {product.features.map((feature) => (
                           <li
-                            key={`feature-${product.id}-${slugify(feature)}`}
                             className="flex items-start"
+                            key={`feature-${product.id}-${slugify(feature)}`}
                           >
-                            <span className="mr-2 mt-1 h-2 w-2 shrink-0 rounded-full bg-primary" />
+                            <span
+                              className={`
+                              mt-1 mr-2 h-2 w-2 shrink-0 rounded-full bg-primary
+                            `}
+                            />
                             <span>{feature}</span>
                           </li>
                         ))}
                       </ul>
                     )}
                     <ProductVariantSection
-                      product={{
-                        id: product.id,
-                        name: product.name,
-                        category: product.category,
-                        image: product.image,
-                        price: product.price,
-                        originalPrice: product.originalPrice,
-                        inStock: product.inStock,
-                        continueSellingWhenOutOfStock:
-                          product.continueSellingWhenOutOfStock,
-                        availableCountryCodes: product.availableCountryCodes,
-                        ...(product.slug && { slug: product.slug }),
-                      }}
+                      handlingDaysMax={product.handlingDaysMax}
+                      handlingDaysMin={product.handlingDaysMin}
                       hasVariants={product.hasVariants ?? false}
                       optionDefinitions={product.optionDefinitions ?? []}
+                      product={{
+                        availableCountryCodes: product.availableCountryCodes,
+                        category: product.category,
+                        continueSellingWhenOutOfStock:
+                          product.continueSellingWhenOutOfStock,
+                        id: product.id,
+                        image: product.image,
+                        inStock: product.inStock,
+                        name: product.name,
+                        originalPrice: product.originalPrice,
+                        price: product.price,
+                        ...(product.slug && { slug: product.slug }),
+                      }}
                       variants={product.variants ?? []}
-                      handlingDaysMin={product.handlingDaysMin}
-                      handlingDaysMax={product.handlingDaysMax}
                     />
                     <EstimatedDeliveryTimeline
-                      handlingDaysMin={product.handlingDaysMin}
-                      handlingDaysMax={product.handlingDaysMax}
-                      transitDaysMin={product.transitDaysMin}
-                      transitDaysMax={product.transitDaysMax}
                       className="mb-6"
+                      handlingDaysMax={product.handlingDaysMax}
+                      handlingDaysMin={product.handlingDaysMin}
+                      transitDaysMax={product.transitDaysMax}
+                      transitDaysMin={product.transitDaysMin}
                     />
                     <ProductDetailAccordion
                       category={product.category}
@@ -506,16 +533,21 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       sizeChart={product.sizeChart ?? undefined}
                     />
                     <ProductShare
+                      className="mt-6"
                       title={product.name}
                       url={`${siteUrl}/${canonicalSlug}`}
-                      className="mt-6"
                     />
                   </div>
                 </div>
               </ProductVariantImageProvider>
               <Separator className="my-8" />
               {Object.keys(product.specs).length > 0 && (
-                <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+                <div
+                  className={`
+                  grid grid-cols-1 gap-8
+                  md:grid-cols-2
+                `}
+                >
                   {Object.keys(product.specs).length > 0 && (
                     <section>
                       <h2 className="mb-4 text-2xl font-bold">
@@ -524,7 +556,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
                       <div className="space-y-2">
                         {Object.entries(product.specs).map(([key, value]) => (
                           <div
-                            className="flex justify-between border-b pb-2 text-sm"
+                            className={`
+                              flex justify-between border-b pb-2 text-sm
+                            `}
                             key={key}
                           >
                             <span className="font-medium capitalize">
@@ -560,7 +594,7 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     const passed = hasValidTokenGateCookie(tgCookie, "category", category.id);
     if (!passed) {
       return (
-        <TokenGateGuard resourceType="category" resourceId={category.id} />
+        <TokenGateGuard resourceId={category.id} resourceType="category" />
       );
     }
   }
@@ -572,9 +606,9 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
 
   const resolvedSearchParams = (await searchParams) as {
     page?: string;
+    q?: string;
     sort?: string;
     subcategory?: string;
-    q?: string;
   };
   const page = Math.max(
     1,
@@ -582,12 +616,12 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   );
   const sortParam = resolvedSearchParams.sort?.trim() || "manual";
   const sort = [
+    "best_selling",
+    "manual",
     "newest",
     "price_asc",
     "price_desc",
-    "best_selling",
     "rating",
-    "manual",
   ].includes(sortParam)
     ? sortParam
     : "manual";
@@ -627,10 +661,10 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   }));
   // First row: All + current category (no subcategory pills to avoid duplicating the second row).
   const categories: CategoryOption[] = [
-    { slug: "all", name: "All" },
+    { name: "All", slug: "all" },
     ...(parent ? [parent] : []),
     ...(subcategories.length > 0
-      ? [{ slug, name: category.name }]
+      ? [{ name: category.name, slug }]
       : subcategories),
   ];
 
@@ -641,40 +675,40 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
   return (
     <>
       <CollectionPageStructuredData
-        name={category.name}
         description={categoryDescription}
-        url={`${baseUrl()}/${slug}`}
+        name={category.name}
         numberOfItems={data.total ?? 0}
+        url={`${baseUrl()}/${slug}`}
       />
       <Suspense fallback={<PageLoadingFallback />}>
         <ProductsClient
-          initialProducts={products}
-          initialCategories={categories}
-          initialPage={page}
-          initialTotalPages={data.totalPages ?? 1}
-          initialTotal={data.total ?? 0}
-          initialCategory={slug}
-          title={category.name}
-          description={categoryDescription}
+          breadcrumbs={[
+            { href: "/", name: "Home" },
+            { href: "/products", name: "Products" },
+            ...(parent ? [{ href: `/${parent.slug}`, name: parent.name }] : []),
+            { href: `/${slug}`, name: category.name },
+          ]}
           categoryDescriptionFull={category.description ?? undefined}
-          subcategories={subcategories}
+          description={categoryDescription}
+          initialCategories={categories}
+          initialCategory={slug}
+          initialPage={page}
+          initialProducts={products}
+          initialSearch={searchQuery}
           initialSort={
             sort as
+              | "best_selling"
+              | "manual"
               | "newest"
               | "price_asc"
               | "price_desc"
-              | "best_selling"
               | "rating"
-              | "manual"
           }
           initialSubcategory={subcategoryParam || undefined}
-          initialSearch={searchQuery}
-          breadcrumbs={[
-            { name: "Home", href: "/" },
-            { name: "Products", href: "/products" },
-            ...(parent ? [{ name: parent.name, href: `/${parent.slug}` }] : []),
-            { name: category.name, href: `/${slug}` },
-          ]}
+          initialTotal={data.total ?? 0}
+          initialTotalPages={data.totalPages ?? 1}
+          subcategories={subcategories}
+          title={category.name}
         />
       </Suspense>
     </>

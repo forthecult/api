@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { MyEsimsClient } from "./my-esims-client";
 
 export const metadata: Metadata = {
+  robots: { follow: false, index: false },
   title: "My eSIMs",
-  robots: { index: false, follow: false },
 };
 
 export default function MyEsimsPage() {

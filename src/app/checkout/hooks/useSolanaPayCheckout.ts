@@ -4,31 +4,34 @@ import { encodeURL } from "@solana/pay";
 import { PublicKey } from "@solana/web3-compat";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+
 import type { SolanaPayStatus } from "~/lib/hooks/use-solana-pay-polling";
+
 import { useSolanaPayPolling } from "~/lib/hooks/use-solana-pay-polling";
 import {
   getSolanaPayLabel,
   USDC_MINT_MAINNET,
   usdcAmountFromUsd,
 } from "~/lib/solana-pay";
+
 import type { OrderPayload } from "../checkout-shared";
 
 export interface UseSolanaPayCheckoutArgs {
   buildOrderPayload: () => OrderPayload;
-  total: number;
   /** Called after payment is confirmed and before redirect. */
-  onComplete?: (orderId: string | null) => void;
+  onComplete?: (orderId: null | string) => void;
+  total: number;
 }
 
 export interface UseSolanaPayCheckoutResult {
+  amountUsd: number;
+  closeDialog: () => void;
   open: boolean;
   openDialog: () => Promise<void>;
-  closeDialog: () => void;
-  paymentUrl: string | null;
+  orderId: null | string;
+  paymentUrl: null | string;
+  recipientAddress: null | string;
   status: SolanaPayStatus;
-  orderId: string | null;
-  amountUsd: number;
-  recipientAddress: string | null;
 }
 
 /**
@@ -37,16 +40,16 @@ export interface UseSolanaPayCheckoutResult {
  */
 export function useSolanaPayCheckout({
   buildOrderPayload,
-  total,
   onComplete,
+  total,
 }: UseSolanaPayCheckoutArgs): UseSolanaPayCheckoutResult {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [orderId, setOrderId] = useState<string | null>(null);
-  const [recipientAddress, setRecipientAddress] = useState<string | null>(null);
-  const [amountStr, setAmountStr] = useState<string | null>(null);
-  const [splToken, setSplToken] = useState<string | null>(null);
+  const [paymentUrl, setPaymentUrl] = useState<null | string>(null);
+  const [orderId, setOrderId] = useState<null | string>(null);
+  const [recipientAddress, setRecipientAddress] = useState<null | string>(null);
+  const [amountStr, setAmountStr] = useState<null | string>(null);
+  const [splToken, setSplToken] = useState<null | string>(null);
 
   const closeDialog = useCallback(() => {
     setOpen(false);
@@ -71,51 +74,51 @@ export function useSolanaPayCheckout({
   );
 
   const { status } = useSolanaPayPolling({
-    depositAddress: recipientAddress,
-    orderId,
     amount: amountStr,
-    splToken,
+    depositAddress: recipientAddress,
     enabled: open && !!recipientAddress && !!amountStr && !!splToken,
     onConfirmed: handleConfirmed,
+    orderId,
     skipRedirect: true,
+    splToken,
   });
 
   const openDialog = useCallback(async () => {
-    const { orderTotalCents, commonBody, form } = buildOrderPayload();
+    const { commonBody, form, orderTotalCents } = buildOrderPayload();
     setOpen(true);
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...commonBody,
           // Include shipping address (was previously missing from QR dialog flow)
           ...(form?.street?.trim()
             ? {
                 shipping: {
-                  name: `${form.firstName ?? ""} ${form.lastName ?? ""}`.trim(),
                   address1: form.street,
                   address2: form.apartment,
                   city: form.city,
-                  stateCode: form.state,
                   countryCode: form.country,
-                  zip: form.zip,
+                  name: `${form.firstName ?? ""} ${form.lastName ?? ""}`.trim(),
                   phone: form.phone,
+                  stateCode: form.state,
+                  zip: form.zip,
                 },
               }
             : {}),
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (!createRes.ok) {
         setOpen(false);
         return;
       }
       const data = (await createRes.json()) as {
-        orderId: string;
-        depositAddress: string;
         confirmationToken?: string;
+        depositAddress: string;
+        orderId: string;
       };
-      const { orderId: id, depositAddress, confirmationToken } = data;
+      const { confirmationToken, depositAddress, orderId: id } = data;
       if (confirmationToken) {
         try {
           sessionStorage.setItem(`checkout_ct_${id}`, confirmationToken);
@@ -123,11 +126,11 @@ export function useSolanaPayCheckout({
       }
       const amount = usdcAmountFromUsd(orderTotalCents / 100);
       const url = encodeURL({
-        recipient: new PublicKey(depositAddress),
         amount,
-        splToken: new PublicKey(USDC_MINT_MAINNET),
         label: getSolanaPayLabel(),
         message: `Order total: $${total.toFixed(2)}`,
+        recipient: new PublicKey(depositAddress),
+        splToken: new PublicKey(USDC_MINT_MAINNET),
       });
       setPaymentUrl(url.toString());
       setOrderId(id);
@@ -140,13 +143,13 @@ export function useSolanaPayCheckout({
   }, [buildOrderPayload, total]);
 
   return {
+    amountUsd: total,
+    closeDialog,
     open,
     openDialog,
-    closeDialog,
-    paymentUrl,
-    status,
     orderId,
-    amountUsd: total,
+    paymentUrl,
     recipientAddress,
+    status,
   };
 }

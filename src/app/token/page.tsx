@@ -29,52 +29,52 @@ import {
 } from "~/ui/primitives/table";
 
 export const metadata = {
-  title: `CULT Token | ${SEO_CONFIG.name}`,
   description:
     "Fair launch utility token for the CULT community. Governance rights and up to 20% discount on eligible purchases.",
+  title: `CULT Token | ${SEO_CONFIG.name}`,
 };
 
 const valueCards = [
   {
-    title: "Equal Pricing",
     description:
       "No preferential pricing. Everyone participates in the same price discovery on the bonding curve.",
     icon: Scale,
+    title: "Equal Pricing",
   },
   {
-    title: "Transparent",
     description:
       "All distribution documented and verifiable on-chain. No hidden allocations or insider deals.",
     icon: Shield,
+    title: "Transparent",
   },
   {
-    title: "Voting",
     description: "Token holders will participate in our direction.",
     icon: Users,
+    title: "Voting",
   },
   {
-    title: "Real Utility",
     description:
       "Up to 20% discount when used for eligible purchases at checkout.",
     icon: Zap,
+    title: "Real Utility",
   },
 ];
 
 const allocationItems = [
   {
     label: "Public (fair launch)",
-    sublabel: "Fair launch bonding curve",
     pct: "86.63%",
+    sublabel: "Fair launch bonding curve",
   },
   {
     label: "Team (locked)",
-    sublabel: "6-month lockup via Streamflow",
     pct: "10%",
+    sublabel: "6-month lockup via Streamflow",
   },
   {
     label: "Team (unlocked)",
-    sublabel: "Voting participation",
     pct: "3.37%",
+    sublabel: "Voting participation",
   },
 ];
 
@@ -99,61 +99,61 @@ const SOLSCAN_BASE = "https://solscan.io/account";
 /** Creator fee allocation: value is numeric % for pie chart; chartLabel = short text on pie. subjectToChange = show * and note below table. */
 const creatorFeeAllocations = [
   {
-    value: 5,
-    pct: "5%",
-    label: "Buy back and burn",
     chartLabel: "5% Buy back & burn",
+    label: "Buy back and burn",
+    pct: "5%",
+    subjectToChange: false,
+    value: 5,
     wallet: "UvbzCHxWyJc5uFoQc44sFRDucLV3AuWLoB3nfPtBURN",
-    subjectToChange: false,
   },
   {
-    value: 5,
-    pct: "5%",
-    label: "Staked token holders",
     chartLabel: "5% Staked holders",
-    wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT",
-    subjectToChange: false,
-  },
-  {
-    value: 5,
+    label: "Staked token holders",
     pct: "5%",
-    label: "Charity",
-    chartLabel: "5% Charity",
-    wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE",
     subjectToChange: false,
+    value: 5,
+    wallet: "y5srMcHfM6efwhGQnNKfJJkfBQ72WRysRpnEYxtCULT",
   },
   {
-    value: 15,
-    pct: "15%",
-    label: "Marketing and advertising",
+    chartLabel: "5% Charity",
+    label: "Charity",
+    pct: "5%",
+    subjectToChange: false,
+    value: 5,
+    wallet: "fuyyUTbX6dKebrKN3iHA6QHA3TP8aFnijheHsvzG1VE",
+  },
+  {
     chartLabel: "13.37% Marketing",
-    wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd",
+    label: "Marketing and advertising",
+    pct: "15%",
     subjectToChange: true,
+    value: 15,
+    wallet: "CULTm4oWmx6vdD7GG6mAiQ4fDtjiHuM1H9QxZhbnAYJd",
   },
   {
-    value: 20,
-    pct: "20%",
-    label: "Subsidize shipping and product prices",
     chartLabel: "20% Shipping & prices",
     chartLabelOutset: 14,
-    wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ",
-    subjectToChange: true,
-  },
-  {
-    value: 20,
+    label: "Subsidize shipping and product prices",
     pct: "20%",
-    label: "Product inventory and development",
-    chartLabel: "20% Product & inventory",
-    wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm",
     subjectToChange: true,
+    value: 20,
+    wallet: "CULTrfVi9B2XCDvs9DJWqFjqKn6vzLgTfnxissZY77VJ",
   },
   {
-    value: 30,
-    pct: "30%",
-    label: "Treasury and feature development",
-    chartLabel: "30% Treasury",
-    wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb",
+    chartLabel: "20% Product & inventory",
+    label: "Product inventory and development",
+    pct: "20%",
     subjectToChange: true,
+    value: 20,
+    wallet: "CULTvM6qwhTvobG6qE4d9fVwuWsMRVokpdzE11sHDcYm",
+  },
+  {
+    chartLabel: "30% Treasury",
+    label: "Treasury and feature development",
+    pct: "30%",
+    subjectToChange: true,
+    value: 30,
+    wallet: "CULTwLwp92fMZUT5EgtCdduuMsjqrsWvygQ3SjPuEDJb",
   },
 ];
 
@@ -179,20 +179,20 @@ function creatorFeePieGradient(): string {
 
 const faqItems = [
   {
-    q: "Why launch on pump.fun?",
     a: "Pump.fun aligns with fair launch principles: equal pricing for everyone, no presale, transparent distribution. Everyone starts at the same price on the bonding curve with no structural advantages for insiders.",
+    q: "Why launch on pump.fun?",
   },
   {
-    q: "Why 13.37% team allocation?",
     a: "Fair launch standards recommend team allocations between 10-20%. We chose 13.37%—the middle path. 10% is locked for 6 months via Streamflow (verifiable on-chain). 3.37% is unlocked so the team can participate in DAO governance from day one.",
+    q: "Why 13.37% team allocation?",
   },
   {
-    q: "What creates demand for CULT?",
     a: "The CULT token provides a 13.37% discount when used for eligible purchases at checkout, giving it utility within the CULT ecosystem.",
+    q: "What creates demand for CULT?",
   },
   {
-    q: "How does the voting work?",
     a: "The CULT community is being organized as a DAO, intended to provide a framework for decentralized governance. Once established, CULT token holders will be able to participate in governance decisions about protocol upgrades, fee structures, and the future of the ecosystem.",
+    q: "How does the voting work?",
   },
 ];
 
@@ -212,8 +212,18 @@ export default function TokenPage() {
         `}
       >
         {/* Web3 eCommerce lead */}
-        <section className="border-b border-border py-8 md:py-10">
-          <p className="mx-auto max-w-2xl text-center text-lg text-muted-foreground md:text-xl">
+        <section
+          className={`
+          border-b border-border py-8
+          md:py-10
+        `}
+        >
+          <p
+            className={`
+            mx-auto max-w-2xl text-center text-lg text-muted-foreground
+            md:text-xl
+          `}
+          >
             When you search &apos;web3 eCommerce&apos; you&apos;ll find dozens
             of articles about the benefits, but no one is doing it the way it
             should be. At least, not with physical products. We&apos;re here to
@@ -222,7 +232,12 @@ export default function TokenPage() {
         </section>
 
         {/* Hero */}
-        <section className="relative overflow-hidden py-12 md:py-16">
+        <section
+          className={`
+          relative overflow-hidden py-12
+          md:py-16
+        `}
+        >
           <div className="relative z-10 mx-auto max-w-3xl space-y-6 text-center">
             <p className="text-base font-medium text-muted-foreground">
               {SEO_CONFIG.name}
@@ -230,8 +245,10 @@ export default function TokenPage() {
 
             <h1
               className={`
-                font-display text-4xl font-bold leading-tight tracking-tight
-                text-foreground sm:text-5xl md:text-6xl
+                font-display text-4xl leading-tight font-bold tracking-tight
+                text-foreground
+                sm:text-5xl
+                md:text-6xl
               `}
             >
               <span
@@ -252,9 +269,19 @@ export default function TokenPage() {
         </section>
 
         {/* Why Pump.fun, value cards, then What CULT Gets You */}
-        <section className="space-y-10 py-6 md:py-6">
+        <section
+          className={`
+          space-y-10 py-6
+          md:py-6
+        `}
+        >
           <div className="space-y-6">
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Why Pump.fun?
             </h2>
             <p className="max-w-3xl text-muted-foreground">
@@ -270,9 +297,15 @@ export default function TokenPage() {
           </div>
 
           {/* Value cards (4 boxes) */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {valueCards.map(({ title, description, icon: Icon }) => (
-              <Card key={title} className="border-border bg-card">
+          <div
+            className={`
+            grid gap-6
+            md:grid-cols-2
+            lg:grid-cols-4
+          `}
+          >
+            {valueCards.map(({ description, icon: Icon, title }) => (
+              <Card className="border-border bg-card" key={title}>
                 <CardHeader>
                   <Icon className="h-8 w-8 text-primary" />
                   <CardTitle className="text-lg">{title}</CardTitle>
@@ -287,13 +320,27 @@ export default function TokenPage() {
           </div>
 
           <div className="space-y-4">
-            <p className="text-base font-medium italic text-foreground/90 sm:text-lg">
+            <p
+              className={`
+              text-base font-medium text-foreground/90 italic
+              sm:text-lg
+            `}
+            >
               A new Age of eCommerce
             </p>
-            <h3 className="font-display text-xl font-semibold text-foreground md:text-2xl">
+            <h3
+              className={`
+              font-display text-xl font-semibold text-foreground
+              md:text-2xl
+            `}
+            >
               What CULT gets you
             </h3>
-            <ul className="list-inside list-disc space-y-2 text-muted-foreground">
+            <ul
+              className={`
+              list-inside list-disc space-y-2 text-muted-foreground
+            `}
+            >
               <li>
                 <strong className="text-foreground">Free Shipping</strong> if
                 you hold 250,000 or more tokens in your wallet
@@ -319,9 +366,19 @@ export default function TokenPage() {
         </section>
 
         {/* Proposed Token Allocation */}
-        <section className="space-y-8 py-12 md:py-6">
+        <section
+          className={`
+          space-y-8 py-12
+          md:py-6
+        `}
+        >
           <div>
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Proposed token allocation
             </h2>
             <p className="mt-2 max-w-3xl text-muted-foreground">
@@ -329,9 +386,14 @@ export default function TokenPage() {
               transparent vesting. We believe in the middle path.
             </p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {allocationItems.map(({ label, sublabel, pct }) => (
-              <Card key={label} className="border-border bg-card">
+          <div
+            className={`
+            grid gap-4
+            md:grid-cols-3
+          `}
+          >
+            {allocationItems.map(({ label, pct, sublabel }) => (
+              <Card className="border-border bg-card" key={label}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-base">{label}</CardTitle>
                   <CardDescription className="text-base text-muted-foreground">
@@ -349,15 +411,25 @@ export default function TokenPage() {
         </section>
 
         {/* Fair Launch Principles */}
-        <section className="space-y-6 py-6 md:py-6">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <section
+          className={`
+          space-y-6 py-6
+          md:py-6
+        `}
+        >
+          <h2
+            className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+          >
             Fair launch principles
           </h2>
           <ul className="space-y-3">
             {fairLaunchPrinciples.map((item) => (
               <li
-                key={item}
                 className="flex items-start gap-3 text-muted-foreground"
+                key={item}
               >
                 <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <span>{item}</span>
@@ -367,9 +439,19 @@ export default function TokenPage() {
         </section>
 
         {/* Creator Fee Allocation */}
-        <section className="space-y-8 py-16 md:py-12">
+        <section
+          className={`
+          space-y-8 py-16
+          md:py-12
+        `}
+        >
           <div>
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Creator Fee Allocation
             </h2>
             <p className="mt-2 max-w-3xl text-muted-foreground">
@@ -379,22 +461,31 @@ export default function TokenPage() {
           </div>
           <div className="flex flex-col gap-10">
             {/* Pie chart: viewBox 130; pie radius 42. Lines run from pie to fixed rLineEnd (equal length); labels at rLabel so text sits behind lines (drawn first). */}
-            <div className="flex flex-col items-center overflow-visible px-2 py-8 md:px-6 md:py-10">
+            <div
+              className={`
+              flex flex-col items-center overflow-visible px-2 py-8
+              md:px-6 md:py-10
+            `}
+            >
               <div
                 className="relative w-full max-w-[380px] overflow-visible"
                 style={{ aspectRatio: "1" }}
               >
                 {/* Gradient pie: center 50,50 radius 42 → 84 units; viewBox 130 → pie 84/130 ≈ 65% of container */}
                 <div
-                  className="absolute left-1/2 top-1/2 h-[65%] w-[65%] -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-background shadow-lg"
-                  style={{ background: creatorFeePieGradient() }}
                   aria-hidden
+                  className={`
+                    absolute top-1/2 left-1/2 h-[65%] w-[65%] -translate-x-1/2
+                    -translate-y-1/2 rounded-full border-4 border-background
+                    shadow-lg
+                  `}
+                  style={{ background: creatorFeePieGradient() }}
                 />
                 <svg
-                  className="absolute inset-0 h-full w-full overflow-visible"
-                  viewBox="-10 -10 130 130"
-                  preserveAspectRatio="xMidYMid meet"
                   aria-hidden
+                  className="absolute inset-0 h-full w-full overflow-visible"
+                  preserveAspectRatio="xMidYMid meet"
+                  viewBox="-10 -10 130 130"
                 >
                   {(() => {
                     const rPie = 42;
@@ -417,17 +508,17 @@ export default function TokenPage() {
                       const lineEnd = rLineEnd + o;
                       const labelR = rLabel + o;
                       return {
-                        key: a.label,
-                        xEdge: 50 + rPie * Math.sin(rad),
-                        yEdge: 50 - rPie * Math.cos(rad),
-                        xLineEnd: 50 + lineEnd * Math.sin(rad),
-                        yLineEnd: 50 - lineEnd * Math.cos(rad),
-                        xLabel: 50 + labelR * Math.sin(rad),
-                        yLabel: 50 - labelR * Math.cos(rad),
                         chartText:
                           "chartLabel" in a && typeof a.chartLabel === "string"
                             ? a.chartLabel
                             : `${a.pct} ${a.label}`,
+                        key: a.label,
+                        xEdge: 50 + rPie * Math.sin(rad),
+                        xLabel: 50 + labelR * Math.sin(rad),
+                        xLineEnd: 50 + lineEnd * Math.sin(rad),
+                        yEdge: 50 - rPie * Math.cos(rad),
+                        yLabel: 50 - labelR * Math.cos(rad),
+                        yLineEnd: 50 - lineEnd * Math.cos(rad),
                       };
                     });
                     return (
@@ -435,13 +526,13 @@ export default function TokenPage() {
                         {/* Labels drawn first so lines render on top (words behind lines) */}
                         {points.map((p) => (
                           <text
+                            className="fill-foreground font-medium"
+                            dominantBaseline="middle"
                             key={`${p.key}-text`}
+                            style={{ fontSize: "6px" }}
+                            textAnchor="middle"
                             x={p.xLabel}
                             y={p.yLabel}
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            className="fill-foreground font-medium"
-                            style={{ fontSize: "6px" }}
                           >
                             {p.chartText}
                           </text>
@@ -450,13 +541,13 @@ export default function TokenPage() {
                         {points.map((p) => (
                           <line
                             key={`${p.key}-line`}
-                            x1={p.xEdge}
-                            y1={p.yEdge}
-                            x2={p.xLineEnd}
-                            y2={p.yLineEnd}
                             stroke="var(--muted-foreground)"
-                            strokeWidth="0.8"
                             strokeOpacity={0.8}
+                            strokeWidth="0.8"
+                            x1={p.xEdge}
+                            x2={p.xLineEnd}
+                            y1={p.yEdge}
+                            y2={p.yLineEnd}
                           />
                         ))}
                       </>
@@ -472,7 +563,11 @@ export default function TokenPage() {
                   <TableRow>
                     <TableHead className="w-[5rem]">Allocation</TableHead>
                     <TableHead>Use</TableHead>
-                    <TableHead className="min-w-0 font-mono text-sm text-muted-foreground">
+                    <TableHead
+                      className={`
+                      min-w-0 font-mono text-sm text-muted-foreground
+                    `}
+                    >
                       Address
                     </TableHead>
                     <TableHead className="min-w-[7.5rem] text-right">
@@ -482,7 +577,7 @@ export default function TokenPage() {
                 </TableHeader>
                 <TableBody>
                   {creatorFeeAllocations.map(
-                    ({ pct, label, wallet, subjectToChange }) => (
+                    ({ label, pct, subjectToChange, wallet }) => (
                       <TableRow key={label}>
                         <TableCell className="font-medium tabular-nums">
                           {pct}
@@ -491,7 +586,10 @@ export default function TokenPage() {
                           {subjectToChange ? `${label}*` : label}
                         </TableCell>
                         <TableCell
-                          className="max-w-[12rem] truncate font-mono text-sm text-muted-foreground"
+                          className={`
+                            max-w-[12rem] truncate font-mono text-sm
+                            text-muted-foreground
+                          `}
                           title={wallet ?? undefined}
                         >
                           {wallet ?? "—"}
@@ -499,10 +597,13 @@ export default function TokenPage() {
                         <TableCell className="text-right">
                           {wallet ? (
                             <a
+                              className={`
+                                inline-flex items-center gap-1 text-primary
+                                hover:underline
+                              `}
                               href={`${SOLSCAN_BASE}/${wallet}`}
-                              target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                              target="_blank"
                             >
                               View on Solscan
                               <ExternalLink className="h-3.5 w-3.5" />
@@ -524,8 +625,18 @@ export default function TokenPage() {
         </section>
 
         {/* Hackathon Funding */}
-        <section className="space-y-6 py-6 md:py-6">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <section
+          className={`
+          space-y-6 py-6
+          md:py-6
+        `}
+        >
+          <h2
+            className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+          >
             Hackathon Funding
           </h2>
           <p className="max-w-3xl text-muted-foreground">
@@ -551,7 +662,7 @@ export default function TokenPage() {
           </ul>
           <div className="mt-4">
             <Link href="/changelog">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button className="gap-2" size="sm" variant="outline">
                 View full changelog
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -560,15 +671,25 @@ export default function TokenPage() {
         </section>
 
         {/* Culture */}
-        <section className="space-y-6 py-6 md:py-6">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <section
+          className={`
+          space-y-6 py-6
+          md:py-6
+        `}
+        >
+          <h2
+            className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+          >
             What's unique about Culture
           </h2>
           <ul className="space-y-3">
             {cultureUnique.map((item) => (
               <li
-                key={item}
                 className="flex items-start gap-3 text-muted-foreground"
+                key={item}
               >
                 <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                 <span>{item}</span>
@@ -578,20 +699,40 @@ export default function TokenPage() {
         </section>
 
         {/*  Governance */}
-        <section className="space-y-8 py-12 md:py-16">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <section
+          className={`
+          space-y-8 py-12
+          md:py-16
+        `}
+        >
+          <h2
+            className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+          >
             Voting
           </h2>
           <p className="max-w-3xl text-muted-foreground">
             We believe the community should decide the future of the ecosystem.
           </p>
-          <div className="grid gap-8 md:grid-cols-2">
+          <div
+            className={`
+            grid gap-8
+            md:grid-cols-2
+          `}
+          >
             <Card className="border-border bg-card">
               <CardHeader>
                 <CardTitle className="text-lg">Voting rights</CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-inside list-disc space-y-1 text-base text-muted-foreground">
+                <ul
+                  className={`
+                  list-inside list-disc space-y-1 text-base
+                  text-muted-foreground
+                `}
+                >
                   <li>Charity funds allocation</li>
                   <li>Determine new products and features</li>
                   <li>Become a DAO one day? It's possible!</li>
@@ -605,7 +746,12 @@ export default function TokenPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <ul className="list-inside list-disc space-y-1 text-base text-muted-foreground">
+                <ul
+                  className={`
+                  list-inside list-disc space-y-1 text-base
+                  text-muted-foreground
+                `}
+                >
                   <li>Better capital management</li>
                   <li>Clear framework for decentralized operations</li>
                   <li>Path to community governance</li>
@@ -616,21 +762,47 @@ export default function TokenPage() {
         </section>
 
         {/* Token FAQ (dropdown accordion like tns.id/token) */}
-        <section className="space-y-6 py-6 md:py-6">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <section
+          className={`
+          space-y-6 py-6
+          md:py-6
+        `}
+        >
+          <h2
+            className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+          >
             Token FAQ
           </h2>
           <div className="space-y-0">
-            {faqItems.map(({ q, a }) => (
+            {faqItems.map(({ a, q }) => (
               <details
+                className={`
+                  border-b border-border
+                  last:border-b-0
+                  [&:first-child]:rounded-t-lg [&:last-child]:rounded-b-lg
+                  [&[open]_svg]:rotate-180
+                `}
                 key={q}
-                className="border-b border-border last:border-b-0 [&[open]_svg]:rotate-180 [&:first-child]:rounded-t-lg [&:last-child]:rounded-b-lg"
               >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 py-4 pr-2 font-medium text-foreground transition-colors hover:text-primary [&::-webkit-details-marker]:hidden">
+                <summary
+                  className={`
+                  flex cursor-pointer list-none items-center justify-between
+                  gap-2 py-4 pr-2 font-medium text-foreground transition-colors
+                  hover:text-primary
+                  [&::-webkit-details-marker]:hidden
+                `}
+                >
                   <span>{q}</span>
-                  <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform" />
+                  <ChevronDown
+                    className={`
+                    h-5 w-5 shrink-0 text-muted-foreground transition-transform
+                  `}
+                  />
                 </summary>
-                <p className="pb-4 pr-8 text-muted-foreground">{a}</p>
+                <p className="pr-8 pb-4 text-muted-foreground">{a}</p>
               </details>
             ))}
           </div>
@@ -641,7 +813,7 @@ export default function TokenPage() {
           <div className="flex flex-wrap justify-center gap-3">
             {/* Stake & Vote link hidden until prod testing complete */}
             <Link href="/products">
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button className="gap-2" size="lg" variant="outline">
                 Shop with CULT at checkout
                 <ArrowRight className="h-4 w-4" />
               </Button>

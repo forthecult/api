@@ -1,8 +1,8 @@
+import { eq, isNull, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { shippingOptionsTable } from "~/db/schema";
-import { eq, isNull, or } from "drizzle-orm";
 
 /**
  * GET /api/x402/rates/shipping?countryCode=US
@@ -24,15 +24,15 @@ export async function GET(request: NextRequest) {
 
   const options = await db
     .select({
-      id: shippingOptionsTable.id,
-      name: shippingOptionsTable.name,
-      type: shippingOptionsTable.type,
-      amountCents: shippingOptionsTable.amountCents,
       additionalItemCents: shippingOptionsTable.additionalItemCents,
-      estimatedDaysText: shippingOptionsTable.estimatedDaysText,
-      speed: shippingOptionsTable.speed,
-      minOrderCents: shippingOptionsTable.minOrderCents,
+      amountCents: shippingOptionsTable.amountCents,
       countryCode: shippingOptionsTable.countryCode,
+      estimatedDaysText: shippingOptionsTable.estimatedDaysText,
+      id: shippingOptionsTable.id,
+      minOrderCents: shippingOptionsTable.minOrderCents,
+      name: shippingOptionsTable.name,
+      speed: shippingOptionsTable.speed,
+      type: shippingOptionsTable.type,
     })
     .from(shippingOptionsTable)
     .where(
@@ -48,19 +48,19 @@ export async function GET(request: NextRequest) {
   );
 
   return NextResponse.json({
-    countryCode,
-    options: forCountry.map((o) => ({
-      name: o.name,
-      type: o.type,
-      amountUsd: o.amountCents != null ? o.amountCents / 100 : null,
-      additionalItemUsd:
-        o.additionalItemCents != null ? o.additionalItemCents / 100 : null,
-      estimatedDays: o.estimatedDaysText ?? null,
-      speed: o.speed,
-      minOrderUsd: o.minOrderCents != null ? o.minOrderCents / 100 : null,
-    })),
-    total: forCountry.length,
     _note:
       "For exact shipping cost use POST /api/shipping/calculate with cart.",
+    countryCode,
+    options: forCountry.map((o) => ({
+      additionalItemUsd:
+        o.additionalItemCents != null ? o.additionalItemCents / 100 : null,
+      amountUsd: o.amountCents != null ? o.amountCents / 100 : null,
+      estimatedDays: o.estimatedDaysText ?? null,
+      minOrderUsd: o.minOrderCents != null ? o.minOrderCents / 100 : null,
+      name: o.name,
+      speed: o.speed,
+      type: o.type,
+    })),
+    total: forCountry.length,
   });
 }

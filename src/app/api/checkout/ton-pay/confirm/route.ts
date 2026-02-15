@@ -1,9 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { onOrderCreated } from "~/lib/create-user-notification";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
@@ -12,11 +13,10 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -61,12 +61,12 @@ export async function POST(request: NextRequest) {
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
-        paymentMethod: ordersTable.paymentMethod,
-        totalCents: ordersTable.totalCents,
         cryptoAmount: ordersTable.cryptoAmount,
+        id: ordersTable.id,
+        paymentMethod: ordersTable.paymentMethod,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        status: ordersTable.status,
+        totalCents: ordersTable.totalCents,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
       );
     }
     if (order.status !== "pending") {
-      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+      return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
     // TODO: Verify txHash on-chain via TON Center API:
@@ -104,10 +104,10 @@ export async function POST(request: NextRequest) {
       await tx
         .update(ordersTable)
         .set({
+          cryptoTxHash: txHash,
           fulfillmentStatus: "unfulfilled",
           paymentStatus: "paid",
           status: "paid",
-          cryptoTxHash: txHash,
           updatedAt: new Date(),
         })
         .where(eq(ordersTable.id, order.id));
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!updated) {
-      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+      return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
     void onOrderCreated(order.id);

@@ -13,13 +13,13 @@ import {
 } from "~/lib/rate-limit";
 
 const STATUS_MAP: Record<string, string> = {
-  pending: "awaiting_payment",
-  paid: "paid",
-  processing: "processing",
-  fulfilled: "shipped",
-  shipped: "shipped",
-  delivered: "delivered",
   cancelled: "cancelled",
+  delivered: "delivered",
+  fulfilled: "shipped",
+  paid: "paid",
+  pending: "awaiting_payment",
+  processing: "processing",
+  shipped: "shipped",
 };
 
 /**
@@ -40,12 +40,12 @@ export async function GET(request: NextRequest) {
 
   const orders = await db
     .select({
-      id: ordersTable.id,
-      status: ordersTable.status,
-      paymentStatus: ordersTable.paymentStatus,
-      totalCents: ordersTable.totalCents,
       createdAt: ordersTable.createdAt,
       email: ordersTable.email,
+      id: ordersTable.id,
+      paymentStatus: ordersTable.paymentStatus,
+      status: ordersTable.status,
+      totalCents: ordersTable.totalCents,
     })
     .from(ordersTable)
     .where(eq(ordersTable.moltbookAgentId, agent.id))
@@ -61,12 +61,12 @@ export async function GET(request: NextRequest) {
     {
       agent: { id: agent.id, name: agent.name },
       orders: orders.map((o) => ({
+        createdAt: o.createdAt.toISOString(),
+        detailUrl: `${baseUrl.replace(/\/$/, "")}/api/agent/me/orders/${o.id}`,
         orderId: o.id,
         status: STATUS_MAP[o.status] ?? o.status,
-        totalUsd: o.totalCents / 100,
-        createdAt: o.createdAt.toISOString(),
         statusUrl: `${baseUrl.replace(/\/$/, "")}/api/orders/${o.id}/status`,
-        detailUrl: `${baseUrl.replace(/\/$/, "")}/api/agent/me/orders/${o.id}`,
+        totalUsd: o.totalCents / 100,
       })),
       total: orders.length,
     },

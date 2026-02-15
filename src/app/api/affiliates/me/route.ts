@@ -11,10 +11,6 @@ const CODE_MIN_LENGTH = 4;
 const CODE_MAX_LENGTH = 24;
 const CODE_REGEX = /^[A-Za-z0-9]+$/;
 
-function normalizeCode(input: string): string {
-  return input.replace(/\s/g, "").toUpperCase();
-}
-
 /**
  * GET /api/affiliates/me
  * Returns current user's affiliate record (if any) and stats.
@@ -29,17 +25,17 @@ export async function GET(request: NextRequest) {
 
   const [affiliate] = await db
     .select({
-      id: affiliateTable.id,
+      applicationNote: affiliateTable.applicationNote,
       code: affiliateTable.code,
-      status: affiliateTable.status,
       commissionType: affiliateTable.commissionType,
       commissionValue: affiliateTable.commissionValue,
+      createdAt: affiliateTable.createdAt,
+      id: affiliateTable.id,
+      payoutAddress: affiliateTable.payoutAddress,
+      payoutMethod: affiliateTable.payoutMethod,
+      status: affiliateTable.status,
       totalEarnedCents: affiliateTable.totalEarnedCents,
       totalPaidCents: affiliateTable.totalPaidCents,
-      applicationNote: affiliateTable.applicationNote,
-      payoutMethod: affiliateTable.payoutMethod,
-      payoutAddress: affiliateTable.payoutAddress,
-      createdAt: affiliateTable.createdAt,
     })
     .from(affiliateTable)
     .where(eq(affiliateTable.userId, userId))
@@ -87,7 +83,7 @@ export async function PATCH(request: NextRequest) {
   const userId = session.user.id;
 
   const [affiliate] = await db
-    .select({ id: affiliateTable.id, code: affiliateTable.code })
+    .select({ code: affiliateTable.code, id: affiliateTable.id })
     .from(affiliateTable)
     .where(eq(affiliateTable.userId, userId))
     .limit(1);
@@ -99,7 +95,7 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  let body: { code?: string; payoutMethod?: string; payoutAddress?: string };
+  let body: { code?: string; payoutAddress?: string; payoutMethod?: string };
   try {
     body = (await request.json()) as typeof body;
   } catch {
@@ -108,8 +104,8 @@ export async function PATCH(request: NextRequest) {
 
   const updates: {
     code?: string;
-    payoutMethod?: string | null;
-    payoutAddress?: string | null;
+    payoutAddress?: null | string;
+    payoutMethod?: null | string;
     updatedAt: Date;
   } = { updatedAt: new Date() };
 
@@ -195,8 +191,12 @@ export async function PATCH(request: NextRequest) {
     ? "Referral code updated. Your previous link no longer works."
     : "Payout settings updated.";
   return NextResponse.json({
-    ok: true,
     message,
+    ok: true,
     ...(updates.code && { code: updates.code }),
   });
+}
+
+function normalizeCode(input: string): string {
+  return input.replace(/\s/g, "").toUpperCase();
 }

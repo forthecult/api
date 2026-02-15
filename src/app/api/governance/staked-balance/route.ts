@@ -13,8 +13,8 @@ import {
   getStakingProgramId,
   lockDurationLabel,
 } from "~/lib/cult-staking";
-import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getActiveToken } from "~/lib/token-config";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -29,11 +29,11 @@ export async function GET(request: Request) {
   const programId = getStakingProgramId();
   if (!programId) {
     return NextResponse.json({
+      decimals: token.decimals,
+      lock: null,
       stakedBalance: "0",
       stakedBalanceRaw: "0",
-      decimals: token.decimals,
       tokenSymbol: token.symbol,
-      lock: null,
     });
   }
   try {
@@ -42,11 +42,11 @@ export async function GET(request: Request) {
 
     if (!stake || stake.amount === 0n) {
       return NextResponse.json({
+        decimals: token.decimals,
+        lock: null,
         stakedBalance: "0",
         stakedBalanceRaw: "0",
-        decimals: token.decimals,
         tokenSymbol: token.symbol,
-        lock: null,
       });
     }
 
@@ -54,27 +54,27 @@ export async function GET(request: Request) {
     const lockStatus = getLockStatus(stake);
 
     return NextResponse.json({
+      decimals: token.decimals,
+      lock: {
+        durationLabel: lockStatus.durationLabel,
+        isLocked: lockStatus.isLocked,
+        lockDurationSeconds: stake.lockDuration,
+        secondsRemaining: lockStatus.secondsRemaining,
+        stakedAt: new Date(stake.stakedAt * 1000).toISOString(),
+        unlocksAt: lockStatus.unlocksAt,
+      },
       stakedBalance: human.toFixed(token.decimals),
       stakedBalanceRaw: stake.amount.toString(),
-      decimals: token.decimals,
       tokenSymbol: token.symbol,
-      lock: {
-        isLocked: lockStatus.isLocked,
-        secondsRemaining: lockStatus.secondsRemaining,
-        unlocksAt: lockStatus.unlocksAt,
-        durationLabel: lockStatus.durationLabel,
-        stakedAt: new Date(stake.stakedAt * 1000).toISOString(),
-        lockDurationSeconds: stake.lockDuration,
-      },
     });
   } catch (e) {
     console.error("[governance] staked-balance error:", e);
     return NextResponse.json({
+      decimals: token.decimals,
+      lock: null,
       stakedBalance: "0",
       stakedBalanceRaw: "0",
-      decimals: token.decimals,
       tokenSymbol: token.symbol,
-      lock: null,
     });
   }
 }

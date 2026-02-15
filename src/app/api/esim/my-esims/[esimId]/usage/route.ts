@@ -1,9 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "~/lib/auth";
 import { db } from "~/db";
 import { esimOrdersTable } from "~/db/schema";
+import { getCurrentUser } from "~/lib/auth";
 import { getEsimUsage } from "~/lib/esim-api";
 
 /**
@@ -18,7 +18,7 @@ export async function GET(
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
-        { status: false, message: "Authentication required" },
+        { message: "Authentication required", status: false },
         { status: 401 },
       );
     }
@@ -39,14 +39,14 @@ export async function GET(
 
     if (!order) {
       return NextResponse.json(
-        { status: false, message: "eSIM order not found" },
+        { message: "eSIM order not found", status: false },
         { status: 404 },
       );
     }
 
     if (!order.esimId) {
       return NextResponse.json(
-        { status: false, message: "eSIM not yet provisioned" },
+        { message: "eSIM not yet provisioned", status: false },
         { status: 400 },
       );
     }
@@ -57,7 +57,7 @@ export async function GET(
   } catch (error) {
     console.error("eSIM usage error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to fetch eSIM usage" },
+      { message: "Failed to fetch eSIM usage", status: false },
       { status: 500 },
     );
   }

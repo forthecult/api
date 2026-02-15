@@ -1,9 +1,10 @@
 "use client";
 
-import React from "react";
 import { usePathname } from "next/navigation";
+import React from "react";
 
 import { cn } from "~/lib/cn";
+import { Button } from "~/ui/primitives/button";
 import {
   Dialog,
   DialogContent,
@@ -12,65 +13,43 @@ import {
   DialogHeader,
   DialogTitle,
 } from "~/ui/primitives/dialog";
-import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 
 const GUEST_ID_KEY = "support-chat-guest-id";
 const POLL_INTERVAL_MS = 3_000;
 const API_BASE = "";
 
-function getGuestId(): string | null {
-  if (typeof window === "undefined") return null;
-  let id = sessionStorage.getItem(GUEST_ID_KEY);
-  if (
-    !id ||
-    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      id,
-    )
-  ) {
-    id = crypto.randomUUID();
-    sessionStorage.setItem(GUEST_ID_KEY, id);
-  }
-  return id;
-}
-
-function getHeaders(guestId: string | null): HeadersInit {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
-  if (guestId) h["X-Support-Guest-Id"] = guestId;
-  return h;
-}
-
-type Message = {
-  id: string;
-  role: string;
-  content: string;
+interface Conversation {
   createdAt: string;
-};
-
-type Conversation = {
   id: string;
   status: string;
-  takenOverBy: string | null;
-  createdAt: string;
+  takenOverBy: null | string;
   updatedAt: string;
-};
+}
+
+interface Message {
+  content: string;
+  createdAt: string;
+  id: string;
+  role: string;
+}
 
 export function SupportChatWidget() {
   const pathname = usePathname();
   const isCheckout = pathname?.startsWith("/checkout") ?? false;
   const [open, setOpen] = React.useState(false);
-  const [conversationId, setConversationId] = React.useState<string | null>(
+  const [conversationId, setConversationId] = React.useState<null | string>(
     null,
   );
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const [takenOverBy, setTakenOverBy] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<null | string>(null);
+  const [takenOverBy, setTakenOverBy] = React.useState<null | string>(null);
   const [endChatDialogOpen, setEndChatDialogOpen] = React.useState(false);
   const [endingChat, setEndingChat] = React.useState(false);
-  const guestIdRef = React.useRef<string | null>(null);
-  const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const guestIdRef = React.useRef<null | string>(null);
+  const pollRef = React.useRef<null | ReturnType<typeof setInterval>>(null);
   const messagesScrollRef = React.useRef<HTMLDivElement>(null);
 
   // ── Drag-to-move state ──────────────────────────────────────────────
@@ -80,9 +59,9 @@ export function SupportChatWidget() {
   }>({ bottom: 16, right: 16 });
   const isDraggingRef = React.useRef(false);
   const dragStartRef = React.useRef({
+    bottom: 16,
     mouseX: 0,
     mouseY: 0,
-    bottom: 16,
     right: 16,
   });
   const hasDraggedRef = React.useRef(false);
@@ -113,9 +92,9 @@ export function SupportChatWidget() {
       isDraggingRef.current = true;
       hasDraggedRef.current = false;
       dragStartRef.current = {
+        bottom: latestPosRef.current.bottom,
         mouseX: clientX,
         mouseY: clientY,
-        bottom: latestPosRef.current.bottom,
         right: latestPosRef.current.right,
       };
     },
@@ -131,13 +110,13 @@ export function SupportChatWidget() {
         hasDraggedRef.current = true;
       }
       const next = {
-        right: Math.max(
-          16,
-          Math.min(window.innerWidth - 64, dragStartRef.current.right - dx),
-        ),
         bottom: Math.max(
           16,
           Math.min(window.innerHeight - 64, dragStartRef.current.bottom - dy),
+        ),
+        right: Math.max(
+          16,
+          Math.min(window.innerWidth - 64, dragStartRef.current.right - dx),
         ),
       };
       latestPosRef.current = next;
@@ -219,9 +198,9 @@ export function SupportChatWidget() {
     }
     const guestId = getGuestId();
     const res = await fetch(`${API_BASE}/api/support-chat/conversations`, {
-      method: "POST",
       credentials: "include",
       headers: getHeaders(guestId),
+      method: "POST",
     });
     if (!res.ok) {
       const err = (await res.json().catch(() => ({}))) as { error?: string };
@@ -308,17 +287,17 @@ export function SupportChatWidget() {
       const res = await fetch(
         `${API_BASE}/api/support-chat/conversations/${cid}/messages`,
         {
-          method: "POST",
+          body: JSON.stringify({ content: text }),
           credentials: "include",
           headers: getHeaders(guestId),
-          body: JSON.stringify({ content: text }),
+          method: "POST",
         },
       );
       const data = (await res.json().catch(() => ({}))) as {
-        messages?: Message[];
         error?: string;
-        takenOverBy?: string;
+        messages?: Message[];
         rateLimited?: boolean;
+        takenOverBy?: string;
       };
       if (!res.ok) {
         setError(data.error ?? "Failed to send.");
@@ -352,9 +331,9 @@ export function SupportChatWidget() {
       if (cid) {
         const guestId = getGuestId();
         await fetch(`${API_BASE}/api/support-chat/conversations/${cid}`, {
-          method: "PATCH",
           credentials: "include",
           headers: getHeaders(guestId),
+          method: "PATCH",
         });
       }
       setConversationId(null);
@@ -371,11 +350,11 @@ export function SupportChatWidget() {
   if (isCheckout) return null;
 
   const quickPrompts = [
-    { label: "Place an Order", icon: "🛒" },
-    { label: "Order Status", icon: "📦" },
-    { label: "Shipping Info", icon: "🚚" },
-    { label: "Returns & Refunds", icon: "↩️" },
-    { label: "Account Help", icon: "👤" },
+    { icon: "🛒", label: "Place an Order" },
+    { icon: "📦", label: "Order Status" },
+    { icon: "🚚", label: "Shipping Info" },
+    { icon: "↩️", label: "Returns & Refunds" },
+    { icon: "👤", label: "Account Help" },
   ];
 
   const handleQuickPrompt = (prompt: string) => {
@@ -396,71 +375,94 @@ export function SupportChatWidget() {
       {open && (
         <div
           className={cn(
-            "relative z-10 flex w-[min(100vw-2rem,400px)] flex-col rounded-xl border bg-background shadow-xl",
+            `
+              relative z-10 flex w-[min(100vw-2rem,400px)] flex-col rounded-xl
+              border bg-background shadow-xl
+            `,
             "max-h-[min(90vh,640px)] overflow-hidden",
           )}
         >
           {/* Header with avatar – draggable */}
           <div
-            className="flex items-center gap-3 border-b px-4 py-3 cursor-grab active:cursor-grabbing select-none"
+            className={`
+              flex cursor-grab items-center gap-3 border-b px-4 py-3 select-none
+              active:cursor-grabbing
+            `}
             onMouseDown={onPointerDownDrag}
             onTouchStart={onPointerDownDrag}
           >
-            <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-sm">
+            <div
+              className={`
+              relative flex h-10 w-10 shrink-0 items-center justify-center
+              rounded-full bg-gradient-to-br from-violet-500 to-indigo-600
+              text-white shadow-sm
+            `}
+            >
               {/* Avatar placeholder – replace src with actual Alice avatar */}
               <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
                 fill="none"
+                height="20"
                 stroke="currentColor"
-                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                width="20"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
-              <span className="absolute -bottom-0.5 -right-0.5 block h-3 w-3 rounded-full border-2 border-background bg-green-500" />
+              <span
+                className={`
+                absolute -right-0.5 -bottom-0.5 block h-3 w-3 rounded-full
+                border-2 border-background bg-green-500
+              `}
+              />
             </div>
             <div className="flex flex-col">
-              <span className="text-base font-semibold leading-tight">
+              <span className="text-base leading-tight font-semibold">
                 {takenOverBy ? "Live Support Agent" : "Alice AI Support Agent"}
               </span>
-              <span className="text-muted-foreground text-sm">
+              <span className="text-sm text-muted-foreground">
                 {takenOverBy
                   ? "A team member is helping you"
                   : "Online · Typically replies instantly"}
               </span>
             </div>
             <Button
+              aria-label="Close chat"
+              className="ml-auto h-8 w-8 shrink-0 p-0"
+              onClick={handleCloseClick}
+              size="sm"
               type="button"
               variant="ghost"
-              size="sm"
-              aria-label="Close chat"
-              onClick={handleCloseClick}
-              className="ml-auto h-8 w-8 shrink-0 p-0"
             >
               ×
             </Button>
           </div>
 
           {/* Messages area */}
-          <div ref={messagesScrollRef} className="flex-1 overflow-y-auto p-3">
+          <div className="flex-1 overflow-y-auto p-3" ref={messagesScrollRef}>
             {messages.length === 0 && !loading && !error && (
               <div className="flex flex-col items-center gap-2 py-6 text-center">
-                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md">
+                <div
+                  className={`
+                  flex h-14 w-14 items-center justify-center rounded-full
+                  bg-gradient-to-br from-violet-500 to-indigo-600 text-white
+                  shadow-md
+                `}
+                >
                   <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="28"
-                    height="28"
-                    viewBox="0 0 24 24"
                     fill="none"
+                    height="28"
                     stroke="currentColor"
-                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                    width="28"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                     <circle cx="12" cy="7" r="4" />
@@ -469,31 +471,31 @@ export function SupportChatWidget() {
                 <p className="text-base font-medium">
                   Hi there! I&apos;m Alice
                 </p>
-                <p className="text-muted-foreground text-sm max-w-[240px]">
+                <p className="max-w-[240px] text-sm text-muted-foreground">
                   Your AI support assistant. How can I help you today?
                 </p>
               </div>
             )}
-            {error && <p className="text-destructive text-sm">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <ul className="space-y-2">
               {messages.map((m) => {
                 const date = m.createdAt ? new Date(m.createdAt) : null;
                 const timeStr = date
                   ? date.toLocaleTimeString(undefined, {
                       hour: "numeric",
-                      minute: "2-digit",
                       hour12: true,
+                      minute: "2-digit",
                     })
                   : "";
                 return (
                   <li
-                    key={m.id}
                     className={cn(
                       "rounded-lg px-3 py-2 text-base",
                       m.role === "customer"
                         ? "ml-8 bg-primary text-primary-foreground"
                         : "mr-8 bg-muted",
                     )}
+                    key={m.id}
                   >
                     <span className="font-medium capitalize">
                       {m.role === "customer" ? "You" : "Alice"}:{" "}
@@ -516,24 +518,36 @@ export function SupportChatWidget() {
               })}
               {loading && (
                 <li
-                  className="mr-8 flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-base"
-                  aria-live="polite"
                   aria-busy="true"
+                  aria-live="polite"
+                  className={`
+                    mr-8 flex items-center gap-2 rounded-lg bg-muted px-3 py-2
+                    text-base
+                  `}
                 >
                   <span className="font-medium text-muted-foreground">
                     {takenOverBy ? "Live Support Agent" : "Alice"}:
                   </span>
-                  <span className="flex gap-1" aria-hidden>
+                  <span aria-hidden className="flex gap-1">
                     <span
-                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-bounce"
+                      className={`
+                        h-1.5 w-1.5 animate-bounce rounded-full
+                        bg-muted-foreground/80
+                      `}
                       style={{ animationDelay: "0ms" }}
                     />
                     <span
-                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-bounce"
+                      className={`
+                        h-1.5 w-1.5 animate-bounce rounded-full
+                        bg-muted-foreground/80
+                      `}
                       style={{ animationDelay: "160ms" }}
                     />
                     <span
-                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground/80 animate-bounce"
+                      className={`
+                        h-1.5 w-1.5 animate-bounce rounded-full
+                        bg-muted-foreground/80
+                      `}
                       style={{ animationDelay: "320ms" }}
                     />
                   </span>
@@ -543,15 +557,21 @@ export function SupportChatWidget() {
           </div>
 
           {/* Quick prompts + input area */}
-          <div className="border-t px-3 pb-2 pt-2">
+          <div className="border-t px-3 pt-2 pb-2">
             {messages.length === 0 && !loading && (
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {quickPrompts.map((p) => (
                   <button
+                    className={`
+                      inline-flex items-center gap-1.5 rounded-full border
+                      bg-muted/50 px-3.5 py-2 text-sm font-medium
+                      transition-colors
+                      hover:border-primary/30 hover:bg-muted
+                      active:scale-95
+                    `}
                     key={p.label}
-                    type="button"
                     onClick={() => handleQuickPrompt(p.label)}
-                    className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-3.5 py-2 text-sm font-medium transition-colors hover:bg-muted hover:border-primary/30 active:scale-95"
+                    type="button"
                   >
                     <span>{p.icon}</span>
                     <span>{p.label}</span>
@@ -561,18 +581,18 @@ export function SupportChatWidget() {
             )}
             <div className="flex gap-2">
               <Input
-                placeholder="Type a message..."
-                value={input}
+                className="min-w-0 flex-1"
+                disabled={loading}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={loading}
-                className="min-w-0 flex-1"
+                placeholder="Type a message..."
+                value={input}
               />
               <Button
-                type="button"
-                size="sm"
-                onClick={() => void sendMessage()}
                 disabled={loading || !input.trim()}
+                onClick={() => void sendMessage()}
+                size="sm"
+                type="button"
               >
                 Send
               </Button>
@@ -580,7 +600,7 @@ export function SupportChatWidget() {
           </div>
         </div>
       )}
-      <Dialog open={endChatDialogOpen} onOpenChange={setEndChatDialogOpen}>
+      <Dialog onOpenChange={setEndChatDialogOpen} open={endChatDialogOpen}>
         <DialogContent
           className="sm:max-w-md"
           onPointerDownOutside={(e) => e.preventDefault()}
@@ -594,17 +614,17 @@ export function SupportChatWidget() {
           </DialogHeader>
           <DialogFooter>
             <Button
+              disabled={endingChat}
+              onClick={() => setEndChatDialogOpen(false)}
               type="button"
               variant="outline"
-              onClick={() => setEndChatDialogOpen(false)}
-              disabled={endingChat}
             >
               Cancel
             </Button>
             <Button
-              type="button"
-              onClick={() => void handleEndChatConfirm()}
               disabled={endingChat}
+              onClick={() => void handleEndChatConfirm()}
+              type="button"
             >
               {endingChat ? "Ending…" : "End chat"}
             </Button>
@@ -613,33 +633,57 @@ export function SupportChatWidget() {
       </Dialog>
 
       <Button
-        type="button"
-        size="icon"
         aria-label={open ? "Close chat" : "Open support chat"}
+        className={cn(
+          `
+            h-12 w-12 cursor-grab rounded-full shadow-md
+            active:cursor-grabbing
+          `,
+          open && "relative z-0",
+        )}
         onClick={() => {
           if (!hasDraggedRef.current) setOpen((o) => !o);
         }}
         onMouseDown={onPointerDownDrag}
         onTouchStart={onPointerDownDrag}
-        className={cn(
-          "h-12 w-12 rounded-full shadow-md cursor-grab active:cursor-grabbing",
-          open && "relative z-0",
-        )}
+        size="icon"
+        type="button"
       >
         <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
           fill="none"
+          height="20"
           stroke="currentColor"
-          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+          width="20"
+          xmlns="http://www.w3.org/2000/svg"
         >
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
         </svg>
       </Button>
     </div>
   );
+}
+
+function getGuestId(): null | string {
+  if (typeof window === "undefined") return null;
+  let id = sessionStorage.getItem(GUEST_ID_KEY);
+  if (
+    !id ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      id,
+    )
+  ) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(GUEST_ID_KEY, id);
+  }
+  return id;
+}
+
+function getHeaders(guestId: null | string): HeadersInit {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (guestId) h["X-Support-Guest-Id"] = guestId;
+  return h;
 }

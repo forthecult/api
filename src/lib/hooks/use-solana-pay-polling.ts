@@ -4,38 +4,38 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SolanaPayStatus =
-  | "idle"
-  | "polling"
   | "confirmed"
+  | "connection-error"
   | "error"
-  | "connection-error";
+  | "idle"
+  | "polling";
 
 interface UseSolanaPayPollingOptions {
-  /** Deposit address to poll for payments */
-  depositAddress: string | null;
-  /** Order ID for confirmation */
-  orderId: string | null;
   /** Amount as string (already formatted for the token's decimals) */
-  amount: string | null;
-  /** SPL token mint address */
-  splToken: string | null;
+  amount: null | string;
+  /** Deposit address to poll for payments */
+  depositAddress: null | string;
   /** Whether to enable polling */
   enabled: boolean;
   /** Callback when payment is confirmed (receives orderId; called before redirect unless skipRedirect) */
   onConfirmed?: (orderId: string) => void;
-  /** Custom success redirect URL (used only when skipRedirect is false) */
-  successUrl?: string;
-  /** When true, do not call router.push; caller handles navigation via onConfirmed */
-  skipRedirect?: boolean;
+  /** Order ID for confirmation */
+  orderId: null | string;
+  /** Payer wallet address (so we can link order to user when they sign up later) */
+  payerWalletAddress?: null | string;
   /** Polling interval in ms (default: 1500) */
   pollInterval?: number;
-  /** Payer wallet address (so we can link order to user when they sign up later) */
-  payerWalletAddress?: string | null;
+  /** When true, do not call router.push; caller handles navigation via onConfirmed */
+  skipRedirect?: boolean;
+  /** SPL token mint address */
+  splToken: null | string;
+  /** Custom success redirect URL (used only when skipRedirect is false) */
+  successUrl?: string;
 }
 
 interface UseSolanaPayPollingResult {
+  signature: null | string;
   status: SolanaPayStatus;
-  signature: string | null;
   stopPolling: () => void;
 }
 
@@ -44,21 +44,21 @@ interface UseSolanaPayPollingResult {
  * Used by both CheckoutClient and CryptoPayClient.
  */
 export function useSolanaPayPolling({
-  depositAddress,
-  orderId,
   amount,
-  splToken,
+  depositAddress,
   enabled,
   onConfirmed,
-  successUrl,
-  skipRedirect = false,
-  pollInterval = 1500,
+  orderId,
   payerWalletAddress,
+  pollInterval = 1500,
+  skipRedirect = false,
+  splToken,
+  successUrl,
 }: UseSolanaPayPollingOptions): UseSolanaPayPollingResult {
   const router = useRouter();
   const [status, setStatus] = useState<SolanaPayStatus>("idle");
-  const [signature, setSignature] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [signature, setSignature] = useState<null | string>(null);
+  const pollRef = useRef<null | ReturnType<typeof setInterval>>(null);
 
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
@@ -77,8 +77,8 @@ export function useSolanaPayPolling({
     setStatus("polling");
 
     const params = new URLSearchParams({
-      depositAddress,
       amount,
+      depositAddress,
       splToken,
     });
 
@@ -88,9 +88,9 @@ export function useSolanaPayPolling({
           `/api/payments/solana-pay/status?${params.toString()}`,
         );
         const data = (await res.json()) as {
-          status: string;
           message?: string;
           signature?: string;
+          status: string;
         };
 
         if (data.status === "confirmed") {
@@ -101,18 +101,18 @@ export function useSolanaPayPolling({
           // Confirm order on server
           try {
             await fetch("/api/checkout/solana-pay/confirm", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
+                amount,
                 depositAddress,
                 orderId,
                 signature: data.signature,
-                amount,
                 splToken,
                 ...(payerWalletAddress?.trim()
                   ? { payerWalletAddress: payerWalletAddress.trim() }
                   : {}),
               }),
+              headers: { "Content-Type": "application/json" },
+              method: "POST",
             });
           } catch {
             // order stays pending; can be reconciled later
@@ -162,8 +162,8 @@ export function useSolanaPayPolling({
   ]);
 
   return {
-    status,
     signature,
+    status,
     stopPolling,
   };
 }

@@ -4,12 +4,12 @@ import type {
   customPrintsTable,
   orderItemsTable,
   ordersTable,
-  productVariantsTable,
   productsTable,
+  productVariantsTable,
 } from "./tables";
 
-export type Product = InferSelectModel<typeof productsTable>;
-export type ProductVariant = InferSelectModel<typeof productVariantsTable>;
+export type CustomPrint = InferSelectModel<typeof customPrintsTable>;
 export type Order = InferSelectModel<typeof ordersTable>;
 export type OrderItem = InferSelectModel<typeof orderItemsTable>;
-export type CustomPrint = InferSelectModel<typeof customPrintsTable>;
+export type Product = InferSelectModel<typeof productsTable>;
+export type ProductVariant = InferSelectModel<typeof productVariantsTable>;

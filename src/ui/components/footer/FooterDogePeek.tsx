@@ -15,8 +15,12 @@ export function FooterDogePeek() {
 
   return (
     <div
-      className="pointer-events-none absolute right-6 overflow-hidden sm:right-10 lg:right-16"
       aria-hidden
+      className={`
+        pointer-events-none absolute right-6 overflow-hidden
+        sm:right-10
+        lg:right-16
+      `}
       style={{
         bottom: "100%",
         height: PEEK_HEIGHT,
@@ -32,13 +36,13 @@ export function FooterDogePeek() {
         height={869}
         role="presentation"
         src="/images/doge-peek.png"
+        style={{
+          display: "block",
+          height: "auto",
+          width: IMAGE_WIDTH,
+        }}
         unoptimized
         width={1000}
-        style={{
-          width: IMAGE_WIDTH,
-          height: "auto",
-          display: "block",
-        }}
       />
     </div>
   );

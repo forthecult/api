@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
 
 import { Button } from "~/ui/primitives/button";
 
@@ -29,7 +29,12 @@ export default function RootError({ error, reset }: ErrorPageProps) {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">
       <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-destructive/10">
+        <div
+          className={`
+          flex h-20 w-20 items-center justify-center rounded-full
+          bg-destructive/10
+        `}
+        >
           <AlertTriangle className="h-10 w-10 text-destructive" />
         </div>
 
@@ -57,7 +62,12 @@ export default function RootError({ error, reset }: ErrorPageProps) {
           </p>
         )}
 
-        <div className="flex flex-col gap-3 sm:flex-row">
+        <div
+          className={`
+          flex flex-col gap-3
+          sm:flex-row
+        `}
+        >
           <Button onClick={reset} variant="default">
             <RefreshCw className="mr-2 h-4 w-4" />
             Try again

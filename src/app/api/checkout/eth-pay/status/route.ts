@@ -1,22 +1,23 @@
+import type { Chain } from "viem";
+
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import {
   createPublicClient,
-  http,
-  parseAbiItem,
   formatEther,
   formatUnits,
+  http,
+  parseAbiItem,
 } from "viem";
-import type { Chain } from "viem";
 import {
-  mainnet,
   arbitrum,
   base,
-  polygon,
-  bsc,
-  optimism,
-  sepolia,
   baseSepolia,
+  bsc,
+  mainnet,
+  optimism,
+  polygon,
+  sepolia,
 } from "viem/chains";
 
 import { db } from "~/db";
@@ -32,62 +33,14 @@ import {
 // Chain configurations for viem (typed as Chain to allow different block explorer names)
 const CHAINS: Record<number, Chain> = {
   1: mainnet,
-  42161: arbitrum,
-  8453: base,
-  137: polygon,
-  56: bsc,
   10: optimism,
-  11155111: sepolia,
+  56: bsc,
+  137: polygon,
+  8453: base,
+  42161: arbitrum,
   84532: baseSepolia,
+  11155111: sepolia,
 };
-
-/**
- * Get the balance of an address (ETH or ERC20 token)
- */
-async function getBalance(
-  chainId: number,
-  address: `0x${string}`,
-  token: "ETH" | "USDC" | "USDT",
-): Promise<bigint> {
-  const chain = CHAINS[chainId];
-  if (!chain) throw new Error(`Unsupported chain: ${chainId}`);
-
-  const client = createPublicClient({
-    chain,
-    transport: http(getRpcUrl(chainId)),
-  });
-
-  if (token === "ETH") {
-    return client.getBalance({ address });
-  }
-
-  // ERC20 token
-  const tokenAddress = getTokenAddress(chainId, token);
-  if (!tokenAddress)
-    throw new Error(`Token ${token} not supported on chain ${chainId}`);
-
-  const balance = await client.readContract({
-    address: tokenAddress,
-    abi: [parseAbiItem("function balanceOf(address) view returns (uint256)")],
-    functionName: "balanceOf",
-    args: [address],
-  });
-
-  return balance as bigint;
-}
-
-/**
- * Check if the payment amount is sufficient
- */
-function isPaymentSufficient(
-  balance: bigint,
-  expectedAmount: bigint,
-  token: "ETH" | "USDC" | "USDT",
-): boolean {
-  // Allow 0.1% tolerance for rounding/gas
-  const tolerance = expectedAmount / 1000n;
-  return balance >= expectedAmount - tolerance;
-}
 
 /**
  * GET /api/checkout/eth-pay/status
@@ -130,10 +83,10 @@ export async function GET(request: NextRequest) {
     if (order.paymentStatus === "paid" || order.paymentStatus === "confirmed") {
       return NextResponse.json({
         orderId,
-        status: "confirmed",
-        paymentStatus: order.paymentStatus,
-        txHash: order.cryptoTxHash,
         paidAt: order.updatedAt,
+        paymentStatus: order.paymentStatus,
+        status: "confirmed",
+        txHash: order.cryptoTxHash,
       });
     }
 
@@ -141,8 +94,8 @@ export async function GET(request: NextRequest) {
     if (order.status === "cancelled" || order.status === "expired") {
       return NextResponse.json({
         orderId,
-        status: order.status,
         paymentStatus: order.paymentStatus,
+        status: order.status,
       });
     }
 
@@ -157,10 +110,10 @@ export async function GET(request: NextRequest) {
         .where(eq(ordersTable.id, orderId));
 
       return NextResponse.json({
-        orderId,
-        status: "expired",
-        paymentStatus: "pending",
         message: "Payment window expired. Please create a new order.",
+        orderId,
+        paymentStatus: "pending",
+        status: "expired",
       });
     }
 
@@ -183,13 +136,13 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       console.error("Error fetching balance:", err);
       return NextResponse.json({
-        orderId,
-        status: "pending",
-        paymentStatus: "pending",
-        depositAddress,
         chainId,
-        token,
+        depositAddress,
         error: "Could not verify balance. Please try again.",
+        orderId,
+        paymentStatus: "pending",
+        status: "pending",
+        token,
       });
     }
 
@@ -203,16 +156,16 @@ export async function GET(request: NextRequest) {
       } else {
         // Return pending with balance info - frontend needs to provide expected amount
         return NextResponse.json({
-          orderId,
-          status: "pending",
-          paymentStatus: "pending",
-          depositAddress,
-          chainId,
-          token,
           balance: balance.toString(),
           balanceFormatted: formatEther(balance),
-          totalCents: order.totalCents,
+          chainId,
+          depositAddress,
           message: "Awaiting payment",
+          orderId,
+          paymentStatus: "pending",
+          status: "pending",
+          token,
+          totalCents: order.totalCents,
         });
       }
     } else {
@@ -238,31 +191,27 @@ export async function GET(request: NextRequest) {
       // Payment detected — but the status endpoint is READ-ONLY.
       // The client must call POST /api/checkout/eth-pay/confirm to finalize.
       return NextResponse.json({
-        orderId,
-        status: "ready_to_confirm",
-        paymentStatus: "pending",
-        depositAddress,
-        chainId,
-        token,
         balance: balance.toString(),
         balanceFormatted,
+        chainId,
+        depositAddress,
         expectedAmount: expectedAmount.toString(),
         expectedFormatted,
         message:
           "Payment detected! Please call the confirm endpoint to finalize.",
+        orderId,
+        paymentStatus: "pending",
+        status: "ready_to_confirm",
+        token,
       });
     }
 
     // Payment not yet received or insufficient
     return NextResponse.json({
-      orderId,
-      status: "pending",
-      paymentStatus: "pending",
-      depositAddress,
-      chainId,
-      token,
       balance: balance.toString(),
       balanceFormatted,
+      chainId,
+      depositAddress,
       expectedAmount: expectedAmount.toString(),
       expectedFormatted,
       expiresAt: expiresAt.toISOString(),
@@ -270,6 +219,10 @@ export async function GET(request: NextRequest) {
         balance > 0n
           ? `Partial payment received: ${balanceFormatted} ${token}. Expected: ${expectedFormatted} ${token}`
           : "Awaiting payment",
+      orderId,
+      paymentStatus: "pending",
+      status: "pending",
+      token,
     });
   } catch (err) {
     console.error("ETH Pay status error:", err);
@@ -278,4 +231,52 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+/**
+ * Get the balance of an address (ETH or ERC20 token)
+ */
+async function getBalance(
+  chainId: number,
+  address: `0x${string}`,
+  token: "ETH" | "USDC" | "USDT",
+): Promise<bigint> {
+  const chain = CHAINS[chainId];
+  if (!chain) throw new Error(`Unsupported chain: ${chainId}`);
+
+  const client = createPublicClient({
+    chain,
+    transport: http(getRpcUrl(chainId)),
+  });
+
+  if (token === "ETH") {
+    return client.getBalance({ address });
+  }
+
+  // ERC20 token
+  const tokenAddress = getTokenAddress(chainId, token);
+  if (!tokenAddress)
+    throw new Error(`Token ${token} not supported on chain ${chainId}`);
+
+  const balance = await client.readContract({
+    abi: [parseAbiItem("function balanceOf(address) view returns (uint256)")],
+    address: tokenAddress,
+    args: [address],
+    functionName: "balanceOf",
+  });
+
+  return balance as bigint;
+}
+
+/**
+ * Check if the payment amount is sufficient
+ */
+function isPaymentSufficient(
+  balance: bigint,
+  expectedAmount: bigint,
+  token: "ETH" | "USDC" | "USDT",
+): boolean {
+  // Allow 0.1% tolerance for rounding/gas
+  const tolerance = expectedAmount / 1000n;
+  return balance >= expectedAmount - tolerance;
 }

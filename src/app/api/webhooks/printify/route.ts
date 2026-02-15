@@ -13,30 +13,54 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { updateOrderFromPrintifyWebhook } from "~/lib/printify-orders";
 import {
-  handlePrintifyProductPublished,
   handlePrintifyProductDeleted,
+  handlePrintifyProductPublished,
 } from "~/lib/printify-sync";
 
 // Printify webhook event structure
-type PrintifyWebhookPayload = {
-  id: string;
-  type: string;
+interface PrintifyWebhookPayload {
   created_at: string;
+  id: string;
   resource: {
-    id: string;
-    type: "shop" | "product" | "order";
     data: {
-      status?: string;
+      [key: string]: unknown;
       shipment?: {
         carrier?: string;
+        delivered_at?: null | string;
         number?: string;
         url?: string;
-        delivered_at?: string | null;
       };
-      [key: string]: unknown;
+      status?: string;
     };
+    id: string;
+    type: "order" | "product" | "shop";
   };
-};
+  type: string;
+}
+
+/**
+ * GET /api/webhooks/printify
+ * Health check and Printify webhook validation endpoint.
+ * Always returns 200 so Printify's URL validation (code 9004) succeeds when they
+ * GET this URL during registration.
+ */
+export async function GET(request: NextRequest) {
+  console.info("[Printify webhook] GET received (validation check)");
+  return NextResponse.json({
+    service: "printify-webhook",
+    status: "ok",
+    timestamp: new Date().toISOString(),
+  });
+}
+
+/**
+ * HEAD /api/webhooks/printify
+ * Some providers validate with HEAD; return 200 so registration (9004) succeeds.
+ */
+export async function HEAD() {
+  console.info("[Printify webhook] HEAD received (validation check)");
+  return new NextResponse(null, { status: 200 });
+}
 
 /**
  * POST /api/webhooks/printify
@@ -54,7 +78,7 @@ export async function POST(request: NextRequest) {
     if (!rawBody?.trim()) {
       return NextResponse.json({ received: true });
     }
-    let payload: PrintifyWebhookPayload | null = null;
+    let payload: null | PrintifyWebhookPayload = null;
     try {
       payload = JSON.parse(rawBody) as PrintifyWebhookPayload;
     } catch {
@@ -175,11 +199,11 @@ export async function POST(request: NextRequest) {
 
     // Update our order based on the event
     const result = await updateOrderFromPrintifyWebhook(printifyOrderId, {
-      type: eventType,
       data: {
-        status: payload.resource.data?.status,
         shipment: payload.resource.data?.shipment,
+        status: payload.resource.data?.status,
       },
+      type: eventType,
     });
 
     if (!result.success) {
@@ -189,9 +213,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      received: true,
-      processed: result.success,
       error: result.error,
+      processed: result.success,
+      received: true,
     });
   } catch (error) {
     console.error("Printify webhook error:", error);
@@ -200,28 +224,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-/**
- * GET /api/webhooks/printify
- * Health check and Printify webhook validation endpoint.
- * Always returns 200 so Printify's URL validation (code 9004) succeeds when they
- * GET this URL during registration.
- */
-export async function GET(request: NextRequest) {
-  console.info("[Printify webhook] GET received (validation check)");
-  return NextResponse.json({
-    status: "ok",
-    service: "printify-webhook",
-    timestamp: new Date().toISOString(),
-  });
-}
-
-/**
- * HEAD /api/webhooks/printify
- * Some providers validate with HEAD; return 200 so registration (9004) succeeds.
- */
-export async function HEAD() {
-  console.info("[Printify webhook] HEAD received (validation check)");
-  return new NextResponse(null, { status: 200 });
 }

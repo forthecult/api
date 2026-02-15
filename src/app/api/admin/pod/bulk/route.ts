@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { bulkCreate } from "@/lib/pod/bulk-creator";
+
 import { getAdminAuth } from "@/lib/admin-api-auth";
+import { bulkCreate } from "@/lib/pod/bulk-creator";
 
 /**
  * POST /api/admin/pod/bulk
@@ -20,19 +21,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
   const input = body as {
-    image?: string;
-    title?: string;
     description?: string;
-    targets?: Array<{
-      provider: string;
-      blueprintId: string;
-      printProviderId?: number;
-      positions: string[];
-      placementStrategy: string;
-      variantFilter?: { colors?: string[]; sizes?: string[] };
-      pricing: { type: string; value: number };
-    }>;
+    image?: string;
     syncToStore?: boolean;
+    targets?: {
+      blueprintId: string;
+      placementStrategy: string;
+      positions: string[];
+      pricing: { type: string; value: number };
+      printProviderId?: number;
+      provider: string;
+      variantFilter?: { colors?: string[]; sizes?: string[] };
+    }[];
+    title?: string;
   };
   if (
     !input?.image ||
@@ -51,29 +52,29 @@ export async function POST(request: NextRequest) {
   }
   try {
     const result = await bulkCreate({
-      image: input.image,
-      title: input.title,
       description: input.description,
+      image: input.image,
+      syncToStore: input.syncToStore ?? true,
       targets: input.targets.map((t) => ({
-        provider: t.provider as "printify" | "printful",
         blueprintId: t.blueprintId,
-        printProviderId: t.printProviderId,
-        positions: t.positions,
         placementStrategy: t.placementStrategy as
           | "center"
           | "center-top"
+          | "custom"
           | "fill"
           | "fit"
           | "left-chest"
-          | "pocket"
-          | "custom",
-        variantFilter: t.variantFilter,
+          | "pocket",
+        positions: t.positions,
         pricing: {
-          type: t.pricing.type as "markup_percent" | "markup_fixed" | "fixed",
+          type: t.pricing.type as "fixed" | "markup_fixed" | "markup_percent",
           value: t.pricing.value,
         },
+        printProviderId: t.printProviderId,
+        provider: t.provider as "printful" | "printify",
+        variantFilter: t.variantFilter,
       })),
-      syncToStore: input.syncToStore ?? true,
+      title: input.title,
     });
     return NextResponse.json(result);
   } catch (e) {

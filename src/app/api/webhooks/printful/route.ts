@@ -1,16 +1,23 @@
-import crypto, { createHmac } from "node:crypto";
-import { type NextRequest, NextResponse } from "next/server";
-
 import { eq, inArray } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
+import crypto, { createHmac } from "node:crypto";
+
 import { db } from "~/db";
 import { productsTable, productVariantsTable } from "~/db/schema";
-
 import { updateOrderFromPrintfulWebhook } from "~/lib/printful-orders";
 import {
+  handleProductDeleted,
   handleProductSynced,
   handleProductUpdated,
-  handleProductDeleted,
 } from "~/lib/printful-sync";
+
+// Also support GET for webhook URL verification (if Printful sends verification requests)
+export async function GET() {
+  return NextResponse.json({
+    message: "Printful webhook endpoint",
+    status: "ok",
+  });
+}
 
 /**
  * POST /api/webhooks/printful
@@ -85,66 +92,66 @@ export async function POST(request: NextRequest) {
 
     // Parse the webhook payload
     let payload: {
-      type: string;
-      occurred_at?: string;
-      retries?: number;
-      store_id?: number;
       data: {
+        catalog_product_id?: number;
+        // catalog_stock_updated / catalog_price_changed specific
+        catalog_variant_id?: number;
         order?: {
-          id?: number;
-          external_id?: string | null;
-          status?: string;
           costs?: {
+            additional_fee?: null | string;
             calculation_status?: string;
-            currency?: string | null;
-            subtotal?: string | null;
-            discount?: string | null;
-            shipping?: string | null;
-            digitization?: string | null;
-            additional_fee?: string | null;
-            fulfillment_fee?: string | null;
-            retail_delivery_fee?: string | null;
-            tax?: string | null;
-            vat?: string | null;
-            total?: string | null;
+            currency?: null | string;
+            digitization?: null | string;
+            discount?: null | string;
+            fulfillment_fee?: null | string;
+            retail_delivery_fee?: null | string;
+            shipping?: null | string;
+            subtotal?: null | string;
+            tax?: null | string;
+            total?: null | string;
+            vat?: null | string;
           };
-        };
-        shipment?: {
+          external_id?: null | string;
           id?: number;
           status?: string;
-          tracking_number?: string;
-          tracking_url?: string;
+        };
+        reason?: string;
+        shipment?: {
           carrier?: string;
-          shipped_at?: string;
           delivered_at?: string;
           delivery_status?: string;
-          tracking_events?: Array<{
-            triggered_at: string;
-            description: string;
-          }>;
           estimated_delivery?: {
             from_date?: string;
             to_date?: string;
           };
+          id?: number;
+          shipped_at?: string;
+          status?: string;
+          tracking_events?: {
+            description: string;
+            triggered_at: string;
+          }[];
+          tracking_number?: string;
+          tracking_url?: string;
         };
-        sync_product?: {
-          id: number;
-          external_id?: string | null;
-          name?: string;
-          variants?: number;
-          synced?: number;
-          thumbnail_url?: string | null;
-          is_ignored?: boolean;
-        };
-        reason?: string;
-        // catalog_stock_updated / catalog_price_changed specific
-        catalog_variant_id?: number;
-        catalog_product_id?: number;
+        status?: string;
         stock_status?: string;
+        sync_product?: {
+          external_id?: null | string;
+          id: number;
+          is_ignored?: boolean;
+          name?: string;
+          synced?: number;
+          thumbnail_url?: null | string;
+          variants?: number;
+        };
         // mockup_task_finished specific
         task_id?: string;
-        status?: string;
       };
+      occurred_at?: string;
+      retries?: number;
+      store_id?: number;
+      type: string;
     };
 
     try {
@@ -285,7 +292,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the Printful order ID to look up our order
-    let printfulOrderId: string | null = null;
+    let printfulOrderId: null | string = null;
 
     if (orderId) {
       printfulOrderId = String(orderId);
@@ -301,11 +308,11 @@ export async function POST(request: NextRequest) {
     // order_refunded, shipment_out_of_stock, shipment_canceled,
     // shipment_put_hold, shipment_put_hold_approval, etc.)
     const result = await updateOrderFromPrintfulWebhook(printfulOrderId, {
-      type: eventType,
       data: {
         order: payload.data.order,
         shipment: payload.data.shipment,
       },
+      type: eventType,
     });
 
     if (!result.success) {
@@ -322,12 +329,4 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
-}
-
-// Also support GET for webhook URL verification (if Printful sends verification requests)
-export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    message: "Printful webhook endpoint",
-  });
 }

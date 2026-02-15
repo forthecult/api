@@ -3,26 +3,26 @@ import { eq } from "drizzle-orm";
 import { db } from "~/db";
 import { affiliateTable } from "~/db/schema";
 
-export type AffiliateOrderResult = {
-  affiliateId: string;
+export interface AffiliateOrderResult {
   affiliateCode: string;
+  affiliateId: string;
   commissionCents: number;
   discountCents: number;
-};
+}
 
 /**
  * Resolve affiliate by code (must be approved). Compute customer discount and commission.
  * Commission is based on order total after discount.
  */
 export async function resolveAffiliateForOrder(
-  code: string | undefined | null,
+  code: null | string | undefined,
   subtotalCents: number,
   shippingFeeCents: number,
-): Promise<{
+): Promise<null | {
   affiliate: AffiliateOrderResult;
   discountCents: number;
   totalAfterDiscountCents: number;
-} | null> {
+}> {
   const raw = code?.trim();
   if (!raw || raw.length === 0) return null;
 
@@ -30,13 +30,13 @@ export async function resolveAffiliateForOrder(
 
   const [affiliate] = await db
     .select({
-      id: affiliateTable.id,
       code: affiliateTable.code,
-      status: affiliateTable.status,
       commissionType: affiliateTable.commissionType,
       commissionValue: affiliateTable.commissionValue,
       customerDiscountType: affiliateTable.customerDiscountType,
       customerDiscountValue: affiliateTable.customerDiscountValue,
+      id: affiliateTable.id,
+      status: affiliateTable.status,
     })
     .from(affiliateTable)
     .where(eq(affiliateTable.code, normalizedCode))
@@ -85,8 +85,8 @@ export async function resolveAffiliateForOrder(
 
   return {
     affiliate: {
-      affiliateId: affiliate.id,
       affiliateCode: affiliate.code,
+      affiliateId: affiliate.id,
       commissionCents,
       discountCents,
     },

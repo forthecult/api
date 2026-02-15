@@ -6,8 +6,8 @@ export default function OrdersLoading() {
       <Skeleton className="h-8 w-48" />
       {Array.from({ length: 4 }).map((_, i) => (
         <div
-          key={`order-skeleton-${i}`}
           className="flex items-center gap-4 rounded-lg border p-4"
+          key={`order-skeleton-${i}`}
         >
           <Skeleton className="h-16 w-16 rounded" />
           <div className="flex-1 space-y-2">

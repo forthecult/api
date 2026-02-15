@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
@@ -6,22 +7,40 @@ import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { CollectionPageStructuredData } from "~/ui/components/structured-data";
 import { PageLoadingFallback } from "~/ui/primitives/spinner";
+
 import { ProductsClient } from "./products-client";
 
 const siteUrl = getPublicSiteUrl();
 
 export const metadata: Metadata = {
-  title: "Products",
-  description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
-  openGraph: {
-    title: `Products | ${SEO_CONFIG.name}`,
-    description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
-    type: "website",
-  },
   alternates: {
     canonical: `${siteUrl}/products`,
   },
+  description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
+  openGraph: {
+    description: `Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`,
+    title: `Products | ${SEO_CONFIG.name}`,
+    type: "website",
+  },
+  title: "Products",
 };
+
+interface CategoryOption {
+  /** Display image: category image or product fallback (not persisted). */
+  image?: null | string;
+  name: string;
+  slug: string;
+}
+
+interface PageProps {
+  searchParams: Promise<{
+    category?: string;
+    page?: string;
+    q?: string;
+    search?: string;
+    sort?: string;
+  }>;
+}
 
 interface Product {
   category: string;
@@ -37,75 +56,12 @@ interface Product {
   rating: number;
 }
 
-interface CategoryOption {
-  slug: string;
-  name: string;
-  /** Display image: category image or product fallback (not persisted). */
-  image?: string | null;
-}
-
 interface ProductsResponse {
-  items?: Product[];
-  total?: number;
-  page?: number;
-  totalPages?: number;
   categories?: CategoryOption[];
-}
-
-async function fetchProducts(
-  page: number,
-  limit: number,
-  category?: string,
-  sort?: string,
-  search?: string,
-): Promise<ProductsResponse> {
-  const baseUrl = getServerBaseUrl();
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(limit),
-  });
-  if (category && category !== "All") {
-    params.set("category", category);
-  } else {
-    params.set("forStorefront", "1");
-  }
-  if (sort) params.set("sort", sort);
-  const q = (search ?? "").trim().slice(0, 100);
-  if (q) params.set("q", q);
-
-  try {
-    const res = await fetch(`${baseUrl}/api/products?${params}`, {
-      next: { revalidate: 60 }, // Cache for 60 seconds
-    });
-    if (!res.ok) {
-      console.error("Failed to fetch products:", res.status);
-      return {
-        items: [],
-        total: 0,
-        totalPages: 1,
-        categories: [] as CategoryOption[],
-      };
-    }
-    return res.json();
-  } catch (error) {
-    console.error("Error fetching products:", error);
-    return {
-      items: [],
-      total: 0,
-      totalPages: 1,
-      categories: [] as CategoryOption[],
-    };
-  }
-}
-
-interface PageProps {
-  searchParams: Promise<{
-    page?: string;
-    category?: string;
-    sort?: string;
-    q?: string;
-    search?: string;
-  }>;
+  items?: Product[];
+  page?: number;
+  total?: number;
+  totalPages?: number;
 }
 
 export default async function ProductsPage({ searchParams }: PageProps) {
@@ -121,12 +77,12 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   const limit = 12;
   const sortParam = params.sort?.trim() || "newest";
   const sort = [
+    "best_selling",
+    "manual",
     "newest",
     "price_asc",
     "price_desc",
-    "best_selling",
     "rating",
-    "manual",
   ].includes(sortParam)
     ? sortParam
     : "newest";
@@ -147,38 +103,84 @@ export default async function ProductsPage({ searchParams }: PageProps) {
   }));
 
   const categories: CategoryOption[] = [
-    { slug: "all", name: "All" },
+    { name: "All", slug: "all" },
     ...(data.categories ?? []),
   ];
 
   return (
     <>
       <CollectionPageStructuredData
-        name="All Products"
         description={`Browse our latest products at ${SEO_CONFIG.name}. Quality apparel, tech accessories, and curated essentials.`}
-        url={`${siteUrl}/products`}
+        name="All Products"
         numberOfItems={data.total ?? 0}
+        url={`${siteUrl}/products`}
       />
       <Suspense fallback={<PageLoadingFallback />}>
         <ProductsClient
-          initialProducts={products}
           initialCategories={categories}
-          initialPage={page}
-          initialTotalPages={data.totalPages ?? 1}
-          initialTotal={data.total ?? 0}
           initialCategory="all"
+          initialPage={page}
+          initialProducts={products}
+          initialSearch={searchQuery}
           initialSort={
             sort as
+              | "best_selling"
+              | "manual"
               | "newest"
               | "price_asc"
               | "price_desc"
-              | "best_selling"
               | "rating"
-              | "manual"
           }
-          initialSearch={searchQuery}
+          initialTotal={data.total ?? 0}
+          initialTotalPages={data.totalPages ?? 1}
         />
       </Suspense>
     </>
   );
+}
+
+async function fetchProducts(
+  page: number,
+  limit: number,
+  category?: string,
+  sort?: string,
+  search?: string,
+): Promise<ProductsResponse> {
+  const baseUrl = getServerBaseUrl();
+  const params = new URLSearchParams({
+    limit: String(limit),
+    page: String(page),
+  });
+  if (category && category !== "All") {
+    params.set("category", category);
+  } else {
+    params.set("forStorefront", "1");
+  }
+  if (sort) params.set("sort", sort);
+  const q = (search ?? "").trim().slice(0, 100);
+  if (q) params.set("q", q);
+
+  try {
+    const res = await fetch(`${baseUrl}/api/products?${params}`, {
+      next: { revalidate: 60 }, // Cache for 60 seconds
+    });
+    if (!res.ok) {
+      console.error("Failed to fetch products:", res.status);
+      return {
+        categories: [] as CategoryOption[],
+        items: [],
+        total: 0,
+        totalPages: 1,
+      };
+    }
+    return res.json();
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return {
+      categories: [] as CategoryOption[],
+      items: [],
+      total: 0,
+      totalPages: 1,
+    };
+  }
 }

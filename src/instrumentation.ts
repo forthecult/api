@@ -22,27 +22,27 @@ export function register(): void {
   ) {
     const noop = (): void => {};
     const stubRequest = (result: unknown) => ({
-      result,
       addEventListener: noop,
       removeEventListener: noop,
+      result,
     });
     const stubStore = {
+      add: noop,
+      clear: noop,
+      delete: noop,
       get: () => stubRequest(undefined),
       put: noop,
-      add: noop,
-      delete: noop,
-      clear: noop,
     };
     const stubTx = {
-      objectStore: () => stubStore,
       addEventListener: noop,
+      objectStore: () => stubStore,
       removeEventListener: noop,
     };
     const stubDb = {
-      transaction: () => stubTx,
       close: noop,
       createObjectStore: noop,
       deleteObjectStore: noop,
+      transaction: () => stubTx,
     };
     (
       globalThis as unknown as {

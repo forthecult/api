@@ -4,8 +4,9 @@
  * Used by scripts/upload-product-mockups.ts.
  */
 
-import sharp from "sharp";
 import type { UTApi } from "uploadthing/server";
+
+import sharp from "sharp";
 
 import { slugify } from "~/lib/slugify";
 
@@ -13,7 +14,7 @@ const WEBP_QUALITY = 85;
 const MAX_WIDTH = 1600;
 
 /** Whether the URL is from a Printful or Printify CDN (should be re-hosted). */
-export function isProviderImageUrl(url: string | null): boolean {
+export function isProviderImageUrl(url: null | string): boolean {
   if (!url || typeof url !== "string") return false;
   try {
     const host = new URL(url).hostname.toLowerCase();
@@ -24,7 +25,7 @@ export function isProviderImageUrl(url: string | null): boolean {
 }
 
 /** Whether the URL is already from UploadThing (no need to re-upload). */
-export function isUploadThingUrl(url: string | null): boolean {
+export function isUploadThingUrl(url: null | string): boolean {
   if (!url || typeof url !== "string") return false;
   try {
     const host = new URL(url).hostname.toLowerCase();
@@ -41,24 +42,47 @@ export function isUploadThingUrl(url: string | null): boolean {
 const SEEED_CACHE_BASE =
   "https://media-cdn.seeedstudio.com/media/catalog/product/cache/1/image/1200x1200/9df78eab33525d08d6e5fb8d27136e95";
 
-/** Seeed cache URL → direct catalog URL (often returns real image when cache returns placeholder). */
-export function getSeeedDirectUrl(cacheUrl: string): string | null {
-  if (!cacheUrl.includes("seeedstudio.com")) return null;
-  if (!cacheUrl.includes("/cache/")) return null;
-  try {
-    const u = new URL(cacheUrl);
-    const path = u.pathname;
-    const cacheSegment = /\/cache\/[^/]+\/[^/]+\/[^/]+\/[^/]+\//;
-    if (!cacheSegment.test(path)) return null;
-    u.pathname = path.replace(cacheSegment, "/");
-    return u.toString();
-  } catch {
-    return null;
-  }
+export interface UploadMockupParams {
+  alt?: string;
+  index?: number;
+  productName: string;
+  sourceUrl: string;
+  variantLabel?: null | string;
+}
+
+export interface UploadMockupResult {
+  alt: string;
+  filename: string;
+  key: string;
+  url: string;
+}
+
+/** Build SEO alt text for the mockup image. */
+export function buildSeoAlt(
+  productName: string,
+  opts?: { index?: number; variantLabel?: null | string },
+): string {
+  const variant = opts?.variantLabel ? ` ${opts.variantLabel}` : "";
+  const suffix =
+    opts?.index != null && opts.index > 0 ? ` (view ${opts.index + 1})` : "";
+  return `${productName}${variant} product mockup${suffix}`.trim();
+}
+
+/** Build an SEO-friendly filename: product-name-mockup.webp or product-name-variant-mockup-2.webp */
+export function buildSeoFilename(
+  productName: string,
+  opts?: { index?: number; variantLabel?: null | string },
+): string {
+  const base = slugify(productName).slice(0, 60) || "product";
+  const variant = opts?.variantLabel
+    ? `-${slugify(opts.variantLabel).slice(0, 30)}`
+    : "";
+  const suffix = opts?.index != null && opts.index > 0 ? `-${opts.index}` : "";
+  return `${base}${variant}-mockup${suffix}.webp`;
 }
 
 /** Seeed direct catalog URL → 1200x1200 cache URL (often returns full-size image when direct returns placeholder). */
-export function getSeeedCacheUrl(directUrl: string): string | null {
+export function getSeeedCacheUrl(directUrl: string): null | string {
   if (!directUrl.includes("seeedstudio.com")) return null;
   if (directUrl.includes("/cache/")) return null;
   try {
@@ -69,6 +93,22 @@ export function getSeeedCacheUrl(directUrl: string): string | null {
     const rest = path.slice(prefix.length);
     if (!rest) return null;
     return `${SEEED_CACHE_BASE}/${rest}${u.search}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Seeed cache URL → direct catalog URL (often returns real image when cache returns placeholder). */
+export function getSeeedDirectUrl(cacheUrl: string): null | string {
+  if (!cacheUrl.includes("seeedstudio.com")) return null;
+  if (!cacheUrl.includes("/cache/")) return null;
+  try {
+    const u = new URL(cacheUrl);
+    const path = u.pathname;
+    const cacheSegment = /\/cache\/[^/]+\/[^/]+\/[^/]+\/[^/]+\//;
+    if (!cacheSegment.test(path)) return null;
+    u.pathname = path.replace(cacheSegment, "/");
+    return u.toString();
   } catch {
     return null;
   }
@@ -85,45 +125,6 @@ export async function optimizeImageToWebP(
     .toBuffer();
 }
 
-/** Build an SEO-friendly filename: product-name-mockup.webp or product-name-variant-mockup-2.webp */
-export function buildSeoFilename(
-  productName: string,
-  opts?: { variantLabel?: string | null; index?: number },
-): string {
-  const base = slugify(productName).slice(0, 60) || "product";
-  const variant = opts?.variantLabel
-    ? `-${slugify(opts.variantLabel).slice(0, 30)}`
-    : "";
-  const suffix = opts?.index != null && opts.index > 0 ? `-${opts.index}` : "";
-  return `${base}${variant}-mockup${suffix}.webp`;
-}
-
-/** Build SEO alt text for the mockup image. */
-export function buildSeoAlt(
-  productName: string,
-  opts?: { variantLabel?: string | null; index?: number },
-): string {
-  const variant = opts?.variantLabel ? ` ${opts.variantLabel}` : "";
-  const suffix =
-    opts?.index != null && opts.index > 0 ? ` (view ${opts.index + 1})` : "";
-  return `${productName}${variant} product mockup${suffix}`.trim();
-}
-
-export type UploadMockupParams = {
-  sourceUrl: string;
-  productName: string;
-  alt?: string;
-  variantLabel?: string | null;
-  index?: number;
-};
-
-export type UploadMockupResult = {
-  url: string;
-  key: string;
-  filename: string;
-  alt: string;
-};
-
 /**
  * Fetch image from sourceUrl, optimize to WebP, assign SEO filename and alt,
  * upload to UploadThing. Returns the new URL and metadata or null on failure.
@@ -131,10 +132,10 @@ export type UploadMockupResult = {
 export async function uploadMockupToUploadThing(
   utapi: UTApi,
   params: UploadMockupParams,
-): Promise<UploadMockupResult | null> {
-  const { sourceUrl, productName, variantLabel, index } = params;
-  const filename = buildSeoFilename(productName, { variantLabel, index });
-  const alt = params.alt ?? buildSeoAlt(productName, { variantLabel, index });
+): Promise<null | UploadMockupResult> {
+  const { index, productName, sourceUrl, variantLabel } = params;
+  const filename = buildSeoFilename(productName, { index, variantLabel });
+  const alt = params.alt ?? buildSeoAlt(productName, { index, variantLabel });
 
   const MIN_SOURCE_BYTES = 12_000;
   /** Seeed often serves a second placeholder (gray with icon) that is ≥12KB; require larger min to skip it. */
@@ -197,11 +198,11 @@ export async function uploadMockupToUploadThing(
     return null;
   }
 
-  let metadata: { width?: number; height?: number };
+  let metadata: { height?: number; width?: number };
   try {
     metadata = (await sharp(buffer).metadata()) as {
-      width?: number;
       height?: number;
+      width?: number;
     };
   } catch (err) {
     console.warn(`Invalid image data for ${sourceUrl}:`, err);
@@ -233,11 +234,11 @@ export async function uploadMockupToUploadThing(
     const result = await utapi.uploadFiles(file);
     const data = Array.isArray(result) ? result[0] : result;
     const res = data as {
-      url?: string;
-      ufsUrl?: string;
-      key?: string;
-      data?: { url?: string; ufsUrl?: string; key?: string };
+      data?: { key?: string; ufsUrl?: string; url?: string };
       error?: { code?: string; message?: string };
+      key?: string;
+      ufsUrl?: string;
+      url?: string;
     };
     if (res?.error) {
       console.warn(`UploadThing error for ${filename}:`, res.error);
@@ -251,10 +252,10 @@ export async function uploadMockupToUploadThing(
       return null;
     }
     return {
-      url,
-      key: key ?? "",
-      filename,
       alt,
+      filename,
+      key: key ?? "",
+      url,
     };
   } catch (err) {
     console.warn(`Upload error for ${filename}:`, err);

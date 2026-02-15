@@ -6,31 +6,31 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { cn } from "~/lib/cn";
+import { useCart } from "~/lib/hooks/use-cart";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
-import { cn } from "~/lib/cn";
-import { useCart } from "~/lib/hooks/use-cart";
 
-type WishlistItem = {
-  productId: string;
+interface WishlistItem {
   createdAt: string;
   product: {
-    id: string;
-    slug?: string;
-    name: string;
-    imageUrl: string | null;
-    priceCents: number;
     hasVariants?: boolean;
+    id: string;
+    imageUrl: null | string;
+    name: string;
+    priceCents: number;
+    slug?: string;
   };
-};
+  productId: string;
+}
 
 export function WishlistPageClient() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [removingId, setRemovingId] = useState<string | null>(null);
-  const [addingId, setAddingId] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<null | string>(null);
+  const [addingId, setAddingId] = useState<null | string>(null);
   const { addItem, openCart } = useCart();
 
   const fetchWishlist = useCallback(async () => {
@@ -58,8 +58,8 @@ export function WishlistPageClient() {
         const res = await fetch(
           `/api/wishlist?productId=${encodeURIComponent(productId)}`,
           {
-            method: "DELETE",
             credentials: "include",
+            method: "DELETE",
           },
         );
         if (!res.ok) throw new Error("Failed to remove");
@@ -109,8 +109,12 @@ export function WishlistPageClient() {
             My Wish List
           </h1>
         </div>
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
-          <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+        <div
+          className={`
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
+        >
+          <Loader2 aria-hidden className="h-8 w-8 animate-spin" />
         </div>
       </>
     );
@@ -125,7 +129,11 @@ export function WishlistPageClient() {
 
       {items.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+          <CardContent
+            className={`
+            flex flex-col items-center justify-center py-12
+          `}
+          >
             <p className="text-muted-foreground">Your wishlist is empty.</p>
             <Button asChild className="mt-4" variant="outline">
               <Link href="/products">Browse products</Link>
@@ -133,26 +141,46 @@ export function WishlistPageClient() {
           </CardContent>
         </Card>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" role="list">
+        <ul
+          className={`
+          grid gap-4
+          sm:grid-cols-2
+          lg:grid-cols-3
+        `}
+          role="list"
+        >
           {items.map((item) => (
-            <li key={item.productId} className="min-w-0">
+            <li className="min-w-0" key={item.productId}>
               <Card className="flex h-full flex-col overflow-hidden">
                 <CardContent className="flex flex-col p-0">
                   <Link
+                    className={`
+                      block shrink-0
+                      focus:ring-2 focus:ring-ring focus:ring-offset-2
+                      focus:outline-none
+                    `}
                     href={`/${item.product.slug ?? item.product.id}`}
-                    className="block shrink-0 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    <div className="relative h-48 w-full shrink-0 overflow-hidden bg-muted">
+                    <div
+                      className={`
+                      relative h-48 w-full shrink-0 overflow-hidden bg-muted
+                    `}
+                    >
                       {item.product.imageUrl ? (
                         <Image
-                          src={item.product.imageUrl}
                           alt=""
-                          fill
                           className="object-cover"
+                          fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          src={item.product.imageUrl}
                         />
                       ) : (
-                        <span className="flex size-full items-center justify-center text-muted-foreground">
+                        <span
+                          className={`
+                          flex size-full items-center justify-center
+                          text-muted-foreground
+                        `}
+                        >
                           No image
                         </span>
                       )}
@@ -160,51 +188,54 @@ export function WishlistPageClient() {
                   </Link>
                   <div className="flex flex-col gap-2 p-4">
                     <Link
+                      className={`
+                        font-medium
+                        hover:underline
+                      `}
                       href={`/${item.product.slug ?? item.product.id}`}
-                      className="font-medium hover:underline"
                     >
                       {item.product.name}
                     </Link>
                     <div className="flex flex-col gap-0.5">
                       <FiatPrice
-                        usdAmount={item.product.priceCents / 100}
                         className="text-sm font-medium tabular-nums"
+                        usdAmount={item.product.priceCents / 100}
                       />
                       <CryptoPrice
-                        usdAmount={item.product.priceCents / 100}
                         className="text-sm text-muted-foreground"
+                        usdAmount={item.product.priceCents / 100}
                       />
                     </div>
                     <div className="flex flex-wrap items-center gap-2 pt-2">
                       {item.product.hasVariants ? (
                         <Button
                           asChild
+                          className="gap-1.5"
                           size="sm"
                           variant="default"
-                          className="gap-1.5"
                         >
                           <Link
                             href={`/${item.product.slug ?? item.product.id}`}
                           >
-                            <ShoppingCart className="size-3.5" aria-hidden />
+                            <ShoppingCart aria-hidden className="size-3.5" />
                             Select options
                           </Link>
                         </Button>
                       ) : (
                         <Button
-                          size="sm"
-                          variant="default"
                           className="gap-1.5"
                           disabled={addingId === item.product.id}
                           onClick={() => handleAddToCart(item)}
+                          size="sm"
+                          variant="default"
                         >
                           {addingId === item.product.id ? (
                             <Loader2
-                              className="size-3.5 animate-spin"
                               aria-hidden
+                              className="size-3.5 animate-spin"
                             />
                           ) : (
-                            <ShoppingCart className="size-3.5" aria-hidden />
+                            <ShoppingCart aria-hidden className="size-3.5" />
                           )}
                           Add to Cart
                         </Button>
@@ -215,18 +246,18 @@ export function WishlistPageClient() {
                         </Link>
                       </Button>
                       <button
-                        type="button"
-                        disabled={removingId === item.productId}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          void removeFromWishlist(item.productId);
-                        }}
+                        aria-label={`Remove ${item.product.name} from wishlist`}
                         className={cn(
                           "rounded p-2 text-muted-foreground transition-colors",
                           "hover:bg-destructive/10 hover:text-destructive",
                           "disabled:opacity-50",
                         )}
-                        aria-label={`Remove ${item.product.name} from wishlist`}
+                        disabled={removingId === item.productId}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          void removeFromWishlist(item.productId);
+                        }}
+                        type="button"
                       >
                         {removingId === item.productId ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

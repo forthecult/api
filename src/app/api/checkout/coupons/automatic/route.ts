@@ -2,28 +2,14 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
 import {
-  resolveAutomaticCouponForCheckout,
   type AutomaticCouponInput,
   type CartLineItem,
+  resolveAutomaticCouponForCheckout,
 } from "~/lib/coupon";
 import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { resolveTierDiscountsForCheckout } from "~/lib/tier-discount";
 
 const validateSchema = {
-  subtotalCents: (v: unknown) =>
-    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
-  shippingFeeCents: (v: unknown) =>
-    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
-  productCount: (v: unknown) =>
-    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
-  productIds: (v: unknown) =>
-    Array.isArray(v)
-      ? (v as unknown[]).filter(
-          (id): id is string => typeof id === "string" && id.length > 0,
-        )
-      : [],
-  paymentMethodKey: (v: unknown) =>
-    typeof v === "string" && v.length > 0 ? v : undefined,
   items: (v: unknown): CartLineItem[] => {
     if (!Array.isArray(v)) return [];
     return (v as unknown[])
@@ -31,8 +17,8 @@ const validateSchema = {
         (
           item,
         ): item is {
-          productId: string;
           priceCents: number;
+          productId: string;
           quantity: number;
         } =>
           typeof item === "object" &&
@@ -42,11 +28,25 @@ const validateSchema = {
           typeof (item as Record<string, unknown>).quantity === "number",
       )
       .map((item) => ({
-        productId: item.productId,
         priceCents: Math.round(item.priceCents),
+        productId: item.productId,
         quantity: Math.max(1, Math.round(item.quantity)),
       }));
   },
+  paymentMethodKey: (v: unknown) =>
+    typeof v === "string" && v.length > 0 ? v : undefined,
+  productCount: (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
+  productIds: (v: unknown) =>
+    Array.isArray(v)
+      ? (v as unknown[]).filter(
+          (id): id is string => typeof id === "string" && id.length > 0,
+        )
+      : [],
+  shippingFeeCents: (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
+  subtotalCents: (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
 };
 
 /**
@@ -75,32 +75,32 @@ export async function POST(request: NextRequest) {
     const items = validateSchema.items(body?.items);
 
     const input: AutomaticCouponInput = {
-      subtotalCents,
-      shippingFeeCents,
+      items: items.length > 0 ? items : undefined,
+      paymentMethodKey,
       productCount,
       productIds: productIds.length > 0 ? productIds : undefined,
+      shippingFeeCents,
+      subtotalCents,
       userId: session?.user?.id ?? undefined,
-      paymentMethodKey,
-      items: items.length > 0 ? items : undefined,
     };
 
     const orderTotalCents = subtotalCents + shippingFeeCents;
 
     // Resolve tier-based discounts when wallet is provided (stack with automatic coupon)
     let tierDiscounts: {
-      id: string;
-      label: string | null;
-      scope: string;
       discountCents: number;
+      id: string;
+      label: null | string;
+      scope: string;
     }[] = [];
     let tierDiscountTotalCents = 0;
     if (wallet) {
       const memberTier = await getMemberTierForWallet(wallet);
       if (memberTier != null) {
         const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
-          subtotalCents,
-          shippingFeeCents,
           items: items.length > 0 ? items : [],
+          shippingFeeCents,
+          subtotalCents,
         });
         tierDiscounts = tierResult.discounts;
         tierDiscountTotalCents = tierResult.totalCents;
@@ -126,8 +126,8 @@ export async function POST(request: NextRequest) {
       tierDiscounts: tierDiscounts.length > 0 ? tierDiscounts : undefined,
       tierDiscountTotalCents:
         tierDiscountTotalCents > 0 ? tierDiscountTotalCents : undefined,
-      totalDiscountCents: totalDiscountCents,
       totalAfterDiscountCents,
+      totalDiscountCents: totalDiscountCents,
     });
   } catch (err) {
     console.error("Automatic coupon resolve error:", err);

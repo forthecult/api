@@ -18,6 +18,24 @@ import { Card, CardContent } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 
+export function LoginPageClient() {
+  return (
+    <Suspense
+      fallback={
+        <div
+          className={`
+          flex min-h-[50vh] items-center justify-center text-muted-foreground
+        `}
+        >
+          Loading…
+        </div>
+      }
+    >
+      <LoginPageClientInner />
+    </Suspense>
+  );
+}
+
 function LoginPageClientInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -90,7 +108,12 @@ function LoginPageClientInner() {
 
   if (isSessionPending || isRedirecting || user) {
     return (
-      <div className="flex h-screen w-full max-w-[100vw] items-center justify-center overflow-x-hidden">
+      <div
+        className={`
+        flex h-screen w-full max-w-[100vw] items-center justify-center
+        overflow-x-hidden
+      `}
+      >
         <p className="text-muted-foreground">
           {isRedirecting || user ? "Redirecting…" : "Checking session…"}
         </p>
@@ -101,8 +124,8 @@ function LoginPageClientInner() {
   return (
     <AuthFormLayout>
       <AuthFormHeader
-        title="Welcome back!"
         subtitle={`Log in below to access your ${SEO_CONFIG.name} Account`}
+        title="Welcome back!"
       />
 
       <Card className="border-none shadow-sm">
@@ -139,7 +162,10 @@ function LoginPageClientInner() {
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
                 <Link
-                  className="text-sm text-muted-foreground hover:underline"
+                  className={`
+                    text-sm text-muted-foreground
+                    hover:underline
+                  `}
                   href="/auth/forgot-password"
                 >
                   Forgot password?
@@ -147,18 +173,24 @@ function LoginPageClientInner() {
               </div>
               <div className="relative">
                 <Input
-                  id="password"
                   className="pr-10"
+                  id="password"
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   type={showPassword ? "text" : "password"}
                   value={password}
                 />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  className={`
+                    absolute top-1/2 right-2 -translate-y-1/2 rounded p-1.5
+                    text-muted-foreground transition-colors
+                    hover:bg-muted hover:text-foreground
+                    focus:ring-2 focus:ring-ring focus:ring-offset-2
+                    focus:outline-none
+                  `}
+                  onClick={() => setShowPassword((p) => !p)}
+                  type="button"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -181,7 +213,10 @@ function LoginPageClientInner() {
           <div className="mt-6 text-center text-sm text-muted-foreground">
             Don&apos;t have an account?{" "}
             <Link
-              className="text-primary underline-offset-4 hover:underline"
+              className={`
+                text-primary underline-offset-4
+                hover:underline
+              `}
               href="/signup"
             >
               Sign up
@@ -190,19 +225,5 @@ function LoginPageClientInner() {
         </CardContent>
       </Card>
     </AuthFormLayout>
-  );
-}
-
-export function LoginPageClient() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-[50vh] items-center justify-center text-muted-foreground">
-          Loading…
-        </div>
-      }
-    >
-      <LoginPageClientInner />
-    </Suspense>
   );
 }

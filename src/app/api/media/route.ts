@@ -4,9 +4,9 @@ import { NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 
 import { db } from "~/db";
-import { getUploadThingToken } from "~/lib/uploadthing-token";
 import { uploadsTable } from "~/db/schema/uploads/tables";
 import { auth } from "~/lib/auth";
+import { getUploadThingToken } from "~/lib/uploadthing-token";
 
 export async function DELETE(request: Request) {
   try {

@@ -5,18 +5,20 @@ import { z } from "zod";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
+import { resolveAffiliateForOrder } from "~/lib/affiliate";
 import { auth } from "~/lib/auth";
 import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-import { resolveAffiliateForOrder } from "~/lib/affiliate";
 import { getStripe } from "~/lib/stripe";
 
 const createPaymentIntentBodySchema = z.object({
+  affiliateCode: z.string().max(64).optional(),
+  email: z.string().email(),
   lineItems: z
     .array(
       z.object({
@@ -27,22 +29,20 @@ const createPaymentIntentBodySchema = z.object({
     )
     .min(1)
     .max(50),
-  email: z.string().email(),
-  userId: z.string().optional(),
-  affiliateCode: z.string().max(64).optional(),
   shipping: z
     .object({
-      firstName: z.string().optional(),
-      lastName: z.string().optional(),
       address1: z.string().optional(),
       address2: z.string().optional(),
       city: z.string().optional(),
-      stateCode: z.string().optional(),
       countryCode: z.string().optional(),
-      zip: z.string().optional(),
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
       phone: z.string().optional(),
+      stateCode: z.string().optional(),
+      zip: z.string().optional(),
     })
     .optional(),
+  userId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Invalid request body",
           details: parsed.error.flatten().fieldErrors,
+          error: "Invalid request body",
         },
         { status: 400 },
       );
@@ -97,10 +97,10 @@ export async function POST(request: NextRequest) {
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     const orderItems: {
-      productId: string;
-      productVariantId?: string;
       name: string;
       priceCents: number;
+      productId: string;
+      productVariantId?: string;
       quantity: number;
     }[] = [];
 
@@ -108,10 +108,10 @@ export async function POST(request: NextRequest) {
       const product = productMap.get(item.productId);
       if (!product) continue;
       orderItems.push({
-        productId: product.id,
-        productVariantId: item.productVariantId,
         name: product.name,
         priceCents: product.priceCents,
+        productId: product.id,
+        productVariantId: item.productVariantId,
         quantity: item.quantity,
       });
     }
@@ -150,16 +150,16 @@ export async function POST(request: NextRequest) {
         : null;
 
     await db.insert(ordersTable).values({
-      id: orderId,
       createdAt: now,
-      updatedAt: now,
       email: body.email.trim(),
-      userId,
-      status: "pending",
-      paymentStatus: "pending",
       fulfillmentStatus: "unfulfilled",
-      totalCents,
+      id: orderId,
       paymentMethod: "stripe",
+      paymentStatus: "pending",
+      status: "pending",
+      totalCents,
+      updatedAt: now,
+      userId,
       ...(body.shipping?.address1 && {
         shippingAddress1: body.shipping.address1.trim(),
       }),
@@ -179,10 +179,10 @@ export async function POST(request: NextRequest) {
       }),
       ...(shippingName && { shippingName }),
       ...(affiliateResult && {
-        affiliateId: affiliateResult.affiliate.affiliateId,
         affiliateCode: affiliateResult.affiliate.affiliateCode,
         affiliateCommissionCents: affiliateResult.affiliate.commissionCents,
         affiliateDiscountCents: affiliateResult.affiliate.discountCents,
+        affiliateId: affiliateResult.affiliate.affiliateId,
       }),
     });
 
@@ -201,8 +201,8 @@ export async function POST(request: NextRequest) {
     const stripe = getStripe();
     const paymentIntent = await stripe.paymentIntents.create({
       amount: totalCents,
-      currency: "usd",
       automatic_payment_methods: { enabled: true },
+      currency: "usd",
       metadata: { orderId },
     });
 
@@ -216,8 +216,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       clientSecret,
-      orderId,
       confirmationToken: generateOrderConfirmationToken(orderId),
+      orderId,
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes("STRIPE_SECRET_KEY")) {

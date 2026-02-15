@@ -10,8 +10,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 
 const { networkConfig } = createNetworkConfig({
-  mainnet: { url: getJsonRpcFullnodeUrl("mainnet"), network: "mainnet" },
-  testnet: { url: getJsonRpcFullnodeUrl("testnet"), network: "testnet" },
+  mainnet: { network: "mainnet", url: getJsonRpcFullnodeUrl("mainnet") },
+  testnet: { network: "testnet", url: getJsonRpcFullnodeUrl("testnet") },
 });
 
 export function SuiWalletProvider({ children }: { children: React.ReactNode }) {
@@ -19,7 +19,7 @@ export function SuiWalletProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SuiClientProvider networks={networkConfig} defaultNetwork="mainnet">
+      <SuiClientProvider defaultNetwork="mainnet" networks={networkConfig}>
         <SuiWalletProviderBase>{children}</SuiWalletProviderBase>
       </SuiClientProvider>
     </QueryClientProvider>

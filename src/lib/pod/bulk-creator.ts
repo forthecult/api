@@ -3,8 +3,6 @@
  * Respects provider rate limits with simple delays.
  */
 
-import { fetchBlueprintWithSpecs } from "./catalog";
-import { createProduct } from "./product-creator";
 import type {
   BulkCreateInput,
   BulkCreateResult,
@@ -12,12 +10,11 @@ import type {
   PodProvider,
 } from "./types";
 
+import { fetchBlueprintWithSpecs } from "./catalog";
+import { createProduct } from "./product-creator";
+
 const PRINTIFY_DELAY_MS = 350; // ~170/min under 200/30min publish limit
 const PRINTFUL_DELAY_MS = 550; // ~110/min under 120/min
-
-function delay(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
 
 /**
  * Create products across all targets. One image applied to multiple blueprints.
@@ -29,7 +26,7 @@ export async function bulkCreate(
   const results: CreateProductResult[] = [];
   const errors: { blueprintId: string; error: string }[] = [];
   let imageBuffer: Buffer | null = null;
-  let imageUrl: string | null = null;
+  let imageUrl: null | string = null;
   if (typeof input.image === "string") {
     if (input.image.startsWith("http")) {
       imageUrl = input.image;
@@ -38,11 +35,11 @@ export async function bulkCreate(
         imageBuffer = Buffer.from(input.image, "base64");
       } catch {
         return {
-          total: input.targets.length,
-          successful: 0,
+          errors: [{ blueprintId: "*", error: "Invalid base64 image" }],
           failed: input.targets.length,
           products: [],
-          errors: [{ blueprintId: "*", error: "Invalid base64 image" }],
+          successful: 0,
+          total: input.targets.length,
         };
       }
     }
@@ -113,10 +110,7 @@ export async function bulkCreate(
         continue;
       }
       const result = await createProduct({
-        provider,
         blueprintId: target.blueprintId,
-        printProviderId: target.printProviderId,
-        title: input.title,
         description: input.description,
         image:
           imageBuffer != null
@@ -128,13 +122,16 @@ export async function bulkCreate(
           position,
           strategy: target.placementStrategy,
         })),
+        printProviderId: target.printProviderId,
+        provider,
+        publish: false,
+        syncToStore: input.syncToStore,
+        title: input.title,
         variants: variantIds.map((id) => ({
-          id,
           enabled: true,
+          id,
           priceCents,
         })),
-        syncToStore: input.syncToStore,
-        publish: false,
       });
       if (result.success) {
         results.push(result);
@@ -150,10 +147,14 @@ export async function bulkCreate(
     }
   }
   return {
-    total: input.targets.length,
-    successful: results.length,
+    errors,
     failed: errors.length,
     products: results,
-    errors,
+    successful: results.length,
+    total: input.targets.length,
   };
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
 }

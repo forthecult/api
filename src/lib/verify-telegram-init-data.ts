@@ -19,12 +19,12 @@ import crypto from "node:crypto";
 export function verifyTelegramInitData(
   initData: string,
   botToken?: string,
-): {
-  id: number;
-  username?: string;
+): null | {
   first_name?: string;
+  id: number;
   last_name?: string;
-} | null {
+  username?: string;
+} {
   const token = botToken ?? process.env.TELEGRAM_BOT_TOKEN;
   if (!token || !initData) return null;
 
@@ -66,10 +66,10 @@ export function verifyTelegramInitData(
     if (!userStr) return null;
 
     const user = JSON.parse(userStr) as {
-      id: number;
-      username?: string;
       first_name?: string;
+      id: number;
       last_name?: string;
+      username?: string;
     };
 
     return user;

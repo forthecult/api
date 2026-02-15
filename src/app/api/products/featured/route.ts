@@ -1,36 +1,27 @@
 import { and, desc, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import {
-  publicApiCorsPreflight,
-  withPublicApiCors,
-} from "~/lib/cors-public-api";
 import { db } from "~/db";
 import {
   categoriesTable,
   productCategoriesTable,
   productsTable,
 } from "~/db/schema";
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 
-type ProductRow = {
+interface ProductRow {
   id: string;
+  imageUrl: null | string;
   name: string;
   priceCents: number;
-  imageUrl: string | null;
-};
+}
 
 const FEATURED_LIMIT = 8;
 const TRENDING_LIMIT = 8;
 const BEST_SELLERS_LIMIT = 8;
-
-/**
- * Featured, trending, best sellers, and deals.
- * GET /api/products/featured
- * Agent discovery: see what's popular/new.
- */
-export async function OPTIONS() {
-  return publicApiCorsPreflight();
-}
 
 export async function GET() {
   try {
@@ -39,9 +30,9 @@ export async function GET() {
         db
           .select({
             id: productsTable.id,
+            imageUrl: productsTable.imageUrl,
             name: productsTable.name,
             priceCents: productsTable.priceCents,
-            imageUrl: productsTable.imageUrl,
           })
           .from(productsTable)
           .innerJoin(
@@ -63,22 +54,22 @@ export async function GET() {
           .limit(FEATURED_LIMIT)
           .then((rows: ProductRow[]) =>
             rows.map((p: ProductRow) => ({
+              badge: "Featured" as const,
+              category: undefined as string | undefined,
               id: p.id,
               name: p.name,
-              category: undefined as string | undefined,
               price: {
-                usd: p.priceCents / 100,
                 crypto: {} as Record<string, string>,
+                usd: p.priceCents / 100,
               },
-              badge: "Featured" as const,
             })),
           ),
         db
           .select({
             id: productsTable.id,
+            imageUrl: productsTable.imageUrl,
             name: productsTable.name,
             priceCents: productsTable.priceCents,
-            imageUrl: productsTable.imageUrl,
           })
           .from(productsTable)
           .where(
@@ -91,22 +82,22 @@ export async function GET() {
           .limit(TRENDING_LIMIT)
           .then((rows: ProductRow[]) =>
             rows.map((p: ProductRow) => ({
+              badge: "New Arrival" as const,
+              category: undefined as string | undefined,
               id: p.id,
               name: p.name,
-              category: undefined as string | undefined,
               price: {
-                usd: p.priceCents / 100,
                 crypto: {} as Record<string, string>,
+                usd: p.priceCents / 100,
               },
-              badge: "New Arrival" as const,
             })),
           ),
         db
           .select({
             id: productsTable.id,
+            imageUrl: productsTable.imageUrl,
             name: productsTable.name,
             priceCents: productsTable.priceCents,
-            imageUrl: productsTable.imageUrl,
           })
           .from(productsTable)
           .where(
@@ -119,14 +110,14 @@ export async function GET() {
           .limit(BEST_SELLERS_LIMIT)
           .then((rows: ProductRow[]) =>
             rows.map((p: ProductRow) => ({
+              badge: "Popular" as const,
+              category: undefined as string | undefined,
               id: p.id,
               name: p.name,
-              category: undefined as string | undefined,
               price: {
-                usd: p.priceCents / 100,
                 crypto: {} as Record<string, string>,
+                usd: p.priceCents / 100,
               },
-              badge: "Popular" as const,
             })),
           ),
       ]);
@@ -140,16 +131,16 @@ export async function GET() {
 
     return withPublicApiCors(
       NextResponse.json({
-        featured,
-        trending: trendingProducts,
         bestSellers: bestSellersProducts,
-        deals: [] as Array<{
+        deals: [] as {
+          badge: string;
+          category?: string;
           id: string;
           name: string;
-          category?: string;
-          price: { usd: number; crypto: Record<string, string> };
-          badge: string;
-        }>,
+          price: { crypto: Record<string, string>; usd: number };
+        }[],
+        featured,
+        trending: trendingProducts,
       }),
     );
   } catch (err) {
@@ -161,4 +152,13 @@ export async function GET() {
       ),
     );
   }
+}
+
+/**
+ * Featured, trending, best sellers, and deals.
+ * GET /api/products/featured
+ * Agent discovery: see what's popular/new.
+ */
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
 }

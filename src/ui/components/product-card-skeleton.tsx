@@ -8,11 +8,19 @@ import { Card, CardContent, CardFooter } from "~/ui/primitives/card";
 export function ProductCardSkeleton() {
   return (
     <div className="h-full">
-      <Card className="relative flex h-full flex-col overflow-hidden rounded-lg py-0">
+      <Card
+        className={`
+        relative flex h-full flex-col overflow-hidden rounded-lg py-0
+      `}
+      >
         {/* Image placeholder */}
-        <div className="relative aspect-square animate-pulse rounded-t-lg bg-muted" />
+        <div
+          className={`
+          relative aspect-square animate-pulse rounded-t-lg bg-muted
+        `}
+        />
 
-        <CardContent className="flex flex-1 flex-col p-4 pt-4 min-h-0">
+        <CardContent className="flex min-h-0 flex-1 flex-col p-4 pt-4">
           {/* Title */}
           <div className="h-5 w-3/4 animate-pulse rounded bg-muted" />
           <div className="mt-1 h-5 w-1/2 animate-pulse rounded bg-muted" />
@@ -36,7 +44,14 @@ export function ProductCardSkeleton() {
 /** Grid of skeleton cards for loading states. */
 export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+    <div
+      className={`
+      grid grid-cols-1 gap-6
+      sm:grid-cols-2
+      md:grid-cols-3
+      lg:grid-cols-4
+    `}
+    >
       {Array.from({ length: count }).map((_, i) => (
         <ProductCardSkeleton key={i} />
       ))}

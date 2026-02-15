@@ -5,24 +5,23 @@
  */
 
 import { createId } from "@paralleldrive/cuid2";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
+import nacl from "tweetnacl";
 import { z } from "zod";
 
 import { db } from "~/db";
 import { governanceProposalTable, governanceVoteTable } from "~/db/schema";
-import { Connection, PublicKey } from "@solana/web3.js";
-import nacl from "tweetnacl";
-
-import { getCultMintSolana } from "~/lib/token-gate";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
+import { getCultMintSolana } from "~/lib/token-gate";
 
 const voteSchema = z.object({
-  wallet: z.string().min(32).max(44),
   choice: z.enum(["for", "against", "abstain"]),
-  signature: z.string().min(1, "Signature required to prove wallet ownership"),
   message: z.string().min(1, "Signed message required"),
+  signature: z.string().min(1, "Signature required to prove wallet ownership"),
+  wallet: z.string().min(32).max(44),
 });
 
 export async function POST(
@@ -43,11 +42,11 @@ export async function POST(
   const parsed = voteSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid body", details: parsed.error.flatten() },
+      { details: parsed.error.flatten(), error: "Invalid body" },
       { status: 400 },
     );
   }
-  const { wallet, choice, signature, message: signedMessage } = parsed.data;
+  const { choice, message: signedMessage, signature, wallet } = parsed.data;
 
   // Verify wallet ownership via signature
   try {
@@ -137,20 +136,20 @@ export async function POST(
 
     const voteId = createId();
     await db.insert(governanceVoteTable).values({
+      choice,
+      createdAt: now,
       id: voteId,
       proposalId,
-      walletAddress: wallet,
-      choice,
       votingPower:
         votingPower > BigInt(Number.MAX_SAFE_INTEGER)
           ? Number.MAX_SAFE_INTEGER
           : Number(votingPower),
-      createdAt: now,
+      walletAddress: wallet,
     });
 
     return NextResponse.json({
-      id: voteId,
       choice,
+      id: voteId,
       votingPower: votingPower.toString(),
     });
   } catch (e) {

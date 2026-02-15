@@ -40,16 +40,16 @@ export const SOLUNA_MINT_MAINNET =
 /** Seeker (SKR) SPL token on Solana. CA: SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3 */
 export const SKR_MINT_MAINNET = "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3";
 
-export function getSolanaPayRecipient(): string | undefined {
-  return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
-    ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined
-    : undefined;
-}
-
 export function getSolanaPayLabel(): string {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_LABEL === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_LABEL.trim()
     : "Store";
+}
+
+export function getSolanaPayRecipient(): string | undefined {
+  return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
+    ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined
+    : undefined;
 }
 
 // ANKR Solana default (no phone required; set NEXT_PUBLIC_SOLANA_RPC_URL for paid RPC)
@@ -61,12 +61,6 @@ const SOLANA_RPCS_SKIP_VALIDATION = [
   "https://solana-api.projectserum.com",
   "https://rpc.ankr.com/solana",
 ] as const;
-
-/** True if we should skip the getGenesisHash network check (avoids 403 in console). */
-export function isPublicSolanaRpc(url: string): boolean {
-  const u = url.trim().toLowerCase();
-  return SOLANA_RPCS_SKIP_VALIDATION.some((r) => u === r.toLowerCase());
-}
 
 /**
  * Get Solana RPC URL (client and server).
@@ -85,11 +79,10 @@ export function getSolanaRpcUrlServer(): string {
   return getSolanaRpcUrl();
 }
 
-/**
- * USDC amount for Solana Pay: subtotal in dollars -> base units (6 decimals).
- */
-export function usdcAmountFromUsd(usdAmount: number): BigNumber {
-  return new BigNumber(usdAmount).times(1e6);
+/** True if we should skip the getGenesisHash network check (avoids 403 in console). */
+export function isPublicSolanaRpc(url: string): boolean {
+  const u = url.trim().toLowerCase();
+  return SOLANA_RPCS_SKIP_VALIDATION.some((r) => u === r.toLowerCase());
 }
 
 /**
@@ -115,4 +108,11 @@ export function tokenAmountFromUsdWithPrice(
   return new BigNumber(tokenAmount)
     .times(10 ** decimals)
     .integerValue(BigNumber.ROUND_CEIL);
+}
+
+/**
+ * USDC amount for Solana Pay: subtotal in dollars -> base units (6 decimals).
+ */
+export function usdcAmountFromUsd(usdAmount: number): BigNumber {
+  return new BigNumber(usdAmount).times(1e6);
 }

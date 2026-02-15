@@ -7,10 +7,10 @@ import { pgTable, primaryKey, text, timestamp } from "drizzle-orm/pg-core";
 export const agentPreferencesTable = pgTable(
   "agent_preference",
   {
-    moltbookAgentId: text("moltbook_agent_id").notNull(),
     key: text("key").notNull(),
-    value: text("value").notNull(),
+    moltbookAgentId: text("moltbook_agent_id").notNull(),
     updatedAt: timestamp("updated_at").notNull(),
+    value: text("value").notNull(),
   },
   (t) => [primaryKey({ columns: [t.moltbookAgentId, t.key] })],
 );

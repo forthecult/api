@@ -19,15 +19,15 @@ export async function GET(request: NextRequest) {
     // Apply markup to prices
     const data = result.data.map((pkg) => ({
       ...pkg,
-      reseller_price: pkg.price,
       price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
+      reseller_price: pkg.price,
     }));
 
     return NextResponse.json({ ...result, data });
   } catch (error) {
     console.error("eSIM packages error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to fetch packages" },
+      { message: "Failed to fetch packages", status: false },
       { status: 500 },
     );
   }

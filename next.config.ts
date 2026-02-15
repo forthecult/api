@@ -1,6 +1,6 @@
-import path from "node:path";
-
 import type { NextConfig } from "next";
+
+import path from "node:path";
 
 const wagmiStub = path.resolve(
   process.cwd(),
@@ -37,9 +37,6 @@ const CATEGORY_REDIRECTS: [string, string][] = [
 const config = {
   // Enable gzip/brotli compression
   compress: true,
-
-  // Optimize production builds
-  productionBrowserSourceMaps: false,
 
   // Experimental performance features
   experimental: {
@@ -81,8 +78,17 @@ const config = {
 
     return [
       {
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+          ...corsForAdmin,
+        ],
         // Cache static assets aggressively
         source: "/:all*(svg|jpg|jpeg|png|gif|ico|webp|avif|woff|woff2)",
+      },
+      {
         headers: [
           {
             key: "Cache-Control",
@@ -90,10 +96,10 @@ const config = {
           },
           ...corsForAdmin,
         ],
-      },
-      {
         // Cache JS/CSS chunks; allow admin app (3001) to load fonts in dev (CORS)
         source: "/_next/static/:path*",
+      },
+      {
         headers: [
           {
             key: "Cache-Control",
@@ -101,21 +107,10 @@ const config = {
           },
           ...corsForAdmin,
         ],
-      },
-      {
         // Next.js sometimes serves media under /next/static (no leading _)
         source: "/next/static/:path*",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
-          },
-          ...corsForAdmin,
-        ],
       },
       {
-        // Security headers for all routes
-        source: "/:path*",
         headers: [
           {
             key: "X-DNS-Prefetch-Control",
@@ -177,56 +172,18 @@ const config = {
             ? [{ key: "X-Robots-Tag" as const, value: "noindex, nofollow" }]
             : []),
         ],
+        // Security headers for all routes
+        source: "/:path*",
       },
     ];
-  },
-
-  async redirects() {
-    const categoryRedirects = CATEGORY_REDIRECTS.map(
-      ([source, destination]) => ({
-        source,
-        destination,
-        permanent: true,
-      }),
-    );
-    return [
-      ...categoryRedirects,
-      // Product URLs at base: /products/trezor-one → /trezor-one
-      { source: "/products/:path", destination: "/:path", permanent: true },
-      // Support ticket URLs: legacy /dashboard/support/:id → /dashboard/support-tickets/:id
-      {
-        source: "/dashboard/support/:id",
-        destination: "/dashboard/support-tickets/:id",
-        permanent: true,
-      },
-    ];
-  },
-
-  // Optional wagmi connectors + pino: alias/stub so build always resolves (Railway, strict installs)
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      porto: false,
-      "@safe-global/safe-apps-provider": false,
-      "@safe-global/safe-apps-sdk": false,
-      "pino-pretty": false,
-    };
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      "@base-org/account": wagmiStub,
-      "@coinbase/wallet-sdk": wagmiStub,
-      "@gemini-wallet/core": wagmiStub,
-      "@walletconnect/ethereum-provider": resolveWalletConnect(),
-    };
-    return config;
   },
 
   images: {
     // skip on-the-fly optimization in dev so images load faster on slow machines
     ...(process.env.NODE_ENV === "development" && { unoptimized: true }),
-    formats: ["image/avif", "image/webp"],
     // Optimize image loading with device sizes
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
+    formats: ["image/avif", "image/webp"],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       { hostname: "avatars.githubusercontent.com", protocol: "https" },
@@ -256,6 +213,49 @@ const config = {
       // eSIM Card API: country flag icons
       { hostname: "flagcdn.com", protocol: "https" },
     ],
+  },
+
+  // Optimize production builds
+  productionBrowserSourceMaps: false,
+
+  async redirects() {
+    const categoryRedirects = CATEGORY_REDIRECTS.map(
+      ([source, destination]) => ({
+        destination,
+        permanent: true,
+        source,
+      }),
+    );
+    return [
+      ...categoryRedirects,
+      // Product URLs at base: /products/trezor-one → /trezor-one
+      { destination: "/:path", permanent: true, source: "/products/:path" },
+      // Support ticket URLs: legacy /dashboard/support/:id → /dashboard/support-tickets/:id
+      {
+        destination: "/dashboard/support-tickets/:id",
+        permanent: true,
+        source: "/dashboard/support/:id",
+      },
+    ];
+  },
+
+  // Optional wagmi connectors + pino: alias/stub so build always resolves (Railway, strict installs)
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      "@safe-global/safe-apps-provider": false,
+      "@safe-global/safe-apps-sdk": false,
+      "pino-pretty": false,
+      porto: false,
+    };
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@base-org/account": wagmiStub,
+      "@coinbase/wallet-sdk": wagmiStub,
+      "@gemini-wallet/core": wagmiStub,
+      "@walletconnect/ethereum-provider": resolveWalletConnect(),
+    };
+    return config;
   },
 } as NextConfig;
 

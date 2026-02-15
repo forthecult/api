@@ -11,13 +11,13 @@ import { userTable } from "../users/tables";
 
 /** Which payment methods are enabled on the storefront. Admin can toggle; disabled methods are hidden in checkout and product pages. */
 export const paymentMethodSettingTable = pgTable("payment_method_setting", {
-  methodKey: text("method_key").primaryKey(),
-  label: text("label").notNull(),
+  createdAt: timestamp("created_at").notNull(),
+  displayOrder: integer("display_order").notNull().default(0),
   enabled: boolean("enabled").notNull().default(true),
   /** For methods with multiple networks (e.g. USDC, USDT): enabled network keys. Null or empty = all supported networks. */
-  enabledNetworks: jsonb("enabled_networks").$type<string[] | null>(),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at").notNull(),
+  enabledNetworks: jsonb("enabled_networks").$type<null | string[]>(),
+  label: text("label").notNull(),
+  methodKey: text("method_key").primaryKey(),
   updatedAt: timestamp("updated_at").notNull(),
 });
 

@@ -6,15 +6,15 @@ import { userTable } from "../users/tables";
 export const customerCommentsTable = pgTable(
   "customer_comment",
   {
-    id: text("id").primaryKey(),
-    customerId: text("customer_id")
-      .notNull()
-      .references(() => userTable.id, { onDelete: "cascade" }),
     authorId: text("author_id")
       .notNull()
       .references(() => userTable.id, { onDelete: "cascade" }),
     body: text("body").notNull(),
     createdAt: timestamp("created_at").notNull(),
+    customerId: text("customer_id")
+      .notNull()
+      .references(() => userTable.id, { onDelete: "cascade" }),
+    id: text("id").primaryKey(),
   },
   (t) => [
     // M7: Index for looking up comments by customer

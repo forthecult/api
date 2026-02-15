@@ -4,17 +4,19 @@
  * if the user has transactional website preference.
  */
 
+import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
+
+import type { NotificationType } from "~/lib/notification-templates";
 
 import { db } from "~/db";
 import {
-  userNotificationTable,
-  userTable,
   ordersTable,
   supportTicketTable,
+  userNotificationTable,
+  userTable,
 } from "~/db/schema";
-import type { NotificationType } from "~/lib/notification-templates";
-import { createId } from "@paralleldrive/cuid2";
+import { getNotificationTemplate } from "~/lib/notification-templates";
 import { sendOrderConfirmationEmail } from "~/lib/send-order-confirmation-email";
 import { sendOrderShippedEmail } from "~/lib/send-order-shipped-email";
 import { sendRefundRequestSubmittedEmail } from "~/lib/send-refund-request-submitted-email";
@@ -22,14 +24,13 @@ import {
   notifyOrderUpdate,
   notifyTransactionalTelegram,
 } from "~/lib/telegram-notify";
-import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface CreateUserNotificationOptions {
-  userId: string;
-  type: NotificationType;
-  title: string;
   description: string;
   metadata?: Record<string, unknown>;
+  title: string;
+  type: NotificationType;
+  userId: string;
 }
 
 /**
@@ -41,16 +42,83 @@ export async function createUserNotification(
 ): Promise<{ id: string }> {
   const id = createId();
   await db.insert(userNotificationTable).values({
-    id,
-    userId: options.userId,
-    type: options.type,
-    title: options.title,
+    createdAt: new Date(),
     description: options.description,
+    id,
     metadata: options.metadata ?? null,
     read: false,
-    createdAt: new Date(),
+    title: options.title,
+    type: options.type,
+    userId: options.userId,
   });
   return { id };
+}
+
+/**
+ * Called when an order is created (Stripe checkout complete, crypto create-order, or admin marks paid).
+ * Sends Telegram "order placed", website notification, and order-confirmation email when preferences allow.
+ */
+export async function onOrderCreated(orderId: string): Promise<void> {
+  const [order] = await db
+    .select({
+      email: ordersTable.email,
+      userId: ordersTable.userId,
+    })
+    .from(ordersTable)
+    .where(eq(ordersTable.id, orderId))
+    .limit(1);
+  if (!order) return;
+
+  void notifyOrderUpdate(orderId, { kind: "order_placed" });
+
+  // Resolve userId for web notification: use order's userId, or look up by order email for guest orders
+  let webNotificationUserId: null | string = order.userId;
+  if (!webNotificationUserId && order.email?.trim()) {
+    const [userByEmail] = await db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.email, order.email.trim()))
+      .limit(1);
+    webNotificationUserId = userByEmail?.id ?? null;
+  }
+  if (
+    webNotificationUserId &&
+    (await userWantsTransactionalWebsite(webNotificationUserId))
+  ) {
+    const shortId = orderId.slice(0, 8);
+    await createUserNotification({
+      description: `Order ${shortId} has been received. We'll notify you when it ships.`,
+      metadata: { orderId },
+      title: "Order confirmed",
+      type: "order_placed",
+      userId: webNotificationUserId,
+    });
+  }
+
+  if (
+    order.email?.trim() &&
+    (await userWantsTransactionalEmail(order.userId))
+  ) {
+    void sendOrderConfirmationEmail({
+      orderId,
+      to: order.email.trim(),
+    });
+  }
+}
+
+/**
+ * Check if user has transactional email enabled (default true). For guests (no userId), returns true.
+ */
+export async function userWantsTransactionalEmail(
+  userId: null | string,
+): Promise<boolean> {
+  if (!userId) return true;
+  const [row] = await db
+    .select({ transactionalEmail: userTable.transactionalEmail })
+    .from(userTable)
+    .where(eq(userTable.id, userId))
+    .limit(1);
+  return row?.transactionalEmail ?? true;
 }
 
 /**
@@ -67,73 +135,6 @@ export async function userWantsTransactionalWebsite(
   return row?.transactionalWebsite ?? true;
 }
 
-/**
- * Check if user has transactional email enabled (default true). For guests (no userId), returns true.
- */
-export async function userWantsTransactionalEmail(
-  userId: string | null,
-): Promise<boolean> {
-  if (!userId) return true;
-  const [row] = await db
-    .select({ transactionalEmail: userTable.transactionalEmail })
-    .from(userTable)
-    .where(eq(userTable.id, userId))
-    .limit(1);
-  return row?.transactionalEmail ?? true;
-}
-
-/**
- * Called when an order is created (Stripe checkout complete, crypto create-order, or admin marks paid).
- * Sends Telegram "order placed", website notification, and order-confirmation email when preferences allow.
- */
-export async function onOrderCreated(orderId: string): Promise<void> {
-  const [order] = await db
-    .select({
-      userId: ordersTable.userId,
-      email: ordersTable.email,
-    })
-    .from(ordersTable)
-    .where(eq(ordersTable.id, orderId))
-    .limit(1);
-  if (!order) return;
-
-  void notifyOrderUpdate(orderId, { kind: "order_placed" });
-
-  // Resolve userId for web notification: use order's userId, or look up by order email for guest orders
-  let webNotificationUserId: string | null = order.userId;
-  if (!webNotificationUserId && order.email?.trim()) {
-    const [userByEmail] = await db
-      .select({ id: userTable.id })
-      .from(userTable)
-      .where(eq(userTable.email, order.email.trim()))
-      .limit(1);
-    webNotificationUserId = userByEmail?.id ?? null;
-  }
-  if (
-    webNotificationUserId &&
-    (await userWantsTransactionalWebsite(webNotificationUserId))
-  ) {
-    const shortId = orderId.slice(0, 8);
-    await createUserNotification({
-      userId: webNotificationUserId,
-      type: "order_placed",
-      title: "Order confirmed",
-      description: `Order ${shortId} has been received. We'll notify you when it ships.`,
-      metadata: { orderId },
-    });
-  }
-
-  if (
-    order.email?.trim() &&
-    (await userWantsTransactionalEmail(order.userId))
-  ) {
-    void sendOrderConfirmationEmail({
-      to: order.email.trim(),
-      orderId,
-    });
-  }
-}
-
 /** Kinds that create a website notification when order status changes. */
 const ORDER_STATUS_NOTIFICATION_KINDS = [
   "order_processing",
@@ -144,10 +145,10 @@ const ORDER_STATUS_NOTIFICATION_KINDS = [
 
 /** Order status kinds that trigger notifications. */
 export type OrderStatusKind =
-  | "order_processing"
-  | "order_shipped"
+  | "order_cancelled"
   | "order_on_hold"
-  | "order_cancelled";
+  | "order_processing"
+  | "order_shipped";
 
 /**
  * Called when order status changes (processing, shipped, on_hold, cancelled). Sends Telegram,
@@ -160,8 +161,8 @@ export async function onOrderStatusUpdate(
 ): Promise<void> {
   const [order] = await db
     .select({
-      userId: ordersTable.userId,
       email: ordersTable.email,
+      userId: ordersTable.userId,
     })
     .from(ordersTable)
     .where(eq(ordersTable.id, orderId))
@@ -169,7 +170,7 @@ export async function onOrderStatusUpdate(
   if (!order) return;
 
   // Map to Telegram notification kind
-  let telegramKind: "processing" | "fulfilled" | "on_hold" | "cancelled";
+  let telegramKind: "cancelled" | "fulfilled" | "on_hold" | "processing";
   if (kind === "order_processing") {
     telegramKind = "processing";
   } else if (kind === "order_shipped") {
@@ -207,9 +208,6 @@ export async function onOrderStatusUpdate(
         description = `Order ${shortId} was cancelled.`;
       }
       await createUserNotification({
-        userId: order.userId,
-        type: kind,
-        title,
         description,
         metadata: {
           orderId,
@@ -217,6 +215,9 @@ export async function onOrderStatusUpdate(
           trackingNumber: options?.trackingNumber,
           trackingUrl: options?.trackingUrl,
         },
+        title,
+        type: kind,
+        userId: order.userId,
       });
     }
   }
@@ -227,8 +228,8 @@ export async function onOrderStatusUpdate(
     (await userWantsTransactionalEmail(order.userId))
   ) {
     void sendOrderShippedEmail({
-      to: order.email.trim(),
       orderId,
+      to: order.email.trim(),
       trackingNumber: options?.trackingNumber,
       trackingUrl: options?.trackingUrl,
     });
@@ -242,15 +243,15 @@ export async function onOrderStatusUpdate(
 export async function onRefundRequestSubmitted(orderId: string): Promise<void> {
   const [order] = await db
     .select({
-      userId: ordersTable.userId,
       email: ordersTable.email,
+      userId: ordersTable.userId,
     })
     .from(ordersTable)
     .where(eq(ordersTable.id, orderId))
     .limit(1);
   if (!order?.email?.trim()) return;
 
-  let userId: string | null = order.userId;
+  let userId: null | string = order.userId;
   if (!userId) {
     const [userByEmail] = await db
       .select({ id: userTable.id })
@@ -267,19 +268,19 @@ export async function onRefundRequestSubmitted(orderId: string): Promise<void> {
     void notifyTransactionalTelegram(userId, "refund_request_submitted");
     if (await userWantsTransactionalWebsite(userId)) {
       await createUserNotification({
-        userId,
-        type: "refund_request_submitted",
-        title: template.title,
         description: `Order ${shortId}: ${template.body}`,
         metadata: { orderId },
+        title: template.title,
+        type: "refund_request_submitted",
+        userId,
       });
     }
   }
 
   if (order.email.trim() && (await userWantsTransactionalEmail(userId))) {
     void sendRefundRequestSubmittedEmail({
-      to: order.email.trim(),
       orderId,
+      to: order.email.trim(),
     });
   }
 }
@@ -294,8 +295,8 @@ export async function onSupportTicketReply(
 ): Promise<void> {
   const [ticket] = await db
     .select({
-      userId: supportTicketTable.userId,
       subject: supportTicketTable.subject,
+      userId: supportTicketTable.userId,
     })
     .from(supportTicketTable)
     .where(eq(supportTicketTable.id, ticketId))
@@ -319,15 +320,15 @@ export async function onSupportTicketReply(
     }
 
     await createUserNotification({
-      userId: ticket.userId,
-      type: "support_ticket_reply",
-      title: "Support ticket update",
       description,
       metadata: {
+        subject: ticket.subject,
         ticketId,
         ticketPath: `/dashboard/support-tickets/${ticketId}`,
-        subject: ticket.subject,
       },
+      title: "Support ticket update",
+      type: "support_ticket_reply",
+      userId: ticket.userId,
     });
   }
 }

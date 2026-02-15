@@ -7,12 +7,12 @@
 
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchPrintifyShops,
   getPrintifyIfConfigured,
   listPrintifyWebhooks,
 } from "~/lib/printify";
-import { getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function GET(request: NextRequest) {
   const authResult = await getAdminAuth(request);
@@ -24,17 +24,17 @@ export async function GET(request: NextRequest) {
     const config = getPrintifyIfConfigured();
 
     const result: {
-      configured: boolean;
-      shopId: string | null;
       apiConnected: boolean;
-      shops: Array<{ id: number; title: string; sales_channel: string }>;
-      webhooks: Array<{ id: string; topic: string; url: string }>;
-      webhookSecretConfigured: boolean;
+      configured: boolean;
       error?: string;
+      shopId: null | string;
+      shops: { id: number; sales_channel: string; title: string }[];
+      webhooks: { id: string; topic: string; url: string }[];
+      webhookSecretConfigured: boolean;
     } = {
+      apiConnected: false,
       configured: config !== null,
       shopId: config?.shopId ?? null,
-      apiConnected: false,
       shops: [],
       webhooks: [],
       webhookSecretConfigured: Boolean(process.env.PRINTIFY_WEBHOOK_SECRET),
@@ -52,8 +52,8 @@ export async function GET(request: NextRequest) {
       result.apiConnected = true;
       result.shops = shops.map((s) => ({
         id: s.id,
-        title: s.title,
         sales_channel: s.sales_channel,
+        title: s.title,
       }));
 
       // Verify the configured shop ID exists
@@ -86,13 +86,13 @@ export async function GET(request: NextRequest) {
     console.error("Printify status check error:", err);
     return NextResponse.json(
       {
-        configured: false,
-        shopId: null,
         apiConnected: false,
+        configured: false,
+        error: "Internal server error",
+        shopId: null,
         shops: [],
         webhooks: [],
         webhookSecretConfigured: false,
-        error: "Internal server error",
       },
       { status: 500 },
     );

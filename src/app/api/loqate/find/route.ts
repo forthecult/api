@@ -7,10 +7,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 import {
-  getClientIp,
   checkRateLimit,
-  rateLimitResponse,
+  getClientIp,
   RATE_LIMITS,
+  rateLimitResponse,
 } from "~/lib/rate-limit";
 
 const LOQATE_FIND_BASE =
@@ -19,32 +19,11 @@ const LOQATE_FIND_BASE =
 const FIND_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 const FIND_CACHE_MAX_ENTRIES = 300;
 
-type CacheEntry = { items: unknown[]; expiresAt: number };
+interface CacheEntry {
+  expiresAt: number;
+  items: unknown[];
+}
 const findCache = new Map<string, CacheEntry>();
-
-function getCacheKey(text: string, countries: string, limit: string): string {
-  return `${text.toLowerCase().trim()}|${countries.trim()}|${limit}`;
-}
-
-function getCached(key: string): unknown[] | null {
-  const entry = findCache.get(key);
-  if (!entry || Date.now() > entry.expiresAt) {
-    if (entry) findCache.delete(key);
-    return null;
-  }
-  return entry.items;
-}
-
-function setCache(key: string, items: unknown[]): void {
-  if (findCache.size >= FIND_CACHE_MAX_ENTRIES) {
-    const firstKey = findCache.keys().next().value;
-    if (firstKey !== undefined) findCache.delete(firstKey);
-  }
-  findCache.set(key, {
-    items,
-    expiresAt: Date.now() + FIND_CACHE_TTL_MS,
-  });
-}
 
 export async function GET(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -81,8 +60,8 @@ export async function GET(request: NextRequest) {
 
   const params = new URLSearchParams({
     Key: apiKey,
-    Text: text,
     Limit: limit,
+    Text: text,
   });
   if (countries) params.set("Countries", countries);
   if (container) params.set("Container", container);
@@ -103,7 +82,7 @@ export async function GET(request: NextRequest) {
         NextResponse.json({ error: "Address lookup failed" }, { status: 502 }),
       );
     }
-    const data = (await res.json()) as { Items?: unknown[]; Error?: string };
+    const data = (await res.json()) as { Error?: string; Items?: unknown[] };
     if (data.Error) {
       return addCorsIfAdminOrigin(
         request,
@@ -123,4 +102,28 @@ export async function GET(request: NextRequest) {
       NextResponse.json({ error: "Address lookup failed" }, { status: 502 }),
     );
   }
+}
+
+function getCached(key: string): null | unknown[] {
+  const entry = findCache.get(key);
+  if (!entry || Date.now() > entry.expiresAt) {
+    if (entry) findCache.delete(key);
+    return null;
+  }
+  return entry.items;
+}
+
+function getCacheKey(text: string, countries: string, limit: string): string {
+  return `${text.toLowerCase().trim()}|${countries.trim()}|${limit}`;
+}
+
+function setCache(key: string, items: unknown[]): void {
+  if (findCache.size >= FIND_CACHE_MAX_ENTRIES) {
+    const firstKey = findCache.keys().next().value;
+    if (firstKey !== undefined) findCache.delete(firstKey);
+  }
+  findCache.set(key, {
+    expiresAt: Date.now() + FIND_CACHE_TTL_MS,
+    items,
+  });
 }

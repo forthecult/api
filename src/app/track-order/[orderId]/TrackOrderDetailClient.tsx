@@ -1,57 +1,58 @@
 "use client";
 
-import { formatDateLong } from "~/lib/format";
-import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
-import { Button } from "~/ui/primitives/button";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-type OrderDetail = {
-  orderId: string;
-  status: string;
+import { formatDateLong } from "~/lib/format";
+import { Button } from "~/ui/primitives/button";
+import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
+
+interface OrderDetail {
   createdAt: string;
-  paidAt: string | null;
   email?: string;
-  items: Array<{
-    productId: string;
+  items: {
     name: string;
-    quantity: number;
     priceUsd: number;
+    productId: string;
+    quantity: number;
     subtotalUsd: number;
-  }>;
+  }[];
+  orderId: string;
+  paidAt: null | string;
   shipping?: {
-    name?: string;
     address1?: string;
     address2?: string;
     city?: string;
+    countryCode?: string;
+    name?: string;
+    phone?: string;
     stateCode?: string;
     zip?: string;
-    countryCode?: string;
-    phone?: string;
   };
+  status: string;
   totals: {
-    subtotalUsd: number;
     shippingUsd: number;
+    subtotalUsd: number;
     totalUsd: number;
   };
   tracking?: {
-    trackingNumber?: string;
-    trackingUrl?: string;
     carrier?: string;
-    shippedAt?: string;
     deliveredAt?: string;
     estimatedDeliveryFrom?: string;
     estimatedDeliveryTo?: string;
+    shippedAt?: string;
+    trackingNumber?: string;
+    trackingUrl?: string;
   };
-};
+}
 
 const STATUS_LABELS: Record<string, string> = {
   awaiting_payment: "Awaiting payment",
+  cancelled: "Cancelled",
   expired: "Expired",
+  fulfilled: "Shipped",
   paid: "Paid",
   shipped: "Shipped",
-  fulfilled: "Shipped",
-  cancelled: "Cancelled",
 };
 
 export function TrackOrderDetailClient({
@@ -59,11 +60,11 @@ export function TrackOrderDetailClient({
   token,
 }: {
   orderId: string;
-  token: string | null;
+  token: null | string;
 }) {
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<null | OrderDetail>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const fetchOrder = useCallback(async () => {
     if (!token) {
@@ -100,7 +101,11 @@ export function TrackOrderDetailClient({
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+      <div
+        className={`
+        flex flex-col items-center justify-center py-16 text-muted-foreground
+      `}
+      >
         <p>Loading order…</p>
       </div>
     );
@@ -114,7 +119,7 @@ export function TrackOrderDetailClient({
             <p className="text-muted-foreground">
               {error ?? "Order not found."}
             </p>
-            <Button asChild variant="outline" className="mt-4">
+            <Button asChild className="mt-4" variant="outline">
               <Link href="/track-order">Look up another order</Link>
             </Button>
           </CardContent>
@@ -127,20 +132,29 @@ export function TrackOrderDetailClient({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <h1 className="text-2xl font-semibold tracking-tight">
           Order{" "}
           <span className="font-mono text-muted-foreground">
             #{order.orderId}
           </span>
         </h1>
-        <Button asChild variant="outline" size="sm">
+        <Button asChild size="sm" variant="outline">
           <Link href="/track-order">Track another order</Link>
         </Button>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          className={`
+          flex flex-row items-center justify-between space-y-0 pb-2
+        `}
+        >
           <span className="text-sm font-medium text-muted-foreground">
             Status
           </span>
@@ -177,8 +191,11 @@ export function TrackOrderDetailClient({
           <ul className="space-y-3">
             {order.items.map((item) => (
               <li
+                className={`
+                  flex justify-between border-b pb-3
+                  last:border-0 last:pb-0
+                `}
                 key={`${item.productId}-${item.name}`}
-                className="flex justify-between border-b pb-3 last:border-0 last:pb-0"
               >
                 <div>
                   <p className="font-medium">{item.name}</p>
@@ -213,10 +230,13 @@ export function TrackOrderDetailClient({
               <span className="text-muted-foreground">Tracking #</span>
               {order.tracking.trackingUrl ? (
                 <a
+                  className={`
+                    font-mono text-blue-600 underline
+                    hover:text-blue-800
+                  `}
                   href={order.tracking.trackingUrl}
-                  target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-blue-600 underline hover:text-blue-800"
+                  target="_blank"
                 >
                   {order.tracking.trackingNumber}
                 </a>
@@ -294,7 +314,13 @@ export function TrackOrderDetailClient({
 
       <p className="text-center text-sm text-muted-foreground">
         Need help?{" "}
-        <Link href="/contact" className="underline hover:text-foreground">
+        <Link
+          className={`
+          underline
+          hover:text-foreground
+        `}
+          href="/contact"
+        >
           Contact us
         </Link>
         .

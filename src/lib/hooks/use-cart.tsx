@@ -10,6 +10,8 @@ import type { CartItem } from "~/ui/components/cart";
 
 export interface CartContextType {
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
+  /** Controlled open state for cart drawer/sheet (used by CartClient). */
+  cartOpen: boolean;
   clearCart: () => void;
   isHydrated: boolean;
   itemCount: number;
@@ -19,8 +21,6 @@ export interface CartContextType {
   setCartOpen: (open: boolean) => void;
   subtotal: number;
   updateQuantity: (id: string, quantity: number) => void;
-  /** Controlled open state for cart drawer/sheet (used by CartClient). */
-  cartOpen: boolean;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -168,7 +168,7 @@ export function CartProvider({ children }: React.PropsWithChildren) {
     ],
   );
 
-  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+  return <CartContext value={value}>{children}</CartContext>;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -178,6 +178,7 @@ export function CartProvider({ children }: React.PropsWithChildren) {
 /** SSR-safe fallback: returned when CartProvider is not yet in the tree (e.g. during SSR). */
 const SSR_FALLBACK: CartContextType = {
   addItem: () => {},
+  cartOpen: false,
   clearCart: () => {},
   isHydrated: false,
   itemCount: 0,
@@ -187,11 +188,10 @@ const SSR_FALLBACK: CartContextType = {
   setCartOpen: () => {},
   subtotal: 0,
   updateQuantity: () => {},
-  cartOpen: false,
 };
 
 export function useCart(): CartContextType {
-  const ctx = React.useContext(CartContext);
+  const ctx = React.use(CartContext);
   if (!ctx) {
     // Return a safe no-op fallback instead of crashing. This handles:
     // 1. SSR when the provider tree hasn't mounted yet

@@ -1,27 +1,29 @@
 "use client";
 
+import type { Wallet } from "@solana/wallet-adapter-react";
+
 import { useConnectWallet, useWallets } from "@mysten/dapp-kit";
 import { WalletReadyState } from "@solana/wallet-adapter-base";
 import { useWallet } from "@solana/wallet-adapter-react";
-import type { Wallet } from "@solana/wallet-adapter-react";
 import { ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { cn } from "~/lib/cn";
+import { useIsMobile } from "~/lib/hooks/use-mobile";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 
 import {
   CHAIN_WALLET_NAMES,
   EVM_SOLANA_ONLY_WALLETS,
   tokenToChain,
 } from "./chain-wallets";
-import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
-import { cn } from "~/lib/cn";
-import { useIsMobile } from "~/lib/hooks/use-mobile";
 
-type ConnectWalletModalProps = {
-  open: boolean;
+interface ConnectWalletModalProps {
   onOpenChange: (open: boolean) => void;
-};
+  open: boolean;
+}
 
 function getTokenFromUrl(): string {
   if (typeof window === "undefined") return "solana";
@@ -30,7 +32,7 @@ function getTokenFromUrl(): string {
 
 const SUGGESTED_NAMES = ["Phantom", "Solflare"];
 
-function isSuggestedWallet(wallet: Wallet, chain: string | null): boolean {
+function isSuggestedWallet(wallet: Wallet, chain: null | string): boolean {
   if (chain === "solana")
     return (
       wallet.adapter.name === "Phantom" || wallet.adapter.name === "Solflare"
@@ -40,46 +42,62 @@ function isSuggestedWallet(wallet: Wallet, chain: string | null): boolean {
 
 /** step 1: wallet list with "Detected" badge when extension is installed */
 function WalletOption({
-  wallet,
-  onClick,
   disabled,
   isDetected,
+  onClick,
+  wallet,
 }: {
-  wallet: Wallet;
-  onClick: () => void;
   disabled: boolean;
   isDetected: boolean;
+  onClick: () => void;
+  wallet: Wallet;
 }) {
   const icon = wallet.adapter.icon;
 
   return (
     <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-        "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+        `
+          flex w-full items-center gap-3 rounded-lg border border-border bg-card
+          px-4 py-3
+        `,
+        `
+          text-left transition-colors
+          hover:bg-muted/50
+          disabled:opacity-50
+        `,
       )}
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
     >
       {icon && (
         <div
-          className="flex shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20"
-          style={{ width: 32, height: 32 }}
+          className={`
+            flex shrink-0 items-center justify-center overflow-hidden rounded-md
+            bg-muted/20
+          `}
+          style={{ height: 32, width: 32 }}
         >
           <img
-            src={icon}
             alt=""
             className="shrink-0 object-contain"
-            width={32}
             height={32}
-            style={{ width: 32, height: 32, minWidth: 32, minHeight: 32 }}
+            src={icon}
+            style={{ height: 32, minHeight: 32, minWidth: 32, width: 32 }}
+            width={32}
           />
         </div>
       )}
       <span className="flex-1 font-medium">{wallet.adapter.name}</span>
       {isDetected && (
-        <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
+        <span
+          className={`
+          flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5
+          text-xs font-medium text-green-700
+          dark:text-green-400
+        `}
+        >
           <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
           Detected
         </span>
@@ -94,47 +112,37 @@ const METAMASK_LOGO =
 
 /** step 2: network selection — EVMs, Solana, Sui (screenshot-style) */
 const NETWORK_OPTIONS = [
-  { id: "evms", name: "EVMs", icon: "/crypto/ethereum/ethereum-logo.svg" },
-  { id: "solana", name: "Solana", icon: "/crypto/solana/solanaLogoMark.svg" },
-  { id: "sui", name: "Sui", icon: "/crypto/sui/sui-logo.svg" },
+  { icon: "/crypto/ethereum/ethereum-logo.svg", id: "evms", name: "EVMs" },
+  { icon: "/crypto/solana/solanaLogoMark.svg", id: "solana", name: "Solana" },
+  { icon: "/crypto/sui/sui-logo.svg", id: "sui", name: "Sui" },
 ] as const;
 
 const CONNECT_WAIT_MS = 30_000;
 
-function useIsMetaMaskDetected(): boolean {
-  const [detected, setDetected] = useState(false);
-  useEffect(() => {
-    setDetected(
-      Boolean(typeof window !== "undefined" && window.ethereum?.isMetaMask),
-    );
-  }, []);
-  return detected;
-}
-
 export function ConnectWalletModal({
-  open,
   onOpenChange,
+  open,
 }: ConnectWalletModalProps) {
   const params = useParams();
   const searchParams = useSearchParams();
   const isMobile = useIsMobile();
   const invoiceId = (params?.invoiceId as string) ?? "";
   const [token, setToken] = useState("solana");
-  const [step, setStep] = useState<"wallet" | "network" | "requesting">(
+  const [step, setStep] = useState<"network" | "requesting" | "wallet">(
     "wallet",
   );
-  const [selectedWallet, setSelectedWallet] = useState<Wallet | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<null | Wallet>(null);
   const [connectingToNetwork, setConnectingToNetwork] = useState<
     "solana" | "sui" | null
   >(null);
   const isMetaMaskDetected = useIsMetaMaskDetected();
-  const { wallets, select, connect, connecting, connected, publicKey } =
+  const { connect, connected, connecting, publicKey, select, wallets } =
     useWallet();
   const suiWallets = useWallets();
   const { mutateAsync: connectSui } = useConnectWallet();
   const connectedRef = useRef(connected);
-  const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
-  const [connectError, setConnectError] = useState<string | null>(null);
+  const [connectingWallet, setConnectingWallet] = useState<null | string>(null);
+  const [connectError, setConnectError] = useState<null | string>(null);
 
   connectedRef.current = connected;
 
@@ -307,18 +315,28 @@ export function ConnectWalletModal({
   const isConnecting = connecting || connectingWallet !== null;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
-        className="max-w-[400px] gap-0 border-border bg-card p-0 sm:max-w-[400px]"
         aria-describedby={undefined}
+        className={`
+          max-w-[400px] gap-0 border-border bg-card p-0
+          sm:max-w-[400px]
+        `}
       >
-        <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+        <div
+          className={`
+          flex items-center gap-2 border-b border-border px-5 py-4
+        `}
+        >
           {(step === "network" || step === "requesting") && (
             <button
-              type="button"
-              onClick={handleBack}
-              className="-ml-1 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Back"
+              className={`
+                -ml-1 rounded p-1 text-muted-foreground
+                hover:bg-muted hover:text-foreground
+              `}
+              onClick={handleBack}
+              type="button"
             >
               <ChevronRight className="size-5 rotate-180" />
             </button>
@@ -333,7 +351,12 @@ export function ConnectWalletModal({
         </div>
         <div className="flex flex-col gap-4 px-5 py-4">
           {connectError && (
-            <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p
+              className={`
+              rounded-md border border-destructive/50 bg-destructive/10 px-3
+              py-2 text-sm text-destructive
+            `}
+            >
               {connectError}
             </p>
           )}
@@ -349,63 +372,96 @@ export function ConnectWalletModal({
                 <>
                   {suggested.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <p
+                        className={`
+                        mb-2 text-xs font-medium tracking-wider
+                        text-muted-foreground uppercase
+                      `}
+                      >
                         Suggested
                       </p>
                       <div className="flex flex-col gap-2">
                         {suggested.map((wallet) => (
                           <WalletOption
-                            key={wallet.adapter.name}
-                            wallet={wallet}
-                            onClick={() => handleSelectWallet(wallet)}
                             disabled={isConnecting}
                             isDetected={
                               wallet.readyState === WalletReadyState.Installed
                             }
+                            key={wallet.adapter.name}
+                            onClick={() => handleSelectWallet(wallet)}
+                            wallet={wallet}
                           />
                         ))}
                         <button
-                          type="button"
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                            "text-left transition-colors hover:bg-muted/50",
+                            `
+                              flex w-full items-center gap-3 rounded-lg border
+                              border-border bg-card px-4 py-3
+                            `,
+                            `
+                              text-left transition-colors
+                              hover:bg-muted/50
+                            `,
                           )}
                           onClick={() => onOpenChange(false)}
+                          type="button"
                         >
                           <img
-                            src={METAMASK_LOGO}
                             alt=""
-                            className="size-8 shrink-0 rounded-md object-contain"
-                            width={32}
+                            className={`
+                              size-8 shrink-0 rounded-md object-contain
+                            `}
                             height={32}
+                            src={METAMASK_LOGO}
+                            width={32}
                           />
                           <span className="flex-1 font-medium">MetaMask</span>
                           {isMetaMaskDetected && (
-                            <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-                              <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
+                            <span
+                              className={`
+                              flex items-center gap-1.5 rounded-full
+                              bg-green-500/15 px-2 py-0.5 text-xs font-medium
+                              text-green-700
+                              dark:text-green-400
+                            `}
+                            >
+                              <span
+                                className={`
+                                size-1.5 shrink-0 rounded-full bg-green-500
+                              `}
+                              />
                               Detected
                             </span>
                           )}
-                          <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                          <ChevronRight
+                            className={`
+                            size-4 shrink-0 text-muted-foreground
+                          `}
+                          />
                         </button>
                       </div>
                     </div>
                   )}
                   {others.length > 0 && (
                     <div>
-                      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                      <p
+                        className={`
+                        mb-2 text-xs font-medium tracking-wider
+                        text-muted-foreground uppercase
+                      `}
+                      >
                         Others
                       </p>
                       <div className="flex flex-col gap-2">
                         {others.map((wallet) => (
                           <WalletOption
-                            key={wallet.adapter.name}
-                            wallet={wallet}
-                            onClick={() => handleSelectWallet(wallet)}
                             disabled={isConnecting}
                             isDetected={
                               wallet.readyState === WalletReadyState.Installed
                             }
+                            key={wallet.adapter.name}
+                            onClick={() => handleSelectWallet(wallet)}
+                            wallet={wallet}
                           />
                         ))}
                       </div>
@@ -420,17 +476,20 @@ export function ConnectWalletModal({
             <div className="flex flex-col items-center py-8 text-center">
               <div
                 className={cn(
-                  "relative mb-6 flex size-20 items-center justify-center rounded-2xl",
-                  "bg-primary/5 ring-2 ring-primary/20 animate-pulse",
+                  `
+                    relative mb-6 flex size-20 items-center justify-center
+                    rounded-2xl
+                  `,
+                  "animate-pulse bg-primary/5 ring-2 ring-primary/20",
                 )}
               >
                 {selectedWallet.adapter.icon && (
                   <img
-                    src={selectedWallet.adapter.icon}
                     alt=""
-                    className="size-14 min-w-14 min-h-14 object-contain"
-                    width={56}
+                    className="size-14 min-h-14 min-w-14 object-contain"
                     height={56}
+                    src={selectedWallet.adapter.icon}
+                    width={56}
                   />
                 )}
               </div>
@@ -449,7 +508,12 @@ export function ConnectWalletModal({
 
           {step === "network" && selectedWallet && (
             <div>
-              <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <p
+                className={`
+                mb-3 text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Network
               </p>
               <div className="flex flex-col gap-2">
@@ -460,46 +524,67 @@ export function ConnectWalletModal({
                   network.id === "evms" ? (
                     <div key={network.id}>
                       <button
-                        type="button"
                         className={cn(
-                          "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                          "text-left transition-colors hover:bg-muted/50",
+                          `
+                            flex w-full items-center gap-3 rounded-lg border
+                            border-border bg-card px-4 py-3
+                          `,
+                          `
+                            text-left transition-colors
+                            hover:bg-muted/50
+                          `,
                         )}
                         onClick={() => onOpenChange(false)}
+                        type="button"
                       >
                         <Image
-                          src={network.icon}
                           alt=""
                           className="size-8 shrink-0 rounded-md object-contain"
-                          width={32}
                           height={32}
+                          src={network.icon}
+                          width={32}
                         />
                         <span className="flex-1 font-medium">
                           {network.name}
                         </span>
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                        <ChevronRight
+                          className={`
+                          size-4 shrink-0 text-muted-foreground
+                        `}
+                        />
                       </button>
                     </div>
                   ) : (
                     <button
-                      key={network.id}
-                      type="button"
-                      onClick={() => handleSelectNetwork(network.id)}
-                      disabled={isConnecting}
                       className={cn(
-                        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3",
-                        "text-left transition-colors hover:bg-muted/50 disabled:opacity-50",
+                        `
+                          flex w-full items-center gap-3 rounded-lg border
+                          border-border bg-card px-4 py-3
+                        `,
+                        `
+                          text-left transition-colors
+                          hover:bg-muted/50
+                          disabled:opacity-50
+                        `,
                       )}
+                      disabled={isConnecting}
+                      key={network.id}
+                      onClick={() => handleSelectNetwork(network.id)}
+                      type="button"
                     >
                       <Image
-                        src={network.icon}
                         alt=""
                         className="size-8 shrink-0 rounded-md object-contain"
-                        width={32}
                         height={32}
+                        src={network.icon}
+                        width={32}
                       />
                       <span className="flex-1 font-medium">{network.name}</span>
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      <ChevronRight
+                        className={`
+                        size-4 shrink-0 text-muted-foreground
+                      `}
+                      />
                     </button>
                   ),
                 )}
@@ -510,4 +595,14 @@ export function ConnectWalletModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+function useIsMetaMaskDetected(): boolean {
+  const [detected, setDetected] = useState(false);
+  useEffect(() => {
+    setDetected(
+      Boolean(typeof window !== "undefined" && window.ethereum?.isMetaMask),
+    );
+  }, []);
+  return detected;
 }

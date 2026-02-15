@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+
 import { RefundRequestForm } from "./RefundRequestForm";
 
 export const metadata = {
@@ -10,9 +11,19 @@ export const metadata = {
 
 export default function RefundPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-10 border-b border-border pb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Request a refund
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
@@ -24,11 +35,21 @@ export default function RefundPage() {
       </header>
 
       <div className="space-y-10">
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             How refunds work
           </h2>
-          <ul className="mt-3 list-inside list-disc space-y-2 leading-relaxed text-muted-foreground">
+          <ul
+            className={`
+            mt-3 list-inside list-disc space-y-2 leading-relaxed
+            text-muted-foreground
+          `}
+          >
             <li>
               <strong className="font-medium text-foreground">
                 Orders that haven’t shipped
@@ -68,15 +89,21 @@ export default function RefundPage() {
         <p className="text-center text-sm text-muted-foreground">
           For full eligibility and return conditions, see our{" "}
           <Link
+            className={`
+              font-medium text-primary underline-offset-4
+              hover:underline
+            `}
             href="/policies/refund"
-            className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Refund policy
           </Link>
           . Need help?{" "}
           <Link
+            className={`
+              font-medium text-primary underline-offset-4
+              hover:underline
+            `}
             href="/contact"
-            className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Contact us
           </Link>

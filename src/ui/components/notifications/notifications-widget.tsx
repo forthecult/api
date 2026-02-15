@@ -6,37 +6,14 @@ import type { Notification } from "./notification-center";
 
 import { NotificationCenter } from "./notification-center";
 
-type FeedItem = {
-  id: string;
-  type: string;
-  title: string;
-  description: string;
-  read: boolean;
+interface FeedItem {
   createdAt: string;
+  description: string;
+  id: string;
   metadata?: Record<string, unknown>;
-};
-
-function mapTypeToNotificationType(
-  type: string,
-): "error" | "info" | "success" | "warning" {
-  if (type.includes("cancelled") || type.includes("refund")) return "error";
-  if (type.includes("placed") || type.includes("confirmed")) return "success";
-  if (type.includes("welcome")) return "success";
-  if (type.includes("shipped") || type.includes("on_hold")) return "info";
-  if (type.includes("support_ticket")) return "info";
-  return "info";
-}
-
-function feedToNotification(item: FeedItem): Notification {
-  return {
-    id: item.id,
-    title: item.title,
-    description: item.description,
-    read: item.read,
-    metadata: item.metadata,
-    timestamp: new Date(item.createdAt),
-    type: mapTypeToNotificationType(item.type),
-  };
+  read: boolean;
+  title: string;
+  type: string;
 }
 
 export function NotificationsWidget() {
@@ -65,20 +42,20 @@ export function NotificationsWidget() {
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
     await fetch("/api/user/notifications/feed", {
-      method: "PATCH",
+      body: JSON.stringify({ markAsRead: id }),
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ markAsRead: id }),
+      method: "PATCH",
     });
   }, []);
 
   const handleMarkAllAsRead = React.useCallback(async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     await fetch("/api/user/notifications/feed", {
-      method: "PATCH",
+      body: JSON.stringify({ markAllAsRead: true }),
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ markAllAsRead: true }),
+      method: "PATCH",
     });
   }, []);
 
@@ -99,4 +76,27 @@ export function NotificationsWidget() {
       onMarkAsRead={handleMarkAsRead}
     />
   );
+}
+
+function feedToNotification(item: FeedItem): Notification {
+  return {
+    description: item.description,
+    id: item.id,
+    metadata: item.metadata,
+    read: item.read,
+    timestamp: new Date(item.createdAt),
+    title: item.title,
+    type: mapTypeToNotificationType(item.type),
+  };
+}
+
+function mapTypeToNotificationType(
+  type: string,
+): "error" | "info" | "success" | "warning" {
+  if (type.includes("cancelled") || type.includes("refund")) return "error";
+  if (type.includes("placed") || type.includes("confirmed")) return "success";
+  if (type.includes("welcome")) return "success";
+  if (type.includes("shipped") || type.includes("on_hold")) return "info";
+  if (type.includes("support_ticket")) return "info";
+  return "info";
 }

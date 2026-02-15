@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { email?: string; code?: string };
+  let body: { code?: string; email?: string };
   try {
     body = await request.json();
   } catch {
@@ -107,12 +107,12 @@ export async function POST(request: NextRequest) {
 
   if (!existingCredential) {
     await db.insert(accountTable).values({
-      id: createId(),
-      userId: session.user.id,
       accountId: email,
-      providerId: CREDENTIAL_PROVIDER_ID,
       createdAt: now,
+      id: createId(),
+      providerId: CREDENTIAL_PROVIDER_ID,
       updatedAt: now,
+      userId: session.user.id,
     });
   }
 

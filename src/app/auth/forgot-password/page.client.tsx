@@ -53,12 +53,12 @@ export function ForgotPasswordClient() {
       <AuthFormLayout>
         <div className="space-y-4">
           <AuthFormHeader
-            title="Check your email"
             subtitle={`If an account exists for ${email.trim()}, you will receive a link to reset your password. In development without an email provider, the link is also printed in the server terminal.`}
+            title="Check your email"
           />
           <Card>
             <CardContent className="pt-6">
-              <Button asChild variant="outline" className="w-full">
+              <Button asChild className="w-full" variant="outline">
                 <Link href="/login">Back to sign in</Link>
               </Button>
             </CardContent>
@@ -72,8 +72,8 @@ export function ForgotPasswordClient() {
     <AuthFormLayout>
       <div className="space-y-4">
         <AuthFormHeader
-          title="Forgot password?"
           subtitle="Enter your email and we'll send you a link to set a new password."
+          title="Forgot password?"
         />
         <Card>
           <CardContent className="pt-6">
@@ -81,8 +81,8 @@ export function ForgotPasswordClient() {
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
-                  id="email"
                   autoComplete="email"
+                  id="email"
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="satoshi@nakamoto.com"
                   required
@@ -101,7 +101,10 @@ export function ForgotPasswordClient() {
             </form>
             <p className="mt-4 text-center text-sm text-muted-foreground">
               <Link
-                className="text-primary underline-offset-4 hover:underline"
+                className={`
+                  text-primary underline-offset-4
+                  hover:underline
+                `}
                 href="/login"
               >
                 Back to sign in

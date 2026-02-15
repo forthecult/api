@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  type Address,
+  formatEther,
+  formatUnits,
+  parseEther,
+  parseUnits,
+} from "viem";
 import {
   useAccount,
   useChainId,
-  useSwitchChain,
   useSendTransaction,
-  useWriteContract,
+  useSwitchChain,
   useWaitForTransactionReceipt,
+  useWriteContract,
 } from "wagmi";
-import {
-  parseEther,
-  parseUnits,
-  formatEther,
-  formatUnits,
-  type Address,
-} from "viem";
 
 import { ERC20ABI } from "~/lib/contracts/abis";
 
@@ -26,111 +26,111 @@ const TOKEN_ADDRESSES: Record<number, Record<string, Address>> = {
     USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
     USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
   },
-  42161: {
-    // Arbitrum
-    USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
-    USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
-  },
-  8453: {
-    // Base
-    USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-  },
-  137: {
-    // Polygon
-    USDC: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
-    USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+  10: {
+    // Optimism
+    USDC: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+    USDT: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
   },
   56: {
     // BNB
     USDC: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
     USDT: "0x55d398326f99059fF775485246999027B3197955",
   },
-  10: {
-    // Optimism
-    USDC: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
-    USDT: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58",
+  137: {
+    // Polygon
+    USDC: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
+    USDT: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+  },
+  8453: {
+    // Base
+    USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  },
+  42161: {
+    // Arbitrum
+    USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+  },
+  84532: {
+    // Base Sepolia
+    USDC: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
   },
   // Testnets
   11155111: {
     // Sepolia
     USDC: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
   },
-  84532: {
-    // Base Sepolia
-    USDC: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-  },
 };
 
 export interface EthPayOrder {
-  orderId: string;
-  depositAddress: Address;
   chainId: number;
-  token: "ETH" | "USDC" | "USDT";
-  totalCents: number;
-  cryptoAmount?: string | null;
-  tokenAddress?: string | null;
+  cryptoAmount?: null | string;
+  depositAddress: Address;
   expiresAt: string;
+  orderId: string;
+  token: "ETH" | "USDC" | "USDT";
+  tokenAddress?: null | string;
+  totalCents: number;
 }
 
 export interface PaymentStatus {
-  status:
-    | "idle"
-    | "switching_chain"
-    | "sending"
-    | "confirming"
-    | "polling"
-    | "confirmed"
-    | "error";
-  txHash?: string;
   error?: string;
   message?: string;
+  status:
+    | "confirmed"
+    | "confirming"
+    | "error"
+    | "idle"
+    | "polling"
+    | "sending"
+    | "switching_chain";
+  txHash?: string;
 }
 
 export interface UseEthPayOptions {
-  order: EthPayOrder;
   ethPriceUsd?: number; // Required for ETH payments
-  onSuccess?: (txHash: string) => void;
   onError?: (error: string) => void;
+  onSuccess?: (txHash: string) => void;
+  order: EthPayOrder;
 }
 
 export function useEthPay({
-  order,
   ethPriceUsd,
-  onSuccess,
   onError,
+  onSuccess,
+  order,
 }: UseEthPayOptions) {
   const { address, isConnected } = useAccount();
   const currentChainId = useChainId();
-  const { switchChainAsync, isPending: isSwitchingChain } = useSwitchChain();
+  const { isPending: isSwitchingChain, switchChainAsync } = useSwitchChain();
 
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>({
     status: "idle",
   });
   const [txHash, setTxHash] = useState<`0x${string}` | undefined>();
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollIntervalRef = useRef<null | ReturnType<typeof setInterval>>(null);
 
   // ETH transfer
   const {
-    sendTransactionAsync,
-    isPending: isSendingEth,
     error: sendEthError,
+    isPending: isSendingEth,
+    sendTransactionAsync,
   } = useSendTransaction();
 
   // ERC20 transfer
   const {
-    writeContractAsync,
-    isPending: isSendingToken,
     error: sendTokenError,
+    isPending: isSendingToken,
+    writeContractAsync,
   } = useWriteContract();
 
   // Wait for transaction receipt
   const {
+    error: receiptError,
     isLoading: isWaitingForReceipt,
     isSuccess: isReceiptSuccess,
-    error: receiptError,
   } = useWaitForTransactionReceipt({
-    hash: txHash,
     confirmations: 1,
+    hash: txHash,
   });
 
   // Calculate amounts
@@ -164,9 +164,9 @@ export function useEthPay({
   const startPolling = useCallback(
     async (hash: string) => {
       setPaymentStatus({
+        message: "Confirming payment...",
         status: "polling",
         txHash: hash,
-        message: "Confirming payment...",
       });
 
       const poll = async () => {
@@ -182,9 +182,9 @@ export function useEthPay({
               pollIntervalRef.current = null;
             }
             setPaymentStatus({
+              message: "Payment confirmed!",
               status: "confirmed",
               txHash: hash,
-              message: "Payment confirmed!",
             });
             onSuccess?.(hash);
           } else if (data.status === "expired" || data.status === "cancelled") {
@@ -193,8 +193,8 @@ export function useEthPay({
               pollIntervalRef.current = null;
             }
             setPaymentStatus({
-              status: "error",
               error: data.message || "Order expired or cancelled",
+              status: "error",
             });
             onError?.(data.message || "Order expired or cancelled");
           }
@@ -215,22 +215,22 @@ export function useEthPay({
     async (hash: string) => {
       try {
         const res = await fetch("/api/checkout/eth-pay/confirm", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             orderId: order.orderId,
-            txHash: hash,
             payerAddress: address,
+            txHash: hash,
           }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
 
         const data = await res.json();
 
         if (data.status === "confirmed" || res.ok) {
           setPaymentStatus({
+            message: "Payment confirmed!",
             status: "confirmed",
             txHash: hash,
-            message: "Payment confirmed!",
           });
           onSuccess?.(hash);
           return true;
@@ -251,7 +251,7 @@ export function useEthPay({
   // Send payment
   const sendPayment = useCallback(async () => {
     if (!isConnected || !address) {
-      setPaymentStatus({ status: "error", error: "Wallet not connected" });
+      setPaymentStatus({ error: "Wallet not connected", status: "error" });
       onError?.("Wallet not connected");
       return;
     }
@@ -260,15 +260,15 @@ export function useEthPay({
       // Check if we need to switch chains
       if (currentChainId !== order.chainId) {
         setPaymentStatus({
-          status: "switching_chain",
           message: "Switching network...",
+          status: "switching_chain",
         });
         try {
           await switchChainAsync({ chainId: order.chainId });
         } catch (err) {
           setPaymentStatus({
-            status: "error",
             error: "Failed to switch network",
+            status: "error",
           });
           onError?.("Failed to switch network. Please switch manually.");
           return;
@@ -276,8 +276,8 @@ export function useEthPay({
       }
 
       setPaymentStatus({
-        status: "sending",
         message: "Confirm transaction in your wallet...",
+        status: "sending",
       });
 
       let hash: `0x${string}`;
@@ -298,18 +298,18 @@ export function useEthPay({
 
         const amount = calculateTokenAmount();
         hash = await writeContractAsync({
-          address: tokenAddress,
           abi: ERC20ABI,
-          functionName: "transfer",
+          address: tokenAddress,
           args: [order.depositAddress, amount],
+          functionName: "transfer",
         });
       }
 
       setTxHash(hash);
       setPaymentStatus({
+        message: "Waiting for confirmation...",
         status: "confirming",
         txHash: hash,
-        message: "Waiting for confirmation...",
       });
 
       // Try to confirm with backend immediately, or start polling
@@ -317,7 +317,7 @@ export function useEthPay({
       setTimeout(() => confirmPayment(hash), 2000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Payment failed";
-      setPaymentStatus({ status: "error", error: message });
+      setPaymentStatus({ error: message, status: "error" });
       onError?.(message);
     }
   }, [
@@ -347,7 +347,7 @@ export function useEthPay({
     const error = sendEthError || sendTokenError || receiptError;
     if (error && paymentStatus.status !== "error") {
       const message = error.message || "Transaction failed";
-      setPaymentStatus({ status: "error", error: message });
+      setPaymentStatus({ error: message, status: "error" });
       onError?.(message);
     }
   }, [
@@ -393,13 +393,13 @@ export function useEthPay({
     paymentStatus.status === "polling";
 
   return {
-    sendPayment,
-    paymentStatus,
-    isProcessing,
-    isConnected,
     address,
-    needsChainSwitch,
     displayAmount: displayAmount(),
+    isConnected,
+    isProcessing,
+    needsChainSwitch,
+    paymentStatus,
+    sendPayment,
     txHash,
   };
 }

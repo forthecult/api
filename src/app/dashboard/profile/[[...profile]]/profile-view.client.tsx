@@ -18,8 +18,15 @@ import { useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { Badge } from "~/ui/primitives/badge";
 import { Card, CardContent } from "~/ui/primitives/card";
 
+interface OrderStats {
+  all: number;
+  awaitingDelivery: number;
+  awaitingPayment: number;
+  awaitingShipment: number;
+}
+
 /** Only show real emails; hide wallet placeholders (e.g. solana_xxx@wallet.local) */
-function showRealEmail(email: string | null | undefined): string {
+function showRealEmail(email: null | string | undefined): string {
   if (!email || typeof email !== "string") return "—";
   const t = email.trim();
   if (
@@ -31,93 +38,57 @@ function showRealEmail(email: string | null | undefined): string {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? email : "—";
 }
 
-type OrderStats = {
-  all: number;
-  awaitingPayment: number;
-  awaitingShipment: number;
-  awaitingDelivery: number;
-};
-
 const defaultOrderStats: OrderStats = {
   all: 0,
+  awaitingDelivery: 0,
   awaitingPayment: 0,
   awaitingShipment: 0,
-  awaitingDelivery: 0,
 };
 
-function formatBalance(cents: number | null | undefined): string {
+function formatBalance(cents: null | number | undefined): string {
   if (cents == null) return "—";
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
   }).format(cents / 100);
 }
 
 // Tier visual config (icons / accent colors)
 const TIER_VISUALS: Record<
   number,
-  { name: string; icon: typeof Crown; accent: string }
+  { accent: string; icon: typeof Crown; name: string }
 > = {
-  1: { name: "Tier 1", icon: Crown, accent: "text-chart-1" },
-  2: { name: "Tier 2", icon: Star, accent: "text-chart-4" },
-  3: { name: "Tier 3", icon: Shield, accent: "text-chart-2" },
-  4: { name: "Tier 4", icon: Signal, accent: "text-muted-foreground" },
+  1: { accent: "text-chart-1", icon: Crown, name: "Tier 1" },
+  2: { accent: "text-chart-4", icon: Star, name: "Tier 2" },
+  3: { accent: "text-chart-2", icon: Shield, name: "Tier 3" },
+  4: { accent: "text-muted-foreground", icon: Signal, name: "Tier 4" },
 };
 
 interface MembershipInfo {
+  accent: string;
+  icon: typeof Crown;
+  isLocked: boolean;
   tierId: number;
   tierName: string;
-  icon: typeof Crown;
-  accent: string;
-  isLocked: boolean;
-  unlocksAt: string | null;
-}
-
-/**
- * Determine user's tier by comparing the USD value of their staked tokens
- * against the tier costs returned by the pricing API.
- */
-function detectTierFromPricing(
-  stakedTokens: number,
-  tokenPriceUsd: number,
-  tierCosts: { tierId: number; costUsd: number; tokensNeeded: number }[],
-): MembershipInfo | null {
-  if (!stakedTokens || stakedTokens <= 0 || !tokenPriceUsd) return null;
-  // Check from best tier (1) to worst (4)
-  const sorted = [...tierCosts].sort((a, b) => a.tierId - b.tierId);
-  for (const t of sorted) {
-    if (stakedTokens >= t.tokensNeeded) {
-      const visual = TIER_VISUALS[t.tierId];
-      if (!visual) continue;
-      return {
-        tierId: t.tierId,
-        tierName: visual.name,
-        icon: visual.icon,
-        accent: visual.accent,
-        isLocked: false,
-        unlocksAt: null,
-      };
-    }
-  }
-  return null;
+  unlocksAt: null | string;
 }
 
 export function ProfileViewClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
   const { publicKey } = useWallet();
   const wallet = publicKey?.toBase58() ?? null;
-  const [profile, setProfile] = useState<{
+  const [profile, setProfile] = useState<null | {
+    email: string;
     firstName: string;
+    image: null | string;
     lastName: string;
     name: string;
-    email: string;
     phone: string;
-    image: string | null;
-  } | null>(null);
+  }>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
-  const [cultBalanceCents, setCultBalanceCents] = useState<number | null>(null);
+  const [cultBalanceCents, setCultBalanceCents] = useState<null | number>(null);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -138,21 +109,21 @@ export function ProfileViewClient() {
       .then(
         ([balanceData, priceData]: [
           {
+            lock?: null | { isLocked?: boolean; unlocksAt?: string };
             stakedBalance?: string;
-            lock?: { isLocked?: boolean; unlocksAt?: string } | null;
           },
           {
-            status?: boolean;
             data?: {
-              token: { priceUsd: number };
               pricing: {
                 tiers: {
-                  tierId: number;
                   costUsd: number;
+                  tierId: number;
                   tokensNeeded: number;
                 }[];
               };
+              token: { priceUsd: number };
             };
+            status?: boolean;
           },
         ]) => {
           const staked = Number.parseFloat(balanceData.stakedBalance ?? "0");
@@ -179,32 +150,32 @@ export function ProfileViewClient() {
       ]);
       if (profileRes.ok) {
         const data = (await profileRes.json()) as {
+          email?: string;
           firstName?: string;
+          image?: null | string;
           lastName?: string;
           name?: string;
-          email?: string;
           phone?: string;
-          image?: string | null;
         };
         setProfile({
+          email: data.email ?? user.email ?? "",
           firstName: data.firstName ?? "",
+          image: data.image ?? null,
           lastName: data.lastName ?? "",
           name:
             data.name ??
             ([data.firstName, data.lastName].filter(Boolean).join(" ") ||
               "User"),
-          email: data.email ?? user.email ?? "",
           phone: data.phone ?? "",
-          image: data.image ?? null,
         });
       } else {
         setProfile({
+          email: user.email ?? "",
           firstName: "",
+          image: user.image ?? null,
           lastName: "",
           name: user.name ?? "User",
-          email: user.email ?? "",
           phone: "",
-          image: user.image ?? null,
         });
       }
       if (countsRes.ok) {
@@ -215,12 +186,12 @@ export function ProfileViewClient() {
       }
     } catch {
       setProfile({
+        email: user.email ?? "",
         firstName: "",
+        image: user.image ?? null,
         lastName: "",
         name: user.name ?? "User",
-        email: user.email ?? "",
         phone: "",
-        image: user.image ?? null,
       });
     } finally {
       setLoading(false);
@@ -247,25 +218,44 @@ export function ProfileViewClient() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <UserIcon className="h-7 w-7 text-muted-foreground" aria-hidden />
+        <UserIcon aria-hidden className="h-7 w-7 text-muted-foreground" />
         <h1 className="text-2xl font-semibold tracking-tight">My Profile</h1>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-6">
+      <div
+        className={`
+        grid gap-6
+        lg:grid-cols-6
+      `}
+      >
         {/* User summary card – takes half the row so it can expand to the right */}
         <Card className="lg:col-span-3">
-          <CardContent className="flex flex-row items-center gap-4 py-3 pl-3 pr-4">
-            <div className="relative size-14 shrink-0 overflow-hidden rounded-full border-2 border-border bg-muted">
+          <CardContent
+            className={`
+            flex flex-row items-center gap-4 py-3 pr-4 pl-3
+          `}
+          >
+            <div
+              className={`
+              relative size-14 shrink-0 overflow-hidden rounded-full border-2
+              border-border bg-muted
+            `}
+            >
               {profile?.image ? (
                 <Image
-                  src={profile.image}
                   alt=""
-                  fill
                   className="object-cover"
+                  fill
                   sizes="56px"
+                  src={profile.image}
                 />
               ) : (
-                <span className="flex size-full items-center justify-center text-lg font-semibold text-muted-foreground">
+                <span
+                  className={`
+                  flex size-full items-center justify-center text-lg
+                  font-semibold text-muted-foreground
+                `}
+                >
                   {(
                     profile?.firstName?.[0] ??
                     profile?.lastName?.[0] ??
@@ -276,7 +266,7 @@ export function ProfileViewClient() {
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-foreground truncate">
+              <p className="truncate font-medium text-foreground">
                 {displayName}
               </p>
               <p className="text-sm text-muted-foreground">
@@ -287,16 +277,24 @@ export function ProfileViewClient() {
               {membershipLoading ? (
                 <span className="text-xs text-muted-foreground">Loading…</span>
               ) : membership ? (
-                <Badge variant="outline" className="gap-1.5">
+                <Badge className="gap-1.5" variant="outline">
                   <membership.icon
-                    className={`h-3.5 w-3.5 ${membership.accent}`}
+                    className={`
+                      h-3.5 w-3.5
+                      ${membership.accent}
+                    `}
                   />
                   {membership.tierName} Member
                 </Badge>
               ) : (
                 <Link
+                  className={`
+                    inline-flex items-center gap-1 rounded-md border
+                    border-primary/20 bg-primary/5 px-2.5 py-1 text-xs
+                    font-medium text-primary transition-colors
+                    hover:bg-primary/10
+                  `}
                   href="/membership"
-                  className="inline-flex items-center gap-1 rounded-md border border-primary/20 bg-primary/5 px-2.5 py-1 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
                 >
                   Join the Cult
                   <ArrowRight className="h-3 w-3" />
@@ -307,18 +305,32 @@ export function ProfileViewClient() {
         </Card>
 
         {/* Order status cards */}
-        <div className="grid grid-cols-2 gap-4 lg:col-span-3 sm:grid-cols-4">
+        <div
+          className={`
+          grid grid-cols-2 gap-4
+          sm:grid-cols-4
+          lg:col-span-3
+        `}
+        >
           <Card>
-            <CardContent className="flex flex-col items-center justify-center p-4 text-center">
-              <span className="text-2xl font-bold tabular-nums text-foreground">
+            <CardContent
+              className={`
+              flex flex-col items-center justify-center p-4 text-center
+            `}
+            >
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {orderStats.all}
               </span>
               <span className="text-sm text-muted-foreground">All Orders</span>
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center justify-center p-4 text-center">
-              <span className="text-2xl font-bold tabular-nums text-foreground">
+            <CardContent
+              className={`
+              flex flex-col items-center justify-center p-4 text-center
+            `}
+            >
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {String(orderStats.awaitingPayment).padStart(2, "0")}
               </span>
               <span className="text-sm text-muted-foreground">
@@ -327,8 +339,12 @@ export function ProfileViewClient() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center justify-center p-4 text-center">
-              <span className="text-2xl font-bold tabular-nums text-foreground">
+            <CardContent
+              className={`
+              flex flex-col items-center justify-center p-4 text-center
+            `}
+            >
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {String(orderStats.awaitingShipment).padStart(2, "0")}
               </span>
               <span className="text-sm text-muted-foreground">
@@ -337,8 +353,12 @@ export function ProfileViewClient() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="flex flex-col items-center justify-center p-4 text-center">
-              <span className="text-2xl font-bold tabular-nums text-foreground">
+            <CardContent
+              className={`
+              flex flex-col items-center justify-center p-4 text-center
+            `}
+            >
+              <span className="text-2xl font-bold text-foreground tabular-nums">
                 {String(orderStats.awaitingDelivery).padStart(2, "0")}
               </span>
               <span className="text-sm text-muted-foreground">
@@ -352,53 +372,93 @@ export function ProfileViewClient() {
       {/* Personal information – compact, low height */}
       <Card className="overflow-hidden">
         <Link
-          href="/dashboard/profile/edit"
-          className="block transition-colors hover:bg-muted/50"
           aria-label="Edit profile and personal details"
+          className={`
+            block transition-colors
+            hover:bg-muted/50
+          `}
+          href="/dashboard/profile/edit"
         >
           <CardContent className="p-0">
-            <div className="grid grid-cols-2 gap-x-4 gap-y-2 py-3 px-4 sm:grid-cols-3 md:grid-cols-6 md:gap-x-6 md:px-5">
+            <div
+              className={`
+              grid grid-cols-2 gap-x-4 gap-y-2 px-4 py-3
+              sm:grid-cols-3
+              md:grid-cols-6 md:gap-x-6 md:px-5
+            `}
+            >
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   First Name
                 </span>
-                <span className="text-sm font-medium text-foreground truncate">
+                <span className="truncate text-sm font-medium text-foreground">
                   {profile?.firstName || "—"}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Last Name
                 </span>
-                <span className="text-sm font-medium text-foreground truncate">
+                <span className="truncate text-sm font-medium text-foreground">
                   {profile?.lastName || "—"}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Email
                 </span>
-                <span className="text-sm text-foreground truncate">
+                <span className="truncate text-sm text-foreground">
                   {showRealEmail(profile?.email)}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Phone
                 </span>
-                <span className="text-sm text-foreground truncate">
+                <span className="truncate text-sm text-foreground">
                   {profile?.phone || "—"}
                 </span>
               </div>
               <div className="flex flex-col gap-0.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Birth date
                 </span>
                 <span className="text-sm text-foreground">—</span>
               </div>
-              <div className="flex items-center justify-end text-muted-foreground col-span-2 sm:col-span-1 md:col-span-1 md:justify-end">
+              <div
+                className={`
+                col-span-2 flex items-center justify-end text-muted-foreground
+                sm:col-span-1
+                md:col-span-1 md:justify-end
+              `}
+              >
                 <span className="text-sm">Edit</span>
-                <ChevronRight className="ml-1 h-4 w-4 shrink-0" aria-hidden />
+                <ChevronRight aria-hidden className="ml-1 h-4 w-4 shrink-0" />
               </div>
             </div>
           </CardContent>
@@ -406,4 +466,33 @@ export function ProfileViewClient() {
       </Card>
     </div>
   );
+}
+
+/**
+ * Determine user's tier by comparing the USD value of their staked tokens
+ * against the tier costs returned by the pricing API.
+ */
+function detectTierFromPricing(
+  stakedTokens: number,
+  tokenPriceUsd: number,
+  tierCosts: { costUsd: number; tierId: number; tokensNeeded: number }[],
+): MembershipInfo | null {
+  if (!stakedTokens || stakedTokens <= 0 || !tokenPriceUsd) return null;
+  // Check from best tier (1) to worst (4)
+  const sorted = [...tierCosts].sort((a, b) => a.tierId - b.tierId);
+  for (const t of sorted) {
+    if (stakedTokens >= t.tokensNeeded) {
+      const visual = TIER_VISUALS[t.tierId];
+      if (!visual) continue;
+      return {
+        accent: visual.accent,
+        icon: visual.icon,
+        isLocked: false,
+        tierId: t.tierId,
+        tierName: visual.name,
+        unlocksAt: null,
+      };
+    }
+  }
+  return null;
 }

@@ -1,14 +1,14 @@
-import { desc, eq, and } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { userNotificationTable } from "~/db/schema";
-import { verifyCsrfOrigin, csrfFailureResponse } from "~/lib/csrf";
 import { auth } from "~/lib/auth";
+import { csrfFailureResponse, verifyCsrfOrigin } from "~/lib/csrf";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -37,13 +37,13 @@ export async function GET(request: NextRequest) {
 
   const rows = await db
     .select({
-      id: userNotificationTable.id,
-      type: userNotificationTable.type,
-      title: userNotificationTable.title,
-      description: userNotificationTable.description,
-      read: userNotificationTable.read,
-      metadata: userNotificationTable.metadata,
       createdAt: userNotificationTable.createdAt,
+      description: userNotificationTable.description,
+      id: userNotificationTable.id,
+      metadata: userNotificationTable.metadata,
+      read: userNotificationTable.read,
+      title: userNotificationTable.title,
+      type: userNotificationTable.type,
     })
     .from(userNotificationTable)
     .where(eq(userNotificationTable.userId, session.user.id))
@@ -52,13 +52,13 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     notifications: rows.map((r) => ({
-      id: r.id,
-      type: r.type,
-      title: r.title,
-      description: r.description,
-      read: r.read,
-      metadata: r.metadata,
       createdAt: r.createdAt.toISOString(),
+      description: r.description,
+      id: r.id,
+      metadata: r.metadata,
+      read: r.read,
+      title: r.title,
+      type: r.type,
     })),
   });
 }
@@ -82,11 +82,11 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  let body: { markAsRead?: string; markAllAsRead?: boolean };
+  let body: { markAllAsRead?: boolean; markAsRead?: string };
   try {
     body = (await request.json()) as {
-      markAsRead?: string;
       markAllAsRead?: boolean;
+      markAsRead?: string;
     };
   } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });

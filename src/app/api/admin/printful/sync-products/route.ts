@@ -3,7 +3,7 @@ import { eq, inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { productVariantsTable, productsTable } from "~/db/schema";
+import { productsTable, productVariantsTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
   fetchCatalogProduct,
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     let ourProductId: string;
     if (isReSync) {
       const [existing] = await db
-        .select({ id: productsTable.id, externalId: productsTable.externalId })
+        .select({ externalId: productsTable.externalId, id: productsTable.id })
         .from(productsTable)
         .where(eq(productsTable.id, productId))
         .limit(1);
@@ -96,11 +96,11 @@ export async function POST(request: NextRequest) {
     } else {
       ourProductId = createId();
       await db.insert(productsTable).values({
-        id: ourProductId,
         brand: catalogProduct.brand ?? null,
         createdAt: now,
         description: catalogProduct.description ?? null,
         externalId: String(catalogProductId),
+        id: ourProductId,
         imageUrl: catalogProduct.image ?? null,
         metaDescription: null,
         name: catalogProduct.name,
@@ -116,10 +116,10 @@ export async function POST(request: NextRequest) {
         "~/lib/category-auto-assign"
       );
       await applyCategoryAutoRules({
-        id: ourProductId,
-        name: catalogProduct.name,
         brand: catalogProduct.brand ?? null,
         createdAt: now,
+        id: ourProductId,
+        name: catalogProduct.name,
       });
     }
 
@@ -130,8 +130,8 @@ export async function POST(request: NextRequest) {
       let priceCents = 0;
       try {
         const priceRes = await fetchVariantPrices(variant.id, {
-          selling_region_name: "worldwide",
           currency: "USD",
+          selling_region_name: "worldwide",
         });
         const firstTechnique = priceRes.data?.variant?.techniques?.[0];
         if (
@@ -154,22 +154,21 @@ export async function POST(request: NextRequest) {
       await db
         .insert(productVariantsTable)
         .values({
-          id: variantRowId,
-          productId: ourProductId,
-          externalId: String(variant.id),
-          size: variant.size ?? null,
           color: variant.color ?? null,
           colorCode: variant.color_code ?? null,
+          createdAt: now,
+          externalId: String(variant.id),
+          id: variantRowId,
+          imageUrl: variant.image ?? null,
+          priceCents: Math.max(0, priceCents),
+          productId: ourProductId,
+          size: variant.size ?? null,
           sku: null,
           stockQuantity: null,
-          priceCents: Math.max(0, priceCents),
-          weightGrams: null,
-          imageUrl: variant.image ?? null,
-          createdAt: now,
           updatedAt: now,
+          weightGrams: null,
         })
         .onConflictDoUpdate({
-          target: productVariantsTable.id,
           set: {
             color: variant.color ?? null,
             colorCode: variant.color_code ?? null,
@@ -178,6 +177,7 @@ export async function POST(request: NextRequest) {
             size: variant.size ?? null,
             updatedAt: now,
           },
+          target: productVariantsTable.id,
         });
     }
 
@@ -204,10 +204,10 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
-      productId: ourProductId,
       catalogProductId,
-      variantsCount: variants.length,
+      productId: ourProductId,
       reSync: isReSync,
+      variantsCount: variants.length,
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes("PRINTFUL_API_TOKEN")) {

@@ -1,9 +1,9 @@
 import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
-import { getCurrentUser } from "~/lib/auth";
 import { db } from "~/db";
 import { esimOrdersTable } from "~/db/schema";
+import { getCurrentUser } from "~/lib/auth";
 import { getEsimDetail, getMyEsims } from "~/lib/esim-api";
 
 /**
@@ -18,7 +18,7 @@ export async function GET(
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
-        { status: false, message: "Authentication required" },
+        { message: "Authentication required", status: false },
         { status: 401 },
       );
     }
@@ -39,7 +39,7 @@ export async function GET(
 
     if (!order) {
       return NextResponse.json(
-        { status: false, message: "eSIM order not found" },
+        { message: "eSIM order not found", status: false },
         { status: 404 },
       );
     }
@@ -67,8 +67,8 @@ export async function GET(
           if (latest) {
             liveDetail = {
               sim: {
-                id: latest.id,
                 iccid: latest.iccid,
+                id: latest.id,
                 status: latest.status,
                 total_bundles: latest.total_bundles,
               },
@@ -82,16 +82,16 @@ export async function GET(
     }
 
     return NextResponse.json({
-      status: true,
       data: {
-        order,
         liveDetail,
+        order,
       },
+      status: true,
     });
   } catch (error) {
     console.error("eSIM detail error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to fetch eSIM details" },
+      { message: "Failed to fetch eSIM details", status: false },
       { status: 500 },
     );
   }

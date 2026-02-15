@@ -4,9 +4,9 @@ import {
   ArrowUpDown,
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Eye,
   EyeOff,
-  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -19,56 +19,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 const API_BASE = getMainAppUrl();
 
 interface ReviewRow {
-  id: string;
-  productId: string;
-  productName: string | null;
-  productImageUrl: string | null;
+  author: null | string;
+  comment: string;
+  createdAt: string;
+  customerEmail: null | string;
   customerName: string;
   displayName: string;
-  showName: boolean;
-  userId: string | null;
-  customerEmail: string | null;
-  title: string | null;
-  author: string | null;
-  location: string | null;
-  comment: string;
+  id: string;
+  location: null | string;
+  productId: string;
+  productImageUrl: null | string;
+  productName: null | string;
   rating: number;
+  showName: boolean;
+  title: null | string;
+  userId: null | string;
   visible: boolean;
-  createdAt: string;
 }
 
 interface ReviewsResponse {
   items: ReviewRow[];
-  page: number;
   limit: number;
+  page: number;
   totalCount: number;
   totalPages: number;
-}
-
-function StarRating({ rating }: { rating: number }) {
-  const full = Math.min(5, Math.max(0, Math.round(rating)));
-  const empty = 5 - full;
-  return (
-    <span
-      className="inline-flex items-center gap-0.5 text-amber-500"
-      aria-label={`${rating} out of 5 stars`}
-    >
-      {Array.from({ length: full }, (_, i) => (
-        <span key={`f-${i}`} className="text-base" aria-hidden>
-          ★
-        </span>
-      ))}
-      {Array.from({ length: empty }, (_, i) => (
-        <span
-          key={`e-${i}`}
-          className="text-base text-amber-500/40"
-          aria-hidden
-        >
-          ☆
-        </span>
-      ))}
-    </span>
-  );
 }
 
 function formatReviewDate(iso: string): string {
@@ -84,6 +58,32 @@ function formatReviewDate(iso: string): string {
   }
 }
 
+function StarRating({ rating }: { rating: number }) {
+  const full = Math.min(5, Math.max(0, Math.round(rating)));
+  const empty = 5 - full;
+  return (
+    <span
+      aria-label={`${rating} out of 5 stars`}
+      className="inline-flex items-center gap-0.5 text-amber-500"
+    >
+      {Array.from({ length: full }, (_, i) => (
+        <span aria-hidden className="text-base" key={`f-${i}`}>
+          ★
+        </span>
+      ))}
+      {Array.from({ length: empty }, (_, i) => (
+        <span
+          aria-hidden
+          className="text-base text-amber-500/40"
+          key={`e-${i}`}
+        >
+          ☆
+        </span>
+      ))}
+    </span>
+  );
+}
+
 const COLUMNS = [
   { key: "name", label: "Product" },
   { key: "customer", label: "Author" },
@@ -95,17 +95,17 @@ const COLUMNS = [
 ] as const;
 
 export default function AdminProductsReviewsPage() {
-  const [data, setData] = useState<ReviewsResponse | null>(null);
+  const [data, setData] = useState<null | ReviewsResponse>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [page, setPage] = useState(1);
-  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<null | string>(null);
 
   const fetchReviews = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "10" });
+      const params = new URLSearchParams({ limit: "10", page: String(page) });
       const res = await fetch(
         `${API_BASE}/api/admin/reviews?${params.toString()}`,
         { credentials: "include" },
@@ -133,10 +133,10 @@ export default function AdminProductsReviewsPage() {
       setTogglingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/reviews/${id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ visible: !current }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -165,7 +165,12 @@ export default function AdminProductsReviewsPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -188,7 +193,12 @@ export default function AdminProductsReviewsPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data ? (
@@ -196,22 +206,28 @@ export default function AdminProductsReviewsPage() {
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <tr
+                      className={`
+                      border-b border-border bg-muted/50 text-left text-xs
+                      font-semibold tracking-wider text-muted-foreground
+                      uppercase
+                    `}
+                    >
                       {COLUMNS.map((col) => (
                         <th
-                          key={col.key}
                           className={cn(
-                            "whitespace-nowrap p-4 font-medium",
+                            "p-4 font-medium whitespace-nowrap",
                             (col.key === "rating" || col.key === "action") &&
                               "text-right",
                           )}
+                          key={col.key}
                           scope="col"
                         >
                           <span className="inline-flex items-center gap-1">
                             {col.label}
                             <ArrowUpDown
-                              className="h-3.5 w-3.5 shrink-0"
                               aria-hidden
+                              className="h-3.5 w-3.5 shrink-0"
                             />
                           </span>
                         </th>
@@ -230,21 +246,37 @@ export default function AdminProductsReviewsPage() {
                       </tr>
                     ) : (
                       data.items.map((review) => (
-                        <tr key={review.id} className="border-b last:border-0">
+                        <tr
+                          className={`
+                          border-b
+                          last:border-0
+                        `}
+                          key={review.id}
+                        >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted">
+                              <div
+                                className={`
+                                relative flex h-10 w-10 shrink-0 items-center
+                                justify-center overflow-hidden rounded-md border
+                                bg-muted
+                              `}
+                              >
                                 {review.productImageUrl ? (
                                   // eslint-disable-next-line @next/next/no-img-element
                                   <img
-                                    src={review.productImageUrl}
                                     alt=""
                                     className="size-full object-cover"
-                                    width={40}
                                     height={40}
+                                    src={review.productImageUrl}
+                                    width={40}
                                   />
                                 ) : (
-                                  <span className="text-xs text-muted-foreground">
+                                  <span
+                                    className={`
+                                    text-xs text-muted-foreground
+                                  `}
+                                  >
                                     —
                                   </span>
                                 )}
@@ -260,13 +292,17 @@ export default function AdminProductsReviewsPage() {
                           >
                             {review.userId ? (
                               <Link
+                                className={`
+                                  inline-flex items-center gap-1 text-primary
+                                  underline-offset-4
+                                  hover:underline
+                                `}
                                 href={`/customers/${review.userId}`}
-                                className="inline-flex items-center gap-1 text-primary underline-offset-4 hover:underline"
                               >
                                 {review.displayName}
                                 <ExternalLink
-                                  className="h-3.5 w-3.5 shrink-0"
                                   aria-hidden
+                                  className="h-3.5 w-3.5 shrink-0"
                                 />
                               </Link>
                             ) : (
@@ -282,15 +318,25 @@ export default function AdminProductsReviewsPage() {
                             )}
                           </td>
                           <td
-                            className="whitespace-nowrap p-4 text-muted-foreground"
+                            className={`
+                              p-4 whitespace-nowrap text-muted-foreground
+                            `}
                             title={review.createdAt}
                           >
                             {formatReviewDate(review.createdAt)}
                           </td>
-                          <td className="max-w-[160px] truncate p-4 text-muted-foreground">
+                          <td
+                            className={`
+                            max-w-[160px] truncate p-4 text-muted-foreground
+                          `}
+                          >
                             {review.title ?? "—"}
                           </td>
-                          <td className="max-w-[280px] truncate p-4 text-muted-foreground">
+                          <td
+                            className={`
+                            max-w-[280px] truncate p-4 text-muted-foreground
+                          `}
+                          >
                             {review.comment}
                           </td>
                           <td className="p-4 text-right">
@@ -298,25 +344,35 @@ export default function AdminProductsReviewsPage() {
                           </td>
                           <td className="p-4 text-right">
                             <button
-                              type="button"
-                              disabled={togglingId === review.id}
-                              onClick={() =>
-                                handleToggleVisible(review.id, review.visible)
-                              }
-                              className={cn(
-                                "rounded p-1.5 transition-colors disabled:opacity-50",
-                                review.visible
-                                  ? "text-muted-foreground hover:bg-muted hover:text-foreground"
-                                  : "text-amber-600 hover:bg-amber-500/10 dark:text-amber-400",
-                              )}
-                              title={
-                                review.visible ? "Hide review" : "Show review"
-                              }
                               aria-label={
                                 review.visible
                                   ? "Hide review on website"
                                   : "Show review on website"
                               }
+                              className={cn(
+                                `
+                                  rounded p-1.5 transition-colors
+                                  disabled:opacity-50
+                                `,
+                                review.visible
+                                  ? `
+                                    text-muted-foreground
+                                    hover:bg-muted hover:text-foreground
+                                  `
+                                  : `
+                                    text-amber-600
+                                    hover:bg-amber-500/10
+                                    dark:text-amber-400
+                                  `,
+                              )}
+                              disabled={togglingId === review.id}
+                              onClick={() =>
+                                handleToggleVisible(review.id, review.visible)
+                              }
+                              title={
+                                review.visible ? "Hide review" : "Show review"
+                              }
+                              type="button"
                             >
                               {review.visible ? (
                                 <Eye className="h-4 w-4" />
@@ -333,15 +389,19 @@ export default function AdminProductsReviewsPage() {
               </div>
 
               {data.items.length > 0 && (
-                <div className="mt-4 flex items-center justify-center gap-2 border-t pt-4">
+                <div
+                  className={`
+                  mt-4 flex items-center justify-center gap-2 border-t pt-4
+                `}
+                >
                   <Button
+                    aria-label="Previous page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -358,17 +418,24 @@ export default function AdminProductsReviewsPage() {
                         const isCurrent = pageNum === data.page;
                         return (
                           <button
-                            key={pageNum}
-                            type="button"
-                            onClick={() => setPage(pageNum)}
+                            aria-current={isCurrent ? "page" : undefined}
+                            aria-label={`Page ${pageNum}`}
                             className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
+                              `
+                                flex h-8 w-8 items-center justify-center
+                                rounded-full text-sm font-medium
+                                transition-colors
+                              `,
                               isCurrent
                                 ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:bg-muted",
+                                : `
+                                  text-muted-foreground
+                                  hover:bg-muted
+                                `,
                             )}
-                            aria-label={`Page ${pageNum}`}
-                            aria-current={isCurrent ? "page" : undefined}
+                            key={pageNum}
+                            onClick={() => setPage(pageNum)}
+                            type="button"
                           >
                             {pageNum}
                           </button>
@@ -377,6 +444,8 @@ export default function AdminProductsReviewsPage() {
                     })()}
                   </span>
                   <Button
+                    aria-label="Next page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page >= data.totalPages}
                     onClick={() =>
                       setPage((p) => Math.min(data.totalPages, p + 1))
@@ -384,8 +453,6 @@ export default function AdminProductsReviewsPage() {
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

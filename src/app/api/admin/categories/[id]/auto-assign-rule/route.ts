@@ -6,44 +6,6 @@ import { categoryAutoAssignRuleTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
- * GET /api/admin/categories/[id]/auto-assign-rule
- * Returns all perpetual auto-assign rules for this category.
- */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const authResult = await getAdminAuth(request);
-    if (!authResult?.ok) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { id: categoryId } = await params;
-    const rules = await db
-      .select({
-        id: categoryAutoAssignRuleTable.id,
-        categoryId: categoryAutoAssignRuleTable.categoryId,
-        titleContains: categoryAutoAssignRuleTable.titleContains,
-        createdWithinDays: categoryAutoAssignRuleTable.createdWithinDays,
-        brand: categoryAutoAssignRuleTable.brand,
-        tagContains: categoryAutoAssignRuleTable.tagContains,
-        enabled: categoryAutoAssignRuleTable.enabled,
-      })
-      .from(categoryAutoAssignRuleTable)
-      .where(eq(categoryAutoAssignRuleTable.categoryId, categoryId));
-
-    return NextResponse.json({ rules });
-  } catch (err) {
-    console.error("Get auto-assign rule error:", err);
-    return NextResponse.json(
-      { error: "Failed to load auto-assign rule" },
-      { status: 500 },
-    );
-  }
-}
-
-/**
  * DELETE /api/admin/categories/[id]/auto-assign-rule?ruleId=xxx
  * Deletes one perpetual rule by id (must belong to this category).
  */
@@ -88,6 +50,44 @@ export async function DELETE(
     console.error("Delete auto-assign rule error:", err);
     return NextResponse.json(
       { error: "Failed to delete rule" },
+      { status: 500 },
+    );
+  }
+}
+
+/**
+ * GET /api/admin/categories/[id]/auto-assign-rule
+ * Returns all perpetual auto-assign rules for this category.
+ */
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id: categoryId } = await params;
+    const rules = await db
+      .select({
+        brand: categoryAutoAssignRuleTable.brand,
+        categoryId: categoryAutoAssignRuleTable.categoryId,
+        createdWithinDays: categoryAutoAssignRuleTable.createdWithinDays,
+        enabled: categoryAutoAssignRuleTable.enabled,
+        id: categoryAutoAssignRuleTable.id,
+        tagContains: categoryAutoAssignRuleTable.tagContains,
+        titleContains: categoryAutoAssignRuleTable.titleContains,
+      })
+      .from(categoryAutoAssignRuleTable)
+      .where(eq(categoryAutoAssignRuleTable.categoryId, categoryId));
+
+    return NextResponse.json({ rules });
+  } catch (err) {
+    console.error("Get auto-assign rule error:", err);
+    return NextResponse.json(
+      { error: "Failed to load auto-assign rule" },
       { status: 500 },
     );
   }

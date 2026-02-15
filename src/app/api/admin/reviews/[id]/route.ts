@@ -27,8 +27,8 @@ export async function PATCH(
     const [updated] = await db
       .update(productReviewsTable)
       .set({
-        visible: body.visible,
         updatedAt: new Date(),
+        visible: body.visible,
       })
       .where(eq(productReviewsTable.id, id))
       .returning({

@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-export type OrderPaymentInfo = {
-  orderId: string;
+export interface OrderPaymentInfo {
   depositAddress: string;
-  totalCents: number;
   email?: string;
   expiresAt: string;
+  orderId: string;
   /** Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna). Used for balance check. */
   token?: string;
-};
+  totalCents: number;
+}
 
 /**
  * Fetches and manages order state for crypto payments.
@@ -20,23 +20,23 @@ export type OrderPaymentInfo = {
  * from `/api/checkout/orders/:orderId`.
  */
 export function useCryptoOrder({
-  orderId,
-  token,
   enabled = true,
+  orderId,
   suiFromHash,
+  token,
 }: {
-  orderId: string;
-  token: string;
   enabled?: boolean;
-  suiFromHash?: { amountUsd: number; expiresAt: string } | null;
+  orderId: string;
+  suiFromHash?: null | { amountUsd: number; expiresAt: string };
+  token: string;
 }): {
-  order: OrderPaymentInfo | null;
+  error: null | string;
   loading: boolean;
-  error: string | null;
+  order: null | OrderPaymentInfo;
 } {
-  const [order, setOrder] = useState<OrderPaymentInfo | null>(null);
+  const [order, setOrder] = useState<null | OrderPaymentInfo>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -87,5 +87,5 @@ export function useCryptoOrder({
     };
   }, [token, orderId, enabled, suiFromHash]);
 
-  return { order, loading, error };
+  return { error, loading, order };
 }

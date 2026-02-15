@@ -9,9 +9,9 @@ import {
   Sun,
   UserIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import * as React from "react";
 
 import { signOut } from "~/lib/auth-client";
@@ -59,7 +59,10 @@ export function HeaderUserDropdown({
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
-          className="relative overflow-hidden rounded-full text-[#1A1611] dark:text-[#F5F1EB]"
+          className={`
+            relative overflow-hidden rounded-full text-[#1A1611]
+            dark:text-[#F5F1EB]
+          `}
           size="icon"
           variant="ghost"
         >
@@ -151,21 +154,30 @@ export function HeaderUserDropdown({
         {mounted && (
           <>
             <DropdownMenuItem
-              className={`cursor-pointer ${theme === "light" ? "font-medium text-primary" : ""}`}
+              className={`
+                cursor-pointer
+                ${theme === "light" ? `font-medium text-primary` : ""}
+              `}
               onClick={() => setTheme("light")}
             >
               <Sun className="mr-2 h-4 w-4" />
               Light
             </DropdownMenuItem>
             <DropdownMenuItem
-              className={`cursor-pointer ${theme === "dark" ? "font-medium text-primary" : ""}`}
+              className={`
+                cursor-pointer
+                ${theme === "dark" ? `font-medium text-primary` : ""}
+              `}
               onClick={() => setTheme("dark")}
             >
               <Moon className="mr-2 h-4 w-4" />
               Dark
             </DropdownMenuItem>
             <DropdownMenuItem
-              className={`cursor-pointer ${theme === "system" || !theme ? "font-medium text-primary" : ""}`}
+              className={`
+                cursor-pointer
+                ${theme === "system" || !theme ? `font-medium text-primary` : ""}
+              `}
               onClick={() => setTheme("system")}
             >
               <svg
@@ -187,7 +199,10 @@ export function HeaderUserDropdown({
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-destructive focus:text-destructive"
+          className={`
+            cursor-pointer text-destructive
+            focus:text-destructive
+          `}
           onSelect={(e) => {
             e.preventDefault();
             void handleLogout();

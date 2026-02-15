@@ -10,7 +10,7 @@ export type UserTheme = "dark" | "light" | "system";
 /**
  * Server-only: returns the current session user's saved theme, or null if not logged in or no theme set.
  */
-export async function getCurrentUserTheme(): Promise<UserTheme | null> {
+export async function getCurrentUserTheme(): Promise<null | UserTheme> {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return null;
 

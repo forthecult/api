@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
-  getClientIp,
   checkRateLimit,
-  rateLimitResponse,
+  getClientIp,
   RATE_LIMITS,
+  rateLimitResponse,
 } from "~/lib/rate-limit";
 
 const BODY_LIMIT = 10 * 1024; // 10 KB
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (typeof body !== "object" || body === null) {
       return NextResponse.json({ error: "Invalid body" }, { status: 400 });
     }
-    const { name, email, subject, message } = body as Record<string, unknown>;
+    const { email, message, name, subject } = body as Record<string, unknown>;
     if (typeof name !== "string" || !name.trim()) {
       return NextResponse.json({ error: "Name is required" }, { status: 400 });
     }
@@ -83,11 +83,11 @@ export async function POST(request: NextRequest) {
           .replace(/>/g, "&gt;");
         const { error } = await resend.emails.send({
           from,
-          to,
+          html: `<!DOCTYPE html><html><body><p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p><p><strong>Subject:</strong> ${safeSubject}</p><hr/><pre style="white-space:pre-wrap;font-family:inherit;">${safeMessage}</pre></body></html>`,
           replyTo: email.trim(),
           subject: `[Contact] ${subject.trim()}`,
-          html: `<!DOCTYPE html><html><body><p><strong>From:</strong> ${safeName} &lt;${safeEmail}&gt;</p><p><strong>Subject:</strong> ${safeSubject}</p><hr/><pre style="white-space:pre-wrap;font-family:inherit;">${safeMessage}</pre></body></html>`,
           text: `From: ${name.trim()} <${email.trim()}>\nSubject: ${subject.trim()}\n\n${message.trim()}`,
+          to,
         });
         if (error) {
           console.error("[Contact form] Resend error:", error);
@@ -105,12 +105,12 @@ export async function POST(request: NextRequest) {
       }
     } else if (process.env.NODE_ENV === "development") {
       console.log("[Contact form] No RESEND_API_KEY - would send to", to, {
-        name: name.trim(),
         email: email.trim(),
-        subject: subject.trim(),
         message:
           message.trim().slice(0, 200) +
           (message.trim().length > 200 ? "…" : ""),
+        name: name.trim(),
+        subject: subject.trim(),
       });
     }
 

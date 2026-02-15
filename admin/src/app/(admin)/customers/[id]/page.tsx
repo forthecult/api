@@ -32,142 +32,111 @@ import {
 
 const API_BASE = getMainAppUrl();
 
-type LoqateFindItem = {
-  Id: string;
-  Type?: string;
-  Text: string;
+interface LoqateFindItem {
   Description?: string;
-};
+  Id: string;
+  Text: string;
+  Type?: string;
+}
 
 const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type SavedAddress = {
-  id: string;
-  address1: string;
-  address2: string | null;
-  city: string;
-  stateCode: string | null;
-  countryCode: string;
-  zip: string;
-  label: string | null;
-  isDefault: boolean;
-};
-
-type LatestShippingAddress = {
-  address1: string;
-  address2: string | null;
-  city: string;
-  stateCode: string | null;
-  countryCode: string;
-  zip: string;
-};
-
-type ChannelPrefs = {
+interface ChannelPrefs {
+  aiCompanion: boolean;
   email: boolean;
-  website: boolean;
   sms: boolean;
   telegram: boolean;
-  aiCompanion: boolean;
-};
+  website: boolean;
+}
 
-type NotificationPreferences = {
-  hasTelegramLinked: boolean;
-  transactional: ChannelPrefs;
-  marketing: ChannelPrefs;
-};
-
-type CustomerDetail = {
-  id: string;
-  name: string;
-  image: string | null;
-  email: string;
-  phone: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  createdAt: string | null;
-  updatedAt: string | null;
-  twoFactorEnabled?: boolean;
-  orderCount: number;
-  tokenBalanceCents: number | null;
-  city: string | null;
-  country: string | null;
-  latestShippingAddress: LatestShippingAddress | null;
-  addresses: SavedAddress[];
-  receiveMarketing: boolean;
-  receiveSmsMarketing: boolean;
-  affiliate: { code: string; status: string } | null;
-  notificationPreferences: NotificationPreferences | null;
-};
-
-type CustomerOrder = {
-  id: string;
-  createdAt: string;
-  email: string;
-  status: string;
-  paymentStatus: string;
-  fulfillmentStatus: string;
-  totalCents: number;
-  itemCount: number;
-  items: { id: string; name: string; priceCents: number; quantity: number }[];
-};
-
-type CustomerComment = {
-  id: string;
-  body: string;
-  createdAt: string;
+interface CustomerComment {
   authorId: string;
   authorName: string;
-};
-
-function formatDate(s: string | null): string {
-  if (!s) return "—";
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
+  body: string;
+  createdAt: string;
+  id: string;
 }
 
-function formatTokenBalance(cents: number | null): string {
-  if (cents === null) return "—";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
+interface CustomerDetail {
+  addresses: SavedAddress[];
+  affiliate: null | { code: string; status: string };
+  city: null | string;
+  country: null | string;
+  createdAt: null | string;
+  email: string;
+  firstName: null | string;
+  id: string;
+  image: null | string;
+  lastName: null | string;
+  latestShippingAddress: LatestShippingAddress | null;
+  name: string;
+  notificationPreferences: NotificationPreferences | null;
+  orderCount: number;
+  phone: null | string;
+  receiveMarketing: boolean;
+  receiveSmsMarketing: boolean;
+  tokenBalanceCents: null | number;
+  twoFactorEnabled?: boolean;
+  updatedAt: null | string;
 }
 
-function formatOrderTotal(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
+interface CustomerOrder {
+  createdAt: string;
+  email: string;
+  fulfillmentStatus: string;
+  id: string;
+  itemCount: number;
+  items: { id: string; name: string; priceCents: number; quantity: number }[];
+  paymentStatus: string;
+  status: string;
+  totalCents: number;
+}
+
+interface LatestShippingAddress {
+  address1: string;
+  address2: null | string;
+  city: string;
+  countryCode: string;
+  stateCode: null | string;
+  zip: string;
+}
+
+interface NotificationPreferences {
+  hasTelegramLinked: boolean;
+  marketing: ChannelPrefs;
+  transactional: ChannelPrefs;
+}
+
+interface SavedAddress {
+  address1: string;
+  address2: null | string;
+  city: string;
+  countryCode: string;
+  id: string;
+  isDefault: boolean;
+  label: null | string;
+  stateCode: null | string;
+  zip: string;
 }
 
 export default function AdminCustomerDetailPage() {
   const params = useParams();
   const id = typeof params.id === "string" ? params.id : "";
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [customer, setCustomer] = useState<CustomerDetail | null>(null);
   const [resetLoading, setResetLoading] = useState(false);
-  const [resetMessage, setResetMessage] = useState<{
-    type: "success" | "error";
+  const [resetMessage, setResetMessage] = useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
   const [disable2faLoading, setDisable2faLoading] = useState(false);
-  const [disable2faMessage, setDisable2faMessage] = useState<{
-    type: "success" | "error";
+  const [disable2faMessage, setDisable2faMessage] = useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
 
   // Editable fields (local state synced from customer)
   const [firstName, setFirstName] = useState("");
@@ -179,14 +148,14 @@ export default function AdminCustomerDetailPage() {
     null,
   );
   const [notifSaveLoading, setNotifSaveLoading] = useState(false);
-  const [notifSaveMessage, setNotifSaveMessage] = useState<{
-    type: "success" | "error";
+  const [notifSaveMessage, setNotifSaveMessage] = useState<null | {
     text: string;
-  } | null>(null);
-  const [saveMessage, setSaveMessage] = useState<{
-    type: "success" | "error";
+    type: "error" | "success";
+  }>(null);
+  const [saveMessage, setSaveMessage] = useState<null | {
     text: string;
-  } | null>(null);
+    type: "error" | "success";
+  }>(null);
 
   // Orders
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
@@ -205,17 +174,17 @@ export default function AdminCustomerDetailPage() {
   const [addressFindOpen, setAddressFindOpen] = useState(false);
   const [addressFindLoading, setAddressFindLoading] = useState(false);
   /** Editable address from lookup (or fallback from suggestion). User can modify before copying/saving. */
-  type EditableAddress = {
+  interface EditableAddress {
     address1: string;
-    address2: string | null;
+    address2: null | string;
     city: string;
-    stateCode: string | null;
-    zip: string;
     countryCode: string;
-  };
+    stateCode: null | string;
+    zip: string;
+  }
   const [editableAddress, setEditableAddress] =
     useState<EditableAddress | null>(null);
-  const addressFindDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+  const addressFindDebounceRef = useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
 
@@ -261,9 +230,9 @@ export default function AdminCustomerDetailPage() {
       address1: lat.address1 ?? "",
       address2: lat.address2 ?? null,
       city: lat.city ?? "",
+      countryCode: lat.countryCode ?? "",
       stateCode: lat.stateCode ?? null,
       zip: lat.zip ?? "",
-      countryCode: lat.countryCode ?? "",
     });
   }, [customer?.latestShippingAddress, editableAddress]);
 
@@ -328,9 +297,9 @@ export default function AdminCustomerDetailPage() {
             .join(", "),
           address2: null,
           city: mapped.city,
+          countryCode: mapped.country || "",
           stateCode: mapped.state || null,
           zip: mapped.zip,
-          countryCode: mapped.country || "",
         });
       } catch {
         // CORS/502 or network error: show suggestion text so address doesn't disappear; user can edit
@@ -339,9 +308,9 @@ export default function AdminCustomerDetailPage() {
           address1: line,
           address2: null,
           city: "",
+          countryCode: "",
           stateCode: null,
           zip: "",
-          countryCode: "",
         });
       }
     },
@@ -418,23 +387,23 @@ export default function AdminCustomerDetailPage() {
     setSaveLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/customers/${id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           firstName: firstName.trim() || null,
           lastName: lastName.trim() || null,
           phone: phone.trim() || null,
         }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: string;
-        firstName?: string | null;
-        lastName?: string | null;
-        phone?: string | null;
+        firstName?: null | string;
+        lastName?: null | string;
+        phone?: null | string;
       };
       if (!res.ok) {
-        setSaveMessage({ type: "error", text: data.error ?? "Failed to save" });
+        setSaveMessage({ text: data.error ?? "Failed to save", type: "error" });
         return;
       }
       setCustomer((prev) =>
@@ -460,29 +429,29 @@ export default function AdminCustomerDetailPage() {
         const addrRes = await fetch(
           `${API_BASE}/api/admin/customers/${id}/addresses`,
           {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               address1: addr!.address1.trim(),
               address2: addr!.address2?.trim() || null,
               city: addr!.city.trim(),
-              stateCode: addr!.stateCode?.trim() || null,
               countryCode: addr!.countryCode.trim().toUpperCase().slice(0, 2),
+              stateCode: addr!.stateCode?.trim() || null,
               zip: addr!.zip.trim(),
             }),
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            method: "POST",
           },
         );
         if (addrRes.ok) {
           await fetchCustomer();
-          setSaveMessage({ type: "success", text: "Saved." });
+          setSaveMessage({ text: "Saved.", type: "success" });
         } else {
           const errData = (await addrRes.json().catch(() => ({}))) as {
             error?: string;
           };
           setSaveMessage({
-            type: "error",
             text: errData.error ?? "Profile saved; address could not be saved.",
+            type: "error",
           });
         }
         setSaveLoading(false);
@@ -496,15 +465,15 @@ export default function AdminCustomerDetailPage() {
           addr.countryCode.trim())
       ) {
         setSaveMessage({
-          type: "error",
           text: "Profile saved. To save the address, fill in address line 1, city, zip, and country.",
+          type: "error",
         });
         setSaveLoading(false);
         return;
       }
-      setSaveMessage({ type: "success", text: "Saved." });
+      setSaveMessage({ text: "Saved.", type: "success" });
     } catch {
-      setSaveMessage({ type: "error", text: "Failed to save" });
+      setSaveMessage({ text: "Failed to save", type: "error" });
     } finally {
       setSaveLoading(false);
     }
@@ -518,8 +487,8 @@ export default function AdminCustomerDetailPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/customers/${id}/reset-password`,
         {
-          method: "POST",
           credentials: "include",
+          method: "POST",
         },
       );
       const data = (await res.json().catch(() => ({}))) as {
@@ -528,17 +497,17 @@ export default function AdminCustomerDetailPage() {
       };
       if (!res.ok) {
         setResetMessage({
-          type: "error",
           text: data.error ?? "Failed to send reset email",
+          type: "error",
         });
         return;
       }
       setResetMessage({
-        type: "success",
         text: "Password reset email sent to customer.",
+        type: "success",
       });
     } catch {
-      setResetMessage({ type: "error", text: "Failed to send reset email" });
+      setResetMessage({ text: "Failed to send reset email", type: "error" });
     } finally {
       setResetLoading(false);
     }
@@ -551,23 +520,23 @@ export default function AdminCustomerDetailPage() {
     try {
       const res = await fetch(
         `${API_BASE}/api/admin/customers/${id}/disable-2fa`,
-        { method: "POST", credentials: "include" },
+        { credentials: "include", method: "POST" },
       );
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         setDisable2faMessage({
-          type: "error",
           text: data.error ?? "Failed to disable 2FA",
+          type: "error",
         });
         return;
       }
       setDisable2faMessage({
-        type: "success",
         text: "Two-factor authentication disabled for this customer.",
+        type: "success",
       });
       void fetchCustomer();
     } catch {
-      setDisable2faMessage({ type: "error", text: "Failed to disable 2FA" });
+      setDisable2faMessage({ text: "Failed to disable 2FA", type: "error" });
     } finally {
       setDisable2faLoading(false);
     }
@@ -575,7 +544,7 @@ export default function AdminCustomerDetailPage() {
 
   const updateNotifPref = useCallback(
     (
-      type: "transactional" | "marketing",
+      type: "marketing" | "transactional",
       channel: keyof ChannelPrefs,
       value: boolean,
     ) => {
@@ -596,31 +565,31 @@ export default function AdminCustomerDetailPage() {
     setNotifSaveLoading(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/customers/${id}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           notificationPreferences: {
-            transactional: notifPrefs.transactional,
             marketing: notifPrefs.marketing,
+            transactional: notifPrefs.transactional,
           },
         }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       const json = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         setNotifSaveMessage({
-          type: "error",
           text: json.error ?? "Failed to save",
+          type: "error",
         });
         return;
       }
       setNotifSaveMessage({
-        type: "success",
         text: "Notification preferences saved.",
+        type: "success",
       });
       void fetchCustomer();
     } catch {
-      setNotifSaveMessage({ type: "error", text: "Failed to save" });
+      setNotifSaveMessage({ text: "Failed to save", type: "error" });
     } finally {
       setNotifSaveLoading(false);
     }
@@ -633,15 +602,15 @@ export default function AdminCustomerDetailPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/customers/${id}/comments`,
         {
-          method: "POST",
+          body: JSON.stringify({ body: newComment.trim() }),
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ body: newComment.trim() }),
+          method: "POST",
         },
       );
       const data = (await res.json().catch(() => ({}))) as
-        | { error?: string }
-        | (CustomerComment & {});
+        | (CustomerComment & {})
+        | { error?: string };
       if (!res.ok) {
         const err = data as { error?: string };
         throw new Error(err.error ?? "Failed to add comment");
@@ -649,11 +618,11 @@ export default function AdminCustomerDetailPage() {
       const added = data as CustomerComment & {};
       setComments((prev) => [
         {
-          id: added.id,
-          body: added.body,
-          createdAt: added.createdAt,
           authorId: added.authorId,
           authorName: added.authorName ?? "—",
+          body: added.body,
+          createdAt: added.createdAt,
+          id: added.id,
         },
         ...prev,
       ]);
@@ -670,10 +639,10 @@ export default function AdminCustomerDetailPage() {
       <div className="space-y-6">
         <Link href="/customers">
           <Button
+            aria-label="Back to customers"
+            size="icon"
             type="button"
             variant="ghost"
-            size="icon"
-            aria-label="Back to customers"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
@@ -688,15 +657,19 @@ export default function AdminCustomerDetailPage() {
       <div className="space-y-6">
         <Link href="/customers">
           <Button
+            aria-label="Back to customers"
+            size="icon"
             type="button"
             variant="ghost"
-            size="icon"
-            aria-label="Back to customers"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+        <div
+          className={`
+          flex min-h-[200px] items-center justify-center text-muted-foreground
+        `}
+        >
           Loading…
         </div>
       </div>
@@ -708,22 +681,27 @@ export default function AdminCustomerDetailPage() {
       <div className="space-y-6">
         <Link href="/customers">
           <Button
+            aria-label="Back to customers"
+            size="icon"
             type="button"
             variant="ghost"
-            size="icon"
-            aria-label="Back to customers"
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error ?? "Customer not found."}
           <Button
             className="mt-2"
+            onClick={() => void fetchCustomer()}
+            size="sm"
             type="button"
             variant="outline"
-            size="sm"
-            onClick={() => void fetchCustomer()}
           >
             Retry
           </Button>
@@ -736,10 +714,10 @@ export default function AdminCustomerDetailPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <Button
-          asChild
-          variant="ghost"
-          size="icon"
           aria-label="Back to customers"
+          asChild
+          size="icon"
+          variant="ghost"
         >
           <Link href="/customers">
             <ChevronLeft className="h-5 w-5" />
@@ -751,22 +729,35 @@ export default function AdminCustomerDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="sr-only">Customer details</CardTitle>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-full border bg-muted">
+          <div
+            className={`
+            flex flex-col gap-4
+            sm:flex-row sm:items-center sm:gap-6
+          `}
+          >
+            <div
+              className={`
+              relative h-16 w-16 shrink-0 overflow-hidden rounded-full border
+              bg-muted
+            `}
+            >
               {customer.image ? (
                 <Image
-                  src={customer.image}
                   alt=""
-                  fill
                   className="object-cover"
+                  fill
                   sizes="64px"
+                  src={customer.image}
                 />
               ) : (
                 <span
-                  className={cn(
-                    "flex size-full items-center justify-center text-2xl font-medium text-muted-foreground",
-                  )}
                   aria-hidden
+                  className={cn(
+                    `
+                      flex size-full items-center justify-center text-2xl
+                      font-medium text-muted-foreground
+                    `,
+                  )}
                 >
                   {customer.name.trim().slice(0, 1).toUpperCase() || "?"}
                 </span>
@@ -788,60 +779,90 @@ export default function AdminCustomerDetailPage() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div
+            className={`
+            grid gap-4
+            sm:grid-cols-2
+          `}
+          >
             <div>
-              <label htmlFor="customer-first-name" className={labelClass}>
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <label className={labelClass} htmlFor="customer-first-name">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   First name
                 </span>
               </label>
               <input
-                id="customer-first-name"
-                type="text"
                 className={inputClass}
-                value={firstName}
+                id="customer-first-name"
                 onChange={(e) => setFirstName(e.target.value)}
                 placeholder="—"
+                type="text"
+                value={firstName}
               />
             </div>
             <div>
-              <label htmlFor="customer-last-name" className={labelClass}>
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <label className={labelClass} htmlFor="customer-last-name">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Last name
                 </span>
               </label>
               <input
-                id="customer-last-name"
-                type="text"
                 className={inputClass}
-                value={lastName}
+                id="customer-last-name"
                 onChange={(e) => setLastName(e.target.value)}
                 placeholder="—"
+                type="text"
+                value={lastName}
               />
             </div>
             <div>
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Email
               </span>
               <p className="mt-1 text-sm">{customer.email}</p>
             </div>
             <div>
-              <label htmlFor="customer-phone" className={labelClass}>
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <label className={labelClass} htmlFor="customer-phone">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Phone
                 </span>
               </label>
               <input
-                id="customer-phone"
-                type="tel"
                 className={inputClass}
-                value={phone}
+                id="customer-phone"
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="+1 234 567 8900"
+                type="tel"
+                value={phone}
               />
             </div>
             <div>
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Location (from latest order)
               </span>
               <p className="mt-1 text-sm">
@@ -849,44 +870,64 @@ export default function AdminCustomerDetailPage() {
                   "—"}
               </p>
             </div>
-            <div className="relative sm:col-span-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                <MapPin className="mr-1 inline-block h-3.5 w-3.5" aria-hidden />
+            <div
+              className={`
+              relative
+              sm:col-span-2
+            `}
+            >
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
+                <MapPin aria-hidden className="mr-1 inline-block h-3.5 w-3.5" />
                 Look up address
               </span>
               <div className="mt-1 space-y-1">
                 <input
-                  type="text"
-                  placeholder="Type address or postcode…"
-                  value={addressFindQuery}
+                  autoComplete="off"
+                  className={inputClass}
                   onChange={(e) => setAddressFindQuery(e.target.value)}
                   onFocus={() =>
                     addressFindResults.length > 0 && setAddressFindOpen(true)
                   }
-                  className={inputClass}
-                  autoComplete="off"
+                  placeholder="Type address or postcode…"
+                  type="text"
+                  value={addressFindQuery}
                 />
                 {addressFindLoading && (
                   <span className="text-muted-foreground">Searching…</span>
                 )}
                 {addressFindOpen && addressFindResults.length > 0 && (
                   <ul
-                    className="z-10 max-h-40 overflow-auto rounded-md border border-input bg-background py-1 shadow-md"
+                    className={`
+                      z-10 max-h-40 overflow-auto rounded-md border border-input
+                      bg-background py-1 shadow-md
+                    `}
                     role="listbox"
                   >
                     {addressFindResults.map((item) => (
                       <li key={item.Id} role="option">
                         <button
-                          type="button"
-                          className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
+                          className={`
+                            w-full px-3 py-1.5 text-left text-sm
+                            hover:bg-muted
+                          `}
                           onMouseDown={(e) => {
                             e.preventDefault();
                             selectAddressFromLoqate(item.Id, item.Text);
                           }}
+                          type="button"
                         >
                           {item.Text}
                           {item.Description ? (
-                            <span className="block text-muted-foreground text-xs">
+                            <span
+                              className={`
+                              block text-xs text-muted-foreground
+                            `}
+                            >
                               {item.Description}
                             </span>
                           ) : null}
@@ -896,14 +937,21 @@ export default function AdminCustomerDetailPage() {
                   </ul>
                 )}
                 {editableAddress && (
-                  <div className="space-y-2 rounded border border-input bg-muted/20 p-3">
-                    <div className="grid gap-2 sm:grid-cols-2">
+                  <div
+                    className={`
+                    space-y-2 rounded border border-input bg-muted/20 p-3
+                  `}
+                  >
+                    <div
+                      className={`
+                      grid gap-2
+                      sm:grid-cols-2
+                    `}
+                    >
                       <div className="sm:col-span-2">
                         <label className={labelClass}>Address line 1</label>
                         <input
-                          type="text"
                           className={inputClass}
-                          value={editableAddress.address1}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
                               prev
@@ -912,14 +960,14 @@ export default function AdminCustomerDetailPage() {
                             )
                           }
                           placeholder="Street address"
+                          type="text"
+                          value={editableAddress.address1}
                         />
                       </div>
                       <div className="sm:col-span-2">
                         <label className={labelClass}>Address line 2</label>
                         <input
-                          type="text"
                           className={inputClass}
-                          value={editableAddress.address2 ?? ""}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
                               prev
@@ -931,28 +979,28 @@ export default function AdminCustomerDetailPage() {
                             )
                           }
                           placeholder="Apt, suite, etc. (optional)"
+                          type="text"
+                          value={editableAddress.address2 ?? ""}
                         />
                       </div>
                       <div>
                         <label className={labelClass}>City</label>
                         <input
-                          type="text"
                           className={inputClass}
-                          value={editableAddress.city}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
                               prev ? { ...prev, city: e.target.value } : null,
                             )
                           }
                           placeholder="City"
+                          type="text"
+                          value={editableAddress.city}
                         />
                       </div>
                       <div>
                         <label className={labelClass}>State / Province</label>
                         <input
-                          type="text"
                           className={inputClass}
-                          value={editableAddress.stateCode ?? ""}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
                               prev
@@ -964,28 +1012,28 @@ export default function AdminCustomerDetailPage() {
                             )
                           }
                           placeholder="State"
+                          type="text"
+                          value={editableAddress.stateCode ?? ""}
                         />
                       </div>
                       <div>
                         <label className={labelClass}>ZIP / Postcode</label>
                         <input
-                          type="text"
                           className={inputClass}
-                          value={editableAddress.zip}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
                               prev ? { ...prev, zip: e.target.value } : null,
                             )
                           }
                           placeholder="ZIP"
+                          type="text"
+                          value={editableAddress.zip}
                         />
                       </div>
                       <div>
                         <label className={labelClass}>Country code</label>
                         <input
-                          type="text"
                           className={inputClass}
-                          value={editableAddress.countryCode}
                           onChange={(e) =>
                             setEditableAddress((prev) =>
                               prev
@@ -994,24 +1042,26 @@ export default function AdminCustomerDetailPage() {
                             )
                           }
                           placeholder="US, GB, …"
+                          type="text"
+                          value={editableAddress.countryCode}
                         />
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button
+                        onClick={copyEditableAddress}
+                        size="sm"
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        onClick={copyEditableAddress}
                       >
-                        <Copy className="mr-1.5 h-4 w-4" aria-hidden />
+                        <Copy aria-hidden className="mr-1.5 h-4 w-4" />
                         Copy address
                       </Button>
                       <Button
+                        onClick={clearEditableAddress}
+                        size="sm"
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        onClick={clearEditableAddress}
                       >
                         Clear
                       </Button>
@@ -1021,14 +1071,19 @@ export default function AdminCustomerDetailPage() {
               </div>
             </div>
             <div className="sm:col-span-2">
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Address
               </span>
               <div className="mt-1 space-y-2 text-sm">
                 {customer.addresses && customer.addresses.length > 0 ? (
                   <ul className="list-inside list-disc space-y-1">
                     {customer.addresses.map((a) => (
-                      <li key={a.id} className="text-muted-foreground">
+                      <li className="text-muted-foreground" key={a.id}>
                         {a.label && (
                           <span className="font-medium text-foreground">
                             {a.label}
@@ -1076,7 +1131,12 @@ export default function AdminCustomerDetailPage() {
               </div>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Token balance
               </span>
               <p className="mt-1 text-sm">
@@ -1084,13 +1144,23 @@ export default function AdminCustomerDetailPage() {
               </p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Created
               </span>
               <p className="mt-1 text-sm">{formatDate(customer.createdAt)}</p>
             </div>
             <div>
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <span
+                className={`
+                text-xs font-medium tracking-wider text-muted-foreground
+                uppercase
+              `}
+              >
                 Updated
               </span>
               <p className="mt-1 text-sm">{formatDate(customer.updatedAt)}</p>
@@ -1102,8 +1172,15 @@ export default function AdminCustomerDetailPage() {
               className={cn(
                 "rounded-md border px-3 py-2 text-sm",
                 saveMessage.type === "success"
-                  ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                  : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                  ? `
+                    border-green-200 bg-green-50 text-green-800
+                    dark:border-green-800 dark:bg-green-950/30
+                    dark:text-green-200
+                  `
+                  : `
+                    border-red-200 bg-red-50 text-red-800
+                    dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+                  `,
               )}
             >
               {saveMessage.text}
@@ -1114,8 +1191,15 @@ export default function AdminCustomerDetailPage() {
               className={cn(
                 "rounded-md border px-3 py-2 text-sm",
                 resetMessage.type === "success"
-                  ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                  : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                  ? `
+                    border-green-200 bg-green-50 text-green-800
+                    dark:border-green-800 dark:bg-green-950/30
+                    dark:text-green-200
+                  `
+                  : `
+                    border-red-200 bg-red-50 text-red-800
+                    dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+                  `,
               )}
             >
               {resetMessage.text}
@@ -1123,29 +1207,29 @@ export default function AdminCustomerDetailPage() {
           )}
           <div className="flex flex-wrap gap-2 border-t pt-4">
             <Button
-              type="button"
-              variant="default"
-              size="sm"
               disabled={saveLoading}
               onClick={() => void handleSaveProfile()}
+              size="sm"
+              type="button"
+              variant="default"
             >
-              <Save className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
+              <Save aria-hidden className="mr-1.5 h-4 w-4 shrink-0" />
               {saveLoading ? "Saving…" : "Save changes"}
             </Button>
-            <Button asChild variant="outline" size="sm">
+            <Button asChild size="sm" variant="outline">
               <Link href={`/orders?userId=${encodeURIComponent(customer.id)}`}>
                 View orders
               </Link>
             </Button>
             <Button
-              type="button"
-              variant="outline"
-              size="sm"
+              aria-label="Send password reset email to customer"
               disabled={resetLoading}
               onClick={() => void handleResetPassword()}
-              aria-label="Send password reset email to customer"
+              size="sm"
+              type="button"
+              variant="outline"
             >
-              <KeyRound className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
+              <KeyRound aria-hidden className="mr-1.5 h-4 w-4 shrink-0" />
               {resetLoading ? "Sending…" : "Reset password"}
             </Button>
           </div>
@@ -1157,7 +1241,7 @@ export default function AdminCustomerDetailPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" aria-hidden />
+              <Shield aria-hidden className="h-5 w-5" />
               Two-Factor Authentication
             </CardTitle>
             <p className="text-sm text-muted-foreground">
@@ -1171,20 +1255,27 @@ export default function AdminCustomerDetailPage() {
                 className={cn(
                   "rounded-md border px-3 py-2 text-sm",
                   disable2faMessage.type === "success"
-                    ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                    : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                    ? `
+                      border-green-200 bg-green-50 text-green-800
+                      dark:border-green-800 dark:bg-green-950/30
+                      dark:text-green-200
+                    `
+                    : `
+                      border-red-200 bg-red-50 text-red-800
+                      dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+                    `,
                 )}
               >
                 {disable2faMessage.text}
               </p>
             )}
             <Button
-              type="button"
-              variant="destructive"
-              size="sm"
+              aria-label="Disable two-factor authentication for this customer"
               disabled={disable2faLoading}
               onClick={() => void handleDisable2fa()}
-              aria-label="Disable two-factor authentication for this customer"
+              size="sm"
+              type="button"
+              variant="destructive"
             >
               {disable2faLoading ? "Disabling…" : "Disable 2FA"}
             </Button>
@@ -1196,7 +1287,7 @@ export default function AdminCustomerDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5" aria-hidden />
+            <Link2 aria-hidden className="h-5 w-5" />
             Affiliate
           </CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -1208,7 +1299,12 @@ export default function AdminCustomerDetailPage() {
           {customer.affiliate ? (
             <div className="flex flex-wrap items-center gap-4">
               <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Code
                 </span>
                 <p className="mt-1 font-mono text-sm font-medium">
@@ -1216,14 +1312,19 @@ export default function AdminCustomerDetailPage() {
                 </p>
               </div>
               <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Status
                 </span>
                 <p className="mt-1 text-sm capitalize">
                   {customer.affiliate.status}
                 </p>
               </div>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild size="sm" variant="outline">
                 <Link
                   href={`/affiliates?search=${encodeURIComponent(customer.affiliate.code)}`}
                 >
@@ -1245,7 +1346,7 @@ export default function AdminCustomerDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" aria-hidden />
+                <Bell aria-hidden className="h-5 w-5" />
                 Notification preferences
               </CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -1263,7 +1364,11 @@ export default function AdminCustomerDetailPage() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-0.5">
                           <span className="font-semibold">Transactional</span>
-                          <span className="text-xs font-normal text-muted-foreground">
+                          <span
+                            className={`
+                            text-xs font-normal text-muted-foreground
+                          `}
+                          >
                             Orders, shipping, account
                           </span>
                         </div>
@@ -1271,7 +1376,11 @@ export default function AdminCustomerDetailPage() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-0.5">
                           <span className="font-semibold">Marketing</span>
-                          <span className="text-xs font-normal text-muted-foreground">
+                          <span
+                            className={`
+                            text-xs font-normal text-muted-foreground
+                          `}
+                          >
                             Promotions, news, offers
                           </span>
                         </div>
@@ -1281,40 +1390,40 @@ export default function AdminCustomerDetailPage() {
                   <TableBody>
                     {[
                       {
+                        disabled: false,
                         id: "website" as const,
                         label: "Website",
-                        disabled: false,
-                        note: null as string | null,
+                        note: null as null | string,
                       },
                       {
+                        disabled: false,
                         id: "email" as const,
                         label: "Email",
-                        disabled: false,
-                        note: null as string | null,
+                        note: null as null | string,
                       },
                       {
+                        disabled: false,
                         id: "sms" as const,
                         label: "SMS",
-                        disabled: false,
-                        note: null as string | null,
+                        note: null as null | string,
                       },
                       {
-                        id: "telegram" as const,
-                        label: "Telegram",
                         disabled:
                           !customer.notificationPreferences.hasTelegramLinked,
+                        id: "telegram" as const,
+                        label: "Telegram",
                         note: !customer.notificationPreferences
                           .hasTelegramLinked
                           ? " (not linked)"
                           : null,
                       },
                       {
+                        disabled: false,
                         id: "aiCompanion" as const,
                         label: "AI Companion",
-                        disabled: false,
-                        note: null as string | null,
+                        note: null as null | string,
                       },
-                    ].map(({ id, label, note, disabled }) => {
+                    ].map(({ disabled, id, label, note }) => {
                       const prefs =
                         notifPrefs ?? customer.notificationPreferences;
                       return (
@@ -1329,8 +1438,9 @@ export default function AdminCustomerDetailPage() {
                           </TableCell>
                           <TableCell className="text-center">
                             <input
-                              type="checkbox"
+                              aria-label={`${label} transactional`}
                               checked={prefs?.transactional[id] ?? false}
+                              className="h-4 w-4 rounded border-input"
                               disabled={disabled}
                               onChange={(e) =>
                                 updateNotifPref(
@@ -1339,14 +1449,14 @@ export default function AdminCustomerDetailPage() {
                                   e.target.checked,
                                 )
                               }
-                              className="h-4 w-4 rounded border-input"
-                              aria-label={`${label} transactional`}
+                              type="checkbox"
                             />
                           </TableCell>
                           <TableCell className="text-center">
                             <input
-                              type="checkbox"
+                              aria-label={`${label} marketing`}
                               checked={prefs?.marketing[id] ?? false}
+                              className="h-4 w-4 rounded border-input"
                               disabled={disabled}
                               onChange={(e) =>
                                 updateNotifPref(
@@ -1355,8 +1465,7 @@ export default function AdminCustomerDetailPage() {
                                   e.target.checked,
                                 )
                               }
-                              className="h-4 w-4 rounded border-input"
-                              aria-label={`${label} marketing`}
+                              type="checkbox"
                             />
                           </TableCell>
                         </TableRow>
@@ -1370,22 +1479,29 @@ export default function AdminCustomerDetailPage() {
                   className={cn(
                     "mt-3 rounded-md border px-3 py-2 text-sm",
                     notifSaveMessage.type === "success"
-                      ? "border-green-200 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-200"
-                      : "border-red-200 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
+                      ? `
+                        border-green-200 bg-green-50 text-green-800
+                        dark:border-green-800 dark:bg-green-950/30
+                        dark:text-green-200
+                      `
+                      : `
+                        border-red-200 bg-red-50 text-red-800
+                        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+                      `,
                   )}
                 >
                   {notifSaveMessage.text}
                 </p>
               )}
               <Button
-                type="button"
-                variant="default"
-                size="sm"
                 className="mt-3"
                 disabled={notifSaveLoading}
                 onClick={() => void handleSaveNotificationPrefs()}
+                size="sm"
+                type="button"
+                variant="default"
               >
-                <Save className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
+                <Save aria-hidden className="mr-1.5 h-4 w-4 shrink-0" />
                 {notifSaveLoading ? "Saving…" : "Save notification preferences"}
               </Button>
             </CardContent>
@@ -1406,13 +1522,19 @@ export default function AdminCustomerDetailPage() {
             <ul className="space-y-3">
               {orders.map((order) => (
                 <li
+                  className={`
+                    flex flex-wrap items-center justify-between gap-2 rounded-md
+                    border p-3
+                  `}
                   key={order.id}
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3"
                 >
                   <div className="min-w-0">
                     <Link
+                      className={`
+                        font-medium text-primary
+                        hover:underline
+                      `}
                       href={`/orders/${order.id}`}
-                      className="font-medium text-primary hover:underline"
                     >
                       {order.id}
                     </Link>
@@ -1426,9 +1548,15 @@ export default function AdminCustomerDetailPage() {
                     className={cn(
                       "rounded-full px-2 py-0.5 text-xs font-medium",
                       order.paymentStatus === "paid"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200"
+                        ? `
+                          bg-green-100 text-green-800
+                          dark:bg-green-900/30 dark:text-green-200
+                        `
                         : order.paymentStatus === "pending"
-                          ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-200"
+                          ? `
+                            bg-amber-100 text-amber-800
+                            dark:bg-amber-900/30 dark:text-amber-200
+                          `
                           : "bg-muted text-muted-foreground",
                     )}
                   >
@@ -1439,7 +1567,7 @@ export default function AdminCustomerDetailPage() {
             </ul>
           )}
           {customer.orderCount > 0 && (
-            <Button asChild variant="outline" size="sm" className="mt-3">
+            <Button asChild className="mt-3" size="sm" variant="outline">
               <Link href={`/orders?userId=${encodeURIComponent(customer.id)}`}>
                 View all orders
               </Link>
@@ -1452,7 +1580,7 @@ export default function AdminCustomerDetailPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <MessageSquarePlus className="h-5 w-5" aria-hidden />
+            <MessageSquarePlus aria-hidden className="h-5 w-5" />
             Internal comments
           </CardTitle>
           <p className="text-sm text-muted-foreground">
@@ -1462,17 +1590,17 @@ export default function AdminCustomerDetailPage() {
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <textarea
-              placeholder="Add a comment…"
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
               className={cn(inputClass, "min-h-[80px] resize-y")}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment…"
               rows={3}
+              value={newComment}
             />
             <Button
-              type="button"
-              size="sm"
               disabled={!newComment.trim() || addCommentLoading}
               onClick={() => void handleAddComment()}
+              size="sm"
+              type="button"
             >
               {addCommentLoading ? "Adding…" : "Add"}
             </Button>
@@ -1485,8 +1613,8 @@ export default function AdminCustomerDetailPage() {
             <ul className="space-y-2">
               {comments.map((c) => (
                 <li
-                  key={c.id}
                   className="rounded-md border bg-muted/30 p-3 text-sm"
+                  key={c.id}
                 >
                   <p className="whitespace-pre-wrap">{c.body}</p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -1500,4 +1628,35 @@ export default function AdminCustomerDetailPage() {
       </Card>
     </div>
   );
+}
+
+function formatDate(s: null | string): string {
+  if (!s) return "—";
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
+}
+
+function formatOrderTotal(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
+  }).format(cents / 100);
+}
+
+function formatTokenBalance(cents: null | number): string {
+  if (cents === null) return "—";
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
+  }).format(cents / 100);
 }

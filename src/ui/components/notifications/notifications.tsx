@@ -97,7 +97,11 @@ export const Notifications: React.FC<NotificationsProps> = ({
               </p>
               {typeof notification.metadata?.orderStatusPath === "string" && (
                 <Link
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className={`
+                    inline-flex items-center gap-1 text-xs font-medium
+                    text-primary
+                    hover:underline
+                  `}
                   href={notification.metadata.orderStatusPath as string}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -107,7 +111,11 @@ export const Notifications: React.FC<NotificationsProps> = ({
               )}
               {typeof notification.metadata?.ticketPath === "string" && (
                 <Link
-                  className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  className={`
+                    inline-flex items-center gap-1 text-xs font-medium
+                    text-primary
+                    hover:underline
+                  `}
                   href={(notification.metadata.ticketPath as string).replace(
                     /^\/dashboard\/support\//,
                     "/dashboard/support-tickets/",

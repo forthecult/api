@@ -23,47 +23,32 @@ import type { TokenDef } from "./token-config";
 // Types
 // ---------------------------------------------------------------------------
 
-export interface TierPrice {
-  /** Tier ID (1 = best, 4 = entry). */
-  tierId: number;
-  /** USD cost to stake for this tier. */
-  costUsd: number;
-  /** Number of tokens needed (human-readable, e.g. 150.5). */
-  tokensNeeded: number;
-  /** Raw token amount (with decimals applied). */
-  tokensRaw: bigint;
-}
-
 export interface PricingResult {
-  /** All tier prices, ordered 4 → 1 (entry → premium). */
-  tiers: TierPrice[];
   /** The market cap bracket that was used. */
   marketCapBracket: string;
   /** Current staker count used in calculation. */
   stakerCount: number;
+  /** All tier prices, ordered 4 → 1 (entry → premium). */
+  tiers: TierPrice[];
   /** Token price in USD used for conversion. */
   tokenPriceUsd: number;
   /** Token symbol. */
   tokenSymbol: string;
 }
 
+export interface TierPrice {
+  /** USD cost to stake for this tier. */
+  costUsd: number;
+  /** Tier ID (1 = best, 4 = entry). */
+  tierId: number;
+  /** Number of tokens needed (human-readable, e.g. 150.5). */
+  tokensNeeded: number;
+  /** Raw token amount (with decimals applied). */
+  tokensRaw: bigint;
+}
+
 // ---------------------------------------------------------------------------
 // SOLUNA pricing (simple MC threshold)
-// ---------------------------------------------------------------------------
-
-function getSolunaTierCosts(marketCapUsd: number): Record<number, number> {
-  if (marketCapUsd > 300_000) {
-    return { 4: 1, 3: 2, 2: 3, 1: 4 };
-  }
-  return { 4: 0.5, 3: 1, 2: 2, 1: 3 };
-}
-
-function getSolunaBracketLabel(marketCapUsd: number): string {
-  return marketCapUsd > 300_000 ? "MC > $300k" : "MC ≤ $300k";
-}
-
-// ---------------------------------------------------------------------------
-// CULT pricing (bonding curve with MC brackets and staker tiers)
 // ---------------------------------------------------------------------------
 
 /**
@@ -74,78 +59,76 @@ function getSolunaBracketLabel(marketCapUsd: number): string {
  * range that 150 falls into.
  */
 interface CultBracketRule {
-  /** MC upper bound (inclusive). Use Infinity for the last bracket. */
-  mcMax: number;
   /** Label for this bracket. */
   label: string;
+  /** MC upper bound (inclusive). Use Infinity for the last bracket. */
+  mcMax: number;
   /**
    * Staker-count ranges. Ordered ascending by maxStakers.
    * Each entry: { maxStakers, costs: { tier4, tier3, tier2, tier1 } }
    */
   stakerRanges: {
-    maxStakers: number;
     costs: Record<number, number>;
+    maxStakers: number;
   }[];
+}
+
+function getSolunaBracketLabel(marketCapUsd: number): string {
+  return marketCapUsd > 300_000 ? "MC > $300k" : "MC ≤ $300k";
+}
+
+// ---------------------------------------------------------------------------
+// CULT pricing (bonding curve with MC brackets and staker tiers)
+// ---------------------------------------------------------------------------
+
+function getSolunaTierCosts(marketCapUsd: number): Record<number, number> {
+  if (marketCapUsd > 300_000) {
+    return { 1: 4, 2: 3, 3: 2, 4: 1 };
+  }
+  return { 1: 3, 2: 2, 3: 1, 4: 0.5 };
 }
 
 const CULT_BRACKETS: CultBracketRule[] = [
   {
-    mcMax: 250_000,
     label: "MC ≤ $250k",
+    mcMax: 250_000,
     stakerRanges: [
-      { maxStakers: 100, costs: { 4: 25, 3: 100, 2: 200, 1: 300 } },
-      { maxStakers: 200, costs: { 4: 50, 3: 200, 2: 400, 1: 600 } },
-      { maxStakers: 400, costs: { 4: 100, 3: 400, 2: 800, 1: 1200 } },
-      { maxStakers: Infinity, costs: { 4: 200, 3: 800, 2: 1600, 1: 2400 } },
+      { costs: { 1: 300, 2: 200, 3: 100, 4: 25 }, maxStakers: 100 },
+      { costs: { 1: 600, 2: 400, 3: 200, 4: 50 }, maxStakers: 200 },
+      { costs: { 1: 1200, 2: 800, 3: 400, 4: 100 }, maxStakers: 400 },
+      { costs: { 1: 2400, 2: 1600, 3: 800, 4: 200 }, maxStakers: Infinity },
     ],
   },
   {
-    mcMax: 500_000,
     label: "$250k < MC ≤ $500k",
+    mcMax: 500_000,
     stakerRanges: [
       // If only 50 people staked in the prior bracket, first 100 in this bracket
       // pay the "second range" prices from the lower bracket
-      { maxStakers: 100, costs: { 4: 50, 3: 200, 2: 400, 1: 600 } },
-      { maxStakers: 200, costs: { 4: 100, 3: 400, 2: 800, 1: 1200 } },
-      { maxStakers: 400, costs: { 4: 200, 3: 800, 2: 1600, 1: 2400 } },
-      { maxStakers: Infinity, costs: { 4: 400, 3: 1600, 2: 3200, 1: 4800 } },
+      { costs: { 1: 600, 2: 400, 3: 200, 4: 50 }, maxStakers: 100 },
+      { costs: { 1: 1200, 2: 800, 3: 400, 4: 100 }, maxStakers: 200 },
+      { costs: { 1: 2400, 2: 1600, 3: 800, 4: 200 }, maxStakers: 400 },
+      { costs: { 1: 4800, 2: 3200, 3: 1600, 4: 400 }, maxStakers: Infinity },
     ],
   },
   {
-    mcMax: 1_000_000,
     label: "$500k < MC ≤ $1M",
+    mcMax: 1_000_000,
     stakerRanges: [
-      { maxStakers: 100, costs: { 4: 100, 3: 400, 2: 800, 1: 1200 } },
-      { maxStakers: 200, costs: { 4: 200, 3: 800, 2: 1600, 1: 2400 } },
-      { maxStakers: Infinity, costs: { 4: 400, 3: 1600, 2: 3200, 1: 4800 } },
+      { costs: { 1: 1200, 2: 800, 3: 400, 4: 100 }, maxStakers: 100 },
+      { costs: { 1: 2400, 2: 1600, 3: 800, 4: 200 }, maxStakers: 200 },
+      { costs: { 1: 4800, 2: 3200, 3: 1600, 4: 400 }, maxStakers: Infinity },
     ],
   },
   {
-    mcMax: Infinity,
     label: "MC > $1M",
+    mcMax: Infinity,
     stakerRanges: [
-      { maxStakers: 100, costs: { 4: 200, 3: 800, 2: 1600, 1: 2400 } },
-      { maxStakers: Infinity, costs: { 4: 400, 3: 1600, 2: 3200, 1: 4800 } },
+      { costs: { 1: 2400, 2: 1600, 3: 800, 4: 200 }, maxStakers: 100 },
+      { costs: { 1: 4800, 2: 3200, 3: 1600, 4: 400 }, maxStakers: Infinity },
     ],
   },
 ];
-
-function getCultTierCosts(
-  marketCapUsd: number,
-  stakerCount: number,
-): { costs: Record<number, number>; label: string } {
-  const bracket =
-    CULT_BRACKETS.find((b) => marketCapUsd <= b.mcMax) ??
-    CULT_BRACKETS[CULT_BRACKETS.length - 1]!;
-  const range =
-    bracket.stakerRanges.find((r) => stakerCount < r.maxStakers) ??
-    bracket.stakerRanges[bracket.stakerRanges.length - 1]!;
-  return { costs: range.costs, label: bracket.label };
-}
-
-// ---------------------------------------------------------------------------
-// Main pricing function
-// ---------------------------------------------------------------------------
 
 /**
  * Compute all tier prices for the active token.
@@ -183,17 +166,21 @@ export function computeTierPricing(
       tokensRaw = BigInt(Math.floor(tokensNeeded * 10 ** token.decimals));
     }
 
-    return { tierId, costUsd, tokensNeeded, tokensRaw };
+    return { costUsd, tierId, tokensNeeded, tokensRaw };
   });
 
   return {
-    tiers,
     marketCapBracket: bracketLabel,
     stakerCount,
+    tiers,
     tokenPriceUsd: priceUsd,
     tokenSymbol: token.symbol,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Main pricing function
+// ---------------------------------------------------------------------------
 
 /**
  * Get the cost in USD for a specific tier.
@@ -209,4 +196,17 @@ export function getTierCostUsd(
     return getSolunaTierCosts(marketCapUsd)[tierId] ?? 0;
   }
   return getCultTierCosts(marketCapUsd, stakerCount).costs[tierId] ?? 0;
+}
+
+function getCultTierCosts(
+  marketCapUsd: number,
+  stakerCount: number,
+): { costs: Record<number, number>; label: string } {
+  const bracket =
+    CULT_BRACKETS.find((b) => marketCapUsd <= b.mcMax) ??
+    CULT_BRACKETS[CULT_BRACKETS.length - 1]!;
+  const range =
+    bracket.stakerRanges.find((r) => stakerCount < r.maxStakers) ??
+    bracket.stakerRanges[bracket.stakerRanges.length - 1]!;
+  return { costs: range.costs, label: bracket.label };
 }

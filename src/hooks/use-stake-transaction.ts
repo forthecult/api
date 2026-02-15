@@ -9,14 +9,14 @@ import { base64ToUint8Array } from "~/lib/solana-tx";
 import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 
 const SEND_OPTS = {
-  skipPreflight: false,
   preflightCommitment: "confirmed" as const,
+  skipPreflight: false,
 };
 
-export type UseStakeTransactionOptions = {
+export interface UseStakeTransactionOptions {
   onStakeSuccess?: () => void;
   onUnstakeSuccess?: () => void;
-};
+}
 
 /**
  * Shared hook for preparing and sending stake/unstake transactions.
@@ -48,9 +48,9 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
       setStakePending(true);
       try {
         const res = await fetch("/api/governance/stake/prepare", {
-          method: "POST",
+          body: JSON.stringify({ amount: trimmed, lockDuration, wallet }),
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, amount: trimmed, lockDuration }),
+          method: "POST",
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -100,9 +100,9 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
       setUnstakePending(true);
       try {
         const res = await fetch("/api/governance/unstake/prepare", {
-          method: "POST",
+          body: JSON.stringify({ amount: trimmed, wallet }),
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ wallet, amount: trimmed }),
+          method: "POST",
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -138,12 +138,12 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
 
   return useMemo(
     () => ({
-      wallet,
       openConnectModal,
       stake,
-      unstake,
       stakePending,
+      unstake,
       unstakePending,
+      wallet,
     }),
     [wallet, openConnectModal, stake, unstake, stakePending, unstakePending],
   );

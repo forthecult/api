@@ -22,10 +22,10 @@ const globalForDb = globalThis as unknown as {
 export const conn: DbConnection =
   globalForDb.conn ??
   postgres(process.env.DATABASE_URL, {
-    max: 20,
-    idle_timeout: 30,
-    max_lifetime: 60 * 30,
     connect_timeout: 10,
+    idle_timeout: 30,
+    max: 20,
+    max_lifetime: 60 * 30,
   });
 if (process.env.NODE_ENV !== "production") {
   globalForDb.conn = conn;
@@ -39,12 +39,12 @@ if (process.env.NODE_ENV !== "production") {
  */
 const schemaWithAuthQueryKeys = {
   ...schema,
-  user: schema.userTable,
   account: schema.accountTable,
-  session: schema.sessionTable,
-  verification: schema.verificationTable,
-  twoFactor: schema.twoFactorTable,
   passkey: schema.passkeyTable,
+  session: schema.sessionTable,
+  twoFactor: schema.twoFactorTable,
+  user: schema.userTable,
+  verification: schema.verificationTable,
 };
 
 // Database connection instance

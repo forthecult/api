@@ -2,7 +2,6 @@ import { createId } from "@paralleldrive/cuid2";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { auth } from "~/lib/auth";
-import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   buildOrderErrorMessage,
   createEsimOrderRecordsForOrder,
@@ -14,6 +13,7 @@ import {
   validateTotal,
 } from "~/lib/checkout/create-order-helpers";
 import { getCoinGeckoSimplePrice } from "~/lib/coingecko";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
   checkRateLimit,
   getClientIp,
@@ -29,17 +29,6 @@ import { createOrderSchema, validateBody } from "~/lib/validations/checkout";
 
 const TON_USD_FALLBACK = 7;
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
-
-async function getTonUsdRate(): Promise<number> {
-  try {
-    const data = await getCoinGeckoSimplePrice(["toncoin"]);
-    const rate = data?.toncoin?.usd;
-    if (typeof rate === "number" && rate > 0) return rate;
-  } catch {
-    // use fallback
-  }
-  return TON_USD_FALLBACK;
-}
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers);
@@ -68,21 +57,21 @@ export async function POST(request: NextRequest) {
     }
 
     const {
-      reference,
-      email,
-      orderItems: rawItems,
-      totalCents,
-      shippingFeeCents = 0,
-      taxCents = 0,
-      emailMarketingConsent,
-      smsMarketingConsent,
-      telegramUserId,
-      telegramUsername,
-      telegramFirstName,
       affiliateCode,
       couponCode,
-      wallet,
+      email,
+      emailMarketingConsent,
+      orderItems: rawItems,
+      reference,
       shipping,
+      shippingFeeCents = 0,
+      smsMarketingConsent,
+      taxCents = 0,
+      telegramFirstName,
+      telegramUserId,
+      telegramUsername,
+      totalCents,
+      wallet,
     } = validation.data;
 
     // ── Validate products & compute subtotal ───────────────────────────
@@ -93,23 +82,23 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    const { validatedItems, productIds, subtotalCents } = productResult;
+    const { productIds, subtotalCents, validatedItems } = productResult;
 
     // ── Resolve discounts ──────────────────────────────────────────────
     const { affiliateResult, couponResult, expectedTotal } =
       await resolveDiscounts({
         affiliateCode,
         couponCode,
-        subtotalCents,
-        shippingFeeCents,
-        userId: session?.user?.id,
-        productIds,
-        paymentMethodKey: "crypto_ton",
         items: validatedItems.map((i) => ({
-          productId: i.productId,
           priceCents: i.priceCents,
+          productId: i.productId,
           quantity: i.quantity,
         })),
+        paymentMethodKey: "crypto_ton",
+        productIds,
+        shippingFeeCents,
+        subtotalCents,
+        userId: session?.user?.id,
         wallet: wallet ?? undefined,
       });
 
@@ -152,24 +141,24 @@ export async function POST(request: NextRequest) {
     // ── Insert order ───────────────────────────────────────────────────
     await insertOrder(
       {
-        orderId,
+        affiliateResult,
         email,
+        orderId,
         paymentMethod: "ton_pay",
-        totalCents: totalCheck.expectedTotal,
+        reference,
         shippingFeeCents,
         taxCents,
-        userId: userIdVal,
-        reference,
+        telegramFirstName,
         telegramUserId,
         telegramUsername,
-        telegramFirstName,
-        affiliateResult,
+        totalCents: totalCheck.expectedTotal,
+        userId: userIdVal,
       },
       {
-        solanaPayDepositAddress: depositAddress,
-        cryptoCurrency: "TON",
         cryptoAmount: tonAmount,
+        cryptoCurrency: "TON",
         cryptoCurrencyNetwork: "ton",
+        solanaPayDepositAddress: depositAddress,
         ...(reference && typeof reference === "string" && reference.trim()
           ? { customerNote: reference.trim() }
           : {}),
@@ -192,35 +181,35 @@ export async function POST(request: NextRequest) {
 
     // ── Post-order bookkeeping ─────────────────────────────────────────
     await postOrderBookkeeping({
-      orderId,
-      userId: userIdVal,
       affiliateResult,
       couponResult,
       emailMarketingConsent,
+      orderId,
       smsMarketingConsent,
+      userId: userIdVal,
     });
 
     // ── eSIM order records (for cart items with esimPackageId) ──────────
     await createEsimOrderRecordsForOrder({
-      orderId,
-      userId: userIdVal,
-      paymentMethod: "ton_pay",
       items: validatedItems,
+      orderId,
+      paymentMethod: "ton_pay",
+      userId: userIdVal,
     });
 
     return NextResponse.json({
-      orderId,
-      confirmationToken: generateOrderConfirmationToken(orderId),
-      depositAddress,
-      tonAmount,
-      totalCents: totalCheck.expectedTotal,
-      expiresAt,
-      /** Use this as transfer comment so we can match payment to order. */
-      comment: orderId,
       _actions: {
         next: "Redirect to /checkout/{orderId}#ton and poll GET /api/checkout/ton-pay/status until settled.",
         pay: "Send TON to depositAddress with comment=orderId (ton://transfer/... or wallet app).",
       },
+      /** Use this as transfer comment so we can match payment to order. */
+      comment: orderId,
+      confirmationToken: generateOrderConfirmationToken(orderId),
+      depositAddress,
+      expiresAt,
+      orderId,
+      tonAmount,
+      totalCents: totalCheck.expectedTotal,
     });
   } catch (err) {
     console.error("TON Pay create-order error:", err);
@@ -229,4 +218,15 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+async function getTonUsdRate(): Promise<number> {
+  try {
+    const data = await getCoinGeckoSimplePrice(["toncoin"]);
+    const rate = data?.toncoin?.usd;
+    if (typeof rate === "number" && rate > 0) return rate;
+  } catch {
+    // use fallback
+  }
+  return TON_USD_FALLBACK;
 }

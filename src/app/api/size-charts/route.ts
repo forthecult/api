@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
-import { eq, and } from "drizzle-orm";
+
+import { and, eq } from "drizzle-orm";
 
 import { db } from "~/db";
 import { sizeChartsTable } from "~/db/schema";
@@ -40,13 +41,13 @@ export async function GET(request: NextRequest) {
     }
 
     return apiSuccess({
-      id: chart.id,
-      provider: chart.provider,
       brand: chart.brand,
-      model: chart.model,
-      displayName: chart.displayName,
       dataImperial: chart.dataImperial as unknown,
       dataMetric: chart.dataMetric as unknown,
+      displayName: chart.displayName,
+      id: chart.id,
+      model: chart.model,
+      provider: chart.provider,
     });
   } catch (err) {
     console.error("Size chart fetch error:", err);

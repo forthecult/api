@@ -21,19 +21,14 @@ import {
   DropdownMenuTrigger,
 } from "~/ui/primitives/dropdown-menu";
 
-type ConnectedWallet = {
-  publicKey: string;
-  name: string;
+interface ConnectedWallet {
   icon?: string;
-};
-
-function truncateAddress(address: string): string {
-  if (address.length <= 12) return address;
-  return `${address.slice(0, 4)}....${address.slice(-4)}`;
+  name: string;
+  publicKey: string;
 }
 
 export function CheckoutCryptoHeader() {
-  const { connected, publicKey, disconnect, wallet } = useWallet();
+  const { connected, disconnect, publicKey, wallet } = useWallet();
   const openModalFromContext = useOpenConnectWalletModal();
   const [connectedWallets, setConnectedWallets] = useState<ConnectedWallet[]>(
     [],
@@ -49,9 +44,9 @@ export function CheckoutCryptoHeader() {
       return [
         ...prev,
         {
-          publicKey: key,
-          name: wallet.adapter.name,
           icon: wallet.adapter.icon,
+          name: wallet.adapter.name,
+          publicKey: key,
         },
       ];
     });
@@ -83,41 +78,61 @@ export function CheckoutCryptoHeader() {
   const showDropdown = connected || hasWallets;
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <header
+      className={`
+      sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
+      supports-[backdrop-filter]:bg-background/60
+    `}
+    >
+      <div
+        className={`
+        container mx-auto max-w-7xl px-4
+        sm:px-6
+        lg:px-8
+      `}
+      >
         <div className="flex h-16 items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
-              href="/checkout"
-              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Back to checkout"
+              className={`
+                rounded p-1 text-muted-foreground
+                hover:bg-muted hover:text-foreground
+              `}
+              href="/checkout"
             >
               <svg
+                aria-hidden
                 className="size-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                aria-hidden
               >
                 <path
+                  d="M15 19l-7-7 7-7"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
                 />
               </svg>
             </Link>
             <Link className="flex items-center gap-2" href="/">
               {SEO_CONFIG.brandLogoUrl ? (
                 <Image
-                  src={SEO_CONFIG.brandLogoUrl}
                   alt={SEO_CONFIG.name}
-                  width={140}
-                  height={32}
                   className="h-8 w-auto object-contain"
+                  height={32}
+                  src={SEO_CONFIG.brandLogoUrl}
+                  width={140}
                 />
               ) : (
-                <span className="font-heading text-lg font-bold uppercase tracking-[0.2em] text-[#1A1611] dark:text-[#F5F1EB]">
+                <span
+                  className={`
+                  font-heading text-lg font-bold tracking-[0.2em] text-[#1A1611]
+                  uppercase
+                  dark:text-[#F5F1EB]
+                `}
+                >
                   {SEO_CONFIG.name}
                 </span>
               )}
@@ -125,21 +140,21 @@ export function CheckoutCryptoHeader() {
           </div>
 
           {showDropdown ? (
-            <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+            <DropdownMenu onOpenChange={setDropdownOpen} open={dropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button
-                  variant="outline"
-                  size="sm"
                   className="gap-2 font-mono"
+                  size="sm"
                   type="button"
+                  variant="outline"
                 >
                   {connected && wallet?.adapter.icon ? (
                     <img
-                      src={wallet.adapter.icon}
                       alt=""
                       className="size-5 shrink-0 rounded object-contain"
-                      width={20}
                       height={20}
+                      src={wallet.adapter.icon}
+                      width={20}
                     />
                   ) : (
                     <Wallet className="size-5 shrink-0" />
@@ -155,32 +170,41 @@ export function CheckoutCryptoHeader() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-[20rem]">
-                <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <DropdownMenuLabel
+                  className={`
+                  text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Connected
                 </DropdownMenuLabel>
                 {connectedWallets.map((w) => (
                   <div
+                    className={`
+                      flex items-center justify-between gap-2 px-2 py-2
+                    `}
                     key={w.publicKey}
-                    className="flex items-center justify-between gap-2 px-2 py-2"
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-2">
                       {w.icon ? (
                         <img
-                          src={w.icon}
                           alt=""
                           className="size-5 shrink-0 rounded object-contain"
-                          width={20}
                           height={20}
+                          src={w.icon}
                           title={w.name}
+                          width={20}
                         />
                       ) : (
                         <Wallet
-                          className="size-5 shrink-0 text-muted-foreground"
                           aria-hidden
+                          className="size-5 shrink-0 text-muted-foreground"
                         />
                       )}
                       <span
-                        className="min-w-0 truncate font-mono text-sm text-foreground"
+                        className={`
+                          min-w-0 truncate font-mono text-sm text-foreground
+                        `}
                         title={w.publicKey}
                       >
                         {truncateAddress(w.publicKey)}
@@ -193,10 +217,10 @@ export function CheckoutCryptoHeader() {
                     </span>
                     <Button
                       className="shrink-0"
+                      onClick={() => handleDisconnect(w.publicKey)}
                       size="sm"
                       type="button"
                       variant="outline"
-                      onClick={() => handleDisconnect(w.publicKey)}
                     >
                       Disconnect
                     </Button>
@@ -204,9 +228,13 @@ export function CheckoutCryptoHeader() {
                 ))}
                 <DropdownMenuSeparator />
                 <button
-                  type="button"
-                  className="block w-full rounded-sm px-2 py-1.5 text-left text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                  className={`
+                    block w-full rounded-sm px-2 py-1.5 text-left text-sm
+                    font-medium
+                    hover:bg-accent hover:text-accent-foreground
+                  `}
                   onClick={handleAddWallet}
+                  type="button"
                 >
                   Add a new wallet
                 </button>
@@ -214,10 +242,16 @@ export function CheckoutCryptoHeader() {
             </DropdownMenu>
           ) : (
             <Button
+              className={`
+                shadow-none
+                hover:shadow-none
+                focus:shadow-none
+                focus-visible:shadow-none
+                active:shadow-none
+              `}
+              onClick={handleAddWallet}
               type="button"
               variant="outline"
-              className="shadow-none hover:shadow-none focus:shadow-none focus-visible:shadow-none active:shadow-none"
-              onClick={handleAddWallet}
             >
               Connect
             </Button>
@@ -226,4 +260,9 @@ export function CheckoutCryptoHeader() {
       </div>
     </header>
   );
+}
+
+function truncateAddress(address: string): string {
+  if (address.length <= 12) return address;
+  return `${address.slice(0, 4)}....${address.slice(-4)}`;
 }

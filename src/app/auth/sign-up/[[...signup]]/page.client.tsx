@@ -127,7 +127,7 @@ export function SignUpPageClient() {
           md:p-8
         `}
       >
-        <div className="w-full min-w-0 max-w-md space-y-4">
+        <div className="w-full max-w-md min-w-0 space-y-4">
           <div
             className={`
               space-y-4 text-center

@@ -5,8 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { COUNTRIES_BY_CONTINENT } from "~/lib/countries-by-continent";
 import { cn } from "~/lib/cn";
+import { COUNTRIES_BY_CONTINENT } from "~/lib/countries-by-continent";
 import { getMainAppUrl } from "~/lib/env";
 import { mapRetrieveToShipping } from "~/lib/loqate";
 import { Button } from "~/ui/button";
@@ -18,212 +18,125 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-const ALL_COUNTRY_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "Select country" },
+const ALL_COUNTRY_OPTIONS: { label: string; value: string }[] = [
+  { label: "Select country", value: "" },
   ...COUNTRIES_BY_CONTINENT.flatMap((c) =>
-    c.countries.map((x) => ({ value: x.code, label: x.name })),
+    c.countries.map((x) => ({ label: x.name, value: x.code })),
   ),
 ];
 
 const US_STATE_OPTIONS = [
-  { value: "", label: "State" },
-  { value: "AL", label: "Alabama" },
-  { value: "CA", label: "California" },
-  { value: "FL", label: "Florida" },
-  { value: "NY", label: "New York" },
-  { value: "TX", label: "Texas" },
-  { value: "WA", label: "Washington" },
+  { label: "State", value: "" },
+  { label: "Alabama", value: "AL" },
+  { label: "California", value: "CA" },
+  { label: "Florida", value: "FL" },
+  { label: "New York", value: "NY" },
+  { label: "Texas", value: "TX" },
+  { label: "Washington", value: "WA" },
   // add more as needed
 ];
 
 const PAYMENT_STATUS_OPTIONS = [
-  { value: "pending", label: "Pending" },
-  { value: "paid", label: "Paid" },
-  { value: "refund_pending", label: "Refund pending" },
-  { value: "refunded", label: "Refunded" },
-  { value: "cancelled", label: "Cancelled" },
+  { label: "Pending", value: "pending" },
+  { label: "Paid", value: "paid" },
+  { label: "Refund pending", value: "refund_pending" },
+  { label: "Refunded", value: "refunded" },
+  { label: "Cancelled", value: "cancelled" },
 ];
 
 const FULFILLMENT_STATUS_OPTIONS = [
-  { value: "unfulfilled", label: "Unfulfilled" },
-  { value: "on_hold", label: "On hold" },
-  { value: "partially_fulfilled", label: "Partially fulfilled" },
-  { value: "fulfilled", label: "Fulfilled" },
+  { label: "Unfulfilled", value: "unfulfilled" },
+  { label: "On hold", value: "on_hold" },
+  { label: "Partially fulfilled", value: "partially_fulfilled" },
+  { label: "Fulfilled", value: "fulfilled" },
 ];
 
-type OrderItem = {
-  id: string;
-  name: string;
-  productName: string;
-  priceCents: number;
-  quantity: number;
-  imageUrl: string | null;
-  productId: string | null;
-};
-
-type TrackingInfo = {
-  trackingNumber: string | null;
-  trackingUrl: string | null;
-  carrier: string | null;
-  shippedAt: string | null;
-  deliveredAt: string | null;
-  estimatedDeliveryFrom: string | null;
-  estimatedDeliveryTo: string | null;
-  events: Array<{ triggered_at: string; description: string }> | null;
-};
-
-type PrintfulCosts = {
-  totalCents: number | null;
-  shippingCents: number | null;
-  taxCents: number | null;
-};
-
-type CryptoPayment = {
-  txHash: string | null;
-  network: string | null;
-  currency: string | null;
-  amount: string | null;
-  payerWallet: string | null;
-  chainId: number | null;
-};
-
-/** Get block explorer URL for a transaction hash based on network/chainId */
-function getBlockExplorerUrl(
-  txHash: string,
-  network: string | null,
-  chainId: number | null,
-): string | null {
-  if (!txHash) return null;
-
-  // Normalize network name
-  const net = (network ?? "").toLowerCase();
-
-  // Solana
-  if (net === "solana" || net === "sol") {
-    return `https://solscan.io/tx/${txHash}`;
-  }
-
-  // EVM chains by chainId
-  if (chainId) {
-    switch (chainId) {
-      case 1: // Ethereum mainnet
-        return `https://etherscan.io/tx/${txHash}`;
-      case 8453: // Base
-        return `https://basescan.org/tx/${txHash}`;
-      case 137: // Polygon
-        return `https://polygonscan.com/tx/${txHash}`;
-      case 42161: // Arbitrum
-        return `https://arbiscan.io/tx/${txHash}`;
-      case 56: // BNB Chain
-        return `https://bscscan.com/tx/${txHash}`;
-      case 43114: // Avalanche
-        return `https://snowtrace.io/tx/${txHash}`;
-      case 10: // Optimism
-        return `https://optimistic.etherscan.io/tx/${txHash}`;
-      default:
-        break;
-    }
-  }
-
-  // Fallback by network name
-  if (net === "ethereum" || net === "eth") {
-    return `https://etherscan.io/tx/${txHash}`;
-  }
-  if (net === "base") {
-    return `https://basescan.org/tx/${txHash}`;
-  }
-  if (net === "polygon" || net === "matic") {
-    return `https://polygonscan.com/tx/${txHash}`;
-  }
-  if (net === "arbitrum" || net === "arb") {
-    return `https://arbiscan.io/tx/${txHash}`;
-  }
-  if (net === "bnb" || net === "bsc") {
-    return `https://bscscan.com/tx/${txHash}`;
-  }
-  if (net === "avalanche" || net === "avax") {
-    return `https://snowtrace.io/tx/${txHash}`;
-  }
-  if (net === "optimism" || net === "op") {
-    return `https://optimistic.etherscan.io/tx/${txHash}`;
-  }
-
-  // Bitcoin (BTCPay)
-  if (net === "bitcoin" || net === "btc") {
-    return `https://mempool.space/tx/${txHash}`;
-  }
-
-  return null;
+interface CryptoPayment {
+  amount: null | string;
+  chainId: null | number;
+  currency: null | string;
+  network: null | string;
+  payerWallet: null | string;
+  txHash: null | string;
 }
 
-type OrderDetail = {
-  id: string;
+interface OrderDetail {
+  /** When set, only these countries are shippable for this order (product restrictions). Empty or null = all countries. */
+  allowedCountryCodes?: null | string[];
   createdAt: string;
-  updatedAt: string;
-  email: string;
-  status: string;
-  paymentStatus: string;
-  fulfillmentStatus: string;
-  totalCents: number;
-  totalComputedCents: number;
-  subtotalCents: number;
+  cryptoPayment?: CryptoPayment | null;
   customerNote: string;
-  internalNotes: string;
-  shippingFeeCents: number;
-  taxCents: number;
   discountPercent: number;
-  shippingMethod: string;
-  shippingName: string;
+  email: string;
+  fulfillmentStatus: string;
+  id: string;
+  internalNotes: string;
+  items: OrderItem[];
+  paymentMethod: string;
+  paymentStatus: string;
+  printfulCosts?: null | PrintfulCosts;
   shippingAddress1: string;
   shippingAddress2: string;
   shippingCity: string;
+  shippingCountryCode: string;
+  shippingFeeCents: number;
+  shippingMethod: string;
+  shippingName: string;
+  shippingPhone: string;
   shippingStateCode: string;
   shippingZip: string;
-  shippingCountryCode: string;
-  shippingPhone: string;
-  userId: string | null;
-  user: { id: string; name: string; email: string } | null;
-  items: OrderItem[];
-  paymentMethod: string;
-  /** When set, only these countries are shippable for this order (product restrictions). Empty or null = all countries. */
-  allowedCountryCodes?: string[] | null;
-  tracking?: TrackingInfo | null;
-  printfulCosts?: PrintfulCosts | null;
-  cryptoPayment?: CryptoPayment | null;
-};
-
-type ProductOption = {
-  id: string;
-  name: string;
-  priceCents: number;
-  imageUrl: string | null;
-};
-
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
+  status: string;
+  subtotalCents: number;
+  taxCents: number;
+  totalCents: number;
+  totalComputedCents: number;
+  tracking?: null | TrackingInfo;
+  updatedAt: string;
+  user: null | { email: string; id: string; name: string };
+  userId: null | string;
 }
 
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+interface OrderItem {
+  id: string;
+  imageUrl: null | string;
+  name: string;
+  priceCents: number;
+  productId: null | string;
+  productName: string;
+  quantity: number;
+}
+
+interface PrintfulCosts {
+  shippingCents: null | number;
+  taxCents: null | number;
+  totalCents: null | number;
+}
+
+interface ProductOption {
+  id: string;
+  imageUrl: null | string;
+  name: string;
+  priceCents: number;
+}
+
+interface TrackingInfo {
+  carrier: null | string;
+  deliveredAt: null | string;
+  estimatedDeliveryFrom: null | string;
+  estimatedDeliveryTo: null | string;
+  events: null | { description: string; triggered_at: string }[];
+  shippedAt: null | string;
+  trackingNumber: null | string;
+  trackingUrl: null | string;
 }
 
 export default function AdminOrderDetailsPage() {
   const params = useParams();
   const orderId = typeof params.orderId === "string" ? params.orderId : "";
 
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<null | OrderDetail>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [saving, setSaving] = useState(false);
 
   const [paymentStatus, setPaymentStatus] = useState("");
@@ -247,16 +160,16 @@ export default function AdminOrderDetailsPage() {
   const [productSearch, setProductSearch] = useState("");
   const [productResults, setProductResults] = useState<ProductOption[]>([]);
   const [productSearching, setProductSearching] = useState(false);
-  const [addingProductId, setAddingProductId] = useState<string | null>(null);
+  const [addingProductId, setAddingProductId] = useState<null | string>(null);
   const [refunding, setRefunding] = useState(false);
 
   const [addressFindQuery, setAddressFindQuery] = useState("");
   const [addressFindResults, setAddressFindResults] = useState<
-    Array<{ Id: string; Type?: string; Text: string; Description?: string }>
+    { Description?: string; Id: string; Text: string; Type?: string }[]
   >([]);
   const [addressFindOpen, setAddressFindOpen] = useState(false);
   const [addressFindLoading, setAddressFindLoading] = useState(false);
-  const addressFindDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(
+  const addressFindDebounceRef = useRef<null | ReturnType<typeof setTimeout>>(
     null,
   );
 
@@ -329,12 +242,12 @@ export default function AdminOrderDetailsPage() {
           return;
         }
         const data = (await res.json()) as {
-          Items?: Array<{
-            Id: string;
-            Type?: string;
-            Text: string;
+          Items?: {
             Description?: string;
-          }>;
+            Id: string;
+            Text: string;
+            Type?: string;
+          }[];
         };
         const items = (data.Items ?? []).filter(
           (i) => !i.Type || i.Type === "Address",
@@ -397,19 +310,19 @@ export default function AdminOrderDetailsPage() {
       );
       if (!res.ok) return;
       const json = (await res.json()) as {
-        items: Array<{
+        items: {
           id: string;
+          imageUrl: null | string;
           name: string;
-          imageUrl: string | null;
           priceCents: number;
-        }>;
+        }[];
       };
       setProductResults(
         (json.items ?? []).map((p) => ({
           id: p.id,
+          imageUrl: p.imageUrl ?? null,
           name: p.name,
           priceCents: p.priceCents,
-          imageUrl: p.imageUrl ?? null,
         })),
       );
     } finally {
@@ -423,12 +336,12 @@ export default function AdminOrderDetailsPage() {
       setAddingProductId(productId);
       try {
         const res = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
             addItems: [{ productId, quantity }],
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -460,10 +373,10 @@ export default function AdminOrderDetailsPage() {
     setError(null);
     try {
       const res = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ paymentStatus: "refunded" }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -484,30 +397,30 @@ export default function AdminOrderDetailsPage() {
     setSaving(true);
     try {
       const res = await fetch(`${API_BASE}/api/admin/orders/${orderId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
-          paymentStatus: paymentStatus || undefined,
-          fulfillmentStatus: fulfillmentStatus || undefined,
           customerNote: customerNote || null,
-          internalNotes: internalNotes || null,
-          shippingFeeCents,
-          taxCents,
           discountPercent,
-          shippingName: shippingName || null,
-          shippingAddress1: shippingAddress1 || null,
-          shippingAddress2: shippingAddress2 || null,
-          shippingCity: shippingCity || null,
-          shippingStateCode: shippingStateCode || null,
-          shippingZip: shippingZip || null,
-          shippingCountryCode: shippingCountryCode || null,
-          shippingPhone: shippingPhone || null,
+          fulfillmentStatus: fulfillmentStatus || undefined,
+          internalNotes: internalNotes || null,
           items: order.items.map((i) => ({
             id: i.id,
             quantity: itemQuantities[i.id] ?? i.quantity,
           })),
+          paymentStatus: paymentStatus || undefined,
+          shippingAddress1: shippingAddress1 || null,
+          shippingAddress2: shippingAddress2 || null,
+          shippingCity: shippingCity || null,
+          shippingCountryCode: shippingCountryCode || null,
+          shippingFeeCents,
+          shippingName: shippingName || null,
+          shippingPhone: shippingPhone || null,
+          shippingStateCode: shippingStateCode || null,
+          shippingZip: shippingZip || null,
+          taxCents,
         }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       });
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -543,8 +456,12 @@ export default function AdminOrderDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin" aria-hidden />
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
+        <Loader2 aria-hidden className="h-8 w-8 animate-spin" />
       </div>
     );
   }
@@ -553,12 +470,20 @@ export default function AdminOrderDetailsPage() {
     return (
       <div className="space-y-4">
         <Link
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/orders"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           ← Back to orders
         </Link>
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       </div>
@@ -582,13 +507,13 @@ export default function AdminOrderDetailsPage() {
   const countryOptions =
     order?.allowedCountryCodes && order.allowedCountryCodes.length > 0
       ? [
-          { value: "", label: "Select country" },
+          { label: "Select country", value: "" },
           ...order.allowedCountryCodes
             .map(
               (code) =>
                 ALL_COUNTRY_OPTIONS.find((o) => o.value === code) ?? {
-                  value: code,
                   label: code,
+                  value: code,
                 },
             )
             .filter((o) => o.value !== ""),
@@ -597,11 +522,19 @@ export default function AdminOrderDetailsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div className="flex items-center gap-4">
           <Link
+            className={`
+              text-sm font-medium text-muted-foreground
+              hover:text-foreground
+            `}
             href="/orders"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             ← Back to orders
           </Link>
@@ -610,10 +543,10 @@ export default function AdminOrderDetailsPage() {
           </h2>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" onClick={handleSave} disabled={saving}>
+          <Button disabled={saving} onClick={handleSave} type="button">
             {saving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                <Loader2 aria-hidden className="mr-2 h-4 w-4 animate-spin" />
                 Saving…
               </>
             ) : (
@@ -621,20 +554,20 @@ export default function AdminOrderDetailsPage() {
             )}
           </Button>
           <Button
-            type="button"
-            variant="outline"
-            onClick={() => void handleRefund()}
+            aria-label="Mark order as refunded"
             disabled={
               refunding ||
               paymentStatus === "refunded" ||
               paymentStatus === "refund_pending"
             }
-            aria-label="Mark order as refunded"
+            onClick={() => void handleRefund()}
+            type="button"
+            variant="outline"
           >
             {refunding ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+              <Loader2 aria-hidden className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Undo2 className="mr-2 h-4 w-4" aria-hidden />
+              <Undo2 aria-hidden className="mr-2 h-4 w-4" />
             )}
             Refund
           </Button>
@@ -642,7 +575,12 @@ export default function AdminOrderDetailsPage() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
@@ -656,16 +594,31 @@ export default function AdminOrderDetailsPage() {
           className={cn(
             "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
             (paymentStatus ?? "pending").toLowerCase() === "pending"
-              ? "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
+              ? `
+                bg-sky-100 text-sky-800
+                dark:bg-sky-900/40 dark:text-sky-200
+              `
               : (paymentStatus ?? "pending").toLowerCase() === "paid"
-                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+                ? `
+                  bg-emerald-100 text-emerald-800
+                  dark:bg-emerald-900/40 dark:text-emerald-200
+                `
                 : (paymentStatus ?? "pending").toLowerCase() ===
                     "refund_pending"
-                  ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                  ? `
+                    bg-amber-100 text-amber-800
+                    dark:bg-amber-900/40 dark:text-amber-200
+                  `
                   : (paymentStatus ?? "pending").toLowerCase() === "refunded" ||
                       (paymentStatus ?? "pending").toLowerCase() === "cancelled"
-                    ? "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200"
-                    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                    ? `
+                      bg-red-100 text-red-800
+                      dark:bg-red-900/40 dark:text-red-200
+                    `
+                    : `
+                      bg-slate-100 text-slate-700
+                      dark:bg-slate-800 dark:text-slate-200
+                    `,
           )}
         >
           Payment:{" "}
@@ -679,17 +632,32 @@ export default function AdminOrderDetailsPage() {
           className={cn(
             "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
             (fulfillmentStatus ?? "unfulfilled").toLowerCase() === "fulfilled"
-              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200"
+              ? `
+                bg-emerald-100 text-emerald-800
+                dark:bg-emerald-900/40 dark:text-emerald-200
+              `
               : (fulfillmentStatus ?? "unfulfilled").toLowerCase() ===
                   "unfulfilled"
-                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200"
+                ? `
+                  bg-amber-100 text-amber-800
+                  dark:bg-amber-900/40 dark:text-amber-200
+                `
                 : (fulfillmentStatus ?? "unfulfilled").toLowerCase() ===
                     "on_hold"
-                  ? "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  ? `
+                    bg-slate-100 text-slate-700
+                    dark:bg-slate-800 dark:text-slate-200
+                  `
                   : (fulfillmentStatus ?? "unfulfilled").toLowerCase() ===
                       "partially_fulfilled"
-                    ? "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200"
-                    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+                    ? `
+                      bg-sky-100 text-sky-800
+                      dark:bg-sky-900/40 dark:text-sky-200
+                    `
+                    : `
+                      bg-slate-100 text-slate-700
+                      dark:bg-slate-800 dark:text-slate-200
+                    `,
           )}
         >
           Fulfillment:{" "}
@@ -725,10 +693,10 @@ export default function AdminOrderDetailsPage() {
                 Payment status
               </span>
               <select
-                value={paymentStatus}
-                onChange={(e) => setPaymentStatus(e.target.value)}
-                className={cn(inputClass, "max-w-[180px]")}
                 aria-label="Payment status"
+                className={cn(inputClass, "max-w-[180px]")}
+                onChange={(e) => setPaymentStatus(e.target.value)}
+                value={paymentStatus}
               >
                 {PAYMENT_STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -742,10 +710,10 @@ export default function AdminOrderDetailsPage() {
                 Fulfillment status
               </span>
               <select
-                value={fulfillmentStatus}
-                onChange={(e) => setFulfillmentStatus(e.target.value)}
-                className={cn(inputClass, "max-w-[180px]")}
                 aria-label="Fulfillment status"
+                className={cn(inputClass, "max-w-[180px]")}
+                onChange={(e) => setFulfillmentStatus(e.target.value)}
+                value={fulfillmentStatus}
               >
                 {FULFILLMENT_STATUS_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -761,8 +729,11 @@ export default function AdminOrderDetailsPage() {
                 </span>
                 <p className="text-sm">
                   <Link
+                    className={`
+                      font-medium text-primary
+                      hover:underline
+                    `}
                     href={`/customers/${order.user.id}`}
-                    className="font-medium text-primary hover:underline"
                   >
                     {order.user.name || order.user.email}
                   </Link>
@@ -785,48 +756,55 @@ export default function AdminOrderDetailsPage() {
         <CardContent className="space-y-2">
           <div className="flex gap-2">
             <input
-              id="add-product"
-              type="text"
-              placeholder="Search products by name…"
+              aria-label="Search products"
               className={inputClass}
-              value={productSearch}
+              id="add-product"
               onChange={(e) => setProductSearch(e.target.value)}
               onKeyDown={(e) =>
                 e.key === "Enter" && (e.preventDefault(), searchProducts())
               }
-              aria-label="Search products"
+              placeholder="Search products by name…"
+              type="text"
+              value={productSearch}
             />
             <Button
+              disabled={productSearching}
+              onClick={() => searchProducts()}
               type="button"
               variant="secondary"
-              onClick={() => searchProducts()}
-              disabled={productSearching}
             >
               {productSearching ? "Searching…" : "Search"}
             </Button>
           </div>
           {productResults.length > 0 && (
-            <ul className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-border p-2">
+            <ul
+              className={`
+              max-h-48 space-y-1 overflow-y-auto rounded-md border border-border
+              p-2
+            `}
+            >
               {productResults.map((p) => (
                 <li
+                  className={`
+                    flex items-center justify-between gap-2 rounded px-2 py-1.5
+                    text-sm
+                    hover:bg-muted/50
+                  `}
                   key={p.id}
-                  className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-muted/50"
                 >
                   <span className="min-w-0 truncate font-medium">{p.name}</span>
-                  <span className="tabular-nums text-muted-foreground">
+                  <span className="text-muted-foreground tabular-nums">
                     {formatCents(p.priceCents)}
                   </span>
                   <div className="flex items-center gap-1">
                     <input
-                      type="number"
-                      min={1}
-                      defaultValue={1}
                       className={cn(inputClass, "w-16")}
+                      defaultValue={1}
                       id={`qty-add-${p.id}`}
+                      min={1}
+                      type="number"
                     />
                     <Button
-                      type="button"
-                      size="sm"
                       disabled={addingProductId === p.id}
                       onClick={() => {
                         const input = document.getElementById(
@@ -838,6 +816,8 @@ export default function AdminOrderDetailsPage() {
                         );
                         handleAddProduct(p.id, qty);
                       }}
+                      size="sm"
+                      type="button"
                     >
                       {addingProductId === p.id ? "Adding…" : "Add"}
                     </Button>
@@ -863,13 +843,18 @@ export default function AdminOrderDetailsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
-                    <th className="pb-2 pr-4">Product</th>
-                    <th className="pb-2 pr-4">Variant</th>
-                    <th className="pb-2 pr-4 text-right">Quantity</th>
-                    <th className="pb-2 pr-4 text-right">Price</th>
-                    <th className="pb-2 pr-4 text-right">Total</th>
-                    <th className="pb-2 w-10" scope="col">
+                  <tr
+                    className={`
+                    border-b border-border text-left text-xs font-medium
+                    text-muted-foreground
+                  `}
+                  >
+                    <th className="pr-4 pb-2">Product</th>
+                    <th className="pr-4 pb-2">Variant</th>
+                    <th className="pr-4 pb-2 text-right">Quantity</th>
+                    <th className="pr-4 pb-2 text-right">Price</th>
+                    <th className="pr-4 pb-2 text-right">Total</th>
+                    <th className="w-10 pb-2" scope="col">
                       <span className="sr-only">Remove</span>
                     </th>
                   </tr>
@@ -877,23 +862,36 @@ export default function AdminOrderDetailsPage() {
                 <tbody>
                   {order.items.map((item) => (
                     <tr
+                      className={`
+                        border-b border-border
+                        last:border-0
+                      `}
                       key={item.id}
-                      className="border-b border-border last:border-0"
                     >
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2">
-                          <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded border bg-muted">
+                          <div
+                            className={`
+                            relative flex h-10 w-10 shrink-0 overflow-hidden
+                            rounded border bg-muted
+                          `}
+                          >
                             {item.imageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img
-                                src={item.imageUrl}
                                 alt=""
                                 className="size-full object-cover"
-                                width={40}
                                 height={40}
+                                src={item.imageUrl}
+                                width={40}
                               />
                             ) : (
-                              <span className="flex size-full items-center justify-center text-xs text-muted-foreground">
+                              <span
+                                className={`
+                                flex size-full items-center justify-center
+                                text-xs text-muted-foreground
+                              `}
+                              >
                                 —
                               </span>
                             )}
@@ -906,24 +904,24 @@ export default function AdminOrderDetailsPage() {
                       <td className="py-3 pr-4 text-muted-foreground">—</td>
                       <td className="py-3 pr-4 text-right">
                         <input
+                          aria-label={`Quantity for ${item.name}`}
+                          className={cn(inputClass, "w-20 text-right")}
                           id={`qty-${item.id}`}
-                          type="number"
                           min={0}
-                          value={itemQuantities[item.id] ?? item.quantity}
                           onChange={(e) =>
                             updateItemQty(
                               item.id,
                               Number.parseInt(e.target.value, 10) || 0,
                             )
                           }
-                          className={cn(inputClass, "w-20 text-right")}
-                          aria-label={`Quantity for ${item.name}`}
+                          type="number"
+                          value={itemQuantities[item.id] ?? item.quantity}
                         />
                       </td>
                       <td className="py-3 pr-4 text-right tabular-nums">
                         {formatCents(item.priceCents)}
                       </td>
-                      <td className="py-3 text-right tabular-nums font-medium">
+                      <td className="py-3 text-right font-medium tabular-nums">
                         {formatCents(
                           item.priceCents *
                             (itemQuantities[item.id] ?? item.quantity),
@@ -931,11 +929,14 @@ export default function AdminOrderDetailsPage() {
                       </td>
                       <td className="py-3 pl-2 text-right">
                         <button
-                          type="button"
-                          className="rounded p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                           aria-label={`Remove ${item.name} from order`}
-                          title="Remove item (save to apply)"
+                          className={`
+                            rounded p-1.5 text-muted-foreground
+                            hover:bg-destructive/10 hover:text-destructive
+                          `}
                           onClick={() => updateItemQty(item.id, 0)}
+                          title="Remove item (save to apply)"
+                          type="button"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -950,62 +951,73 @@ export default function AdminOrderDetailsPage() {
       </Card>
 
       {/* Shipping address + Shipping/taxes side by side (50% each) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div
+        className={`
+        grid grid-cols-1 gap-6
+        lg:grid-cols-2
+      `}
+      >
         <Card>
           <CardHeader>
             <CardTitle>Shipping Address</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
             <div>
-              <label htmlFor="shipping-name" className={labelClass}>
+              <label className={labelClass} htmlFor="shipping-name">
                 Name
               </label>
               <input
-                id="shipping-name"
-                type="text"
-                placeholder="Full name"
-                value={shippingName}
-                onChange={(e) => setShippingName(e.target.value)}
                 className={inputClass}
+                id="shipping-name"
+                onChange={(e) => setShippingName(e.target.value)}
+                placeholder="Full name"
+                type="text"
+                value={shippingName}
               />
             </div>
             <div className="relative">
-              <label htmlFor="address-finder" className={labelClass}>
-                <MapPin className="mr-1.5 inline-block h-4 w-4" aria-hidden />
+              <label className={labelClass} htmlFor="address-finder">
+                <MapPin aria-hidden className="mr-1.5 inline-block h-4 w-4" />
                 Find address
               </label>
               <input
+                autoComplete="off"
+                className={inputClass}
                 id="address-finder"
-                type="text"
-                placeholder="Start typing address or postcode…"
-                value={addressFindQuery}
+                onBlur={() => setTimeout(() => setAddressFindOpen(false), 200)}
                 onChange={(e) => setAddressFindQuery(e.target.value)}
                 onFocus={() =>
                   addressFindResults.length > 0 && setAddressFindOpen(true)
                 }
-                onBlur={() => setTimeout(() => setAddressFindOpen(false), 200)}
-                className={inputClass}
-                autoComplete="off"
+                placeholder="Start typing address or postcode…"
+                type="text"
+                value={addressFindQuery}
               />
               {addressFindLoading && (
-                <span className="absolute right-3 top-9 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                <span className="absolute top-9 right-3 text-muted-foreground">
+                  <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
                 </span>
               )}
               {addressFindOpen && addressFindResults.length > 0 && (
                 <ul
-                  className="absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md border border-input bg-background py-1 shadow-md"
+                  className={`
+                    absolute z-10 mt-1 max-h-48 w-full overflow-auto rounded-md
+                    border border-input bg-background py-1 shadow-md
+                  `}
                   role="listbox"
                 >
                   {addressFindResults.map((item) => (
                     <li key={item.Id} role="option">
                       <button
-                        type="button"
-                        className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                        className={`
+                          w-full px-3 py-2 text-left text-sm
+                          hover:bg-muted
+                        `}
                         onMouseDown={(e) => {
                           e.preventDefault();
                           selectAddressFromLoqate(item.Id);
                         }}
+                        type="button"
                       >
                         {item.Text}
                         {item.Description ? (
@@ -1020,68 +1032,68 @@ export default function AdminOrderDetailsPage() {
               )}
             </div>
             <div>
-              <label htmlFor="shipping-address1" className={labelClass}>
+              <label className={labelClass} htmlFor="shipping-address1">
                 Address line 1
               </label>
               <input
-                id="shipping-address1"
-                type="text"
-                placeholder="Street address"
-                value={shippingAddress1}
-                onChange={(e) => setShippingAddress1(e.target.value)}
                 className={inputClass}
+                id="shipping-address1"
+                onChange={(e) => setShippingAddress1(e.target.value)}
+                placeholder="Street address"
+                type="text"
+                value={shippingAddress1}
               />
             </div>
             <div>
-              <label htmlFor="shipping-address2" className={labelClass}>
+              <label className={labelClass} htmlFor="shipping-address2">
                 Address line 2
               </label>
               <input
-                id="shipping-address2"
-                type="text"
-                placeholder="Apartment, suite, etc."
-                value={shippingAddress2}
-                onChange={(e) => setShippingAddress2(e.target.value)}
                 className={inputClass}
+                id="shipping-address2"
+                onChange={(e) => setShippingAddress2(e.target.value)}
+                placeholder="Apartment, suite, etc."
+                type="text"
+                value={shippingAddress2}
               />
             </div>
             <div>
-              <label htmlFor="shipping-phone" className={labelClass}>
+              <label className={labelClass} htmlFor="shipping-phone">
                 Phone (required for Printful)
               </label>
               <input
-                id="shipping-phone"
-                type="tel"
-                placeholder="+1 234 567 8900"
-                value={shippingPhone}
-                onChange={(e) => setShippingPhone(e.target.value)}
                 className={inputClass}
+                id="shipping-phone"
+                onChange={(e) => setShippingPhone(e.target.value)}
+                placeholder="+1 234 567 8900"
+                type="tel"
+                value={shippingPhone}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="shipping-city" className={labelClass}>
+                <label className={labelClass} htmlFor="shipping-city">
                   City
                 </label>
                 <input
-                  id="shipping-city"
-                  type="text"
-                  placeholder="City"
-                  value={shippingCity}
-                  onChange={(e) => setShippingCity(e.target.value)}
                   className={inputClass}
+                  id="shipping-city"
+                  onChange={(e) => setShippingCity(e.target.value)}
+                  placeholder="City"
+                  type="text"
+                  value={shippingCity}
                 />
               </div>
               <div>
-                <label htmlFor="shipping-state" className={labelClass}>
+                <label className={labelClass} htmlFor="shipping-state">
                   State / Province
                 </label>
                 {isUS ? (
                   <select
-                    id="shipping-state"
-                    value={shippingStateCode}
-                    onChange={(e) => setShippingStateCode(e.target.value)}
                     className={inputClass}
+                    id="shipping-state"
+                    onChange={(e) => setShippingStateCode(e.target.value)}
+                    value={shippingStateCode}
                   >
                     {US_STATE_OPTIONS.map((opt) => (
                       <option key={opt.value || "empty"} value={opt.value}>
@@ -1091,39 +1103,39 @@ export default function AdminOrderDetailsPage() {
                   </select>
                 ) : (
                   <input
-                    id="shipping-state"
-                    type="text"
-                    placeholder="State (2-letter)"
-                    value={shippingStateCode}
-                    onChange={(e) => setShippingStateCode(e.target.value)}
                     className={inputClass}
+                    id="shipping-state"
+                    onChange={(e) => setShippingStateCode(e.target.value)}
+                    placeholder="State (2-letter)"
+                    type="text"
+                    value={shippingStateCode}
                   />
                 )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="shipping-postal" className={labelClass}>
+                <label className={labelClass} htmlFor="shipping-postal">
                   Postal code
                 </label>
                 <input
-                  id="shipping-postal"
-                  type="text"
-                  placeholder="Postal code"
-                  value={shippingZip}
-                  onChange={(e) => setShippingZip(e.target.value)}
                   className={inputClass}
+                  id="shipping-postal"
+                  onChange={(e) => setShippingZip(e.target.value)}
+                  placeholder="Postal code"
+                  type="text"
+                  value={shippingZip}
                 />
               </div>
               <div>
-                <label htmlFor="shipping-country" className={labelClass}>
+                <label className={labelClass} htmlFor="shipping-country">
                   Country
                 </label>
                 <select
-                  id="shipping-country"
-                  value={shippingCountryCode}
-                  onChange={(e) => setShippingCountryCode(e.target.value)}
                   className={inputClass}
+                  id="shipping-country"
+                  onChange={(e) => setShippingCountryCode(e.target.value)}
+                  value={shippingCountryCode}
                 >
                   {countryOptions.map((opt) => (
                     <option key={opt.value || "empty"} value={opt.value}>
@@ -1149,17 +1161,15 @@ export default function AdminOrderDetailsPage() {
               <p className="text-sm">{order.shippingMethod || "—"}</p>
             </div>
             <div>
-              <label htmlFor="shipping-fee" className={labelClass}>
+              <label className={labelClass} htmlFor="shipping-fee">
                 Shipping cost
               </label>
               <div className="flex items-center gap-1">
                 <span className="text-muted-foreground">$</span>
                 <input
+                  className={cn(inputClass, "w-24")}
                   id="shipping-fee"
-                  type="number"
                   min={0}
-                  step={0.01}
-                  value={shippingFeeCents / 100}
                   onChange={(e) =>
                     setShippingFeeCents(
                       Math.round(
@@ -1167,22 +1177,22 @@ export default function AdminOrderDetailsPage() {
                       ),
                     )
                   }
-                  className={cn(inputClass, "w-24")}
+                  step={0.01}
+                  type="number"
+                  value={shippingFeeCents / 100}
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="tax-cents" className={labelClass}>
+              <label className={labelClass} htmlFor="tax-cents">
                 Tax
               </label>
               <div className="flex items-center gap-1">
                 <span className="text-muted-foreground">$</span>
                 <input
+                  className={cn(inputClass, "w-24")}
                   id="tax-cents"
-                  type="number"
                   min={0}
-                  step={0.01}
-                  value={taxCents / 100}
                   onChange={(e) =>
                     setTaxCents(
                       Math.round(
@@ -1190,20 +1200,21 @@ export default function AdminOrderDetailsPage() {
                       ),
                     )
                   }
-                  className={cn(inputClass, "w-24")}
+                  step={0.01}
+                  type="number"
+                  value={taxCents / 100}
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="discount-percent" className={labelClass}>
+              <label className={labelClass} htmlFor="discount-percent">
                 Discount (%)
               </label>
               <input
+                className={cn(inputClass, "w-24")}
                 id="discount-percent"
-                type="number"
-                min={0}
                 max={100}
-                value={discountPercent}
+                min={0}
                 onChange={(e) =>
                   setDiscountPercent(
                     Math.max(
@@ -1212,7 +1223,8 @@ export default function AdminOrderDetailsPage() {
                     ),
                   )
                 }
-                className={cn(inputClass, "w-24")}
+                type="number"
+                value={discountPercent}
               />
             </div>
           </CardContent>
@@ -1248,7 +1260,11 @@ export default function AdminOrderDetailsPage() {
               {formatCents(Math.round((subtotalCents * discountPercent) / 100))}
             </span>
           </div>
-          <div className="flex justify-between border-t border-border pt-4 font-medium">
+          <div
+            className={`
+            flex justify-between border-t border-border pt-4 font-medium
+          `}
+          >
             <span>Total</span>
             <span className="tabular-nums">{formatCents(totalCents)}</span>
           </div>
@@ -1285,10 +1301,13 @@ export default function AdminOrderDetailsPage() {
                   );
                   return explorerUrl ? (
                     <a
+                      className={`
+                        max-w-[280px] truncate font-mono text-blue-600 underline
+                        hover:text-blue-800
+                      `}
                       href={explorerUrl}
-                      target="_blank"
                       rel="noopener noreferrer"
-                      className="max-w-[280px] truncate font-mono text-blue-600 underline hover:text-blue-800"
+                      target="_blank"
                       title={order.cryptoPayment.txHash}
                     >
                       {order.cryptoPayment.txHash.slice(0, 10)}…
@@ -1338,7 +1357,7 @@ export default function AdminOrderDetailsPage() {
               <div className="flex flex-col gap-1 text-sm">
                 <span className="text-muted-foreground">Payer wallet</span>
                 <span
-                  className="break-all font-mono text-xs select-all"
+                  className="font-mono text-xs break-all select-all"
                   title={order.cryptoPayment.payerWallet}
                 >
                   {order.cryptoPayment.payerWallet}
@@ -1361,10 +1380,13 @@ export default function AdminOrderDetailsPage() {
                 <span className="text-muted-foreground">Tracking #</span>
                 {order.tracking.trackingUrl ? (
                   <a
+                    className={`
+                      font-mono text-blue-600 underline
+                      hover:text-blue-800
+                    `}
                     href={order.tracking.trackingUrl}
-                    target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-blue-600 underline hover:text-blue-800"
+                    target="_blank"
                   >
                     {order.tracking.trackingNumber}
                   </a>
@@ -1410,18 +1432,26 @@ export default function AdminOrderDetailsPage() {
                 Array.isArray(order.tracking.events) &&
                 order.tracking.events.length > 0 && (
                   <div className="mt-2 border-t pt-2">
-                    <p className="mb-1 text-xs font-medium text-muted-foreground">
+                    <p
+                      className={`
+                      mb-1 text-xs font-medium text-muted-foreground
+                    `}
+                    >
                       Tracking events
                     </p>
                     <ul className="space-y-1">
                       {(
-                        order.tracking.events as Array<{
-                          triggered_at: string;
+                        order.tracking.events as {
                           description: string;
-                        }>
+                          triggered_at: string;
+                        }[]
                       ).map((ev, i) => (
-                        <li key={i} className="flex items-start gap-2 text-xs">
-                          <span className="whitespace-nowrap text-muted-foreground">
+                        <li className="flex items-start gap-2 text-xs" key={i}>
+                          <span
+                            className={`
+                            whitespace-nowrap text-muted-foreground
+                          `}
+                          >
                             {new Date(ev.triggered_at).toLocaleDateString()}
                           </span>
                           <span>{ev.description}</span>
@@ -1442,25 +1472,25 @@ export default function AdminOrderDetailsPage() {
             </p>
             <div className="grid grid-cols-3 gap-2">
               <input
-                type="text"
-                placeholder="Tracking #"
+                className={cn(inputClass, "text-xs")}
                 defaultValue={order.tracking?.trackingNumber ?? ""}
                 id="tracking-number"
-                className={cn(inputClass, "text-xs")}
+                placeholder="Tracking #"
+                type="text"
               />
               <input
-                type="text"
-                placeholder="Tracking URL"
+                className={cn(inputClass, "text-xs")}
                 defaultValue={order.tracking?.trackingUrl ?? ""}
                 id="tracking-url"
-                className={cn(inputClass, "text-xs")}
+                placeholder="Tracking URL"
+                type="text"
               />
               <input
-                type="text"
-                placeholder="Carrier"
+                className={cn(inputClass, "text-xs")}
                 defaultValue={order.tracking?.carrier ?? ""}
                 id="tracking-carrier"
-                className={cn(inputClass, "text-xs")}
+                placeholder="Carrier"
+                type="text"
               />
             </div>
           </div>
@@ -1499,7 +1529,12 @@ export default function AdminOrderDetailsPage() {
               </div>
             )}
             {order.printfulCosts.totalCents != null && (
-              <div className="flex justify-between border-t border-border pt-2 text-sm font-medium">
+              <div
+                className={`
+                flex justify-between border-t border-border pt-2 text-sm
+                font-medium
+              `}
+              >
                 <span>Your Margin</span>
                 <span className="tabular-nums">
                   {formatCents(
@@ -1519,40 +1554,40 @@ export default function AdminOrderDetailsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div>
-            <label htmlFor="customer-note" className={labelClass}>
+            <label className={labelClass} htmlFor="customer-note">
               Customer&apos;s note
             </label>
             <textarea
-              id="customer-note"
-              rows={3}
-              placeholder="Optional note from the customer"
-              value={customerNote}
-              onChange={(e) => setCustomerNote(e.target.value)}
-              className={cn(inputClass, "resize-y")}
               aria-label="Customer's note"
+              className={cn(inputClass, "resize-y")}
+              id="customer-note"
+              onChange={(e) => setCustomerNote(e.target.value)}
+              placeholder="Optional note from the customer"
+              rows={3}
+              value={customerNote}
             />
           </div>
           <div>
-            <label htmlFor="internal-notes" className={labelClass}>
+            <label className={labelClass} htmlFor="internal-notes">
               Internal notes (admin only)
             </label>
             <textarea
-              id="internal-notes"
-              rows={4}
-              placeholder="Internal notes about this order"
-              value={internalNotes}
-              onChange={(e) => setInternalNotes(e.target.value)}
-              className={cn(inputClass, "resize-y")}
               aria-label="Internal notes"
+              className={cn(inputClass, "resize-y")}
+              id="internal-notes"
+              onChange={(e) => setInternalNotes(e.target.value)}
+              placeholder="Internal notes about this order"
+              rows={4}
+              value={internalNotes}
             />
           </div>
         </CardContent>
       </Card>
 
-      <Button type="button" onClick={handleSave} disabled={saving}>
+      <Button disabled={saving} onClick={handleSave} type="button">
         {saving ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+            <Loader2 aria-hidden className="mr-2 h-4 w-4 animate-spin" />
             Saving…
           </>
         ) : (
@@ -1561,4 +1596,91 @@ export default function AdminOrderDetailsPage() {
       </Button>
     </div>
   );
+}
+
+function formatCents(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
+  }).format(cents / 100);
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** Get block explorer URL for a transaction hash based on network/chainId */
+function getBlockExplorerUrl(
+  txHash: string,
+  network: null | string,
+  chainId: null | number,
+): null | string {
+  if (!txHash) return null;
+
+  // Normalize network name
+  const net = (network ?? "").toLowerCase();
+
+  // Solana
+  if (net === "solana" || net === "sol") {
+    return `https://solscan.io/tx/${txHash}`;
+  }
+
+  // EVM chains by chainId
+  if (chainId) {
+    switch (chainId) {
+      case 1: // Ethereum mainnet
+        return `https://etherscan.io/tx/${txHash}`;
+      case 10: // Optimism
+        return `https://optimistic.etherscan.io/tx/${txHash}`;
+      case 56: // BNB Chain
+        return `https://bscscan.com/tx/${txHash}`;
+      case 137: // Polygon
+        return `https://polygonscan.com/tx/${txHash}`;
+      case 8453: // Base
+        return `https://basescan.org/tx/${txHash}`;
+      case 42161: // Arbitrum
+        return `https://arbiscan.io/tx/${txHash}`;
+      case 43114: // Avalanche
+        return `https://snowtrace.io/tx/${txHash}`;
+      default:
+        break;
+    }
+  }
+
+  // Fallback by network name
+  if (net === "ethereum" || net === "eth") {
+    return `https://etherscan.io/tx/${txHash}`;
+  }
+  if (net === "base") {
+    return `https://basescan.org/tx/${txHash}`;
+  }
+  if (net === "polygon" || net === "matic") {
+    return `https://polygonscan.com/tx/${txHash}`;
+  }
+  if (net === "arbitrum" || net === "arb") {
+    return `https://arbiscan.io/tx/${txHash}`;
+  }
+  if (net === "bnb" || net === "bsc") {
+    return `https://bscscan.com/tx/${txHash}`;
+  }
+  if (net === "avalanche" || net === "avax") {
+    return `https://snowtrace.io/tx/${txHash}`;
+  }
+  if (net === "optimism" || net === "op") {
+    return `https://optimistic.etherscan.io/tx/${txHash}`;
+  }
+
+  // Bitcoin (BTCPay)
+  if (net === "bitcoin" || net === "btc") {
+    return `https://mempool.space/tx/${txHash}`;
+  }
+
+  return null;
 }

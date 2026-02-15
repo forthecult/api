@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const statusParam =
       request.nextUrl.searchParams.get("status")?.trim().toLowerCase() ?? "";
-    const statusFilter: StatusFilter | "" = STATUS_VALUES.includes(
+    const statusFilter: "" | StatusFilter = STATUS_VALUES.includes(
       statusParam as StatusFilter,
     )
       ? (statusParam as StatusFilter)
@@ -58,16 +58,16 @@ export async function GET(request: NextRequest) {
     const [rows, countResult] = await Promise.all([
       db
         .select({
-          id: refundRequestsTable.id,
-          orderId: refundRequestsTable.orderId,
-          status: refundRequestsTable.status,
-          refundAddress: refundRequestsTable.refundAddress,
           createdAt: refundRequestsTable.createdAt,
-          updatedAt: refundRequestsTable.updatedAt,
+          id: refundRequestsTable.id,
           orderEmail: ordersTable.email,
-          orderTotalCents: ordersTable.totalCents,
-          orderPaymentStatus: ordersTable.paymentStatus,
+          orderId: refundRequestsTable.orderId,
           orderPaymentMethod: ordersTable.paymentMethod,
+          orderPaymentStatus: ordersTable.paymentStatus,
+          orderTotalCents: ordersTable.totalCents,
+          refundAddress: refundRequestsTable.refundAddress,
+          status: refundRequestsTable.status,
+          updatedAt: refundRequestsTable.updatedAt,
         })
         .from(refundRequestsTable)
         .innerJoin(ordersTable, eq(refundRequestsTable.orderId, ordersTable.id))
@@ -86,21 +86,21 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       items: rows.map((r) => ({
-        id: r.id,
-        orderId: r.orderId,
-        status: r.status,
-        refundAddress: r.refundAddress ?? null,
         createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
+        id: r.id,
         order: {
           email: r.orderEmail,
-          totalCents: r.orderTotalCents,
-          paymentStatus: r.orderPaymentStatus,
           paymentMethod: r.orderPaymentMethod,
+          paymentStatus: r.orderPaymentStatus,
+          totalCents: r.orderTotalCents,
         },
+        orderId: r.orderId,
+        refundAddress: r.refundAddress ?? null,
+        status: r.status,
+        updatedAt: r.updatedAt,
       })),
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });

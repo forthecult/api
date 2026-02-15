@@ -11,37 +11,39 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-type SortBy = "memberTier" | "scope" | "discountValue" | "createdAt";
+type SortBy = "createdAt" | "discountValue" | "memberTier" | "scope";
 type SortOrder = "asc" | "desc";
 
-type TierDiscountRow = {
-  id: string;
-  memberTier: number;
-  label: string | null;
-  scope: string;
+interface TierDiscountRow {
+  appliesToEsim: null | number;
+  categoryId: null | string;
+  createdAt: string;
   discountType: string;
   discountValue: number;
-  categoryId: string | null;
-  productId: string | null;
-  appliesToEsim: number | null;
-  createdAt: string;
+  id: string;
+  label: null | string;
+  memberTier: number;
+  productId: null | string;
+  scope: string;
   updatedAt: string;
-};
+}
 
 const SCOPE_LABELS: Record<string, string> = {
-  shipping: "Shipping",
-  order: "Order",
   category: "Category",
+  order: "Order",
   product: "Product / eSIM",
+  shipping: "Shipping",
 };
 
-type ListResponse = { items: TierDiscountRow[] };
+interface ListResponse {
+  items: TierDiscountRow[];
+}
 
 export default function AdminTierDiscountsPage() {
   const [data, setData] = useState<ListResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
+  const [deletingId, setDeletingId] = useState<null | string>(null);
   const [sortBy, setSortBy] = useState<SortBy>("memberTier");
   const [sortOrder, setSortOrder] = useState<SortOrder>("asc");
 
@@ -93,18 +95,21 @@ export default function AdminTierDiscountsPage() {
   );
 
   const SortHeader = ({ column, label }: { column: SortBy; label: string }) => (
-    <th className="whitespace-nowrap p-4 font-medium" scope="col">
+    <th className="p-4 font-medium whitespace-nowrap" scope="col">
       <button
-        type="button"
+        className={`
+          flex items-center gap-1 text-left
+          hover:text-foreground
+        `}
         onClick={() => handleSort(column)}
-        className="flex items-center gap-1 text-left hover:text-foreground"
+        type="button"
       >
         {label}
         {sortBy === column ? (
           sortOrder === "asc" ? (
-            <ArrowUp className="size-3.5" aria-hidden />
+            <ArrowUp aria-hidden className="size-3.5" />
           ) : (
-            <ArrowDown className="size-3.5" aria-hidden />
+            <ArrowDown aria-hidden className="size-3.5" />
           )
         ) : null}
       </button>
@@ -118,8 +123,8 @@ export default function AdminTierDiscountsPage() {
       setDeletingId(id);
       try {
         const res = await fetch(`${API_BASE}/api/admin/tier-discounts/${id}`, {
-          method: "DELETE",
           credentials: "include",
+          method: "DELETE",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -148,7 +153,12 @@ export default function AdminTierDiscountsPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button className="mt-2" onClick={() => void fetchList()} type="button">
           Retry
@@ -159,12 +169,17 @@ export default function AdminTierDiscountsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <h2 className="text-2xl font-semibold tracking-tight">
           Member tier discounts
         </h2>
         <Link href="/tier-discounts/create">
-          <Button type="button" className="gap-2">
+          <Button className="gap-2" type="button">
             <Plus className="size-4" />
             Add tier discount
           </Button>
@@ -181,14 +196,24 @@ export default function AdminTierDiscountsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data?.items.length === 0 ? (
-            <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] flex-col items-center justify-center gap-2 p-8
+              text-muted-foreground
+            `}
+            >
               <p>No tier discounts yet.</p>
               <Link href="/tier-discounts/create">
-                <Button type="button" variant="outline" className="gap-2">
+                <Button className="gap-2" type="button" variant="outline">
                   <Plus className="size-4" />
                   Add tier discount
                 </Button>
@@ -198,12 +223,17 @@ export default function AdminTierDiscountsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr
+                    className={`
+                    border-b bg-muted/50 text-left text-xs font-semibold
+                    tracking-wider text-muted-foreground uppercase
+                  `}
+                  >
                     <SortHeader column="memberTier" label="Tier" />
-                    <th className="whitespace-nowrap p-4 font-medium">Label</th>
-                    <th className="whitespace-nowrap p-4 font-medium">Scope</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Label</th>
+                    <th className="p-4 font-medium whitespace-nowrap">Scope</th>
                     <SortHeader column="discountValue" label="Value" />
-                    <th className="whitespace-nowrap p-4 font-medium">
+                    <th className="p-4 font-medium whitespace-nowrap">
                       Action
                     </th>
                   </tr>
@@ -211,12 +241,17 @@ export default function AdminTierDiscountsPage() {
                 <tbody>
                   {data.items.map((row) => (
                     <tr
+                      className={`
+                        border-b transition-colors
+                        hover:bg-muted/30
+                      `}
                       key={row.id}
-                      className="border-b transition-colors hover:bg-muted/30"
                     >
                       <td className="p-4 font-medium">Tier {row.memberTier}</td>
                       <td
-                        className="max-w-[200px] truncate p-4 text-muted-foreground"
+                        className={`
+                          max-w-[200px] truncate p-4 text-muted-foreground
+                        `}
                         title={row.label ?? ""}
                       >
                         {row.label || "—"}
@@ -229,21 +264,29 @@ export default function AdminTierDiscountsPage() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Link
+                            className={`
+                              rounded p-1.5 text-muted-foreground
+                              transition-colors
+                              hover:bg-muted hover:text-foreground
+                            `}
                             href={`/tier-discounts/${row.id}`}
-                            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             title="Edit"
                           >
                             <Pencil className="size-4" />
                           </Link>
                           <button
-                            type="button"
-                            disabled={deletingId === row.id}
-                            onClick={() => handleDelete(row.id)}
                             className={cn(
-                              "rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
+                              `
+                                rounded p-1.5 text-muted-foreground
+                                transition-colors
+                                hover:bg-destructive/10 hover:text-destructive
+                              `,
                               deletingId === row.id && "opacity-50",
                             )}
+                            disabled={deletingId === row.id}
+                            onClick={() => handleDelete(row.id)}
                             title="Delete"
+                            type="button"
                           >
                             <Trash2 className="size-4" />
                           </button>

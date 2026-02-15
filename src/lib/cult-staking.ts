@@ -13,12 +13,12 @@
  * that file from client components.
  */
 
-import { type Connection, PublicKey as PublicKeyClass } from "@solana/web3.js";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
+import { type Connection, PublicKey as PublicKeyClass } from "@solana/web3.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -32,30 +32,21 @@ export const LOCK_30_DAYS = 2_592_000;
 /** 365 days in seconds (12 months). */
 export const LOCK_12_MONTHS = 31_536_000;
 
-export type LockDuration = typeof LOCK_30_DAYS | typeof LOCK_12_MONTHS;
+export type LockDuration = typeof LOCK_12_MONTHS | typeof LOCK_30_DAYS;
 
-/** Validate that a duration is one of the two allowed values. */
-export function isValidLockDuration(d: number): d is LockDuration {
-  return d === LOCK_30_DAYS || d === LOCK_12_MONTHS;
+/** Pool PDA: seeds = ["pool"] */
+export function getPoolPda(
+  programId: PublicKeyClass,
+): [PublicKeyClass, number] {
+  return PublicKeyClass.findProgramAddressSync([STAKE_POOL_SEED], programId);
 }
-
-/** Human-readable label for a lock duration. */
-export function lockDurationLabel(d: number): string {
-  if (d === LOCK_30_DAYS) return "30 days";
-  if (d === LOCK_12_MONTHS) return "12 months";
-  return `${d}s`;
-}
-
-// ---------------------------------------------------------------------------
-// Program ID & PDAs
-// ---------------------------------------------------------------------------
 
 /**
  * Staking program ID.
  * Set CULT_STAKING_PROGRAM_ID (server) / NEXT_PUBLIC_CULT_STAKING_PROGRAM_ID (client).
  * Returns null if not set (staking disabled).
  */
-export function getStakingProgramId(): PublicKeyClass | null {
+export function getStakingProgramId(): null | PublicKeyClass {
   const id =
     typeof process.env.CULT_STAKING_PROGRAM_ID === "string"
       ? process.env.CULT_STAKING_PROGRAM_ID.trim()
@@ -66,12 +57,9 @@ export function getStakingProgramId(): PublicKeyClass | null {
   return new PublicKeyClass(id);
 }
 
-/** Pool PDA: seeds = ["pool"] */
-export function getPoolPda(
-  programId: PublicKeyClass,
-): [PublicKeyClass, number] {
-  return PublicKeyClass.findProgramAddressSync([STAKE_POOL_SEED], programId);
-}
+// ---------------------------------------------------------------------------
+// Program ID & PDAs
+// ---------------------------------------------------------------------------
 
 /** User stake PDA: seeds = ["stake", pool.key(), user.key()] */
 export function getUserStakePda(
@@ -98,6 +86,18 @@ export function getVaultAta(
     tokenProgram,
     ASSOCIATED_TOKEN_PROGRAM_ID,
   );
+}
+
+/** Validate that a duration is one of the two allowed values. */
+export function isValidLockDuration(d: number): d is LockDuration {
+  return d === LOCK_30_DAYS || d === LOCK_12_MONTHS;
+}
+
+/** Human-readable label for a lock duration. */
+export function lockDurationLabel(d: number): string {
+  if (d === LOCK_30_DAYS) return "30 days";
+  if (d === LOCK_12_MONTHS) return "12 months";
+  return `${d}s`;
 }
 
 // ---------------------------------------------------------------------------
@@ -138,94 +138,48 @@ const POOL_ACCOUNT_SIZE = 89;
 // Parsed types
 // ---------------------------------------------------------------------------
 
-export type ParsedUserStake = {
-  owner: string;
-  amount: bigint;
-  stakedAt: number; // Unix timestamp (seconds)
-  lockDuration: number; // seconds
-  lockedUntil: number; // Unix timestamp (seconds)
-};
-
-export type ParsedStakePool = {
-  mint: string;
-  vault: string;
-  bump: number;
-  totalStakers: number;
-  totalStaked: bigint;
-};
-
-export type StakerEntry = {
-  owner: string;
-  amount: bigint;
-  stakedAt: number;
-  lockDuration: number;
-  lockedUntil: number;
-};
-
-// ---------------------------------------------------------------------------
-// Account parsing
-// ---------------------------------------------------------------------------
-
-/** Parse a UserStake account's data buffer. Returns null if data is too small. */
-export function parseUserStake(data: Buffer): ParsedUserStake | null {
-  if (data.length < USER_STAKE_ACCOUNT_SIZE) return null;
-  return {
-    owner: new PublicKeyClass(
-      data.subarray(USER_STAKE_OWNER_OFFSET, USER_STAKE_OWNER_OFFSET + 32),
-    ).toBase58(),
-    amount: data.readBigUInt64LE(USER_STAKE_AMOUNT_OFFSET),
-    stakedAt: Number(data.readBigInt64LE(USER_STAKE_STAKED_AT_OFFSET)),
-    lockDuration: Number(data.readBigUInt64LE(USER_STAKE_LOCK_DURATION_OFFSET)),
-    lockedUntil: Number(data.readBigInt64LE(USER_STAKE_LOCKED_UNTIL_OFFSET)),
-  };
-}
-
-/** Parse a StakePool account's data buffer. Returns null if data is too small. */
-export function parseStakePool(data: Buffer): ParsedStakePool | null {
-  if (data.length < POOL_ACCOUNT_SIZE) return null;
-  return {
-    mint: new PublicKeyClass(data.subarray(8, 8 + 32)).toBase58(),
-    vault: new PublicKeyClass(data.subarray(8 + 32, 8 + 32 + 32)).toBase58(),
-    bump: data.readUInt8(8 + 32 + 32),
-    totalStakers: Number(data.readBigUInt64LE(POOL_TOTAL_STAKERS_OFFSET)),
-    totalStaked: data.readBigUInt64LE(POOL_TOTAL_STAKED_OFFSET),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Lock status helpers
-// ---------------------------------------------------------------------------
-
-export type LockStatus = {
+export interface LockStatus {
+  /** Human-readable label for the lock duration (e.g. "30 days"). */
+  durationLabel: string;
   isLocked: boolean;
   /** Seconds remaining until unlock. 0 if already unlocked. */
   secondsRemaining: number;
   /** ISO string of the unlock date. */
   unlocksAt: string;
-  /** Human-readable label for the lock duration (e.g. "30 days"). */
-  durationLabel: string;
-};
+}
 
-/** Compute lock status from a parsed user stake. */
-export function getLockStatus(stake: ParsedUserStake): LockStatus {
-  const nowSec = Math.floor(Date.now() / 1000);
-  const remaining = Math.max(0, stake.lockedUntil - nowSec);
-  return {
-    isLocked: remaining > 0,
-    secondsRemaining: remaining,
-    unlocksAt: new Date(stake.lockedUntil * 1000).toISOString(),
-    durationLabel: lockDurationLabel(stake.lockDuration),
-  };
+export interface ParsedStakePool {
+  bump: number;
+  mint: string;
+  totalStaked: bigint;
+  totalStakers: number;
+  vault: string;
+}
+
+export interface ParsedUserStake {
+  amount: bigint;
+  lockDuration: number; // seconds
+  lockedUntil: number; // Unix timestamp (seconds)
+  owner: string;
+  stakedAt: number; // Unix timestamp (seconds)
 }
 
 // ---------------------------------------------------------------------------
-// Fetch helpers
+// Account parsing
 // ---------------------------------------------------------------------------
+
+export interface StakerEntry {
+  amount: bigint;
+  lockDuration: number;
+  lockedUntil: number;
+  owner: string;
+  stakedAt: number;
+}
 
 /** Fetch all stakers with their full stake metadata. */
 export async function fetchAllStakers(
   connection: Connection,
-  programId: PublicKeyClass | null,
+  programId: null | PublicKeyClass,
 ): Promise<StakerEntry[]> {
   if (!programId) return [];
   try {
@@ -237,16 +191,38 @@ export async function fetchAllStakers(
         const parsed = parseUserStake(account.data as Buffer);
         if (!parsed || parsed.amount === 0n) return null;
         return {
-          owner: parsed.owner,
           amount: parsed.amount,
-          stakedAt: parsed.stakedAt,
           lockDuration: parsed.lockDuration,
           lockedUntil: parsed.lockedUntil,
+          owner: parsed.owner,
+          stakedAt: parsed.stakedAt,
         };
       })
       .filter((e): e is StakerEntry => e !== null);
   } catch {
     return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Lock status helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch pool stats (total stakers, total staked). Returns null if pool not initialized.
+ */
+export async function fetchPoolStats(
+  connection: Connection,
+  programId: null | PublicKeyClass,
+): Promise<null | ParsedStakePool> {
+  if (!programId) return null;
+  try {
+    const [poolPda] = getPoolPda(programId);
+    const account = await connection.getAccountInfo(poolPda);
+    if (!account) return null;
+    return parseStakePool(account.data as Buffer);
+  } catch {
+    return null;
   }
 }
 
@@ -256,8 +232,8 @@ export async function fetchAllStakers(
  */
 export async function fetchStakedBalance(
   connection: Connection,
-  programId: PublicKeyClass | null,
-  walletAddress: string | PublicKeyClass,
+  programId: null | PublicKeyClass,
+  walletAddress: PublicKeyClass | string,
 ): Promise<bigint> {
   if (!programId) return 0n;
   try {
@@ -276,14 +252,18 @@ export async function fetchStakedBalance(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Fetch helpers
+// ---------------------------------------------------------------------------
+
 /**
  * Fetch full stake info for a wallet. Returns null if no stake account exists.
  */
 export async function fetchUserStake(
   connection: Connection,
-  programId: PublicKeyClass | null,
-  walletAddress: string | PublicKeyClass,
-): Promise<ParsedUserStake | null> {
+  programId: null | PublicKeyClass,
+  walletAddress: PublicKeyClass | string,
+): Promise<null | ParsedUserStake> {
   if (!programId) return null;
   try {
     const [poolPda] = getPoolPda(programId);
@@ -300,20 +280,40 @@ export async function fetchUserStake(
   }
 }
 
-/**
- * Fetch pool stats (total stakers, total staked). Returns null if pool not initialized.
- */
-export async function fetchPoolStats(
-  connection: Connection,
-  programId: PublicKeyClass | null,
-): Promise<ParsedStakePool | null> {
-  if (!programId) return null;
-  try {
-    const [poolPda] = getPoolPda(programId);
-    const account = await connection.getAccountInfo(poolPda);
-    if (!account) return null;
-    return parseStakePool(account.data as Buffer);
-  } catch {
-    return null;
-  }
+/** Compute lock status from a parsed user stake. */
+export function getLockStatus(stake: ParsedUserStake): LockStatus {
+  const nowSec = Math.floor(Date.now() / 1000);
+  const remaining = Math.max(0, stake.lockedUntil - nowSec);
+  return {
+    durationLabel: lockDurationLabel(stake.lockDuration),
+    isLocked: remaining > 0,
+    secondsRemaining: remaining,
+    unlocksAt: new Date(stake.lockedUntil * 1000).toISOString(),
+  };
+}
+
+/** Parse a StakePool account's data buffer. Returns null if data is too small. */
+export function parseStakePool(data: Buffer): null | ParsedStakePool {
+  if (data.length < POOL_ACCOUNT_SIZE) return null;
+  return {
+    bump: data.readUInt8(8 + 32 + 32),
+    mint: new PublicKeyClass(data.subarray(8, 8 + 32)).toBase58(),
+    totalStaked: data.readBigUInt64LE(POOL_TOTAL_STAKED_OFFSET),
+    totalStakers: Number(data.readBigUInt64LE(POOL_TOTAL_STAKERS_OFFSET)),
+    vault: new PublicKeyClass(data.subarray(8 + 32, 8 + 32 + 32)).toBase58(),
+  };
+}
+
+/** Parse a UserStake account's data buffer. Returns null if data is too small. */
+export function parseUserStake(data: Buffer): null | ParsedUserStake {
+  if (data.length < USER_STAKE_ACCOUNT_SIZE) return null;
+  return {
+    amount: data.readBigUInt64LE(USER_STAKE_AMOUNT_OFFSET),
+    lockDuration: Number(data.readBigUInt64LE(USER_STAKE_LOCK_DURATION_OFFSET)),
+    lockedUntil: Number(data.readBigInt64LE(USER_STAKE_LOCKED_UNTIL_OFFSET)),
+    owner: new PublicKeyClass(
+      data.subarray(USER_STAKE_OWNER_OFFSET, USER_STAKE_OWNER_OFFSET + 32),
+    ).toBase58(),
+    stakedAt: Number(data.readBigInt64LE(USER_STAKE_STAKED_AT_OFFSET)),
+  };
 }

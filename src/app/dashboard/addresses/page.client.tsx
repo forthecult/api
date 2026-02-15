@@ -4,15 +4,16 @@ import { Loader2, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
+import type { Address } from "~/db/schema/addresses/types";
+import type { MappedShippingAddress } from "~/lib/loqate";
+
 import {
   createAddress,
   deleteAddress,
   setDefaultAddress,
   updateAddress,
 } from "~/app/dashboard/addresses/actions";
-import type { Address } from "~/db/schema/addresses/types";
 import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
-import type { MappedShippingAddress } from "~/lib/loqate";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
@@ -31,27 +32,27 @@ interface AddressesPageClientProps {
   addresses: Address[];
 }
 
-const COUNTRY_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "Select country" },
-  { value: "US", label: "United States" },
-  { value: "CA", label: "Canada" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "AU", label: "Australia" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "ES", label: "Spain" },
-  { value: "IT", label: "Italy" },
-  { value: "NL", label: "Netherlands" },
-  { value: "JP", label: "Japan" },
-  { value: "NZ", label: "New Zealand" },
-  { value: "HK", label: "Hong Kong" },
-  { value: "AE", label: "United Arab Emirates" },
-  { value: "IL", label: "Israel" },
-  { value: "KR", label: "South Korea" },
-  { value: "MX", label: "Mexico" },
-  { value: "BR", label: "Brazil" },
-  { value: "IN", label: "India" },
-  { value: "OTHER", label: "Other" },
+const COUNTRY_OPTIONS: { label: string; value: string }[] = [
+  { label: "Select country", value: "" },
+  { label: "United States", value: "US" },
+  { label: "Canada", value: "CA" },
+  { label: "United Kingdom", value: "GB" },
+  { label: "Australia", value: "AU" },
+  { label: "Germany", value: "DE" },
+  { label: "France", value: "FR" },
+  { label: "Spain", value: "ES" },
+  { label: "Italy", value: "IT" },
+  { label: "Netherlands", value: "NL" },
+  { label: "Japan", value: "JP" },
+  { label: "New Zealand", value: "NZ" },
+  { label: "Hong Kong", value: "HK" },
+  { label: "United Arab Emirates", value: "AE" },
+  { label: "Israel", value: "IL" },
+  { label: "South Korea", value: "KR" },
+  { label: "Mexico", value: "MX" },
+  { label: "Brazil", value: "BR" },
+  { label: "India", value: "IN" },
+  { label: "Other", value: "OTHER" },
 ];
 
 const emptyForm = {
@@ -64,24 +65,6 @@ const emptyForm = {
   stateCode: "",
   zip: "",
 };
-
-function countryLabel(countryCode: string): string {
-  const opt = COUNTRY_OPTIONS.find(
-    (o) => o.value === countryCode || o.label === countryCode,
-  );
-  return opt?.label ?? countryCode;
-}
-
-function formatAddress(addr: Address): string {
-  const parts = [
-    addr.address1,
-    addr.address2,
-    [addr.city, addr.stateCode].filter(Boolean).join(", "),
-    addr.zip,
-    countryLabel(addr.countryCode),
-  ].filter(Boolean);
-  return parts.join(", ");
-}
 
 export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
   const router = useRouter();
@@ -97,17 +80,17 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
       address1: mapped.street,
       address2: mapped.apartment || prev.address2,
       city: mapped.city,
+      countryCode: mapped.country || prev.countryCode,
       stateCode: mapped.state,
       zip: mapped.zip,
-      countryCode: mapped.country || prev.countryCode,
     }));
   }, []);
 
   const loqate = useLoqateAutocomplete({
-    text: form.address1 ?? "",
     country: form.countryCode,
     enabled: addOpen,
     onSelect: onLoqateSelect,
+    text: form.address1 ?? "",
   });
 
   const openAdd = () => {
@@ -216,7 +199,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
             My Addresses
           </h1>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <Dialog onOpenChange={setAddOpen} open={addOpen}>
           <DialogTrigger asChild>
             <Button onClick={openAdd} size="sm">
               <Plus className="mr-2 h-4 w-4" />
@@ -249,19 +232,19 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                   <Label htmlFor="add-address1">Address line 1 *</Label>
                   <div className="relative">
                     <Input
-                      id="add-address1"
                       aria-autocomplete="list"
                       aria-expanded={loqate.open}
+                      id="add-address1"
+                      onBlur={() => {
+                        loqate.inputFocusedRef.current = false;
+                        setTimeout(() => loqate.setOpen(false), 200);
+                      }}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, address1: e.target.value }))
                       }
                       onFocus={() => {
                         loqate.inputFocusedRef.current = true;
                         if (loqate.suggestions.length > 0) loqate.setOpen(true);
-                      }}
-                      onBlur={() => {
-                        loqate.inputFocusedRef.current = false;
-                        setTimeout(() => loqate.setOpen(false), 200);
                       }}
                       placeholder="Start typing to search address"
                       required
@@ -270,14 +253,23 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                     {loqate.open &&
                       (loqate.suggestions.length > 0 || loqate.loading) && (
                         <div
-                          className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
+                          className={`
+                            absolute top-full right-0 left-0 z-50 mt-1 max-h-60
+                            overflow-auto rounded-md border border-border
+                            bg-background shadow-lg
+                          `}
                           role="listbox"
                         >
                           {loqate.loading && loqate.suggestions.length === 0 ? (
-                            <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                            <div
+                              className={`
+                              flex items-center gap-2 px-3 py-2 text-sm
+                              text-muted-foreground
+                            `}
+                            >
                               <Loader2
-                                className="h-4 w-4 shrink-0 animate-spin"
                                 aria-hidden
+                                className="h-4 w-4 shrink-0 animate-spin"
                               />
                               Finding addresses…
                             </div>
@@ -286,17 +278,23 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                               .filter((item) => item.Type === "Address")
                               .map((item) => (
                                 <button
-                                  key={item.Id}
-                                  type="button"
                                   className={cn(
-                                    "w-full cursor-pointer px-3 py-2 text-left text-sm",
-                                    "hover:bg-muted focus:bg-muted focus:outline-none",
+                                    `
+                                      w-full cursor-pointer px-3 py-2 text-left
+                                      text-sm
+                                    `,
+                                    `
+                                      hover:bg-muted
+                                      focus:bg-muted focus:outline-none
+                                    `,
                                   )}
-                                  role="option"
+                                  key={item.Id}
                                   onMouseDown={(e) => {
                                     e.preventDefault();
                                     loqate.selectAddress(item.Id);
                                   }}
+                                  role="option"
+                                  type="button"
                                 >
                                   <span className="font-medium">
                                     {item.Text}
@@ -377,13 +375,19 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                   <div className="grid gap-2">
                     <Label htmlFor="add-countryCode">Country *</Label>
                     <select
+                      className={`
+                        flex h-9 w-full rounded-md border border-input
+                        bg-transparent px-3 py-1 text-sm shadow-xs
+                        transition-[color,box-shadow] outline-none
+                        focus-visible:ring-2 focus-visible:ring-ring
+                        disabled:cursor-not-allowed disabled:opacity-50
+                      `}
                       id="add-countryCode"
-                      required
-                      value={form.countryCode}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, countryCode: e.target.value }))
                       }
-                      className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                      required
+                      value={form.countryCode}
                     >
                       {COUNTRY_OPTIONS.map((opt) => (
                         <option key={opt.value || "empty"} value={opt.value}>
@@ -397,9 +401,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
               <DialogFooter>
                 <Button
                   disabled={pending}
+                  onClick={() => setAddOpen(false)}
                   type="button"
                   variant="outline"
-                  onClick={() => setAddOpen(false)}
                 >
                   Cancel
                 </Button>
@@ -414,7 +418,11 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
 
       {addresses.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
+          <CardContent
+            className={`
+            flex flex-col items-center justify-center py-12
+          `}
+          >
             <p className="text-muted-foreground">No saved addresses yet.</p>
             <Button className="mt-4" onClick={openAdd} variant="outline">
               <Plus className="mr-2 h-4 w-4" />
@@ -427,15 +435,28 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
           {addresses.map((addr) => (
             <li key={addr.id}>
               <Card>
-                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                <CardHeader
+                  className={`
+                  flex flex-row items-start justify-between space-y-0 pb-2
+                `}
+                >
                   <div>
                     {addr.label && (
-                      <span className="text-sm font-medium text-muted-foreground">
+                      <span
+                        className={`
+                        text-sm font-medium text-muted-foreground
+                      `}
+                      >
                         {addr.label}
                       </span>
                     )}
                     {addr.isDefault && (
-                      <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      <span
+                        className={`
+                        ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-xs
+                        font-medium text-primary
+                      `}
+                      >
                         Default
                       </span>
                     )}
@@ -443,25 +464,25 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                   <div className="flex gap-2">
                     {!addr.isDefault && (
                       <Button
+                        onClick={() => handleSetDefault(addr.id)}
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleSetDefault(addr.id)}
                       >
                         Set default
                       </Button>
                     )}
                     <Button
+                      onClick={() => openEdit(addr)}
                       size="icon"
                       variant="ghost"
-                      onClick={() => openEdit(addr)}
                     >
                       <Pencil className="h-4 w-4" />
                       <span className="sr-only">Edit</span>
                     </Button>
                     <Button
+                      onClick={() => handleDelete(addr.id)}
                       size="icon"
                       variant="ghost"
-                      onClick={() => handleDelete(addr.id)}
                     >
                       <Trash2 className="h-4 w-4" />
                       <span className="sr-only">Delete</span>
@@ -477,7 +498,7 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
         </ul>
       )}
 
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+      <Dialog onOpenChange={setEditOpen} open={editOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit address</DialogTitle>
@@ -573,13 +594,19 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
                 <div className="grid gap-2">
                   <Label htmlFor="edit-countryCode">Country *</Label>
                   <select
+                    className={`
+                      flex h-9 w-full rounded-md border border-input
+                      bg-transparent px-3 py-1 text-sm shadow-xs
+                      transition-[color,box-shadow] outline-none
+                      focus-visible:ring-2 focus-visible:ring-ring
+                      disabled:cursor-not-allowed disabled:opacity-50
+                    `}
                     id="edit-countryCode"
-                    required
-                    value={form.countryCode}
                     onChange={(e) =>
                       setForm((f) => ({ ...f, countryCode: e.target.value }))
                     }
-                    className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                    required
+                    value={form.countryCode}
                   >
                     {COUNTRY_OPTIONS.map((opt) => (
                       <option key={opt.value || "empty"} value={opt.value}>
@@ -593,9 +620,9 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
             <DialogFooter>
               <Button
                 disabled={pending}
+                onClick={() => setEditOpen(false)}
                 type="button"
                 variant="outline"
-                onClick={() => setEditOpen(false)}
               >
                 Cancel
               </Button>
@@ -608,4 +635,22 @@ export function AddressesPageClient({ addresses }: AddressesPageClientProps) {
       </Dialog>
     </div>
   );
+}
+
+function countryLabel(countryCode: string): string {
+  const opt = COUNTRY_OPTIONS.find(
+    (o) => o.value === countryCode || o.label === countryCode,
+  );
+  return opt?.label ?? countryCode;
+}
+
+function formatAddress(addr: Address): string {
+  const parts = [
+    addr.address1,
+    addr.address2,
+    [addr.city, addr.stateCode].filter(Boolean).join(", "),
+    addr.zip,
+    countryLabel(addr.countryCode),
+  ].filter(Boolean);
+  return parts.join(", ");
 }

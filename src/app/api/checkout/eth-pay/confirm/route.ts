@@ -1,41 +1,37 @@
+import type { Chain } from "viem";
+
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import {
   createPublicClient,
-  http,
-  parseAbiItem,
+  decodeEventLog,
   formatEther,
   formatUnits,
+  http,
   isAddress,
-  decodeEventLog,
+  parseAbiItem,
 } from "viem";
-import type { Chain } from "viem";
 import {
-  mainnet,
   arbitrum,
   base,
-  polygon,
-  bsc,
-  optimism,
-  sepolia,
   baseSepolia,
+  bsc,
+  mainnet,
+  optimism,
+  polygon,
+  sepolia,
 } from "viem/chains";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
+import { ERC20ABI } from "~/lib/contracts/abis";
 import {
   getRpcUrl,
   getTokenAddress,
   TOKEN_DECIMALS,
 } from "~/lib/contracts/evm-payment";
 import { onOrderCreated } from "~/lib/create-user-notification";
-import { ERC20ABI } from "~/lib/contracts/abis";
-import {
-  getClientIp,
-  RATE_LIMITS,
-  checkRateLimit,
-  rateLimitResponse,
-} from "~/lib/rate-limit";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
@@ -44,24 +40,29 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
+import {
+  checkRateLimit,
+  getClientIp,
+  RATE_LIMITS,
+  rateLimitResponse,
+} from "~/lib/rate-limit";
 
 // Chain configurations for viem (typed as Chain to allow different block explorer names)
 const CHAINS: Record<number, Chain> = {
   1: mainnet,
-  42161: arbitrum,
-  8453: base,
-  137: polygon,
-  56: bsc,
   10: optimism,
-  11155111: sepolia,
+  56: bsc,
+  137: polygon,
+  8453: base,
+  42161: arbitrum,
   84532: baseSepolia,
+  11155111: sepolia,
 };
 
 interface ConfirmPaymentBody {
   orderId: string;
-  txHash: string;
   payerAddress?: string;
+  txHash: string;
 }
 
 /**
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as ConfirmPaymentBody;
-    const { orderId, txHash, payerAddress } = body;
+    const { orderId, payerAddress, txHash } = body;
 
     if (!orderId) {
       return NextResponse.json({ error: "orderId required" }, { status: 400 });
@@ -122,9 +123,9 @@ export async function POST(request: NextRequest) {
     // If already confirmed, return success
     if (order.paymentStatus === "paid" || order.paymentStatus === "confirmed") {
       return NextResponse.json({
+        message: "Payment already confirmed",
         orderId,
         status: "confirmed",
-        message: "Payment already confirmed",
         txHash: order.cryptoTxHash || txHash,
       });
     }
@@ -284,8 +285,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Insufficient payment amount",
-          received: receivedFormatted,
           expected: expectedFormatted,
+          received: receivedFormatted,
           token,
         },
         { status: 400 },
@@ -305,10 +306,10 @@ export async function POST(request: NextRequest) {
       await tx
         .update(ordersTable)
         .set({
-          paymentStatus: "paid",
-          status: "processing",
           cryptoTxHash: txHash,
           payerWalletAddress: payerAddress || senderAddress,
+          paymentStatus: "paid",
+          status: "processing",
           updatedAt: new Date(),
         })
         .where(eq(ordersTable.id, orderId));
@@ -317,9 +318,9 @@ export async function POST(request: NextRequest) {
 
     if (!updated) {
       return NextResponse.json({
+        message: "Payment already confirmed",
         orderId,
         status: "confirmed",
-        message: "Payment already confirmed",
         txHash: order.cryptoTxHash || txHash,
       });
     }
@@ -394,16 +395,16 @@ export async function POST(request: NextRequest) {
         : formatUnits(amountReceived, decimals);
 
     return NextResponse.json({
-      orderId,
-      status: "confirmed",
-      paymentStatus: "paid",
-      txHash,
       amount: amountReceived.toString(),
       amountFormatted,
-      token,
       chainId,
-      payer: senderAddress,
       message: "Payment confirmed successfully!",
+      orderId,
+      payer: senderAddress,
+      paymentStatus: "paid",
+      status: "confirmed",
+      token,
+      txHash,
       ...((printfulError || printifyError || esimError) && {
         fulfillmentError: [printfulError, printifyError, esimError]
           .filter(Boolean)

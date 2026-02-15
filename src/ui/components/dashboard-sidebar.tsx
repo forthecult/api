@@ -14,37 +14,31 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { signOut } from "~/lib/auth-client";
-import { useRouter } from "next/navigation";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 
-type Counts = {
-  orders: number;
-  wishlist: number;
+interface Counts {
   addresses: number;
-  supportTickets: number;
+  orders: number;
   paymentMethods: number;
-};
+  supportTickets: number;
+  wishlist: number;
+}
 
 const defaultCounts: Counts = {
-  orders: 0,
-  wishlist: 0,
   addresses: 0,
-  supportTickets: 0,
+  orders: 0,
   paymentMethods: 0,
+  supportTickets: 0,
+  wishlist: 0,
 };
 
 /** Dispatch from pages that change counts (e.g. new/deleted support ticket) so sidebar refetches. */
 export const DASHBOARD_COUNTS_INVALIDATE = "dashboard:counts-invalidate";
-
-function fetchCounts(): Promise<Counts> {
-  return fetch("/api/dashboard/counts", { credentials: "include" })
-    .then((res) => (res.ok ? res.json() : defaultCounts))
-    .catch(() => defaultCounts);
-}
 
 export function DashboardSidebar() {
   const pathname = usePathname();
@@ -83,10 +77,16 @@ export function DashboardSidebar() {
 
   const navLinkClass = (href: string) =>
     cn(
-      "flex items-center justify-between gap-2 rounded-r-md px-3 py-2.5 text-sm font-medium transition-colors",
+      `
+        flex items-center justify-between gap-2 rounded-r-md px-3 py-2.5 text-sm
+        font-medium transition-colors
+      `,
       isActive(href)
         ? "border-l-4 border-primary bg-primary/5 text-primary"
-        : "border-l-4 border-transparent text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+        : `
+          border-l-4 border-transparent text-muted-foreground
+          hover:bg-muted/50 hover:text-foreground
+        `,
     );
 
   return (
@@ -96,72 +96,77 @@ export function DashboardSidebar() {
         "flex flex-col gap-6",
       )}
     >
-      <nav className="flex flex-1 flex-col gap-6" aria-label="Dashboard">
+      <nav aria-label="Dashboard" className="flex flex-1 flex-col gap-6">
         <div>
-          <h2 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2
+            className={`
+            mb-2 px-3 text-xs font-semibold tracking-wider text-muted-foreground
+            uppercase
+          `}
+          >
             Dashboard
           </h2>
           <ul className="space-y-0.5">
             <li>
               <Link
-                href="/dashboard/orders"
                 className={navLinkClass("/dashboard/orders")}
+                href="/dashboard/orders"
               >
                 <span className="flex items-center gap-2">
-                  <Package className="h-4 w-4 shrink-0" aria-hidden />
+                  <Package aria-hidden className="h-4 w-4 shrink-0" />
                   Orders
                 </span>
-                <span className="tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground tabular-nums">
                   {counts.orders}
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/wishlist"
                 className={navLinkClass("/dashboard/wishlist")}
+                href="/dashboard/wishlist"
               >
                 <span className="flex items-center gap-2">
-                  <Heart className="h-4 w-4 shrink-0" aria-hidden />
+                  <Heart aria-hidden className="h-4 w-4 shrink-0" />
                   Wishlist
                 </span>
-                <span className="tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground tabular-nums">
                   {counts.wishlist}
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/support-tickets"
                 className={navLinkClass("/dashboard/support-tickets")}
+                href="/dashboard/support-tickets"
               >
                 <span className="flex items-center gap-2">
-                  <Headphones className="h-4 w-4 shrink-0" aria-hidden />
+                  <Headphones aria-hidden className="h-4 w-4 shrink-0" />
                   Support Tickets
                 </span>
-                <span className="tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground tabular-nums">
                   {counts.supportTickets}
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/affiliate"
                 className={navLinkClass("/dashboard/affiliate")}
+                href="/dashboard/affiliate"
               >
                 <span className="flex items-center gap-2">
-                  <Link2 className="h-4 w-4 shrink-0" aria-hidden />
+                  <Link2 aria-hidden className="h-4 w-4 shrink-0" />
                   Affiliate
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/esim"
                 className={navLinkClass("/dashboard/esim")}
+                href="/dashboard/esim"
               >
                 <span className="flex items-center gap-2">
-                  <Smartphone className="h-4 w-4 shrink-0" aria-hidden />
+                  <Smartphone aria-hidden className="h-4 w-4 shrink-0" />
                   My eSIMs
                 </span>
               </Link>
@@ -170,53 +175,58 @@ export function DashboardSidebar() {
         </div>
 
         <div>
-          <h2 className="mb-2 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <h2
+            className={`
+            mb-2 px-3 text-xs font-semibold tracking-wider text-muted-foreground
+            uppercase
+          `}
+          >
             Account Settings
           </h2>
           <ul className="space-y-0.5">
             <li>
               <Link
-                href="/dashboard/profile"
                 className={navLinkClass("/dashboard/profile")}
+                href="/dashboard/profile"
               >
                 <span className="flex items-center gap-2">
-                  <UserIcon className="h-4 w-4 shrink-0" aria-hidden />
+                  <UserIcon aria-hidden className="h-4 w-4 shrink-0" />
                   Profile Info
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/settings"
                 className={navLinkClass("/dashboard/settings")}
+                href="/dashboard/settings"
               >
                 <span className="flex items-center gap-2">
-                  <Settings className="h-4 w-4 shrink-0" aria-hidden />
+                  <Settings aria-hidden className="h-4 w-4 shrink-0" />
                   Notifications
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/security"
                 className={navLinkClass("/dashboard/security")}
+                href="/dashboard/security"
               >
                 <span className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 shrink-0" aria-hidden />
+                  <Shield aria-hidden className="h-4 w-4 shrink-0" />
                   Security
                 </span>
               </Link>
             </li>
             <li>
               <Link
-                href="/dashboard/addresses"
                 className={navLinkClass("/dashboard/addresses")}
+                href="/dashboard/addresses"
               >
                 <span className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+                  <MapPin aria-hidden className="h-4 w-4 shrink-0" />
                   Addresses
                 </span>
-                <span className="tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground tabular-nums">
                   {counts.addresses}
                 </span>
               </Link>
@@ -227,15 +237,21 @@ export function DashboardSidebar() {
 
       <div className="border-t pt-4">
         <Button
-          type="button"
-          variant="outline"
           className="w-full justify-center gap-2"
           onClick={() => void handleLogout()}
+          type="button"
+          variant="outline"
         >
-          <LogOut className="h-4 w-4" aria-hidden />
+          <LogOut aria-hidden className="h-4 w-4" />
           Logout
         </Button>
       </div>
     </aside>
   );
+}
+
+function fetchCounts(): Promise<Counts> {
+  return fetch("/api/dashboard/counts", { credentials: "include" })
+    .then((res) => (res.ok ? res.json() : defaultCounts))
+    .catch(() => defaultCounts);
 }

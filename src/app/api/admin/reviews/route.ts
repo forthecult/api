@@ -35,17 +35,17 @@ export async function GET(request: NextRequest) {
 
     const [reviews, countResult] = await Promise.all([
       db.query.productReviewsTable.findMany({
+        limit,
+        offset,
         orderBy: [desc(productReviewsTable.createdAt)],
         with: {
           product: {
-            columns: { id: true, name: true, imageUrl: true },
+            columns: { id: true, imageUrl: true, name: true },
           },
           user: {
-            columns: { id: true, email: true, name: true },
+            columns: { email: true, id: true, name: true },
           },
         },
-        limit,
-        offset,
       }),
       db
         .select({ count: sql<number>`count(*)::int` })
@@ -56,48 +56,48 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalCount / limit) || 1;
 
     const items = reviews.map((r) => {
-      const author = (r as { author?: string | null }).author ?? null;
-      const title = (r as { title?: string | null }).title ?? null;
-      const location = (r as { location?: string | null }).location ?? null;
+      const author = (r as { author?: null | string }).author ?? null;
+      const title = (r as { title?: null | string }).title ?? null;
+      const location = (r as { location?: null | string }).location ?? null;
       const productName =
-        (r as { productName?: string | null }).productName ?? null;
+        (r as { productName?: null | string }).productName ?? null;
       const productSlug =
-        (r as { productSlug?: string | null }).productSlug ?? null;
+        (r as { productSlug?: null | string }).productSlug ?? null;
       const createdAt = r.createdAt;
       return {
-        id: r.id,
-        productId: r.productId,
-        productSlug,
-        // Use linked product name, fall back to stored snapshot, then null
-        productName: r.product?.name ?? productName,
-        productImageUrl: r.product?.imageUrl ?? null,
-        customerName: r.customerName,
-        displayName: getReviewDisplayName({
-          id: r.id,
-          customerName: r.customerName,
-          showName: r.showName,
-          author,
-        }),
-        showName: r.showName,
-        userId: r.userId ?? null,
-        customerEmail: r.user?.email ?? null,
-        title,
         author,
-        location,
         comment: r.comment,
-        rating: r.rating,
-        visible: r.visible,
         createdAt:
           createdAt instanceof Date
             ? createdAt.toISOString()
             : String(createdAt ?? ""),
+        customerEmail: r.user?.email ?? null,
+        customerName: r.customerName,
+        displayName: getReviewDisplayName({
+          author,
+          customerName: r.customerName,
+          id: r.id,
+          showName: r.showName,
+        }),
+        id: r.id,
+        location,
+        productId: r.productId,
+        productImageUrl: r.product?.imageUrl ?? null,
+        // Use linked product name, fall back to stored snapshot, then null
+        productName: r.product?.name ?? productName,
+        productSlug,
+        rating: r.rating,
+        showName: r.showName,
+        title,
+        userId: r.userId ?? null,
+        visible: r.visible,
       };
     });
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });

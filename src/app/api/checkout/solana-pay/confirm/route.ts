@@ -7,13 +7,13 @@ import {
   TransactionMessage,
 } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
-import { type NextRequest, NextResponse } from "next/server";
 import { and, eq, or } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { onOrderCreated } from "~/lib/create-user-notification";
-import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
+import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
   createAndConfirmPrintfulOrder,
   hasPrintfulItems,
@@ -22,57 +22,24 @@ import {
   createAndConfirmPrintifyOrder,
   hasPrintifyItems,
 } from "~/lib/printify-orders";
-import { fulfillEsimOrder, hasEsimItems } from "~/lib/esim-fulfillment";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 import {
-  getSolanaRpcUrlServer,
-  USDC_MINT_MAINNET,
   CRUST_MINT_MAINNET,
+  getSolanaRpcUrlServer,
   PUMP_MINT_MAINNET,
   SKR_MINT_MAINNET,
   TROLL_MINT_MAINNET,
+  USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
+import { getTokenBalanceAnyProgram } from "~/lib/solana-token-utils";
 
 const NATIVE_SOL_SENTINEL = "native";
-
-/** Verify that the given signature is a native SOL transfer to depositAddress with at least expectedLamports. */
-async function verifyNativeSolTransfer(
-  connection: Connection,
-  signature: string,
-  depositAddress: PublicKey,
-  expectedLamports: number,
-): Promise<boolean> {
-  const tx = await connection.getTransaction(signature, {
-    commitment: "confirmed",
-    maxSupportedTransactionVersion: 0,
-  });
-  if (!tx?.transaction?.message) return false;
-  const message = tx.transaction.message as Parameters<
-    typeof TransactionMessage.decompile
-  >[0];
-  const txMessage = TransactionMessage.decompile(message);
-  for (const ix of txMessage.instructions) {
-    if (!ix.programId.equals(SystemProgram.programId)) continue;
-    try {
-      const decoded = SystemInstruction.decodeTransfer(ix);
-      if (
-        decoded.toPubkey.equals(depositAddress) &&
-        decoded.lamports >= expectedLamports
-      ) {
-        return true;
-      }
-    } catch {
-      // not a transfer instruction
-    }
-  }
-  return false;
-}
 
 /**
  * Mark order as paid only after verifying the Solana transfer on-chain.
@@ -90,23 +57,23 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as {
+      amount?: string;
       depositAddress?: string;
       orderId?: string;
-      reference?: string;
-      signature?: string;
-      amount?: string;
-      splToken?: string;
       /** Payer wallet address (from connected wallet) so we can link order to user when they sign up later */
       payerWalletAddress?: string;
+      reference?: string;
+      signature?: string;
+      splToken?: string;
     };
     const {
+      amount,
       depositAddress,
       orderId,
+      payerWalletAddress: payerWalletFromBody,
       reference,
       signature,
-      amount,
       splToken,
-      payerWalletAddress: payerWalletFromBody,
     } = body;
 
     const byDeposit =
@@ -134,12 +101,12 @@ export async function POST(request: NextRequest) {
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
-        solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
-        totalCents: ordersTable.totalCents,
         cryptoAmount: ordersTable.cryptoAmount,
+        id: ordersTable.id,
         paymentMethod: ordersTable.paymentMethod,
+        solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        status: ordersTable.status,
+        totalCents: ordersTable.totalCents,
       })
       .from(ordersTable)
       .where(or(...conditions))
@@ -155,7 +122,7 @@ export async function POST(request: NextRequest) {
       );
     }
     if (order.status !== "pending") {
-      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+      return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
     const depositAddressStr = order.solanaPayDepositAddress ?? depositAddress;
@@ -256,8 +223,8 @@ export async function POST(request: NextRequest) {
         let transferVerified = false;
         try {
           await validateTransfer(connection, sigTrim, {
-            recipient: depositPk,
             amount: amountBn,
+            recipient: depositPk,
             splToken: new PublicKey(splTokenMint),
           });
           transferVerified = true;
@@ -336,9 +303,9 @@ export async function POST(request: NextRequest) {
           // Store crypto payment details for admin visibility
           // Don't store the "balance-verified" sentinel as a real txid
           ...(sigTrim && !isBalanceVerified ? { cryptoTxHash: sigTrim } : {}),
-          cryptoCurrencyNetwork: "Solana",
-          cryptoCurrency: tokenDisplayName,
           cryptoAmount: serverAmount,
+          cryptoCurrency: tokenDisplayName,
+          cryptoCurrencyNetwork: "Solana",
           ...(typeof payerWalletFromBody === "string" &&
           payerWalletFromBody.trim()
             ? { payerWalletAddress: payerWalletFromBody.trim() }
@@ -349,7 +316,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!updated) {
-      return NextResponse.json({ orderId: order.id, alreadyPaid: true });
+      return NextResponse.json({ alreadyPaid: true, orderId: order.id });
     }
 
     void onOrderCreated(order.id);
@@ -429,4 +396,37 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+/** Verify that the given signature is a native SOL transfer to depositAddress with at least expectedLamports. */
+async function verifyNativeSolTransfer(
+  connection: Connection,
+  signature: string,
+  depositAddress: PublicKey,
+  expectedLamports: number,
+): Promise<boolean> {
+  const tx = await connection.getTransaction(signature, {
+    commitment: "confirmed",
+    maxSupportedTransactionVersion: 0,
+  });
+  if (!tx?.transaction?.message) return false;
+  const message = tx.transaction.message as Parameters<
+    typeof TransactionMessage.decompile
+  >[0];
+  const txMessage = TransactionMessage.decompile(message);
+  for (const ix of txMessage.instructions) {
+    if (!ix.programId.equals(SystemProgram.programId)) continue;
+    try {
+      const decoded = SystemInstruction.decodeTransfer(ix);
+      if (
+        decoded.toPubkey.equals(depositAddress) &&
+        decoded.lamports >= expectedLamports
+      ) {
+        return true;
+      }
+    } catch {
+      // not a transfer instruction
+    }
+  }
+  return false;
 }

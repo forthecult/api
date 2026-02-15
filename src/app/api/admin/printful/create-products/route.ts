@@ -2,14 +2,14 @@ import { type NextRequest, NextResponse } from "next/server";
 import { UTApi } from "uploadthing/server";
 
 import { getAdminAuth } from "~/lib/admin-api-auth";
-import { getUploadThingToken } from "~/lib/uploadthing-token";
 import {
-  fetchCatalogVariants,
   createSyncProduct,
+  fetchCatalogVariants,
   getPrintfulIfConfigured,
 } from "~/lib/printful";
 import { importSinglePrintfulProduct } from "~/lib/printful-sync";
 import { triggerMockupUploadForProduct } from "~/lib/upload-product-mockups";
+import { getUploadThingToken } from "~/lib/uploadthing-token";
 
 /**
  * POST /api/admin/printful/create-products
@@ -60,16 +60,16 @@ export async function POST(request: NextRequest) {
   let body: {
     imageBase64?: string;
     imageName?: string;
-    products?: Array<{
+    products?: {
       catalogProductId?: number;
-      title?: string;
-      description?: string;
       color?: string;
-      sizes?: string[];
-      priceCents?: number;
-      tags?: string[];
+      description?: string;
       position?: string;
-    }>;
+      priceCents?: number;
+      sizes?: string[];
+      tags?: string[];
+      title?: string;
+    }[];
   };
 
   try {
@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
       typeof payload === "object" &&
       (payload as { data?: unknown }).data != null
         ? (payload as { data: Record<string, unknown> }).data
-        : (payload as Record<string, unknown> | null);
+        : (payload as null | Record<string, unknown>);
     const fromData =
       data && typeof data === "object"
         ? ((data as { ufsUrl?: string }).ufsUrl ??
@@ -143,32 +143,32 @@ export async function POST(request: NextRequest) {
   }
 
   // 2. Create each product
-  const results: Array<{
-    success: boolean;
-    title: string;
-    syncProductId?: number;
-    localProductId?: string;
-    variantCount?: number;
+  const results: {
     error?: string;
-  }> = [];
+    localProductId?: string;
+    success: boolean;
+    syncProductId?: number;
+    title: string;
+    variantCount?: number;
+  }[] = [];
 
   for (const spec of body.products) {
     const {
       catalogProductId,
-      title,
-      description,
       color,
-      sizes,
-      priceCents,
-      tags,
+      description,
       position,
+      priceCents,
+      sizes,
+      tags,
+      title,
     } = spec;
 
     if (!catalogProductId || !title || !color || !priceCents) {
       results.push({
+        error: "catalogProductId, title, color, and priceCents are required",
         success: false,
         title: title ?? "unknown",
-        error: "catalogProductId, title, color, and priceCents are required",
       });
       continue;
     }
@@ -195,9 +195,9 @@ export async function POST(request: NextRequest) {
           ...new Set(allVariants.map((v) => v.color).filter(Boolean)),
         ];
         results.push({
+          error: `No variants found for color "${color}". Available: ${availableColors.join(", ")}`,
           success: false,
           title,
-          error: `No variants found for color "${color}". Available: ${availableColors.join(", ")}`,
         });
         continue;
       }
@@ -212,17 +212,15 @@ export async function POST(request: NextRequest) {
 
       if (filtered.length === 0) {
         results.push({
+          error: `No variants found after filtering by sizes`,
           success: false,
           title,
-          error: `No variants found after filtering by sizes`,
         });
         continue;
       }
 
       // Build sync variants
       const syncVariants = filtered.map((v) => ({
-        variant_id: v.id,
-        retail_price: (priceCents / 100).toFixed(2),
         files: [
           {
             type:
@@ -232,6 +230,8 @@ export async function POST(request: NextRequest) {
             url: imageUrl,
           },
         ],
+        retail_price: (priceCents / 100).toFixed(2),
+        variant_id: v.id,
       }));
 
       // Create sync product in Printful
@@ -280,15 +280,15 @@ export async function POST(request: NextRequest) {
       }
 
       results.push({
-        success: true,
-        title,
-        syncProductId: syncProduct.id,
         localProductId,
+        success: true,
+        syncProductId: syncProduct.id,
+        title,
         variantCount: filtered.length,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      results.push({ success: false, title, error: msg });
+      results.push({ error: msg, success: false, title });
     }
   }
 
@@ -326,9 +326,9 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    ok: true,
     imageUrl,
-    results,
     message: `Created ${results.filter((r) => r.success).length}/${results.length} products`,
+    ok: true,
+    results,
   });
 }

@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-type WishlistItem = {
-  productId: string;
+interface WishlistItem {
   product: { id: string };
-};
+  productId: string;
+}
 
 export function useWishlist() {
   const [productIds, setProductIds] = useState<Set<string>>(new Set());
@@ -38,19 +38,19 @@ export function useWishlist() {
   const addToWishlist = useCallback(async (productId: string) => {
     try {
       const res = await fetch("/api/wishlist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({ productId }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       if (res.ok) {
         setProductIds((prev) => new Set(prev).add(productId));
         return { ok: true };
       }
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      return { ok: false, error: data.error };
+      return { error: data.error, ok: false };
     } catch {
-      return { ok: false, error: "Request failed" };
+      return { error: "Request failed", ok: false };
     }
   }, []);
 
@@ -58,7 +58,7 @@ export function useWishlist() {
     try {
       const res = await fetch(
         `/api/wishlist?productId=${encodeURIComponent(productId)}`,
-        { method: "DELETE", credentials: "include" },
+        { credentials: "include", method: "DELETE" },
       );
       if (res.ok) {
         setProductIds((prev) => {
@@ -69,9 +69,9 @@ export function useWishlist() {
         return { ok: true };
       }
       const data = (await res.json().catch(() => ({}))) as { error?: string };
-      return { ok: false, error: data.error };
+      return { error: data.error, ok: false };
     } catch {
-      return { ok: false, error: "Request failed" };
+      return { error: "Request failed", ok: false };
     }
   }, []);
 
@@ -81,11 +81,11 @@ export function useWishlist() {
   );
 
   return {
-    wishlistProductIds: productIds,
-    isInWishlist,
     addToWishlist,
-    removeFromWishlist,
+    isInWishlist,
     isLoading,
     refetch: fetchWishlist,
+    removeFromWishlist,
+    wishlistProductIds: productIds,
   };
 }

@@ -1,4 +1,5 @@
 import { SEO_CONFIG } from "~/app";
+
 import { TrackOrderForm } from "./TrackOrderForm";
 
 export const metadata = {
@@ -8,9 +9,19 @@ export const metadata = {
 
 export default function TrackOrderPage() {
   return (
-    <div className="container mx-auto max-w-xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-10 text-center">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Order tracking
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">

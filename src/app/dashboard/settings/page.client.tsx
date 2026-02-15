@@ -1,13 +1,12 @@
 "use client";
 
 import { Bot, Globe, Mail, MessageCircle, Phone } from "lucide-react";
-
-import { DiscordIcon } from "~/ui/components/icons/discord";
 import Link from "next/link";
 import * as React from "react";
 
-import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
 import { useCurrentUser } from "~/lib/auth-client";
+import { NOTIFICATION_PREFS_UPDATED } from "~/lib/events";
+import { DiscordIcon } from "~/ui/components/icons/discord";
 import {
   Card,
   CardContent,
@@ -28,50 +27,48 @@ import {
 // Notification channels: Website, Email, SMS, Telegram, Discord, AI Companion
 const NOTIFICATION_CHANNELS = [
   {
+    description: "In-app notifications",
+    icon: Globe,
     id: "website",
     label: "Website",
-    icon: Globe,
-    description: "In-app notifications",
   },
-  { id: "email", label: "Email", icon: Mail, description: "Receive via email" },
-  { id: "sms", label: "SMS", icon: Phone, description: "Text messages" },
+  { description: "Receive via email", icon: Mail, id: "email", label: "Email" },
+  { description: "Text messages", icon: Phone, id: "sms", label: "SMS" },
   {
+    description: "Telegram messages",
+    icon: MessageCircle,
     id: "telegram",
     label: "Telegram",
-    icon: MessageCircle,
-    description: "Telegram messages",
     requiresTelegram: true,
   },
   {
+    description: "Discord messages",
+    icon: DiscordIcon,
     id: "discord",
     label: "Discord",
-    icon: DiscordIcon,
-    description: "Discord messages",
     requiresDiscord: true,
   },
   {
+    description: "AI assistant notifications",
+    icon: Bot,
     id: "aiCompanion",
     label: "AI Companion",
-    icon: Bot,
-    description: "AI assistant notifications",
   },
 ] as const;
 
 type ChannelId = (typeof NOTIFICATION_CHANNELS)[number]["id"];
 
-type ChannelPreferences = {
-  [K in ChannelId]: boolean;
-};
+type ChannelPreferences = Record<ChannelId, boolean>;
 
-type NotificationPrefs = {
-  hasTelegramLinked: boolean;
+interface NotificationPrefs {
   hasDiscordLinked: boolean;
-  transactional: ChannelPreferences;
+  hasTelegramLinked: boolean;
   marketing: ChannelPreferences;
+  receiveMarketing: boolean;
   // Legacy fields
   receiveOrderNotificationsViaTelegram: boolean;
-  receiveMarketing: boolean;
-};
+  transactional: ChannelPreferences;
+}
 
 export function SettingsPageClient() {
   const { user } = useCurrentUser();
@@ -101,7 +98,7 @@ export function SettingsPageClient() {
 
   const updateNotificationPref = React.useCallback(
     (
-      type: "transactional" | "marketing",
+      type: "marketing" | "transactional",
       channel: ChannelId,
       value: boolean,
     ) => {
@@ -121,9 +118,9 @@ export function SettingsPageClient() {
 
       setNotificationSaving(true);
       fetch("/api/user/notifications", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ [type]: { [channel]: value } }),
+        headers: { "Content-Type": "application/json" },
+        method: "PATCH",
       })
         .then((res) => {
           if (res?.ok) {
@@ -214,7 +211,11 @@ export function SettingsPageClient() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-semibold">Transactional</span>
-                          <span className="text-xs font-normal text-muted-foreground">
+                          <span
+                            className={`
+                            text-xs font-normal text-muted-foreground
+                          `}
+                          >
                             Orders, shipping, account
                           </span>
                         </div>
@@ -222,7 +223,11 @@ export function SettingsPageClient() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-semibold">Marketing</span>
-                          <span className="text-xs font-normal text-muted-foreground">
+                          <span
+                            className={`
+                            text-xs font-normal text-muted-foreground
+                          `}
+                          >
                             Promotions, news, offers
                           </span>
                         </div>
@@ -240,15 +245,25 @@ export function SettingsPageClient() {
                             <div className="flex items-center gap-3">
                               <div
                                 className={`
-                                    flex h-9 w-9 items-center justify-center rounded-lg
-                                    ${disabled ? "bg-muted text-muted-foreground" : "bg-primary/10 text-primary"}
-                                  `}
+                                  flex h-9 w-9 items-center justify-center
+                                  rounded-lg
+                                  ${
+                                    disabled
+                                      ? `bg-muted text-muted-foreground`
+                                      : `
+                                    bg-primary/10 text-primary
+                                  `
+                                  }
+                                `}
                               >
                                 <Icon className="h-4 w-4" />
                               </div>
                               <div className="flex flex-col">
                                 <span
-                                  className={`font-medium ${disabled ? "text-muted-foreground" : ""}`}
+                                  className={`
+                                    font-medium
+                                    ${disabled ? `text-muted-foreground` : ""}
+                                  `}
                                 >
                                   {channel.label}
                                 </span>
@@ -261,11 +276,13 @@ export function SettingsPageClient() {
                           <TableCell className="text-center">
                             <div className="flex justify-center">
                               <Checkbox
+                                aria-label={`${channel.label} transactional notifications`}
                                 checked={
                                   notificationPrefs?.transactional[
                                     channel.id
                                   ] ?? false
                                 }
+                                disabled={disabled || notificationSaving}
                                 onCheckedChange={(checked) =>
                                   updateNotificationPref(
                                     "transactional",
@@ -273,18 +290,18 @@ export function SettingsPageClient() {
                                     checked === true,
                                   )
                                 }
-                                disabled={disabled || notificationSaving}
-                                aria-label={`${channel.label} transactional notifications`}
                               />
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
                             <div className="flex justify-center">
                               <Checkbox
+                                aria-label={`${channel.label} marketing notifications`}
                                 checked={
                                   notificationPrefs?.marketing[channel.id] ??
                                   false
                                 }
+                                disabled={disabled || notificationSaving}
                                 onCheckedChange={(checked) =>
                                   updateNotificationPref(
                                     "marketing",
@@ -292,8 +309,6 @@ export function SettingsPageClient() {
                                     checked === true,
                                   )
                                 }
-                                disabled={disabled || notificationSaving}
-                                aria-label={`${channel.label} marketing notifications`}
                               />
                             </div>
                           </TableCell>
@@ -308,14 +323,22 @@ export function SettingsPageClient() {
               {!notificationPrefs?.hasTelegramLinked && (
                 <div className="rounded-lg border border-muted bg-muted/30 p-4">
                   <div className="flex items-start gap-3">
-                    <MessageCircle className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                    <MessageCircle
+                      className={`
+                      mt-0.5 h-5 w-5 text-muted-foreground
+                    `}
+                    />
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Telegram not linked</p>
                       <p className="text-sm text-muted-foreground">
                         Link your Telegram account to enable the options above.{" "}
                         <Link
+                          className={`
+                            font-medium text-primary underline
+                            underline-offset-2
+                            hover:no-underline
+                          `}
                           href="/dashboard/security"
-                          className="font-medium text-primary underline underline-offset-2 hover:no-underline"
                         >
                           Link Telegram in Security →
                         </Link>
@@ -329,14 +352,22 @@ export function SettingsPageClient() {
               {!notificationPrefs?.hasDiscordLinked && (
                 <div className="rounded-lg border border-muted bg-muted/30 p-4">
                   <div className="flex items-start gap-3">
-                    <DiscordIcon className="mt-0.5 h-5 w-5 text-muted-foreground" />
+                    <DiscordIcon
+                      className={`
+                      mt-0.5 h-5 w-5 text-muted-foreground
+                    `}
+                    />
                     <div className="space-y-1">
                       <p className="text-sm font-medium">Discord not linked</p>
                       <p className="text-sm text-muted-foreground">
                         Link your Discord account to enable the options above.{" "}
                         <Link
+                          className={`
+                            font-medium text-primary underline
+                            underline-offset-2
+                            hover:no-underline
+                          `}
                           href="/dashboard/security"
-                          className="font-medium text-primary underline underline-offset-2 hover:no-underline"
                         >
                           Link Discord in Security →
                         </Link>
@@ -347,7 +378,12 @@ export function SettingsPageClient() {
               )}
 
               {/* Info about notification types */}
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div
+                className={`
+                grid gap-4
+                sm:grid-cols-2
+              `}
+              >
                 <div className="rounded-lg border bg-card p-4">
                   <h4 className="mb-2 font-medium">
                     Transactional Notifications

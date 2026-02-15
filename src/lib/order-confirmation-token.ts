@@ -11,15 +11,6 @@
 
 import { createHmac } from "node:crypto";
 
-function getSecret(): string {
-  const secret = process.env.AUTH_SECRET;
-  if (secret) return secret;
-  if (process.env.NODE_ENV === "production") {
-    throw new Error("AUTH_SECRET is required in production");
-  }
-  return "dev-secret-min-32-chars-for-better-auth-local";
-}
-
 /**
  * Generate a confirmation token for a given identifier (orderId or Stripe sessionId).
  * The token is deterministic — the server can re-derive it to verify without DB storage.
@@ -34,7 +25,7 @@ export function generateOrderConfirmationToken(identifier: string): string {
 /** Verify a confirmation token against an identifier. */
 export function verifyOrderConfirmationToken(
   identifier: string,
-  token: string | null | undefined,
+  token: null | string | undefined,
 ): boolean {
   if (!token || !identifier) return false;
   const expected = generateOrderConfirmationToken(identifier);
@@ -45,4 +36,13 @@ export function verifyOrderConfirmationToken(
     mismatch |= expected.charCodeAt(i) ^ token.charCodeAt(i);
   }
   return mismatch === 0;
+}
+
+function getSecret(): string {
+  const secret = process.env.AUTH_SECRET;
+  if (secret) return secret;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("AUTH_SECRET is required in production");
+  }
+  return "dev-secret-min-32-chars-for-better-auth-local";
 }

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 import { withOptionalX402 } from "~/lib/x402-config";
+import { getCryptoAndMetalPricesUsd } from "~/lib/x402-rates";
 
 const METALS = ["XAU", "XAG"];
 const CRYPTO_SYMBOLS = ["BTC", "ETH", "SOL", "DOGE", "TON", "XMR"];
@@ -22,7 +22,7 @@ async function getHandler(request: NextRequest) {
   }
   if (!CRYPTO_SYMBOLS.includes(crypto)) {
     return NextResponse.json(
-      { error: "Unsupported crypto", crypto, supported: CRYPTO_SYMBOLS },
+      { crypto, error: "Unsupported crypto", supported: CRYPTO_SYMBOLS },
       { status: 400 },
     );
   }
@@ -31,17 +31,17 @@ async function getHandler(request: NextRequest) {
   const cryptoUsd = prices[crypto];
   if (metalUsd == null || cryptoUsd == null || cryptoUsd === 0) {
     return NextResponse.json(
-      { error: "Rate temporarily unavailable", metal, crypto },
+      { crypto, error: "Rate temporarily unavailable", metal },
       { status: 503 },
     );
   }
   const rate = metalUsd / cryptoUsd;
   return NextResponse.json({
-    metal,
+    _note: "1 unit of metal in units of crypto",
     crypto,
+    metal,
     rate,
     source: "coingecko",
-    _note: "1 unit of metal in units of crypto",
   });
 }
 

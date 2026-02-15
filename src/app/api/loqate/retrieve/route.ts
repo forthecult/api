@@ -5,10 +5,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 import {
-  getClientIp,
   checkRateLimit,
-  rateLimitResponse,
+  getClientIp,
   RATE_LIMITS,
+  rateLimitResponse,
 } from "~/lib/rate-limit";
 
 const LOQATE_RETRIEVE_BASE =
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const params = new URLSearchParams({ Key: key, Id: id });
+  const params = new URLSearchParams({ Id: id, Key: key });
 
   try {
     const res = await fetch(`${LOQATE_RETRIEVE_BASE}?${params.toString()}`, {
@@ -62,23 +62,23 @@ export async function GET(request: NextRequest) {
       );
     }
     const data = (await res.json()) as {
-      Items?: Array<{
-        Line1?: string;
-        Line2?: string;
-        Street?: string;
-        City?: string;
-        ProvinceCode?: string;
+      Error?: string;
+      Items?: {
         AdminAreaCode?: string;
-        ProvinceName?: string;
         AdminAreaName?: string;
-        PostalCode?: string;
+        BuildingName?: string;
+        BuildingNumber?: string;
+        City?: string;
         CountryIso2?: string;
         CountryIso3?: string;
+        Line1?: string;
+        Line2?: string;
+        PostalCode?: string;
+        ProvinceCode?: string;
+        ProvinceName?: string;
+        Street?: string;
         SubBuilding?: string;
-        BuildingNumber?: string;
-        BuildingName?: string;
-      }>;
-      Error?: string;
+      }[];
     };
     if (data.Error) {
       return addCorsIfAdminOrigin(

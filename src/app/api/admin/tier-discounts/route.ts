@@ -48,16 +48,16 @@ export async function GET(request: NextRequest) {
       .orderBy(orderFn(sortColumn));
 
     const items = rows.map((r) => ({
-      id: r.id,
-      memberTier: r.memberTier,
-      label: r.label ?? null,
-      scope: r.scope,
+      appliesToEsim: r.appliesToEsim ?? null,
+      categoryId: r.categoryId ?? null,
+      createdAt: r.createdAt.toISOString(),
       discountType: r.discountType,
       discountValue: r.discountValue,
-      categoryId: r.categoryId ?? null,
+      id: r.id,
+      label: r.label ?? null,
+      memberTier: r.memberTier,
       productId: r.productId ?? null,
-      appliesToEsim: r.appliesToEsim ?? null,
-      createdAt: r.createdAt.toISOString(),
+      scope: r.scope,
       updatedAt: r.updatedAt.toISOString(),
     }));
 
@@ -77,14 +77,14 @@ export async function POST(request: NextRequest) {
     if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
-      memberTier?: number;
-      label?: string | null;
-      scope?: string;
+      appliesToEsim?: null | number;
+      categoryId?: null | string;
       discountType?: string;
       discountValue?: number;
-      categoryId?: string | null;
-      productId?: string | null;
-      appliesToEsim?: number | null;
+      label?: null | string;
+      memberTier?: number;
+      productId?: null | string;
+      scope?: string;
     };
 
     const memberTier =
@@ -140,21 +140,21 @@ export async function POST(request: NextRequest) {
     const id = createId();
 
     await db.insert(memberTierDiscountTable).values({
-      id,
-      memberTier,
-      label,
-      scope,
+      appliesToEsim,
+      categoryId,
+      createdAt: now,
       discountType,
       discountValue,
-      categoryId,
+      id,
+      label,
+      memberTier,
       productId,
-      appliesToEsim,
-      createdAt: now,
+      scope,
       updatedAt: now,
     });
 
     return NextResponse.json(
-      { id, memberTier, scope, discountType, discountValue },
+      { discountType, discountValue, id, memberTier, scope },
       { status: 201 },
     );
   } catch (err) {

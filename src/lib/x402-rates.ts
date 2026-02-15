@@ -22,13 +22,13 @@ const COINGECKO_IDS = [
 
 const COINGECKO_TO_SYMBOL: Record<string, string> = {
   bitcoin: "BTC",
-  ethereum: "ETH",
-  solana: "SOL",
   dogecoin: "DOGE",
-  toncoin: "TON",
+  ethereum: "ETH",
+  "kinesis-silver": "XAG",
   monero: "XMR",
   "pax-gold": "XAU",
-  "kinesis-silver": "XAG",
+  solana: "SOL",
+  toncoin: "TON",
 };
 
 /** Fetch crypto and metal spot prices in USD (cached via CoinGecko). */
@@ -50,42 +50,16 @@ export async function getCryptoAndMetalPricesUsd(): Promise<
 const FiatCodes = ["USD", "EUR", "GBP", "JPY", "CHF", "CAD", "AUD"] as const;
 export type FiatCode = (typeof FiatCodes)[number];
 
-export async function getFiatRate(
-  from: string,
-  to: string,
-): Promise<number | null> {
-  const fromUpper = from.toUpperCase().trim();
-  const toUpper = to.toUpperCase().trim();
-  if (fromUpper === toUpper) return 1;
-
-  if (
-    !FiatCodes.includes(fromUpper as FiatCode) ||
-    !FiatCodes.includes(toUpper as FiatCode)
-  ) {
-    return null;
-  }
-
-  try {
-    const url = `https://api.frankfurter.app/latest?from=${fromUpper}&to=${toUpper}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
-    const data = (await res.json()) as { rates?: Record<string, number> };
-    const rate = data?.rates?.[toUpper];
-    return typeof rate === "number" ? rate : null;
-  } catch {
-    return null;
-  }
-}
-
 /** Bulk product id -> { usd, imageUrl, imageUrls[] }. Only published products. */
 export async function getBulkProductPricesAndImages(
   productIds: string[],
 ): Promise<
-  Array<{
+  {
+    imageUrl: null | string;
+    imageUrls: string[];
     productId: string;
     usd: number;
-    imageUrl: string | null;
-    imageUrls: string[];
-  }>
+  }[]
 > {
   if (productIds.length === 0) return [];
   const uniq = [...new Set(productIds)].slice(0, 200);
@@ -94,8 +68,8 @@ export async function getBulkProductPricesAndImages(
     db
       .select({
         id: productsTable.id,
-        priceCents: productsTable.priceCents,
         imageUrl: productsTable.imageUrl,
+        priceCents: productsTable.priceCents,
       })
       .from(productsTable)
       .where(
@@ -116,10 +90,10 @@ export async function getBulkProductPricesAndImages(
     published.map((p) => [
       p.id,
       {
-        productId: p.id,
-        usd: (p.priceCents ?? 0) / 100,
         imageUrl: p.imageUrl ?? null,
         imageUrls: [] as string[],
+        productId: p.id,
+        usd: (p.priceCents ?? 0) / 100,
       },
     ]),
   );
@@ -129,10 +103,36 @@ export async function getBulkProductPricesAndImages(
     if (entry) entry.imageUrls.push(row.url);
   }
 
-  return uniq.map((id) => priceMap.get(id)).filter(Boolean) as Array<{
+  return uniq.map((id) => priceMap.get(id)).filter(Boolean) as {
+    imageUrl: null | string;
+    imageUrls: string[];
     productId: string;
     usd: number;
-    imageUrl: string | null;
-    imageUrls: string[];
-  }>;
+  }[];
+}
+
+export async function getFiatRate(
+  from: string,
+  to: string,
+): Promise<null | number> {
+  const fromUpper = from.toUpperCase().trim();
+  const toUpper = to.toUpperCase().trim();
+  if (fromUpper === toUpper) return 1;
+
+  if (
+    !FiatCodes.includes(fromUpper as FiatCode) ||
+    !FiatCodes.includes(toUpper as FiatCode)
+  ) {
+    return null;
+  }
+
+  try {
+    const url = `https://api.frankfurter.app/latest?from=${fromUpper}&to=${toUpper}`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const data = (await res.json()) as { rates?: Record<string, number> };
+    const rate = data?.rates?.[toUpper];
+    return typeof rate === "number" ? rate : null;
+  } catch {
+    return null;
+  }
 }

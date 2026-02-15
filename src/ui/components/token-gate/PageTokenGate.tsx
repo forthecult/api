@@ -10,11 +10,11 @@ import { TokenGateGuard } from "~/ui/components/token-gate/TokenGateGuard";
  * the guard UI or children. No per-page token gate setup.
  */
 export async function PageTokenGate({
-  slug,
   children,
+  slug,
 }: {
-  slug: string;
   children: React.ReactNode;
+  slug: string;
 }) {
   const config = await getPageTokenGates(slug);
   if (!config.tokenGated) {
@@ -24,7 +24,7 @@ export async function PageTokenGate({
   const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
   const passed = hasValidTokenGateCookie(tgCookie, "page", slug);
   if (!passed) {
-    return <TokenGateGuard resourceType="page" resourceId={slug} />;
+    return <TokenGateGuard resourceId={slug} resourceType="page" />;
   }
   return <>{children}</>;
 }

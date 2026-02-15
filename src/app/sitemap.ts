@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+
 import { headers } from "next/headers";
 
 import {
@@ -10,16 +11,16 @@ import {
 // Generate on request so build doesn't depend on DB/API (avoids timeout + 42P01 during deploy)
 export const dynamic = "force-dynamic";
 
+interface CategoryItem {
+  id: string;
+  name: string;
+  slug?: string;
+}
+
 interface ProductItem {
   id: string;
   slug?: string;
   updatedAt?: string;
-}
-
-interface CategoryItem {
-  id: string;
-  slug?: string;
-  name: string;
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -34,16 +35,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (isAgent) {
     return [
       {
-        url: siteUrl,
-        lastModified: now,
         changeFrequency: "weekly",
+        lastModified: now,
         priority: 0.8,
+        url: siteUrl,
       },
       {
-        url: `${siteUrl}/for-agents`,
-        lastModified: now,
         changeFrequency: "weekly",
+        lastModified: now,
         priority: 1,
+        url: `${siteUrl}/for-agents`,
       },
     ];
   }
@@ -80,149 +81,149 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [
-    { url: siteUrl, lastModified: now, changeFrequency: "daily", priority: 1 },
+    { changeFrequency: "daily", lastModified: now, priority: 1, url: siteUrl },
     {
-      url: `${siteUrl}/products`,
-      lastModified: now,
       changeFrequency: "daily",
+      lastModified: now,
       priority: 0.9,
+      url: `${siteUrl}/products`,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.7,
       url: `${siteUrl}/about`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.7,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.6,
       url: `${siteUrl}/lookbook`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
     },
     {
-      url: `${siteUrl}/esim`,
-      lastModified: now,
       changeFrequency: "weekly",
+      lastModified: now,
       priority: 0.7,
+      url: `${siteUrl}/esim`,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.6,
       url: `${siteUrl}/membership`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
     },
     {
+      changeFrequency: "weekly",
+      lastModified: now,
+      priority: 0.5,
       url: `${siteUrl}/changelog`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.5,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.6,
       url: `${siteUrl}/token`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.6,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.5,
       url: `${siteUrl}/token/stake`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
     {
-      url: `${siteUrl}/affiliate-program`,
-      lastModified: now,
       changeFrequency: "monthly",
+      lastModified: now,
       priority: 0.6,
+      url: `${siteUrl}/affiliate-program`,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.5,
       url: `${siteUrl}/for-agents`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.5,
       url: `${siteUrl}/contact`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.5,
       url: `${siteUrl}/track-order`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.5,
       url: `${siteUrl}/refund`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.5,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.4,
       url: `${siteUrl}/login`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.4,
       url: `${siteUrl}/signup`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.4,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.3,
       url: `${siteUrl}/policies/privacy`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.3,
       url: `${siteUrl}/policies/terms`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.3,
       url: `${siteUrl}/policies/refund`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.3,
       url: `${siteUrl}/policies/shipping`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
     },
     {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.3,
       url: `${siteUrl}/cookies`,
-      lastModified: now,
-      changeFrequency: "monthly",
-      priority: 0.3,
     },
     {
-      url: `${siteUrl}/sitemap`,
-      lastModified: now,
       changeFrequency: "weekly",
+      lastModified: now,
       priority: 0.3,
+      url: `${siteUrl}/sitemap`,
     },
   ];
 
   const categoryPages: MetadataRoute.Sitemap = categories
     .filter((c) => c.slug)
     .map((category) => ({
-      url: `${siteUrl}/${category.slug}`,
-      lastModified: now,
       changeFrequency: "daily" as const,
+      lastModified: now,
       priority: 0.8,
+      url: `${siteUrl}/${category.slug}`,
     }));
 
   const productPages: MetadataRoute.Sitemap = products.map((product) => ({
-    url: `${siteUrl}/${product.slug ?? product.id}`,
-    lastModified: product.updatedAt ? new Date(product.updatedAt) : now,
     changeFrequency: "weekly" as const,
+    lastModified: product.updatedAt ? new Date(product.updatedAt) : now,
     priority: 0.7,
+    url: `${siteUrl}/${product.slug ?? product.id}`,
   }));
 
   return [...staticPages, ...categoryPages, ...productPages];

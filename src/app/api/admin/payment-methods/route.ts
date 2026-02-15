@@ -23,11 +23,11 @@ export async function GET(request: NextRequest) {
 
   const rows = await db
     .select({
-      methodKey: paymentMethodSettingTable.methodKey,
-      label: paymentMethodSettingTable.label,
+      displayOrder: paymentMethodSettingTable.displayOrder,
       enabled: paymentMethodSettingTable.enabled,
       enabledNetworks: paymentMethodSettingTable.enabledNetworks,
-      displayOrder: paymentMethodSettingTable.displayOrder,
+      label: paymentMethodSettingTable.label,
+      methodKey: paymentMethodSettingTable.methodKey,
     })
     .from(paymentMethodSettingTable)
     .orderBy(paymentMethodSettingTable.displayOrder);
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
     rows.map((r) => [
       r.methodKey,
       {
-        methodKey: r.methodKey,
-        label: r.label,
+        displayOrder: r.displayOrder,
         enabled: r.enabled,
         enabledNetworks: Array.isArray(r.enabledNetworks)
           ? r.enabledNetworks
           : null,
-        displayOrder: r.displayOrder,
+        label: r.label,
+        methodKey: r.methodKey,
       },
     ]),
   );
@@ -54,19 +54,19 @@ export async function GET(request: NextRequest) {
     const existing = byKey.get(d.methodKey);
     if (existing) {
       list.push({
-        methodKey: existing.methodKey,
-        label: existing.label,
+        displayOrder: existing.displayOrder,
         enabled: existing.enabled,
         enabledNetworks: existing.enabledNetworks,
-        displayOrder: existing.displayOrder,
+        label: existing.label,
+        methodKey: existing.methodKey,
       });
     } else {
       toInsert.push(d);
       list.push({
-        methodKey: d.methodKey,
-        label: d.label,
-        enabled: true,
         displayOrder: d.displayOrder,
+        enabled: true,
+        label: d.label,
+        methodKey: d.methodKey,
       });
     }
   }
@@ -76,11 +76,11 @@ export async function GET(request: NextRequest) {
   if (toInsert.length > 0) {
     for (const d of toInsert) {
       await db.insert(paymentMethodSettingTable).values({
-        methodKey: d.methodKey,
-        label: d.label,
-        enabled: false,
-        displayOrder: d.displayOrder,
         createdAt: now,
+        displayOrder: d.displayOrder,
+        enabled: false,
+        label: d.label,
+        methodKey: d.methodKey,
         updatedAt: now,
       });
     }
@@ -101,9 +101,9 @@ export async function PATCH(request: NextRequest) {
   }
 
   let body: {
-    methodKey?: string;
     enabled?: boolean;
-    enabledNetworks?: string[] | null;
+    enabledNetworks?: null | string[];
+    methodKey?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -139,7 +139,7 @@ export async function PATCH(request: NextRequest) {
 
   const updatePayload: {
     enabled?: boolean;
-    enabledNetworks?: string[] | null;
+    enabledNetworks?: null | string[];
     updatedAt: Date;
   } = { updatedAt: now };
   if (enabled !== undefined) updatePayload.enabled = enabled;
@@ -160,12 +160,12 @@ export async function PATCH(request: NextRequest) {
       );
     }
     await db.insert(paymentMethodSettingTable).values({
-      methodKey: def.methodKey,
-      label: def.label,
+      createdAt: now,
+      displayOrder: def.displayOrder,
       enabled: enabled ?? true,
       enabledNetworks: enabledNetworks ?? null,
-      displayOrder: def.displayOrder,
-      createdAt: now,
+      label: def.label,
+      methodKey: def.methodKey,
       updatedAt: now,
     });
   }

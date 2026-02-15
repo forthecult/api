@@ -53,7 +53,8 @@ export function TestimonialsSection({
         >
           <h2
             className={`
-              font-heading max-w-[720px] text-3xl leading-tight font-bold text-[#F5F1EB]
+              font-heading max-w-[720px] text-3xl leading-tight font-bold
+              text-[#F5F1EB]
               sm:text-5xl sm:leading-tight
             `}
           >
@@ -84,20 +85,20 @@ export function TestimonialsSection({
           >
             <div
               className={`
-                flex shrink-0 flex-row justify-around
-                animate-marquee-testimonials
+                animate-marquee-testimonials flex shrink-0 flex-row
+                justify-around
                 [gap:var(--gap)]
               `}
             >
               {[...Array(4)].map((_, setIndex) =>
                 testimonials.map((testimonial, i) => (
                   <TestimonialCard
-                    key={`testimonial-${testimonial.author.name}-${setIndex}-${i}`}
                     author={testimonial.author}
-                    text={testimonial.text}
-                    rating={testimonial.rating}
-                    productTitle={testimonial.productTitle}
                     href={testimonial.href}
+                    key={`testimonial-${testimonial.author.name}-${setIndex}-${i}`}
+                    productTitle={testimonial.productTitle}
+                    rating={testimonial.rating}
+                    text={testimonial.text}
                   />
                 )),
               )}

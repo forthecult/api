@@ -99,7 +99,12 @@ export function SignupPageClient() {
 
   if (isSessionPending) {
     return (
-      <div className="flex h-screen w-full max-w-[100vw] items-center justify-center overflow-x-hidden">
+      <div
+        className={`
+        flex h-screen w-full max-w-[100vw] items-center justify-center
+        overflow-x-hidden
+      `}
+      >
         <p className="text-muted-foreground">Checking session…</p>
       </div>
     );
@@ -110,7 +115,12 @@ export function SignupPageClient() {
       <AuthFormHeader title="Create Account" />
 
       <Card className="border-none shadow-sm">
-        <CardContent className="px-4 py-3 sm:px-6 sm:py-4">
+        <CardContent
+          className={`
+          px-4 py-3
+          sm:px-6 sm:py-4
+        `}
+        >
           <SocialLoginButtons
             disabled={loading}
             onError={setError}
@@ -162,20 +172,26 @@ export function SignupPageClient() {
               <Label htmlFor="password">Password</Label>
               <div className="relative">
                 <Input
-                  id="password"
-                  name="password"
                   className="pr-10"
+                  id="password"
                   minLength={MIN_PASSWORD_LENGTH}
+                  name="password"
                   onChange={handleChange}
                   required
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                 />
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((p) => !p)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   aria-label={showPassword ? "Hide password" : "Show password"}
+                  className={`
+                    absolute top-1/2 right-2 -translate-y-1/2 rounded p-1.5
+                    text-muted-foreground transition-colors
+                    hover:bg-muted hover:text-foreground
+                    focus:ring-2 focus:ring-ring focus:ring-offset-2
+                    focus:outline-none
+                  `}
+                  onClick={() => setShowPassword((p) => !p)}
+                  type="button"
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -198,7 +214,10 @@ export function SignupPageClient() {
           <div className="mt-4 text-center text-sm text-muted-foreground">
             Already have an account?{" "}
             <Link
-              className="text-primary underline-offset-4 hover:underline"
+              className={`
+                text-primary underline-offset-4
+                hover:underline
+              `}
               href="/login"
             >
               Sign in

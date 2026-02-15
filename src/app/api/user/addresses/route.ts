@@ -19,16 +19,16 @@ export async function GET(request: NextRequest) {
 
   const rows = await db
     .select({
-      id: addressesTable.id,
       address1: addressesTable.address1,
       address2: addressesTable.address2,
       city: addressesTable.city,
-      stateCode: addressesTable.stateCode,
       countryCode: addressesTable.countryCode,
-      zip: addressesTable.zip,
-      phone: addressesTable.phone,
-      label: addressesTable.label,
+      id: addressesTable.id,
       isDefault: addressesTable.isDefault,
+      label: addressesTable.label,
+      phone: addressesTable.phone,
+      stateCode: addressesTable.stateCode,
+      zip: addressesTable.zip,
     })
     .from(addressesTable)
     .where(eq(addressesTable.userId, session.user.id))
@@ -36,16 +36,16 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     addresses: rows.map((r) => ({
-      id: r.id,
       address1: r.address1,
       address2: r.address2 ?? undefined,
       city: r.city,
-      stateCode: r.stateCode ?? undefined,
       countryCode: r.countryCode,
-      zip: r.zip,
-      phone: r.phone ?? undefined,
-      label: r.label ?? undefined,
+      id: r.id,
       isDefault: r.isDefault,
+      label: r.label ?? undefined,
+      phone: r.phone ?? undefined,
+      stateCode: r.stateCode ?? undefined,
+      zip: r.zip,
     })),
   });
 }
@@ -65,11 +65,11 @@ export async function POST(request: NextRequest) {
     address1?: string;
     address2?: string;
     city?: string;
-    stateCode?: string;
     countryCode?: string;
-    zip?: string;
-    phone?: string;
     label?: string;
+    phone?: string;
+    stateCode?: string;
+    zip?: string;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -99,21 +99,21 @@ export async function POST(request: NextRequest) {
   const id = createId();
   const now = new Date();
   await db.insert(addressesTable).values({
-    id,
-    userId: session.user.id,
     address1,
     address2:
       typeof body.address2 === "string" ? body.address2.trim() || null : null,
     city,
+    countryCode,
+    createdAt: now,
+    id,
+    isDefault,
+    label: typeof body.label === "string" ? body.label.trim() || null : null,
+    phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
     stateCode:
       typeof body.stateCode === "string" ? body.stateCode.trim() || null : null,
-    countryCode,
-    zip,
-    phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
-    label: typeof body.label === "string" ? body.label.trim() || null : null,
-    isDefault,
-    createdAt: now,
     updatedAt: now,
+    userId: session.user.id,
+    zip,
   });
 
   return NextResponse.json({ id });

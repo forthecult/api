@@ -20,13 +20,24 @@ export function AgentSubdomainLayout({
   return (
     <>
       <header
-        className="border-b border-neutral-200 bg-neutral-50 px-4 py-2 dark:border-neutral-800 dark:bg-neutral-900"
+        className={`
+          border-b border-neutral-200 bg-neutral-50 px-4 py-2
+          dark:border-neutral-800 dark:bg-neutral-900
+        `}
         role="banner"
       >
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2">
+        <div
+          className={`
+          mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2
+        `}
+        >
           <Link
+            className={`
+              font-mono text-sm font-medium text-neutral-700
+              hover:text-neutral-900
+              dark:text-neutral-300 dark:hover:text-neutral-100
+            `}
             href="/for-agents"
-            className="font-mono text-sm font-medium text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
           >
             For the Cult — AI
           </Link>
@@ -34,12 +45,16 @@ export function AgentSubdomainLayout({
             <Link href="/for-agents">/for-agents</Link>
             {" · "}
             <a
-              href={capabilitiesUrl}
-              className="text-blue-600 hover:underline dark:text-blue-400"
-              target="_blank"
-              rel="noopener noreferrer"
+              className={`
+                text-blue-600
+                hover:underline
+                dark:text-blue-400
+              `}
               data-endpoint="capabilities"
               data-method="GET"
+              href={capabilitiesUrl}
+              rel="noopener noreferrer"
+              target="_blank"
             >
               Start: GET /api/agent/capabilities
             </a>
@@ -47,9 +62,12 @@ export function AgentSubdomainLayout({
         </div>
       </header>
       <main
-        className="min-h-screen bg-white dark:bg-neutral-950"
-        role="main"
+        className={`
+          min-h-screen bg-white
+          dark:bg-neutral-950
+        `}
         id="main-content"
+        role="main"
       >
         {children}
       </main>

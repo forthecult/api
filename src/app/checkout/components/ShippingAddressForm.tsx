@@ -2,17 +2,25 @@
 
 import { ChevronDown, CircleHelp, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
+  forwardRef,
   useCallback,
   useEffect,
   useImperativeHandle,
   useLayoutEffect,
   useRef,
   useState,
-  forwardRef,
 } from "react";
+
+import type { MappedShippingAddress } from "~/lib/loqate";
+
+import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import { signIn } from "~/lib/auth-client";
+import { cn } from "~/lib/cn";
+import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/primitives/card";
+import { Checkbox } from "~/ui/primitives/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +28,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "~/ui/primitives/dialog";
-import { Checkbox } from "~/ui/primitives/checkbox";
 import { Input } from "~/ui/primitives/input";
 import { Label } from "~/ui/primitives/label";
 import {
@@ -28,122 +35,79 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "~/ui/primitives/popover";
-import { FiatPrice } from "~/ui/components/FiatPrice";
-import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
-import type { MappedShippingAddress } from "~/lib/loqate";
-import { isShippingExcluded } from "~/lib/shipping-restrictions";
-import { cn } from "~/lib/cn";
+
 import {
+  checkoutFieldHeight,
   type CheckoutFormState,
   COUNTRIES_REQUIRING_STATE,
   COUNTRIES_WITHOUT_POSTAL,
   defaultForm,
-  checkoutFieldHeight,
-  selectInputClass,
   getPersistedShippingForm,
   persistShippingForm,
+  selectInputClass,
   US_STATE_OPTIONS,
 } from "../checkout-shared";
 
 const SHIPPING_CALCULATE_TIMEOUT_MS = 15_000;
 
-/** Saved address from GET /api/user/addresses */
-type SavedAddress = {
-  id: string;
-  address1: string;
-  address2?: string;
-  city: string;
-  stateCode?: string;
-  countryCode: string;
-  zip: string;
-  phone?: string;
-  label?: string;
-  isDefault: boolean;
-};
-
-export interface ShippingUpdate {
-  shippingCents: number;
-  shippingLabel: string | null;
-  shippingFree: boolean;
-  shippingLoading: boolean;
-  canShipToCountry: boolean;
-  shippingSpeed: "standard" | "express";
-  taxCents: number;
-  taxNote: string | null;
-  customsDutiesNote: string | null;
-}
-
 export interface ShippingAddressFormProps {
-  countryOptions: { value: string; label: string }[];
-  items: {
-    productId?: string;
-    id: string;
-    productVariantId?: string;
-    quantity: number;
-    digital?: boolean;
-  }[];
-  subtotal: number;
-  appliedCoupon: { code: string; freeShipping: boolean } | null;
-  selectedCountry: string | null;
-  user:
-    | { email?: string; firstName?: string; lastName?: string }
-    | null
-    | undefined;
-  isLoggedIn: boolean;
-  userReceiveMarketing: boolean;
-  userReceiveSmsMarketing: boolean;
+  appliedCoupon: null | { code: string; freeShipping: boolean };
   authPending: boolean;
-  validationErrors: string[];
-  onShippingUpdate: (update: ShippingUpdate) => void;
+  countryOptions: { label: string; value: string }[];
   /** When true, only show email field and skip shipping address/method (e.g. digital-only cart). */
   emailOnly?: boolean;
+  isLoggedIn: boolean;
+  items: {
+    digital?: boolean;
+    id: string;
+    productId?: string;
+    productVariantId?: string;
+    quantity: number;
+  }[];
+  onShippingUpdate: (update: ShippingUpdate) => void;
+  selectedCountry: null | string;
+  subtotal: number;
+  user:
+    | null
+    | undefined
+    | { email?: string; firstName?: string; lastName?: string };
+  userReceiveMarketing: boolean;
+  userReceiveSmsMarketing: boolean;
+  validationErrors: string[];
 }
 
 export interface ShippingAddressFormRef {
-  getForm: () => CheckoutFormState;
   getEmailNews: () => boolean;
+  getForm: () => CheckoutFormState;
   getTextNews: () => boolean;
-  validate: () => string[];
   persistForm: () => void;
+  validate: () => string[];
 }
 
-function validateEmailOnlyForm(form: CheckoutFormState): string[] {
-  const err: string[] = [];
-  if (!form.email?.trim()) err.push("Email is required");
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
-    err.push("Please enter a valid email address");
-  return err;
+export interface ShippingUpdate {
+  canShipToCountry: boolean;
+  customsDutiesNote: null | string;
+  shippingCents: number;
+  shippingFree: boolean;
+  shippingLabel: null | string;
+  shippingLoading: boolean;
+  shippingSpeed: "express" | "standard";
+  taxCents: number;
+  taxNote: null | string;
 }
 
-function validateShippingForm(
-  form: CheckoutFormState,
-  shippingSpeed: "standard" | "express",
-): string[] {
-  const err: string[] = [];
-  const country = form.country?.trim();
-  if (!country) err.push("Country is required");
-  if (!form.firstName?.trim()) err.push("First name is required");
-  if (!form.lastName?.trim()) err.push("Last name is required");
-  if (!form.street?.trim()) err.push("Address is required");
-  if (!form.city?.trim()) err.push("City is required");
-  if (country && !COUNTRIES_WITHOUT_POSTAL.has(country) && !form.zip?.trim()) {
-    err.push(
-      country === "US" ? "ZIP code is required" : "Postal code is required",
-    );
-  }
-  if (
-    country &&
-    COUNTRIES_REQUIRING_STATE.has(country) &&
-    !form.state?.trim()
-  ) {
-    err.push(
-      country === "US" ? "State is required" : "State / Province is required",
-    );
-  }
-  if (shippingSpeed === "express" && !form.phone?.trim()) {
-    err.push("Phone number is required for Express shipping");
-  }
-  return err;
+/** Saved address from GET /api/user/addresses */
+interface SavedAddress {
+  address1: string;
+  address2?: string;
+  city: string;
+  countryCode: string;
+  id: string;
+  isDefault: boolean;
+  label?: string;
+  phone?: string;
+  stateCode?: string;
+  zip: string;
 }
 
 /** Inline sign-in dialog that keeps the user on the checkout page. */
@@ -179,11 +143,14 @@ function CheckoutSignInDialog() {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
         <button
+          className={`
+            text-sm font-medium text-primary
+            hover:underline
+          `}
           type="button"
-          className="text-sm font-medium text-primary hover:underline"
         >
           Sign in
         </button>
@@ -205,42 +172,46 @@ function CheckoutSignInDialog() {
           <div className="grid gap-1.5">
             <Label htmlFor="checkout-signin-email">Email</Label>
             <Input
-              id="checkout-signin-email"
-              type="email"
               autoComplete="email"
+              disabled={loading}
+              id="checkout-signin-email"
               inputMode="email"
-              placeholder="your@email.com"
-              value={email}
               onChange={(e) => {
                 setEmail(e.target.value);
                 setError("");
               }}
+              placeholder="your@email.com"
               required
-              disabled={loading}
+              type="email"
+              value={email}
             />
           </div>
           <div className="grid gap-1.5">
             <Label htmlFor="checkout-signin-password">Password</Label>
             <div className="relative">
               <Input
-                id="checkout-signin-password"
-                type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
-                placeholder="Password"
                 className="pr-9"
-                value={password}
+                disabled={loading}
+                id="checkout-signin-password"
                 onChange={(e) => {
                   setPassword(e.target.value);
                   setError("");
                 }}
+                placeholder="Password"
                 required
-                disabled={loading}
+                type={showPassword ? "text" : "password"}
+                value={password}
               />
               <button
-                type="button"
-                onClick={() => setShowPassword((p) => !p)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:text-foreground"
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                className={`
+                  absolute top-1/2 right-2 -translate-y-1/2 rounded p-1
+                  text-muted-foreground
+                  hover:text-foreground
+                `}
+                onClick={() => setShowPassword((p) => !p)}
+                type="button"
               >
                 {showPassword ? (
                   <EyeOff className="size-3.5" />
@@ -251,7 +222,7 @@ function CheckoutSignInDialog() {
             </div>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button className="w-full" disabled={loading} type="submit">
             {loading ? (
               <>
                 <Loader2 className="mr-1.5 size-3.5 animate-spin" />
@@ -270,27 +241,63 @@ function CheckoutSignInDialog() {
   );
 }
 
-export const ShippingAddressForm = forwardRef<
-  ShippingAddressFormRef,
-  ShippingAddressFormProps
->(function ShippingAddressForm(
-  {
-    countryOptions,
-    items,
-    subtotal,
-    appliedCoupon,
-    selectedCountry,
-    user,
-    isLoggedIn,
-    userReceiveMarketing,
-    userReceiveSmsMarketing,
-    authPending,
-    validationErrors,
-    onShippingUpdate,
-    emailOnly = false,
-  },
+function validateEmailOnlyForm(form: CheckoutFormState): string[] {
+  const err: string[] = [];
+  if (!form.email?.trim()) err.push("Email is required");
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()))
+    err.push("Please enter a valid email address");
+  return err;
+}
+
+function validateShippingForm(
+  form: CheckoutFormState,
+  shippingSpeed: "express" | "standard",
+): string[] {
+  const err: string[] = [];
+  const country = form.country?.trim();
+  if (!country) err.push("Country is required");
+  if (!form.firstName?.trim()) err.push("First name is required");
+  if (!form.lastName?.trim()) err.push("Last name is required");
+  if (!form.street?.trim()) err.push("Address is required");
+  if (!form.city?.trim()) err.push("City is required");
+  if (country && !COUNTRIES_WITHOUT_POSTAL.has(country) && !form.zip?.trim()) {
+    err.push(
+      country === "US" ? "ZIP code is required" : "Postal code is required",
+    );
+  }
+  if (
+    country &&
+    COUNTRIES_REQUIRING_STATE.has(country) &&
+    !form.state?.trim()
+  ) {
+    err.push(
+      country === "US" ? "State is required" : "State / Province is required",
+    );
+  }
+  if (shippingSpeed === "express" && !form.phone?.trim()) {
+    err.push("Phone number is required for Express shipping");
+  }
+  return err;
+}
+
+export const ShippingAddressForm = function ShippingAddressForm({
+  appliedCoupon,
+  authPending,
+  countryOptions,
+  emailOnly = false,
+  isLoggedIn,
+  items,
+  onShippingUpdate,
   ref,
-) {
+  selectedCountry,
+  subtotal,
+  user,
+  userReceiveMarketing,
+  userReceiveSmsMarketing,
+  validationErrors,
+}: ShippingAddressFormProps & {
+  ref?: React.RefObject<null | ShippingAddressFormRef>;
+}) {
   const [form, setForm] = useState<CheckoutFormState>(() =>
     getPersistedShippingForm(),
   );
@@ -323,15 +330,15 @@ export const ShippingAddressForm = forwardRef<
    *  for validating express-shipping phone requirements. All changes
    *  are also pushed to the parent via onShippingUpdate. */
   const [localShipping, setLocalShipping] = useState<ShippingUpdate>({
-    shippingCents: 0,
-    shippingLabel: null,
-    shippingFree: false,
-    shippingLoading: false,
     canShipToCountry: true,
+    customsDutiesNote: null,
+    shippingCents: 0,
+    shippingFree: false,
+    shippingLabel: null,
+    shippingLoading: false,
     shippingSpeed: "standard",
     taxCents: 0,
     taxNote: null,
-    customsDutiesNote: null,
   });
 
   const update = useCallback(
@@ -353,25 +360,25 @@ export const ShippingAddressForm = forwardRef<
   const onLoqateSelect = useCallback((mapped: MappedShippingAddress) => {
     setForm((prev) => ({
       ...prev,
-      street: mapped.street,
       apartment: mapped.apartment || prev.apartment,
       city: mapped.city,
-      state: mapped.state,
-      zip: mapped.zip,
       country: mapped.country || prev.country,
+      state: mapped.state,
+      street: mapped.street,
+      zip: mapped.zip,
     }));
   }, []);
 
   const applySavedAddress = useCallback((addr: SavedAddress) => {
     setForm((prev) => ({
       ...prev,
-      street: addr.address1,
       apartment: addr.address2 ?? "",
       city: addr.city,
-      state: addr.stateCode ?? "",
       country: addr.countryCode,
-      zip: addr.zip,
       phone: addr.phone ?? "",
+      state: addr.stateCode ?? "",
+      street: addr.address1,
+      zip: addr.zip,
     }));
   }, []);
 
@@ -423,9 +430,9 @@ export const ShippingAddressForm = forwardRef<
   }, []);
 
   const shippingLoqate = useLoqateAutocomplete({
-    text: form.street ?? "",
     country: form.country,
     onSelect: onLoqateSelect,
+    text: form.street ?? "",
   });
 
   const restoreShippingForm = useCallback(() => {
@@ -507,15 +514,15 @@ export const ShippingAddressForm = forwardRef<
 
   useEffect(() => {
     const EMPTY_SHIPPING: ShippingUpdate = {
-      shippingCents: 0,
-      shippingLabel: null,
-      shippingFree: false,
-      shippingLoading: false,
       canShipToCountry: true,
+      customsDutiesNote: null,
+      shippingCents: 0,
+      shippingFree: false,
+      shippingLabel: null,
+      shippingLoading: false,
       shippingSpeed: "standard",
       taxCents: 0,
       taxNote: null,
-      customsDutiesNote: null,
     };
     if (emailOnly) {
       updateShipping(EMPTY_SHIPPING);
@@ -534,24 +541,24 @@ export const ShippingAddressForm = forwardRef<
     );
     updateShipping({ ...EMPTY_SHIPPING, shippingLoading: true });
     fetch("/api/shipping/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        address1: form.street?.trim() || undefined,
+        city: form.city?.trim() || undefined,
         countryCode: country,
-        orderValueCents: Math.round(subtotal * 100),
         items: items.map((i) => ({
           productId: i.productId ?? i.id,
           productVariantId: i.productVariantId,
           quantity: i.quantity,
         })),
+        orderValueCents: Math.round(subtotal * 100),
         stateCode: form.state?.trim() || undefined,
-        city: form.city?.trim() || undefined,
         zip: form.zip?.trim() || undefined,
-        address1: form.street?.trim() || undefined,
         ...(appliedCoupon?.freeShipping && appliedCoupon?.code
           ? { couponCode: appliedCoupon.code }
           : {}),
       }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
       signal: ac.signal,
     })
       .then((res) =>
@@ -559,28 +566,28 @@ export const ShippingAddressForm = forwardRef<
       )
       .then(
         (data: {
-          shippingCents?: number;
-          label?: string | null;
-          freeShipping?: boolean;
           canShipToCountry?: boolean;
-          shippingSpeed?: "standard" | "express";
-          customsDutiesNote?: string | null;
+          customsDutiesNote?: null | string;
+          freeShipping?: boolean;
+          label?: null | string;
+          shippingCents?: number;
+          shippingSpeed?: "express" | "standard";
           taxCents?: number;
-          taxNote?: string | null;
+          taxNote?: null | string;
         }) => {
           if (!cancelled) {
             updateShipping({
+              canShipToCountry: data.canShipToCountry !== false,
+              customsDutiesNote: data.customsDutiesNote ?? null,
               shippingCents:
                 typeof data.shippingCents === "number" ? data.shippingCents : 0,
-              shippingLabel: data.label ?? null,
               shippingFree: Boolean(data.freeShipping),
+              shippingLabel: data.label ?? null,
               shippingLoading: false,
-              canShipToCountry: data.canShipToCountry !== false,
               shippingSpeed:
                 data.shippingSpeed === "express" ? "express" : "standard",
               taxCents: typeof data.taxCents === "number" ? data.taxCents : 0,
               taxNote: data.taxNote ?? null,
-              customsDutiesNote: data.customsDutiesNote ?? null,
             });
           }
         },
@@ -618,21 +625,21 @@ export const ShippingAddressForm = forwardRef<
   useImperativeHandle(
     ref,
     () => ({
-      getForm: () => form,
       getEmailNews: () => emailNews,
+      getForm: () => form,
       getTextNews: () => textNews,
-      validate,
       persistForm: () => persistShippingForm(form),
+      validate,
     }),
     [form, emailNews, textNews, validate],
   );
 
   const {
-    shippingCents,
-    shippingLabel,
-    shippingFree,
-    shippingLoading,
     canShipToCountry,
+    shippingCents,
+    shippingFree,
+    shippingLabel,
+    shippingLoading,
     shippingSpeed,
   } = localShipping;
   const isUS = form.country === "US";
@@ -655,7 +662,11 @@ export const ShippingAddressForm = forwardRef<
     <>
       {/* Contact */}
       <Card className="shadow-none">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader
+          className={`
+          flex flex-row items-center justify-between space-y-0 pb-2
+        `}
+        >
           <CardTitle>Contact</CardTitle>
           {!isLoggedIn && <CheckoutSignInDialog />}
         </CardHeader>
@@ -670,7 +681,6 @@ export const ShippingAddressForm = forwardRef<
               <Input
                 aria-label="Email"
                 autoComplete="email"
-                inputMode="email"
                 className={cn(
                   checkoutFieldHeight,
                   touchedFields.has("email") &&
@@ -678,11 +688,12 @@ export const ShippingAddressForm = forwardRef<
                     !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim()) &&
                     "border-destructive",
                 )}
+                inputMode="email"
+                onBlur={() => markTouched("email")}
+                onChange={(e) => update("email", e.target.value)}
                 placeholder="Email"
                 type="email"
                 value={form.email}
-                onChange={(e) => update("email", e.target.value)}
-                onBlur={() => markTouched("email")}
               />
               {touchedFields.has("email") &&
                 form.email?.trim() &&
@@ -705,26 +716,34 @@ export const ShippingAddressForm = forwardRef<
             <CardHeader>
               <CardTitle>Shipping address</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
+            <CardContent
+              className={`
+              grid gap-4
+              sm:grid-cols-2
+            `}
+            >
               {savedAddresses.length > 0 && (
                 <div className="sm:col-span-2">
                   <Label className="text-sm font-medium text-muted-foreground">
                     Use a saved address
                   </Label>
                   <Popover
-                    open={savedAddressPopoverOpen}
                     onOpenChange={setSavedAddressPopoverOpen}
+                    open={savedAddressPopoverOpen}
                   >
                     <PopoverTrigger asChild>
                       <button
-                        type="button"
-                        aria-label="Use a saved address"
-                        aria-haspopup="listbox"
                         aria-expanded={savedAddressPopoverOpen}
+                        aria-haspopup="listbox"
+                        aria-label="Use a saved address"
                         className={cn(
                           selectInputClass,
-                          "mt-1.5 flex w-full items-center justify-between gap-2 text-left",
+                          `
+                            mt-1.5 flex w-full items-center justify-between
+                            gap-2 text-left
+                          `,
                         )}
+                        type="button"
                       >
                         <span className="truncate">
                           {selectedSavedAddressId
@@ -743,25 +762,31 @@ export const ShippingAddressForm = forwardRef<
                     </PopoverTrigger>
                     <PopoverContent
                       align="start"
-                      className="max-h-[min(60vh,320px)] w-[var(--radix-popover-trigger-width)] overflow-auto p-0"
+                      className={`
+                        max-h-[min(60vh,320px)]
+                        w-[var(--radix-popover-trigger-width)] overflow-auto p-0
+                      `}
                       onOpenAutoFocus={(e) => e.preventDefault()}
                     >
                       <ul
-                        role="listbox"
                         aria-label="Use a saved address"
                         className="py-1"
+                        role="listbox"
                       >
                         <li role="option">
                           <button
-                            type="button"
                             className={cn(
-                              "w-full px-3 py-2 text-left text-sm hover:bg-muted/80",
+                              `
+                                w-full px-3 py-2 text-left text-sm
+                                hover:bg-muted/80
+                              `,
                               !selectedSavedAddressId && "bg-muted/50",
                             )}
                             onClick={() => {
                               setSelectedSavedAddressId("");
                               setSavedAddressPopoverOpen(false);
                             }}
+                            type="button"
                           >
                             Enter address manually
                           </button>
@@ -769,9 +794,11 @@ export const ShippingAddressForm = forwardRef<
                         {savedAddresses.map((addr) => (
                           <li key={addr.id} role="option">
                             <button
-                              type="button"
                               className={cn(
-                                "w-full px-3 py-2 text-left text-sm hover:bg-muted/80",
+                                `
+                                  w-full px-3 py-2 text-left text-sm
+                                  hover:bg-muted/80
+                                `,
                                 selectedSavedAddressId === addr.id &&
                                   "bg-muted/50",
                               )}
@@ -780,6 +807,7 @@ export const ShippingAddressForm = forwardRef<
                                 applySavedAddress(addr);
                                 setSavedAddressPopoverOpen(false);
                               }}
+                              type="button"
                             >
                               {addr.label || "Address"} — {addr.address1},{" "}
                               {addr.city}
@@ -794,20 +822,20 @@ export const ShippingAddressForm = forwardRef<
               )}
               <div className="sm:col-span-2">
                 <select
-                  aria-label="Country"
-                  autoComplete="shipping country"
                   aria-invalid={
                     validationErrors.includes("Country is required") ||
                     !canShipToCountry
                   }
-                  value={form.country}
-                  onChange={(e) => update("country", e.target.value)}
+                  aria-label="Country"
+                  autoComplete="shipping country"
                   className={cn(
                     selectInputClass,
                     (validationErrors.includes("Country is required") ||
                       !canShipToCountry) &&
                       "border-destructive",
                   )}
+                  onChange={(e) => update("country", e.target.value)}
+                  value={form.country}
                 >
                   {countryOptions.map((opt) => (
                     <option key={opt.value || "empty"} value={opt.value}>
@@ -823,21 +851,21 @@ export const ShippingAddressForm = forwardRef<
               </div>
               <div>
                 <Input
-                  aria-label="First name"
-                  autoComplete="shipping given-name"
                   aria-invalid={showFieldError(
                     "First name is required",
                     "firstName",
                   )}
+                  aria-label="First name"
+                  autoComplete="shipping given-name"
                   className={cn(
                     checkoutFieldHeight,
                     showFieldError("First name is required", "firstName") &&
                       "border-destructive",
                   )}
+                  onBlur={() => markTouched("firstName")}
+                  onChange={(e) => update("firstName", e.target.value)}
                   placeholder="First name"
                   value={form.firstName}
-                  onChange={(e) => update("firstName", e.target.value)}
-                  onBlur={() => markTouched("firstName")}
                 />
                 {showFieldError("First name is required", "firstName") && (
                   <p className="mt-1 text-xs text-destructive" role="alert">
@@ -847,21 +875,21 @@ export const ShippingAddressForm = forwardRef<
               </div>
               <div>
                 <Input
-                  aria-label="Last name"
-                  autoComplete="shipping family-name"
                   aria-invalid={showFieldError(
                     "Last name is required",
                     "lastName",
                   )}
+                  aria-label="Last name"
+                  autoComplete="shipping family-name"
                   className={cn(
                     checkoutFieldHeight,
                     showFieldError("Last name is required", "lastName") &&
                       "border-destructive",
                   )}
+                  onBlur={() => markTouched("lastName")}
+                  onChange={(e) => update("lastName", e.target.value)}
                   placeholder="Last name"
                   value={form.lastName}
-                  onChange={(e) => update("lastName", e.target.value)}
-                  onBlur={() => markTouched("lastName")}
                 />
                 {showFieldError("Last name is required", "lastName") && (
                   <p className="mt-1 text-xs text-destructive" role="alert">
@@ -872,9 +900,12 @@ export const ShippingAddressForm = forwardRef<
               <div className="sm:col-span-2">
                 {!showCompany ? (
                   <button
-                    type="button"
+                    className={`
+                      text-sm text-primary underline-offset-4
+                      hover:underline
+                    `}
                     onClick={() => setShowCompany(true)}
-                    className="text-sm text-primary underline-offset-4 hover:underline"
+                    type="button"
                   >
                     Add company
                   </button>
@@ -882,37 +913,32 @@ export const ShippingAddressForm = forwardRef<
                   <Input
                     aria-label="Company (optional)"
                     autoComplete="shipping organization"
+                    autoFocus
                     className={checkoutFieldHeight}
+                    onChange={(e) => update("company", e.target.value)}
                     placeholder="Company (optional)"
                     value={form.company}
-                    onChange={(e) => update("company", e.target.value)}
-                    autoFocus
                   />
                 )}
               </div>
               <div
-                className="relative sm:col-span-2"
+                className={`
+                  relative
+                  sm:col-span-2
+                `}
                 ref={shippingLoqate.containerRef}
               >
                 <Input
-                  aria-label="Address"
-                  autoComplete="shipping address-line1"
                   aria-autocomplete="list"
                   aria-expanded={shippingLoqate.open}
                   aria-invalid={showFieldError("Address is required", "street")}
+                  aria-label="Address"
+                  autoComplete="shipping address-line1"
                   className={cn(
                     checkoutFieldHeight,
                     showFieldError("Address is required", "street") &&
                       "border-destructive",
                   )}
-                  placeholder="Address"
-                  value={form.street}
-                  onChange={(e) => update("street", e.target.value)}
-                  onFocus={() => {
-                    shippingLoqate.inputFocusedRef.current = true;
-                    if (shippingLoqate.suggestions.length > 0)
-                      shippingLoqate.setOpen(true);
-                  }}
                   onBlur={() => {
                     shippingLoqate.inputFocusedRef.current = false;
                     markTouched("street");
@@ -926,6 +952,14 @@ export const ShippingAddressForm = forwardRef<
                       }
                     }, 200);
                   }}
+                  onChange={(e) => update("street", e.target.value)}
+                  onFocus={() => {
+                    shippingLoqate.inputFocusedRef.current = true;
+                    if (shippingLoqate.suggestions.length > 0)
+                      shippingLoqate.setOpen(true);
+                  }}
+                  placeholder="Address"
+                  value={form.street}
                 />
                 {showFieldError("Address is required", "street") && (
                   <p className="mt-1 text-xs text-destructive" role="alert">
@@ -936,15 +970,24 @@ export const ShippingAddressForm = forwardRef<
                   (shippingLoqate.suggestions.length > 0 ||
                     shippingLoqate.loading) && (
                     <div
-                      className="absolute left-0 right-0 top-full z-50 mt-1 max-h-60 overflow-auto rounded-md border border-border bg-background shadow-lg"
+                      className={`
+                        absolute top-full right-0 left-0 z-50 mt-1 max-h-60
+                        overflow-auto rounded-md border border-border
+                        bg-background shadow-lg
+                      `}
                       role="listbox"
                     >
                       {shippingLoqate.loading &&
                       shippingLoqate.suggestions.length === 0 ? (
-                        <div className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
+                        <div
+                          className={`
+                          flex items-center gap-2 px-3 py-2 text-sm
+                          text-muted-foreground
+                        `}
+                        >
                           <Loader2
-                            className="h-4 w-4 animate-spin shrink-0"
                             aria-hidden
+                            className="h-4 w-4 shrink-0 animate-spin"
                           />
                           Finding addresses…
                         </div>
@@ -953,14 +996,19 @@ export const ShippingAddressForm = forwardRef<
                           .filter((item) => item.Type === "Address")
                           .map((item) => (
                             <button
+                              className={`
+                                w-full cursor-pointer px-3 py-2 text-left
+                                text-sm
+                                hover:bg-muted
+                                focus:bg-muted focus:outline-none
+                              `}
                               key={item.Id}
-                              type="button"
-                              className="w-full cursor-pointer px-3 py-2 text-left text-sm hover:bg-muted focus:bg-muted focus:outline-none"
-                              role="option"
                               onMouseDown={(e) => {
                                 e.preventDefault();
                                 shippingLoqate.selectAddress(item.Id);
                               }}
+                              role="option"
+                              type="button"
                             >
                               <span className="font-medium">{item.Text}</span>
                               {item.Description ? (
@@ -979,26 +1027,31 @@ export const ShippingAddressForm = forwardRef<
                   aria-label="Apartment, suite, etc (optional)"
                   autoComplete="shipping address-line2"
                   className={checkoutFieldHeight}
+                  onChange={(e) => update("apartment", e.target.value)}
                   placeholder="Apartment, suite, etc (optional)"
                   value={form.apartment}
-                  onChange={(e) => update("apartment", e.target.value)}
                 />
               </div>
-              <div className="grid gap-4 sm:col-span-2 sm:grid-cols-3">
+              <div
+                className={`
+                grid gap-4
+                sm:col-span-2 sm:grid-cols-3
+              `}
+              >
                 <div>
                   <Input
+                    aria-invalid={showFieldError("City is required", "city")}
                     aria-label="City"
                     autoComplete="shipping address-level2"
-                    aria-invalid={showFieldError("City is required", "city")}
                     className={cn(
                       checkoutFieldHeight,
                       showFieldError("City is required", "city") &&
                         "border-destructive",
                     )}
+                    onBlur={() => markTouched("city")}
+                    onChange={(e) => update("city", e.target.value)}
                     placeholder="City"
                     value={form.city}
-                    onChange={(e) => update("city", e.target.value)}
-                    onBlur={() => markTouched("city")}
                   />
                   {showFieldError("City is required", "city") && (
                     <p className="mt-1 text-xs text-destructive" role="alert">
@@ -1009,18 +1062,18 @@ export const ShippingAddressForm = forwardRef<
                 {isUS ? (
                   <div>
                     <select
-                      aria-label="State"
-                      autoComplete="shipping address-level1"
                       aria-invalid={validationErrors.includes(
                         "State is required",
                       )}
-                      value={form.state}
-                      onChange={(e) => update("state", e.target.value)}
+                      aria-label="State"
+                      autoComplete="shipping address-level1"
                       className={cn(
                         selectInputClass,
                         validationErrors.includes("State is required") &&
                           "border-destructive",
                       )}
+                      onChange={(e) => update("state", e.target.value)}
+                      value={form.state}
                     >
                       {US_STATE_OPTIONS.map((opt) => (
                         <option key={opt.value || "empty"} value={opt.value}>
@@ -1032,71 +1085,85 @@ export const ShippingAddressForm = forwardRef<
                 ) : (
                   <div>
                     <Input
-                      aria-label="State / Province"
-                      autoComplete="shipping address-level1"
                       aria-invalid={validationErrors.includes(
                         "State / Province is required",
                       )}
+                      aria-label="State / Province"
+                      autoComplete="shipping address-level1"
                       className={cn(
                         checkoutFieldHeight,
                         validationErrors.includes(
                           "State / Province is required",
                         ) && "border-destructive",
                       )}
+                      onChange={(e) => update("state", e.target.value)}
                       placeholder="State / Province"
                       value={form.state}
-                      onChange={(e) => update("state", e.target.value)}
                     />
                   </div>
                 )}
                 <div>
                   <Input
-                    aria-label={isUS ? "ZIP code" : "Postal code"}
-                    autoComplete="shipping postal-code"
-                    inputMode="text"
                     aria-invalid={
                       validationErrors.includes("ZIP code is required") ||
                       validationErrors.includes("Postal code is required")
                     }
+                    aria-label={isUS ? "ZIP code" : "Postal code"}
+                    autoComplete="shipping postal-code"
                     className={cn(
                       checkoutFieldHeight,
                       (validationErrors.includes("ZIP code is required") ||
                         validationErrors.includes("Postal code is required")) &&
                         "border-destructive",
                     )}
+                    inputMode="text"
+                    onChange={(e) => update("zip", e.target.value)}
                     placeholder={isUS ? "ZIP code" : "Postal code"}
                     value={form.zip}
-                    onChange={(e) => update("zip", e.target.value)}
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-2 sm:col-span-2">
+              <div
+                className={`
+                flex items-center gap-2
+                sm:col-span-2
+              `}
+              >
                 <Input
                   aria-label={
                     shippingSpeed === "express" ? "Phone (required)" : "Phone"
                   }
-                  autoComplete="shipping tel"
-                  inputMode="tel"
                   aria-required={shippingSpeed === "express"}
+                  autoComplete="shipping tel"
                   className={cn(checkoutFieldHeight, "min-w-0 flex-1")}
+                  inputMode="tel"
+                  onChange={(e) => update("phone", e.target.value)}
                   placeholder={
                     shippingSpeed === "express" ? "Phone" : "Phone (optional)"
                   }
                   type="tel"
                   value={form.phone}
-                  onChange={(e) => update("phone", e.target.value)}
                 />
                 <Popover>
                   <PopoverTrigger
-                    type="button"
-                    className="shrink-0 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     aria-label="Why we ask for phone"
+                    className={`
+                      shrink-0 rounded-full p-1 text-muted-foreground
+                      hover:bg-muted hover:text-foreground
+                      focus-visible:ring-2 focus-visible:ring-ring
+                      focus-visible:outline-none
+                    `}
+                    type="button"
                   >
-                    <CircleHelp className="size-5" aria-hidden />
+                    <CircleHelp aria-hidden className="size-5" />
                   </PopoverTrigger>
                   <PopoverContent
                     align="end"
-                    className="max-w-56 border-0 bg-neutral-900 px-3 py-2 text-sm text-white shadow-lg dark:bg-neutral-100 dark:text-neutral-900"
+                    className={`
+                      max-w-56 border-0 bg-neutral-900 px-3 py-2 text-sm
+                      text-white shadow-lg
+                      dark:bg-neutral-100 dark:text-neutral-900
+                    `}
                     side="top"
                   >
                     In case we need to contact you about your order
@@ -1105,7 +1172,11 @@ export const ShippingAddressForm = forwardRef<
               </div>
               {showSaveAddressCheckbox && (
                 <div className="sm:col-span-2">
-                  <label className="flex cursor-pointer items-center gap-2 text-sm">
+                  <label
+                    className={`
+                    flex cursor-pointer items-center gap-2 text-sm
+                  `}
+                  >
                     <Checkbox
                       checked={saveAddressForNextTime}
                       onCheckedChange={(v) =>
@@ -1126,7 +1197,12 @@ export const ShippingAddressForm = forwardRef<
               <CardTitle>Shipping method</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-between rounded-md border border-border p-3">
+              <div
+                className={`
+                flex items-center justify-between rounded-md border
+                border-border p-3
+              `}
+              >
                 <div className="flex flex-col gap-0.5">
                   <span className="text-sm font-medium">
                     {shippingLoading
@@ -1144,11 +1220,16 @@ export const ShippingAddressForm = forwardRef<
                 <span className="text-sm font-medium text-muted-foreground">
                   {shippingLoading ? (
                     <Loader2
-                      className="size-4 animate-spin"
                       aria-label="Calculating shipping"
+                      className="size-4 animate-spin"
                     />
                   ) : shippingFree ? (
-                    <span className="font-medium text-green-600 dark:text-green-400">
+                    <span
+                      className={`
+                      font-medium text-green-600
+                      dark:text-green-400
+                    `}
+                    >
                       Free
                     </span>
                   ) : (
@@ -1162,4 +1243,4 @@ export const ShippingAddressForm = forwardRef<
       )}
     </>
   );
-});
+};

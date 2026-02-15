@@ -2,13 +2,13 @@ import { and, eq, inArray, ne, notInArray, or } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import {
   categoriesTable,
   productCategoriesTable,
   productsTable,
   productTagsTable,
 } from "~/db/schema";
+import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 
 const RELATED_LIMIT = 4;
 
@@ -53,31 +53,31 @@ export async function GET(
       .where(eq(productTagsTable.productId, id));
     const tagList = myTags.map((r) => r.tag).filter(Boolean);
 
-    const collected: Array<{
-      id: string;
-      slug: string | null;
-      name: string;
-      imageUrl: string | null;
-      priceCents: number;
-      compareAtPriceCents: number | null;
+    const collected: {
       categoryName: string;
-      tokenGated: boolean;
+      compareAtPriceCents: null | number;
       hasVariants: boolean;
-    }> = [];
+      id: string;
+      imageUrl: null | string;
+      name: string;
+      priceCents: number;
+      slug: null | string;
+      tokenGated: boolean;
+    }[] = [];
     const seenIds = new Set<string>([id]);
 
     // 2) Products that share at least one tag
     if (tagList.length > 0) {
       const byTag = await db
         .select({
-          id: productsTable.id,
-          slug: productsTable.slug,
-          name: productsTable.name,
-          imageUrl: productsTable.imageUrl,
-          priceCents: productsTable.priceCents,
           compareAtPriceCents: productsTable.compareAtPriceCents,
-          tokenGated: productsTable.tokenGated,
           hasVariants: productsTable.hasVariants,
+          id: productsTable.id,
+          imageUrl: productsTable.imageUrl,
+          name: productsTable.name,
+          priceCents: productsTable.priceCents,
+          slug: productsTable.slug,
+          tokenGated: productsTable.tokenGated,
         })
         .from(productsTable)
         .innerJoin(
@@ -96,8 +96,8 @@ export async function GET(
 
       const mainCats = await db
         .select({
-          productId: productCategoriesTable.productId,
           categoryName: categoriesTable.name,
+          productId: productCategoriesTable.productId,
         })
         .from(productCategoriesTable)
         .innerJoin(
@@ -122,15 +122,15 @@ export async function GET(
         if (seenIds.has(p.id)) continue;
         seenIds.add(p.id);
         collected.push({
-          id: p.id,
-          slug: p.slug,
-          name: p.name,
-          imageUrl: p.imageUrl,
-          priceCents: p.priceCents,
-          compareAtPriceCents: p.compareAtPriceCents,
           categoryName: categoryByProductId.get(p.id) ?? "Uncategorized",
-          tokenGated: p.tokenGated ?? false,
+          compareAtPriceCents: p.compareAtPriceCents,
           hasVariants: p.hasVariants ?? false,
+          id: p.id,
+          imageUrl: p.imageUrl,
+          name: p.name,
+          priceCents: p.priceCents,
+          slug: p.slug,
+          tokenGated: p.tokenGated ?? false,
         });
       }
     }
@@ -148,15 +148,15 @@ export async function GET(
       if (myCategoryIds.length > 0) {
         const sameCategory = await db
           .select({
-            id: productsTable.id,
-            slug: productsTable.slug,
-            name: productsTable.name,
-            imageUrl: productsTable.imageUrl,
-            priceCents: productsTable.priceCents,
-            compareAtPriceCents: productsTable.compareAtPriceCents,
             categoryName: categoriesTable.name,
-            tokenGated: productsTable.tokenGated,
+            compareAtPriceCents: productsTable.compareAtPriceCents,
             hasVariants: productsTable.hasVariants,
+            id: productsTable.id,
+            imageUrl: productsTable.imageUrl,
+            name: productsTable.name,
+            priceCents: productsTable.priceCents,
+            slug: productsTable.slug,
+            tokenGated: productsTable.tokenGated,
           })
           .from(productsTable)
           .innerJoin(
@@ -182,15 +182,15 @@ export async function GET(
           if (seenIds.has(p.id)) continue;
           seenIds.add(p.id);
           collected.push({
-            id: p.id,
-            slug: p.slug,
-            name: p.name,
-            imageUrl: p.imageUrl,
-            priceCents: p.priceCents,
-            compareAtPriceCents: p.compareAtPriceCents,
             categoryName: p.categoryName,
-            tokenGated: p.tokenGated ?? false,
+            compareAtPriceCents: p.compareAtPriceCents,
             hasVariants: p.hasVariants ?? false,
+            id: p.id,
+            imageUrl: p.imageUrl,
+            name: p.name,
+            priceCents: p.priceCents,
+            slug: p.slug,
+            tokenGated: p.tokenGated ?? false,
           });
         }
       }
@@ -201,14 +201,14 @@ export async function GET(
       const excludeIds = Array.from(seenIds);
       const anyPublished = await db
         .select({
-          id: productsTable.id,
-          slug: productsTable.slug,
-          name: productsTable.name,
-          imageUrl: productsTable.imageUrl,
-          priceCents: productsTable.priceCents,
           compareAtPriceCents: productsTable.compareAtPriceCents,
-          tokenGated: productsTable.tokenGated,
           hasVariants: productsTable.hasVariants,
+          id: productsTable.id,
+          imageUrl: productsTable.imageUrl,
+          name: productsTable.name,
+          priceCents: productsTable.priceCents,
+          slug: productsTable.slug,
+          tokenGated: productsTable.tokenGated,
         })
         .from(productsTable)
         .where(
@@ -224,8 +224,8 @@ export async function GET(
 
       const mainCatsAny = await db
         .select({
-          productId: productCategoriesTable.productId,
           categoryName: categoriesTable.name,
+          productId: productCategoriesTable.productId,
         })
         .from(productCategoriesTable)
         .innerJoin(
@@ -250,15 +250,15 @@ export async function GET(
         if (seenIds.has(p.id)) continue;
         seenIds.add(p.id);
         collected.push({
-          id: p.id,
-          slug: p.slug,
-          name: p.name,
-          imageUrl: p.imageUrl,
-          priceCents: p.priceCents,
-          compareAtPriceCents: p.compareAtPriceCents,
           categoryName: categoryByProductId.get(p.id) ?? "Uncategorized",
-          tokenGated: p.tokenGated ?? false,
+          compareAtPriceCents: p.compareAtPriceCents,
           hasVariants: p.hasVariants ?? false,
+          id: p.id,
+          imageUrl: p.imageUrl,
+          name: p.name,
+          priceCents: p.priceCents,
+          slug: p.slug,
+          tokenGated: p.tokenGated ?? false,
         });
       }
     }
@@ -280,19 +280,19 @@ export async function GET(
         p.tokenGated &&
         hasValidTokenGateCookie(tgCookieValue, "product", resourceId);
       return {
-        id: p.id,
-        slug: p.slug ?? p.id,
-        name: p.name,
         category: p.categoryName,
         hasVariants: p.hasVariants,
+        id: p.id,
         image: p.imageUrl ?? "/placeholder.svg",
-        price: p.priceCents / 100,
+        inStock: true,
+        name: p.name,
         originalPrice:
           p.compareAtPriceCents != null
             ? p.compareAtPriceCents / 100
             : undefined,
-        inStock: true,
+        price: p.priceCents / 100,
         rating: 0,
+        slug: p.slug ?? p.id,
         tokenGated: p.tokenGated,
         tokenGatePassed: tokenGatePassed ?? false,
       };

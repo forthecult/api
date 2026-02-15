@@ -8,10 +8,10 @@ import { toast } from "sonner";
 import { Button } from "~/ui/primitives/button";
 
 interface CancelOrderButtonProps {
+  className?: string;
   orderId: string;
   orderShortId: string;
-  size?: "default" | "sm" | "lg" | "icon";
-  className?: string;
+  size?: "default" | "icon" | "lg" | "sm";
 }
 
 /**
@@ -19,10 +19,10 @@ interface CancelOrderButtonProps {
  * then refreshes the page so the order shows as Cancelled.
  */
 export function CancelOrderButton({
+  className,
   orderId,
   orderShortId,
   size = "sm",
-  className,
 }: CancelOrderButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -38,14 +38,14 @@ export function CancelOrderButton({
     setLoading(true);
     try {
       const res = await fetch(`/api/orders/${orderId}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: "{}",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const data = (await res.json().catch(() => ({}))) as {
-        message?: string;
         error?: { code?: string; message?: string };
+        message?: string;
       };
       if (!res.ok) {
         const msg =
@@ -64,19 +64,23 @@ export function CancelOrderButton({
 
   return (
     <Button
+      aria-label={`Remove unpaid order ${orderShortId}`}
+      className={`
+        text-muted-foreground
+        hover:text-destructive
+        ${className ?? ""}
+      `}
+      disabled={loading}
+      onClick={handleCancel}
+      size={size}
+      title="Remove unpaid order"
       type="button"
       variant="ghost"
-      size={size}
-      className={`text-muted-foreground hover:text-destructive ${className ?? ""}`}
-      onClick={handleCancel}
-      disabled={loading}
-      aria-label={`Remove unpaid order ${orderShortId}`}
-      title="Remove unpaid order"
     >
       {loading ? (
-        <Loader2 className="size-4 animate-spin" aria-hidden />
+        <Loader2 aria-hidden className="size-4 animate-spin" />
       ) : (
-        <Trash2 className="size-4" aria-hidden />
+        <Trash2 aria-hidden className="size-4" />
       )}
     </Button>
   );

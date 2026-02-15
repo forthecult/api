@@ -1,8 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import { CircleHelp, Loader2, Minus, Plus, Trash2 } from "lucide-react";
+import Image from "next/image";
 import * as React from "react";
+
+import type { CartItem } from "~/ui/components/cart";
+
+import { FiatPrice } from "~/ui/components/FiatPrice";
+import { Button } from "~/ui/primitives/button";
 import {
   Card,
   CardContent,
@@ -10,7 +15,6 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import { Button } from "~/ui/primitives/button";
 import {
   Dialog,
   DialogContent,
@@ -19,79 +23,65 @@ import {
   DialogTrigger,
 } from "~/ui/primitives/dialog";
 import { Input } from "~/ui/primitives/input";
-import { FiatPrice } from "~/ui/components/FiatPrice";
-import { checkoutFieldHeight, type AppliedCoupon } from "../checkout-shared";
-import type { TierDiscountLine } from "../hooks/useCoupons";
-import type { CartItem } from "~/ui/components/cart";
 
-/** Show only the size/variant (e.g. "2XL", "M") in checkout — strip title/category before " / ". */
-function variantDisplayOnly(
-  _productName: string,
-  variantLabel: string,
-): string {
-  if (!variantLabel?.trim()) return variantLabel ?? "";
-  const lastSlash = variantLabel.lastIndexOf(" / ");
-  if (lastSlash >= 0) {
-    const after = variantLabel.slice(lastSlash + 3).trim();
-    if (after) return after;
-  }
-  return variantLabel;
-}
+import type { TierDiscountLine } from "../hooks/useCoupons";
+
+import { type AppliedCoupon, checkoutFieldHeight } from "../checkout-shared";
 
 export interface OrderSummaryProps {
-  items: CartItem[];
-  itemCount: number;
-  subtotal: number;
-  shippingCents: number;
-  shippingLoading: boolean;
-  shippingFree: boolean;
-  taxCents: number;
-  taxNote: string | null;
-  customsDutiesNote: string | null;
   appliedCoupon: AppliedCoupon | null;
+  couponError: string;
+  couponLoading: boolean;
+  cryptoTotalLabel: null | string;
+  customsDutiesNote: null | string;
+  discountCodeInput: string;
+  itemCount: number;
+  items: CartItem[];
+  onApplyCoupon: () => void;
+  onDiscountCodeInputChange: (value: string) => void;
+  onRemoveCoupon: () => void;
+  onRemoveItem?: (id: string) => void;
+  onShowDiscountCode: () => void;
+  /** Cart editing callbacks */
+  onUpdateQuantity?: (id: string, quantity: number) => void;
+  shippingCents: number;
+  shippingFree: boolean;
+  shippingLoading: boolean;
+  /** Discount code UI (state lives in parent so it can drive API/coupon logic). */
+  showDiscountCode: boolean;
+  subtotal: number;
+  taxCents: number;
+  taxNote: null | string;
   /** Member tier discounts (stacked). Shown as "Member savings". */
   tierDiscounts?: TierDiscountLine[];
   tierDiscountTotalCents?: number;
   total: number;
-  cryptoTotalLabel: string | null;
-  /** Discount code UI (state lives in parent so it can drive API/coupon logic). */
-  showDiscountCode: boolean;
-  discountCodeInput: string;
-  couponError: string;
-  couponLoading: boolean;
-  onShowDiscountCode: () => void;
-  onDiscountCodeInputChange: (value: string) => void;
-  onApplyCoupon: () => void;
-  onRemoveCoupon: () => void;
-  /** Cart editing callbacks */
-  onUpdateQuantity?: (id: string, quantity: number) => void;
-  onRemoveItem?: (id: string) => void;
 }
 
 export function OrderSummary({
-  items,
-  itemCount,
-  subtotal,
-  shippingCents,
-  shippingLoading,
-  shippingFree,
-  taxCents,
-  customsDutiesNote,
   appliedCoupon,
+  couponError,
+  couponLoading,
+  cryptoTotalLabel,
+  customsDutiesNote,
+  discountCodeInput,
+  itemCount,
+  items,
+  onApplyCoupon,
+  onDiscountCodeInputChange,
+  onRemoveCoupon,
+  onRemoveItem,
+  onShowDiscountCode,
+  onUpdateQuantity,
+  shippingCents,
+  shippingFree,
+  shippingLoading,
+  showDiscountCode,
+  subtotal,
+  taxCents,
   tierDiscounts = [],
   tierDiscountTotalCents = 0,
   total,
-  cryptoTotalLabel,
-  showDiscountCode,
-  discountCodeInput,
-  couponError,
-  couponLoading,
-  onShowDiscountCode,
-  onDiscountCodeInputChange,
-  onApplyCoupon,
-  onRemoveCoupon,
-  onUpdateQuantity,
-  onRemoveItem,
 }: OrderSummaryProps) {
   const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
     () => new Set(),
@@ -109,10 +99,16 @@ export function OrderSummary({
       <CardContent className="space-y-4">
         {items.map((item) => (
           <div
-            className="flex gap-3 rounded-lg border border-border/60 bg-muted/30 p-3"
+            className={`
+              flex gap-3 rounded-lg border border-border/60 bg-muted/30 p-3
+            `}
             key={item.id}
           >
-            <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white">
+            <div
+              className={`
+              relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white
+            `}
+            >
               {failedImageIds.has(item.id) || !item.image?.trim() ? (
                 <Image
                   alt={item.name}
@@ -126,17 +122,17 @@ export function OrderSummary({
                   alt={item.name}
                   className="object-contain"
                   fill
-                  sizes="64px"
-                  src={item.image.trim()}
-                  unoptimized={/^https?:\/\//i.test(item.image)}
                   onError={() =>
                     setFailedImageIds((prev) => new Set(prev).add(item.id))
                   }
+                  sizes="64px"
+                  src={item.image.trim()}
+                  unoptimized={/^https?:\/\//i.test(item.image)}
                 />
               )}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium leading-tight">{item.name}</p>
+              <p className="text-sm leading-tight font-medium">{item.name}</p>
               {item.variantLabel ? (
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {variantDisplayOnly(item.name, item.variantLabel)}
@@ -147,37 +143,59 @@ export function OrderSummary({
               </p>
               {/* Quantity controls */}
               <div className="mt-1.5 flex items-center gap-1.5">
-                <div className="flex items-center rounded-md border border-border">
+                <div
+                  className={`
+                  flex items-center rounded-md border border-border
+                `}
+                >
                   <button
-                    type="button"
-                    className="flex size-6 items-center justify-center rounded-l-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40"
                     aria-label={`Decrease quantity of ${item.name}`}
+                    className={`
+                      flex size-6 items-center justify-center rounded-l-md
+                      text-muted-foreground transition-colors
+                      hover:bg-muted hover:text-foreground
+                      disabled:opacity-40
+                    `}
                     disabled={item.quantity <= 1}
                     onClick={() =>
                       onUpdateQuantity?.(item.id, item.quantity - 1)
                     }
+                    type="button"
                   >
                     <Minus className="size-3" />
                   </button>
-                  <span className="flex w-7 items-center justify-center text-xs font-medium tabular-nums">
+                  <span
+                    className={`
+                    flex w-7 items-center justify-center text-xs font-medium
+                    tabular-nums
+                  `}
+                  >
                     {item.quantity}
                   </span>
                   <button
-                    type="button"
-                    className="flex size-6 items-center justify-center rounded-r-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     aria-label={`Increase quantity of ${item.name}`}
+                    className={`
+                      flex size-6 items-center justify-center rounded-r-md
+                      text-muted-foreground transition-colors
+                      hover:bg-muted hover:text-foreground
+                    `}
                     onClick={() =>
                       onUpdateQuantity?.(item.id, item.quantity + 1)
                     }
+                    type="button"
                   >
                     <Plus className="size-3" />
                   </button>
                 </div>
                 <button
-                  type="button"
-                  className="flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                   aria-label={`Remove ${item.name}`}
+                  className={`
+                    flex size-6 items-center justify-center rounded-md
+                    text-muted-foreground transition-colors
+                    hover:bg-destructive/10 hover:text-destructive
+                  `}
                   onClick={() => onRemoveItem?.(item.id)}
+                  type="button"
                 >
                   <Trash2 className="size-3" />
                 </button>
@@ -192,9 +210,12 @@ export function OrderSummary({
           <div className="space-y-2">
             {!showDiscountCode ? (
               <button
-                type="button"
+                className={`
+                  text-primary underline-offset-4
+                  hover:underline
+                `}
                 onClick={onShowDiscountCode}
-                className="text-primary underline-offset-4 hover:underline"
+                type="button"
               >
                 Have a code?
               </button>
@@ -202,9 +223,12 @@ export function OrderSummary({
               <div className="flex w-full max-w-[65%] flex-col gap-2">
                 <div className="flex gap-2">
                   <Input
-                    type="text"
-                    placeholder="Discount code or gift card"
-                    value={discountCodeInput}
+                    aria-label="Discount code"
+                    className={`
+                      ${checkoutFieldHeight}
+                      min-w-0 flex-1
+                    `}
+                    disabled={couponLoading}
                     onChange={(e) => onDiscountCodeInputChange(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -212,20 +236,23 @@ export function OrderSummary({
                         onApplyCoupon();
                       }
                     }}
-                    className={`${checkoutFieldHeight} min-w-0 flex-1`}
-                    disabled={couponLoading}
-                    aria-label="Discount code"
+                    placeholder="Discount code or gift card"
+                    type="text"
+                    value={discountCodeInput}
                   />
                   <Button
+                    className={`
+                      ${checkoutFieldHeight}
+                      shrink-0
+                    `}
+                    disabled={couponLoading || !discountCodeInput.trim()}
+                    onClick={onApplyCoupon}
+                    size="sm"
                     type="button"
                     variant="secondary"
-                    size="sm"
-                    className={`${checkoutFieldHeight} shrink-0`}
-                    onClick={onApplyCoupon}
-                    disabled={couponLoading || !discountCodeInput.trim()}
                   >
                     {couponLoading ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                      <Loader2 aria-hidden className="size-4 animate-spin" />
                     ) : (
                       "Apply"
                     )}
@@ -261,9 +288,12 @@ export function OrderSummary({
                 )}
                 {appliedCoupon.source === "code" ? (
                   <button
-                    type="button"
+                    className={`
+                      text-xs text-primary underline-offset-4
+                      hover:underline
+                    `}
                     onClick={onRemoveCoupon}
-                    className="text-xs text-primary underline-offset-4 hover:underline"
+                    type="button"
                   >
                     Remove
                   </button>
@@ -284,33 +314,63 @@ export function OrderSummary({
               Shipping
               <Dialog>
                 <DialogTrigger
-                  type="button"
-                  className="shrink-0 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label="Shipping information"
+                  className={`
+                    shrink-0 rounded-full p-0.5 text-muted-foreground
+                    hover:bg-muted hover:text-foreground
+                    focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:outline-none
+                  `}
+                  type="button"
                 >
-                  <CircleHelp className="size-4" aria-hidden />
+                  <CircleHelp aria-hidden className="size-4" />
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Shipping</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-3 text-sm">
-                    <div className="flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2 dark:bg-blue-950/30">
-                      <span className="font-medium text-blue-700 dark:text-blue-400">
+                    <div
+                      className={`
+                      flex items-center gap-2 rounded-md bg-blue-50 px-3 py-2
+                      dark:bg-blue-950/30
+                    `}
+                    >
+                      <span
+                        className={`
+                        font-medium text-blue-700
+                        dark:text-blue-400
+                      `}
+                      >
                         Most orders ship within 1 business day
                       </span>
                     </div>
                     <ul className="space-y-2">
                       <li className="flex items-start gap-2">
-                        <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                        <span
+                          className={`
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
+                        />
                         <strong>Domestic (US):</strong> 2–4 business days
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                        <span
+                          className={`
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
+                        />
                         <strong>International:</strong> 5–14 business days
                       </li>
                       <li className="flex items-start gap-2">
-                        <span className="mt-1 block size-1.5 shrink-0 rounded-full bg-foreground/40" />
+                        <span
+                          className={`
+                          mt-1 block size-1.5 shrink-0 rounded-full
+                          bg-foreground/40
+                        `}
+                        />
                         Tracking number sent via email once shipped
                       </li>
                     </ul>
@@ -344,7 +404,12 @@ export function OrderSummary({
             <p className="text-xs text-muted-foreground">{customsDutiesNote}</p>
           ) : null}
         </div>
-        <div className="flex justify-between border-t border-border pt-3 text-base font-semibold">
+        <div
+          className={`
+          flex justify-between border-t border-border pt-3 text-base
+          font-semibold
+        `}
+        >
           <span>Total</span>
           <span>
             <FiatPrice usdAmount={total} />
@@ -358,4 +423,18 @@ export function OrderSummary({
       </CardContent>
     </Card>
   );
+}
+
+/** Show only the size/variant (e.g. "2XL", "M") in checkout — strip title/category before " / ". */
+function variantDisplayOnly(
+  _productName: string,
+  variantLabel: string,
+): string {
+  if (!variantLabel?.trim()) return variantLabel ?? "";
+  const lastSlash = variantLabel.lastIndexOf(" / ");
+  if (lastSlash >= 0) {
+    const after = variantLabel.slice(lastSlash + 3).trim();
+    if (after) return after;
+  }
+  return variantLabel;
 }

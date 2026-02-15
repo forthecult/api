@@ -1,24 +1,331 @@
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { cn } from "~/lib/cn";
 import { FooterBottom } from "~/ui/components/footer/FooterBottom";
 import { FooterDogePeek } from "~/ui/components/footer/FooterDogePeek";
 import { FooterPaymentsBar } from "~/ui/components/footer/FooterPaymentsBar";
 import { GitHubIcon } from "~/ui/components/icons/github";
-import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 
-function XIcon({ className }: { className?: string }) {
+export function Footer({ className }: { className?: string }) {
   return (
-    <svg
-      aria-hidden
-      className={className}
-      fill="currentColor"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
+    <footer
+      className={cn(
+        `
+          relative border-t border-border bg-secondary
+          dark:border-[#2A2A2A] dark:bg-[#0D0D0D]
+        `,
+        className,
+      )}
     >
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
+      <FooterDogePeek />
+      <div
+        className={`
+          container mx-auto max-w-7xl px-4 py-12
+          sm:px-6
+          lg:px-8
+        `}
+      >
+        <div
+          className={`
+            grid grid-cols-1 gap-8
+            md:grid-cols-4
+          `}
+        >
+          <div className="space-y-4">
+            <Link className="flex items-center gap-2" href="/">
+              <span
+                className={`
+                font-heading text-lg font-bold tracking-[0.2em] text-foreground
+                uppercase transition-colors duration-300
+                hover:text-primary
+              `}
+              >
+                {SEO_CONFIG.name}
+              </span>
+            </Link>
+            <p className="text-base text-muted-foreground">
+              Health. Autonomy. Culture.
+            </p>
+            <div className="flex space-x-4">
+              <Button
+                asChild
+                className="h-9 w-9 rounded-full"
+                size="icon"
+                variant="ghost"
+              >
+                <Link
+                  aria-label="X @bytheculture"
+                  href="https://x.com/bythecult"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <XIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="h-9 w-9 rounded-full"
+                size="icon"
+                variant="ghost"
+              >
+                <Link
+                  aria-label="Telegram @bytheculture"
+                  href="https://t.me/bytheculture"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <TelegramIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="h-9 w-9 rounded-full"
+                size="icon"
+                variant="ghost"
+              >
+                <Link
+                  aria-label="Discord"
+                  href="https://discord.gg/pMPwfQQX6c"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <DiscordIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                className="h-9 w-9 rounded-full"
+                size="icon"
+                variant="ghost"
+              >
+                <Link
+                  aria-label="GitHub forthecult"
+                  href="https://github.com/forthecult"
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <GitHubIcon className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          </div>
+          <div>
+            <h3
+              className={`
+              mb-4 text-sm font-semibold tracking-[0.15em] text-primary
+              uppercase
+            `}
+            >
+              Shop
+            </h3>
+            <ul aria-label="Shop" className="space-y-2.5 text-base">
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/health-wellness"
+                >
+                  Health &amp; Wellness
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/travel-lifestyle"
+                >
+                  Travel &amp; Lifestyle
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/best-sellers"
+                >
+                  Best Sellers
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/products"
+                >
+                  All Products
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/esim"
+                >
+                  eSIMs
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3
+              className={`
+              mb-4 text-sm font-semibold tracking-[0.15em] text-primary
+              uppercase
+            `}
+            >
+              Store Links
+            </h3>
+            <ul className="space-y-2.5 text-base">
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/about"
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/token"
+                >
+                  CULT
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/lookbook"
+                >
+                  Lookbook
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/affiliate-program"
+                >
+                  Affiliate Program
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/changelog"
+                >
+                  Changelog
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/api/docs"
+                >
+                  API
+                </Link>
+              </li>
+            </ul>
+          </div>
+          <div>
+            <h3
+              className={`
+              mb-4 text-sm font-semibold tracking-[0.15em] text-primary
+              uppercase
+            `}
+            >
+              Support
+            </h3>
+            <ul className="space-y-2.5 text-base">
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/track-order"
+                >
+                  Track order
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/contact"
+                >
+                  Contact Us
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/policies/shipping"
+                >
+                  Shipping policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
+                  href="/policies/refund"
+                >
+                  Refund policy
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div
+          className={`
+          relative mt-12 border-t border-border pt-8
+          dark:border-[#2A2A2A]
+        `}
+        >
+          <div className="mb-6">
+            <FooterPaymentsBar />
+          </div>
+          <FooterBottom />
+        </div>
+      </div>
+    </footer>
   );
 }
 
@@ -50,249 +357,16 @@ function TelegramIcon({ className }: { className?: string }) {
   );
 }
 
-export function Footer({ className }: { className?: string }) {
+function XIcon({ className }: { className?: string }) {
   return (
-    <footer
-      className={cn(
-        "relative border-t border-border bg-secondary dark:bg-[#0D0D0D] dark:border-[#2A2A2A]",
-        className,
-      )}
+    <svg
+      aria-hidden
+      className={className}
+      fill="currentColor"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
     >
-      <FooterDogePeek />
-      <div
-        className={`
-          container mx-auto max-w-7xl px-4 py-12
-          sm:px-6
-          lg:px-8
-        `}
-      >
-        <div
-          className={`
-            grid grid-cols-1 gap-8
-            md:grid-cols-4
-          `}
-        >
-          <div className="space-y-4">
-            <Link className="flex items-center gap-2" href="/">
-              <span className="font-heading text-lg font-bold tracking-[0.2em] uppercase text-foreground hover:text-primary transition-colors duration-300">
-                {SEO_CONFIG.name}
-              </span>
-            </Link>
-            <p className="text-base text-muted-foreground">
-              Health. Autonomy. Culture.
-            </p>
-            <div className="flex space-x-4">
-              <Button
-                asChild
-                className="h-9 w-9 rounded-full"
-                size="icon"
-                variant="ghost"
-              >
-                <Link
-                  href="https://x.com/bythecult"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  aria-label="X @bytheculture"
-                >
-                  <XIcon className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                className="h-9 w-9 rounded-full"
-                size="icon"
-                variant="ghost"
-              >
-                <Link
-                  href="https://t.me/bytheculture"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  aria-label="Telegram @bytheculture"
-                >
-                  <TelegramIcon className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                className="h-9 w-9 rounded-full"
-                size="icon"
-                variant="ghost"
-              >
-                <Link
-                  href="https://discord.gg/pMPwfQQX6c"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  aria-label="Discord"
-                >
-                  <DiscordIcon className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                asChild
-                className="h-9 w-9 rounded-full"
-                size="icon"
-                variant="ghost"
-              >
-                <Link
-                  href="https://github.com/forthecult"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  aria-label="GitHub forthecult"
-                >
-                  <GitHubIcon className="h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
-              Shop
-            </h3>
-            <ul className="space-y-2.5 text-base" aria-label="Shop">
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/health-wellness"
-                >
-                  Health &amp; Wellness
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/travel-lifestyle"
-                >
-                  Travel &amp; Lifestyle
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/best-sellers"
-                >
-                  Best Sellers
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/products"
-                >
-                  All Products
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/esim"
-                >
-                  eSIMs
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
-              Store Links
-            </h3>
-            <ul className="space-y-2.5 text-base">
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/about"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/token"
-                >
-                  CULT
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/lookbook"
-                >
-                  Lookbook
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/affiliate-program"
-                >
-                  Affiliate Program
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/changelog"
-                >
-                  Changelog
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/api/docs"
-                >
-                  API
-                </Link>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.15em] text-primary">
-              Support
-            </h3>
-            <ul className="space-y-2.5 text-base">
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/track-order"
-                >
-                  Track order
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/contact"
-                >
-                  Contact Us
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/policies/shipping"
-                >
-                  Shipping policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                  href="/policies/refund"
-                >
-                  Refund policy
-                </Link>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="relative mt-12 border-t border-border dark:border-[#2A2A2A] pt-8">
-          <div className="mb-6">
-            <FooterPaymentsBar />
-          </div>
-          <FooterBottom />
-        </div>
-      </div>
-    </footer>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
   );
 }

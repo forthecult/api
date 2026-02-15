@@ -16,11 +16,14 @@ const inputClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2";
 const labelClass = "mb-1.5 block text-sm font-medium";
 
-type AssetRow = { url: string; type: string };
+interface AssetRow {
+  type: string;
+  url: string;
+}
 
 export default function AdminBrandsCreatePage() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [saving, setSaving] = useState(false);
 
   const [name, setName] = useState("");
@@ -32,7 +35,7 @@ export default function AdminBrandsCreatePage() {
   const [assets, setAssets] = useState<AssetRow[]>([]);
 
   const addAsset = useCallback(() => {
-    setAssets((prev) => [...prev, { url: "", type: "other" }]);
+    setAssets((prev) => [...prev, { type: "other", url: "" }]);
   }, []);
 
   const removeAsset = useCallback((index: number) => {
@@ -40,7 +43,7 @@ export default function AdminBrandsCreatePage() {
   }, []);
 
   const updateAsset = useCallback(
-    (index: number, field: "url" | "type", value: string) => {
+    (index: number, field: "type" | "url", value: string) => {
       setAssets((prev) =>
         prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
       );
@@ -49,7 +52,7 @@ export default function AdminBrandsCreatePage() {
   );
 
   const uploadAssetInputRef = useRef<HTMLInputElement>(null);
-  const uploadAssetTargetRef = useRef<number | null>(null);
+  const uploadAssetTargetRef = useRef<null | number>(null);
   const [uploadAssetLoading, setUploadAssetLoading] = useState(false);
   const handleUploadAsset = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,9 +66,9 @@ export default function AdminBrandsCreatePage() {
         const form = new FormData();
         form.append("file", file);
         const res = await fetch(`${API_BASE}/api/admin/upload`, {
-          method: "POST",
-          credentials: "include",
           body: form,
+          credentials: "include",
+          method: "POST",
         });
         if (!res.ok) {
           const data = (await res.json().catch(() => ({}))) as {
@@ -99,17 +102,17 @@ export default function AdminBrandsCreatePage() {
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/brands`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            name: name.trim(),
-            slug: slug.trim() || undefined,
-            websiteUrl: websiteUrl.trim() || undefined,
             description: description.trim() || undefined,
             featured,
             logoUrl: logoUrl.trim() || undefined,
+            name: name.trim(),
+            slug: slug.trim() || undefined,
+            websiteUrl: websiteUrl.trim() || undefined,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -123,14 +126,14 @@ export default function AdminBrandsCreatePage() {
             const a = assets[i];
             if (!a.url.trim()) continue;
             await fetch(`${API_BASE}/api/admin/brands/${json.id}/assets`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
               body: JSON.stringify({
-                url: a.url.trim(),
-                type: a.type || "other",
                 sortOrder: i,
+                type: a.type || "other",
+                url: a.url.trim(),
               }),
+              credentials: "include",
+              headers: { "Content-Type": "application/json" },
+              method: "POST",
             });
           }
         }
@@ -151,15 +154,23 @@ export default function AdminBrandsCreatePage() {
           Create New Brand
         </h2>
         <Link
+          className={`
+            text-sm font-medium text-muted-foreground
+            hover:text-foreground
+          `}
           href="/brands"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
           ← Back to list
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800
+          dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
@@ -170,87 +181,92 @@ export default function AdminBrandsCreatePage() {
             <CardTitle>Brand details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-6 sm:grid-cols-2">
+            <div
+              className={`
+              grid gap-6
+              sm:grid-cols-2
+            `}
+            >
               <div className="space-y-2">
-                <label htmlFor="name" className={labelClass}>
+                <label className={labelClass} htmlFor="name">
                   Name <span className="text-destructive">*</span>
                 </label>
                 <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
                   className={inputClass}
+                  id="name"
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. PacSafe"
                   required
+                  type="text"
+                  value={name}
                 />
               </div>
               <div className="space-y-2">
-                <label htmlFor="slug" className={labelClass}>
+                <label className={labelClass} htmlFor="slug">
                   Slug
                 </label>
                 <input
+                  className={inputClass}
                   id="slug"
+                  onChange={(e) => setSlug(e.target.value)}
+                  placeholder="Auto-generated from name if empty"
                   type="text"
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
-                  className={inputClass}
-                  placeholder="Auto-generated from name if empty"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="websiteUrl" className={labelClass}>
+              <label className={labelClass} htmlFor="websiteUrl">
                 Website URL
               </label>
               <input
+                className={inputClass}
                 id="websiteUrl"
+                onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="https://example.com"
                 type="url"
                 value={websiteUrl}
-                onChange={(e) => setWebsiteUrl(e.target.value)}
-                className={inputClass}
-                placeholder="https://example.com"
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="description" className={labelClass}>
+              <label className={labelClass} htmlFor="description">
                 Description
               </label>
               <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
                 className={cn(inputClass, "resize-y")}
+                id="description"
+                onChange={(e) => setDescription(e.target.value)}
                 placeholder="Brief description of what the brand offers"
+                rows={3}
+                value={description}
               />
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="logoUrl" className={labelClass}>
+              <label className={labelClass} htmlFor="logoUrl">
                 Logo URL
               </label>
               <input
+                className={inputClass}
                 id="logoUrl"
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://… or upload in main app Dashboard → Uploads, then paste URL here"
                 type="url"
                 value={logoUrl}
-                onChange={(e) => setLogoUrl(e.target.value)}
-                className={inputClass}
-                placeholder="https://… or upload in main app Dashboard → Uploads, then paste URL here"
               />
             </div>
 
             <div className="flex items-center gap-2">
               <input
-                id="featured"
-                type="checkbox"
                 checked={featured}
-                onChange={(e) => setFeatured(e.target.checked)}
                 className="size-4 rounded border-input"
+                id="featured"
+                onChange={(e) => setFeatured(e.target.checked)}
+                type="checkbox"
               />
-              <label htmlFor="featured" className="text-sm font-medium">
+              <label className="text-sm font-medium" htmlFor="featured">
                 Featured Brand
               </label>
             </div>
@@ -261,10 +277,10 @@ export default function AdminBrandsCreatePage() {
                   Brand assets (logos, banners)
                 </label>
                 <Button
+                  onClick={addAsset}
+                  size="sm"
                   type="button"
                   variant="outline"
-                  size="sm"
-                  onClick={addAsset}
                 >
                   + Add asset
                 </Button>
@@ -273,53 +289,58 @@ export default function AdminBrandsCreatePage() {
                 Upload to UploadThing or paste image URLs.
               </p>
               <input
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                aria-hidden
+                className="hidden"
+                onChange={handleUploadAsset}
                 ref={uploadAssetInputRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                className="hidden"
-                aria-hidden
-                onChange={handleUploadAsset}
               />
               {assets.length > 0 && (
                 <ul className="space-y-2">
                   {assets.map((a, i) => (
                     <li
+                      className={`
+                        flex flex-wrap items-center gap-2 rounded border p-2
+                      `}
                       key={i}
-                      className="flex flex-wrap items-center gap-2 rounded border p-2"
                     >
                       <input
+                        className={cn(inputClass, "min-w-[200px] flex-1")}
+                        onChange={(e) => updateAsset(i, "url", e.target.value)}
+                        placeholder="Image URL"
                         type="url"
                         value={a.url}
-                        onChange={(e) => updateAsset(i, "url", e.target.value)}
-                        className={cn(inputClass, "min-w-[200px] flex-1")}
-                        placeholder="Image URL"
                       />
                       <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 shrink-0"
+                        className="shrink-0 gap-1"
                         disabled={uploadAssetLoading}
                         onClick={() => triggerUploadAsset(i)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
                       >
                         <Upload className="h-4 w-4" />
                         Upload
                       </Button>
                       <select
-                        value={a.type}
-                        onChange={(e) => updateAsset(i, "type", e.target.value)}
                         className={cn(inputClass, "w-28")}
+                        onChange={(e) => updateAsset(i, "type", e.target.value)}
+                        value={a.type}
                       >
                         <option value="logo">Logo</option>
                         <option value="banner">Banner</option>
                         <option value="other">Other</option>
                       </select>
                       <Button
+                        className={`
+                          text-destructive
+                          hover:text-destructive
+                        `}
+                        onClick={() => removeAsset(i)}
+                        size="sm"
                         type="button"
                         variant="ghost"
-                        size="sm"
-                        onClick={() => removeAsset(i)}
-                        className="text-destructive hover:text-destructive"
                       >
                         Remove
                       </Button>
@@ -330,7 +351,7 @@ export default function AdminBrandsCreatePage() {
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={saving}>
+              <Button disabled={saving} type="submit">
                 {saving ? "Saving…" : "Save Brand"}
               </Button>
               <Link href="/brands">

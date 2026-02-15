@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createProduct } from "@/lib/pod/product-creator";
+
 import { getAdminAuth } from "@/lib/admin-api-auth";
+import { createProduct } from "@/lib/pod/product-creator";
 
 /**
  * POST /api/admin/pod/products
@@ -20,25 +21,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
   const input = body as {
-    provider?: string;
     blueprintId?: string;
-    printProviderId?: number;
-    title?: string;
     description?: string;
-    tags?: string[];
     image?: {
+      buffer?: string;
       id?: string;
       url?: string;
-      buffer?: string;
     };
-    printAreas?: Array<{
+    printAreas?: {
+      customPosition?: { scale: number; x: number; y: number };
       position: string;
       strategy: string;
-      customPosition?: { x: number; y: number; scale: number };
-    }>;
-    variants?: Array<{ id: number; enabled: boolean; priceCents: number }>;
-    syncToStore?: boolean;
+    }[];
+    printProviderId?: number;
+    provider?: string;
     publish?: boolean;
+    syncToStore?: boolean;
+    tags?: string[];
+    title?: string;
+    variants?: { enabled: boolean; id: number; priceCents: number }[];
   };
   if (
     !input?.provider ||
@@ -63,39 +64,39 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
-  const image = input.image as { id?: string; url?: string; buffer?: string };
+  const image = input.image as { buffer?: string; id?: string; url?: string };
   const decodedBuffer =
     typeof image.buffer === "string"
       ? Buffer.from(image.buffer, "base64")
       : undefined;
   try {
     const result = await createProduct({
-      provider: input.provider as "printify" | "printful",
       blueprintId: input.blueprintId,
-      printProviderId: input.printProviderId,
-      title: input.title,
       description: input.description,
-      tags: input.tags,
       image: {
+        buffer: decodedBuffer,
         id: image.id,
         url: image.url,
-        buffer: decodedBuffer,
       },
       printAreas: input.printAreas.map((pa) => ({
+        customPosition: pa.customPosition,
         position: pa.position,
         strategy: pa.strategy as
           | "center"
           | "center-top"
+          | "custom"
           | "fill"
           | "fit"
           | "left-chest"
-          | "pocket"
-          | "custom",
-        customPosition: pa.customPosition,
+          | "pocket",
       })),
-      variants: input.variants,
-      syncToStore: input.syncToStore ?? true,
+      printProviderId: input.printProviderId,
+      provider: input.provider as "printful" | "printify",
       publish: input.publish ?? false,
+      syncToStore: input.syncToStore ?? true,
+      tags: input.tags,
+      title: input.title,
+      variants: input.variants,
     });
     return NextResponse.json(result);
   } catch (e) {

@@ -1,16 +1,17 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Check, Search } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { cn } from "~/lib/cn";
+import { countryFlag } from "~/lib/country-flag";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
+  type CountryCode,
   CURRENCY_OPTIONS,
   LANGUAGE_OPTIONS,
-  type CountryCode,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import { countryFlag } from "~/lib/country-flag";
 import { Button } from "~/ui/primitives/button";
 import {
   Dialog,
@@ -19,18 +20,17 @@ import {
   DialogTitle,
 } from "~/ui/primitives/dialog";
 import { Input } from "~/ui/primitives/input";
-import { cn } from "~/lib/cn";
 
-type View = "main" | "country" | "currency";
+type View = "country" | "currency" | "main";
 
 export function FooterPreferencesModal({
-  open,
   onOpenChange,
+  open,
 }: {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
+  open: boolean;
 }) {
-  const { selectedCountry, currency, setPreferences } = useCountryCurrency();
+  const { currency, selectedCountry, setPreferences } = useCountryCurrency();
 
   const [view, setView] = useState<View>("main");
   const [draftCountry, setDraftCountry] =
@@ -112,7 +112,7 @@ export function FooterPreferencesModal({
   }, [open, selectedCountry, currency]);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent
         className="sm:max-w-md"
         onPointerDownOutside={(e) => view !== "main" && e.preventDefault()}
@@ -128,15 +128,22 @@ export function FooterPreferencesModal({
                   Country
                 </span>
                 <button
-                  type="button"
-                  onClick={openCountry}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg border border-input bg-background px-4 py-3 text-left",
-                    "hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    `
+                      flex w-full items-center justify-between rounded-lg border
+                      border-input bg-background px-4 py-3 text-left
+                    `,
+                    `
+                      hover:bg-muted/50
+                      focus:ring-2 focus:ring-ring focus:ring-offset-2
+                      focus:outline-none
+                    `,
                   )}
+                  onClick={openCountry}
+                  type="button"
                 >
                   <span className="flex items-center gap-2">
-                    <span className="text-xl" aria-hidden>
+                    <span aria-hidden className="text-xl">
                       {currentCountryOption
                         ? countryFlag(currentCountryOption.code)
                         : "🌐"}
@@ -153,12 +160,19 @@ export function FooterPreferencesModal({
                   Currency
                 </span>
                 <button
-                  type="button"
-                  onClick={openCurrency}
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg border border-input bg-background px-4 py-3 text-left",
-                    "hover:bg-muted/50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+                    `
+                      flex w-full items-center justify-between rounded-lg border
+                      border-input bg-background px-4 py-3 text-left
+                    `,
+                    `
+                      hover:bg-muted/50
+                      focus:ring-2 focus:ring-ring focus:ring-offset-2
+                      focus:outline-none
+                    `,
                   )}
+                  onClick={openCurrency}
+                  type="button"
                 >
                   <span className="flex items-center gap-2">
                     <span className="text-muted-foreground">
@@ -178,11 +192,14 @@ export function FooterPreferencesModal({
                   Language
                 </span>
                 <div
+                  aria-label="Language (English only for now)"
                   className={cn(
-                    "flex w-full items-center justify-between rounded-lg border border-input bg-background px-4 py-3",
+                    `
+                      flex w-full items-center justify-between rounded-lg border
+                      border-input bg-background px-4 py-3
+                    `,
                     "text-muted-foreground",
                   )}
-                  aria-label="Language (English only for now)"
                 >
                   <span className="font-medium">
                     {LANGUAGE_OPTIONS[0]?.label ?? "English"}
@@ -200,11 +217,11 @@ export function FooterPreferencesModal({
           <>
             <div className="flex items-center gap-2">
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
                 aria-label="Back"
                 onClick={() => setView("main")}
+                size="icon"
+                type="button"
+                variant="ghost"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -212,39 +229,57 @@ export function FooterPreferencesModal({
               <div className="w-10" />
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search
+                className={`
+                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                text-muted-foreground
+              `}
+              />
               <Input
+                className="pl-9"
+                onChange={(e) => setCountrySearch(e.target.value)}
                 placeholder="Search country"
                 value={countrySearch}
-                onChange={(e) => setCountrySearch(e.target.value)}
-                className="pl-9"
               />
             </div>
             <ul
-              className="max-h-[60vh] overflow-auto rounded-md border border-input"
+              className={`
+                max-h-[60vh] overflow-auto rounded-md border border-input
+              `}
               role="listbox"
             >
               {filteredCountries.map((o) => (
                 <li key={o.code}>
                   <button
-                    type="button"
-                    role="option"
                     aria-selected={draftCountry === o.code}
-                    onClick={() => selectCountry(o.code)}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 px-4 py-3 text-left",
-                      "hover:bg-muted/50 focus:bg-muted/50 focus:outline-none",
+                      `
+                        flex w-full items-center justify-between gap-2 px-4 py-3
+                        text-left
+                      `,
+                      `
+                        hover:bg-muted/50
+                        focus:bg-muted/50 focus:outline-none
+                      `,
                       draftCountry === o.code && "bg-muted/50",
                     )}
+                    onClick={() => selectCountry(o.code)}
+                    role="option"
+                    type="button"
                   >
                     <span className="flex items-center gap-2">
-                      <span className="text-xl" aria-hidden>
+                      <span aria-hidden className="text-xl">
                         {countryFlag(o.code)}
                       </span>
                       <span>{o.countryName}</span>
                     </span>
                     {draftCountry === o.code && (
-                      <Check className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400" />
+                      <Check
+                        className={`
+                        h-5 w-5 shrink-0 text-green-600
+                        dark:text-green-400
+                      `}
+                      />
                     )}
                   </button>
                 </li>
@@ -257,11 +292,11 @@ export function FooterPreferencesModal({
           <>
             <div className="flex items-center gap-2">
               <Button
-                type="button"
-                variant="ghost"
-                size="icon"
                 aria-label="Back"
                 onClick={() => setView("main")}
+                size="icon"
+                type="button"
+                variant="ghost"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -271,30 +306,43 @@ export function FooterPreferencesModal({
               <div className="w-10" />
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search
+                className={`
+                absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+                text-muted-foreground
+              `}
+              />
               <Input
+                className="pl-9"
+                onChange={(e) => setCurrencySearch(e.target.value)}
                 placeholder="Search currency"
                 value={currencySearch}
-                onChange={(e) => setCurrencySearch(e.target.value)}
-                className="pl-9"
               />
             </div>
             <ul
-              className="max-h-[60vh] overflow-auto rounded-md border border-input"
+              className={`
+                max-h-[60vh] overflow-auto rounded-md border border-input
+              `}
               role="listbox"
             >
               {filteredCurrencies.map((o) => (
                 <li key={o.code}>
                   <button
-                    type="button"
-                    role="option"
                     aria-selected={draftCurrency === o.code}
-                    onClick={() => selectCurrency(o.code)}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 px-4 py-3 text-left",
-                      "hover:bg-muted/50 focus:bg-muted/50 focus:outline-none",
+                      `
+                        flex w-full items-center justify-between gap-2 px-4 py-3
+                        text-left
+                      `,
+                      `
+                        hover:bg-muted/50
+                        focus:bg-muted/50 focus:outline-none
+                      `,
                       draftCurrency === o.code && "bg-muted/50",
                     )}
+                    onClick={() => selectCurrency(o.code)}
+                    role="option"
+                    type="button"
                   >
                     <span className="flex items-center gap-2">
                       <span className="text-muted-foreground">{o.symbol}</span>
@@ -303,7 +351,12 @@ export function FooterPreferencesModal({
                       </span>
                     </span>
                     {draftCurrency === o.code && (
-                      <Check className="h-5 w-5 shrink-0 text-green-600 dark:text-green-400" />
+                      <Check
+                        className={`
+                        h-5 w-5 shrink-0 text-green-600
+                        dark:text-green-400
+                      `}
+                      />
                     )}
                   </button>
                 </li>

@@ -1,7 +1,8 @@
 import { createRouteHandler } from "uploadthing/next";
 
-import { ourFileRouter } from "./core";
 import { getUploadThingToken } from "~/lib/uploadthing-token";
+
+import { ourFileRouter } from "./core";
 
 // So the SDK sees the raw token (env often has UPLOADTHING_TOKEN='...' with quotes)
 const token = getUploadThingToken();

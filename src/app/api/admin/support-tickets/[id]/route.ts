@@ -30,16 +30,16 @@ export async function GET(
 
     const [row] = await db
       .select({
+        createdAt: supportTicketTable.createdAt,
         id: supportTicketTable.id,
-        subject: supportTicketTable.subject,
         message: supportTicketTable.message,
         status: supportTicketTable.status,
+        subject: supportTicketTable.subject,
         type: supportTicketTable.type,
-        createdAt: supportTicketTable.createdAt,
         updatedAt: supportTicketTable.updatedAt,
+        userEmail: userTable.email,
         userId: supportTicketTable.userId,
         userName: userTable.name,
-        userEmail: userTable.email,
       })
       .from(supportTicketTable)
       .innerJoin(userTable, eq(supportTicketTable.userId, userTable.id))
@@ -52,14 +52,14 @@ export async function GET(
 
     const followUps = await db
       .select({
-        id: supportTicketMessageTable.id,
-        role: supportTicketMessageTable.role,
-        userId: supportTicketMessageTable.userId,
         content: supportTicketMessageTable.content,
         createdAt: supportTicketMessageTable.createdAt,
+        id: supportTicketMessageTable.id,
+        role: supportTicketMessageTable.role,
         staffFirstName: userTable.firstName,
-        staffLastName: userTable.lastName,
         staffImage: userTable.image,
+        staffLastName: userTable.lastName,
+        userId: supportTicketMessageTable.userId,
       })
       .from(supportTicketMessageTable)
       .leftJoin(userTable, eq(supportTicketMessageTable.userId, userTable.id))
@@ -68,16 +68,16 @@ export async function GET(
 
     const messages = [
       {
-        id: row.id,
-        role: "customer" as const,
         content: row.message,
         createdAt: row.createdAt,
+        id: row.id,
+        role: "customer" as const,
       },
       ...followUps.map((m) => ({
-        id: m.id,
-        role: m.role as "customer" | "staff",
         content: m.content,
         createdAt: m.createdAt,
+        id: m.id,
+        role: m.role as "customer" | "staff",
         ...(m.role === "staff" &&
         (m.staffFirstName != null ||
           m.staffLastName != null ||
@@ -85,8 +85,8 @@ export async function GET(
           ? {
               staffUser: {
                 firstName: m.staffFirstName ?? "",
-                lastName: m.staffLastName ?? "",
                 image: m.staffImage ?? null,
+                lastName: m.staffLastName ?? "",
               },
             }
           : {}),
@@ -94,19 +94,19 @@ export async function GET(
     ];
 
     return NextResponse.json({
-      id: row.id,
-      subject: row.subject,
-      message: row.message,
-      status: row.status,
-      type: row.type,
       createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
       customer: {
+        email: row.userEmail ?? "",
         id: row.userId,
         name: row.userName ?? "",
-        email: row.userEmail ?? "",
       },
+      id: row.id,
+      message: row.message,
       messages,
+      status: row.status,
+      subject: row.subject,
+      type: row.type,
+      updatedAt: row.updatedAt,
     });
   } catch (err) {
     console.error("Admin support-tickets [id] GET:", err);
@@ -140,12 +140,12 @@ export async function PATCH(
       return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
     }
 
-    let body: { status?: string; type?: string; priority?: string };
+    let body: { priority?: string; status?: string; type?: string };
     try {
       body = (await request.json()) as {
+        priority?: string;
         status?: string;
         type?: string;
-        priority?: string;
       };
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });

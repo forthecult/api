@@ -9,8 +9,8 @@ import { buildEmailHtml, plainTextToHtml } from "~/lib/email-layout";
 import { getNotificationTemplate } from "~/lib/notification-templates";
 
 export interface SendOrderShippedEmailParams {
-  to: string;
   orderId: string;
+  to: string;
   trackingNumber?: string;
   trackingUrl?: string;
 }
@@ -21,7 +21,7 @@ export interface SendOrderShippedEmailParams {
 export async function sendOrderShippedEmail(
   params: SendOrderShippedEmailParams,
 ): Promise<void> {
-  const { to, orderId, trackingNumber, trackingUrl } = params;
+  const { orderId, to, trackingNumber, trackingUrl } = params;
   const shortId = orderId.slice(0, 8);
   const template = getNotificationTemplate("order_shipped");
   const subject = template.emailSubject ?? "Your order has shipped";
@@ -40,8 +40,8 @@ export async function sendOrderShippedEmail(
 
   const contentHtml = plainTextToHtml(body);
   const html = buildEmailHtml(contentHtml, {
-    ctaUrl: orderStatusUrl,
     ctaLabel: "View order & track",
+    ctaUrl: orderStatusUrl,
   });
 
   if (process.env.RESEND_API_KEY) {
@@ -55,10 +55,10 @@ export async function sendOrderShippedEmail(
           : "onboarding@resend.dev";
       await resend.emails.send({
         from,
-        to,
+        html,
         subject,
         text: body + `\n\nView order status: ${orderStatusUrl}`,
-        html,
+        to,
       });
     } catch (err) {
       console.error("[sendOrderShippedEmail] Resend send failed:", err);
@@ -68,9 +68,9 @@ export async function sendOrderShippedEmail(
 
   if (process.env.NODE_ENV === "development") {
     console.log("[sendOrderShippedEmail] No RESEND_API_KEY - would send:", {
-      to,
-      subject,
       body: body.slice(0, 200),
+      subject,
+      to,
     });
   }
 }

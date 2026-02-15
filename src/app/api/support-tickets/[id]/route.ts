@@ -10,6 +10,51 @@ import {
 import { auth } from "~/lib/auth";
 
 /**
+ * DELETE /api/support-tickets/[id]
+ * Deletes a ticket for the current user (own tickets only).
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await auth.api.getSession({ headers: _request.headers });
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  if (!id) {
+    return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
+  }
+
+  const [ticket] = await db
+    .select({ id: supportTicketTable.id })
+    .from(supportTicketTable)
+    .where(
+      and(
+        eq(supportTicketTable.id, id),
+        eq(supportTicketTable.userId, session.user.id),
+      ),
+    )
+    .limit(1);
+
+  if (!ticket) {
+    return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  }
+
+  try {
+    await db.delete(supportTicketTable).where(eq(supportTicketTable.id, id));
+    return NextResponse.json({ success: true });
+  } catch (err) {
+    console.error("Support ticket DELETE:", err);
+    return NextResponse.json(
+      { error: "Failed to delete ticket." },
+      { status: 500 },
+    );
+  }
+}
+
+/**
  * GET /api/support-tickets/[id]
  * Returns a single ticket with messages for the current user (own tickets only).
  * messages[0] is the initial ticket message; rest are follow-ups from support_ticket_message.
@@ -30,12 +75,12 @@ export async function GET(
 
   const [ticket] = await db
     .select({
+      createdAt: supportTicketTable.createdAt,
       id: supportTicketTable.id,
-      subject: supportTicketTable.subject,
       message: supportTicketTable.message,
       status: supportTicketTable.status,
+      subject: supportTicketTable.subject,
       type: supportTicketTable.type,
-      createdAt: supportTicketTable.createdAt,
       updatedAt: supportTicketTable.updatedAt,
     })
     .from(supportTicketTable)
@@ -53,13 +98,13 @@ export async function GET(
 
   const followUps = await db
     .select({
-      id: supportTicketMessageTable.id,
-      role: supportTicketMessageTable.role,
       content: supportTicketMessageTable.content,
       createdAt: supportTicketMessageTable.createdAt,
+      id: supportTicketMessageTable.id,
+      role: supportTicketMessageTable.role,
       staffFirstName: userTable.firstName,
-      staffLastName: userTable.lastName,
       staffImage: userTable.image,
+      staffLastName: userTable.lastName,
     })
     .from(supportTicketMessageTable)
     .leftJoin(userTable, eq(supportTicketMessageTable.userId, userTable.id))
@@ -68,16 +113,16 @@ export async function GET(
 
   const messages = [
     {
-      id: ticket.id,
-      role: "customer" as const,
       content: ticket.message,
       createdAt: ticket.createdAt,
+      id: ticket.id,
+      role: "customer" as const,
     },
     ...followUps.map((m) => ({
-      id: m.id,
-      role: m.role as "customer" | "staff",
       content: m.content,
       createdAt: m.createdAt,
+      id: m.id,
+      role: m.role as "customer" | "staff",
       ...(m.role === "staff" &&
       (m.staffFirstName != null ||
         m.staffLastName != null ||
@@ -85,8 +130,8 @@ export async function GET(
         ? {
             staffUser: {
               firstName: m.staffFirstName ?? "",
-              lastName: m.staffLastName ?? "",
               image: m.staffImage ?? null,
+              lastName: m.staffLastName ?? "",
             },
           }
         : {}),
@@ -94,13 +139,13 @@ export async function GET(
   ];
 
   return NextResponse.json({
-    id: ticket.id,
-    subject: ticket.subject,
-    status: ticket.status,
-    type: ticket.type,
     createdAt: ticket.createdAt,
-    updatedAt: ticket.updatedAt,
+    id: ticket.id,
     messages,
+    status: ticket.status,
+    subject: ticket.subject,
+    type: ticket.type,
+    updatedAt: ticket.updatedAt,
   });
 }
 
@@ -157,49 +202,4 @@ export async function PATCH(
     .where(eq(supportTicketTable.id, id));
 
   return NextResponse.json({ status: "closed", updatedAt: now.toISOString() });
-}
-
-/**
- * DELETE /api/support-tickets/[id]
- * Deletes a ticket for the current user (own tickets only).
- */
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  const session = await auth.api.getSession({ headers: _request.headers });
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const { id } = await params;
-  if (!id) {
-    return NextResponse.json({ error: "Missing ticket id" }, { status: 400 });
-  }
-
-  const [ticket] = await db
-    .select({ id: supportTicketTable.id })
-    .from(supportTicketTable)
-    .where(
-      and(
-        eq(supportTicketTable.id, id),
-        eq(supportTicketTable.userId, session.user.id),
-      ),
-    )
-    .limit(1);
-
-  if (!ticket) {
-    return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
-  }
-
-  try {
-    await db.delete(supportTicketTable).where(eq(supportTicketTable.id, id));
-    return NextResponse.json({ success: true });
-  } catch (err) {
-    console.error("Support ticket DELETE:", err);
-    return NextResponse.json(
-      { error: "Failed to delete ticket." },
-      { status: 500 },
-    );
-  }
 }

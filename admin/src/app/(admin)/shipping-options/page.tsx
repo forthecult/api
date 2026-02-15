@@ -18,43 +18,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-const COUNTRY_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "All countries" },
-  { value: "US", label: "United States" },
-  { value: "CA", label: "Canada" },
-  { value: "GB", label: "United Kingdom" },
-  { value: "AU", label: "Australia" },
-  { value: "DE", label: "Germany" },
-  { value: "FR", label: "France" },
-  { value: "MX", label: "Mexico" },
-  { value: "OTHER", label: "Other (enter code)" },
+const COUNTRY_OPTIONS: { label: string; value: string }[] = [
+  { label: "All countries", value: "" },
+  { label: "United States", value: "US" },
+  { label: "Canada", value: "CA" },
+  { label: "United Kingdom", value: "GB" },
+  { label: "Australia", value: "AU" },
+  { label: "Germany", value: "DE" },
+  { label: "France", value: "FR" },
+  { label: "Mexico", value: "MX" },
+  { label: "Other (enter code)", value: "OTHER" },
 ];
 
-type ShippingOptionRow = {
+interface BrandOption {
   id: string;
   name: string;
-  countryCode: string | null;
-  minOrderCents: number | null;
-  maxOrderCents: number | null;
-  minQuantity: number | null;
-  maxQuantity: number | null;
-  minWeightGrams: number | null;
-  maxWeightGrams: number | null;
-  type: "flat" | "per_item" | "flat_plus_per_item" | "free";
-  amountCents: number | null;
-  additionalItemCents: number | null;
-  priority: number;
-  brandId: string | null;
-  brandName: string | null;
-  sourceUrl: string | null;
-  estimatedDaysText: string | null;
+}
+
+interface ListResponse {
+  items: ShippingOptionRow[];
+}
+
+interface ShippingOptionRow {
+  additionalItemCents: null | number;
+  amountCents: null | number;
+  brandId: null | string;
+  brandName: null | string;
+  countryCode: null | string;
   createdAt: string;
+  estimatedDaysText: null | string;
+  id: string;
+  maxOrderCents: null | number;
+  maxQuantity: null | number;
+  maxWeightGrams: null | number;
+  minOrderCents: null | number;
+  minQuantity: null | number;
+  minWeightGrams: null | number;
+  name: string;
+  priority: number;
+  sourceUrl: null | string;
+  type: "flat" | "flat_plus_per_item" | "free" | "per_item";
   updatedAt: string;
-};
-
-type BrandOption = { id: string; name: string };
-
-type ListResponse = { items: ShippingOptionRow[] };
+}
 
 const SORT_KEYS = [
   "name",
@@ -69,25 +74,12 @@ const SORT_KEYS = [
 ] as const;
 type SortBy = (typeof SORT_KEYS)[number];
 
-function formatRange(
-  min: number | null,
-  max: number | null,
-  formatter: (n: number) => string,
-): string {
-  if (min == null && max == null) return "—";
-  if (min != null && max == null) return `${formatter(min)}+`;
-  if (min == null && max != null) return `≤ ${formatter(max)}`;
-  if (min != null && max != null)
-    return `${formatter(min)} – ${formatter(max)}`;
-  return "—";
-}
-
 export default function AdminShippingOptionsPage() {
   const [data, setData] = useState<ListResponse | null>(null);
   const [brands, setBrands] = useState<BrandOption[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
+  const [deletingId, setDeletingId] = useState<null | string>(null);
   const [sortBy, setSortBy] = useState<SortBy>("priority");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [brandFilter, setBrandFilter] = useState<string>("");
@@ -145,8 +137,8 @@ export default function AdminShippingOptionsPage() {
         const res = await fetch(
           `${API_BASE}/api/admin/shipping-options/${id}`,
           {
-            method: "DELETE",
             credentials: "include",
+            method: "DELETE",
           },
         );
         if (!res.ok) {
@@ -178,11 +170,15 @@ export default function AdminShippingOptionsPage() {
   }, []);
 
   const SortHeader = ({ column, label }: { column: SortBy; label: string }) => (
-    <th className="whitespace-nowrap p-4 font-medium" scope="col">
+    <th className="p-4 font-medium whitespace-nowrap" scope="col">
       <button
-        type="button"
+        className={`
+          flex items-center gap-1 text-left text-xs font-semibold tracking-wider
+          text-muted-foreground uppercase
+          hover:text-foreground
+        `}
         onClick={() => toggleSort(column)}
-        className="flex items-center gap-1 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+        type="button"
       >
         {label}
         {sortBy === column ? (
@@ -200,7 +196,12 @@ export default function AdminShippingOptionsPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -215,16 +216,23 @@ export default function AdminShippingOptionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <h2 className="text-2xl font-semibold tracking-tight">
           Shipping options
         </h2>
         <div className="flex flex-wrap items-center gap-2">
           <select
-            value={brandFilter}
-            onChange={(e) => setBrandFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             aria-label="Filter by brand"
+            className={`
+              rounded-md border border-input bg-background px-3 py-2 text-sm
+            `}
+            onChange={(e) => setBrandFilter(e.target.value)}
+            value={brandFilter}
           >
             <option value="">All brands</option>
             {brands.map((b) => (
@@ -234,10 +242,12 @@ export default function AdminShippingOptionsPage() {
             ))}
           </select>
           <select
-            value={countryFilter}
-            onChange={(e) => setCountryFilter(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
             aria-label="Filter by country"
+            className={`
+              rounded-md border border-input bg-background px-3 py-2 text-sm
+            `}
+            onChange={(e) => setCountryFilter(e.target.value)}
+            value={countryFilter}
           >
             <option value="">All countries</option>
             {COUNTRY_OPTIONS.filter((c) => c.value).map((c) => (
@@ -247,7 +257,7 @@ export default function AdminShippingOptionsPage() {
             ))}
           </select>
           <Link href="/shipping-options/create">
-            <Button type="button" className="gap-2">
+            <Button className="gap-2" type="button">
               <Plus className="size-4" />
               Add shipping option
             </Button>
@@ -267,14 +277,24 @@ export default function AdminShippingOptionsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data?.items.length === 0 ? (
-            <div className="flex min-h-[200px] flex-col items-center justify-center gap-2 p-8 text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] flex-col items-center justify-center gap-2 p-8
+              text-muted-foreground
+            `}
+            >
               <p>No shipping options yet.</p>
               <Link href="/shipping-options/create">
-                <Button type="button" variant="outline" className="gap-2">
+                <Button className="gap-2" type="button" variant="outline">
                   <Plus className="size-4" />
                   Add shipping option
                 </Button>
@@ -284,7 +304,12 @@ export default function AdminShippingOptionsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <tr
+                    className={`
+                    border-b bg-muted/50 text-left text-xs font-semibold
+                    tracking-wider text-muted-foreground uppercase
+                  `}
+                  >
                     <SortHeader column="name" label="Name" />
                     <SortHeader column="brandName" label="Brand" />
                     <SortHeader column="countryCode" label="Country" />
@@ -295,7 +320,7 @@ export default function AdminShippingOptionsPage() {
                     <SortHeader column="amountCents" label="Amount" />
                     <SortHeader column="priority" label="Priority" />
                     <th
-                      className="whitespace-nowrap p-4 font-medium"
+                      className="p-4 font-medium whitespace-nowrap"
                       scope="col"
                     >
                       Action
@@ -305,13 +330,19 @@ export default function AdminShippingOptionsPage() {
                 <tbody>
                   {data.items.map((row) => (
                     <tr
+                      className={`
+                        border-b transition-colors
+                        hover:bg-muted/30
+                      `}
                       key={row.id}
-                      className="border-b transition-colors hover:bg-muted/30"
                     >
                       <td className="p-4 font-medium">
                         <Link
+                          className={`
+                            text-primary
+                            hover:underline
+                          `}
                           href={`/shipping-options/${row.id}`}
-                          className="text-primary hover:underline"
                         >
                           {row.brandId ? "Standard Shipping" : row.name}
                         </Link>
@@ -361,21 +392,29 @@ export default function AdminShippingOptionsPage() {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <Link
+                            className={`
+                              rounded p-1.5 text-muted-foreground
+                              transition-colors
+                              hover:bg-muted hover:text-foreground
+                            `}
                             href={`/shipping-options/${row.id}`}
-                            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                             title="Edit"
                           >
                             <Pencil className="size-4" />
                           </Link>
                           <button
-                            type="button"
-                            disabled={deletingId === row.id}
-                            onClick={() => handleDelete(row.id, row.name)}
                             className={cn(
-                              "rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive",
+                              `
+                                rounded p-1.5 text-muted-foreground
+                                transition-colors
+                                hover:bg-destructive/10 hover:text-destructive
+                              `,
                               deletingId === row.id && "opacity-50",
                             )}
+                            disabled={deletingId === row.id}
+                            onClick={() => handleDelete(row.id, row.name)}
                             title="Delete"
+                            type="button"
                           >
                             <Trash2 className="size-4" />
                           </button>
@@ -391,4 +430,17 @@ export default function AdminShippingOptionsPage() {
       </Card>
     </div>
   );
+}
+
+function formatRange(
+  min: null | number,
+  max: null | number,
+  formatter: (n: number) => string,
+): string {
+  if (min == null && max == null) return "—";
+  if (min != null && max == null) return `${formatter(min)}+`;
+  if (min == null && max != null) return `≤ ${formatter(max)}`;
+  if (min != null && max != null)
+    return `${formatter(min)} – ${formatter(max)}`;
+  return "—";
 }

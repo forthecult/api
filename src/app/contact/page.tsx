@@ -1,4 +1,5 @@
 import { SEO_CONFIG } from "~/app";
+
 import { ContactPageClient } from "./ContactPageClient";
 
 export const metadata = {
@@ -13,9 +14,19 @@ export default function ContactPage() {
     "";
 
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Contact us
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">

@@ -89,17 +89,17 @@ export async function GET(request: NextRequest) {
     const allOrders = ordersRow[0]?.count ?? 0;
 
     return NextResponse.json({
-      orders: allOrders,
-      wishlist: wishlistRow[0]?.count ?? 0,
       addresses: addressesRow[0]?.count ?? 0,
-      supportTickets: supportTicketsRow[0]?.count ?? 0,
-      paymentMethods: 0,
+      orders: allOrders,
       orderStats: {
         all: allOrders,
+        awaitingDelivery: awaitingDeliveryRow[0]?.count ?? 0,
         awaitingPayment: awaitingPaymentRow[0]?.count ?? 0,
         awaitingShipment: awaitingShipmentRow[0]?.count ?? 0,
-        awaitingDelivery: awaitingDeliveryRow[0]?.count ?? 0,
       },
+      paymentMethods: 0,
+      supportTickets: supportTicketsRow[0]?.count ?? 0,
+      wishlist: wishlistRow[0]?.count ?? 0,
     });
   } catch (err) {
     console.error("Dashboard counts error:", err);

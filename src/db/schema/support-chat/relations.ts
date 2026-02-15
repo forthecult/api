@@ -1,24 +1,24 @@
 import { relations } from "drizzle-orm";
 
+import { userTable } from "../users/tables";
 import {
   supportChatConversationTable,
   supportChatMessageTable,
 } from "./tables";
-import { userTable } from "../users/tables";
 
 export const supportChatConversationRelations = relations(
   supportChatConversationTable,
-  ({ one, many }) => ({
-    user: one(userTable, {
-      fields: [supportChatConversationTable.userId],
-      references: [userTable.id],
-    }),
+  ({ many, one }) => ({
+    messages: many(supportChatMessageTable),
     takenOverByUser: one(userTable, {
       fields: [supportChatConversationTable.takenOverBy],
       references: [userTable.id],
       relationName: "takenOverBy",
     }),
-    messages: many(supportChatMessageTable),
+    user: one(userTable, {
+      fields: [supportChatConversationTable.userId],
+      references: [userTable.id],
+    }),
   }),
 );
 

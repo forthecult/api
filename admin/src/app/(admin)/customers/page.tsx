@@ -23,35 +23,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 const API_BASE = getMainAppUrl();
 
 interface CustomerRow {
-  id: string;
-  name: string;
-  image: string | null;
+  amountSpentCents: null | number;
+  city: null | string;
+  country: null | string;
   email: string;
-  phone: string | null;
-  tokenBalanceCents: number | null;
+  id: string;
+  image: null | string;
+  name: string;
   orderCount: number;
-  amountSpentCents: number | null;
-  city: string | null;
-  country: string | null;
+  phone: null | string;
   receiveMarketing: boolean;
   receiveSmsMarketing: boolean;
+  tokenBalanceCents: null | number;
 }
 
 interface CustomersResponse {
   items: CustomerRow[];
-  page: number;
   limit: number;
+  page: number;
   totalCount: number;
   totalPages: number;
 }
 
-function formatTokenBalance(cents: number | null): string {
-  if (cents === null) return "—";
+function formatAmountSpent(cents: number): string {
+  if (cents === 0) return "—";
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
   }).format(cents / 100);
 }
 
@@ -59,13 +59,13 @@ function formatOrderCount(n: number): string {
   return n.toString().padStart(2, "0");
 }
 
-function formatAmountSpent(cents: number): string {
-  if (cents === 0) return "—";
+function formatTokenBalance(cents: null | number): string {
+  if (cents === null) return "—";
   return new Intl.NumberFormat("en-US", {
-    style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
   }).format(cents / 100);
 }
 
@@ -82,13 +82,13 @@ const COLUMNS = [
   { key: "action", label: "Action" },
 ] as const;
 
-type SortBy = "name" | "email" | "tokenBalance" | "orderCount" | "amountSpent";
+type SortBy = "amountSpent" | "email" | "name" | "orderCount" | "tokenBalance";
 type SortOrder = "asc" | "desc";
 
 export default function AdminCustomersPage() {
   const [data, setData] = useState<CustomersResponse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -99,7 +99,7 @@ export default function AdminCustomersPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "10" });
+      const params = new URLSearchParams({ limit: "10", page: String(page) });
       if (search.trim()) params.set("search", search.trim());
       params.set("sortBy", sortBy);
       params.set("order", sortOrder);
@@ -133,7 +133,12 @@ export default function AdminCustomersPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -148,29 +153,48 @@ export default function AdminCustomersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <h2 className="text-2xl font-semibold tracking-tight">Customers</h2>
         <Link href="#">
-          <Button type="button" className="gap-2">
+          <Button className="gap-2" type="button">
             <Plus className="h-4 w-4" />+ Add Customer
           </Button>
         </Link>
       </div>
 
       <Card>
-        <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <CardHeader
+          className={`
+          flex flex-col gap-4
+          sm:flex-row sm:items-center sm:justify-between
+        `}
+        >
           <CardTitle className="sr-only">Customer list</CardTitle>
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <div className="relative max-w-md flex-1">
+            <Search
+              className={`
+              absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2
+              text-muted-foreground
+            `}
+            />
             <input
-              className={cn(
-                "w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm",
-                "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
-              )}
-              placeholder="Search Customer..."
-              type="text"
+              aria-label="Search customers"
               autoComplete="off"
-              value={searchInput}
+              className={cn(
+                `
+                  w-full rounded-md border border-input bg-background py-2 pr-3
+                  pl-9 text-sm
+                `,
+                `
+                  placeholder:text-muted-foreground
+                  focus:ring-2 focus:ring-ring focus:outline-none
+                `,
+              )}
               onChange={(e) => setSearchInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -179,23 +203,30 @@ export default function AdminCustomersPage() {
                   setPage(1);
                 }
               }}
-              aria-label="Search customers"
+              placeholder="Search Customer..."
+              type="text"
+              value={searchInput}
             />
           </div>
           <Button
-            type="button"
-            variant="secondary"
             onClick={() => {
               setSearch(searchInput);
               setPage(1);
             }}
+            type="button"
+            variant="secondary"
           >
             Search
           </Button>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data ? (
@@ -203,7 +234,13 @@ export default function AdminCustomersPage() {
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <tr
+                      className={`
+                      border-b border-border bg-muted/50 text-left text-xs
+                      font-semibold tracking-wider text-muted-foreground
+                      uppercase
+                    `}
+                    >
                       {COLUMNS.map((col) => {
                         const isSortable =
                           "sortable" in col &&
@@ -215,18 +252,27 @@ export default function AdminCustomersPage() {
                         const isActive = isSortable && sortBy === col.key;
                         return (
                           <th
-                            key={col.key}
+                            aria-sort={
+                              isActive
+                                ? sortOrder === "asc"
+                                  ? "ascending"
+                                  : "descending"
+                                : undefined
+                            }
                             className={cn(
-                              "whitespace-nowrap p-4 font-medium",
+                              "p-4 font-medium whitespace-nowrap",
                               (col.key === "tokenBalance" ||
                                 col.key === "orderCount" ||
                                 col.key === "amountSpent") &&
                                 "text-right",
                               col.key === "action" && "text-right",
                               isSortable &&
-                                "cursor-pointer select-none hover:bg-muted/70",
+                                `
+                                  cursor-pointer select-none
+                                  hover:bg-muted/70
+                                `,
                             )}
-                            scope="col"
+                            key={col.key}
                             onClick={() =>
                               isSortable
                                 ? handleSort(col.key as SortBy)
@@ -238,14 +284,8 @@ export default function AdminCustomersPage() {
                               handleSort(col.key as SortBy)
                             }
                             role={isSortable ? "button" : undefined}
+                            scope="col"
                             tabIndex={isSortable ? 0 : undefined}
-                            aria-sort={
-                              isActive
-                                ? sortOrder === "asc"
-                                  ? "ascending"
-                                  : "descending"
-                                : undefined
-                            }
                           >
                             <span
                               className={cn(
@@ -260,19 +300,25 @@ export default function AdminCustomersPage() {
                                 isActive ? (
                                   sortOrder === "asc" ? (
                                     <ChevronUp
-                                      className="h-3.5 w-3.5 shrink-0 text-foreground"
                                       aria-hidden
+                                      className={`
+                                        h-3.5 w-3.5 shrink-0 text-foreground
+                                      `}
                                     />
                                   ) : (
                                     <ChevronDown
-                                      className="h-3.5 w-3.5 shrink-0 text-foreground"
                                       aria-hidden
+                                      className={`
+                                        h-3.5 w-3.5 shrink-0 text-foreground
+                                      `}
                                     />
                                   )
                                 ) : (
                                   <ArrowUpDown
-                                    className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
                                     aria-hidden
+                                    className={`
+                                      h-3.5 w-3.5 shrink-0 text-muted-foreground
+                                    `}
                                   />
                                 )
                               ) : null}
@@ -297,24 +343,35 @@ export default function AdminCustomersPage() {
                     ) : (
                       data.items.map((customer) => (
                         <tr
+                          className={`
+                            border-b
+                            last:border-0
+                          `}
                           key={customer.id}
-                          className="border-b last:border-0"
                         >
                           <td className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="relative flex h-9 w-9 shrink-0 overflow-hidden rounded-full border bg-muted">
+                              <div
+                                className={`
+                                relative flex h-9 w-9 shrink-0 overflow-hidden
+                                rounded-full border bg-muted
+                              `}
+                              >
                                 {customer.image ? (
                                   <Image
-                                    src={customer.image}
                                     alt=""
-                                    fill
                                     className="object-cover"
+                                    fill
                                     sizes="36px"
+                                    src={customer.image}
                                   />
                                 ) : (
                                   <span
-                                    className="flex size-full items-center justify-center text-xs font-medium text-muted-foreground"
                                     aria-hidden
+                                    className={`
+                                      flex size-full items-center justify-center
+                                      text-xs font-medium text-muted-foreground
+                                    `}
                                   >
                                     {customer.name
                                       .trim()
@@ -324,8 +381,11 @@ export default function AdminCustomersPage() {
                                 )}
                               </div>
                               <Link
+                                className={`
+                                  font-medium text-primary underline-offset-2
+                                  hover:underline
+                                `}
                                 href={`/customers/${customer.id}`}
-                                className="font-medium text-primary underline-offset-2 hover:underline"
                               >
                                 {customer.name}
                               </Link>
@@ -348,15 +408,22 @@ export default function AdminCustomersPage() {
                           >
                             {customer.receiveMarketing ? (
                               <span
-                                className="inline-flex size-5 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
                                 aria-label="Agreed to email marketing"
+                                className={`
+                                  inline-flex size-5 items-center justify-center
+                                  rounded-full bg-green-100 text-green-700
+                                  dark:bg-green-900/40 dark:text-green-400
+                                `}
                               >
                                 ✓
                               </span>
                             ) : (
                               <span
-                                className="inline-flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground"
                                 aria-label="Did not agree to email marketing"
+                                className={`
+                                  inline-flex size-5 items-center justify-center
+                                  rounded-full bg-muted text-muted-foreground
+                                `}
                               >
                                 —
                               </span>
@@ -365,15 +432,22 @@ export default function AdminCustomersPage() {
                           <td className="p-4 text-center" title="SMS marketing">
                             {customer.receiveSmsMarketing ? (
                               <span
-                                className="inline-flex size-5 items-center justify-center rounded-full bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400"
                                 aria-label="Agreed to SMS marketing"
+                                className={`
+                                  inline-flex size-5 items-center justify-center
+                                  rounded-full bg-green-100 text-green-700
+                                  dark:bg-green-900/40 dark:text-green-400
+                                `}
                               >
                                 ✓
                               </span>
                             ) : (
                               <span
-                                className="inline-flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground"
                                 aria-label="Did not agree to SMS marketing"
+                                className={`
+                                  inline-flex size-5 items-center justify-center
+                                  rounded-full bg-muted text-muted-foreground
+                                `}
                               >
                                 —
                               </span>
@@ -391,16 +465,24 @@ export default function AdminCustomersPage() {
                           <td className="p-4 text-right">
                             <span className="inline-flex items-center gap-1">
                               <Link
-                                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                                href={`/customers/${customer.id}`}
                                 aria-label={`Edit ${customer.name}`}
+                                className={`
+                                  rounded p-1.5 text-muted-foreground
+                                  transition-colors
+                                  hover:bg-muted hover:text-foreground
+                                `}
+                                href={`/customers/${customer.id}`}
                               >
                                 <Pencil className="h-4 w-4" />
                               </Link>
                               <button
-                                type="button"
-                                className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                                 aria-label={`Delete ${customer.name}`}
+                                className={`
+                                  rounded p-1.5 text-muted-foreground
+                                  transition-colors
+                                  hover:bg-destructive/10 hover:text-destructive
+                                `}
+                                type="button"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -414,15 +496,19 @@ export default function AdminCustomersPage() {
               </div>
 
               {data.items.length > 0 && (
-                <div className="mt-4 flex items-center justify-center gap-2 border-t pt-4">
+                <div
+                  className={`
+                  mt-4 flex items-center justify-center gap-2 border-t pt-4
+                `}
+                >
                   <Button
+                    aria-label="Previous page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Previous page"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
@@ -438,17 +524,24 @@ export default function AdminCustomersPage() {
                         const isCurrent = pageNum === data.page;
                         return (
                           <button
-                            key={pageNum}
-                            type="button"
-                            onClick={() => setPage(pageNum)}
+                            aria-current={isCurrent ? "page" : undefined}
+                            aria-label={`Page ${pageNum}`}
                             className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors",
+                              `
+                                flex h-8 w-8 items-center justify-center
+                                rounded-full text-sm font-medium
+                                transition-colors
+                              `,
                               isCurrent
                                 ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:bg-muted",
+                                : `
+                                  text-muted-foreground
+                                  hover:bg-muted
+                                `,
                             )}
-                            aria-label={`Page ${pageNum}`}
-                            aria-current={isCurrent ? "page" : undefined}
+                            key={pageNum}
+                            onClick={() => setPage(pageNum)}
+                            type="button"
                           >
                             {pageNum}
                           </button>
@@ -457,6 +550,8 @@ export default function AdminCustomersPage() {
                     )}
                   </span>
                   <Button
+                    aria-label="Next page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page >= data.totalPages}
                     onClick={() =>
                       setPage((p) => Math.min(data.totalPages, p + 1))
@@ -464,8 +559,6 @@ export default function AdminCustomersPage() {
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Next page"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>

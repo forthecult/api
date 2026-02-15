@@ -2,7 +2,12 @@ export default function ProductDetailLoading() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 py-10">
-        <div className="container mx-auto px-4 md:px-6">
+        <div
+          className={`
+          container mx-auto px-4
+          md:px-6
+        `}
+        >
           {/* Breadcrumb skeleton */}
           <div className="mb-4 flex gap-2">
             <div className="h-4 w-16 animate-pulse rounded bg-muted" />
@@ -14,7 +19,12 @@ export default function ProductDetailLoading() {
           <div className="mb-6 h-9 w-36 animate-pulse rounded bg-muted" />
 
           {/* Main grid */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
+          <div
+            className={`
+            grid grid-cols-1 gap-8
+            md:grid-cols-2
+          `}
+          >
             {/* Image gallery skeleton */}
             <div className="aspect-square animate-pulse rounded-lg bg-muted" />
 

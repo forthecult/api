@@ -30,9 +30,9 @@ export async function GET(
 
     const [category] = await db
       .select({
+        description: categoriesTable.description,
         id: categoriesTable.id,
         name: categoriesTable.name,
-        description: categoriesTable.description,
         slug: categoriesTable.slug,
       })
       .from(categoriesTable)
@@ -48,9 +48,9 @@ export async function GET(
 
     const childCategories = await db
       .select({
+        description: categoriesTable.description,
         id: categoriesTable.id,
         name: categoriesTable.name,
-        description: categoriesTable.description,
       })
       .from(categoriesTable)
       .where(eq(categoriesTable.parentId, category.id))
@@ -64,15 +64,15 @@ export async function GET(
     const ids = productIdsInCategory.map((r) => r.productId);
     if (ids.length === 0) {
       return NextResponse.json({
+        availableFilters: [],
+        description: category.description ?? undefined,
         id: category.id,
         name: category.name,
-        description: category.description ?? undefined,
-        slug: category.slug ?? undefined,
-        productCount: 0,
-        subcategories: childCategories.map((c) => ({ ...c, productCount: 0 })),
-        availableFilters: [],
-        priceRange: { min: 0, max: 0, currency: "usd" },
         popularProducts: [],
+        priceRange: { currency: "usd", max: 0, min: 0 },
+        productCount: 0,
+        slug: category.slug ?? undefined,
+        subcategories: childCategories.map((c) => ({ ...c, productCount: 0 })),
       });
     }
 
@@ -98,8 +98,8 @@ export async function GET(
           .groupBy(productsTable.brand),
         db
           .select({
-            min: sql<number>`min(${productsTable.priceCents})::int`,
             max: sql<number>`max(${productsTable.priceCents})::int`,
+            min: sql<number>`min(${productsTable.priceCents})::int`,
           })
           .from(productsTable)
           .innerJoin(
@@ -158,62 +158,62 @@ export async function GET(
 
     const brandOptions = brandCounts
       .filter(
-        (r: { brand: string | null; count: number }) =>
+        (r: { brand: null | string; count: number }) =>
           r.brand != null && String(r.brand).trim() !== "",
       )
-      .map((r: { brand: string | null; count: number }) => ({
-        value: String(r.brand).toLowerCase().replace(/\s+/g, "-"),
-        label: String(r.brand),
+      .map((r: { brand: null | string; count: number }) => ({
         count: r.count,
+        label: String(r.brand),
+        value: String(r.brand).toLowerCase().replace(/\s+/g, "-"),
       }));
 
     const priceMin = priceRange[0]?.min != null ? priceRange[0].min / 100 : 0;
     const priceMax = priceRange[0]?.max != null ? priceRange[0].max / 100 : 0;
 
-    const availableFilters: Array<{
-      id: string;
-      name: string;
-      type: string;
-      options?: Array<{
-        value: string | boolean;
-        label: string;
-        count: number;
-      }>;
-      min?: number;
-      max?: number;
+    const availableFilters: {
       currency?: string;
-    }> = [];
+      id: string;
+      max?: number;
+      min?: number;
+      name: string;
+      options?: {
+        count: number;
+        label: string;
+        value: boolean | string;
+      }[];
+      type: string;
+    }[] = [];
 
     if (brandOptions.length > 0) {
       availableFilters.push({
         id: "brand",
         name: "Brand",
-        type: "multiselect",
         options: brandOptions.map((o) => ({
-          value: o.value,
-          label: o.label,
           count: o.count,
+          label: o.label,
+          value: o.value,
         })),
+        type: "multiselect",
       });
     }
     if (priceMin < priceMax) {
       availableFilters.push({
+        currency: "usd",
         id: "price",
+        max: priceMax,
+        min: priceMin,
         name: "Price",
         type: "range",
-        min: priceMin,
-        max: priceMax,
-        currency: "usd",
       });
     }
     availableFilters.push({
       id: "inStock",
       name: "Availability",
-      type: "boolean",
       options: [
-        { value: true, label: "In Stock", count: ids.length },
-        { value: false, label: "Out of Stock", count: 0 },
+        { count: ids.length, label: "In Stock", value: true },
+        { count: 0, label: "Out of Stock", value: false },
       ],
+      type: "boolean",
     });
 
     const childProductCountMap = new Map(
@@ -224,26 +224,26 @@ export async function GET(
     );
 
     return NextResponse.json({
+      availableFilters,
+      description: category.description ?? undefined,
       id: category.id,
       name: category.name,
-      description: category.description ?? undefined,
-      slug: category.slug ?? undefined,
-      productCount: ids.length,
-      subcategories: childCategories.map(
-        (c: { id: string; name: string; description: string | null }) => ({
-          id: c.id,
-          name: c.name,
-          description: c.description ?? undefined,
-          productCount: childProductCountMap.get(c.id) ?? 0,
-        }),
-      ),
-      availableFilters,
-      priceRange: { min: priceMin, max: priceMax, currency: "usd" },
       popularProducts: popularRows.map(
         (p: { id: string; name: string; priceCents: number }) => ({
           id: p.id,
           name: p.name,
           price: { usd: p.priceCents / 100 },
+        }),
+      ),
+      priceRange: { currency: "usd", max: priceMax, min: priceMin },
+      productCount: ids.length,
+      slug: category.slug ?? undefined,
+      subcategories: childCategories.map(
+        (c: { description: null | string; id: string; name: string }) => ({
+          description: c.description ?? undefined,
+          id: c.id,
+          name: c.name,
+          productCount: childProductCountMap.get(c.id) ?? 0,
         }),
       ),
     });

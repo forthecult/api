@@ -9,9 +9,19 @@ export const metadata = {
 
 export default function CookiesPolicyPage() {
   return (
-    <div className="container mx-auto max-w-2xl px-4 py-12 sm:py-16">
+    <div
+      className={`
+      container mx-auto max-w-2xl px-4 py-12
+      sm:py-16
+    `}
+    >
       <header className="mb-12 border-b border-border pb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        <h1
+          className={`
+          text-3xl font-bold tracking-tight text-foreground
+          sm:text-4xl
+        `}
+        >
           Cookies policy
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
@@ -20,7 +30,12 @@ export default function CookiesPolicyPage() {
       </header>
 
       <div className="space-y-10">
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             We only use essential cookies
           </h2>
@@ -35,7 +50,12 @@ export default function CookiesPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             No &quot;bad&quot; cookies — that&apos;s why there&apos;s no popup
           </h2>
@@ -47,7 +67,12 @@ export default function CookiesPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             We don&apos;t follow you around the internet
           </h2>
@@ -59,30 +84,35 @@ export default function CookiesPolicyPage() {
           </p>
         </section>
 
-        <section className="rounded-lg border border-border bg-card/50 px-5 py-5 sm:px-6">
+        <section
+          className={`
+          rounded-lg border border-border bg-card/50 px-5 py-5
+          sm:px-6
+        `}
+        >
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
             Summary
           </h2>
           <ul className="mt-3 space-y-2 text-muted-foreground" role="list">
             <li className="flex gap-2 leading-relaxed">
               <span
-                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
               Only essential cookies — nothing optional or creepy.
             </li>
             <li className="flex gap-2 leading-relaxed">
               <span
-                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
               No cookie popup because we don&apos;t use the kind that require
               one.
             </li>
             <li className="flex gap-2 leading-relaxed">
               <span
-                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
                 aria-hidden
+                className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"
               />
               No cross‑site trackers; we don&apos;t follow you around the web.
             </li>
@@ -92,8 +122,11 @@ export default function CookiesPolicyPage() {
         <p className="pt-2 text-muted-foreground">
           Questions? Reach out on our{" "}
           <Link
+            className={`
+              font-medium text-primary underline-offset-4
+              hover:underline
+            `}
             href="/contact"
-            className="font-medium text-primary underline-offset-4 hover:underline"
           >
             contact page
           </Link>

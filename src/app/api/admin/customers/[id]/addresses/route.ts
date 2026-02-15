@@ -4,8 +4,8 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { addressesTable } from "~/db/schema";
-import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 import { getAdminAuth } from "~/lib/admin-api-auth";
+import { addCorsIfAdminOrigin } from "~/lib/cors-admin";
 
 /**
  * OPTIONS for CORS preflight when admin app (different origin) calls this API.
@@ -71,38 +71,38 @@ export async function POST(
     const now = new Date();
 
     await db.insert(addressesTable).values({
-      id,
-      userId,
       address1,
       address2:
         typeof body.address2 === "string" ? body.address2.trim() || null : null,
       city,
+      countryCode,
+      createdAt: now,
+      id,
+      isDefault,
+      label: typeof body.label === "string" ? body.label.trim() || null : null,
+      phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
       stateCode:
         typeof body.stateCode === "string"
           ? body.stateCode.trim() || null
           : null,
-      countryCode,
-      zip,
-      phone: typeof body.phone === "string" ? body.phone.trim() || null : null,
-      label: typeof body.label === "string" ? body.label.trim() || null : null,
-      isDefault,
-      createdAt: now,
       updatedAt: now,
+      userId,
+      zip,
     });
 
     return addCorsIfAdminOrigin(
       request,
       NextResponse.json({
-        id,
         address1,
         city,
+        countryCode,
+        id,
+        isDefault,
         stateCode:
           typeof body.stateCode === "string"
             ? body.stateCode.trim() || null
             : null,
-        countryCode,
         zip,
-        isDefault,
       }),
     );
   } catch (err) {

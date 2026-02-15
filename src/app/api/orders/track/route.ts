@@ -5,15 +5,11 @@ import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import { createOrderTrackToken } from "~/lib/order-track-token";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-
-function normalize(value: string | null | undefined): string {
-  return (value ?? "").trim().toLowerCase();
-}
 
 /**
  * POST /api/orders/track
@@ -30,10 +26,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json().catch(() => ({}))) as {
-      orderId?: string;
-      lookupValue?: string;
       // Legacy fields for backward compatibility
       email?: string;
+      lookupValue?: string;
+      orderId?: string;
       paymentAddress?: string;
     };
     const orderId = typeof body.orderId === "string" ? body.orderId.trim() : "";
@@ -76,8 +72,8 @@ export async function POST(request: NextRequest) {
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
         email: ordersTable.email,
+        id: ordersTable.id,
         payerWalletAddress: ordersTable.payerWalletAddress,
         shippingZip: ordersTable.shippingZip,
       })
@@ -111,7 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     const token = createOrderTrackToken(order.id);
-    return NextResponse.json({ token, orderId: order.id });
+    return NextResponse.json({ orderId: order.id, token });
   } catch (err) {
     console.error("Order track error:", err);
     return NextResponse.json(
@@ -119,4 +115,8 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function normalize(value: null | string | undefined): string {
+  return (value ?? "").trim().toLowerCase();
 }

@@ -13,13 +13,13 @@ import {
 } from "~/lib/rate-limit";
 
 const STATUS_MAP: Record<string, string> = {
-  pending: "awaiting_payment",
-  paid: "paid",
-  processing: "processing",
-  fulfilled: "shipped",
-  shipped: "shipped",
-  delivered: "delivered",
   cancelled: "cancelled",
+  delivered: "delivered",
+  fulfilled: "shipped",
+  paid: "paid",
+  pending: "awaiting_payment",
+  processing: "processing",
+  shipped: "shipped",
 };
 
 /**
@@ -48,24 +48,24 @@ export async function GET(
 
   const [order] = await db
     .select({
-      id: ordersTable.id,
-      status: ordersTable.status,
-      paymentStatus: ordersTable.paymentStatus,
-      totalCents: ordersTable.totalCents,
-      shippingFeeCents: ordersTable.shippingFeeCents,
       createdAt: ordersTable.createdAt,
-      updatedAt: ordersTable.updatedAt,
       email: ordersTable.email,
+      id: ordersTable.id,
       moltbookAgentId: ordersTable.moltbookAgentId,
-      shippingName: ordersTable.shippingName,
+      paymentStatus: ordersTable.paymentStatus,
       shippingAddress1: ordersTable.shippingAddress1,
       shippingAddress2: ordersTable.shippingAddress2,
       shippingCity: ordersTable.shippingCity,
+      shippingCountryCode: ordersTable.shippingCountryCode,
+      shippingFeeCents: ordersTable.shippingFeeCents,
+      shippingName: ordersTable.shippingName,
+      shippingPhone: ordersTable.shippingPhone,
       shippingStateCode: ordersTable.shippingStateCode,
       shippingZip: ordersTable.shippingZip,
-      shippingCountryCode: ordersTable.shippingCountryCode,
-      shippingPhone: ordersTable.shippingPhone,
       solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+      status: ordersTable.status,
+      totalCents: ordersTable.totalCents,
+      updatedAt: ordersTable.updatedAt,
     })
     .from(ordersTable)
     .where(eq(ordersTable.id, orderId.trim()))
@@ -80,10 +80,10 @@ export async function GET(
 
   const items = await db
     .select({
-      productId: orderItemsTable.productId,
       name: orderItemsTable.name,
-      quantity: orderItemsTable.quantity,
       priceCents: orderItemsTable.priceCents,
+      productId: orderItemsTable.productId,
+      quantity: orderItemsTable.quantity,
     })
     .from(orderItemsTable)
     .where(eq(orderItemsTable.orderId, order.id));
@@ -98,48 +98,48 @@ export async function GET(
 
   return NextResponse.json(
     {
-      orderId: order.id,
-      status,
       createdAt: order.createdAt.toISOString(),
+      email: order.email ?? undefined,
+      items: items.map((i) => ({
+        name: i.name,
+        priceUsd: i.priceCents / 100,
+        productId: i.productId,
+        quantity: i.quantity,
+        subtotalUsd: (i.priceCents * i.quantity) / 100,
+      })),
+      orderId: order.id,
       paidAt:
         order.status === "paid" || order.paymentStatus === "paid"
           ? order.updatedAt.toISOString()
           : null,
-      email: order.email ?? undefined,
       paymentMethod: order.solanaPayDepositAddress ? "solana_pay" : undefined,
-      items: items.map((i) => ({
-        productId: i.productId,
-        name: i.name,
-        quantity: i.quantity,
-        priceUsd: i.priceCents / 100,
-        subtotalUsd: (i.priceCents * i.quantity) / 100,
-      })),
       shipping:
         order.shippingName ||
         order.shippingAddress1 ||
         order.shippingCity ||
         order.shippingCountryCode
           ? {
-              name: order.shippingName ?? undefined,
               address1: order.shippingAddress1 ?? undefined,
               address2: order.shippingAddress2 ?? undefined,
               city: order.shippingCity ?? undefined,
+              countryCode: order.shippingCountryCode ?? undefined,
+              name: order.shippingName ?? undefined,
+              phone: order.shippingPhone ?? undefined,
               stateCode: order.shippingStateCode ?? undefined,
               zip: order.shippingZip ?? undefined,
-              countryCode: order.shippingCountryCode ?? undefined,
-              phone: order.shippingPhone ?? undefined,
             }
           : undefined,
-      totals: {
-        subtotalUsd: subtotalCents / 100,
-        shippingUsd,
-        totalUsd,
-      },
+      status,
       statusUrl:
         `${process.env.NEXT_PUBLIC_AGENT_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store"}`.replace(
           /\/$/,
           "",
         ) + `/api/orders/${order.id}/status`,
+      totals: {
+        shippingUsd,
+        subtotalUsd: subtotalCents / 100,
+        totalUsd,
+      },
     },
     { headers: getRateLimitHeaders(rl, RATE_LIMITS.api.limit) },
   );

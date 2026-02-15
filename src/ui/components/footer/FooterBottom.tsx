@@ -7,17 +7,18 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import type { CryptoCode } from "~/lib/hooks/use-crypto-currency";
-import {
-  CRYPTO_OPTIONS,
-  useCryptoCurrency,
-} from "~/lib/hooks/use-crypto-currency";
+
+import { SEO_CONFIG } from "~/app";
+import { countryFlag } from "~/lib/country-flag";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import { countryFlag } from "~/lib/country-flag";
-import { SEO_CONFIG } from "~/app";
+import {
+  CRYPTO_OPTIONS,
+  useCryptoCurrency,
+} from "~/lib/hooks/use-crypto-currency";
 import { Button } from "~/ui/primitives/button";
 import {
   DropdownMenu,
@@ -39,24 +40,24 @@ const CRYPTO_ICON_SIZE = 20;
 
 const CRYPTO_COLORS: Record<CryptoCode, string> = {
   BTC: "#F7931A",
-  ETH: "#627EEA",
-  SOL: "#0D9488",
-  DOGE: "#C2A633",
   CRUST: "#9945FF",
+  DOGE: "#C2A633",
+  ETH: "#627EEA",
   PUMP: "#00D26A",
-  TROLL: "#6B7280",
-  TON: "#0088CC",
-  XMR: "#FF6600",
-  XAU: "#FFD700",
-  XAG: "#C0C0C0",
   SKR: "#0EA5E9",
+  SOL: "#0D9488",
+  TON: "#0088CC",
+  TROLL: "#6B7280",
+  XAG: "#C0C0C0",
+  XAU: "#FFD700",
+  XMR: "#FF6600",
 };
 
 export function FooterBottom() {
   const [mounted, setMounted] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const { rates, selectedCrypto, setSelectedCrypto } = useCryptoCurrency();
-  const { currency, convertUsdToFiat, formatFiat, selectedCountry } =
+  const { convertUsdToFiat, currency, formatFiat, selectedCountry } =
     useCountryCurrency();
 
   useEffect(() => {
@@ -88,10 +89,10 @@ export function FooterBottom() {
             selectedCrypto === "XMR"
           ) {
             return new Intl.NumberFormat(undefined, {
-              style: "currency",
               currency,
-              minimumFractionDigits: 4,
               maximumFractionDigits: 6,
+              minimumFractionDigits: 4,
+              style: "currency",
             }).format(fiat);
           }
           return formatFiat(fiat);
@@ -121,7 +122,16 @@ export function FooterBottom() {
       >
         {fiatPrice != null && currentCrypto && (
           <span
-            className={`flex items-center gap-1.5 font-mono-crypto font-medium ${selectedCrypto === "SOL" || selectedCrypto === "PUMP" ? "font-semibold" : ""}`}
+            className={`
+              font-mono-crypto flex items-center gap-1.5 font-medium
+              ${
+                selectedCrypto === "SOL" || selectedCrypto === "PUMP"
+                  ? `
+                font-semibold
+              `
+                  : ""
+              }
+            `}
             style={{ color: CRYPTO_COLORS[selectedCrypto] }}
           >
             <Image
@@ -137,11 +147,19 @@ export function FooterBottom() {
             {fiatPrice}
           </span>
         )}
-        <div className="flex flex-col items-center justify-center gap-2 md:flex-row md:gap-4">
+        <div
+          className={`
+          flex flex-col items-center justify-center gap-2
+          md:flex-row md:gap-4
+        `}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                className="h-auto gap-1.5 px-0 py-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
+                className={`
+                  h-auto gap-1.5 px-0 py-0 text-sm text-muted-foreground
+                  hover:bg-transparent hover:text-foreground
+                `}
                 variant="ghost"
               >
                 {currentCrypto && (
@@ -161,11 +179,11 @@ export function FooterBottom() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {CRYPTO_OPTIONS.map(({ code, label, iconSrc }) => (
+              {CRYPTO_OPTIONS.map(({ code, iconSrc, label }) => (
                 <DropdownMenuItem
+                  className="flex items-center gap-2"
                   key={code}
                   onClick={() => setSelectedCrypto(code)}
-                  className="flex items-center gap-2"
                 >
                   <Image
                     alt=""
@@ -183,14 +201,22 @@ export function FooterBottom() {
             </DropdownMenuContent>
           </DropdownMenu>
           <Button
-            className="h-auto gap-1.5 px-0 py-0 text-sm text-muted-foreground hover:bg-transparent hover:text-foreground"
-            variant="ghost"
-            onClick={() => setPrefsOpen(true)}
             aria-label="Country and payment currency"
+            className={`
+              h-auto gap-1.5 px-0 py-0 text-sm text-muted-foreground
+              hover:bg-transparent hover:text-foreground
+            `}
+            onClick={() => setPrefsOpen(true)}
+            variant="ghost"
           >
             {mounted && currentCountry ? (
-              <span className="flex items-center gap-1.5" aria-hidden>
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center text-base leading-none">
+              <span aria-hidden className="flex items-center gap-1.5">
+                <span
+                  className={`
+                  flex h-5 w-5 shrink-0 items-center justify-center text-base
+                  leading-none
+                `}
+                >
                   {countryFlag(currentCountry.code)}
                 </span>
                 <span>{prefsLabel}</span>
@@ -201,8 +227,8 @@ export function FooterBottom() {
             <ChevronDown className="h-4 w-4 shrink-0" />
           </Button>
           <FooterPreferencesModal
-            open={prefsOpen}
             onOpenChange={setPrefsOpen}
+            open={prefsOpen}
           />
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4">

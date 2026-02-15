@@ -10,23 +10,23 @@ import {
   Sun,
   UserIcon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import * as React from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";
 import { countryFlag } from "~/lib/country-flag";
-import { Cart } from "~/ui/components/cart";
-import { Button } from "~/ui/primitives/button";
-import { Input } from "~/ui/primitives/input";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
+import { Cart } from "~/ui/components/cart";
+import { Button } from "~/ui/primitives/button";
+import { Input } from "~/ui/primitives/input";
 import { Sheet, SheetClose, SheetContent } from "~/ui/primitives/sheet";
 
 // Lazy load FooterPreferencesModal - only needed when user opens preferences
@@ -38,39 +38,39 @@ const FooterPreferencesModal = dynamic(
   { ssr: false },
 );
 
-type CategoryItem = {
+interface CategoryItem {
   id: string;
   name: string;
-  slug?: string;
   productCount?: number;
-  subcategories?: Array<{ id: string; name: string; productCount?: number }>;
-};
+  slug?: string;
+  subcategories?: { id: string; name: string; productCount?: number }[];
+}
 
 interface MobileNavSheetProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  categories: CategoryItem[];
-  pathname: string;
-  user:
-    | { email: string; image?: string | null; name: string }
-    | null
-    | undefined;
   authPending: boolean;
+  categories: CategoryItem[];
   isAdmin: boolean;
-  showAuth: boolean;
   isShopActive: boolean;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  pathname: string;
+  showAuth: boolean;
+  user:
+    | null
+    | undefined
+    | { email: string; image?: null | string; name: string };
 }
 
 export function MobileNavSheet({
-  open,
-  onOpenChange,
-  categories,
-  pathname,
-  user,
   authPending,
+  categories,
   isAdmin,
-  showAuth,
   isShopActive,
+  onOpenChange,
+  open,
+  pathname,
+  showAuth,
+  user,
 }: MobileNavSheetProps) {
   // Alias for backward compatibility
   const authUser = user;
@@ -110,14 +110,20 @@ export function MobileNavSheet({
 
   return (
     <>
-      <Sheet open={open} onOpenChange={onOpenChange}>
+      <Sheet onOpenChange={onOpenChange} open={open}>
         <SheetContent
-          side="left"
+          className={`
+            flex w-[min(85vw,320px)] flex-col gap-0 overflow-hidden p-0
+          `}
           hideClose
-          className="flex w-[min(85vw,320px)] flex-col gap-0 overflow-hidden p-0"
+          side="left"
         >
           {/* Header: Close, Culture, User, Cart */}
-          <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
+          <div
+            className={`
+            flex h-14 shrink-0 items-center justify-between border-b px-4
+          `}
+          >
             <div className="flex items-center gap-2">
               <SheetClose asChild>
                 <Button aria-label="Close menu" size="icon" variant="ghost">
@@ -125,7 +131,10 @@ export function MobileNavSheet({
                 </Button>
               </SheetClose>
               <Link
-                className="font-heading text-sm font-bold tracking-[0.2em] uppercase text-[#F5F1EB]"
+                className={`
+                  font-heading text-sm font-bold tracking-[0.2em] text-[#F5F1EB]
+                  uppercase
+                `}
                 href="/"
                 onClick={() => onOpenChange(false)}
               >
@@ -138,9 +147,9 @@ export function MobileNavSheet({
                   {authUser ? (
                     <Button asChild size="icon" variant="ghost">
                       <Link
+                        aria-label="Account"
                         href="/dashboard"
                         onClick={() => onOpenChange(false)}
-                        aria-label="Account"
                       >
                         <UserIcon className="h-5 w-5" />
                       </Link>
@@ -148,9 +157,9 @@ export function MobileNavSheet({
                   ) : (
                     <Button asChild size="icon" variant="ghost">
                       <Link
+                        aria-label="Log in"
                         href="/login"
                         onClick={() => onOpenChange(false)}
-                        aria-label="Log in"
                       >
                         <UserIcon className="h-5 w-5" />
                       </Link>
@@ -166,23 +175,35 @@ export function MobileNavSheet({
 
           {/* Always-visible search */}
           <form
-            onSubmit={handleSearchSubmit}
             className="flex shrink-0 items-center gap-2 border-b px-4 py-3"
+            onSubmit={handleSearchSubmit}
           >
-            <Search className="h-4 w-4 shrink-0 text-[#1A1611] dark:text-[#F5F1EB]" />
+            <Search
+              className={`
+              h-4 w-4 shrink-0 text-[#1A1611]
+              dark:text-[#F5F1EB]
+            `}
+            />
             <Input
-              type="search"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0"
               aria-label="Search"
+              className={`
+                border-0 bg-transparent shadow-none
+                focus-visible:ring-0
+              `}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search products..."
+              type="search"
+              value={searchQuery}
             />
           </form>
 
           {/* Token status (if logged in) */}
           {authUser && !authPending && (
-            <div className="shrink-0 border-b px-4 py-2 text-sm text-muted-foreground">
+            <div
+              className={`
+              shrink-0 border-b px-4 py-2 text-sm text-muted-foreground
+            `}
+            >
               <span aria-hidden>💎</span> Member
             </div>
           )}
@@ -192,27 +213,33 @@ export function MobileNavSheet({
             {/* Shop expandable */}
             <div className="px-2">
               <button
-                type="button"
+                aria-expanded={shopExpanded}
                 className={cn(
-                  "flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-base font-medium",
+                  `
+                    flex w-full items-center justify-between rounded-md px-3
+                    py-2 text-left text-base font-medium
+                  `,
                   isShopActive
                     ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-muted/50",
+                    : `
+                      text-foreground
+                      hover:bg-muted/50
+                    `,
                 )}
                 onClick={() => setShopExpanded((e) => !e)}
-                aria-expanded={shopExpanded}
+                type="button"
               >
                 Shop
                 <ChevronRight
+                  aria-hidden
                   className={cn(
                     "h-4 w-4 transition-transform",
                     shopExpanded && "rotate-90",
                   )}
-                  aria-hidden
                 />
               </button>
               {shopExpanded && (
-                <ul className="ml-2 mt-1 space-y-0.5 border-l border-muted pl-3">
+                <ul className="mt-1 ml-2 space-y-0.5 border-l border-muted pl-3">
                   {categories.map((cat) => {
                     const href = cat.slug ? `/${cat.slug}` : "/products";
                     return (
@@ -222,7 +249,10 @@ export function MobileNavSheet({
                             "block rounded px-2 py-1.5 text-sm",
                             pathname === href
                               ? "font-medium text-primary"
-                              : "text-muted-foreground hover:text-foreground",
+                              : `
+                                text-muted-foreground
+                                hover:text-foreground
+                              `,
                           )}
                           href={href}
                           onClick={() => onOpenChange(false)}
@@ -242,7 +272,10 @@ export function MobileNavSheet({
                 "block rounded-md px-4 py-2 text-base font-medium",
                 pathname?.startsWith("/esim")
                   ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-muted/50",
+                  : `
+                    text-foreground
+                    hover:bg-muted/50
+                  `,
               )}
               href="/esim"
               onClick={() => onOpenChange(false)}
@@ -257,7 +290,10 @@ export function MobileNavSheet({
                 "block rounded-md px-4 py-2 text-base font-medium",
                 pathname === "/about"
                   ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-muted/50",
+                  : `
+                    text-foreground
+                    hover:bg-muted/50
+                  `,
               )}
               href="/about"
               onClick={() => onOpenChange(false)}
@@ -269,7 +305,10 @@ export function MobileNavSheet({
                 "block rounded-md px-4 py-2 text-base font-medium",
                 pathname === "/contact"
                   ? "bg-primary/10 text-primary"
-                  : "text-foreground hover:bg-muted/50",
+                  : `
+                    text-foreground
+                    hover:bg-muted/50
+                  `,
               )}
               href="/contact"
               onClick={() => onOpenChange(false)}
@@ -284,7 +323,11 @@ export function MobileNavSheet({
             {showAuth && (
               <>
                 <Link
-                  className="flex items-center gap-2 rounded-md px-4 py-2 text-base font-medium text-foreground hover:bg-muted/50"
+                  className={`
+                    flex items-center gap-2 rounded-md px-4 py-2 text-base
+                    font-medium text-foreground
+                    hover:bg-muted/50
+                  `}
                   href="/dashboard"
                   onClick={() => onOpenChange(false)}
                 >
@@ -292,7 +335,11 @@ export function MobileNavSheet({
                   Account
                 </Link>
                 <Link
-                  className="flex items-center gap-2 rounded-md px-4 py-2 text-base font-medium text-foreground hover:bg-muted/50"
+                  className={`
+                    flex items-center gap-2 rounded-md px-4 py-2 text-base
+                    font-medium text-foreground
+                    hover:bg-muted/50
+                  `}
                   href="/dashboard/orders"
                   onClick={() => onOpenChange(false)}
                 >
@@ -300,7 +347,11 @@ export function MobileNavSheet({
                   Orders
                 </Link>
                 <Link
-                  className="flex items-center gap-2 rounded-md px-4 py-2 text-base font-medium text-foreground hover:bg-muted/50"
+                  className={`
+                    flex items-center gap-2 rounded-md px-4 py-2 text-base
+                    font-medium text-foreground
+                    hover:bg-muted/50
+                  `}
                   href="/dashboard/wishlist"
                   onClick={() => onOpenChange(false)}
                 >
@@ -309,15 +360,19 @@ export function MobileNavSheet({
                 </Link>
                 {isAdmin && (
                   <a
-                    className="flex items-center gap-2 rounded-md px-4 py-2 text-base font-medium text-foreground hover:bg-muted/50"
+                    className={`
+                      flex items-center gap-2 rounded-md px-4 py-2 text-base
+                      font-medium text-foreground
+                      hover:bg-muted/50
+                    `}
                     href={
                       typeof process.env.NEXT_PUBLIC_ADMIN_APP_URL === "string"
                         ? process.env.NEXT_PUBLIC_ADMIN_APP_URL
                         : "http://localhost:3001"
                     }
+                    onClick={() => onOpenChange(false)}
                     rel="noopener noreferrer"
                     target="_blank"
-                    onClick={() => onOpenChange(false)}
                   >
                     Admin
                   </a>
@@ -330,10 +385,14 @@ export function MobileNavSheet({
 
             {/* Country / currency */}
             <button
-              type="button"
-              className="flex w-full items-center gap-2 rounded-md px-4 py-2 text-left text-base font-medium text-foreground hover:bg-muted/50"
-              onClick={() => setPrefsOpen(true)}
               aria-label="Country and currency"
+              className={`
+                flex w-full items-center gap-2 rounded-md px-4 py-2 text-left
+                text-base font-medium text-foreground
+                hover:bg-muted/50
+              `}
+              onClick={() => setPrefsOpen(true)}
+              type="button"
             >
               <span aria-hidden>{countryFlag(selectedCountry)}</span>
               {localeLabel}
@@ -342,35 +401,39 @@ export function MobileNavSheet({
             {/* Theme */}
             {mounted && (
               <div className="px-4 py-2">
-                <span className="mb-1 block text-xs font-medium text-muted-foreground">
+                <span
+                  className={`
+                  mb-1 block text-xs font-medium text-muted-foreground
+                `}
+                >
                   Theme
                 </span>
                 <div className="flex flex-wrap gap-1">
                   <Button
+                    className="min-w-0 flex-1"
+                    onClick={() => setTheme("light")}
                     size="sm"
                     variant={theme === "light" ? "secondary" : "ghost"}
-                    className="flex-1 min-w-0"
-                    onClick={() => setTheme("light")}
                   >
                     <Sun className="mr-1 h-3.5 w-3.5 shrink-0" />
                     Light
                   </Button>
                   <Button
+                    className="min-w-0 flex-1"
+                    onClick={() => setTheme("dark")}
                     size="sm"
                     variant={theme === "dark" ? "secondary" : "ghost"}
-                    className="flex-1 min-w-0"
-                    onClick={() => setTheme("dark")}
                   >
                     <Moon className="mr-1 h-3.5 w-3.5 shrink-0" />
                     Dark
                   </Button>
                   <Button
+                    className="min-w-0 flex-1"
+                    onClick={() => setTheme("system")}
                     size="sm"
                     variant={
                       theme === "system" || !theme ? "secondary" : "ghost"
                     }
-                    className="flex-1 min-w-0"
-                    onClick={() => setTheme("system")}
                   >
                     <svg
                       aria-hidden
@@ -393,7 +456,7 @@ export function MobileNavSheet({
           </nav>
         </SheetContent>
       </Sheet>
-      <FooterPreferencesModal open={prefsOpen} onOpenChange={setPrefsOpen} />
+      <FooterPreferencesModal onOpenChange={setPrefsOpen} open={prefsOpen} />
     </>
   );
 }

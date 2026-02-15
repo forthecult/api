@@ -1,71 +1,152 @@
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl } from "~/lib/app-url";
 
-/** Safely serialize JSON-LD data, escaping </script> to prevent injection. */
-function safeJsonLd(data: unknown): string {
-  return JSON.stringify(data).replace(/</g, "\\u003c");
+interface BreadcrumbItem {
+  name: string;
+  url: string;
+}
+
+interface BreadcrumbStructuredDataProps {
+  items: BreadcrumbItem[];
+}
+
+interface CollectionPageStructuredDataProps {
+  description: string;
+  name: string;
+  numberOfItems?: number;
+  url: string;
+}
+
+interface FAQItem {
+  answer: string;
+  question: string;
+}
+
+interface FAQStructuredDataProps {
+  items: FAQItem[];
 }
 
 interface ProductStructuredDataProps {
   product: {
-    id: string;
-    name: string;
+    category?: string;
     description: string;
-    price: number;
+    id: string;
     image: string;
     inStock: boolean;
+    name: string;
+    price: number;
     rating?: number;
-    category?: string;
     /** Product URL path (store.com/[slug]). Defaults to /products/[id] if not set. */
     slug?: string;
   };
 }
 
 /**
- * JSON-LD structured data for product pages (SEO).
- * Renders as a script tag that search engines parse.
+ * AboutPage structured data for about pages.
  */
-export function ProductStructuredData({ product }: ProductStructuredDataProps) {
+export function AboutPageStructuredData() {
   const siteUrl = getPublicSiteUrl();
 
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "Product",
-    name: product.name,
-    description: product.description,
-    image: product.image,
-    sku: product.id,
-    offers: {
-      "@type": "Offer",
-      url: `${siteUrl}/${product.slug ?? product.id}`,
-      priceCurrency: "USD",
-      price: product.price,
-      availability: product.inStock
-        ? "https://schema.org/InStock"
-        : "https://schema.org/OutOfStock",
-      seller: {
-        "@type": "Organization",
-        name: SEO_CONFIG.name,
-      },
+    "@type": "AboutPage",
+    description: SEO_CONFIG.description,
+    mainEntity: {
+      "@type": "Organization",
+      description:
+        "For the Cult is the lifestyle brand for the age of decentralization. Premium gear, toxin-free apparel, crypto-native since 2015.",
+      foundingDate: "2015",
+      name: SEO_CONFIG.name,
+      url: siteUrl,
     },
-    ...(product.rating && {
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: product.rating,
-        bestRating: 5,
-        worstRating: 1,
-        ratingCount: 1, // Placeholder; ideally fetch real count
-      },
-    }),
-    ...(product.category && {
-      category: product.category,
-    }),
+    name: `About ${SEO_CONFIG.name}`,
+    url: `${siteUrl}/about`,
   };
 
   return (
     <script
-      type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
+    />
+  );
+}
+
+/**
+ * Breadcrumb structured data for navigation context.
+ */
+export function BreadcrumbStructuredData({
+  items,
+}: BreadcrumbStructuredDataProps) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      item: item.url,
+      name: item.name,
+      position: index + 1,
+    })),
+  };
+
+  return (
+    <script
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
+    />
+  );
+}
+
+/**
+ * CollectionPage structured data for product listing and category pages.
+ */
+export function CollectionPageStructuredData({
+  description,
+  name,
+  numberOfItems,
+  url,
+}: CollectionPageStructuredDataProps) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    description,
+    name,
+    url,
+    ...(numberOfItems != null && { numberOfItems }),
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: numberOfItems ?? 0,
+    },
+  };
+
+  return (
+    <script
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
+    />
+  );
+}
+
+/**
+ * FAQPage structured data for FAQ sections.
+ */
+export function FAQStructuredData({ items }: FAQStructuredDataProps) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
+      name: item.question,
+    })),
+  };
+
+  return (
+    <script
+      dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
     />
   );
 }
@@ -80,55 +161,70 @@ export function OrganizationStructuredData() {
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    name: SEO_CONFIG.name,
-    url: siteUrl,
-    logo: SEO_CONFIG.brandLogoUrl ?? `${siteUrl}/logo.png`,
-    description: SEO_CONFIG.description,
     contactPoint: {
       "@type": "ContactPoint",
       contactType: "customer service",
       url: `${siteUrl}/contact`,
     },
+    description: SEO_CONFIG.description,
+    logo: SEO_CONFIG.brandLogoUrl ?? `${siteUrl}/logo.png`,
+    name: SEO_CONFIG.name,
+    url: siteUrl,
   };
 
   return (
     <script
-      type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
     />
   );
 }
 
-interface BreadcrumbItem {
-  name: string;
-  url: string;
-}
-
-interface BreadcrumbStructuredDataProps {
-  items: BreadcrumbItem[];
-}
-
 /**
- * Breadcrumb structured data for navigation context.
+ * JSON-LD structured data for product pages (SEO).
+ * Renders as a script tag that search engines parse.
  */
-export function BreadcrumbStructuredData({
-  items,
-}: BreadcrumbStructuredDataProps) {
+export function ProductStructuredData({ product }: ProductStructuredDataProps) {
+  const siteUrl = getPublicSiteUrl();
+
   const structuredData = {
     "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: items.map((item, index) => ({
-      "@type": "ListItem",
-      position: index + 1,
-      name: item.name,
-      item: item.url,
-    })),
+    "@type": "Product",
+    description: product.description,
+    image: product.image,
+    name: product.name,
+    offers: {
+      "@type": "Offer",
+      availability: product.inStock
+        ? "https://schema.org/InStock"
+        : "https://schema.org/OutOfStock",
+      price: product.price,
+      priceCurrency: "USD",
+      seller: {
+        "@type": "Organization",
+        name: SEO_CONFIG.name,
+      },
+      url: `${siteUrl}/${product.slug ?? product.id}`,
+    },
+    sku: product.id,
+    ...(product.rating && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        bestRating: 5,
+        ratingCount: 1, // Placeholder; ideally fetch real count
+        ratingValue: product.rating,
+        worstRating: 1,
+      },
+    }),
+    ...(product.category && {
+      category: product.category,
+    }),
   };
 
   return (
     <script
-      type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
     />
   );
 }
@@ -143,122 +239,26 @@ export function WebSiteStructuredData() {
     "@context": "https://schema.org",
     "@type": "WebSite",
     name: SEO_CONFIG.name,
-    url: siteUrl,
     potentialAction: {
       "@type": "SearchAction",
+      "query-input": "required name=search_term_string",
       target: {
         "@type": "EntryPoint",
         urlTemplate: `${siteUrl}/products?search={search_term_string}`,
       },
-      "query-input": "required name=search_term_string",
     },
+    url: siteUrl,
   };
 
   return (
     <script
-      type="application/ld+json"
       dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
+      type="application/ld+json"
     />
   );
 }
 
-/**
- * AboutPage structured data for about pages.
- */
-export function AboutPageStructuredData() {
-  const siteUrl = getPublicSiteUrl();
-
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "AboutPage",
-    name: `About ${SEO_CONFIG.name}`,
-    description: SEO_CONFIG.description,
-    url: `${siteUrl}/about`,
-    mainEntity: {
-      "@type": "Organization",
-      name: SEO_CONFIG.name,
-      url: siteUrl,
-      foundingDate: "2015",
-      description:
-        "For the Cult is the lifestyle brand for the age of decentralization. Premium gear, toxin-free apparel, crypto-native since 2015.",
-    },
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
-    />
-  );
-}
-
-interface CollectionPageStructuredDataProps {
-  name: string;
-  description: string;
-  url: string;
-  numberOfItems?: number;
-}
-
-/**
- * CollectionPage structured data for product listing and category pages.
- */
-export function CollectionPageStructuredData({
-  name,
-  description,
-  url,
-  numberOfItems,
-}: CollectionPageStructuredDataProps) {
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "CollectionPage",
-    name,
-    description,
-    url,
-    ...(numberOfItems != null && { numberOfItems }),
-    mainEntity: {
-      "@type": "ItemList",
-      numberOfItems: numberOfItems ?? 0,
-    },
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
-    />
-  );
-}
-
-interface FAQItem {
-  question: string;
-  answer: string;
-}
-
-interface FAQStructuredDataProps {
-  items: FAQItem[];
-}
-
-/**
- * FAQPage structured data for FAQ sections.
- */
-export function FAQStructuredData({ items }: FAQStructuredDataProps) {
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: items.map((item) => ({
-      "@type": "Question",
-      name: item.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: item.answer,
-      },
-    })),
-  };
-
-  return (
-    <script
-      type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: safeJsonLd(structuredData) }}
-    />
-  );
+/** Safely serialize JSON-LD data, escaping </script> to prevent injection. */
+function safeJsonLd(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, "\\u003c");
 }

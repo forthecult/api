@@ -14,7 +14,7 @@ import { useSession } from "~/lib/auth-client";
 export function ThemePersistSync({
   initialUserTheme,
 }: {
-  initialUserTheme: string | null;
+  initialUserTheme: null | string;
 }) {
   const { setTheme, theme } = useTheme();
   const { data } = useSession();
@@ -34,9 +34,9 @@ export function ThemePersistSync({
 
     const ctrl = new AbortController();
     fetch("/api/user/profile", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ theme }),
+      headers: { "Content-Type": "application/json" },
+      method: "PATCH",
       signal: ctrl.signal,
     }).catch(() => {
       // Ignore errors (e.g. network); theme is still in localStorage

@@ -5,18 +5,6 @@ import { db } from "~/db";
 import { orderItemsTable, ordersTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 
-function paymentStatusFromLegacy(status: string): string {
-  if (status === "refunded") return "refunded";
-  if (status === "paid" || status === "fulfilled") return "paid";
-  if (status === "cancelled") return "cancelled";
-  return "pending";
-}
-
-function fulfillmentStatusFromLegacy(status: string): string {
-  if (status === "fulfilled") return "fulfilled";
-  return "unfulfilled";
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -30,12 +18,12 @@ export async function GET(
     const { id: customerId } = await params;
     const orders = await db
       .select({
-        id: ordersTable.id,
         createdAt: ordersTable.createdAt,
         email: ordersTable.email,
-        status: ordersTable.status,
-        paymentStatus: ordersTable.paymentStatus,
         fulfillmentStatus: ordersTable.fulfillmentStatus,
+        id: ordersTable.id,
+        paymentStatus: ordersTable.paymentStatus,
+        status: ordersTable.status,
         totalCents: ordersTable.totalCents,
       })
       .from(ordersTable)
@@ -47,9 +35,9 @@ export async function GET(
       orderIds.length > 0
         ? await db
             .select({
-              orderId: orderItemsTable.orderId,
               id: orderItemsTable.id,
               name: orderItemsTable.name,
+              orderId: orderItemsTable.orderId,
               priceCents: orderItemsTable.priceCents,
               quantity: orderItemsTable.quantity,
             })
@@ -78,13 +66,10 @@ export async function GET(
       const fulfillment =
         o.fulfillmentStatus ?? fulfillmentStatusFromLegacy(o.status);
       return {
-        id: o.id,
         createdAt: o.createdAt.toISOString(),
         email: o.email,
-        status: o.status,
-        paymentStatus: payment,
         fulfillmentStatus: fulfillment,
-        totalCents: o.totalCents,
+        id: o.id,
         itemCount,
         items: orderItems.map((i) => ({
           id: i.id,
@@ -92,6 +77,9 @@ export async function GET(
           priceCents: i.priceCents,
           quantity: i.quantity,
         })),
+        paymentStatus: payment,
+        status: o.status,
+        totalCents: o.totalCents,
       };
     });
 
@@ -103,4 +91,16 @@ export async function GET(
       { status: 500 },
     );
   }
+}
+
+function fulfillmentStatusFromLegacy(status: string): string {
+  if (status === "fulfilled") return "fulfilled";
+  return "unfulfilled";
+}
+
+function paymentStatusFromLegacy(status: string): string {
+  if (status === "refunded") return "refunded";
+  if (status === "paid" || status === "fulfilled") return "paid";
+  if (status === "cancelled") return "cancelled";
+  return "pending";
 }

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import Image from "next/image";
 
 import { SEO_CONFIG } from "~/app";
@@ -6,108 +7,108 @@ import { getLookbookImages } from "~/lib/get-lookbook-images";
 import { PageTokenGate } from "~/ui/components/token-gate/PageTokenGate";
 
 const PHOTOGRAPHER = {
-  name: "George J. Patterson",
   bio: "George is a freelance photographer residing in Syracuse, NY. He specializes in portrait, product, and lifestyle photography.",
+  name: "George J. Patterson",
 };
 
-const LOOKBOOK_IMAGES: Array<{
-  src: string;
+const LOOKBOOK_IMAGES: {
   alt: string;
-  title: string;
   description: string;
   size: "large" | "medium" | "small";
-}> = [
+  src: string;
+  title: string;
+}[] = [
   {
-    src: "/lookbook/culture-brand-lifestyle-premium-apparel.jpg",
     alt: "Culture brand lifestyle shot — premium apparel and decentralized culture",
-    title: "Culture lifestyle — About",
     description:
       "Lifestyle photography for Culture brand, premium apparel and lifestyle.",
     size: "large",
+    src: "/lookbook/culture-brand-lifestyle-premium-apparel.jpg",
+    title: "Culture lifestyle — About",
   },
   {
-    src: "/lookbook/culture-apparel-lookbook-natural-fiber-clothing.jpeg",
     alt: "Culture apparel lookbook — natural fiber clothing",
-    title: "Lookbook — Apparel 1",
     description: "Product and lifestyle photography for Culture apparel.",
     size: "medium",
+    src: "/lookbook/culture-apparel-lookbook-natural-fiber-clothing.jpeg",
+    title: "Lookbook — Apparel 1",
   },
   {
-    src: "/lookbook/culture-lookbook-toxin-free-apparel-styling.jpg",
     alt: "Culture lookbook — toxin-free apparel styling",
-    title: "Lookbook — Apparel 2",
     description: "Lifestyle shot featuring Culture premium apparel.",
     size: "medium",
+    src: "/lookbook/culture-lookbook-toxin-free-apparel-styling.jpg",
+    title: "Lookbook — Apparel 2",
   },
   {
-    src: "/lookbook/culture-merchandise-lookbook-limited-edition.jpg",
     alt: "Culture merchandise lookbook — limited edition",
-    title: "Lookbook — Limited edition",
     description: "Limited edition Culture merchandise, lifestyle photography.",
     size: "large",
+    src: "/lookbook/culture-merchandise-lookbook-limited-edition.jpg",
+    title: "Lookbook — Limited edition",
   },
   {
-    src: "/lookbook/culture-product-photography-premium-gear.jpg",
     alt: "Culture product photography — premium gear",
-    title: "Lookbook — Premium gear",
     description: "Product and lifestyle shot for Culture premium gear.",
     size: "small",
+    src: "/lookbook/culture-product-photography-premium-gear.jpg",
+    title: "Lookbook — Premium gear",
   },
   {
-    src: "/lookbook/culture-apparel-portrait-and-product.jpg",
     alt: "Culture apparel — portrait and product",
-    title: "Lookbook — Portrait",
     description: "Portrait and product photography for Culture brand.",
     size: "small",
+    src: "/lookbook/culture-apparel-portrait-and-product.jpg",
+    title: "Lookbook — Portrait",
   },
   {
-    src: "/lookbook/culture-lookbook-lifestyle-and-apparel.jpg",
     alt: "Culture lookbook — lifestyle and apparel",
-    title: "Lookbook — Lifestyle",
     description: "Lifestyle photography featuring Culture apparel.",
     size: "large",
+    src: "/lookbook/culture-lookbook-lifestyle-and-apparel.jpg",
+    title: "Lookbook — Lifestyle",
   },
   {
-    src: "/lookbook/culture-lookbook-decentralized-lifestyle.jpg",
     alt: "Culture lookbook — decentralized lifestyle",
-    title: "Lookbook — Decentralized lifestyle",
     description: "Lifestyle shot for Culture decentralized lifestyle brand.",
     size: "medium",
+    src: "/lookbook/culture-lookbook-decentralized-lifestyle.jpg",
+    title: "Lookbook — Decentralized lifestyle",
   },
   {
-    src: "/lookbook/culture-brand-lookbook-premium-product.jpg",
     alt: "Culture brand lookbook — premium product",
-    title: "Lookbook — Premium product",
     description: "Final lookbook shot for Culture premium product.",
     size: "medium",
+    src: "/lookbook/culture-brand-lookbook-premium-product.jpg",
+    title: "Lookbook — Premium product",
   },
   {
-    src: "/lookbook/culture-apparel-styling-natural-fibers.jpg",
     alt: "Culture apparel styling — natural fibers",
-    title: "Lookbook — Styling",
     description: "Apparel styling shot for Culture natural fiber clothing.",
     size: "small",
+    src: "/lookbook/culture-apparel-styling-natural-fibers.jpg",
+    title: "Lookbook — Styling",
   },
   {
-    src: "/lookbook/culture-lookbook-product-and-lifestyle.jpg",
     alt: "Culture lookbook — product and lifestyle",
-    title: "Lookbook — Product and lifestyle",
     description: "Product and lifestyle photography for Culture.",
     size: "medium",
+    src: "/lookbook/culture-lookbook-product-and-lifestyle.jpg",
+    title: "Lookbook — Product and lifestyle",
   },
   {
-    src: "/lookbook/culture-merchandise-lifestyle-photography.jpg",
     alt: "Culture merchandise — lifestyle photography",
-    title: "Lookbook — Merchandise",
     description: "Lifestyle photography for Culture merchandise.",
     size: "large",
+    src: "/lookbook/culture-merchandise-lifestyle-photography.jpg",
+    title: "Lookbook — Merchandise",
   },
   {
-    src: "/lookbook/culture-brand-lookbook-editorial.jpg",
     alt: "Culture brand lookbook — editorial",
-    title: "Lookbook — Editorial",
     description: "Editorial lookbook shot for Culture brand.",
     size: "medium",
+    src: "/lookbook/culture-brand-lookbook-editorial.jpg",
+    title: "Lookbook — Editorial",
   },
 ];
 
@@ -115,29 +116,29 @@ const LOOKBOOK_IMAGES: Array<{
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Lookbook | ${SEO_CONFIG.name}`,
   description:
     "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography. Photos by George J. Patterson, Syracuse NY.",
   openGraph: {
-    title: `Lookbook | ${SEO_CONFIG.name}`,
     description:
       "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography. Photos by George J. Patterson.",
-    type: "website",
     images: [
       {
+        alt: "Culture lookbook — product and lifestyle photography",
+        height: 630,
         url: "/lookbook/culture-lookbook-product-and-lifestyle.jpg",
         width: 1200,
-        height: 630,
-        alt: "Culture lookbook — product and lifestyle photography",
       },
     ],
+    title: `Lookbook | ${SEO_CONFIG.name}`,
+    type: "website",
   },
+  title: `Lookbook | ${SEO_CONFIG.name}`,
   twitter: {
     card: "summary_large_image",
-    title: `Lookbook | ${SEO_CONFIG.name}`,
     description:
       "Culture lookbook: premium apparel, toxin-free clothing, and lifestyle photography.",
     images: ["/lookbook/culture-lookbook-product-and-lifestyle.jpg"],
+    title: `Lookbook | ${SEO_CONFIG.name}`,
   },
 };
 
@@ -145,9 +146,19 @@ export default async function LookbookPage() {
   const images = getLookbookImages();
   return (
     <PageTokenGate slug="lookbook">
-      <div className="container mx-auto max-w-6xl px-4 py-12 sm:py-16">
+      <div
+        className={`
+        container mx-auto max-w-6xl px-4 py-12
+        sm:py-16
+      `}
+      >
         <header className="mb-12 border-b border-border pb-10">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <h1
+            className={`
+            text-3xl font-bold tracking-tight text-foreground
+            sm:text-4xl
+          `}
+          >
             Lookbook
           </h1>
           <p className="mt-3 text-lg text-muted-foreground">
@@ -157,21 +168,51 @@ export default async function LookbookPage() {
         </header>
 
         <div
-          className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3"
+          className={`
+            grid grid-cols-1 gap-4
+            sm:grid-cols-2 sm:gap-6
+            lg:grid-cols-3
+          `}
           role="list"
         >
           {images.map((img) => (
             <figure
-              key={img.src}
               className={`
-              relative overflow-hidden rounded-lg border border-border bg-muted/30
-              ${img.size === "large" ? "sm:col-span-2 lg:col-span-2" : ""}
-              ${img.size === "medium" ? "sm:col-span-2 lg:col-span-1" : ""}
-            `}
+                relative overflow-hidden rounded-lg border border-border
+                bg-muted/30
+                ${
+                  img.size === "large"
+                    ? `
+                  sm:col-span-2
+                  lg:col-span-2
+                `
+                    : ""
+                }
+                ${
+                  img.size === "medium"
+                    ? `
+                  sm:col-span-2
+                  lg:col-span-1
+                `
+                    : ""
+                }
+              `}
+              key={img.src}
             >
               <Image
-                src={img.src}
                 alt={img.alt}
+                className="h-auto w-full object-cover"
+                height={
+                  img.size === "large" ? 800 : img.size === "medium" ? 600 : 500
+                }
+                sizes={
+                  img.size === "large"
+                    ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
+                    : img.size === "medium"
+                      ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                }
+                src={img.src}
                 title={img.title}
                 width={
                   img.size === "large"
@@ -179,17 +220,6 @@ export default async function LookbookPage() {
                     : img.size === "medium"
                       ? 800
                       : 600
-                }
-                height={
-                  img.size === "large" ? 800 : img.size === "medium" ? 600 : 500
-                }
-                className="h-auto w-full object-cover"
-                sizes={
-                  img.size === "large"
-                    ? "(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 66vw"
-                    : img.size === "medium"
-                      ? "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 }
               />
               <figcaption className="sr-only">

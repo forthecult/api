@@ -70,7 +70,12 @@ export function ResetPasswordClient() {
 
   if (errorParam === "INVALID_TOKEN" || (token === null && !success)) {
     return (
-      <div className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
+      <div
+        className={`
+        container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
+        gap-6 p-4
+      `}
+      >
         <div className="flex items-center gap-2">
           <KeyRound className="h-8 w-8 text-muted-foreground" />
           <h1 className="text-2xl font-semibold tracking-tight">
@@ -94,10 +99,20 @@ export function ResetPasswordClient() {
 
   if (success) {
     return (
-      <div className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
+      <div
+        className={`
+        container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center
+        gap-6 p-4
+      `}
+      >
         <Card>
           <CardHeader>
-            <CardTitle className="text-green-600 dark:text-green-400">
+            <CardTitle
+              className={`
+              text-green-600
+              dark:text-green-400
+            `}
+            >
               Password changed
             </CardTitle>
           </CardHeader>
@@ -112,7 +127,12 @@ export function ResetPasswordClient() {
   }
 
   return (
-    <div className="container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6 p-4">
+    <div
+      className={`
+      container mx-auto flex min-h-[60vh] max-w-md flex-col justify-center gap-6
+      p-4
+    `}
+    >
       <div className="flex items-center gap-2">
         <KeyRound className="h-8 w-8 text-muted-foreground" />
         <h1 className="text-2xl font-semibold tracking-tight">
@@ -128,46 +148,53 @@ export function ResetPasswordClient() {
           </p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {error && (
-              <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+              <div
+                className={`
+                rounded-md bg-destructive/10 p-3 text-sm text-destructive
+              `}
+              >
                 {error}
               </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="new-password">New password</Label>
               <Input
-                id="new-password"
-                type="password"
                 autoComplete="new-password"
-                value={newPassword}
+                id="new-password"
+                minLength={MIN_PASSWORD_LENGTH}
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="At least 8 characters"
                 required
-                minLength={MIN_PASSWORD_LENGTH}
+                type="password"
+                value={newPassword}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirm-password">Confirm password</Label>
               <Input
-                id="confirm-password"
-                type="password"
                 autoComplete="new-password"
-                value={confirmPassword}
+                id="confirm-password"
+                minLength={MIN_PASSWORD_LENGTH}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Same as above"
                 required
-                minLength={MIN_PASSWORD_LENGTH}
+                type="password"
+                value={confirmPassword}
               />
             </div>
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button className="w-full" disabled={loading} type="submit">
               {loading ? "Updating…" : "Update password"}
             </Button>
           </form>
           <p className="mt-4 text-center text-sm text-muted-foreground">
             <Link
+              className={`
+                underline
+                hover:no-underline
+              `}
               href="/dashboard/security"
-              className="underline hover:no-underline"
             >
               Back to Security
             </Link>

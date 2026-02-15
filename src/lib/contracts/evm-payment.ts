@@ -9,12 +9,12 @@
  */
 
 import {
-  keccak256,
-  encodeAbiParameters,
-  parseAbiParameters,
   concat,
-  toHex,
+  encodeAbiParameters,
+  keccak256,
   pad,
+  parseAbiParameters,
+  toHex,
 } from "viem";
 
 // ============================================================================
@@ -30,14 +30,14 @@ import {
 export const FACTORY_ADDRESSES: Record<number, `0x${string}`> = {
   // Mainnets - Deploy and update these addresses
   1: "0x0000000000000000000000000000000000000000", // Ethereum Mainnet
-  42161: "0x0000000000000000000000000000000000000000", // Arbitrum One
-  8453: "0x0000000000000000000000000000000000000000", // Base
-  137: "0x0000000000000000000000000000000000000000", // Polygon
-  56: "0x0000000000000000000000000000000000000000", // BNB Smart Chain
   10: "0x0000000000000000000000000000000000000000", // Optimism
+  56: "0x0000000000000000000000000000000000000000", // BNB Smart Chain
+  137: "0x0000000000000000000000000000000000000000", // Polygon
+  8453: "0x0000000000000000000000000000000000000000", // Base
+  42161: "0x0000000000000000000000000000000000000000", // Arbitrum One
+  84532: "0x0000000000000000000000000000000000000000", // Base Sepolia
   // Testnets
   11155111: "0x0000000000000000000000000000000000000000", // Sepolia
-  84532: "0x0000000000000000000000000000000000000000", // Base Sepolia
 };
 
 /**
@@ -45,13 +45,13 @@ export const FACTORY_ADDRESSES: Record<number, `0x${string}`> = {
  */
 export const IMPLEMENTATION_ADDRESSES: Record<number, `0x${string}`> = {
   1: "0x0000000000000000000000000000000000000000",
-  42161: "0x0000000000000000000000000000000000000000",
-  8453: "0x0000000000000000000000000000000000000000",
-  137: "0x0000000000000000000000000000000000000000",
-  56: "0x0000000000000000000000000000000000000000",
   10: "0x0000000000000000000000000000000000000000",
-  11155111: "0x0000000000000000000000000000000000000000",
+  56: "0x0000000000000000000000000000000000000000",
+  137: "0x0000000000000000000000000000000000000000",
+  8453: "0x0000000000000000000000000000000000000000",
+  42161: "0x0000000000000000000000000000000000000000",
   84532: "0x0000000000000000000000000000000000000000",
+  11155111: "0x0000000000000000000000000000000000000000",
 };
 
 // ============================================================================
@@ -63,14 +63,14 @@ export const IMPLEMENTATION_ADDRESSES: Record<number, `0x${string}`> = {
  */
 export const USDC_ADDRESSES: Record<number, `0x${string}`> = {
   1: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", // Ethereum
-  42161: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // Arbitrum (native USDC)
-  8453: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base
-  137: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", // Polygon (native USDC)
-  56: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // BNB (Binance-Peg)
   10: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85", // Optimism (native USDC)
+  56: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", // BNB (Binance-Peg)
+  137: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359", // Polygon (native USDC)
+  8453: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base
+  42161: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831", // Arbitrum (native USDC)
+  84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
   // Testnets
   11155111: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia
-  84532: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia
 };
 
 /**
@@ -78,10 +78,10 @@ export const USDC_ADDRESSES: Record<number, `0x${string}`> = {
  */
 export const USDT_ADDRESSES: Record<number, `0x${string}`> = {
   1: "0xdAC17F958D2ee523a2206206994597C13D831ec7", // Ethereum
-  42161: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", // Arbitrum
-  137: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // Polygon
-  56: "0x55d398326f99059fF775485246999027B3197955", // BNB (Binance-Peg)
   10: "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58", // Optimism
+  56: "0x55d398326f99059fF775485246999027B3197955", // BNB (Binance-Peg)
+  137: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", // Polygon
+  42161: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9", // Arbitrum
   // Note: USDT not available on Base mainnet
 };
 
@@ -100,24 +100,24 @@ export const TOKEN_DECIMALS: Record<string, number> = {
 
 export const CHAIN_NAMES: Record<number, string> = {
   1: "ethereum",
-  42161: "arbitrum",
-  8453: "base",
-  137: "polygon",
-  56: "bnb",
   10: "optimism",
-  11155111: "sepolia",
+  56: "bnb",
+  137: "polygon",
+  8453: "base",
+  42161: "arbitrum",
   84532: "base-sepolia",
+  11155111: "sepolia",
 };
 
 export const CHAIN_IDS: Record<string, number> = {
-  ethereum: 1,
   arbitrum: 42161,
   base: 8453,
-  polygon: 137,
-  bnb: 56,
-  optimism: 10,
-  sepolia: 11155111,
   "base-sepolia": 84532,
+  bnb: 56,
+  ethereum: 1,
+  optimism: 10,
+  polygon: 137,
+  sepolia: 11155111,
 };
 
 /**
@@ -132,13 +132,13 @@ export function getRpcUrl(chainId: number): string {
   // Default ANKR public RPCs (set * _RPC_URL in .env for paid sub)
   const defaults: Record<number, string> = {
     1: "https://rpc.ankr.com/eth",
-    42161: "https://rpc.ankr.com/arbitrum_one",
-    8453: "https://rpc.ankr.com/base",
-    137: "https://rpc.ankr.com/polygon",
-    56: "https://rpc.ankr.com/bsc",
     10: "https://rpc.ankr.com/optimism",
-    11155111: "https://rpc.sepolia.org",
+    56: "https://rpc.ankr.com/bsc",
+    137: "https://rpc.ankr.com/polygon",
+    8453: "https://rpc.ankr.com/base",
+    42161: "https://rpc.ankr.com/arbitrum_one",
     84532: "https://sepolia.base.org",
+    11155111: "https://rpc.sepolia.org",
   };
   return defaults[chainId] ?? "";
 }
@@ -184,11 +184,26 @@ export function computePaymentReceiverAddress(
 }
 
 /**
- * Convert an order ID string to bytes32 for use as CREATE2 salt
- * Uses keccak256 to ensure consistent 32-byte output
+ * Format token amount for display
  */
-export function orderIdToBytes32(orderId: string): `0x${string}` {
-  return keccak256(toHex(orderId));
+export function formatTokenAmount(
+  amount: bigint,
+  token: "ETH" | "USDC" | "USDT",
+  maxDecimals = 6,
+): string {
+  const decimals = TOKEN_DECIMALS[token];
+  const divisor = BigInt(10 ** decimals);
+  const whole = amount / divisor;
+  const fraction = amount % divisor;
+
+  if (fraction === 0n) {
+    return whole.toString();
+  }
+
+  const fractionStr = fraction.toString().padStart(decimals, "0");
+  const trimmed = fractionStr.slice(0, maxDecimals).replace(/0+$/, "");
+
+  return trimmed ? `${whole}.${trimmed}` : whole.toString();
 }
 
 /**
@@ -226,6 +241,57 @@ export function getPaymentReceiverAddress(
 // ============================================================================
 
 /**
+ * Get token contract address for a chain
+ */
+export function getTokenAddress(
+  chainId: number,
+  token: "USDC" | "USDT",
+): `0x${string}` | null {
+  if (token === "USDC") {
+    return USDC_ADDRESSES[chainId] ?? null;
+  }
+  if (token === "USDT") {
+    return USDT_ADDRESSES[chainId] ?? null;
+  }
+  return null;
+}
+
+/**
+ * Check if factory is deployed on a chain
+ */
+export function isFactoryDeployed(chainId: number): boolean {
+  const address = FACTORY_ADDRESSES[chainId];
+  return (
+    address !== undefined &&
+    address !== "0x0000000000000000000000000000000000000000"
+  );
+}
+
+// ============================================================================
+// TOKEN HELPERS
+// ============================================================================
+
+/**
+ * Check if a token is supported on a chain
+ */
+export function isTokenSupportedOnChain(
+  chainId: number,
+  token: "ETH" | "USDC" | "USDT",
+): boolean {
+  if (token === "ETH") return true; // ETH is native on all EVM chains
+  const address = getTokenAddress(chainId, token);
+  return address !== null;
+}
+
+/**
+ * Convert an order ID string to bytes32 for use as CREATE2 salt
+ * Uses keccak256 to ensure consistent 32-byte output
+ */
+export function orderIdToBytes32(orderId: string): `0x${string}` {
+  return keccak256(toHex(orderId));
+}
+
+/**
  * Convert USD cents to token amount (wei/smallest unit)
  *
  * @param usdCents Amount in USD cents (e.g., 1999 for $19.99)
@@ -255,70 +321,4 @@ export function usdCentsToTokenAmount(
   // USDC/USDT: 1 USD = 1 token, 6 decimals
   // usdCents / 100 * 10^6 = usdCents * 10^4
   return BigInt(usdCents) * BigInt(10 ** (decimals - 2));
-}
-
-/**
- * Format token amount for display
- */
-export function formatTokenAmount(
-  amount: bigint,
-  token: "ETH" | "USDC" | "USDT",
-  maxDecimals = 6,
-): string {
-  const decimals = TOKEN_DECIMALS[token];
-  const divisor = BigInt(10 ** decimals);
-  const whole = amount / divisor;
-  const fraction = amount % divisor;
-
-  if (fraction === 0n) {
-    return whole.toString();
-  }
-
-  const fractionStr = fraction.toString().padStart(decimals, "0");
-  const trimmed = fractionStr.slice(0, maxDecimals).replace(/0+$/, "");
-
-  return trimmed ? `${whole}.${trimmed}` : whole.toString();
-}
-
-// ============================================================================
-// TOKEN HELPERS
-// ============================================================================
-
-/**
- * Get token contract address for a chain
- */
-export function getTokenAddress(
-  chainId: number,
-  token: "USDC" | "USDT",
-): `0x${string}` | null {
-  if (token === "USDC") {
-    return USDC_ADDRESSES[chainId] ?? null;
-  }
-  if (token === "USDT") {
-    return USDT_ADDRESSES[chainId] ?? null;
-  }
-  return null;
-}
-
-/**
- * Check if a token is supported on a chain
- */
-export function isTokenSupportedOnChain(
-  chainId: number,
-  token: "ETH" | "USDC" | "USDT",
-): boolean {
-  if (token === "ETH") return true; // ETH is native on all EVM chains
-  const address = getTokenAddress(chainId, token);
-  return address !== null;
-}
-
-/**
- * Check if factory is deployed on a chain
- */
-export function isFactoryDeployed(chainId: number): boolean {
-  const address = FACTORY_ADDRESSES[chainId];
-  return (
-    address !== undefined &&
-    address !== "0x0000000000000000000000000000000000000000"
-  );
 }

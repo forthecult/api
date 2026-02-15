@@ -19,7 +19,7 @@ function getAllowedAdminOrigins(): string[] {
   return DEFAULT_ADMIN_ORIGINS;
 }
 
-function getCorsHeaders(request: NextRequest): Record<string, string> | null {
+function getCorsHeaders(request: NextRequest): null | Record<string, string> {
   const origin = request.headers.get("origin") ?? "";
   const allowed = getAllowedAdminOrigins();
   // Only set CORS headers for recognized origins — never fall back to the first allowed origin
@@ -36,57 +36,57 @@ function getCorsHeaders(request: NextRequest): Record<string, string> | null {
 
 /** Map Vercel geo country (ISO 3166-1 alpha-2) to our CountryCode. Only set cookie when we support the country. */
 const GEO_TO_COUNTRY: Record<string, string> = {
-  // Americas
-  US: "US",
-  CA: "CA",
-  MX: "MX",
-  BR: "BR",
+  AE: "AE",
   AR: "AR",
-  CL: "CL",
-  CR: "CR",
-  PA: "PA",
-  SV: "SV",
-  BZ: "BZ",
-  KN: "KN",
-  // Europe
-  GB: "GB",
-  DE: "DE",
-  FR: "FR",
-  ES: "ES",
-  IT: "IT",
-  NL: "NL",
-  BE: "BE",
   AT: "AT",
-  CH: "CH",
-  IE: "IE",
-  PT: "PT",
-  PL: "PL",
-  SE: "SE",
-  NO: "NO",
-  DK: "DK",
-  FI: "FI",
-  IS: "IS",
-  LU: "LU",
-  LI: "LI",
-  LT: "LT",
-  EE: "EE",
-  ME: "ME",
   // Asia Pacific
   AU: "AU",
-  NZ: "NZ",
-  JP: "JP",
-  KR: "KR",
-  HK: "HK",
-  SG: "SG",
-  TW: "TW",
-  PH: "PH",
-  IN: "IN",
+  BE: "BE",
+  BR: "BR",
+  BZ: "BZ",
+  CA: "CA",
+  CH: "CH",
+  CL: "CL",
+  CR: "CR",
+  DE: "DE",
+  DK: "DK",
+  EE: "EE",
+  ES: "ES",
+  FI: "FI",
   FJ: "FJ",
+  FR: "FR",
+  // Europe
+  GB: "GB",
+  HK: "HK",
+  IE: "IE",
   // Middle East
   IL: "IL",
-  AE: "AE",
-  SA: "SA",
+  IN: "IN",
+  IS: "IS",
+  IT: "IT",
+  JP: "JP",
+  KN: "KN",
+  KR: "KR",
+  LI: "LI",
+  LT: "LT",
+  LU: "LU",
+  ME: "ME",
+  MX: "MX",
+  NL: "NL",
+  NO: "NO",
+  NZ: "NZ",
+  PA: "PA",
+  PH: "PH",
+  PL: "PL",
+  PT: "PT",
   QA: "QA",
+  SA: "SA",
+  SE: "SE",
+  SG: "SG",
+  SV: "SV",
+  TW: "TW",
+  // Americas
+  US: "US",
 };
 
 const COUNTRY_CURRENCY_COOKIE = "country-currency";
@@ -145,8 +145,8 @@ function proxyHandler(request: NextRequest) {
     const country = geo ? GEO_TO_COUNTRY[geo.toUpperCase()] : null;
     if (country) {
       res.cookies.set(COUNTRY_CURRENCY_COOKIE, country, {
-        path: "/",
         maxAge: 60 * 60 * 24 * 365,
+        path: "/",
         sameSite: "lax",
       });
     }
@@ -157,10 +157,10 @@ function proxyHandler(request: NextRequest) {
   if (ref && ref.trim().length > 0) {
     const code = ref.trim().slice(0, 64); // reasonable max length
     res.cookies.set(AFFILIATE_COOKIE_NAME, code, {
-      path: "/",
-      maxAge: AFFILIATE_COOKIE_MAX_AGE_SECONDS,
-      sameSite: "lax",
       httpOnly: true,
+      maxAge: AFFILIATE_COOKIE_MAX_AGE_SECONDS,
+      path: "/",
+      sameSite: "lax",
     });
   }
 

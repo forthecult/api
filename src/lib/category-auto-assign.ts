@@ -14,94 +14,12 @@ import {
 } from "~/db/schema";
 
 export interface ProductForAutoAssign {
+  brand: null | string;
+  createdAt: Date;
   id: string;
   name: string;
-  brand: string | null;
-  createdAt: Date;
   /** Product tags (for tagContains rule). If not provided, tag-based rules do not match. */
   tags?: string[];
-}
-
-/**
- * Escapes a string for use inside a regex (so literal match, no special chars).
- */
-function escapeForRegex(needle: string): string {
-  return needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/**
- * True if haystack contains needle as a whole word (case-insensitive).
- * E.g. "ton" matches "TON" or "Ton" in "buy Ton" but not in "cotton" or "button".
- */
-function containsWholeWord(haystack: string, needle: string): boolean {
-  const trimmed = needle.trim();
-  if (!trimmed) return false;
-  const escaped = escapeForRegex(trimmed);
-  const re = new RegExp(`\\b${escaped}\\b`, "i");
-  return re.test(haystack);
-}
-
-/**
- * Returns a PostgreSQL regex pattern for whole-word match (case-insensitive with ~*).
- * Uses \m and \M for word boundaries. Use in SQL: column ~* pattern
- */
-export function getWholeWordRegexPattern(needle: string): string {
-  const trimmed = needle.trim();
-  if (!trimmed) return "";
-  const escaped = escapeForRegex(trimmed);
-  return `\\m${escaped}\\M`;
-}
-
-/**
- * Match is case-insensitive for title and tag (e.g. "Bitcoin" and "bitcoin" match the same).
- * Title and tag "contains" use whole-word matching so e.g. "ton" does not match "cotton".
- */
-function productMatchesRule(
-  product: ProductForAutoAssign,
-  rule: {
-    titleContains: string | null;
-    createdWithinDays: number | null;
-    brand: string | null;
-    tagContains: string | null;
-  },
-): boolean {
-  if (rule.titleContains?.trim()) {
-    if (
-      !product.name ||
-      !containsWholeWord(product.name, rule.titleContains.trim())
-    ) {
-      return false;
-    }
-  }
-  if (rule.brand?.trim()) {
-    if (
-      !product.brand ||
-      product.brand.trim().toLowerCase() !== rule.brand.trim().toLowerCase()
-    ) {
-      return false;
-    }
-  }
-  if (rule.tagContains?.trim()) {
-    const needle = rule.tagContains.trim();
-    const tags = product.tags ?? [];
-    if (!tags.some((t) => containsWholeWord(String(t).trim(), needle))) {
-      return false;
-    }
-  }
-  if (rule.createdWithinDays != null && rule.createdWithinDays > 0) {
-    const since = new Date();
-    since.setDate(since.getDate() - rule.createdWithinDays);
-    if (product.createdAt < since) return false;
-  }
-  if (
-    !rule.titleContains?.trim() &&
-    rule.createdWithinDays == null &&
-    !rule.brand?.trim() &&
-    !rule.tagContains?.trim()
-  ) {
-    return false;
-  }
-  return true;
 }
 
 /**
@@ -142,9 +60,9 @@ export async function applyCategoryAutoRules(
     await db
       .insert(productCategoriesTable)
       .values({
-        productId: product.id,
         categoryId,
         isMain: false,
+        productId: product.id,
       })
       .onConflictDoNothing({
         target: [
@@ -155,6 +73,17 @@ export async function applyCategoryAutoRules(
     added += 1;
   }
   return { added };
+}
+
+/**
+ * Returns a PostgreSQL regex pattern for whole-word match (case-insensitive with ~*).
+ * Uses \m and \M for word boundaries. Use in SQL: column ~* pattern
+ */
+export function getWholeWordRegexPattern(needle: string): string {
+  const trimmed = needle.trim();
+  if (!trimmed) return "";
+  const escaped = escapeForRegex(trimmed);
+  return `\\m${escaped}\\M`;
 }
 
 /**
@@ -195,9 +124,9 @@ export async function syncProductCategoriesWithAutoRules(
       const result = await db
         .insert(productCategoriesTable)
         .values({
-          productId: product.id,
           categoryId: rule.categoryId,
           isMain: false,
+          productId: product.id,
         })
         .onConflictDoNothing({
           target: [
@@ -223,4 +152,75 @@ export async function syncProductCategoriesWithAutoRules(
   }
 
   return { added, removed };
+}
+
+/**
+ * True if haystack contains needle as a whole word (case-insensitive).
+ * E.g. "ton" matches "TON" or "Ton" in "buy Ton" but not in "cotton" or "button".
+ */
+function containsWholeWord(haystack: string, needle: string): boolean {
+  const trimmed = needle.trim();
+  if (!trimmed) return false;
+  const escaped = escapeForRegex(trimmed);
+  const re = new RegExp(`\\b${escaped}\\b`, "i");
+  return re.test(haystack);
+}
+
+/**
+ * Escapes a string for use inside a regex (so literal match, no special chars).
+ */
+function escapeForRegex(needle: string): string {
+  return needle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Match is case-insensitive for title and tag (e.g. "Bitcoin" and "bitcoin" match the same).
+ * Title and tag "contains" use whole-word matching so e.g. "ton" does not match "cotton".
+ */
+function productMatchesRule(
+  product: ProductForAutoAssign,
+  rule: {
+    brand: null | string;
+    createdWithinDays: null | number;
+    tagContains: null | string;
+    titleContains: null | string;
+  },
+): boolean {
+  if (rule.titleContains?.trim()) {
+    if (
+      !product.name ||
+      !containsWholeWord(product.name, rule.titleContains.trim())
+    ) {
+      return false;
+    }
+  }
+  if (rule.brand?.trim()) {
+    if (
+      !product.brand ||
+      product.brand.trim().toLowerCase() !== rule.brand.trim().toLowerCase()
+    ) {
+      return false;
+    }
+  }
+  if (rule.tagContains?.trim()) {
+    const needle = rule.tagContains.trim();
+    const tags = product.tags ?? [];
+    if (!tags.some((t) => containsWholeWord(String(t).trim(), needle))) {
+      return false;
+    }
+  }
+  if (rule.createdWithinDays != null && rule.createdWithinDays > 0) {
+    const since = new Date();
+    since.setDate(since.getDate() - rule.createdWithinDays);
+    if (product.createdAt < since) return false;
+  }
+  if (
+    !rule.titleContains?.trim() &&
+    rule.createdWithinDays == null &&
+    !rule.brand?.trim() &&
+    !rule.tagContains?.trim()
+  ) {
+    return false;
+  }
+  return true;
 }

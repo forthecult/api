@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
   const token = (body?.token ?? "ETH").toUpperCase();
   if (!TOKENS.includes(token)) {
     return NextResponse.json(
-      { error: "Unsupported token", token, supported: TOKENS },
+      { error: "Unsupported token", supported: TOKENS, token },
       { status: 400 },
     );
   }
@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json({
-    token,
-    tokenUsd,
     products: products.map((p) => ({
       productId: p.productId,
-      usd: p.usd,
       [token]: p.usd / tokenUsd,
+      usd: p.usd,
     })),
+    token,
+    tokenUsd,
     total: products.length,
   });
 }

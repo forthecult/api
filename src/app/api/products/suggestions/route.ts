@@ -1,16 +1,16 @@
 import { and, asc, eq, ilike, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
-import {
-  publicApiCorsPreflight,
-  withPublicApiCors,
-} from "~/lib/cors-public-api";
 import { db } from "~/db";
 import {
   categoriesTable,
   productCategoriesTable,
   productsTable,
 } from "~/db/schema";
+import {
+  publicApiCorsPreflight,
+  withPublicApiCors,
+} from "~/lib/cors-public-api";
 
 const SUGGESTIONS_LIMIT = 10;
 const CATEGORIES_LIMIT = 5;
@@ -25,9 +25,9 @@ export async function GET(request: NextRequest) {
     const q = request.nextUrl.searchParams.get("q")?.trim() ?? "";
     if (q.length === 0) {
       return NextResponse.json({
+        categories: [],
         query: "",
         suggestions: [],
-        categories: [],
       });
     }
 
@@ -107,16 +107,16 @@ export async function GET(request: NextRequest) {
     }));
 
     const keywordSuggestions = categoryRows.map((c) => ({
+      resultCount: countByCategoryId.get(c.id) ?? 0,
       text: c.name,
       type: "keyword" as const,
-      resultCount: countByCategoryId.get(c.id) ?? 0,
     }));
 
     const productSuggestions = productRows.map((p) => ({
+      category: undefined as string | undefined,
+      productId: p.id,
       text: p.name,
       type: "product" as const,
-      productId: p.id,
-      category: undefined as string | undefined,
     }));
 
     const mainCategoryByProduct = await Promise.all(
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
             ),
           )
           .limit(1);
-        return { productId: p.id, categoryId: pc?.categoryId };
+        return { categoryId: pc?.categoryId, productId: p.id };
       }),
     );
     const categoryByProductId = new Map(
@@ -154,9 +154,9 @@ export async function GET(request: NextRequest) {
 
     return withPublicApiCors(
       NextResponse.json({
+        categories,
         query: q,
         suggestions,
-        categories,
       }),
     );
   } catch (err) {

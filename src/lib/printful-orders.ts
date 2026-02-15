@@ -15,177 +15,93 @@ import {
   productVariantsTable,
 } from "~/db/schema";
 import {
-  createPrintfulOrder,
-  confirmPrintfulOrder,
-  deletePrintfulOrder,
-  getPrintfulIfConfigured,
-  getPrintfulOrder,
-  fetchOrderShipments,
-  type PrintfulCreateOrderRequest,
-  type PrintfulOrderItem,
-  type PrintfulOrderCosts,
-  type PrintfulRecipient,
-  type PrintfulShipment,
-} from "~/lib/printful";
-import {
   onOrderStatusUpdate,
   type OrderStatusKind,
 } from "~/lib/create-user-notification";
+import {
+  confirmPrintfulOrder,
+  createPrintfulOrder,
+  deletePrintfulOrder,
+  fetchOrderShipments,
+  getPrintfulIfConfigured,
+  getPrintfulOrder,
+  type PrintfulCreateOrderRequest,
+  type PrintfulOrderCosts,
+  type PrintfulOrderItem,
+  type PrintfulRecipient,
+  type PrintfulShipment,
+} from "~/lib/printful";
 
-export type PrintfulOrderResult = {
-  success: boolean;
-  printfulOrderId?: number;
+export interface PrintfulOrderResult {
   error?: string;
-};
-
-/**
- * Check if any order items are Printful products
- */
-export async function hasPrintfulItems(orderId: string): Promise<boolean> {
-  const items = await db
-    .select({
-      productId: orderItemsTable.productId,
-      productVariantId: orderItemsTable.productVariantId,
-    })
-    .from(orderItemsTable)
-    .where(eq(orderItemsTable.orderId, orderId));
-
-  if (items.length === 0) return false;
-
-  const productIds = items
-    .map((i) => i.productId)
-    .filter((id): id is string => id != null);
-
-  if (productIds.length === 0) return false;
-
-  const products = await db
-    .select({ id: productsTable.id, source: productsTable.source })
-    .from(productsTable)
-    .where(inArray(productsTable.id, productIds));
-
-  return products.some((p) => p.source === "printful");
+  printfulOrderId?: number;
+  success: boolean;
 }
 
 /**
- * Get Printful items from an order with their catalog variant IDs
+ * Cancel a Printful order.
+ * Called when an order is refunded/cancelled before shipping.
+ *
+ * Note: Printful orders can only be cancelled in draft or failed state.
+ * Once in process, cancellation may not be possible.
  */
-export async function getPrintfulOrderItems(orderId: string): Promise<
-  Array<{
-    orderItemId: string;
-    productId: string;
-    productVariantId: string | null;
-    catalogVariantId: number;
-    quantity: number;
-    name: string;
-    priceCents: number;
-  }>
-> {
-  // Get order items
-  const items = await db
-    .select()
-    .from(orderItemsTable)
-    .where(eq(orderItemsTable.orderId, orderId));
-
-  if (items.length === 0) return [];
-
-  // Get products to check source
-  const productIds = items
-    .map((i) => i.productId)
-    .filter((id): id is string => id != null);
-
-  if (productIds.length === 0) return [];
-
-  const products = await db
-    .select({
-      id: productsTable.id,
-      source: productsTable.source,
-      externalId: productsTable.externalId,
-    })
-    .from(productsTable)
-    .where(inArray(productsTable.id, productIds));
-
-  const printfulProductIds = new Set(
-    products.filter((p) => p.source === "printful").map((p) => p.id),
-  );
-
-  // Get variant external IDs for items with variants
-  const variantIds = items
-    .map((i) => i.productVariantId)
-    .filter((id): id is string => id != null);
-
-  const variants =
-    variantIds.length > 0
-      ? await db
-          .select({
-            id: productVariantsTable.id,
-            externalId: productVariantsTable.externalId,
-          })
-          .from(productVariantsTable)
-          .where(inArray(productVariantsTable.id, variantIds))
-      : [];
-
-  const variantExternalIdMap = new Map(
-    variants.map((v) => [v.id, v.externalId]),
-  );
-
-  // Build result with catalog variant IDs
-  const result: Array<{
-    orderItemId: string;
-    productId: string;
-    productVariantId: string | null;
-    catalogVariantId: number;
-    quantity: number;
-    name: string;
-    priceCents: number;
-  }> = [];
-
-  for (const item of items) {
-    if (!item.productId || !printfulProductIds.has(item.productId)) continue;
-
-    // Get catalog_variant_id from variant's externalId, or fall back to product's externalId
-    let catalogVariantId: number | null = null;
-
-    if (item.productVariantId) {
-      const variantExternalId = variantExternalIdMap.get(item.productVariantId);
-      if (variantExternalId) {
-        catalogVariantId = Number.parseInt(variantExternalId, 10);
-      }
-    }
-
-    // If no variant or variant doesn't have external ID, try to get from product
-    // (This is a fallback - ideally all Printful products have variant-level IDs)
-    if (!catalogVariantId || isNaN(catalogVariantId)) {
-      const product = products.find((p) => p.id === item.productId);
-      if (product?.externalId) {
-        // Note: This is the catalog_product_id, not variant.
-        // For Printful orders, we need catalog_variant_id.
-        // Skip items without proper variant IDs
-        console.warn(
-          `Order item ${item.id} has Printful product but no variant with catalog_variant_id`,
-        );
-        continue;
-      }
-    }
-
-    if (!catalogVariantId || isNaN(catalogVariantId)) {
-      console.warn(
-        `Skipping order item ${item.id}: no valid catalog_variant_id`,
-      );
-      continue;
-    }
-
-    result.push({
-      orderItemId: item.id,
-      productId: item.productId,
-      productVariantId: item.productVariantId,
-      catalogVariantId,
-      quantity: item.quantity,
-      name: item.name,
-      priceCents: item.priceCents,
-    });
+export async function cancelPrintfulOrder(
+  orderId: string,
+): Promise<{ error?: string; success: boolean }> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return { error: "Printful not configured", success: false };
   }
 
-  return result;
+  // Get the order
+  const [order] = await db
+    .select({ printfulOrderId: ordersTable.printfulOrderId })
+    .from(ordersTable)
+    .where(eq(ordersTable.id, orderId))
+    .limit(1);
+
+  if (!order?.printfulOrderId) {
+    // No Printful order to cancel
+    return { success: true };
+  }
+
+  const storeId = (() => {
+    const raw = process.env.PRINTFUL_STORE_ID?.trim();
+    if (!raw) return undefined;
+    const n = Number.parseInt(raw, 10);
+    return Number.isNaN(n) ? undefined : n;
+  })();
+
+  try {
+    const result = await deletePrintfulOrder(
+      Number.parseInt(order.printfulOrderId, 10),
+      storeId,
+    );
+
+    if (result.success) {
+      console.log(`Printful order ${order.printfulOrderId} cancelled`);
+
+      // Clear the Printful order ID from our order
+      await db
+        .update(ordersTable)
+        .set({
+          printfulOrderId: null,
+          updatedAt: new Date(),
+        })
+        .where(eq(ordersTable.id, orderId));
+
+      return { success: true };
+    }
+
+    return { error: result.error, success: false };
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unknown error cancelling Printful order";
+    console.error(`Failed to cancel Printful order:`, message);
+    return { error: message, success: false };
+  }
 }
 
 /**
@@ -198,7 +114,7 @@ export async function createAndConfirmPrintfulOrder(
   // Check if Printful is configured
   const pf = getPrintfulIfConfigured();
   if (!pf) {
-    return { success: false, error: "Printful not configured" };
+    return { error: "Printful not configured", success: false };
   }
 
   // Get the order
@@ -209,15 +125,15 @@ export async function createAndConfirmPrintfulOrder(
     .limit(1);
 
   if (!order) {
-    return { success: false, error: "Order not found" };
+    return { error: "Order not found", success: false };
   }
 
   // Check if already sent to Printful
   if (order.printfulOrderId) {
     return {
-      success: true,
-      printfulOrderId: Number.parseInt(order.printfulOrderId, 10),
       error: "Order already sent to Printful",
+      printfulOrderId: Number.parseInt(order.printfulOrderId, 10),
+      success: true,
     };
   }
 
@@ -231,57 +147,57 @@ export async function createAndConfirmPrintfulOrder(
 
   // Build recipient from order shipping fields
   const recipient: PrintfulRecipient = {
-    name: order.shippingName || undefined,
     address1: order.shippingAddress1 || "",
     address2: order.shippingAddress2 || undefined,
     city: order.shippingCity || undefined,
-    state_code: order.shippingStateCode || undefined,
     country_code: order.shippingCountryCode || "",
-    zip: order.shippingZip || undefined,
-    phone: order.shippingPhone || undefined,
     email: order.email,
+    name: order.shippingName || undefined,
+    phone: order.shippingPhone || undefined,
+    state_code: order.shippingStateCode || undefined,
+    zip: order.shippingZip || undefined,
   };
 
   // Validate required fields
   if (!recipient.address1 || !recipient.country_code) {
     return {
-      success: false,
       error: "Missing required shipping address for Printful order",
+      success: false,
     };
   }
 
   // US, CA, AU require state_code
   if (
-    ["US", "CA", "AU"].includes(recipient.country_code) &&
+    ["AU", "CA", "US"].includes(recipient.country_code) &&
     !recipient.state_code
   ) {
     return {
-      success: false,
       error: `State code required for ${recipient.country_code} orders`,
+      success: false,
     };
   }
 
   // Build order items
   const orderItems: PrintfulOrderItem[] = printfulItems.map((item) => ({
-    source: "catalog" as const,
     catalog_variant_id: item.catalogVariantId,
-    quantity: item.quantity,
     external_id: item.orderItemId,
-    retail_price: (item.priceCents / 100).toFixed(2),
     name: item.name,
+    quantity: item.quantity,
+    retail_price: (item.priceCents / 100).toFixed(2),
+    source: "catalog" as const,
   }));
 
   // Build request
   const createRequest: PrintfulCreateOrderRequest = {
     external_id: orderId,
-    shipping: order.shippingMethod || "STANDARD",
-    recipient,
     order_items: orderItems,
+    recipient,
     retail_costs: {
       currency: "USD",
       shipping: ((order.shippingFeeCents || 0) / 100).toFixed(2),
       tax: ((order.taxCents || 0) / 100).toFixed(2),
     },
+    shipping: order.shippingMethod || "STANDARD",
   };
 
   const storeId = (() => {
@@ -363,45 +279,194 @@ export async function createAndConfirmPrintfulOrder(
       .where(eq(ordersTable.id, orderId));
 
     return {
-      success: true,
       printfulOrderId,
+      success: true,
     };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unknown Printful error";
     console.error(`Failed to create Printful order for ${orderId}:`, message);
     return {
-      success: false,
       error: message,
+      success: false,
     };
   }
 }
 
 /**
- * Cancel a Printful order.
- * Called when an order is refunded/cancelled before shipping.
- *
- * Note: Printful orders can only be cancelled in draft or failed state.
- * Once in process, cancellation may not be possible.
+ * Get Printful items from an order with their catalog variant IDs
  */
-export async function cancelPrintfulOrder(
-  orderId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const pf = getPrintfulIfConfigured();
-  if (!pf) {
-    return { success: false, error: "Printful not configured" };
+export async function getPrintfulOrderItems(orderId: string): Promise<
+  {
+    catalogVariantId: number;
+    name: string;
+    orderItemId: string;
+    priceCents: number;
+    productId: string;
+    productVariantId: null | string;
+    quantity: number;
+  }[]
+> {
+  // Get order items
+  const items = await db
+    .select()
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, orderId));
+
+  if (items.length === 0) return [];
+
+  // Get products to check source
+  const productIds = items
+    .map((i) => i.productId)
+    .filter((id): id is string => id != null);
+
+  if (productIds.length === 0) return [];
+
+  const products = await db
+    .select({
+      externalId: productsTable.externalId,
+      id: productsTable.id,
+      source: productsTable.source,
+    })
+    .from(productsTable)
+    .where(inArray(productsTable.id, productIds));
+
+  const printfulProductIds = new Set(
+    products.filter((p) => p.source === "printful").map((p) => p.id),
+  );
+
+  // Get variant external IDs for items with variants
+  const variantIds = items
+    .map((i) => i.productVariantId)
+    .filter((id): id is string => id != null);
+
+  const variants =
+    variantIds.length > 0
+      ? await db
+          .select({
+            externalId: productVariantsTable.externalId,
+            id: productVariantsTable.id,
+          })
+          .from(productVariantsTable)
+          .where(inArray(productVariantsTable.id, variantIds))
+      : [];
+
+  const variantExternalIdMap = new Map(
+    variants.map((v) => [v.id, v.externalId]),
+  );
+
+  // Build result with catalog variant IDs
+  const result: {
+    catalogVariantId: number;
+    name: string;
+    orderItemId: string;
+    priceCents: number;
+    productId: string;
+    productVariantId: null | string;
+    quantity: number;
+  }[] = [];
+
+  for (const item of items) {
+    if (!item.productId || !printfulProductIds.has(item.productId)) continue;
+
+    // Get catalog_variant_id from variant's externalId, or fall back to product's externalId
+    let catalogVariantId: null | number = null;
+
+    if (item.productVariantId) {
+      const variantExternalId = variantExternalIdMap.get(item.productVariantId);
+      if (variantExternalId) {
+        catalogVariantId = Number.parseInt(variantExternalId, 10);
+      }
+    }
+
+    // If no variant or variant doesn't have external ID, try to get from product
+    // (This is a fallback - ideally all Printful products have variant-level IDs)
+    if (!catalogVariantId || isNaN(catalogVariantId)) {
+      const product = products.find((p) => p.id === item.productId);
+      if (product?.externalId) {
+        // Note: This is the catalog_product_id, not variant.
+        // For Printful orders, we need catalog_variant_id.
+        // Skip items without proper variant IDs
+        console.warn(
+          `Order item ${item.id} has Printful product but no variant with catalog_variant_id`,
+        );
+        continue;
+      }
+    }
+
+    if (!catalogVariantId || isNaN(catalogVariantId)) {
+      console.warn(
+        `Skipping order item ${item.id}: no valid catalog_variant_id`,
+      );
+      continue;
+    }
+
+    result.push({
+      catalogVariantId,
+      name: item.name,
+      orderItemId: item.id,
+      priceCents: item.priceCents,
+      productId: item.productId,
+      productVariantId: item.productVariantId,
+      quantity: item.quantity,
+    });
   }
 
-  // Get the order
+  return result;
+}
+
+/**
+ * Check if any order items are Printful products
+ */
+export async function hasPrintfulItems(orderId: string): Promise<boolean> {
+  const items = await db
+    .select({
+      productId: orderItemsTable.productId,
+      productVariantId: orderItemsTable.productVariantId,
+    })
+    .from(orderItemsTable)
+    .where(eq(orderItemsTable.orderId, orderId));
+
+  if (items.length === 0) return false;
+
+  const productIds = items
+    .map((i) => i.productId)
+    .filter((id): id is string => id != null);
+
+  if (productIds.length === 0) return false;
+
+  const products = await db
+    .select({ id: productsTable.id, source: productsTable.source })
+    .from(productsTable)
+    .where(inArray(productsTable.id, productIds));
+
+  return products.some((p) => p.source === "printful");
+}
+
+/**
+ * Fetch and persist shipment tracking data from Printful for an order.
+ * Call this on-demand (e.g. admin viewing order details) to backfill tracking
+ * info that may have been missed by webhooks.
+ */
+export async function syncPrintfulShipmentTracking(orderId: string): Promise<{
+  error?: string;
+  shipments?: PrintfulShipment[];
+  success: boolean;
+}> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) return { error: "Printful not configured", success: false };
+
   const [order] = await db
-    .select({ printfulOrderId: ordersTable.printfulOrderId })
+    .select({
+      id: ordersTable.id,
+      printfulOrderId: ordersTable.printfulOrderId,
+    })
     .from(ordersTable)
     .where(eq(ordersTable.id, orderId))
     .limit(1);
 
   if (!order?.printfulOrderId) {
-    // No Printful order to cancel
-    return { success: true };
+    return { error: "No Printful order linked", success: false };
   }
 
   const storeId = (() => {
@@ -412,34 +477,46 @@ export async function cancelPrintfulOrder(
   })();
 
   try {
-    const result = await deletePrintfulOrder(
-      Number.parseInt(order.printfulOrderId, 10),
-      storeId,
-    );
+    const pfOrderId = Number.parseInt(order.printfulOrderId, 10);
+    const shipmentsRes = await fetchOrderShipments(pfOrderId, storeId);
+    const shipments = shipmentsRes.data;
 
-    if (result.success) {
-      console.log(`Printful order ${order.printfulOrderId} cancelled`);
-
-      // Clear the Printful order ID from our order
-      await db
-        .update(ordersTable)
-        .set({
-          printfulOrderId: null,
-          updatedAt: new Date(),
-        })
-        .where(eq(ordersTable.id, orderId));
-
-      return { success: true };
+    if (shipments.length === 0) {
+      return { shipments: [], success: true };
     }
 
-    return { success: false, error: result.error };
+    // Use the latest (most recent) shipment for tracking info
+    const latest = shipments[shipments.length - 1]!;
+
+    const updates: Partial<typeof ordersTable.$inferInsert> = {
+      updatedAt: new Date(),
+    };
+
+    if (latest.tracking_number) updates.trackingNumber = latest.tracking_number;
+    if (latest.tracking_url) updates.trackingUrl = latest.tracking_url;
+    if (latest.carrier) updates.trackingCarrier = latest.carrier;
+    if (latest.shipped_at) updates.shippedAt = new Date(latest.shipped_at);
+    if (latest.delivered_at)
+      updates.deliveredAt = new Date(latest.delivered_at);
+    if (latest.estimated_delivery?.from_date) {
+      updates.estimatedDeliveryFrom = latest.estimated_delivery.from_date;
+    }
+    if (latest.estimated_delivery?.to_date) {
+      updates.estimatedDeliveryTo = latest.estimated_delivery.to_date;
+    }
+    if (latest.tracking_events && latest.tracking_events.length > 0) {
+      updates.trackingEventsJson = JSON.stringify(latest.tracking_events);
+    }
+
+    await db
+      .update(ordersTable)
+      .set(updates)
+      .where(eq(ordersTable.id, orderId));
+
+    return { shipments, success: true };
   } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "Unknown error cancelling Printful order";
-    console.error(`Failed to cancel Printful order:`, message);
-    return { success: false, error: message };
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return { error: message, success: false };
   }
 }
 
@@ -451,32 +528,32 @@ export async function cancelPrintfulOrder(
 export async function updateOrderFromPrintfulWebhook(
   printfulOrderId: string,
   event: {
-    type: string;
     data: {
-      order?: { status?: string; costs?: Partial<PrintfulOrderCosts> };
+      order?: { costs?: Partial<PrintfulOrderCosts>; status?: string };
       shipment?: {
-        id?: number;
-        status?: string;
-        tracking_number?: string;
-        tracking_url?: string;
         carrier?: string;
-        shipped_at?: string;
         delivered_at?: string;
         delivery_status?: string;
-        tracking_events?: Array<{ triggered_at: string; description: string }>;
         estimated_delivery?: {
           from_date?: string;
           to_date?: string;
         };
+        id?: number;
+        shipped_at?: string;
+        status?: string;
+        tracking_events?: { description: string; triggered_at: string }[];
+        tracking_number?: string;
+        tracking_url?: string;
       };
     };
+    type: string;
   },
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ error?: string; success: boolean }> {
   // Find our order by Printful order ID
   const [order] = await db
     .select({
-      id: ordersTable.id,
       fulfillmentStatus: ordersTable.fulfillmentStatus,
+      id: ordersTable.id,
     })
     .from(ordersTable)
     .where(eq(ordersTable.printfulOrderId, printfulOrderId))
@@ -484,7 +561,7 @@ export async function updateOrderFromPrintfulWebhook(
 
   if (!order) {
     console.warn(`No order found for Printful order ${printfulOrderId}`);
-    return { success: false, error: "Order not found" };
+    return { error: "Order not found", success: false };
   }
 
   const updates: Partial<typeof ordersTable.$inferInsert> = {
@@ -537,26 +614,39 @@ export async function updateOrderFromPrintfulWebhook(
   // Note: Printful v1 API uses "package_shipped", v2 uses "shipment_sent"
   // We handle both for compatibility
   switch (event.type) {
-    case "package_shipped":
-    case "shipment_sent":
-      // Package/shipment has shipped
-      updates.fulfillmentStatus = "fulfilled";
-      updates.status = "fulfilled";
+    case "order_canceled":
+      // Printful cancelled the order
+      updates.fulfillmentStatus = "unfulfilled";
+      // Note: Don't change payment status - that's a separate concern
       break;
-
-    case "shipment_delivered":
-      updates.fulfillmentStatus = "fulfilled";
-      updates.status = "fulfilled";
-      if (shipment?.delivered_at) {
-        updates.deliveredAt = new Date(shipment.delivered_at);
-      } else {
-        updates.deliveredAt = new Date();
-      }
-      break;
-
     case "order_created":
       // Order created at Printful - mark as processing
       if (order.fulfillmentStatus === "unfulfilled") {
+        updates.fulfillmentStatus = "partially_fulfilled";
+      }
+      break;
+
+    case "order_failed":
+      // Order failed at Printful
+      updates.fulfillmentStatus = "on_hold";
+      break;
+
+    case "order_put_hold":
+
+    case "order_put_hold_approval":
+      // Order put on hold
+      updates.fulfillmentStatus = "on_hold";
+      break;
+
+    case "order_refunded":
+      // Printful-initiated refund
+      updates.paymentStatus = "refunded";
+      updates.status = "refunded";
+      break;
+
+    case "order_remove_hold":
+      // Order removed from hold - back to processing
+      if (order.fulfillmentStatus === "on_hold") {
         updates.fulfillmentStatus = "partially_fulfilled";
       }
       break;
@@ -578,27 +668,32 @@ export async function updateOrderFromPrintfulWebhook(
       break;
     }
 
-    case "order_failed":
-      // Order failed at Printful
-      updates.fulfillmentStatus = "on_hold";
-      break;
-
-    case "order_canceled":
-      // Printful cancelled the order
-      updates.fulfillmentStatus = "unfulfilled";
-      // Note: Don't change payment status - that's a separate concern
-      break;
-
-    case "order_refunded":
-      // Printful-initiated refund
-      updates.paymentStatus = "refunded";
-      updates.status = "refunded";
-      break;
-
     case "package_returned":
     case "shipment_returned":
       // Package returned
       updates.fulfillmentStatus = "on_hold";
+      break;
+
+    case "package_shipped":
+
+    case "shipment_sent":
+      // Package/shipment has shipped
+      updates.fulfillmentStatus = "fulfilled";
+      updates.status = "fulfilled";
+      break;
+
+    case "shipment_canceled":
+      // Individual shipment cancelled
+      updates.fulfillmentStatus = "on_hold";
+      break;
+    case "shipment_delivered":
+      updates.fulfillmentStatus = "fulfilled";
+      updates.status = "fulfilled";
+      if (shipment?.delivered_at) {
+        updates.deliveredAt = new Date(shipment.delivered_at);
+      } else {
+        updates.deliveredAt = new Date();
+      }
       break;
 
     case "shipment_out_of_stock":
@@ -608,19 +703,8 @@ export async function updateOrderFromPrintfulWebhook(
         `[Printful] Shipment out of stock for order ${order.id} (Printful order ${printfulOrderId})`,
       );
       break;
-
-    case "shipment_canceled":
-      // Individual shipment cancelled
-      updates.fulfillmentStatus = "on_hold";
-      break;
-
-    case "order_put_hold":
-    case "order_put_hold_approval":
-      // Order put on hold
-      updates.fulfillmentStatus = "on_hold";
-      break;
-
     case "shipment_put_hold":
+
     case "shipment_put_hold_approval":
       // Shipment put on hold - alert admin but DO NOT change store fulfillment status
       console.warn(
@@ -632,13 +716,6 @@ export async function updateOrderFromPrintfulWebhook(
     case "shipment_remove_hold":
       // Shipment hold removed - log only (status unchanged per shipment_put_hold policy)
       console.log(`[Printful] Shipment hold removed for order ${order.id}`);
-      break;
-
-    case "order_remove_hold":
-      // Order removed from hold - back to processing
-      if (order.fulfillmentStatus === "on_hold") {
-        updates.fulfillmentStatus = "partially_fulfilled";
-      }
       break;
 
     default:
@@ -687,81 +764,4 @@ export async function updateOrderFromPrintfulWebhook(
   }
 
   return { success: true };
-}
-
-/**
- * Fetch and persist shipment tracking data from Printful for an order.
- * Call this on-demand (e.g. admin viewing order details) to backfill tracking
- * info that may have been missed by webhooks.
- */
-export async function syncPrintfulShipmentTracking(orderId: string): Promise<{
-  success: boolean;
-  shipments?: PrintfulShipment[];
-  error?: string;
-}> {
-  const pf = getPrintfulIfConfigured();
-  if (!pf) return { success: false, error: "Printful not configured" };
-
-  const [order] = await db
-    .select({
-      id: ordersTable.id,
-      printfulOrderId: ordersTable.printfulOrderId,
-    })
-    .from(ordersTable)
-    .where(eq(ordersTable.id, orderId))
-    .limit(1);
-
-  if (!order?.printfulOrderId) {
-    return { success: false, error: "No Printful order linked" };
-  }
-
-  const storeId = (() => {
-    const raw = process.env.PRINTFUL_STORE_ID?.trim();
-    if (!raw) return undefined;
-    const n = Number.parseInt(raw, 10);
-    return Number.isNaN(n) ? undefined : n;
-  })();
-
-  try {
-    const pfOrderId = Number.parseInt(order.printfulOrderId, 10);
-    const shipmentsRes = await fetchOrderShipments(pfOrderId, storeId);
-    const shipments = shipmentsRes.data;
-
-    if (shipments.length === 0) {
-      return { success: true, shipments: [] };
-    }
-
-    // Use the latest (most recent) shipment for tracking info
-    const latest = shipments[shipments.length - 1]!;
-
-    const updates: Partial<typeof ordersTable.$inferInsert> = {
-      updatedAt: new Date(),
-    };
-
-    if (latest.tracking_number) updates.trackingNumber = latest.tracking_number;
-    if (latest.tracking_url) updates.trackingUrl = latest.tracking_url;
-    if (latest.carrier) updates.trackingCarrier = latest.carrier;
-    if (latest.shipped_at) updates.shippedAt = new Date(latest.shipped_at);
-    if (latest.delivered_at)
-      updates.deliveredAt = new Date(latest.delivered_at);
-    if (latest.estimated_delivery?.from_date) {
-      updates.estimatedDeliveryFrom = latest.estimated_delivery.from_date;
-    }
-    if (latest.estimated_delivery?.to_date) {
-      updates.estimatedDeliveryTo = latest.estimated_delivery.to_date;
-    }
-    if (latest.tracking_events && latest.tracking_events.length > 0) {
-      updates.trackingEventsJson = JSON.stringify(latest.tracking_events);
-    }
-
-    await db
-      .update(ordersTable)
-      .set(updates)
-      .where(eq(ordersTable.id, orderId));
-
-    return { success: true, shipments };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return { success: false, error: message };
-  }
 }

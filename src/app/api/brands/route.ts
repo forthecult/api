@@ -7,14 +7,6 @@ import { brandTable, productCategoriesTable, productsTable } from "~/db/schema";
 /** Cache for 5 minutes (public data) */
 export const revalidate = 300;
 
-function isMissingTableError(err: unknown): boolean {
-  const code =
-    typeof err === "object" && err !== null && "code" in err
-      ? (err as { code: string }).code
-      : (err as { cause?: { code?: string } })?.cause?.code;
-  return code === "42P01";
-}
-
 /**
  * List all brands: curated brands from brand table + product-derived brands.
  * GET /api/brands
@@ -25,13 +17,13 @@ export async function GET() {
     const [curatedBrands, brandCounts, brandCategories] = await Promise.all([
       db
         .select({
-          id: brandTable.id,
-          name: brandTable.name,
-          slug: brandTable.slug,
-          logoUrl: brandTable.logoUrl,
-          websiteUrl: brandTable.websiteUrl,
           description: brandTable.description,
           featured: brandTable.featured,
+          id: brandTable.id,
+          logoUrl: brandTable.logoUrl,
+          name: brandTable.name,
+          slug: brandTable.slug,
+          websiteUrl: brandTable.websiteUrl,
         })
         .from(brandTable),
       db
@@ -92,30 +84,30 @@ export async function GET() {
       productOnlyNames.delete(b.name.trim());
     }
 
-    const brands: Array<{
-      id: string;
-      name: string;
-      logo: string | null;
-      websiteUrl?: string | null;
-      description?: string | null;
-      featured?: boolean;
-      productCount: number;
+    const brands: {
       categories: string[];
-    }> = [];
+      description?: null | string;
+      featured?: boolean;
+      id: string;
+      logo: null | string;
+      name: string;
+      productCount: number;
+      websiteUrl?: null | string;
+    }[] = [];
 
     for (const c of curatedBrands) {
       const name = c.name.trim();
       const productCount = countByBrand.get(name) ?? 0;
       const catIds = Array.from(categoryByBrand.get(name) ?? []);
       brands.push({
-        id: c.slug || c.id,
-        name,
-        logo: c.logoUrl ?? null,
-        websiteUrl: c.websiteUrl ?? null,
+        categories: catIds,
         description: c.description ?? null,
         featured: c.featured ?? false,
+        id: c.slug || c.id,
+        logo: c.logoUrl ?? null,
+        name,
         productCount,
-        categories: catIds,
+        websiteUrl: c.websiteUrl ?? null,
       });
     }
 
@@ -126,11 +118,11 @@ export async function GET() {
         .replace(/[^a-z0-9-]/g, "");
       const catIds = Array.from(categoryByBrand.get(brandName) ?? []);
       brands.push({
-        id: slug || brandName,
-        name: brandName,
-        logo: null,
-        productCount: countByBrand.get(brandName) ?? 0,
         categories: catIds,
+        id: slug || brandName,
+        logo: null,
+        name: brandName,
+        productCount: countByBrand.get(brandName) ?? 0,
       });
     }
 
@@ -163,4 +155,12 @@ export async function GET() {
       { status: 500 },
     );
   }
+}
+
+function isMissingTableError(err: unknown): boolean {
+  const code =
+    typeof err === "object" && err !== null && "code" in err
+      ? (err as { code: string }).code
+      : (err as { cause?: { code?: string } })?.cause?.code;
+  return code === "42P01";
 }

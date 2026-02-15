@@ -13,13 +13,12 @@ import { eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { db } from "~/db";
-import { slugify } from "~/lib/slugify";
 import {
   productAvailableCountryTable,
-  productsTable,
-  productVariantsTable,
   productImagesTable,
+  productsTable,
   productTagsTable,
+  productVariantsTable,
 } from "~/db/schema";
 import {
   applyCategoryAutoRules,
@@ -27,37 +26,39 @@ import {
 } from "~/lib/category-auto-assign";
 import { POD_SHIPPING_COUNTRY_CODES } from "~/lib/pod-shipping-countries";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { slugify } from "~/lib/slugify";
+
 import {
-  fetchPrintifyProducts,
-  fetchPrintifyProduct,
-  fetchPrintifyBlueprint,
-  fetchPrintifyShippingInfo,
-  updatePrintifyProduct,
-  getPrintifyIfConfigured,
   confirmPrintifyPublishingSucceeded,
+  fetchPrintifyBlueprint,
+  fetchPrintifyGpsr,
+  fetchPrintifyProduct,
+  fetchPrintifyProducts,
+  fetchPrintifyShippingInfo,
+  getPrintifyIfConfigured,
+  type PrintifyProduct,
   reportPrintifyPublishingFailed,
   unpublishPrintifyProduct,
-  fetchPrintifyGpsr,
-  type PrintifyProduct,
+  updatePrintifyProduct,
 } from "./printify";
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type PrintifySyncResult = {
-  success: boolean;
-  imported: number;
-  updated: number;
-  skipped: number;
-  errors: string[];
-};
-
-export type PrintifyProductExportResult = {
-  success: boolean;
-  printifyProductId?: string;
+export interface PrintifyProductExportResult {
   error?: string;
-};
+  printifyProductId?: string;
+  success: boolean;
+}
+
+export interface PrintifySyncResult {
+  errors: string[];
+  imported: number;
+  skipped: number;
+  success: boolean;
+  updated: number;
+}
 
 // ============================================================================
 // Import: Printify → Backend
@@ -69,29 +70,29 @@ export type PrintifyProductExportResult = {
  */
 export async function importAllPrintifyProducts(
   options: {
-    /** Only import visible products */
-    visibleOnly?: boolean;
     /** Overwrite existing product data (name, description, etc.) */
     overwriteExisting?: boolean;
+    /** Only import visible products */
+    visibleOnly?: boolean;
   } = {},
 ): Promise<PrintifySyncResult> {
   const pf = getPrintifyIfConfigured();
   if (!pf) {
     return {
-      success: false,
-      imported: 0,
-      updated: 0,
-      skipped: 0,
       errors: ["Printify not configured"],
+      imported: 0,
+      skipped: 0,
+      success: false,
+      updated: 0,
     };
   }
 
   const result: PrintifySyncResult = {
-    success: true,
-    imported: 0,
-    updated: 0,
-    skipped: 0,
     errors: [],
+    imported: 0,
+    skipped: 0,
+    success: true,
+    updated: 0,
   };
 
   try {
@@ -101,8 +102,8 @@ export async function importAllPrintifyProducts(
 
     while (hasMore) {
       const response = await fetchPrintifyProducts(pf.shopId, {
-        page,
         limit: 50,
+        page,
       });
 
       for (const product of response.data) {
@@ -150,7 +151,7 @@ export async function importAllPrintifyProducts(
 export async function importSinglePrintifyProduct(
   printifyProductId: string,
   overwriteExisting = false,
-): Promise<{ action: "imported" | "updated" | "skipped"; productId: string }> {
+): Promise<{ action: "imported" | "skipped" | "updated"; productId: string }> {
   const pf = getPrintifyIfConfigured();
   if (!pf) {
     throw new Error("Printify not configured");
@@ -207,145 +208,362 @@ export async function importSinglePrintifyProduct(
 const PRINTIFY_REST_OF_WORLD = "REST_OF_THE_WORLD";
 
 /**
- * Convert Printify handling_time to business days (min and max).
- * Unit can be "business_days", "days", "hours". Returns { min, max } or null.
+ * Push price changes for all Printify products to Printify.
  */
-function printifyHandlingToDays(
-  value: number,
-  unit: string,
-): { min: number; max: number } | null {
-  if (value <= 0 || !Number.isFinite(value)) return null;
-  let days: number;
-  const u = (unit || "").toLowerCase();
-  if (u === "business_days" || u === "days") {
-    days = Math.round(value);
-  } else if (u === "hours") {
-    days = Math.max(1, Math.round(value / 24));
-  } else {
-    days = Math.round(value);
+export async function exportAllPrintifyProducts(): Promise<PrintifySyncResult> {
+  const pf = getPrintifyIfConfigured();
+  if (!pf) {
+    return {
+      errors: ["Printify not configured"],
+      imported: 0,
+      skipped: 0,
+      success: false,
+      updated: 0,
+    };
   }
-  return { min: days, max: days + 1 };
+
+  const result: PrintifySyncResult = {
+    errors: [],
+    imported: 0,
+    skipped: 0,
+    success: true,
+    updated: 0,
+  };
+
+  // Get all Printify products
+  const products = await db
+    .select({
+      id: productsTable.id,
+      printifyProductId: productsTable.printifyProductId,
+    })
+    .from(productsTable)
+    .where(eq(productsTable.source, "printify"));
+
+  for (const product of products) {
+    if (!product.printifyProductId) {
+      result.skipped++;
+      continue;
+    }
+
+    const exportResult = await exportProductToPrintify(product.id);
+    if (exportResult.success) {
+      result.updated++;
+    } else {
+      result.errors.push(`Product ${product.id}: ${exportResult.error}`);
+    }
+  }
+
+  return result;
 }
 
 /**
- * Fetch shipping countries and handling days in one catalog API call.
+ * Push local product changes to Printify.
+ *
+ * Updates all relevant fields that Printify accepts:
+ * - title (product name)
+ * - description
+ * - tags (from productTagsTable)
+ * - variant prices
+ * - variant enabled status
+ *
+ * This ensures that when you modify a product in your backend (price, description,
+ * SEO, tags), those changes are pushed to Printify so everything stays in sync.
+ * When Printify syncs back, it won't overwrite fields it doesn't manage.
  */
-async function getPrintifyShippingData(
-  blueprintId: number,
-  printProviderId: number,
-): Promise<{
-  countryCodes: string[] | null;
-  handlingDaysMin: number | null;
-  handlingDaysMax: number | null;
-}> {
+export async function exportProductToPrintify(
+  productId: string,
+): Promise<PrintifyProductExportResult> {
+  const pf = getPrintifyIfConfigured();
+  if (!pf) {
+    return { error: "Printify not configured", success: false };
+  }
+
+  // Get product
+  const [product] = await db
+    .select()
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (!product) {
+    return { error: "Product not found", success: false };
+  }
+
+  if (product.source !== "printify" || !product.printifyProductId) {
+    return { error: "Product is not a Printify product", success: false };
+  }
+
+  // Get variants
+  const variants = await db
+    .select()
+    .from(productVariantsTable)
+    .where(eq(productVariantsTable.productId, productId));
+
+  // Get tags from productTagsTable
+  const tags = await db
+    .select({ tag: productTagsTable.tag })
+    .from(productTagsTable)
+    .where(eq(productTagsTable.productId, productId));
+  const tagList = tags.map((t) => t.tag);
+
   try {
-    const shipping = await fetchPrintifyShippingInfo(
-      blueprintId,
-      printProviderId,
-    );
-    const allCountries = new Set<string>();
-    let hasRestOfWorld = false;
-    for (const profile of shipping.profiles ?? []) {
-      for (const c of profile.countries ?? []) {
-        if (c === PRINTIFY_REST_OF_WORLD) {
-          hasRestOfWorld = true;
-        } else if (typeof c === "string" && c.length === 2) {
-          allCountries.add(c.toUpperCase());
-        }
+    // Build variant updates with prices
+    const variantUpdates = variants
+      .filter((v) => v.printifyVariantId)
+      .map((v) => ({
+        id: Number.parseInt(v.printifyVariantId!, 10),
+        is_enabled: true,
+        price: v.priceCents,
+      }));
+
+    // Images only flow inbound (Printify → store), never outbound.
+    // Only sync content fields: title, description, tags, and variant prices.
+    await updatePrintifyProduct(pf.shopId, product.printifyProductId, {
+      description: product.description || undefined,
+      tags: tagList.length > 0 ? tagList : undefined,
+      title: product.name,
+      variants: variantUpdates,
+    });
+
+    // Update product last synced timestamp
+    await db
+      .update(productsTable)
+      .set({ lastSyncedAt: new Date(), updatedAt: new Date() })
+      .where(eq(productsTable.id, productId));
+
+    return { printifyProductId: product.printifyProductId, success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isDisabledForEditing =
+      message.includes("8252") || /disabled for editing/i.test(message);
+    if (isDisabledForEditing) {
+      return {
+        error:
+          "Product is in Publishing in Printify; Printify blocks edits until it is Published. Register webhooks, then delete and re-publish the product in Printify to clear status.",
+        success: false,
+      };
+    }
+    return { error: message, success: false };
+  }
+}
+
+/**
+ * Get sync status for a product.
+ */
+export async function getPrintifyProductSyncStatus(productId: string): Promise<{
+  error?: string;
+  lastSyncedAt: Date | null;
+  printifyProductId: null | string;
+  synced: boolean;
+}> {
+  const [product] = await db
+    .select({
+      lastSyncedAt: productsTable.lastSyncedAt,
+      printifyProductId: productsTable.printifyProductId,
+      source: productsTable.source,
+    })
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (!product) {
+    return {
+      error: "Product not found",
+      lastSyncedAt: null,
+      printifyProductId: null,
+      synced: false,
+    };
+  }
+
+  return {
+    lastSyncedAt: product.lastSyncedAt,
+    printifyProductId: product.printifyProductId,
+    synced: product.source === "printify" && product.printifyProductId != null,
+  };
+}
+
+/**
+ * Handle Printify product:deleted webhook event.
+ * Called when a product is deleted in Printify.
+ */
+export async function handlePrintifyProductDeleted(data: {
+  id: string;
+}): Promise<{ error?: string; success: boolean }> {
+  try {
+    // Find and unpublish the local product
+    const [product] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.printifyProductId, data.id))
+      .limit(1);
+
+    if (!product) {
+      // Product doesn't exist locally - nothing to do
+      return { success: true };
+    }
+
+    // Notify Printify the product is unpublished from our store
+    const pf = getPrintifyIfConfigured();
+    if (pf) {
+      try {
+        await unpublishPrintifyProduct(pf.shopId, data.id);
+      } catch {
+        // Best-effort: product may already be deleted in Printify
       }
     }
-    const countryCodes =
-      hasRestOfWorld || allCountries.size === 0 ? null : [...allCountries];
 
-    const ht = shipping.handling_time;
-    const handlingResult =
-      ht && typeof ht.value === "number"
-        ? printifyHandlingToDays(ht.value, ht.unit ?? "business_days")
-        : null;
+    // Unpublish the product (safer than deleting - keeps historical data)
+    await db
+      .update(productsTable)
+      .set({
+        printifyProductId: null, // Unlink from Printify
+        published: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(productsTable.id, product.id));
 
-    return {
-      countryCodes,
-      handlingDaysMin: handlingResult?.min ?? null,
-      handlingDaysMax: handlingResult?.max ?? null,
-    };
+    console.log(`Unpublished product ${product.id} (Printify product deleted)`);
+
+    return { success: true };
   } catch (err) {
-    console.warn(
-      `Printify shipping info failed for blueprint ${blueprintId} provider ${printProviderId}:`,
-      err instanceof Error ? err.message : err,
-    );
-    return {
-      countryCodes: null,
-      handlingDaysMin: null,
-      handlingDaysMax: null,
-    };
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Failed to handle product:deleted:", message);
+    return { error: message, success: false };
   }
 }
 
 /**
- * Sync product available countries. When API returns null/empty (e.g. REST_OF_WORLD),
- * use comprehensive fallback so Markets are populated.
+ * Handle Printify product:publish:started webhook event.
+ * Called when a product is created/published in Printify.
+ *
+ * After importing the product, calls publishing_succeeded.json to complete the
+ * 3-step publish handshake and clear the "Publishing" status in Printify:
+ *   1. Printify fires product:publish:started webhook → we return 200 immediately
+ *   2. We import/update the product in our store (this function)
+ *   3. We call publishing_succeeded.json with our local product ID and slug
+ *
+ * Without step 3, Printify keeps the product stuck in "Publishing" indefinitely.
  */
-async function syncPrintifyProductCountries(
-  productId: string,
-  countryCodes: string[] | null,
-): Promise<void> {
-  await db
-    .delete(productAvailableCountryTable)
-    .where(eq(productAvailableCountryTable.productId, productId));
-
-  let allowed: string[];
-  if (countryCodes != null && countryCodes.length > 0) {
-    allowed = countryCodes.filter((c) => !isShippingExcluded(c));
-  } else {
-    allowed = [...POD_SHIPPING_COUNTRY_CODES].filter(
-      (c) => !isShippingExcluded(c),
-    );
+export async function handlePrintifyProductPublished(data: {
+  id: string;
+}): Promise<{ error?: string; success: boolean }> {
+  const pf = getPrintifyIfConfigured();
+  if (!pf) {
+    return { error: "Printify not configured", success: false };
   }
-  if (allowed.length > 0) {
-    await db.insert(productAvailableCountryTable).values(
-      allowed.map((countryCode) => ({
-        productId,
-        countryCode,
-      })),
-    );
+
+  try {
+    const result = await importSinglePrintifyProduct(data.id, false);
+
+    // Complete the publish handshake: tell Printify we successfully listed the product.
+    // This clears the "Publishing" status in Printify.
+    if (result.productId) {
+      // Look up the product's slug for the handle
+      const [product] = await db
+        .select({ slug: productsTable.slug })
+        .from(productsTable)
+        .where(eq(productsTable.id, result.productId))
+        .limit(1);
+
+      const handle = product?.slug
+        ? `/products/${product.slug}`
+        : `/products/${result.productId}`;
+      const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+
+      const confirmResult = await confirmPrintifyPublishingSucceeded(
+        pf.shopId,
+        data.id,
+        {
+          handle: appUrl ? `${appUrl}${handle}` : handle,
+          id: result.productId,
+        },
+      );
+
+      if (!confirmResult.success) {
+        console.warn(
+          `Printify publishing_succeeded failed for ${data.id}: ${confirmResult.error}`,
+        );
+        // Don't fail the import just because the confirmation failed
+      } else {
+        console.log(
+          `Printify product ${data.id} publishing confirmed (local: ${result.productId})`,
+        );
+      }
+    }
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Failed to handle product:publish:started:", message);
+
+    // Tell Printify publishing failed so the product doesn't stay stuck in "Publishing"
+    try {
+      await reportPrintifyPublishingFailed(
+        pf.shopId,
+        data.id,
+        `Import failed: ${message}`,
+      );
+    } catch (reportErr) {
+      console.error(
+        "Failed to report publishing_failed to Printify:",
+        reportErr,
+      );
+    }
+
+    return { error: message, success: false };
   }
 }
 
 /**
- * Sync only shipping-related data for an existing product.
- * Called when overwriteExisting=false to ensure shipping calculations stay current
- * without overwriting user-edited fields like name, description, SEO, etc.
+ * List all Printify products from the API (not local DB).
+ * Useful for admin UI to show what's available to import.
  */
-async function syncShippingDataOnly(
-  productId: string,
-  printifyProduct: PrintifyProduct,
-): Promise<void> {
-  const shippingData = await getPrintifyShippingData(
-    printifyProduct.blueprint_id,
-    printifyProduct.print_provider_id,
-  );
+export async function listAvailablePrintifyProducts(): Promise<{
+  error?: string;
+  products: PrintifyProduct[];
+}> {
+  const pf = getPrintifyIfConfigured();
+  if (!pf) {
+    return { error: "Printify not configured", products: [] };
+  }
 
-  // Update only shipping-related fields on the product (including express/economy eligibility)
-  await db
-    .update(productsTable)
-    .set({
-      handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
-      handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
-      printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
-      printifyExpressEligible:
-        printifyProduct.is_printify_express_eligible ?? false,
-      printifyExpressEnabled:
-        printifyProduct.is_printify_express_enabled ?? false,
-      printifyEconomyEligible:
-        printifyProduct.is_economy_shipping_eligible ?? false,
-      printifyEconomyEnabled:
-        printifyProduct.is_economy_shipping_enabled ?? false,
-      lastSyncedAt: new Date(),
-    })
-    .where(eq(productsTable.id, productId));
+  try {
+    const allProducts: PrintifyProduct[] = [];
+    let page = 1;
+    let hasMore = true;
 
-  // Sync shipping countries
-  await syncPrintifyProductCountries(productId, shippingData.countryCodes);
+    while (hasMore) {
+      const response = await fetchPrintifyProducts(pf.shopId, {
+        limit: 50,
+        page,
+      });
+      allProducts.push(...response.data);
+      page++;
+      hasMore = response.next_page_url != null;
+    }
+
+    return { products: allProducts };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message, products: [] };
+  }
+}
+
+/**
+ * Build option definitions for storefront (Size, Color, Phone Model, etc.) from Printify product.options.
+ */
+function buildOptionDefinitionsFromPrintify(
+  product: PrintifyProduct,
+): { name: string; values: string[] }[] {
+  if (!product.options?.length) return [];
+  return product.options
+    .map((opt) => ({
+      name: opt.name.trim() || "Option",
+      values: (opt.values ?? [])
+        .map((v) => v.title?.trim())
+        .filter((t): t is string => Boolean(t)),
+    }))
+    .filter((opt) => opt.values.length > 0);
 }
 
 /**
@@ -442,56 +660,56 @@ async function createLocalProductFromPrintify(
 
   // Create product
   await db.insert(productsTable).values({
-    id: productId,
-    name: printifyProduct.title,
+    brand,
+    continueSellingWhenOutOfStock: true, // POD products are made to order
+    costPerItemCents,
+    countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
+    createdAt: now,
     description: printifyProduct.description || null,
-    slug,
-    source: "printify",
     externalId: String(printifyProduct.blueprint_id), // Store blueprint ID
-    printifyProductId: printifyProduct.id,
-    printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+    // EU GPSR compliance data
+    gpsrJson: gpsrData ?? undefined,
+    handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
+    handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
+    hasVariants,
+    hsCode: printifyProduct.hs_code?.trim() || null,
+    id: productId,
+    imageUrl,
+    lastSyncedAt: now,
+    metaDescription,
+    model,
+    name: printifyProduct.title,
+    optionDefinitionsJson,
+    pageTitle,
+    physicalProduct: true,
+    priceCents,
+    printifyEconomyEligible:
+      printifyProduct.is_economy_shipping_eligible ?? false,
+    printifyEconomyEnabled:
+      printifyProduct.is_economy_shipping_enabled ?? false,
     // Printify shipping eligibility flags
     printifyExpressEligible:
       printifyProduct.is_printify_express_eligible ?? false,
     printifyExpressEnabled:
       printifyProduct.is_printify_express_enabled ?? false,
-    printifyEconomyEligible:
-      printifyProduct.is_economy_shipping_eligible ?? false,
-    printifyEconomyEnabled:
-      printifyProduct.is_economy_shipping_enabled ?? false,
-    // EU GPSR compliance data
-    gpsrJson: gpsrData ?? undefined,
-    priceCents,
-    hasVariants,
-    optionDefinitionsJson,
+    printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+    printifyProductId: printifyProduct.id,
     published: printifyProduct.visible, // visible = not "hide in store"
-    imageUrl,
-    pageTitle,
-    metaDescription,
-    costPerItemCents,
+    sku: productSku,
+    slug,
+    source: "printify",
+    trackQuantity: false, // Printify manages inventory
+    updatedAt: now,
+    vendor: "Printify",
     weightGrams,
     weightUnit: weightGrams ? "kg" : null,
-    vendor: "Printify",
-    brand,
-    model,
-    sku: productSku,
-    countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
-    hsCode: printifyProduct.hs_code?.trim() || null,
-    handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
-    handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
-    createdAt: now,
-    updatedAt: now,
-    lastSyncedAt: now,
-    physicalProduct: true,
-    trackQuantity: false, // Printify manages inventory
-    continueSellingWhenOutOfStock: true, // POD products are made to order
   });
 
   await applyCategoryAutoRules({
-    id: productId,
-    name: printifyProduct.title,
     brand: brand ?? null,
     createdAt: now,
+    id: productId,
+    name: printifyProduct.title,
     tags: printifyProduct.tags ?? [],
   });
 
@@ -504,11 +722,11 @@ async function createLocalProductFromPrintify(
   let sortOrder = 0;
   for (const img of printifyProduct.images) {
     await db.insert(productImagesTable).values({
+      alt: printifyProduct.title,
       id: nanoid(),
       productId,
-      url: img.src,
-      alt: printifyProduct.title,
       sortOrder: sortOrder++,
+      url: img.src,
     });
   }
 
@@ -537,6 +755,252 @@ async function createLocalProductFromPrintify(
   );
   return productId;
 }
+
+/**
+ * Create a local variant from Printify variant data.
+ */
+async function createLocalVariantFromPrintify(
+  productId: string,
+  printifyProduct: PrintifyProduct,
+  variant: PrintifyProduct["variants"][0],
+): Promise<string> {
+  const variantId = nanoid();
+  const now = new Date();
+
+  const variantOptions = getVariantOptions(printifyProduct, variant);
+  const label = getVariantLabel(printifyProduct, variant);
+
+  const variantImage = printifyProduct.images.find((img) =>
+    img.variant_ids.includes(variant.id),
+  );
+  const imageUrl = variantImage?.src || null;
+
+  await db.insert(productVariantsTable).values({
+    color: variantOptions.color,
+    createdAt: now,
+    externalId: String(variant.id),
+    gender: variantOptions.gender,
+    id: variantId,
+    imageUrl,
+    label,
+    priceCents: variant.price,
+    printifyVariantId: String(variant.id),
+    productId,
+    size: variantOptions.size,
+    sku: variant.sku || null,
+    updatedAt: now,
+    weightGrams: variant.grams || null,
+  });
+
+  return variantId;
+}
+
+/**
+ * Fetch shipping countries and handling days in one catalog API call.
+ */
+async function getPrintifyShippingData(
+  blueprintId: number,
+  printProviderId: number,
+): Promise<{
+  countryCodes: null | string[];
+  handlingDaysMax: null | number;
+  handlingDaysMin: null | number;
+}> {
+  try {
+    const shipping = await fetchPrintifyShippingInfo(
+      blueprintId,
+      printProviderId,
+    );
+    const allCountries = new Set<string>();
+    let hasRestOfWorld = false;
+    for (const profile of shipping.profiles ?? []) {
+      for (const c of profile.countries ?? []) {
+        if (c === PRINTIFY_REST_OF_WORLD) {
+          hasRestOfWorld = true;
+        } else if (typeof c === "string" && c.length === 2) {
+          allCountries.add(c.toUpperCase());
+        }
+      }
+    }
+    const countryCodes =
+      hasRestOfWorld || allCountries.size === 0 ? null : [...allCountries];
+
+    const ht = shipping.handling_time;
+    const handlingResult =
+      ht && typeof ht.value === "number"
+        ? printifyHandlingToDays(ht.value, ht.unit ?? "business_days")
+        : null;
+
+    return {
+      countryCodes,
+      handlingDaysMax: handlingResult?.max ?? null,
+      handlingDaysMin: handlingResult?.min ?? null,
+    };
+  } catch (err) {
+    console.warn(
+      `Printify shipping info failed for blueprint ${blueprintId} provider ${printProviderId}:`,
+      err instanceof Error ? err.message : err,
+    );
+    return {
+      countryCodes: null,
+      handlingDaysMax: null,
+      handlingDaysMin: null,
+    };
+  }
+}
+
+/**
+ * Build display label for a variant. Printify often returns variant.title as "Default" for
+ * phone cases and other products; use option value titles (e.g. "iPhone 16", "White / M") instead.
+ */
+function getVariantLabel(
+  product: PrintifyProduct,
+  variant: PrintifyProduct["variants"][0],
+): null | string {
+  const title = variant.title?.trim();
+  if (title && title.toLowerCase() !== "default") {
+    return title;
+  }
+  const opts = getVariantOptions(product, variant);
+  const parts = [opts.color, opts.size, opts.gender].filter((t): t is string =>
+    Boolean(t?.trim()),
+  );
+  return parts.length > 0 ? parts.join(" / ") : title || null;
+}
+
+// ============================================================================
+// Export: Backend → Printify
+// ============================================================================
+
+/**
+ * Extract size, color, and first other option (e.g. Phone Model) from Printify variant options.
+ * Front-end maps option names to color / size / gender; we store "other" (e.g. device) in gender.
+ */
+function getVariantOptions(
+  product: PrintifyProduct,
+  variant: PrintifyProduct["variants"][0],
+): { color: null | string; gender: null | string; size: null | string } {
+  let size: null | string = null;
+  let color: null | string = null;
+  let gender: null | string = null;
+
+  for (let i = 0; i < variant.options.length; i++) {
+    const optionValueId = variant.options[i];
+    const optionDef = product.options[i];
+    if (!optionDef) continue;
+
+    const optionValue = optionDef.values.find((v) => v.id === optionValueId);
+    if (!optionValue) continue;
+
+    const optionName = optionDef.name.toLowerCase();
+    if (optionName.includes("size")) {
+      size = optionValue.title;
+    } else if (optionName.includes("color") || optionName.includes("colour")) {
+      color = optionValue.title;
+    } else {
+      // First "other" option (e.g. Phone Model, Device) → store in gender for storefront
+      if (!gender) gender = optionValue.title;
+    }
+  }
+
+  return { color, gender, size };
+}
+
+/**
+ * Convert Printify handling_time to business days (min and max).
+ * Unit can be "business_days", "days", "hours". Returns { min, max } or null.
+ */
+function printifyHandlingToDays(
+  value: number,
+  unit: string,
+): null | { max: number; min: number } {
+  if (value <= 0 || !Number.isFinite(value)) return null;
+  let days: number;
+  const u = (unit || "").toLowerCase();
+  if (u === "business_days" || u === "days") {
+    days = Math.round(value);
+  } else if (u === "hours") {
+    days = Math.max(1, Math.round(value / 24));
+  } else {
+    days = Math.round(value);
+  }
+  return { max: days + 1, min: days };
+}
+
+// ============================================================================
+// Webhook Handlers
+// ============================================================================
+
+/**
+ * Sync product available countries. When API returns null/empty (e.g. REST_OF_WORLD),
+ * use comprehensive fallback so Markets are populated.
+ */
+async function syncPrintifyProductCountries(
+  productId: string,
+  countryCodes: null | string[],
+): Promise<void> {
+  await db
+    .delete(productAvailableCountryTable)
+    .where(eq(productAvailableCountryTable.productId, productId));
+
+  let allowed: string[];
+  if (countryCodes != null && countryCodes.length > 0) {
+    allowed = countryCodes.filter((c) => !isShippingExcluded(c));
+  } else {
+    allowed = [...POD_SHIPPING_COUNTRY_CODES].filter(
+      (c) => !isShippingExcluded(c),
+    );
+  }
+  if (allowed.length > 0) {
+    await db.insert(productAvailableCountryTable).values(
+      allowed.map((countryCode) => ({
+        countryCode,
+        productId,
+      })),
+    );
+  }
+}
+
+/**
+ * Sync only shipping-related data for an existing product.
+ * Called when overwriteExisting=false to ensure shipping calculations stay current
+ * without overwriting user-edited fields like name, description, SEO, etc.
+ */
+async function syncShippingDataOnly(
+  productId: string,
+  printifyProduct: PrintifyProduct,
+): Promise<void> {
+  const shippingData = await getPrintifyShippingData(
+    printifyProduct.blueprint_id,
+    printifyProduct.print_provider_id,
+  );
+
+  // Update only shipping-related fields on the product (including express/economy eligibility)
+  await db
+    .update(productsTable)
+    .set({
+      handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
+      handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
+      lastSyncedAt: new Date(),
+      printifyEconomyEligible:
+        printifyProduct.is_economy_shipping_eligible ?? false,
+      printifyEconomyEnabled:
+        printifyProduct.is_economy_shipping_enabled ?? false,
+      printifyExpressEligible:
+        printifyProduct.is_printify_express_eligible ?? false,
+      printifyExpressEnabled:
+        printifyProduct.is_printify_express_enabled ?? false,
+      printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+    })
+    .where(eq(productsTable.id, productId));
+
+  // Sync shipping countries
+  await syncPrintifyProductCountries(productId, shippingData.countryCodes);
+}
+
+// ============================================================================
+// Utilities
+// ============================================================================
 
 /**
  * Update an existing local product from Printify product data.
@@ -623,40 +1087,40 @@ async function updateLocalProductFromPrintify(
   await db
     .update(productsTable)
     .set({
-      name: printifyProduct.title,
+      brand,
+      costPerItemCents,
+      countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
       description: printifyProduct.description || null,
-      imageUrl,
-      published: printifyProduct.visible,
+      // EU GPSR compliance data
+      gpsrJson: gpsrData ?? undefined,
+      handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
+      handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
       hasVariants: enabledVariants.length > 1,
+      hsCode: printifyProduct.hs_code?.trim() || null,
+      imageUrl,
+      metaDescription,
+      model,
+      name: printifyProduct.title,
       optionDefinitionsJson,
       pageTitle: printifyProduct.title,
-      metaDescription,
-      costPerItemCents,
-      weightGrams,
-      weightUnit: weightGrams ? "kg" : null,
-      vendor: "Printify",
-      brand,
-      model,
-      sku: productSku,
-      printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+      printifyEconomyEligible:
+        printifyProduct.is_economy_shipping_eligible ?? false,
+      printifyEconomyEnabled:
+        printifyProduct.is_economy_shipping_enabled ?? false,
       // Printify shipping eligibility flags
       printifyExpressEligible:
         printifyProduct.is_printify_express_eligible ?? false,
       printifyExpressEnabled:
         printifyProduct.is_printify_express_enabled ?? false,
-      printifyEconomyEligible:
-        printifyProduct.is_economy_shipping_eligible ?? false,
-      printifyEconomyEnabled:
-        printifyProduct.is_economy_shipping_enabled ?? false,
-      // EU GPSR compliance data
-      gpsrJson: gpsrData ?? undefined,
-      countryOfOrigin: printifyProduct.country_of_origin?.trim() || null,
-      hsCode: printifyProduct.hs_code?.trim() || null,
-      handlingDaysMin: shippingData.handlingDaysMin ?? undefined,
-      handlingDaysMax: shippingData.handlingDaysMax ?? undefined,
+      printifyPrintProviderId: printifyProduct.print_provider_id ?? null,
+      published: printifyProduct.visible,
+      sku: productSku,
+      vendor: "Printify",
+      weightGrams,
+      weightUnit: weightGrams ? "kg" : null,
       ...(priceCents != null && { priceCents }),
-      updatedAt: now,
       lastSyncedAt: now,
+      updatedAt: now,
     })
     .where(eq(productsTable.id, productId));
 
@@ -677,10 +1141,10 @@ async function updateLocalProductFromPrintify(
   }
 
   await syncProductCategoriesWithAutoRules({
-    id: productId,
-    name: printifyProduct.title,
     brand: brand ?? null,
     createdAt: productCreatedAt,
+    id: productId,
+    name: printifyProduct.title,
     tags: printifyProduct.tags ?? [],
   });
 
@@ -728,11 +1192,11 @@ async function updateLocalProductFromPrintify(
   let sortOrder = 0;
   for (const img of printifyProduct.images) {
     await db.insert(productImagesTable).values({
+      alt: printifyProduct.title,
       id: nanoid(),
       productId,
-      url: img.src,
-      alt: printifyProduct.title,
       sortOrder: sortOrder++,
+      url: img.src,
     });
   }
 
@@ -749,45 +1213,6 @@ async function updateLocalProductFromPrintify(
   console.log(
     `Updated Printify product ${printifyProduct.id} (local: ${productId})`,
   );
-}
-
-/**
- * Create a local variant from Printify variant data.
- */
-async function createLocalVariantFromPrintify(
-  productId: string,
-  printifyProduct: PrintifyProduct,
-  variant: PrintifyProduct["variants"][0],
-): Promise<string> {
-  const variantId = nanoid();
-  const now = new Date();
-
-  const variantOptions = getVariantOptions(printifyProduct, variant);
-  const label = getVariantLabel(printifyProduct, variant);
-
-  const variantImage = printifyProduct.images.find((img) =>
-    img.variant_ids.includes(variant.id),
-  );
-  const imageUrl = variantImage?.src || null;
-
-  await db.insert(productVariantsTable).values({
-    id: variantId,
-    productId,
-    externalId: String(variant.id),
-    printifyVariantId: String(variant.id),
-    size: variantOptions.size,
-    color: variantOptions.color,
-    gender: variantOptions.gender,
-    label,
-    sku: variant.sku || null,
-    priceCents: variant.price,
-    weightGrams: variant.grams || null,
-    imageUrl,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  return variantId;
 }
 
 /**
@@ -811,440 +1236,16 @@ async function updateLocalVariantFromPrintify(
   await db
     .update(productVariantsTable)
     .set({
-      externalId: String(variant.id),
-      size: variantOptions.size,
       color: variantOptions.color,
+      externalId: String(variant.id),
       gender: variantOptions.gender,
       label: label ?? undefined,
-      sku: variant.sku || null,
       priceCents: variant.price,
+      size: variantOptions.size,
+      sku: variant.sku || null,
       weightGrams: variant.grams || null,
       ...(imageUrl && { imageUrl }),
       updatedAt: now,
     })
     .where(eq(productVariantsTable.id, variantId));
-}
-
-/**
- * Build option definitions for storefront (Size, Color, Phone Model, etc.) from Printify product.options.
- */
-function buildOptionDefinitionsFromPrintify(
-  product: PrintifyProduct,
-): Array<{ name: string; values: string[] }> {
-  if (!product.options?.length) return [];
-  return product.options
-    .map((opt) => ({
-      name: opt.name.trim() || "Option",
-      values: (opt.values ?? [])
-        .map((v) => v.title?.trim())
-        .filter((t): t is string => Boolean(t)),
-    }))
-    .filter((opt) => opt.values.length > 0);
-}
-
-/**
- * Extract size, color, and first other option (e.g. Phone Model) from Printify variant options.
- * Front-end maps option names to color / size / gender; we store "other" (e.g. device) in gender.
- */
-function getVariantOptions(
-  product: PrintifyProduct,
-  variant: PrintifyProduct["variants"][0],
-): { size: string | null; color: string | null; gender: string | null } {
-  let size: string | null = null;
-  let color: string | null = null;
-  let gender: string | null = null;
-
-  for (let i = 0; i < variant.options.length; i++) {
-    const optionValueId = variant.options[i];
-    const optionDef = product.options[i];
-    if (!optionDef) continue;
-
-    const optionValue = optionDef.values.find((v) => v.id === optionValueId);
-    if (!optionValue) continue;
-
-    const optionName = optionDef.name.toLowerCase();
-    if (optionName.includes("size")) {
-      size = optionValue.title;
-    } else if (optionName.includes("color") || optionName.includes("colour")) {
-      color = optionValue.title;
-    } else {
-      // First "other" option (e.g. Phone Model, Device) → store in gender for storefront
-      if (!gender) gender = optionValue.title;
-    }
-  }
-
-  return { size, color, gender };
-}
-
-/**
- * Build display label for a variant. Printify often returns variant.title as "Default" for
- * phone cases and other products; use option value titles (e.g. "iPhone 16", "White / M") instead.
- */
-function getVariantLabel(
-  product: PrintifyProduct,
-  variant: PrintifyProduct["variants"][0],
-): string | null {
-  const title = variant.title?.trim();
-  if (title && title.toLowerCase() !== "default") {
-    return title;
-  }
-  const opts = getVariantOptions(product, variant);
-  const parts = [opts.color, opts.size, opts.gender].filter((t): t is string =>
-    Boolean(t?.trim()),
-  );
-  return parts.length > 0 ? parts.join(" / ") : title || null;
-}
-
-// ============================================================================
-// Export: Backend → Printify
-// ============================================================================
-
-/**
- * Push local product changes to Printify.
- *
- * Updates all relevant fields that Printify accepts:
- * - title (product name)
- * - description
- * - tags (from productTagsTable)
- * - variant prices
- * - variant enabled status
- *
- * This ensures that when you modify a product in your backend (price, description,
- * SEO, tags), those changes are pushed to Printify so everything stays in sync.
- * When Printify syncs back, it won't overwrite fields it doesn't manage.
- */
-export async function exportProductToPrintify(
-  productId: string,
-): Promise<PrintifyProductExportResult> {
-  const pf = getPrintifyIfConfigured();
-  if (!pf) {
-    return { success: false, error: "Printify not configured" };
-  }
-
-  // Get product
-  const [product] = await db
-    .select()
-    .from(productsTable)
-    .where(eq(productsTable.id, productId))
-    .limit(1);
-
-  if (!product) {
-    return { success: false, error: "Product not found" };
-  }
-
-  if (product.source !== "printify" || !product.printifyProductId) {
-    return { success: false, error: "Product is not a Printify product" };
-  }
-
-  // Get variants
-  const variants = await db
-    .select()
-    .from(productVariantsTable)
-    .where(eq(productVariantsTable.productId, productId));
-
-  // Get tags from productTagsTable
-  const tags = await db
-    .select({ tag: productTagsTable.tag })
-    .from(productTagsTable)
-    .where(eq(productTagsTable.productId, productId));
-  const tagList = tags.map((t) => t.tag);
-
-  try {
-    // Build variant updates with prices
-    const variantUpdates = variants
-      .filter((v) => v.printifyVariantId)
-      .map((v) => ({
-        id: Number.parseInt(v.printifyVariantId!, 10),
-        price: v.priceCents,
-        is_enabled: true,
-      }));
-
-    // Images only flow inbound (Printify → store), never outbound.
-    // Only sync content fields: title, description, tags, and variant prices.
-    await updatePrintifyProduct(pf.shopId, product.printifyProductId, {
-      title: product.name,
-      description: product.description || undefined,
-      tags: tagList.length > 0 ? tagList : undefined,
-      variants: variantUpdates,
-    });
-
-    // Update product last synced timestamp
-    await db
-      .update(productsTable)
-      .set({ lastSyncedAt: new Date(), updatedAt: new Date() })
-      .where(eq(productsTable.id, productId));
-
-    return { success: true, printifyProductId: product.printifyProductId };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    const isDisabledForEditing =
-      message.includes("8252") || /disabled for editing/i.test(message);
-    if (isDisabledForEditing) {
-      return {
-        success: false,
-        error:
-          "Product is in Publishing in Printify; Printify blocks edits until it is Published. Register webhooks, then delete and re-publish the product in Printify to clear status.",
-      };
-    }
-    return { success: false, error: message };
-  }
-}
-
-/**
- * Push price changes for all Printify products to Printify.
- */
-export async function exportAllPrintifyProducts(): Promise<PrintifySyncResult> {
-  const pf = getPrintifyIfConfigured();
-  if (!pf) {
-    return {
-      success: false,
-      imported: 0,
-      updated: 0,
-      skipped: 0,
-      errors: ["Printify not configured"],
-    };
-  }
-
-  const result: PrintifySyncResult = {
-    success: true,
-    imported: 0,
-    updated: 0,
-    skipped: 0,
-    errors: [],
-  };
-
-  // Get all Printify products
-  const products = await db
-    .select({
-      id: productsTable.id,
-      printifyProductId: productsTable.printifyProductId,
-    })
-    .from(productsTable)
-    .where(eq(productsTable.source, "printify"));
-
-  for (const product of products) {
-    if (!product.printifyProductId) {
-      result.skipped++;
-      continue;
-    }
-
-    const exportResult = await exportProductToPrintify(product.id);
-    if (exportResult.success) {
-      result.updated++;
-    } else {
-      result.errors.push(`Product ${product.id}: ${exportResult.error}`);
-    }
-  }
-
-  return result;
-}
-
-// ============================================================================
-// Webhook Handlers
-// ============================================================================
-
-/**
- * Handle Printify product:publish:started webhook event.
- * Called when a product is created/published in Printify.
- *
- * After importing the product, calls publishing_succeeded.json to complete the
- * 3-step publish handshake and clear the "Publishing" status in Printify:
- *   1. Printify fires product:publish:started webhook → we return 200 immediately
- *   2. We import/update the product in our store (this function)
- *   3. We call publishing_succeeded.json with our local product ID and slug
- *
- * Without step 3, Printify keeps the product stuck in "Publishing" indefinitely.
- */
-export async function handlePrintifyProductPublished(data: {
-  id: string;
-}): Promise<{ success: boolean; error?: string }> {
-  const pf = getPrintifyIfConfigured();
-  if (!pf) {
-    return { success: false, error: "Printify not configured" };
-  }
-
-  try {
-    const result = await importSinglePrintifyProduct(data.id, false);
-
-    // Complete the publish handshake: tell Printify we successfully listed the product.
-    // This clears the "Publishing" status in Printify.
-    if (result.productId) {
-      // Look up the product's slug for the handle
-      const [product] = await db
-        .select({ slug: productsTable.slug })
-        .from(productsTable)
-        .where(eq(productsTable.id, result.productId))
-        .limit(1);
-
-      const handle = product?.slug
-        ? `/products/${product.slug}`
-        : `/products/${result.productId}`;
-      const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
-
-      const confirmResult = await confirmPrintifyPublishingSucceeded(
-        pf.shopId,
-        data.id,
-        {
-          id: result.productId,
-          handle: appUrl ? `${appUrl}${handle}` : handle,
-        },
-      );
-
-      if (!confirmResult.success) {
-        console.warn(
-          `Printify publishing_succeeded failed for ${data.id}: ${confirmResult.error}`,
-        );
-        // Don't fail the import just because the confirmation failed
-      } else {
-        console.log(
-          `Printify product ${data.id} publishing confirmed (local: ${result.productId})`,
-        );
-      }
-    }
-
-    return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Failed to handle product:publish:started:", message);
-
-    // Tell Printify publishing failed so the product doesn't stay stuck in "Publishing"
-    try {
-      await reportPrintifyPublishingFailed(
-        pf.shopId,
-        data.id,
-        `Import failed: ${message}`,
-      );
-    } catch (reportErr) {
-      console.error(
-        "Failed to report publishing_failed to Printify:",
-        reportErr,
-      );
-    }
-
-    return { success: false, error: message };
-  }
-}
-
-/**
- * Handle Printify product:deleted webhook event.
- * Called when a product is deleted in Printify.
- */
-export async function handlePrintifyProductDeleted(data: {
-  id: string;
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Find and unpublish the local product
-    const [product] = await db
-      .select()
-      .from(productsTable)
-      .where(eq(productsTable.printifyProductId, data.id))
-      .limit(1);
-
-    if (!product) {
-      // Product doesn't exist locally - nothing to do
-      return { success: true };
-    }
-
-    // Notify Printify the product is unpublished from our store
-    const pf = getPrintifyIfConfigured();
-    if (pf) {
-      try {
-        await unpublishPrintifyProduct(pf.shopId, data.id);
-      } catch {
-        // Best-effort: product may already be deleted in Printify
-      }
-    }
-
-    // Unpublish the product (safer than deleting - keeps historical data)
-    await db
-      .update(productsTable)
-      .set({
-        published: false,
-        updatedAt: new Date(),
-        printifyProductId: null, // Unlink from Printify
-      })
-      .where(eq(productsTable.id, product.id));
-
-    console.log(`Unpublished product ${product.id} (Printify product deleted)`);
-
-    return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Failed to handle product:deleted:", message);
-    return { success: false, error: message };
-  }
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-/**
- * Get sync status for a product.
- */
-export async function getPrintifyProductSyncStatus(productId: string): Promise<{
-  synced: boolean;
-  printifyProductId: string | null;
-  lastSyncedAt: Date | null;
-  error?: string;
-}> {
-  const [product] = await db
-    .select({
-      printifyProductId: productsTable.printifyProductId,
-      lastSyncedAt: productsTable.lastSyncedAt,
-      source: productsTable.source,
-    })
-    .from(productsTable)
-    .where(eq(productsTable.id, productId))
-    .limit(1);
-
-  if (!product) {
-    return {
-      synced: false,
-      printifyProductId: null,
-      lastSyncedAt: null,
-      error: "Product not found",
-    };
-  }
-
-  return {
-    synced: product.source === "printify" && product.printifyProductId != null,
-    printifyProductId: product.printifyProductId,
-    lastSyncedAt: product.lastSyncedAt,
-  };
-}
-
-/**
- * List all Printify products from the API (not local DB).
- * Useful for admin UI to show what's available to import.
- */
-export async function listAvailablePrintifyProducts(): Promise<{
-  products: PrintifyProduct[];
-  error?: string;
-}> {
-  const pf = getPrintifyIfConfigured();
-  if (!pf) {
-    return { products: [], error: "Printify not configured" };
-  }
-
-  try {
-    const allProducts: PrintifyProduct[] = [];
-    let page = 1;
-    let hasMore = true;
-
-    while (hasMore) {
-      const response = await fetchPrintifyProducts(pf.shopId, {
-        page,
-        limit: 50,
-      });
-      allProducts.push(...response.data);
-      page++;
-      hasMore = response.next_page_url != null;
-    }
-
-    return { products: allProducts };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { products: [], error: message };
-  }
 }

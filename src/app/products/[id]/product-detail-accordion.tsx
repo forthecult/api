@@ -16,22 +16,22 @@ const BASE_ITEMS = [
   { id: "payment", label: "Payment Options" },
 ] as const;
 
-type SizeChartData = {
+interface SizeChartData {
   availableSizes?: string[];
-  sizeTables?: Array<{
-    type: string;
-    unit: string;
+  sizeTables?: {
     description?: string;
     image_url?: string;
-    measurements?: Array<{
+    measurements?: {
       type_label: string;
-      values: Array<
+      values: (
+        | { max_value: string; min_value: string; size: string }
         | { size: string; value: string }
-        | { size: string; min_value: string; max_value: string }
-      >;
-    }>;
-  }>;
-};
+      )[];
+    }[];
+    type: string;
+    unit: string;
+  }[];
+}
 
 const DELIVERY_COPY = (
   <>
@@ -92,13 +92,22 @@ const RETURNS_COPY = (
     <p>
       You can contact us by emailing at{" "}
       <a
+        className={`
+          underline
+          hover:no-underline
+        `}
         href="mailto:support@forthecult.store"
-        className="underline hover:no-underline"
       >
         support@forthecult.store
       </a>{" "}
       or visiting our{" "}
-      <Link href="/contact" className="underline hover:no-underline">
+      <Link
+        className={`
+        underline
+        hover:no-underline
+      `}
+        href="/contact"
+      >
         Contact Us Page
       </Link>
       .
@@ -106,188 +115,27 @@ const RETURNS_COPY = (
   </>
 );
 
-function isApparelCategory(category: string): boolean {
-  const lower = category.toLowerCase();
-  return (
-    lower.includes("apparel") ||
-    lower.includes("clothing") ||
-    lower.includes("tee") ||
-    lower.includes("shirt") ||
-    lower.includes("sock") ||
-    lower.includes("mens") ||
-    lower.includes("womens")
-  );
-}
-
-/** Render size chart description as HTML when it contains tags, otherwise as plain text. */
-function renderSizeChartDescription(description: string | null | undefined) {
-  if (!description?.trim()) return null;
-  const trimmed = description.trim();
-  const looksLikeHtml = /<[a-z][\s\S]*>/i.test(trimmed);
-  if (looksLikeHtml) {
-    const sanitized = sanitizeProductDescription(trimmed);
-    if (!sanitized) return null;
-    return (
-      <div
-        className="mb-3 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert [&_p]:mb-1 [&_p:last-child]:mb-0"
-        dangerouslySetInnerHTML={{ __html: sanitized }}
-      />
-    );
-  }
-  return <p className="mb-3 text-sm text-muted-foreground">{trimmed}</p>;
-}
-
-function renderSizeChartData(
-  data: SizeChartData | null | undefined,
-  unitLabel: string,
-) {
-  if (!data?.sizeTables?.length) return null;
-  return (
-    <div className="mb-6">
-      <h4 className="mb-2 text-sm font-semibold text-foreground">
-        {unitLabel}
-      </h4>
-      {data.sizeTables.map((table, idx) => {
-        const measurements = table.measurements ?? [];
-        const canCombine =
-          measurements.length > 1 &&
-          measurements.every(
-            (m) => m.values.length === measurements[0]?.values.length,
-          ) &&
-          measurements.every((m, i) =>
-            m.values.every(
-              (v, j) => v.size === measurements[0]?.values[j]?.size,
-            ),
-          );
-
-        if (canCombine && measurements.length > 0) {
-          const sizeColumn = measurements[0]!.values.map((v) => v.size);
-          const columns = ["Size", ...measurements.map((m) => m.type_label)];
-          return (
-            <div key={idx} className="mb-6">
-              {table.description != null &&
-                renderSizeChartDescription(table.description)}
-              <div className="overflow-x-auto rounded-md border border-border">
-                <table className="w-full min-w-[320px] border-collapse text-sm">
-                  <thead>
-                    <tr className="bg-muted/60">
-                      {columns.map((col, cidx) => (
-                        <th
-                          key={cidx}
-                          className="px-3 py-2.5 text-left font-semibold text-foreground first:rounded-tl-md last:rounded-tr-md"
-                        >
-                          {col}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sizeColumn.map((size, rowIdx) => (
-                      <tr
-                        key={rowIdx}
-                        className={cn(
-                          "border-t border-border/60",
-                          rowIdx % 2 === 1 && "bg-muted/30",
-                        )}
-                      >
-                        <td className="px-3 py-2 font-medium text-foreground">
-                          {size}
-                        </td>
-                        {measurements.map((m, midx) => {
-                          const v = m.values[rowIdx];
-                          const cell =
-                            v && "value" in v
-                              ? v.value
-                              : v && "min_value" in v
-                                ? `${v.min_value} – ${v.max_value}`
-                                : "—";
-                          return (
-                            <td
-                              key={midx}
-                              className="px-3 py-2 text-muted-foreground"
-                            >
-                              {cell}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          );
-        }
-
-        return (
-          <div key={idx} className="mb-4">
-            {table.description != null &&
-              renderSizeChartDescription(table.description)}
-            {measurements.map((m, midx) => (
-              <div
-                key={midx}
-                className="mb-3 overflow-x-auto rounded-md border border-border"
-              >
-                <table className="w-full min-w-[200px] border-collapse text-sm">
-                  <thead>
-                    <tr className="bg-muted/60">
-                      <th className="px-3 py-2 text-left font-semibold text-foreground">
-                        Size
-                      </th>
-                      <th className="px-3 py-2 text-left font-semibold text-foreground">
-                        {m.type_label}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {m.values.map((v, vidx) => (
-                      <tr
-                        key={vidx}
-                        className={cn(
-                          "border-t border-border/60",
-                          vidx % 2 === 1 && "bg-muted/30",
-                        )}
-                      >
-                        <td className="px-3 py-2 font-medium">{v.size}</td>
-                        <td className="px-3 py-2 text-muted-foreground">
-                          {"value" in v
-                            ? v.value
-                            : `${v.min_value} – ${v.max_value}`}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ))}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 export interface ProductDetailAccordionProps {
-  description: string;
   category: string;
+  description: string;
   /** When true, description is sanitized HTML and will be rendered as HTML. */
   descriptionIsHtml?: boolean;
   /** When set, adds a "Size Guide: {displayName}" accordion section with imperial + metric charts. */
   sizeChart?: {
-    displayName: string;
     dataImperial: unknown;
     dataMetric: unknown;
+    displayName: string;
   };
 }
 
 export function ProductDetailAccordion({
-  description,
   category,
+  description,
   descriptionIsHtml,
   sizeChart,
 }: ProductDetailAccordionProps) {
   const items = React.useMemo(() => {
-    const list: Array<{ id: string; label: string }> = [...BASE_ITEMS];
+    const list: { id: string; label: string }[] = [...BASE_ITEMS];
     if (sizeChart) {
       list.splice(1, 0, {
         id: "size-guide",
@@ -318,22 +166,6 @@ export function ProductDetailAccordion({
 
   const renderContent = (itemId: string) => {
     switch (itemId) {
-      case "description":
-        if (descriptionIsHtml && description) {
-          return (
-            <div
-              className="pb-4 text-sm text-muted-foreground prose prose-sm max-w-none dark:prose-invert"
-              dangerouslySetInnerHTML={{
-                __html: sanitizeProductDescription(description),
-              }}
-            />
-          );
-        }
-        return (
-          <div className="pb-4 text-sm text-muted-foreground whitespace-pre-wrap">
-            {description || "No description available."}
-          </div>
-        );
       case "delivery":
         return (
           <div className="pb-4 text-sm text-muted-foreground">
@@ -341,10 +173,27 @@ export function ProductDetailAccordion({
             {isApparelCategory(category) && DELIVERY_APPAREL_EXTRA}
           </div>
         );
-      case "returns":
+      case "description":
+        if (descriptionIsHtml && description) {
+          return (
+            <div
+              className={`
+                prose prose-sm max-w-none pb-4 text-sm text-muted-foreground
+                dark:prose-invert
+              `}
+              dangerouslySetInnerHTML={{
+                __html: sanitizeProductDescription(description),
+              }}
+            />
+          );
+        }
         return (
-          <div className="pb-4 text-sm text-muted-foreground">
-            {RETURNS_COPY}
+          <div
+            className={`
+            pb-4 text-sm whitespace-pre-wrap text-muted-foreground
+          `}
+          >
+            {description || "No description available."}
           </div>
         );
       case "payment": {
@@ -389,6 +238,12 @@ export function ProductDetailAccordion({
           </div>
         );
       }
+      case "returns":
+        return (
+          <div className="pb-4 text-sm text-muted-foreground">
+            {RETURNS_COPY}
+          </div>
+        );
       case "size-guide": {
         if (!sizeChart) return null;
         const imperial = sizeChart.dataImperial as SizeChartData | undefined;
@@ -419,32 +274,42 @@ export function ProductDetailAccordion({
       {items.map((item) => {
         const isOpen = isPanelOpen(item.id);
         return (
-          <div key={item.id} className="border-b border-border last:border-b-0">
+          <div
+            className={`
+            border-b border-border
+            last:border-b-0
+          `}
+            key={item.id}
+          >
             <button
-              type="button"
-              onClick={() => toggleOpen(item.id)}
-              className="flex w-full items-center justify-between py-4 text-left font-medium transition-colors hover:text-foreground"
-              aria-expanded={isOpen}
               aria-controls={`accordion-content-${item.id}`}
+              aria-expanded={isOpen}
+              className={`
+                flex w-full items-center justify-between py-4 text-left
+                font-medium transition-colors
+                hover:text-foreground
+              `}
               id={`accordion-trigger-${item.id}`}
+              onClick={() => toggleOpen(item.id)}
+              type="button"
             >
               {item.label}
               <ChevronDown
+                aria-hidden
                 className={cn(
                   "h-4 w-4 shrink-0 transition-transform",
                   isOpen && "rotate-180",
                 )}
-                aria-hidden
               />
             </button>
             <div
-              id={`accordion-content-${item.id}`}
-              role="region"
               aria-labelledby={`accordion-trigger-${item.id}`}
               className={cn(
                 "overflow-hidden transition-all",
                 isOpen ? "visible" : "hidden",
               )}
+              id={`accordion-content-${item.id}`}
+              role="region"
             >
               {renderContent(item.id)}
             </div>
@@ -453,4 +318,182 @@ export function ProductDetailAccordion({
       })}
     </div>
   );
+}
+
+function isApparelCategory(category: string): boolean {
+  const lower = category.toLowerCase();
+  return (
+    lower.includes("apparel") ||
+    lower.includes("clothing") ||
+    lower.includes("tee") ||
+    lower.includes("shirt") ||
+    lower.includes("sock") ||
+    lower.includes("mens") ||
+    lower.includes("womens")
+  );
+}
+
+function renderSizeChartData(
+  data: null | SizeChartData | undefined,
+  unitLabel: string,
+) {
+  if (!data?.sizeTables?.length) return null;
+  return (
+    <div className="mb-6">
+      <h4 className="mb-2 text-sm font-semibold text-foreground">
+        {unitLabel}
+      </h4>
+      {data.sizeTables.map((table, idx) => {
+        const measurements = table.measurements ?? [];
+        const canCombine =
+          measurements.length > 1 &&
+          measurements.every(
+            (m) => m.values.length === measurements[0]?.values.length,
+          ) &&
+          measurements.every((m, i) =>
+            m.values.every(
+              (v, j) => v.size === measurements[0]?.values[j]?.size,
+            ),
+          );
+
+        if (canCombine && measurements.length > 0) {
+          const sizeColumn = measurements[0]!.values.map((v) => v.size);
+          const columns = ["Size", ...measurements.map((m) => m.type_label)];
+          return (
+            <div className="mb-6" key={idx}>
+              {table.description != null &&
+                renderSizeChartDescription(table.description)}
+              <div className="overflow-x-auto rounded-md border border-border">
+                <table className="w-full min-w-[320px] border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      {columns.map((col, cidx) => (
+                        <th
+                          className={`
+                            px-3 py-2.5 text-left font-semibold text-foreground
+                            first:rounded-tl-md
+                            last:rounded-tr-md
+                          `}
+                          key={cidx}
+                        >
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sizeColumn.map((size, rowIdx) => (
+                      <tr
+                        className={cn(
+                          "border-t border-border/60",
+                          rowIdx % 2 === 1 && "bg-muted/30",
+                        )}
+                        key={rowIdx}
+                      >
+                        <td className="px-3 py-2 font-medium text-foreground">
+                          {size}
+                        </td>
+                        {measurements.map((m, midx) => {
+                          const v = m.values[rowIdx];
+                          const cell =
+                            v && "value" in v
+                              ? v.value
+                              : v && "min_value" in v
+                                ? `${v.min_value} – ${v.max_value}`
+                                : "—";
+                          return (
+                            <td
+                              className="px-3 py-2 text-muted-foreground"
+                              key={midx}
+                            >
+                              {cell}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          <div className="mb-4" key={idx}>
+            {table.description != null &&
+              renderSizeChartDescription(table.description)}
+            {measurements.map((m, midx) => (
+              <div
+                className="mb-3 overflow-x-auto rounded-md border border-border"
+                key={midx}
+              >
+                <table className="w-full min-w-[200px] border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-muted/60">
+                      <th
+                        className={`
+                        px-3 py-2 text-left font-semibold text-foreground
+                      `}
+                      >
+                        Size
+                      </th>
+                      <th
+                        className={`
+                        px-3 py-2 text-left font-semibold text-foreground
+                      `}
+                      >
+                        {m.type_label}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {m.values.map((v, vidx) => (
+                      <tr
+                        className={cn(
+                          "border-t border-border/60",
+                          vidx % 2 === 1 && "bg-muted/30",
+                        )}
+                        key={vidx}
+                      >
+                        <td className="px-3 py-2 font-medium">{v.size}</td>
+                        <td className="px-3 py-2 text-muted-foreground">
+                          {"value" in v
+                            ? v.value
+                            : `${v.min_value} – ${v.max_value}`}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Render size chart description as HTML when it contains tags, otherwise as plain text. */
+function renderSizeChartDescription(description: null | string | undefined) {
+  if (!description?.trim()) return null;
+  const trimmed = description.trim();
+  const looksLikeHtml = /<[a-z][\s\S]*>/i.test(trimmed);
+  if (looksLikeHtml) {
+    const sanitized = sanitizeProductDescription(trimmed);
+    if (!sanitized) return null;
+    return (
+      <div
+        className={`
+          prose prose-sm mb-3 max-w-none text-sm text-muted-foreground
+          dark:prose-invert
+          [&_p]:mb-1
+          [&_p:last-child]:mb-0
+        `}
+        dangerouslySetInnerHTML={{ __html: sanitized }}
+      />
+    );
+  }
+  return <p className="mb-3 text-sm text-muted-foreground">{trimmed}</p>;
 }

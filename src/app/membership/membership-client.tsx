@@ -22,8 +22,9 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
+import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { cn } from "~/lib/cn";
+import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatMarketCap, formatTokens, formatUsd } from "~/lib/format";
 import {
   MEMBERSHIP_BENEFIT_ROWS,
@@ -48,54 +49,52 @@ import {
   TableRow,
 } from "~/ui/primitives/table";
 
-import { useStakeTransaction } from "~/hooks/use-stake-transaction";
-
 // ---------------------------------------------------------------------------
 // Live pricing types
 // ---------------------------------------------------------------------------
 
 /** Shape of the /api/governance/token-price response */
 interface TokenPriceResponse {
-  status: boolean;
   data?: {
-    token: { symbol: string; mint: string; decimals: number; priceUsd: number };
+    fetchedAt: number;
     market: {
+      liquidityUsd: number;
       marketCapUsd: number;
       volume24hUsd: number;
-      liquidityUsd: number;
     };
-    staking: { stakerCount: number; programConfigured: boolean };
     pricing: {
       bracket: string;
       tiers: {
-        tierId: number;
         costUsd: number;
+        tierId: number;
         tokensNeeded: number;
         tokensRaw: string;
       }[];
     };
-    fetchedAt: number;
+    staking: { programConfigured: boolean; stakerCount: number };
+    token: { decimals: number; mint: string; priceUsd: number; symbol: string };
   };
+  status: boolean;
 }
 
 export function MembershipClient() {
   const [selectedTier, setSelectedTier] = useState<number>(2);
-  const [stakeDuration, setStakeDuration] = useState<"30d" | "12m">("30d");
+  const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
 
   // eSIM claim state
   const [claimEligible, setClaimEligible] = useState(false);
   const [claimAlreadyClaimed, setClaimAlreadyClaimed] = useState(false);
-  const [claimTier, setClaimTier] = useState<number | null>(null);
+  const [claimTier, setClaimTier] = useState<null | number>(null);
   const [claimPending, setClaimPending] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
 
   // Live pricing state
   const [pricingData, setPricingData] = useState<
-    TokenPriceResponse["data"] | null
+    null | TokenPriceResponse["data"]
   >(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { wallet, openConnectModal, stake, stakePending } =
+  const { openConnectModal, stake, stakePending, wallet } =
     useStakeTransaction();
 
   // Fetch live pricing from the API (polls every 30s)
@@ -136,9 +135,9 @@ export function MembershipClient() {
       .then((r) => r.json())
       .then(
         (data: {
-          eligible?: boolean;
           claimed?: boolean;
-          tier?: number | null;
+          eligible?: boolean;
+          tier?: null | number;
         }) => {
           setClaimEligible(data.eligible ?? false);
           setClaimAlreadyClaimed(data.claimed ?? false);
@@ -200,19 +199,19 @@ export function MembershipClient() {
     setClaimPending(true);
     try {
       const res = await fetch("/api/esim/membership-claim", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          wallet,
           // Use a well-known global 1GB/30-day data-only package as the default free SIM
           // This can be swapped for a configurable package later
           packageId: "esim-free-tier2-default",
+          wallet,
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const data = (await res.json()) as {
-        status: boolean;
-        message?: string;
         data?: { message?: string };
+        message?: string;
+        status: boolean;
       };
       if (!res.ok || !data.status) {
         toast.error(data.message ?? "Failed to claim eSIM");
@@ -232,35 +231,64 @@ export function MembershipClient() {
   }, [wallet]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background to-background">
+    <div
+      className={`
+      flex min-h-screen flex-col bg-gradient-to-b from-muted/50 via-background
+      to-background
+    `}
+    >
       {/* ----------------------------------------------------------------- */}
       {/* Hero */}
       {/* ----------------------------------------------------------------- */}
       <section className="relative overflow-hidden">
         {/* Subtle radial glow */}
         <div
+          aria-hidden
           className="pointer-events-none absolute inset-0 -top-32 opacity-30"
           style={{
             background:
               "radial-gradient(ellipse 80% 50% at 50% 0%, var(--primary) 0%, transparent 70%)",
           }}
-          aria-hidden
         />
 
-        <div className="container relative z-10 mx-auto max-w-5xl px-4 py-20 text-center sm:px-6 sm:py-28 lg:px-8 lg:py-36">
-          <Badge variant="secondary" className="mb-6 gap-1.5 px-3 py-1">
+        <div
+          className={`
+          relative z-10 container mx-auto max-w-5xl px-4 py-20 text-center
+          sm:px-6 sm:py-28
+          lg:px-8 lg:py-36
+        `}
+        >
+          <Badge className="mb-6 gap-1.5 px-3 py-1" variant="secondary">
             <Sparkles className="h-3.5 w-3.5" />
             Membership
           </Badge>
 
-          <h1 className="font-display text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl md:text-6xl lg:text-7xl">
+          <h1
+            className={`
+            font-display text-4xl leading-tight font-bold tracking-tight
+            text-foreground
+            sm:text-5xl
+            md:text-6xl
+            lg:text-7xl
+          `}
+          >
             Join the{" "}
-            <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            <span
+              className={`
+              bg-gradient-to-r from-primary to-primary/70 bg-clip-text
+              text-transparent
+            `}
+            >
               Cult
             </span>
           </h1>
 
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
+          <p
+            className={`
+            mx-auto mt-6 max-w-2xl text-lg text-muted-foreground
+            sm:text-xl
+          `}
+          >
             Stake {tokenSymbol} to unlock exclusive membership benefits. Free
             eSIM cards, free shipping, member-only discounts, and more. The
             longer you stake, the more you save.
@@ -268,27 +296,50 @@ export function MembershipClient() {
 
           {/* Live market data bar */}
           {pricingData && (
-            <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+            <div
+              className={`
+              mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6
+              gap-y-2 text-sm text-muted-foreground
+            `}
+            >
               <span>
                 <span className="font-medium text-foreground">
                   {tokenSymbol}
                 </span>{" "}
                 {formatUsd(tokenPrice)}
               </span>
-              <span className="hidden sm:inline text-border">|</span>
+              <span
+                className={`
+                hidden text-border
+                sm:inline
+              `}
+              >
+                |
+              </span>
               <span>MC {formatMarketCap(marketCap)}</span>
-              <span className="hidden sm:inline text-border">|</span>
+              <span
+                className={`
+                hidden text-border
+                sm:inline
+              `}
+              >
+                |
+              </span>
               <span className="text-sm">{pricingBracket}</span>
             </div>
           )}
 
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Button size="lg" className="gap-2" onClick={scrollToTiers}>
+          <div
+            className={`
+            mt-10 flex flex-wrap items-center justify-center gap-4
+          `}
+          >
+            <Button className="gap-2" onClick={scrollToTiers} size="lg">
               View Tiers
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Link href="/esim">
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button className="gap-2" size="lg" variant="outline">
                 <Globe className="h-4 w-4" />
                 Browse eSIM Plans
               </Button>
@@ -297,16 +348,44 @@ export function MembershipClient() {
         </div>
       </section>
 
-      <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div
+        className={`
+        container mx-auto max-w-7xl px-4
+        sm:px-6
+        lg:px-8
+      `}
+      >
         {/* --------------------------------------------------------------- */}
         {/* Stake & Join — below the fold, left card + right benefits */}
         {/* --------------------------------------------------------------- */}
-        <section id="stake-cta" className="scroll-mt-20 py-16 md:py-20">
-          <div className="flex flex-col gap-8 md:flex-row md:gap-10">
+        <section
+          className={`
+          scroll-mt-20 py-16
+          md:py-20
+        `}
+          id="stake-cta"
+        >
+          <div
+            className={`
+            flex flex-col gap-8
+            md:flex-row md:gap-10
+          `}
+          >
             {/* Left: Stake card */}
-            <div className="w-full overflow-hidden rounded-2xl border border-border bg-card shadow-xl md:w-1/2 md:shrink-0">
+            <div
+              className={`
+              w-full overflow-hidden rounded-2xl border border-border bg-card
+              shadow-xl
+              md:w-1/2 md:shrink-0
+            `}
+            >
               <div className="border-b bg-muted/30 px-6 py-5">
-                <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
+                <h2
+                  className={`
+                  font-display text-xl font-semibold text-foreground
+                  md:text-2xl
+                `}
+                >
                   Stake {tokenSymbol} &amp; Join
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -327,15 +406,23 @@ export function MembershipClient() {
                       const isSelected = selectedTier === tier.id;
                       return (
                         <button
-                          key={tier.id}
-                          type="button"
-                          onClick={() => setSelectedTier(tier.id)}
                           className={cn(
-                            "flex items-center gap-1.5 rounded-lg border-2 px-3 py-2 text-sm font-medium transition-all",
+                            `
+                              flex items-center gap-1.5 rounded-lg border-2 px-3
+                              py-2 text-sm font-medium transition-all
+                            `,
                             isSelected
                               ? "border-primary bg-primary/10 text-primary"
-                              : "border-border bg-background text-muted-foreground hover:border-muted-foreground/40 hover:text-foreground",
+                              : `
+                                border-border bg-background
+                                text-muted-foreground
+                                hover:border-muted-foreground/40
+                                hover:text-foreground
+                              `,
                           )}
+                          key={tier.id}
+                          onClick={() => setSelectedTier(tier.id)}
+                          type="button"
                         >
                           <Icon className="h-4 w-4" />
                           {tier.name}
@@ -352,14 +439,20 @@ export function MembershipClient() {
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <button
-                      type="button"
                       className={cn(
-                        "rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all",
+                        `
+                          rounded-lg border-2 px-3 py-2.5 text-left text-sm
+                          transition-all
+                        `,
                         stakeDuration === "30d"
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-muted-foreground/30",
+                          : `
+                            border-border
+                            hover:border-muted-foreground/30
+                          `,
                       )}
                       onClick={() => setStakeDuration("30d")}
+                      type="button"
                     >
                       <span className="font-semibold">30 Days</span>
                       <span className="block text-sm text-muted-foreground">
@@ -367,16 +460,27 @@ export function MembershipClient() {
                       </span>
                     </button>
                     <button
-                      type="button"
                       className={cn(
-                        "relative rounded-lg border-2 px-3 py-2.5 text-left text-sm transition-all",
+                        `
+                          relative rounded-lg border-2 px-3 py-2.5 text-left
+                          text-sm transition-all
+                        `,
                         stakeDuration === "12m"
                           ? "border-primary bg-primary/5"
-                          : "border-border hover:border-muted-foreground/30",
+                          : `
+                            border-border
+                            hover:border-muted-foreground/30
+                          `,
                       )}
                       onClick={() => setStakeDuration("12m")}
+                      type="button"
                     >
-                      <Badge className="absolute -top-1.5 right-1.5 bg-chart-1 text-[10px] text-white">
+                      <Badge
+                        className={`
+                        absolute -top-1.5 right-1.5 bg-chart-1 text-[10px]
+                        text-white
+                      `}
+                      >
                         Best Value
                       </Badge>
                       <span className="font-semibold">12 Months</span>
@@ -416,8 +520,17 @@ export function MembershipClient() {
                       ? nextTierPrice.tokensNeeded - stakeAmount
                       : 0;
                     return (
-                      <div className="flex items-start gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-                        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                      <div
+                        className={`
+                        flex items-start gap-2 rounded-lg border
+                        border-primary/20 bg-primary/5 p-3
+                      `}
+                      >
+                        <TrendingUp
+                          className={`
+                          mt-0.5 h-4 w-4 shrink-0 text-primary
+                        `}
+                        />
                         <p className="text-sm font-medium text-foreground">
                           {extraUsd > 0
                             ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
@@ -444,10 +557,10 @@ export function MembershipClient() {
                   })()}
 
                 <Button
-                  size="lg"
                   className="w-full gap-2 text-base"
-                  onClick={handleStake}
                   disabled={stakePending}
+                  onClick={handleStake}
+                  size="lg"
                 >
                   <Wallet className="h-5 w-5" />
                   {stakePending
@@ -465,20 +578,37 @@ export function MembershipClient() {
 
             {/* Right: Benefits for selected tier */}
             <div className="flex min-w-0 flex-1 flex-col">
-              <h3 className="mb-4 font-display text-lg font-semibold text-foreground">
+              <h3
+                className={`
+                font-display mb-4 text-lg font-semibold text-foreground
+              `}
+              >
                 Your benefits
               </h3>
               <div
                 className={cn(
-                  "flex flex-1 flex-col rounded-2xl border border-border bg-card p-6",
+                  `
+                    flex flex-1 flex-col rounded-2xl border border-border
+                    bg-card p-6
+                  `,
                   selectedTierData.accentBorder,
                   selectedTierData.accentBg,
                 )}
               >
                 {/* eSIM graphic */}
-                <div className="mb-5 flex items-center justify-center rounded-xl border border-border/60 bg-muted/30 py-6">
+                <div
+                  className={`
+                  mb-5 flex items-center justify-center rounded-xl border
+                  border-border/60 bg-muted/30 py-6
+                `}
+                >
                   <div className="flex flex-col items-center gap-2">
-                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+                    <div
+                      className={`
+                      flex h-16 w-16 items-center justify-center rounded-2xl
+                      bg-primary/10
+                    `}
+                    >
                       <Globe className="h-8 w-8 text-primary" />
                     </div>
                     <span className="text-sm font-medium text-muted-foreground">
@@ -489,7 +619,10 @@ export function MembershipClient() {
                 <div className="mb-4 flex items-center gap-3">
                   <div
                     className={cn(
-                      "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+                      `
+                        flex h-12 w-12 shrink-0 items-center justify-center
+                        rounded-xl
+                      `,
                       selectedTierData.accentBg,
                     )}
                   >
@@ -522,7 +655,7 @@ export function MembershipClient() {
                     </span>
                   </li>
                   {selectedTierData.benefits.extras.map((extra) => (
-                    <li key={extra} className="flex items-start gap-2">
+                    <li className="flex items-start gap-2" key={extra}>
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                       <span>{extra}</span>
                     </li>
@@ -536,9 +669,19 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* How It Works */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 md:py-20">
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               How It Works
             </h2>
             <p className="mt-3 text-muted-foreground">
@@ -546,35 +689,45 @@ export function MembershipClient() {
             </p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-4xl gap-8 md:grid-cols-3">
+          <div
+            className={`
+            mx-auto mt-12 grid max-w-4xl gap-8
+            md:grid-cols-3
+          `}
+          >
             {[
               {
-                step: "01",
-                icon: Wallet,
-                title: "Connect Wallet",
                 desc: `Connect your Solana wallet that holds ${tokenSymbol} tokens.`,
+                icon: Wallet,
+                step: "01",
+                title: "Connect Wallet",
               },
               {
-                step: "02",
-                icon: TrendingUp,
-                title: "Choose & Stake",
                 desc: `Pick a tier and stake the required ${tokenSymbol} tokens for 30 days or 12 months.`,
+                icon: TrendingUp,
+                step: "02",
+                title: "Choose & Stake",
               },
               {
-                step: "03",
-                icon: Sparkles,
-                title: "Unlock Benefits",
                 desc: "Instantly access your membership perks—eSIM discounts, shipping benefits, and more.",
+                icon: Sparkles,
+                step: "03",
+                title: "Unlock Benefits",
               },
-            ].map(({ step, icon: Icon, title, desc }) => (
+            ].map(({ desc, icon: Icon, step, title }) => (
               <div
-                key={step}
                 className="relative flex flex-col items-center text-center"
+                key={step}
               >
                 <span className="mb-3 text-5xl font-black text-primary/10">
                   {step}
                 </span>
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                <div
+                  className={`
+                  mb-4 flex h-14 w-14 items-center justify-center rounded-2xl
+                  bg-primary/10
+                `}
+                >
                   <Icon className="h-7 w-7 text-primary" />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">
@@ -589,14 +742,31 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* Tier Cards */}
         {/* --------------------------------------------------------------- */}
-        <section id="tiers" className="scroll-mt-20 py-16 md:py-20">
+        <section
+          className={`
+          scroll-mt-20 py-16
+          md:py-20
+        `}
+          id="tiers"
+        >
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Choose Your Tier
             </h2>
           </div>
 
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div
+            className={`
+            mt-12 grid gap-6
+            sm:grid-cols-2
+            lg:grid-cols-4
+          `}
+          >
             {MEMBERSHIP_TIERS.map((tier) => {
               const Icon = tier.icon;
               const isSelected = selectedTier === tier.id;
@@ -604,29 +774,42 @@ export function MembershipClient() {
 
               return (
                 <Card
-                  key={tier.id}
+                  aria-label={`Select ${tier.name}`}
+                  aria-pressed={isSelected}
                   className={cn(
-                    "relative cursor-pointer transition-all duration-200 hover:shadow-lg",
+                    `
+                      relative cursor-pointer transition-all duration-200
+                      hover:shadow-lg
+                    `,
                     isSelected
-                      ? `ring-2 ring-primary shadow-lg ${tier.accentBorder}`
-                      : "border-border hover:-translate-y-1",
+                      ? `
+                        shadow-lg ring-2 ring-primary
+                        ${tier.accentBorder}
+                      `
+                      : `
+                        border-border
+                        hover:-translate-y-1
+                      `,
                     tier.popular && "lg:scale-[1.02]",
                   )}
+                  key={tier.id}
                   onClick={() => setSelectedTier(tier.id)}
-                  role="button"
-                  tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       setSelectedTier(tier.id);
                     }
                   }}
-                  aria-pressed={isSelected}
-                  aria-label={`Select ${tier.name}`}
+                  role="button"
+                  tabIndex={0}
                 >
                   {tier.popular && (
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                      <Badge className="gap-1 bg-primary px-3 py-0.5 text-primary-foreground">
+                      <Badge
+                        className={`
+                        gap-1 bg-primary px-3 py-0.5 text-primary-foreground
+                      `}
+                      >
                         <Sparkles className="h-3 w-3" />
                         Most Popular
                       </Badge>
@@ -636,7 +819,10 @@ export function MembershipClient() {
                   <CardHeader className="pb-3">
                     <div
                       className={cn(
-                        "mb-2 flex h-12 w-12 items-center justify-center rounded-xl",
+                        `
+                          mb-2 flex h-12 w-12 items-center justify-center
+                          rounded-xl
+                        `,
                         tier.accentBg,
                       )}
                     >
@@ -653,7 +839,11 @@ export function MembershipClient() {
                         <div className="h-8 w-24 animate-pulse rounded bg-muted" />
                       ) : tierPrice ? (
                         <>
-                          <p className="text-2xl font-bold tabular-nums text-foreground">
+                          <p
+                            className={`
+                            text-2xl font-bold text-foreground tabular-nums
+                          `}
+                          >
                             {formatUsd(tierPrice.costUsd)}
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -702,7 +892,7 @@ export function MembershipClient() {
                             e !== "Governance voting",
                         )
                         .map((extra) => (
-                          <div key={extra} className="flex items-start gap-2">
+                          <div className="flex items-start gap-2" key={extra}>
                             <Check
                               className={cn(
                                 "mt-0.5 h-4 w-4 shrink-0",
@@ -718,13 +908,13 @@ export function MembershipClient() {
 
                     {/* Select CTA */}
                     <Button
-                      variant={isSelected ? "default" : "outline"}
                       className="w-full"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedTier(tier.id);
                         scrollToCTA();
                       }}
+                      variant={isSelected ? "default" : "outline"}
                     >
                       {isSelected ? "Selected" : "Select"}
                     </Button>
@@ -738,9 +928,19 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* Benefits Comparison Table */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 md:py-20">
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Compare Benefits
             </h2>
             <p className="mt-3 text-muted-foreground">
@@ -759,11 +959,11 @@ export function MembershipClient() {
                     const Icon = tier.icon;
                     return (
                       <TableHead
-                        key={tier.id}
                         className={cn(
                           "min-w-[120px] text-center",
                           selectedTier === tier.id && "bg-primary/5",
                         )}
+                        key={tier.id}
                       >
                         <div className="flex flex-col items-center gap-1">
                           <Icon className={cn("h-4 w-4", tier.accent)} />
@@ -787,16 +987,20 @@ export function MembershipClient() {
                     const tp = tierPriceMap[tier.id];
                     return (
                       <TableCell
-                        key={tier.id}
                         className={cn(
                           "text-center font-medium tabular-nums",
                           selectedTier === tier.id && "bg-primary/5",
                         )}
+                        key={tier.id}
                       >
                         {tp ? (
                           <div>
                             <div>{formatUsd(tp.costUsd)}</div>
-                            <div className="text-sm font-normal text-muted-foreground">
+                            <div
+                              className={`
+                              text-sm font-normal text-muted-foreground
+                            `}
+                            >
                               ≈ {formatTokens(tp.tokensNeeded)} {tokenSymbol}
                             </div>
                           </div>
@@ -822,16 +1026,20 @@ export function MembershipClient() {
                         const val = row.values[tier.id];
                         return (
                           <TableCell
-                            key={tier.id}
                             className={cn(
                               "text-center",
                               selectedTier === tier.id && "bg-primary/5",
                             )}
+                            key={tier.id}
                           >
                             {val === true ? (
                               <Check className="mx-auto h-5 w-5 text-primary" />
                             ) : val === false ? (
-                              <Minus className="mx-auto h-5 w-5 text-muted-foreground/40" />
+                              <Minus
+                                className={`
+                                mx-auto h-5 w-5 text-muted-foreground/40
+                              `}
+                              />
                             ) : (
                               <span className="text-sm font-medium">{val}</span>
                             )}
@@ -849,16 +1057,41 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* eSIM Spotlight */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 md:py-20">
-          <div className="overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-muted/30">
-            <div className="grid gap-0 md:grid-cols-2">
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
+          <div
+            className={`
+            overflow-hidden rounded-2xl border border-border bg-gradient-to-br
+            from-card via-card to-muted/30
+          `}
+          >
+            <div
+              className={`
+              grid gap-0
+              md:grid-cols-2
+            `}
+            >
               {/* Left: content */}
-              <div className="flex flex-col justify-center p-8 md:p-12">
-                <Badge variant="secondary" className="mb-4 w-fit gap-1.5">
+              <div
+                className={`
+                flex flex-col justify-center p-8
+                md:p-12
+              `}
+              >
+                <Badge className="mb-4 w-fit gap-1.5" variant="secondary">
                   <Globe className="h-3.5 w-3.5" />
                   eSIM Included
                 </Badge>
-                <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+                <h2
+                  className={`
+                  font-display text-2xl font-semibold text-foreground
+                  md:text-3xl
+                `}
+                >
                   Stay connected everywhere
                 </h2>
                 <p className="mt-4 text-muted-foreground">
@@ -873,7 +1106,7 @@ export function MembershipClient() {
                     "Flexible data plans from 1GB to unlimited",
                     "Stake 12 months, get 14 months of eSIM coverage",
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-3">
+                    <li className="flex items-start gap-3" key={item}>
                       <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
                       <span className="text-sm text-muted-foreground">
                         {item}
@@ -883,7 +1116,7 @@ export function MembershipClient() {
                 </ul>
                 <div className="mt-8">
                   <Link href="/esim">
-                    <Button variant="outline" className="gap-2">
+                    <Button className="gap-2" variant="outline">
                       Explore eSIM Plans
                       <ArrowRight className="h-4 w-4" />
                     </Button>
@@ -892,19 +1125,30 @@ export function MembershipClient() {
               </div>
 
               {/* Right: visual grid */}
-              <div className="flex items-center justify-center bg-muted/20 p-8 md:p-12">
+              <div
+                className={`
+                flex items-center justify-center bg-muted/20 p-8
+                md:p-12
+              `}
+              >
                 <div className="grid w-full max-w-xs grid-cols-2 gap-4">
                   {MEMBERSHIP_TIERS.map((tier) => {
                     const Icon = tier.icon;
                     return (
                       <div
-                        key={tier.id}
                         className={cn(
-                          "flex flex-col items-center gap-2 rounded-xl border p-4 text-center transition-colors",
+                          `
+                            flex flex-col items-center gap-2 rounded-xl border
+                            p-4 text-center transition-colors
+                          `,
                           selectedTier === tier.id
-                            ? `${tier.accentBorder} ${tier.accentBg}`
+                            ? `
+                              ${tier.accentBorder}
+                              ${tier.accentBg}
+                            `
                             : "border-border/50 bg-card/50",
                         )}
+                        key={tier.id}
                       >
                         <Icon className={cn("h-5 w-5", tier.accent)} />
                         <p className="text-sm font-medium text-foreground">
@@ -925,13 +1169,39 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* 12 Month Incentive */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 md:py-20">
-          <div className="mx-auto max-w-4xl overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5">
-            <div className="p-8 text-center md:p-12">
-              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
+          <div
+            className={`
+            mx-auto max-w-4xl overflow-hidden rounded-2xl border-2
+            border-primary/20 bg-gradient-to-r from-primary/5 via-primary/10
+            to-primary/5
+          `}
+          >
+            <div
+              className={`
+              p-8 text-center
+              md:p-12
+            `}
+            >
+              <div
+                className={`
+                mx-auto mb-6 flex h-16 w-16 items-center justify-center
+                rounded-full bg-primary/10
+              `}
+              >
                 <Timer className="h-8 w-8 text-primary" />
               </div>
-              <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+              <h2
+                className={`
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
+              >
                 Stake 12 Months, Get 14 Months of eSIM
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
@@ -941,24 +1211,32 @@ export function MembershipClient() {
                 everything else stay active for the full staking period.
               </p>
 
-              <div className="mx-auto mt-10 grid max-w-lg gap-6 sm:grid-cols-2">
+              <div
+                className={`
+                mx-auto mt-10 grid max-w-lg gap-6
+                sm:grid-cols-2
+              `}
+              >
                 <div
+                  aria-pressed={stakeDuration === "30d"}
                   className={cn(
                     "cursor-pointer rounded-xl border-2 p-6 transition-all",
                     stakeDuration === "30d"
                       ? "border-primary bg-card shadow-md"
-                      : "border-border bg-card/50 hover:border-border/80",
+                      : `
+                        border-border bg-card/50
+                        hover:border-border/80
+                      `,
                   )}
                   onClick={() => setStakeDuration("30d")}
-                  role="button"
-                  tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       setStakeDuration("30d");
                     }
                   }}
-                  aria-pressed={stakeDuration === "30d"}
+                  role="button"
+                  tabIndex={0}
                 >
                   <p className="text-3xl font-bold text-foreground">30</p>
                   <p className="text-sm font-medium text-muted-foreground">
@@ -969,22 +1247,28 @@ export function MembershipClient() {
                   </p>
                 </div>
                 <div
+                  aria-pressed={stakeDuration === "12m"}
                   className={cn(
-                    "relative cursor-pointer rounded-xl border-2 p-6 transition-all",
+                    `
+                      relative cursor-pointer rounded-xl border-2 p-6
+                      transition-all
+                    `,
                     stakeDuration === "12m"
                       ? "border-primary bg-card shadow-md"
-                      : "border-border bg-card/50 hover:border-border/80",
+                      : `
+                        border-border bg-card/50
+                        hover:border-border/80
+                      `,
                   )}
                   onClick={() => setStakeDuration("12m")}
-                  role="button"
-                  tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
                       setStakeDuration("12m");
                     }
                   }}
-                  aria-pressed={stakeDuration === "12m"}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className="absolute -top-2.5 right-3">
                     <Badge className="gap-1 bg-chart-1 text-white">
@@ -1008,9 +1292,19 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* Dynamic Pricing Explainer */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 md:py-20">
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
           <div className="mx-auto max-w-3xl text-center">
-            <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Dynamic Staking Requirements
             </h2>
             <p className="mt-3 text-muted-foreground">
@@ -1019,10 +1313,20 @@ export function MembershipClient() {
             </p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-3xl gap-8 md:grid-cols-2">
+          <div
+            className={`
+            mx-auto mt-12 grid max-w-3xl gap-8
+            md:grid-cols-2
+          `}
+          >
             <Card className="border-border">
               <CardHeader>
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <div
+                  className={`
+                  mb-2 flex h-10 w-10 items-center justify-center rounded-lg
+                  bg-primary/10
+                `}
+                >
                   <TrendingUp className="h-5 w-5 text-primary" />
                 </div>
                 <CardTitle className="text-lg">Token Price</CardTitle>
@@ -1037,7 +1341,12 @@ export function MembershipClient() {
             </Card>
             <Card className="border-border">
               <CardHeader>
-                <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <div
+                  className={`
+                  mb-2 flex h-10 w-10 items-center justify-center rounded-lg
+                  bg-primary/10
+                `}
+                >
                   <Users className="h-5 w-5 text-primary" />
                 </div>
                 <CardTitle className="text-lg">Staker Count</CardTitle>
@@ -1057,11 +1366,26 @@ export function MembershipClient() {
         {/* Claim Free eSIM (Tier 2+) */}
         {/* --------------------------------------------------------------- */}
         {wallet && (claimEligible || claimAlreadyClaimed) && (
-          <section className="py-16 md:py-20">
+          <section
+            className={`
+            py-16
+            md:py-20
+          `}
+          >
             <div className="mx-auto max-w-2xl">
-              <Card className="overflow-hidden border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+              <Card
+                className={`
+                overflow-hidden border-2 border-primary/30 bg-gradient-to-br
+                from-primary/5 via-background to-primary/5
+              `}
+              >
                 <CardHeader className="text-center">
-                  <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+                  <div
+                    className={`
+                    mx-auto mb-3 flex h-14 w-14 items-center justify-center
+                    rounded-full bg-primary/10
+                  `}
+                  >
                     <Smartphone className="h-7 w-7 text-primary" />
                   </div>
                   <CardTitle className="font-display text-2xl">
@@ -1081,9 +1405,9 @@ export function MembershipClient() {
                   {claimAlreadyClaimed ? (
                     <Button
                       asChild
-                      variant="outline"
-                      size="lg"
                       className="gap-2"
+                      size="lg"
+                      variant="outline"
                     >
                       <Link href="/dashboard/esim">
                         <Globe className="h-5 w-5" />
@@ -1094,10 +1418,10 @@ export function MembershipClient() {
                   ) : (
                     <>
                       <Button
-                        size="lg"
                         className="gap-2 text-base"
-                        onClick={handleClaimEsim}
                         disabled={claimPending}
+                        onClick={handleClaimEsim}
+                        size="lg"
                       >
                         <Smartphone className="h-5 w-5" />
                         {claimPending ? "Claiming eSIM…" : "Claim Free eSIM"}
@@ -1117,23 +1441,50 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* FAQ */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 md:py-20">
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
           <div className="mx-auto max-w-3xl">
-            <h2 className="text-center font-display text-2xl font-semibold text-foreground md:text-3xl">
+            <h2
+              className={`
+              font-display text-center text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
               Frequently Asked Questions
             </h2>
 
             <div className="mt-10 space-y-0 rounded-xl border border-border">
-              {MEMBERSHIP_FAQ.map(({ q, a }) => (
+              {MEMBERSHIP_FAQ.map(({ a, q }) => (
                 <details
+                  className={`
+                    group border-b border-border
+                    last:border-b-0
+                    [&[open]_svg]:rotate-180
+                  `}
                   key={q}
-                  className="group border-b border-border last:border-b-0 [&[open]_svg]:rotate-180"
                 >
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-6 py-5 font-medium text-foreground transition-colors hover:text-primary [&::-webkit-details-marker]:hidden">
+                  <summary
+                    className={`
+                    flex cursor-pointer list-none items-center justify-between
+                    gap-2 px-6 py-5 font-medium text-foreground
+                    transition-colors
+                    hover:text-primary
+                    [&::-webkit-details-marker]:hidden
+                  `}
+                  >
                     <span>{q}</span>
-                    <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform" />
+                    <ChevronDown
+                      className={`
+                      h-5 w-5 shrink-0 text-muted-foreground
+                      transition-transform
+                    `}
+                    />
                   </summary>
-                  <p className="px-6 pb-5 pr-12 text-muted-foreground">{a}</p>
+                  <p className="px-6 pr-12 pb-5 text-muted-foreground">{a}</p>
                 </details>
               ))}
             </div>
@@ -1143,8 +1494,18 @@ export function MembershipClient() {
         {/* --------------------------------------------------------------- */}
         {/* Final CTA */}
         {/* --------------------------------------------------------------- */}
-        <section className="py-16 text-center md:py-20">
-          <h2 className="font-display text-2xl font-semibold text-foreground md:text-3xl">
+        <section
+          className={`
+          py-16 text-center
+          md:py-20
+        `}
+        >
+          <h2
+            className={`
+            font-display text-2xl font-semibold text-foreground
+            md:text-3xl
+          `}
+          >
             Ready to Join?
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-muted-foreground">
@@ -1152,12 +1513,12 @@ export function MembershipClient() {
             benefits. The earlier you join, the lower the staking threshold.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <Button size="lg" className="gap-2" onClick={scrollToCTA}>
+            <Button className="gap-2" onClick={scrollToCTA} size="lg">
               Stake Now
               <ArrowRight className="h-4 w-4" />
             </Button>
             <Link href="/token">
-              <Button size="lg" variant="outline" className="gap-2">
+              <Button className="gap-2" size="lg" variant="outline">
                 Learn About CULT
                 <ArrowRight className="h-4 w-4" />
               </Button>

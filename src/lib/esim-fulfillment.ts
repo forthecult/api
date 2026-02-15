@@ -12,29 +12,16 @@ import { eq } from "drizzle-orm";
 import { db } from "~/db";
 import { esimOrdersTable, ordersTable } from "~/db/schema";
 import {
+  getMyEsims,
   purchaseEsimDataVoiceSms,
   purchaseEsimPackage,
-  getMyEsims,
 } from "~/lib/esim-api";
 import { sendEsimActivationEmail } from "~/lib/send-esim-activation-email";
 
-export type EsimFulfillmentResult = {
-  success: boolean;
-  esimOrderId?: string;
+export interface EsimFulfillmentResult {
   error?: string;
-};
-
-/**
- * Check if an order contains eSIM items by looking for a linked
- * esim_order record in "pending" payment status.
- */
-export async function hasEsimItems(orderId: string): Promise<boolean> {
-  const rows = await db
-    .select({ id: esimOrdersTable.id })
-    .from(esimOrdersTable)
-    .where(eq(esimOrdersTable.orderId, orderId))
-    .limit(1);
-  return rows.length > 0;
+  esimOrderId?: string;
+  success: boolean;
 }
 
 /**
@@ -62,8 +49,8 @@ export async function fulfillEsimOrder(
     }
 
     const activationItems: {
+      activationLink: null | string;
       packageName: string;
-      activationLink: string | null;
     }[] = [];
 
     for (const esimOrder of esimOrders) {
@@ -94,17 +81,17 @@ export async function fulfillEsimOrder(
         }
 
         // Extract eSIM details
-        const purchaseData = purchaseResult.data as Record<string, unknown>;
+        const purchaseData = purchaseResult.data as unknown as Record<string, unknown>;
         const sim = purchaseData.sim as
-          | { id: string; iccid: string; status: string }
-          | undefined;
+          | undefined
+          | { iccid: string; id: string; status: string };
         const esimId = sim?.id ?? (purchaseData.id as string) ?? null;
         const iccid = sim?.iccid ?? null;
         const simApplied =
           sim !== undefined || (purchaseData.sim_applied as boolean) === true;
 
         // Try to get activation link
-        let activationLink: string | null = null;
+        let activationLink: null | string = null;
         if (esimId) {
           try {
             const myEsims = await getMyEsims();
@@ -121,19 +108,19 @@ export async function fulfillEsimOrder(
         await db
           .update(esimOrdersTable)
           .set({
+            activatedAt: simApplied ? new Date() : null,
+            activationLink,
             esimId,
             iccid,
-            status: simApplied ? "active" : "processing",
             paymentStatus: "paid",
-            activationLink,
-            activatedAt: simApplied ? new Date() : null,
+            status: simApplied ? "active" : "processing",
             updatedAt: new Date(),
           })
           .where(eq(esimOrdersTable.id, esimOrder.id));
 
         activationItems.push({
-          packageName: esimOrder.packageName,
           activationLink,
+          packageName: esimOrder.packageName,
         });
         console.log(
           `eSIM provisioned for esim_order ${esimOrder.id}: esimId=${esimId}, status=${simApplied ? "active" : "processing"}`,
@@ -164,10 +151,10 @@ export async function fulfillEsimOrder(
     if (email && activationItems.length > 0) {
       try {
         await sendEsimActivationEmail({
-          to: email,
-          orderId,
-          items: activationItems,
           isGuest: order?.userId == null,
+          items: activationItems,
+          orderId,
+          to: email,
         });
       } catch (emailErr) {
         console.error(
@@ -177,12 +164,25 @@ export async function fulfillEsimOrder(
       }
     }
 
-    return { success: true, esimOrderId: esimOrders[0]?.id };
+    return { esimOrderId: esimOrders[0]?.id, success: true };
   } catch (error) {
     console.error("eSIM fulfillment error:", error);
     return {
-      success: false,
       error: error instanceof Error ? error.message : "Unknown error",
+      success: false,
     };
   }
+}
+
+/**
+ * Check if an order contains eSIM items by looking for a linked
+ * esim_order record in "pending" payment status.
+ */
+export async function hasEsimItems(orderId: string): Promise<boolean> {
+  const rows = await db
+    .select({ id: esimOrdersTable.id })
+    .from(esimOrdersTable)
+    .where(eq(esimOrdersTable.orderId, orderId))
+    .limit(1);
+  return rows.length > 0;
 }

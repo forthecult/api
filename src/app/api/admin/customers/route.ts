@@ -25,19 +25,6 @@ type SortBy = (typeof SORT_BY_VALUES)[number];
 const ORDER_VALUES = ["asc", "desc"] as const;
 type Order = (typeof ORDER_VALUES)[number];
 
-function parseSort(
-  sortByParam: string | null,
-  orderParam: string | null,
-): { sortBy: SortBy; order: Order } {
-  const sortBy = SORT_BY_VALUES.includes(sortByParam as SortBy)
-    ? (sortByParam as SortBy)
-    : "name";
-  const order = ORDER_VALUES.includes(orderParam as Order)
-    ? (orderParam as Order)
-    : "asc";
-  return { sortBy, order };
-}
-
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
@@ -60,7 +47,7 @@ export async function GET(request: NextRequest) {
     );
     const offset = (page - 1) * limit;
     const search = request.nextUrl.searchParams.get("search")?.trim() ?? "";
-    const { sortBy, order } = parseSort(
+    const { order, sortBy } = parseSort(
       request.nextUrl.searchParams.get("sortBy"),
       request.nextUrl.searchParams.get("order"),
     );
@@ -113,35 +100,35 @@ export async function GET(request: NextRequest) {
                     ),
                   ];
 
-    type UserRow = {
-      id: string;
-      name: string;
-      image: string | null;
+    interface UserRow {
       email: string;
-      phone: string | null;
-      firstName: string | null;
-      lastName: string | null;
+      firstName: null | string;
+      id: string;
+      image: null | string;
+      lastName: null | string;
+      name: string;
+      phone: null | string;
       receiveMarketing: boolean;
       receiveSmsMarketing: boolean;
-    };
+    }
 
     const runFullQuery = async (): Promise<UserRow[]> => {
       const rows = await db.query.userTable.findMany({
-        where: whereClause,
-        orderBy,
         columns: {
-          id: true,
-          name: true,
-          image: true,
           email: true,
-          phone: true,
           firstName: true,
+          id: true,
+          image: true,
           lastName: true,
+          name: true,
+          phone: true,
           receiveMarketing: true,
           receiveSmsMarketing: true,
         },
         limit,
         offset,
+        orderBy,
+        where: whereClause,
       });
       return rows as UserRow[];
     };
@@ -149,13 +136,13 @@ export async function GET(request: NextRequest) {
     const runFallbackQuery = async (): Promise<UserRow[]> => {
       const baseSelect = db
         .select({
-          id: userTable.id,
-          name: userTable.name,
-          image: userTable.image,
           email: userTable.email,
-          phone: userTable.phone,
           firstName: userTable.firstName,
+          id: userTable.id,
+          image: userTable.image,
           lastName: userTable.lastName,
+          name: userTable.name,
+          phone: userTable.phone,
           receiveMarketing: userTable.receiveMarketing,
           receiveSmsMarketing: userTable.receiveSmsMarketing,
         })
@@ -186,9 +173,9 @@ export async function GET(request: NextRequest) {
     const runMinimalFallbackQuery = async (): Promise<UserRow[]> => {
       const baseSelect = db
         .select({
+          email: userTable.email,
           id: userTable.id,
           name: userTable.name,
-          email: userTable.email,
         })
         .from(userTable)
         .orderBy(asc(userTable.name))
@@ -198,13 +185,13 @@ export async function GET(request: NextRequest) {
         ? await baseSelect.where(whereClause)
         : await baseSelect;
       return rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        image: null,
         email: r.email,
-        phone: null,
         firstName: null,
+        id: r.id,
+        image: null,
         lastName: null,
+        name: r.name,
+        phone: null,
         receiveMarketing: false,
         receiveSmsMarketing: false,
       }));
@@ -266,8 +253,8 @@ export async function GET(request: NextRequest) {
       userIds.length > 0
         ? await db
             .select({
-              userId: ordersTable.userId,
               count: sql<number>`count(*)::int`.as("count"),
+              userId: ordersTable.userId,
             })
             .from(ordersTable)
             .where(inArray(ordersTable.userId, userIds))
@@ -283,11 +270,11 @@ export async function GET(request: NextRequest) {
     if (userIds.length > 0) {
       const spentRows = await db
         .select({
-          userId: ordersTable.userId,
           totalSpent:
             sql<number>`COALESCE(SUM(${ordersTable.totalCents}), 0)::bigint`.as(
               "totalSpent",
             ),
+          userId: ordersTable.userId,
         })
         .from(ordersTable)
         .where(inArray(ordersTable.userId, userIds))
@@ -302,9 +289,9 @@ export async function GET(request: NextRequest) {
     const recentOrders =
       userIds.length > 0
         ? await db.execute<{
+            shipping_city: null | string;
+            shipping_country_code: null | string;
             user_id: string;
-            shipping_city: string | null;
-            shipping_country_code: string | null;
           }>(sql`
             SELECT DISTINCT ON (user_id) user_id, shipping_city, shipping_country_code
             FROM "order"
@@ -317,7 +304,7 @@ export async function GET(request: NextRequest) {
         : [];
     const locationByUserId = new Map<
       string,
-      { city: string | null; country: string | null }
+      { city: null | string; country: null | string }
     >();
     for (const row of recentOrders) {
       if (row.user_id)
@@ -330,25 +317,25 @@ export async function GET(request: NextRequest) {
     const items = users.map((u) => {
       const loc = locationByUserId.get(u.id);
       return {
-        id: u.id,
-        name: u.name,
-        image: u.image,
-        email: u.email,
-        phone: u.phone,
-        tokenBalanceCents: null as number | null,
-        orderCount: countByUserId.get(u.id) ?? 0,
         amountSpentCents: totalSpentByUserId.get(u.id) ?? 0,
         city: loc?.city ?? null,
         country: loc?.country ?? null,
+        email: u.email,
+        id: u.id,
+        image: u.image,
+        name: u.name,
+        orderCount: countByUserId.get(u.id) ?? 0,
+        phone: u.phone,
         receiveMarketing: u.receiveMarketing ?? false,
         receiveSmsMarketing: u.receiveSmsMarketing ?? false,
+        tokenBalanceCents: null as null | number,
       };
     });
 
     return NextResponse.json({
       items,
-      page,
       limit,
+      page,
       totalCount,
       totalPages,
     });
@@ -360,4 +347,17 @@ export async function GET(request: NextRequest) {
         : "Failed to load customers";
     return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+function parseSort(
+  sortByParam: null | string,
+  orderParam: null | string,
+): { order: Order; sortBy: SortBy } {
+  const sortBy = SORT_BY_VALUES.includes(sortByParam as SortBy)
+    ? (sortByParam as SortBy)
+    : "name";
+  const order = ORDER_VALUES.includes(orderParam as Order)
+    ? (orderParam as Order)
+    : "asc";
+  return { order, sortBy };
 }

@@ -6,6 +6,19 @@
 import { cn } from "~/lib/cn";
 import { secureStorageSync } from "~/lib/secure-storage";
 
+export interface BillingFormState {
+  apartment: string;
+  city: string;
+  company: string;
+  country: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  state: string;
+  street: string;
+  zip: string;
+}
+
 export interface CheckoutFormState {
   apartment: string;
   city: string;
@@ -18,19 +31,6 @@ export interface CheckoutFormState {
   state: string;
   street: string;
   zip: string;
-}
-
-export interface BillingFormState {
-  country: string;
-  firstName: string;
-  lastName: string;
-  company: string;
-  street: string;
-  apartment: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone: string;
 }
 
 export const defaultBillingForm: BillingFormState = {
@@ -62,77 +62,77 @@ export const defaultForm: CheckoutFormState = {
 
 /** Countries that use state/province as a distinct required field. */
 export const COUNTRIES_REQUIRING_STATE = new Set([
-  "US",
-  "CA",
   "AU",
-  "MX",
   "BR",
+  "CA",
   "IN",
+  "MX",
+  "US",
 ]);
 /** Countries that do not use postal/zip codes. */
 export const COUNTRIES_WITHOUT_POSTAL = new Set<string>(["HK"]);
 
-export const US_STATE_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "State" },
-  { value: "AL", label: "Alabama" },
-  { value: "AK", label: "Alaska" },
-  { value: "AZ", label: "Arizona" },
-  { value: "AR", label: "Arkansas" },
-  { value: "CA", label: "California" },
-  { value: "CO", label: "Colorado" },
-  { value: "CT", label: "Connecticut" },
-  { value: "DE", label: "Delaware" },
-  { value: "DC", label: "District of Columbia" },
-  { value: "FL", label: "Florida" },
-  { value: "GA", label: "Georgia" },
-  { value: "HI", label: "Hawaii" },
-  { value: "ID", label: "Idaho" },
-  { value: "IL", label: "Illinois" },
-  { value: "IN", label: "Indiana" },
-  { value: "IA", label: "Iowa" },
-  { value: "KS", label: "Kansas" },
-  { value: "KY", label: "Kentucky" },
-  { value: "LA", label: "Louisiana" },
-  { value: "ME", label: "Maine" },
-  { value: "MD", label: "Maryland" },
-  { value: "MA", label: "Massachusetts" },
-  { value: "MI", label: "Michigan" },
-  { value: "MN", label: "Minnesota" },
-  { value: "MS", label: "Mississippi" },
-  { value: "MO", label: "Missouri" },
-  { value: "MT", label: "Montana" },
-  { value: "NE", label: "Nebraska" },
-  { value: "NV", label: "Nevada" },
-  { value: "NH", label: "New Hampshire" },
-  { value: "NJ", label: "New Jersey" },
-  { value: "NM", label: "New Mexico" },
-  { value: "NY", label: "New York" },
-  { value: "NC", label: "North Carolina" },
-  { value: "ND", label: "North Dakota" },
-  { value: "OH", label: "Ohio" },
-  { value: "OK", label: "Oklahoma" },
-  { value: "OR", label: "Oregon" },
-  { value: "PA", label: "Pennsylvania" },
-  { value: "RI", label: "Rhode Island" },
-  { value: "SC", label: "South Carolina" },
-  { value: "SD", label: "South Dakota" },
-  { value: "TN", label: "Tennessee" },
-  { value: "TX", label: "Texas" },
-  { value: "UT", label: "Utah" },
-  { value: "VT", label: "Vermont" },
-  { value: "VA", label: "Virginia" },
-  { value: "WA", label: "Washington" },
-  { value: "WV", label: "West Virginia" },
-  { value: "WI", label: "Wisconsin" },
-  { value: "WY", label: "Wyoming" },
-  { value: "AA", label: "Armed Forces Americas" },
-  { value: "AE", label: "Armed Forces Europe" },
-  { value: "AP", label: "Armed Forces Pacific" },
-  { value: "AS", label: "American Samoa" },
-  { value: "GU", label: "Guam" },
-  { value: "MP", label: "Northern Mariana Islands" },
-  { value: "PR", label: "Puerto Rico" },
-  { value: "VI", label: "U.S. Virgin Islands" },
+export const US_STATE_OPTIONS: { label: string; value: string }[] = [
+  { label: "State", value: "" },
+  { label: "Alabama", value: "AL" },
+  { label: "Alaska", value: "AK" },
+  { label: "Arizona", value: "AZ" },
+  { label: "Arkansas", value: "AR" },
+  { label: "California", value: "CA" },
+  { label: "Colorado", value: "CO" },
+  { label: "Connecticut", value: "CT" },
+  { label: "Delaware", value: "DE" },
+  { label: "District of Columbia", value: "DC" },
+  { label: "Florida", value: "FL" },
+  { label: "Georgia", value: "GA" },
+  { label: "Hawaii", value: "HI" },
+  { label: "Idaho", value: "ID" },
+  { label: "Illinois", value: "IL" },
+  { label: "Indiana", value: "IN" },
+  { label: "Iowa", value: "IA" },
+  { label: "Kansas", value: "KS" },
+  { label: "Kentucky", value: "KY" },
+  { label: "Louisiana", value: "LA" },
+  { label: "Maine", value: "ME" },
+  { label: "Maryland", value: "MD" },
+  { label: "Massachusetts", value: "MA" },
+  { label: "Michigan", value: "MI" },
+  { label: "Minnesota", value: "MN" },
+  { label: "Mississippi", value: "MS" },
+  { label: "Missouri", value: "MO" },
+  { label: "Montana", value: "MT" },
+  { label: "Nebraska", value: "NE" },
+  { label: "Nevada", value: "NV" },
+  { label: "New Hampshire", value: "NH" },
+  { label: "New Jersey", value: "NJ" },
+  { label: "New Mexico", value: "NM" },
+  { label: "New York", value: "NY" },
+  { label: "North Carolina", value: "NC" },
+  { label: "North Dakota", value: "ND" },
+  { label: "Ohio", value: "OH" },
+  { label: "Oklahoma", value: "OK" },
+  { label: "Oregon", value: "OR" },
+  { label: "Pennsylvania", value: "PA" },
+  { label: "Rhode Island", value: "RI" },
+  { label: "South Carolina", value: "SC" },
+  { label: "South Dakota", value: "SD" },
+  { label: "Tennessee", value: "TN" },
+  { label: "Texas", value: "TX" },
+  { label: "Utah", value: "UT" },
+  { label: "Vermont", value: "VT" },
+  { label: "Virginia", value: "VA" },
+  { label: "Washington", value: "WA" },
+  { label: "West Virginia", value: "WV" },
+  { label: "Wisconsin", value: "WI" },
+  { label: "Wyoming", value: "WY" },
+  { label: "Armed Forces Americas", value: "AA" },
+  { label: "Armed Forces Europe", value: "AE" },
+  { label: "Armed Forces Pacific", value: "AP" },
+  { label: "American Samoa", value: "AS" },
+  { label: "Guam", value: "GU" },
+  { label: "Northern Mariana Islands", value: "MP" },
+  { label: "Puerto Rico", value: "PR" },
+  { label: "U.S. Virgin Islands", value: "VI" },
 ];
 
 export const CHECKOUT_SHIPPING_STORAGE_KEY = "checkout-shipping";
@@ -189,9 +189,12 @@ export const paymentOptionRowClass =
   "min-h-12 flex cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-card p-3 transition-colors hover:bg-muted/30 dark:hover:bg-muted/40 has-[:checked]:border-primary has-[:checked]:ring-2 has-[:checked]:ring-primary/20";
 export const paymentButtonClass = "h-[3.75rem] w-full";
 export const selectInputClass = cn(
-  "flex w-full rounded-md border border-input bg-background px-3 py-1 text-sm text-foreground",
+  `
+    flex w-full rounded-md border border-input bg-background px-3 py-1 text-sm
+    text-foreground
+  `,
   checkoutFieldHeight,
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+  "focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
   "disabled:pointer-events-none disabled:opacity-50",
 );
 
@@ -218,35 +221,35 @@ export const PRIVACY_POLICY_SUMMARY =
 export const TERMS_POLICY_SUMMARY =
   'By using Culture you agree to these terms and our Privacy, Refund, and Shipping policies. You must be the age of majority to use the service. We may refuse or cancel orders, limit quantities, and correct pricing errors. Products are provided "as is." We are not liable for indirect or consequential damages. We encourage contacting us first for disputes; governing law is the United States.';
 
-/** Common order payload built by CheckoutClient and passed to PaymentMethodSection for create-order APIs */
-export interface OrderPayload {
-  form: CheckoutFormState | undefined;
-  emailNewsVal: boolean;
-  textNewsVal: boolean;
-  orderItems: Array<{
-    productId: string;
-    productVariantId?: string;
-    name: string;
-    priceCents: number;
-    quantity: number;
-  }>;
-  subtotalCents: number;
-  orderTotalCents: number;
-  shippingFeeCentsRounded: number;
-  taxCentsRounded: number;
-  email: string;
-  commonBody: Record<string, unknown>;
-}
-
 /** Applied coupon as returned from validate/automatic APIs */
 export interface AppliedCoupon {
-  couponId: string;
   code: string;
+  couponId: string;
+  discountCents: number;
   discountKind: string;
   discountType: string;
   discountValue: number;
-  discountCents: number;
   freeShipping: boolean;
+  source: "automatic" | "code";
   totalAfterDiscountCents: number;
-  source: "code" | "automatic";
+}
+
+/** Common order payload built by CheckoutClient and passed to PaymentMethodSection for create-order APIs */
+export interface OrderPayload {
+  commonBody: Record<string, unknown>;
+  email: string;
+  emailNewsVal: boolean;
+  form: CheckoutFormState | undefined;
+  orderItems: {
+    name: string;
+    priceCents: number;
+    productId: string;
+    productVariantId?: string;
+    quantity: number;
+  }[];
+  orderTotalCents: number;
+  shippingFeeCentsRounded: number;
+  subtotalCents: number;
+  taxCentsRounded: number;
+  textNewsVal: boolean;
 }

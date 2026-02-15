@@ -5,11 +5,11 @@
 declare module "x402-next" {
   import type { NextRequest } from "next/server";
 
-  type RouteConfig = {
-    price: string;
-    network: string;
+  interface RouteConfig {
     config?: { description?: string; maxTimeoutSeconds?: number };
-  };
+    network: string;
+    price: string;
+  }
 
   export function withX402(
     handler: (request: NextRequest) => Promise<Response>,

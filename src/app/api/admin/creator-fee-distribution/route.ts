@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { desc, sql } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 
-import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
-import { runDailyDistribution } from "~/lib/creator-fee-distribution";
 import { db } from "~/db";
 import { creatorFeeDistributionTable } from "~/db/schema";
+import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
+import { runDailyDistribution } from "~/lib/creator-fee-distribution";
 
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
@@ -40,9 +40,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       distributions,
-      total: countRow?.count ?? 0,
-      page,
       limit,
+      page,
+      total: countRow?.count ?? 0,
     });
   } catch (err) {
     console.error("[admin] creator-fee-distribution list error:", err);
@@ -78,8 +78,8 @@ export async function POST(request: NextRequest) {
     console.error("[admin] creator-fee-distribution trigger error:", err);
     return NextResponse.json(
       {
-        ok: false,
         error: err instanceof Error ? err.message : "Distribution failed",
+        ok: false,
       },
       { status: 500 },
     );

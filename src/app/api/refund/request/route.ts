@@ -1,7 +1,6 @@
+import { createId } from "@paralleldrive/cuid2";
 import { eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
-
-import { createId } from "@paralleldrive/cuid2";
 
 import { db } from "~/db";
 import { ordersTable, refundRequestsTable } from "~/db/schema";
@@ -9,23 +8,23 @@ import { onRefundRequestSubmitted } from "~/lib/create-user-notification";
 import { cancelPrintfulOrder } from "~/lib/printful-orders";
 import { cancelPrintifyOrder } from "~/lib/printify-orders";
 import {
-  getClientIp,
   checkRateLimit,
-  rateLimitResponse,
+  getClientIp,
   RATE_LIMITS,
+  rateLimitResponse,
 } from "~/lib/rate-limit";
 
 const BODY_LIMIT = 4 * 1024; // 4 KB
 
-function normalizeEmail(email: string | null | undefined): string {
+function normalizeEmail(email: null | string | undefined): string {
   return (email ?? "").trim().toLowerCase();
 }
 
-function normalizePaymentAddress(addr: string | null | undefined): string {
+function normalizePaymentAddress(addr: null | string | undefined): string {
   return (addr ?? "").trim().toLowerCase();
 }
 
-function normalizePostal(postal: string | null | undefined): string {
+function normalizePostal(postal: null | string | undefined): string {
   return (postal ?? "").trim().replace(/\s+/g, "").toLowerCase();
 }
 
@@ -61,11 +60,11 @@ export async function POST(request: NextRequest) {
         { status: 400 },
       );
     }
-    type Body = {
-      orderId?: string;
+    interface Body {
       lookupValue?: string;
+      orderId?: string;
       refundAddress?: string;
-    };
+    }
     let body: Body;
     try {
       body = JSON.parse(raw) as Body;
@@ -104,16 +103,16 @@ export async function POST(request: NextRequest) {
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
         email: ordersTable.email,
+        fulfillmentStatus: ordersTable.fulfillmentStatus,
+        id: ordersTable.id,
         payerWalletAddress: ordersTable.payerWalletAddress,
-        shippingZip: ordersTable.shippingZip,
         paymentMethod: ordersTable.paymentMethod,
         paymentStatus: ordersTable.paymentStatus,
-        status: ordersTable.status,
-        fulfillmentStatus: ordersTable.fulfillmentStatus,
         printfulOrderId: ordersTable.printfulOrderId,
         printifyOrderId: ordersTable.printifyOrderId,
+        shippingZip: ordersTable.shippingZip,
+        status: ordersTable.status,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId))
@@ -227,11 +226,11 @@ export async function POST(request: NextRequest) {
             : "onboarding@resend.dev";
         const { error } = await resend.emails.send({
           from,
-          to,
+          html: `<!DOCTYPE html><html><body>${htmlParts.join("")}</body></html>`,
           replyTo: replyTo ?? undefined,
           subject: `[Refund request] Order ${orderId.slice(0, 12)}…`,
-          html: `<!DOCTYPE html><html><body>${htmlParts.join("")}</body></html>`,
           text: `Refund request\nOrder ID: ${orderId}\nLookup value: ${lookupValue}\nOrder billing email: ${order.email ?? "—"}\n${isCrypto && refundAddress ? `Refund address (stablecoin): ${refundAddress}\n` : ""}\nProcess in admin and mark as refunded.`,
+          to,
         });
         if (error) {
           console.error("[Refund request] Resend error:", error);
@@ -259,19 +258,19 @@ export async function POST(request: NextRequest) {
       }
     } else if (process.env.NODE_ENV === "development") {
       console.log("[Refund request] No RESEND_API_KEY - would send to", to, {
-        orderId,
         lookupValue,
+        orderId,
         refundAddress: isCrypto ? refundAddress : "—",
       });
     }
 
     const now = new Date();
     await db.insert(refundRequestsTable).values({
+      createdAt: now,
       id: createId(),
       orderId,
-      status: "requested",
       refundAddress: isCrypto && refundAddress ? refundAddress : null,
-      createdAt: now,
+      status: "requested",
       updatedAt: now,
     });
 
@@ -284,8 +283,8 @@ export async function POST(request: NextRequest) {
       await db
         .update(ordersTable)
         .set({
-          status: "refund_pending",
           paymentStatus: "refund_pending",
+          status: "refund_pending",
           updatedAt: now,
         })
         .where(eq(ordersTable.id, orderId));

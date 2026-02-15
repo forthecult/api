@@ -31,6 +31,14 @@ const SIZE_ORDER_INDEX = new Map<string, number>(
 );
 
 /**
+ * Sort an array of size strings from smallest to largest.
+ * E.g. ["2XL", "S", "M", "XL", "XS"] → ["XS", "S", "M", "XL", "2XL"].
+ */
+export function sortClothingSizes(values: string[]): string[] {
+  return [...values].sort((a, b) => sizeRank(a) - sizeRank(b));
+}
+
+/**
  * Compare two size strings for sorting (smallest first).
  * Letter sizes (XS, S, M, L, XL, 2XL, ...) and generic labels (Small, Large) use standard order.
  * Numeric sizes (e.g. 28, 30, 32 or 5, 5.5, 6) sort by number.
@@ -49,12 +57,4 @@ function sizeRank(a: string): number {
   const num = parseFloat(a.replace(/,/g, ".").trim());
   if (!Number.isNaN(num)) return 1000 + num;
   return 2000 + upper.charCodeAt(0);
-}
-
-/**
- * Sort an array of size strings from smallest to largest.
- * E.g. ["2XL", "S", "M", "XL", "XS"] → ["XS", "S", "M", "XL", "2XL"].
- */
-export function sortClothingSizes(values: string[]): string[] {
-  return [...values].sort((a, b) => sizeRank(a) - sizeRank(b));
 }

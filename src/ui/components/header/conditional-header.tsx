@@ -5,14 +5,6 @@ import { usePathname } from "next/navigation";
 import { Header } from "./header";
 import { TopBanner } from "./top-banner";
 
-function isCryptoPayPage(pathname: string | null): boolean {
-  if (pathname == null) return false;
-  if (!pathname.startsWith("/checkout/")) return false;
-  if (pathname === "/checkout/cancelled" || pathname === "/checkout/success")
-    return false;
-  return pathname.length > "/checkout/".length;
-}
-
 /** Renders TopBanner + Header except on checkout (no banner), on crypto payment page (/checkout/[invoiceId], no header/banner), and inside Telegram Mini App (/telegram). */
 export function ConditionalHeader(props: React.ComponentProps<typeof Header>) {
   const pathname = usePathname();
@@ -25,4 +17,12 @@ export function ConditionalHeader(props: React.ComponentProps<typeof Header>) {
       <Header {...props} />
     </>
   );
+}
+
+function isCryptoPayPage(pathname: null | string): boolean {
+  if (pathname == null) return false;
+  if (!pathname.startsWith("/checkout/")) return false;
+  if (pathname === "/checkout/cancelled" || pathname === "/checkout/success")
+    return false;
+  return pathname.length > "/checkout/".length;
 }

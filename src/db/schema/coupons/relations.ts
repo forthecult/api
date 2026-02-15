@@ -2,7 +2,6 @@ import { relations } from "drizzle-orm";
 
 import { categoriesTable } from "../categories/tables";
 import { productsTable } from "../orders/tables";
-
 import {
   couponCategoryTable,
   couponProductTable,
@@ -17,13 +16,13 @@ export const couponsRelations = relations(couponsTable, ({ many }) => ({
 export const couponCategoryRelations = relations(
   couponCategoryTable,
   ({ one }) => ({
-    coupon: one(couponsTable, {
-      fields: [couponCategoryTable.couponId],
-      references: [couponsTable.id],
-    }),
     category: one(categoriesTable, {
       fields: [couponCategoryTable.categoryId],
       references: [categoriesTable.id],
+    }),
+    coupon: one(couponsTable, {
+      fields: [couponCategoryTable.couponId],
+      references: [couponsTable.id],
     }),
   }),
 );

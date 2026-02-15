@@ -9,7 +9,7 @@ export async function GET() {
   } catch (error) {
     console.error("eSIM countries error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to fetch countries" },
+      { message: "Failed to fetch countries", status: false },
       { status: 500 },
     );
   }

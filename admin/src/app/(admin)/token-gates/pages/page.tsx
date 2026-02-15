@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import type { TokenGateRow } from "~/ui/token-gates-list";
+
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
-import type { TokenGateRow } from "~/ui/token-gates-list";
 import { TokenGatesList } from "~/ui/token-gates-list";
 
 const API_BASE = getMainAppUrl();
@@ -22,8 +23,8 @@ export default function AdminPageTokenGatesPage() {
   const [gates, setGates] = useState<TokenGateRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loadedSlug, setLoadedSlug] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
+  const [loadedSlug, setLoadedSlug] = useState<null | string>(null);
 
   const fetchExistingSlugs = useCallback(async () => {
     try {
@@ -73,8 +74,8 @@ export default function AdminPageTokenGatesPage() {
           throw new Error(body.error ?? `HTTP ${res.status}`);
         }
         const data = (await res.json()) as {
-          pageSlug: string;
           gates: TokenGateRow[];
+          pageSlug: string;
         };
         setGates(data.gates ?? []);
         setLoadedSlug(data.pageSlug);
@@ -106,10 +107,10 @@ export default function AdminPageTokenGatesPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/token-gate/pages/${encodeURIComponent(s)}`,
         {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({ gates }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "PATCH",
         },
       );
       if (!res.ok) {
@@ -117,8 +118,8 @@ export default function AdminPageTokenGatesPage() {
         throw new Error(body.error ?? "Failed to save");
       }
       const data = (await res.json()) as {
-        pageSlug: string;
         gates: TokenGateRow[];
+        pageSlug: string;
       };
       setGates(data.gates ?? []);
       setLoadedSlug(data.pageSlug);
@@ -134,7 +135,7 @@ export default function AdminPageTokenGatesPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Page token gates</h1>
-        <p className="text-sm text-muted-foreground mt-1">
+        <p className="mt-1 text-sm text-muted-foreground">
           Require users to hold tokens to view a page by slug (e.g. /about,
           /token). Add gates for a slug; visitors must satisfy at least one
           (OR).
@@ -149,18 +150,18 @@ export default function AdminPageTokenGatesPage() {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-wrap gap-2">
             <input
-              type="text"
-              value={slug}
+              className={cn(inputClass, "max-w-xs")}
               onChange={(e) => setSlug(e.target.value)}
               placeholder="e.g. about, token"
-              className={cn(inputClass, "max-w-xs")}
+              type="text"
+              value={slug}
             />
             <Button
-              type="button"
-              onClick={() => void loadGates()}
               disabled={loading}
+              onClick={() => void loadGates()}
+              type="button"
             >
               {loading ? "Loading…" : "Load / Create"}
             </Button>
@@ -172,10 +173,10 @@ export default function AdminPageTokenGatesPage() {
                 {existingSlugs.map((s) => (
                   <Button
                     key={s}
+                    onClick={() => loadGates(s)}
+                    size="sm"
                     type="button"
                     variant={loadedSlug === s ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => loadGates(s)}
                   >
                     {s}
                   </Button>
@@ -187,7 +188,12 @@ export default function AdminPageTokenGatesPage() {
       </Card>
 
       {error && (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        <div
+          className={`
+          rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2
+          text-sm text-destructive
+        `}
+        >
           {error}
         </div>
       )}
@@ -195,24 +201,29 @@ export default function AdminPageTokenGatesPage() {
       {(loadedSlug !== null || gates.length > 0) && (
         <>
           <TokenGatesList
+            description="User must hold ≥ quantity of ANY token to view this page."
             gates={gates}
+            inputClass={inputClass}
+            labelClass={labelClass}
             onChange={setGates}
             title={
               loadedSlug ? `Token gates for /${loadedSlug}` : "Token gates"
             }
-            description="User must hold ≥ quantity of ANY token to view this page."
-            inputClass={inputClass}
-            labelClass={labelClass}
           />
           <div className="flex gap-2">
-            <Button onClick={saveGates} disabled={saving}>
+            <Button disabled={saving} onClick={saveGates}>
               {saving ? "Saving…" : "Save"}
             </Button>
             <Link
-              href="/token-gates/pages"
               className={cn(
-                "inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-muted",
+                `
+                  inline-flex items-center justify-center rounded-md border
+                  border-input bg-background px-4 py-2 text-sm font-medium
+                  transition-colors
+                  hover:bg-muted
+                `,
               )}
+              href="/token-gates/pages"
             >
               Cancel
             </Link>

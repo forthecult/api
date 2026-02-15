@@ -8,23 +8,12 @@ import { Connection } from "@solana/web3.js";
 import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
-import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-
-function detectTierFromPricing(
-  stakedTokens: number,
-  tiers: { tierId: number; tokensNeeded: number }[],
-): number | null {
-  const sorted = [...tiers].sort((a, b) => a.tierId - b.tierId);
-  for (const t of sorted) {
-    if (stakedTokens >= t.tokensNeeded) return t.tierId;
-  }
-  return null;
-}
+import { getActiveToken } from "~/lib/token-config";
 
 export async function getMemberTierForWallet(
   wallet: string,
-): Promise<number | null> {
+): Promise<null | number> {
   const programId = getStakingProgramId();
   if (!programId) return null;
 
@@ -54,4 +43,15 @@ export async function getMemberTierForWallet(
   } catch {
     return null;
   }
+}
+
+function detectTierFromPricing(
+  stakedTokens: number,
+  tiers: { tierId: number; tokensNeeded: number }[],
+): null | number {
+  const sorted = [...tiers].sort((a, b) => a.tierId - b.tierId);
+  for (const t of sorted) {
+    if (stakedTokens >= t.tokensNeeded) return t.tierId;
+  }
+  return null;
 }

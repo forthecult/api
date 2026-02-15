@@ -7,21 +7,6 @@ import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
 type Range = "daily" | "monthly" | "yearly";
 
-function getRangeBounds(range: Range): { start: Date; end: Date } {
-  const end = new Date();
-  const start = new Date();
-  if (range === "daily") {
-    start.setHours(0, 0, 0, 0);
-  } else if (range === "monthly") {
-    start.setDate(1);
-    start.setHours(0, 0, 0, 0);
-  } else {
-    start.setMonth(0, 1);
-    start.setHours(0, 0, 0, 0);
-  }
-  return { start, end };
-}
-
 export async function GET(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);
@@ -33,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Invalid range" }, { status: 400 });
     }
 
-    const { start, end } = getRangeBounds(range);
+    const { end, start } = getRangeBounds(range);
 
     const rangeCondition = and(
       gte(ordersTable.createdAt, start),
@@ -45,8 +30,8 @@ export async function GET(request: NextRequest) {
     const [statsResult, soldItemsResult] = await Promise.all([
       db
         .select({
-          totalSalesCents: sql<number>`COALESCE(SUM(${ordersTable.totalCents}), 0)::bigint`,
           orderCount: sql<number>`COUNT(*)::int`,
+          totalSalesCents: sql<number>`COALESCE(SUM(${ordersTable.totalCents}), 0)::bigint`,
         })
         .from(ordersTable)
         .where(rangeCondition),
@@ -73,9 +58,9 @@ export async function GET(request: NextRequest) {
     // Fetch only the 10 most recent orders for the detail list
     const recentOrderRows = await db
       .select({
-        id: ordersTable.id,
         createdAt: ordersTable.createdAt,
         email: ordersTable.email,
+        id: ordersTable.id,
         status: ordersTable.status,
         totalCents: ordersTable.totalCents,
       })
@@ -91,9 +76,9 @@ export async function GET(request: NextRequest) {
             .select({
               id: orderItemsTable.id,
               name: orderItemsTable.name,
+              orderId: orderItemsTable.orderId,
               priceCents: orderItemsTable.priceCents,
               quantity: orderItemsTable.quantity,
-              orderId: orderItemsTable.orderId,
             })
             .from(orderItemsTable)
             .where(inArray(orderItemsTable.orderId, recentOrderIds))
@@ -107,35 +92,35 @@ export async function GET(request: NextRequest) {
     }
 
     const recentOrders = recentOrderRows.map((o) => ({
-      id: o.id,
       createdAt:
         o.createdAt instanceof Date
           ? o.createdAt.toISOString()
           : String(o.createdAt),
       email: o.email,
-      status: o.status,
-      totalCents: o.totalCents,
+      id: o.id,
       items: (itemsByOrderId.get(o.id) ?? []).map((i) => ({
         id: i.id,
         name: i.name,
         priceCents: i.priceCents,
         quantity: i.quantity,
       })),
+      status: o.status,
+      totalCents: o.totalCents,
     }));
 
     return NextResponse.json({
-      visits: 0,
-      totalSalesCents,
       averageOrderValueCents,
-      orderCount,
-      soldItems,
       grossSaleCents: totalSalesCents,
-      totalShippingCents: 0,
-      weeklySalesCents: 0,
-      productShare: 0,
       marketShare: 0,
+      orderCount,
+      productShare: 0,
       recentOrders,
+      soldItems,
       stockOutProducts: [],
+      totalSalesCents,
+      totalShippingCents: 0,
+      visits: 0,
+      weeklySalesCents: 0,
     });
   } catch (err) {
     console.error("Dashboard stats error:", err);
@@ -154,4 +139,19 @@ export async function GET(request: NextRequest) {
       { status: 500 },
     );
   }
+}
+
+function getRangeBounds(range: Range): { end: Date; start: Date } {
+  const end = new Date();
+  const start = new Date();
+  if (range === "daily") {
+    start.setHours(0, 0, 0, 0);
+  } else if (range === "monthly") {
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+  } else {
+    start.setMonth(0, 1);
+    start.setHours(0, 0, 0, 0);
+  }
+  return { end, start };
 }

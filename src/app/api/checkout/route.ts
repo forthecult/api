@@ -2,14 +2,13 @@ import { createId } from "@paralleldrive/cuid2";
 import { inArray } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { db } from "~/db";
+import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
 import {
   publicApiCorsPreflight,
   withPublicApiCors,
 } from "~/lib/cors-public-api";
-import { db } from "~/db";
-import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
 import { getOptionalMoltbookAgentFromRequest } from "~/lib/moltbook-auth";
-import { deriveDepositAddress } from "~/lib/solana-deposit";
 import {
   checkRateLimit,
   getClientIp,
@@ -17,6 +16,7 @@ import {
   RATE_LIMITS,
   rateLimitResponse,
 } from "~/lib/rate-limit";
+import { deriveDepositAddress } from "~/lib/solana-deposit";
 import {
   getSolanaPayLabel,
   USDC_MINT_MAINNET,
@@ -25,10 +25,10 @@ import {
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
-type CheckoutBody = {
-  items: Array<{ productId: string; quantity: number }>;
+interface CheckoutBody {
   email: string;
-  payment: { chain: string; token: string; tokenMint?: string | null };
+  items: { productId: string; quantity: number }[];
+  payment: { chain: string; token: string; tokenMint?: null | string };
   shipping?: {
     address1?: string;
     address2?: string;
@@ -39,7 +39,7 @@ type CheckoutBody = {
     stateCode?: string;
     zip?: string;
   };
-};
+}
 
 /**
  * Agent-friendly checkout: create order and return Solana Pay payment details.
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = (await request.json()) as CheckoutBody;
-    const { items: rawItems, email, payment } = body;
+    const { email, items: rawItems, payment } = body;
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email || typeof email !== "string" || !EMAIL_RE.test(email.trim())) {
       return withPublicApiCors(
@@ -135,12 +135,12 @@ export async function POST(request: NextRequest) {
         : [];
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const orderItems: Array<{
-      productId: string;
+    const orderItems: {
       name: string;
       priceCents: number;
+      productId: string;
       quantity: number;
-    }> = [];
+    }[] = [];
     for (const item of rawItems) {
       if (
         typeof item?.productId !== "string" ||
@@ -170,9 +170,9 @@ export async function POST(request: NextRequest) {
       const product = productMap.get(item.productId);
       if (!product || !product.published) continue;
       orderItems.push({
-        productId: product.id,
         name: product.name,
         priceCents: product.priceCents,
+        productId: product.id,
         quantity: item.quantity,
       });
     }
@@ -225,10 +225,10 @@ export async function POST(request: NextRequest) {
       }
     }
     await db.insert(ordersTable).values({
-      id: orderId,
       createdAt: now,
       email: email.trim(),
       fulfillmentStatus: "unfulfilled",
+      id: orderId,
       paymentMethod: "solana_pay",
       paymentStatus: "pending",
       shippingFeeCents,
@@ -279,34 +279,34 @@ export async function POST(request: NextRequest) {
     return withPublicApiCors(
       NextResponse.json(
         {
-          orderId,
-          status: "awaiting_payment",
           expiresAt,
+          orderId,
           payment: {
-            chain: "solana",
-            method: "solana_pay",
-            url: solanaPayUrl,
-            recipient: depositAddress,
             amount: amountBaseUnits,
             amountHuman: totalUsd.toFixed(2),
-            token,
-            tokenMint: tokenMint ?? undefined,
+            chain: "solana",
             decimals,
             label: `Order ${orderId}`,
             message,
+            method: "solana_pay",
+            recipient: depositAddress,
+            token,
+            tokenMint: tokenMint ?? undefined,
+            url: solanaPayUrl,
           },
+          status: "awaiting_payment",
           totals: {
-            subtotalUsd,
             shippingUsd: 0,
+            subtotalUsd,
             totalUsd,
           },
         },
         {
-          status: 201,
           headers: getRateLimitHeaders(
             rateLimitResult,
             RATE_LIMITS.checkout.limit,
           ),
+          status: 201,
         },
       ),
     );

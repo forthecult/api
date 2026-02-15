@@ -3,8 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { accountTable } from "~/db/schema";
-import { affiliateTable } from "~/db/schema/affiliates/tables";
 import { addressesTable, ordersTable } from "~/db/schema";
+import { affiliateTable } from "~/db/schema/affiliates/tables";
 import { userTable } from "~/db/schema/users/tables";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
@@ -22,29 +22,29 @@ export async function GET(
     // TODO: Standardize error response format across admin routes (L20)
     const [user] = await db
       .select({
-        id: userTable.id,
-        name: userTable.name,
-        image: userTable.image,
-        email: userTable.email,
-        phone: userTable.phone,
-        firstName: userTable.firstName,
-        lastName: userTable.lastName,
         createdAt: userTable.createdAt,
-        updatedAt: userTable.updatedAt,
-        twoFactorEnabled: userTable.twoFactorEnabled,
-        receiveMarketing: userTable.receiveMarketing,
-        receiveSmsMarketing: userTable.receiveSmsMarketing,
-        // Notification preferences
-        transactionalEmail: userTable.transactionalEmail,
-        transactionalWebsite: userTable.transactionalWebsite,
-        transactionalSms: userTable.transactionalSms,
-        transactionalTelegram: userTable.transactionalTelegram,
-        transactionalAiCompanion: userTable.transactionalAiCompanion,
+        email: userTable.email,
+        firstName: userTable.firstName,
+        id: userTable.id,
+        image: userTable.image,
+        lastName: userTable.lastName,
+        marketingAiCompanion: userTable.marketingAiCompanion,
         marketingEmail: userTable.marketingEmail,
-        marketingWebsite: userTable.marketingWebsite,
         marketingSms: userTable.marketingSms,
         marketingTelegram: userTable.marketingTelegram,
-        marketingAiCompanion: userTable.marketingAiCompanion,
+        marketingWebsite: userTable.marketingWebsite,
+        name: userTable.name,
+        phone: userTable.phone,
+        receiveMarketing: userTable.receiveMarketing,
+        receiveSmsMarketing: userTable.receiveSmsMarketing,
+        transactionalAiCompanion: userTable.transactionalAiCompanion,
+        // Notification preferences
+        transactionalEmail: userTable.transactionalEmail,
+        transactionalSms: userTable.transactionalSms,
+        transactionalTelegram: userTable.transactionalTelegram,
+        transactionalWebsite: userTable.transactionalWebsite,
+        twoFactorEnabled: userTable.twoFactorEnabled,
+        updatedAt: userTable.updatedAt,
       })
       .from(userTable)
       .where(eq(userTable.id, id))
@@ -73,9 +73,9 @@ export async function GET(
           shippingAddress1: ordersTable.shippingAddress1,
           shippingAddress2: ordersTable.shippingAddress2,
           shippingCity: ordersTable.shippingCity,
+          shippingCountryCode: ordersTable.shippingCountryCode,
           shippingStateCode: ordersTable.shippingStateCode,
           shippingZip: ordersTable.shippingZip,
-          shippingCountryCode: ordersTable.shippingCountryCode,
         })
         .from(ordersTable)
         .where(eq(ordersTable.userId, id))
@@ -83,15 +83,15 @@ export async function GET(
         .limit(1),
       db
         .select({
-          id: addressesTable.id,
           address1: addressesTable.address1,
           address2: addressesTable.address2,
           city: addressesTable.city,
-          stateCode: addressesTable.stateCode,
           countryCode: addressesTable.countryCode,
-          zip: addressesTable.zip,
-          label: addressesTable.label,
+          id: addressesTable.id,
           isDefault: addressesTable.isDefault,
+          label: addressesTable.label,
+          stateCode: addressesTable.stateCode,
+          zip: addressesTable.zip,
         })
         .from(addressesTable)
         .where(eq(addressesTable.userId, id)),
@@ -121,63 +121,63 @@ export async function GET(
     const hasTelegramLinked = Boolean(telegramAccount[0]?.accountId);
 
     return NextResponse.json({
-      id: user.id,
-      name: user.name,
-      image: user.image,
-      email: user.email,
-      phone: user.phone,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      createdAt: user.createdAt?.toISOString() ?? null,
-      updatedAt: user.updatedAt?.toISOString() ?? null,
-      twoFactorEnabled: user.twoFactorEnabled ?? false,
-      orderCount,
-      tokenBalanceCents: null as number | null,
+      addresses: addresses.map((a) => ({
+        address1: a.address1,
+        address2: a.address2 ?? null,
+        city: a.city,
+        countryCode: a.countryCode,
+        id: a.id,
+        isDefault: a.isDefault ?? false,
+        label: a.label ?? null,
+        stateCode: a.stateCode ?? null,
+        zip: a.zip,
+      })),
+      affiliate: affiliate
+        ? { code: affiliate.code, status: affiliate.status }
+        : null,
       city: loc?.shippingCity ?? null,
       country: loc?.shippingCountryCode ?? null,
+      createdAt: user.createdAt?.toISOString() ?? null,
+      email: user.email,
+      firstName: user.firstName,
+      id: user.id,
+      image: user.image,
+      lastName: user.lastName,
       latestShippingAddress: loc
         ? {
             address1: loc.shippingAddress1 ?? "",
             address2: loc.shippingAddress2 ?? null,
             city: loc.shippingCity ?? "",
-            stateCode: loc.shippingStateCode ?? null,
             countryCode: loc.shippingCountryCode ?? "",
+            stateCode: loc.shippingStateCode ?? null,
             zip: loc.shippingZip ?? "",
           }
         : null,
-      addresses: addresses.map((a) => ({
-        id: a.id,
-        address1: a.address1,
-        address2: a.address2 ?? null,
-        city: a.city,
-        stateCode: a.stateCode ?? null,
-        countryCode: a.countryCode,
-        zip: a.zip,
-        label: a.label ?? null,
-        isDefault: a.isDefault ?? false,
-      })),
-      receiveMarketing: user.receiveMarketing ?? false,
-      receiveSmsMarketing: user.receiveSmsMarketing ?? false,
-      affiliate: affiliate
-        ? { code: affiliate.code, status: affiliate.status }
-        : null,
+      name: user.name,
       notificationPreferences: {
         hasTelegramLinked,
-        transactional: {
-          email: user.transactionalEmail ?? true,
-          website: user.transactionalWebsite ?? true,
-          sms: user.transactionalSms ?? false,
-          telegram: user.transactionalTelegram ?? false,
-          aiCompanion: user.transactionalAiCompanion ?? false,
-        },
         marketing: {
+          aiCompanion: user.marketingAiCompanion ?? false,
           email: user.marketingEmail ?? false,
-          website: user.marketingWebsite ?? false,
           sms: user.marketingSms ?? false,
           telegram: user.marketingTelegram ?? false,
-          aiCompanion: user.marketingAiCompanion ?? false,
+          website: user.marketingWebsite ?? false,
+        },
+        transactional: {
+          aiCompanion: user.transactionalAiCompanion ?? false,
+          email: user.transactionalEmail ?? true,
+          sms: user.transactionalSms ?? false,
+          telegram: user.transactionalTelegram ?? false,
+          website: user.transactionalWebsite ?? true,
         },
       },
+      orderCount,
+      phone: user.phone,
+      receiveMarketing: user.receiveMarketing ?? false,
+      receiveSmsMarketing: user.receiveSmsMarketing ?? false,
+      tokenBalanceCents: null as null | number,
+      twoFactorEnabled: user.twoFactorEnabled ?? false,
+      updatedAt: user.updatedAt?.toISOString() ?? null,
     });
   } catch (err) {
     console.error("Admin customer get error:", err);
@@ -223,11 +223,11 @@ export async function PATCH(
 
     // Notification preferences: single source of truth (keeps receiveMarketing/receiveSmsMarketing in sync)
     const prefs = body.notificationPreferences as
+      | undefined
       | {
-          transactional?: Partial<Record<string, boolean>>;
           marketing?: Partial<Record<string, boolean>>;
-        }
-      | undefined;
+          transactional?: Partial<Record<string, boolean>>;
+        };
     if (prefs?.transactional) {
       if (typeof prefs.transactional.email === "boolean") {
         updates.transactionalEmail = prefs.transactional.email;
@@ -277,8 +277,8 @@ export async function PATCH(
       .set({ ...updates, updatedAt: new Date() })
       .where(eq(userTable.id, id))
       .returning({
-        id: userTable.id,
         firstName: userTable.firstName,
+        id: userTable.id,
         lastName: userTable.lastName,
         phone: userTable.phone,
         receiveMarketing: userTable.receiveMarketing,

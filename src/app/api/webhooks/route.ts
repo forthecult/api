@@ -6,35 +6,10 @@ import { db } from "~/db";
 import { ordersTable, webhookRegistrationsTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
-  getClientIp,
   checkRateLimit,
+  getClientIp,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-
-/** Validate that a webhook URL is a safe, non-private HTTPS endpoint. */
-function isValidWebhookUrl(urlStr: string): boolean {
-  try {
-    const url = new URL(urlStr);
-    if (url.protocol !== "https:") return false;
-    // Block localhost and private IPs
-    const hostname = url.hostname.toLowerCase();
-    if (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "0.0.0.0"
-    )
-      return false;
-    if (hostname.startsWith("10.") || hostname.startsWith("192.168."))
-      return false;
-    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return false;
-    if (hostname === "169.254.169.254") return false; // AWS metadata
-    if (hostname.endsWith(".local") || hostname.endsWith(".internal"))
-      return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Register a webhook URL to receive POST notifications when order status changes.
@@ -47,10 +22,10 @@ function isValidWebhookUrl(urlStr: string): boolean {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json().catch(() => ({}))) as {
-      url?: string;
-      secret?: string;
       events?: string;
       orderId?: string;
+      secret?: string;
+      url?: string;
     };
 
     const isAdmin = (await getAdminAuth(request))?.ok === true;
@@ -109,22 +84,22 @@ export async function POST(request: NextRequest) {
     const id = createId();
     const now = new Date();
     await db.insert(webhookRegistrationsTable).values({
-      id,
-      url,
-      secret: typeof body.secret === "string" ? body.secret : null,
+      createdAt: now,
       events:
         typeof body.events === "string" && body.events.trim()
           ? body.events.trim()
           : "order.updated",
-      createdAt: now,
+      id,
+      secret: typeof body.secret === "string" ? body.secret : null,
+      url,
       // Store orderId scope so webhook dispatcher only fires for this order
       ...(scopedOrderId ? { orderId: scopedOrderId } : {}),
     });
 
     return NextResponse.json({
+      events: "order.updated",
       id,
       url,
-      events: "order.updated",
       ...(scopedOrderId ? { orderId: scopedOrderId } : {}),
       message: scopedOrderId
         ? `Webhook registered for order ${scopedOrderId}. You will receive POST requests when this order's status changes.`
@@ -136,5 +111,30 @@ export async function POST(request: NextRequest) {
       { error: "Failed to register webhook" },
       { status: 500 },
     );
+  }
+}
+
+/** Validate that a webhook URL is a safe, non-private HTTPS endpoint. */
+function isValidWebhookUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    if (url.protocol !== "https:") return false;
+    // Block localhost and private IPs
+    const hostname = url.hostname.toLowerCase();
+    if (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "0.0.0.0"
+    )
+      return false;
+    if (hostname.startsWith("10.") || hostname.startsWith("192.168."))
+      return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return false;
+    if (hostname === "169.254.169.254") return false; // AWS metadata
+    if (hostname.endsWith(".local") || hostname.endsWith(".internal"))
+      return false;
+    return true;
+  } catch {
+    return false;
   }
 }

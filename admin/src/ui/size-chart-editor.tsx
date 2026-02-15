@@ -10,37 +10,31 @@ import { Button } from "~/ui/button";
 /*  Types matching the stored JSON schema                             */
 /* ------------------------------------------------------------------ */
 
-type MeasurementValue =
-  | { size: string; value: string }
-  | { size: string; min_value: string; max_value: string };
+export interface SizeChartData {
+  availableSizes?: string[];
+  sizeTables?: SizeTable[];
+}
 
-type Measurement = {
+interface Measurement {
   type_label: string;
   values: MeasurementValue[];
-};
+}
 
-type SizeTable = {
-  type: string;
-  unit: string;
+type MeasurementValue =
+  | { max_value: string; min_value: string; size: string }
+  | { size: string; value: string };
+
+interface SizeTable {
   description?: string;
   image_url?: string;
   measurements?: Measurement[];
-};
-
-export type SizeChartData = {
-  availableSizes?: string[];
-  sizeTables?: SizeTable[];
-};
+  type: string;
+  unit: string;
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
-
-function isRange(
-  v: MeasurementValue,
-): v is { size: string; min_value: string; max_value: string } {
-  return "min_value" in v;
-}
 
 /** Get the display value for a cell */
 function cellDisplay(v: MeasurementValue | undefined): string {
@@ -75,6 +69,12 @@ function getValueForSize(
   return m.values.find((v) => v.size === size);
 }
 
+function isRange(
+  v: MeasurementValue,
+): v is { max_value: string; min_value: string; size: string } {
+  return "min_value" in v;
+}
+
 /* ------------------------------------------------------------------ */
 /*  Cell Editor                                                       */
 /* ------------------------------------------------------------------ */
@@ -82,14 +82,214 @@ function getValueForSize(
 const cellInputClass =
   "w-full min-w-[60px] rounded border border-input bg-background px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-ring";
 
-function CellEditor({
-  value,
-  isRangeMode,
+export function SizeChartDataEditor({
+  data,
+  label,
   onChange,
 }: {
-  value: MeasurementValue | undefined;
+  data: null | SizeChartData;
+  label: string;
+  onChange: (d: null | SizeChartData) => void;
+}) {
+  const [mode, setMode] = useState<"json" | "visual">("visual");
+  const [jsonRaw, setJsonRaw] = useState(() =>
+    data != null ? JSON.stringify(data, null, 2) : "",
+  );
+  const [jsonError, setJsonError] = useState<null | string>(null);
+
+  const tables = data?.sizeTables ?? [];
+
+  const updateTable = useCallback(
+    (idx: number, t: SizeTable) => {
+      const next = [...tables];
+      next[idx] = t;
+      const updated: SizeChartData = {
+        ...data,
+        availableSizes: deriveAvailableSizes(next),
+        sizeTables: next,
+      };
+      onChange(updated);
+      setJsonRaw(JSON.stringify(updated, null, 2));
+    },
+    [data, tables, onChange],
+  );
+
+  const removeTable = useCallback(
+    (idx: number) => {
+      const next = tables.filter((_, i) => i !== idx);
+      const updated: SizeChartData = {
+        ...data,
+        availableSizes: deriveAvailableSizes(next),
+        sizeTables: next,
+      };
+      onChange(next.length > 0 ? updated : null);
+      setJsonRaw(next.length > 0 ? JSON.stringify(updated, null, 2) : "");
+    },
+    [data, tables, onChange],
+  );
+
+  const addTable = useCallback(() => {
+    const newTable: SizeTable = {
+      measurements: [],
+      type: "measure_yourself",
+      unit: label.toLowerCase().includes("metric") ? "cm" : "inches",
+    };
+    const next = [...tables, newTable];
+    const updated: SizeChartData = {
+      ...data,
+      availableSizes: data?.availableSizes ?? [],
+      sizeTables: next,
+    };
+    onChange(updated);
+    setJsonRaw(JSON.stringify(updated, null, 2));
+  }, [data, tables, label, onChange]);
+
+  const applyJson = useCallback(() => {
+    const trimmed = jsonRaw.trim();
+    if (!trimmed) {
+      onChange(null);
+      setJsonError(null);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(trimmed) as SizeChartData;
+      onChange(parsed);
+      setJsonError(null);
+    } catch (e) {
+      setJsonError(e instanceof Error ? e.message : "Invalid JSON");
+    }
+  }, [jsonRaw, onChange]);
+
+  const switchToJson = useCallback(() => {
+    setJsonRaw(data != null ? JSON.stringify(data, null, 2) : "");
+    setJsonError(null);
+    setMode("json");
+  }, [data]);
+
+  const switchToVisual = useCallback(() => {
+    // Try to apply any pending JSON changes first
+    if (jsonRaw.trim()) {
+      try {
+        const parsed = JSON.parse(jsonRaw) as SizeChartData;
+        onChange(parsed);
+      } catch {
+        // keep current data
+      }
+    }
+    setMode("visual");
+  }, [jsonRaw, onChange]);
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">{label}</h3>
+        <div className="flex rounded-md border border-input text-xs">
+          <button
+            className={cn(
+              "rounded-l-md px-3 py-1 transition-colors",
+              mode === "visual"
+                ? "bg-primary text-primary-foreground"
+                : `
+                  bg-background
+                  hover:bg-muted
+                `,
+            )}
+            onClick={switchToVisual}
+            type="button"
+          >
+            Visual
+          </button>
+          <button
+            className={cn(
+              "rounded-r-md px-3 py-1 transition-colors",
+              mode === "json"
+                ? "bg-primary text-primary-foreground"
+                : `
+                  bg-background
+                  hover:bg-muted
+                `,
+            )}
+            onClick={switchToJson}
+            type="button"
+          >
+            JSON
+          </button>
+        </div>
+      </div>
+
+      {mode === "visual" ? (
+        <div className="space-y-4">
+          {tables.length === 0 ? (
+            <div
+              className={`
+              rounded-lg border border-dashed border-border p-6 text-center
+              text-sm text-muted-foreground
+            `}
+            >
+              No size data yet.
+            </div>
+          ) : (
+            tables.map((t, idx) => (
+              <SingleTableEditor
+                canRemove={tables.length > 1}
+                key={idx}
+                onRemove={() => removeTable(idx)}
+                onUpdate={(updated) => updateTable(idx, updated)}
+                table={t}
+                tableIndex={idx}
+              />
+            ))
+          )}
+          <Button
+            className="gap-1"
+            onClick={addTable}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            <Plus className="size-3" /> Add size table
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <textarea
+            className={`
+              w-full rounded-md border border-input bg-background px-3 py-2
+              font-mono text-xs ring-offset-background
+              placeholder:text-muted-foreground
+              focus-visible:ring-2 focus-visible:ring-ring
+              focus-visible:ring-offset-2 focus-visible:outline-none
+            `}
+            onChange={(e) => {
+              setJsonRaw(e.target.value);
+              setJsonError(null);
+            }}
+            placeholder='{ "availableSizes": ["S","M","L"], "sizeTables": [...] }'
+            rows={12}
+            value={jsonRaw}
+          />
+          {jsonError && <p className="text-xs text-destructive">{jsonError}</p>}
+          <Button onClick={applyJson} size="sm" type="button" variant="outline">
+            Apply JSON
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Single Size Table Editor                                          */
+/* ------------------------------------------------------------------ */
+
+function CellEditor({
+  isRangeMode,
+  onChange,
+  value,
+}: {
   isRangeMode: boolean;
   onChange: (v: MeasurementValue | null) => void;
+  value: MeasurementValue | undefined;
 }) {
   if (isRangeMode) {
     const min = value && isRange(value) ? value.min_value : "";
@@ -97,31 +297,31 @@ function CellEditor({
     return (
       <div className="flex items-center gap-0.5">
         <input
-          type="text"
-          value={min}
+          className={cn(cellInputClass, "min-w-[40px]")}
           onChange={(e) =>
             onChange({
-              size: value?.size ?? "",
-              min_value: e.target.value,
               max_value: max,
+              min_value: e.target.value,
+              size: value?.size ?? "",
             })
           }
-          className={cn(cellInputClass, "min-w-[40px]")}
           placeholder="min"
+          type="text"
+          value={min}
         />
         <span className="text-[10px] text-muted-foreground">–</span>
         <input
-          type="text"
-          value={max}
+          className={cn(cellInputClass, "min-w-[40px]")}
           onChange={(e) =>
             onChange({
-              size: value?.size ?? "",
-              min_value: min,
               max_value: e.target.value,
+              min_value: min,
+              size: value?.size ?? "",
             })
           }
-          className={cn(cellInputClass, "min-w-[40px]")}
           placeholder="max"
+          type="text"
+          value={max}
         />
       </div>
     );
@@ -130,33 +330,51 @@ function CellEditor({
   const single = value && !isRange(value) ? value.value : "";
   return (
     <input
-      type="text"
-      value={single}
+      className={cellInputClass}
       onChange={(e) =>
         onChange({ size: value?.size ?? "", value: e.target.value })
       }
-      className={cellInputClass}
       placeholder="—"
+      type="text"
+      value={single}
     />
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Single Size Table Editor                                          */
+/*  Main SizeChartDataEditor                                          */
+/* ------------------------------------------------------------------ */
+
+function deriveAvailableSizes(tables: SizeTable[]): string[] {
+  const seen = new Set<string>();
+  const sizes: string[] = [];
+  for (const t of tables) {
+    for (const s of extractSizes(t)) {
+      if (!seen.has(s)) {
+        seen.add(s);
+        sizes.push(s);
+      }
+    }
+  }
+  return sizes;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Utility                                                           */
 /* ------------------------------------------------------------------ */
 
 function SingleTableEditor({
+  canRemove,
+  onRemove,
+  onUpdate,
   table,
   tableIndex,
-  onUpdate,
-  onRemove,
-  canRemove,
 }: {
+  canRemove: boolean;
+  onRemove: () => void;
+  onUpdate: (t: SizeTable) => void;
   table: SizeTable;
   tableIndex: number;
-  onUpdate: (t: SizeTable) => void;
-  onRemove: () => void;
-  canRemove: boolean;
 }) {
   const sizes = useMemo(() => extractSizes(table), [table]);
   const measurements = table.measurements ?? [];
@@ -222,7 +440,7 @@ function SingleTableEditor({
       type_label: label,
       values: sizes.map((s) =>
         showRanges
-          ? { size: s, min_value: "", max_value: "" }
+          ? { max_value: "", min_value: "", size: s }
           : { size: s, value: "" },
       ),
     };
@@ -242,7 +460,7 @@ function SingleTableEditor({
         values: [
           ...m.values,
           showRanges
-            ? { size, min_value: "", max_value: "" }
+            ? { max_value: "", min_value: "", size }
             : { size, value: "" },
         ],
       })),
@@ -277,7 +495,7 @@ function SingleTableEditor({
           if (next) {
             // single → range
             const val = !isRange(v) ? v.value : "";
-            return { size: v.size, min_value: val, max_value: val };
+            return { max_value: val, min_value: val, size: v.size };
           }
           // range → single (use min or combined)
           const display = isRange(v)
@@ -300,46 +518,53 @@ function SingleTableEditor({
               Type
             </label>
             <input
+              className={`
+                rounded border border-input bg-background px-2 py-1 text-xs
+              `}
+              onChange={(e) => onUpdate({ ...table, type: e.target.value })}
+              placeholder="e.g. measure_yourself"
               type="text"
               value={table.type}
-              onChange={(e) => onUpdate({ ...table, type: e.target.value })}
-              className="rounded border border-input bg-background px-2 py-1 text-xs"
-              placeholder="e.g. measure_yourself"
             />
             <label className="ml-2 text-xs font-medium text-muted-foreground">
               Unit
             </label>
             <input
+              className={`
+                w-20 rounded border border-input bg-background px-2 py-1 text-xs
+              `}
+              onChange={(e) => onUpdate({ ...table, unit: e.target.value })}
+              placeholder="inches"
               type="text"
               value={table.unit}
-              onChange={(e) => onUpdate({ ...table, unit: e.target.value })}
-              className="w-20 rounded border border-input bg-background px-2 py-1 text-xs"
-              placeholder="inches"
             />
           </div>
           {table.description && (
-            <p className="text-xs text-muted-foreground line-clamp-1">
+            <p className="line-clamp-1 text-xs text-muted-foreground">
               {table.description}
             </p>
           )}
         </div>
         <div className="flex items-center gap-2">
           <Button
+            className="text-xs"
+            onClick={toggleRangeMode}
+            size="sm"
             type="button"
             variant="outline"
-            size="sm"
-            onClick={toggleRangeMode}
-            className="text-xs"
           >
             {showRanges ? "Single values" : "Min–Max ranges"}
           </Button>
           {canRemove && (
             <Button
+              className={`
+                text-destructive
+                hover:text-destructive
+              `}
+              onClick={onRemove}
+              size="sm"
               type="button"
               variant="ghost"
-              size="sm"
-              onClick={onRemove}
-              className="text-destructive hover:text-destructive"
             >
               <X className="size-3" />
             </Button>
@@ -352,18 +577,26 @@ function SingleTableEditor({
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b">
-              <th className="px-2 py-1.5 text-left font-medium text-muted-foreground min-w-[140px]">
+              <th
+                className={`
+                min-w-[140px] px-2 py-1.5 text-left font-medium
+                text-muted-foreground
+              `}
+              >
                 Measurement
               </th>
               {sizes.map((size) => (
-                <th key={size} className="px-1 py-1.5 text-center font-medium">
+                <th className="px-1 py-1.5 text-center font-medium" key={size}>
                   <div className="flex items-center justify-center gap-1">
                     <span>{size}</span>
                     <button
-                      type="button"
+                      className={`
+                        rounded p-0.5 text-muted-foreground
+                        hover:text-destructive
+                      `}
                       onClick={() => removeSize(size)}
-                      className="rounded p-0.5 text-muted-foreground hover:text-destructive"
                       title={`Remove size ${size}`}
+                      type="button"
                     >
                       <X className="size-3" />
                     </button>
@@ -373,8 +606,10 @@ function SingleTableEditor({
               <th className="px-1 py-1.5 text-center">
                 <div className="flex items-center gap-1">
                   <input
-                    type="text"
-                    value={newSizeInput}
+                    className={`
+                      w-16 rounded border border-dashed border-input
+                      bg-background px-1.5 py-0.5 text-center text-xs
+                    `}
                     onChange={(e) => setNewSizeInput(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
@@ -382,14 +617,18 @@ function SingleTableEditor({
                         addSize();
                       }
                     }}
-                    className="w-16 rounded border border-dashed border-input bg-background px-1.5 py-0.5 text-xs text-center"
                     placeholder="+ size"
+                    type="text"
+                    value={newSizeInput}
                   />
                   <button
-                    type="button"
+                    className={`
+                      rounded p-0.5 text-muted-foreground
+                      hover:text-foreground
+                    `}
                     onClick={addSize}
-                    className="rounded p-0.5 text-muted-foreground hover:text-foreground"
                     title="Add size"
+                    type="button"
                   >
                     <Plus className="size-3" />
                   </button>
@@ -399,33 +638,48 @@ function SingleTableEditor({
           </thead>
           <tbody>
             {measurements.map((m, mIdx) => (
-              <tr key={mIdx} className="border-b last:border-0">
+              <tr
+                className={`
+                border-b
+                last:border-0
+              `}
+                key={mIdx}
+              >
                 <td className="px-2 py-1">
                   <div className="flex items-center gap-1">
                     <input
-                      type="text"
-                      value={m.type_label}
+                      className={`
+                        flex-1 rounded border border-transparent bg-transparent
+                        px-1 py-0.5 text-xs font-medium
+                        hover:border-input
+                        focus:border-input focus:ring-1 focus:ring-ring
+                        focus:outline-none
+                      `}
                       onChange={(e) =>
                         updateMeasurementLabel(mIdx, e.target.value)
                       }
-                      className="flex-1 rounded border border-transparent bg-transparent px-1 py-0.5 text-xs font-medium hover:border-input focus:border-input focus:outline-none focus:ring-1 focus:ring-ring"
+                      type="text"
+                      value={m.type_label}
                     />
                     <button
-                      type="button"
+                      className={`
+                        rounded p-0.5 text-muted-foreground
+                        hover:text-destructive
+                      `}
                       onClick={() => removeMeasurement(mIdx)}
-                      className="rounded p-0.5 text-muted-foreground hover:text-destructive"
                       title="Remove measurement"
+                      type="button"
                     >
                       <Minus className="size-3" />
                     </button>
                   </div>
                 </td>
                 {sizes.map((size) => (
-                  <td key={size} className="px-1 py-1">
+                  <td className="px-1 py-1" key={size}>
                     <CellEditor
-                      value={getValueForSize(m, size)}
                       isRangeMode={showRanges}
                       onChange={(v) => updateMeasurementValue(mIdx, size, v)}
+                      value={getValueForSize(m, size)}
                     />
                   </td>
                 ))}
@@ -439,8 +693,10 @@ function SingleTableEditor({
       {/* Add measurement row */}
       <div className="flex items-center gap-2 pt-1">
         <input
-          type="text"
-          value={newMeasurementInput}
+          className={`
+            max-w-[200px] rounded border border-dashed border-input
+            bg-background px-2 py-1 text-xs
+          `}
           onChange={(e) => setNewMeasurementInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -448,220 +704,20 @@ function SingleTableEditor({
               addMeasurement();
             }
           }}
-          className="max-w-[200px] rounded border border-dashed border-input bg-background px-2 py-1 text-xs"
           placeholder="e.g. Chest Width"
+          type="text"
+          value={newMeasurementInput}
         />
         <Button
+          className="gap-1 text-xs"
+          onClick={addMeasurement}
+          size="sm"
           type="button"
           variant="outline"
-          size="sm"
-          onClick={addMeasurement}
-          className="gap-1 text-xs"
         >
           <Plus className="size-3" /> Add measurement
         </Button>
       </div>
     </div>
   );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Main SizeChartDataEditor                                          */
-/* ------------------------------------------------------------------ */
-
-export function SizeChartDataEditor({
-  label,
-  data,
-  onChange,
-}: {
-  label: string;
-  data: SizeChartData | null;
-  onChange: (d: SizeChartData | null) => void;
-}) {
-  const [mode, setMode] = useState<"visual" | "json">("visual");
-  const [jsonRaw, setJsonRaw] = useState(() =>
-    data != null ? JSON.stringify(data, null, 2) : "",
-  );
-  const [jsonError, setJsonError] = useState<string | null>(null);
-
-  const tables = data?.sizeTables ?? [];
-
-  const updateTable = useCallback(
-    (idx: number, t: SizeTable) => {
-      const next = [...tables];
-      next[idx] = t;
-      const updated: SizeChartData = {
-        ...data,
-        sizeTables: next,
-        availableSizes: deriveAvailableSizes(next),
-      };
-      onChange(updated);
-      setJsonRaw(JSON.stringify(updated, null, 2));
-    },
-    [data, tables, onChange],
-  );
-
-  const removeTable = useCallback(
-    (idx: number) => {
-      const next = tables.filter((_, i) => i !== idx);
-      const updated: SizeChartData = {
-        ...data,
-        sizeTables: next,
-        availableSizes: deriveAvailableSizes(next),
-      };
-      onChange(next.length > 0 ? updated : null);
-      setJsonRaw(next.length > 0 ? JSON.stringify(updated, null, 2) : "");
-    },
-    [data, tables, onChange],
-  );
-
-  const addTable = useCallback(() => {
-    const newTable: SizeTable = {
-      type: "measure_yourself",
-      unit: label.toLowerCase().includes("metric") ? "cm" : "inches",
-      measurements: [],
-    };
-    const next = [...tables, newTable];
-    const updated: SizeChartData = {
-      ...data,
-      sizeTables: next,
-      availableSizes: data?.availableSizes ?? [],
-    };
-    onChange(updated);
-    setJsonRaw(JSON.stringify(updated, null, 2));
-  }, [data, tables, label, onChange]);
-
-  const applyJson = useCallback(() => {
-    const trimmed = jsonRaw.trim();
-    if (!trimmed) {
-      onChange(null);
-      setJsonError(null);
-      return;
-    }
-    try {
-      const parsed = JSON.parse(trimmed) as SizeChartData;
-      onChange(parsed);
-      setJsonError(null);
-    } catch (e) {
-      setJsonError(e instanceof Error ? e.message : "Invalid JSON");
-    }
-  }, [jsonRaw, onChange]);
-
-  const switchToJson = useCallback(() => {
-    setJsonRaw(data != null ? JSON.stringify(data, null, 2) : "");
-    setJsonError(null);
-    setMode("json");
-  }, [data]);
-
-  const switchToVisual = useCallback(() => {
-    // Try to apply any pending JSON changes first
-    if (jsonRaw.trim()) {
-      try {
-        const parsed = JSON.parse(jsonRaw) as SizeChartData;
-        onChange(parsed);
-      } catch {
-        // keep current data
-      }
-    }
-    setMode("visual");
-  }, [jsonRaw, onChange]);
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">{label}</h3>
-        <div className="flex rounded-md border border-input text-xs">
-          <button
-            type="button"
-            onClick={switchToVisual}
-            className={cn(
-              "px-3 py-1 rounded-l-md transition-colors",
-              mode === "visual"
-                ? "bg-primary text-primary-foreground"
-                : "bg-background hover:bg-muted",
-            )}
-          >
-            Visual
-          </button>
-          <button
-            type="button"
-            onClick={switchToJson}
-            className={cn(
-              "px-3 py-1 rounded-r-md transition-colors",
-              mode === "json"
-                ? "bg-primary text-primary-foreground"
-                : "bg-background hover:bg-muted",
-            )}
-          >
-            JSON
-          </button>
-        </div>
-      </div>
-
-      {mode === "visual" ? (
-        <div className="space-y-4">
-          {tables.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-              No size data yet.
-            </div>
-          ) : (
-            tables.map((t, idx) => (
-              <SingleTableEditor
-                key={idx}
-                table={t}
-                tableIndex={idx}
-                onUpdate={(updated) => updateTable(idx, updated)}
-                onRemove={() => removeTable(idx)}
-                canRemove={tables.length > 1}
-              />
-            ))
-          )}
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={addTable}
-            className="gap-1"
-          >
-            <Plus className="size-3" /> Add size table
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          <textarea
-            rows={12}
-            value={jsonRaw}
-            onChange={(e) => {
-              setJsonRaw(e.target.value);
-              setJsonError(null);
-            }}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 font-mono text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            placeholder='{ "availableSizes": ["S","M","L"], "sizeTables": [...] }'
-          />
-          {jsonError && <p className="text-xs text-destructive">{jsonError}</p>}
-          <Button type="button" variant="outline" size="sm" onClick={applyJson}>
-            Apply JSON
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Utility                                                           */
-/* ------------------------------------------------------------------ */
-
-function deriveAvailableSizes(tables: SizeTable[]): string[] {
-  const seen = new Set<string>();
-  const sizes: string[] = [];
-  for (const t of tables) {
-    for (const s of extractSizes(t)) {
-      if (!seen.has(s)) {
-        seen.add(s);
-        sizes.push(s);
-      }
-    }
-  }
-  return sizes;
 }

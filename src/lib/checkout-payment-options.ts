@@ -8,75 +8,86 @@ import type { PaymentMethodSetting } from "~/lib/payment-method-settings";
 
 export const HIDDEN_PAYMENT_OPTIONS = {
   creditCard: true,
-  paypal: true,
   cryptoBitcoin: true,
   cryptoDogecoin: true,
   cryptoMonero: true,
+  paypal: true,
 } as const;
 
 /** Enabled flags per UI bucket; derived from API settings. Default true when method not in list. */
-export type PaymentVisibility = {
+export interface PaymentVisibility {
   creditCard: boolean;
-  paypal: boolean;
   cryptoBitcoin: boolean;
-  cryptoDogecoin: boolean;
-  cryptoMonero: boolean;
-  cryptoEthereum: boolean;
-  cryptoSolana: boolean;
   cryptoCrust: boolean;
+  cryptoDogecoin: boolean;
+  cryptoEthereum: boolean;
+  cryptoMonero: boolean;
   cryptoPump: boolean;
-  cryptoTroll: boolean;
-  cryptoSoluna: boolean;
   cryptoSeeker: boolean;
+  cryptoSolana: boolean;
+  cryptoSoluna: boolean;
   cryptoSui: boolean;
   cryptoTon: boolean;
+  cryptoTroll: boolean;
+  /** For USDC: enabled network keys. Null/empty = all supported. */
+  enabledUsdcNetworks: null | string[];
+  /** For USDT: enabled network keys. Null/empty = all supported. */
+  enabledUsdtNetworks: null | string[];
+  paypal: boolean;
   stablecoinUsdc: boolean;
   stablecoinUsdt: boolean;
-  /** For USDC: enabled network keys. Null/empty = all supported. */
-  enabledUsdcNetworks: string[] | null;
-  /** For USDT: enabled network keys. Null/empty = all supported. */
-  enabledUsdtNetworks: string[] | null;
-};
+}
 
 const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
-  stripe: "creditCard",
-  paypal: "paypal",
   crypto_bitcoin: "cryptoBitcoin",
+  crypto_crust: "cryptoCrust",
   crypto_dogecoin: "cryptoDogecoin",
   crypto_ethereum: "cryptoEthereum",
-  crypto_solana: "cryptoSolana",
   crypto_monero: "cryptoMonero",
-  crypto_crust: "cryptoCrust",
   crypto_pump: "cryptoPump",
-  crypto_troll: "cryptoTroll",
-  crypto_soluna: "cryptoSoluna",
   crypto_seeker: "cryptoSeeker",
+  crypto_solana: "cryptoSolana",
+  crypto_soluna: "cryptoSoluna",
   crypto_sui: "cryptoSui",
   crypto_ton: "cryptoTon",
+  crypto_troll: "cryptoTroll",
+  paypal: "paypal",
   stablecoin_usdc: "stablecoinUsdc",
   stablecoin_usdt: "stablecoinUsdt",
+  stripe: "creditCard",
 };
 
 const DEFAULT_VISIBILITY: PaymentVisibility = {
   creditCard: true,
-  paypal: true,
   cryptoBitcoin: true,
-  cryptoDogecoin: true,
-  cryptoMonero: true,
-  cryptoEthereum: true,
-  cryptoSolana: true,
   cryptoCrust: true,
+  cryptoDogecoin: true,
+  cryptoEthereum: true,
+  cryptoMonero: true,
   cryptoPump: true,
-  cryptoTroll: true,
-  cryptoSoluna: true,
   cryptoSeeker: true,
+  cryptoSolana: true,
+  cryptoSoluna: true,
   cryptoSui: true,
   cryptoTon: true,
-  stablecoinUsdc: true,
-  stablecoinUsdt: true,
+  cryptoTroll: true,
   enabledUsdcNetworks: null,
   enabledUsdtNetworks: null,
+  paypal: true,
+  stablecoinUsdc: true,
+  stablecoinUsdt: true,
 };
+
+/** Hidden flags derived from visibility (for code that still uses "hidden" shape). */
+export function getHiddenFromVisibility(v: PaymentVisibility) {
+  return {
+    creditCard: !v.creditCard,
+    cryptoBitcoin: !v.cryptoBitcoin,
+    cryptoDogecoin: !v.cryptoDogecoin,
+    cryptoMonero: !v.cryptoMonero,
+    paypal: !v.paypal,
+  };
+}
 
 /** Build visibility flags from API payment method settings. Missing methods default to enabled. */
 export function getPaymentVisibility(
@@ -104,59 +115,48 @@ export function getPaymentVisibility(
   return v;
 }
 
-/** Hidden flags derived from visibility (for code that still uses "hidden" shape). */
-export function getHiddenFromVisibility(v: PaymentVisibility) {
-  return {
-    creditCard: !v.creditCard,
-    paypal: !v.paypal,
-    cryptoBitcoin: !v.cryptoBitcoin,
-    cryptoDogecoin: !v.cryptoDogecoin,
-    cryptoMonero: !v.cryptoMonero,
-  };
-}
-
 const CRYPTO_SUB_OPTIONS: {
-  value: string;
   label: string;
+  value: string;
 }[] = [
-  { value: "bitcoin", label: "Bitcoin (BTC)" },
-  { value: "dogecoin", label: "Dogecoin (DOGE)" },
-  { value: "eth", label: "Ethereum (ETH)" },
-  { value: "solana", label: "Solana (SOL)" },
-  { value: "monero", label: "Monero (XMR)" },
-  { value: "crust", label: "Crustafarian (CRUST)" },
-  { value: "pump", label: "Pump (PUMP)" },
-  { value: "troll", label: "Troll (TROLL)" },
-  { value: "soluna", label: "SOLUNA (SOLUNA)" },
-  { value: "seeker", label: "Seeker (SKR)" },
-  { value: "other", label: "Other" },
+  { label: "Bitcoin (BTC)", value: "bitcoin" },
+  { label: "Dogecoin (DOGE)", value: "dogecoin" },
+  { label: "Ethereum (ETH)", value: "eth" },
+  { label: "Solana (SOL)", value: "solana" },
+  { label: "Monero (XMR)", value: "monero" },
+  { label: "Crustafarian (CRUST)", value: "crust" },
+  { label: "Pump (PUMP)", value: "pump" },
+  { label: "Troll (TROLL)", value: "troll" },
+  { label: "SOLUNA (SOLUNA)", value: "soluna" },
+  { label: "Seeker (SKR)", value: "seeker" },
+  { label: "Other", value: "other" },
 ];
 
-const OTHER_CRYPTO_OPTIONS: { value: string; label: string }[] = [
-  { value: "sui", label: "Sui (SUI)" },
-  { value: "ton", label: "TON" },
+const OTHER_CRYPTO_OPTIONS: { label: string; value: string }[] = [
+  { label: "Sui (SUI)", value: "sui" },
+  { label: "TON", value: "ton" },
 ];
 
-const ETH_CHAIN_OPTIONS: { value: string; label: string }[] = [
-  { value: "ethereum", label: "ETH (Ethereum)" },
-  { value: "arbitrum", label: "ETH (Arbitrum)" },
-  { value: "base", label: "ETH (Base)" },
-  { value: "polygon", label: "ETH (Polygon)" },
+const ETH_CHAIN_OPTIONS: { label: string; value: string }[] = [
+  { label: "ETH (Ethereum)", value: "ethereum" },
+  { label: "ETH (Arbitrum)", value: "arbitrum" },
+  { label: "ETH (Base)", value: "base" },
+  { label: "ETH (Polygon)", value: "polygon" },
 ];
 
-const USDC_SUB_OPTIONS: { value: string; label: string }[] = [
-  { value: "solana", label: "USDC (Solana)" },
-  { value: "ethereum", label: "USDC (Ethereum)" },
-  { value: "arbitrum", label: "USDC (Arbitrum)" },
-  { value: "base", label: "USDC (Base)" },
-  { value: "polygon", label: "USDC (Polygon)" },
+const USDC_SUB_OPTIONS: { label: string; value: string }[] = [
+  { label: "USDC (Solana)", value: "solana" },
+  { label: "USDC (Ethereum)", value: "ethereum" },
+  { label: "USDC (Arbitrum)", value: "arbitrum" },
+  { label: "USDC (Base)", value: "base" },
+  { label: "USDC (Polygon)", value: "polygon" },
 ];
 
-const USDT_SUB_OPTIONS: { value: string; label: string }[] = [
-  { value: "ethereum", label: "USDT (Ethereum)" },
-  { value: "arbitrum", label: "USDT (Arbitrum)" },
-  { value: "bnb", label: "USDT (BNB Smart Chain)" },
-  { value: "polygon", label: "USDT (Polygon)" },
+const USDT_SUB_OPTIONS: { label: string; value: string }[] = [
+  { label: "USDT (Ethereum)", value: "ethereum" },
+  { label: "USDT (Arbitrum)", value: "arbitrum" },
+  { label: "USDT (BNB Smart Chain)", value: "bnb" },
+  { label: "USDT (Polygon)", value: "polygon" },
 ];
 
 /** Visible crypto options (filters out hidden). Used when no API visibility is passed. */
@@ -169,289 +169,22 @@ export const VISIBLE_CRYPTO_SUB_OPTIONS = CRYPTO_SUB_OPTIONS.filter(
     ),
 );
 
-/** Visible crypto sub-options for checkout when using API visibility. */
-export function visibleCryptoSubFromVisibility(v: PaymentVisibility) {
-  return CRYPTO_SUB_OPTIONS.filter((opt) => {
-    if (opt.value === "bitcoin") return v.cryptoBitcoin;
-    if (opt.value === "dogecoin") return v.cryptoDogecoin;
-    if (opt.value === "eth") return v.cryptoEthereum;
-    if (opt.value === "solana") return v.cryptoSolana;
-    if (opt.value === "monero") return v.cryptoMonero;
-    if (opt.value === "crust") return v.cryptoCrust;
-    if (opt.value === "pump") return v.cryptoPump;
-    if (opt.value === "troll") return v.cryptoTroll;
-    if (opt.value === "soluna") return v.cryptoSoluna;
-    if (opt.value === "seeker") return v.cryptoSeeker;
-    if (opt.value === "other") return v.cryptoSui || v.cryptoTon;
-    return true;
-  });
-}
-
-export function hasAnyCryptoEnabled(v: PaymentVisibility): boolean {
-  return (
-    v.cryptoBitcoin ||
-    v.cryptoDogecoin ||
-    v.cryptoEthereum ||
-    v.cryptoSolana ||
-    v.cryptoMonero ||
-    v.cryptoCrust ||
-    v.cryptoPump ||
-    v.cryptoTroll ||
-    v.cryptoSoluna ||
-    v.cryptoSeeker ||
-    v.cryptoSui ||
-    v.cryptoTon
-  );
-}
-
-export function hasAnyStablecoinEnabled(v: PaymentVisibility): boolean {
-  return v.stablecoinUsdc || v.stablecoinUsdt;
-}
-
-/** USDC network options filtered by admin-enabled networks. Null/empty = all. */
-export function visibleUsdcNetworks(
-  v: PaymentVisibility | null,
-): { value: string; label: string }[] {
-  const opts = USDC_SUB_OPTIONS;
-  if (!v) return opts;
-  const allowed = v.enabledUsdcNetworks;
-  if (!allowed || allowed.length === 0) return opts;
-  return opts.filter((o) => allowed.includes(o.value));
-}
-
-/** USDT network options filtered by admin-enabled networks. Null/empty = all. */
-export function visibleUsdtNetworks(
-  v: PaymentVisibility | null,
-): { value: string; label: string }[] {
-  const opts = USDT_SUB_OPTIONS;
-  if (!v) return opts;
-  const allowed = v.enabledUsdtNetworks;
-  if (!allowed || allowed.length === 0) return opts;
-  return opts.filter((o) => allowed.includes(o.value));
-}
-
-/** Build crypto payment copy for product accordion: list of accepted cryptocurrencies. */
-function getCryptoList(visibility?: PaymentVisibility | null): string[] {
-  const opts = visibility
-    ? visibleCryptoSubFromVisibility(visibility)
-    : VISIBLE_CRYPTO_SUB_OPTIONS;
-  const list: string[] = [];
-  for (const opt of opts) {
-    if (opt.value === "other") {
-      if (visibility) {
-        if (visibility.cryptoSui) list.push("Sui (SUI)");
-        if (visibility.cryptoTon) list.push("TON");
-      } else {
-        list.push(...OTHER_CRYPTO_OPTIONS.map((o) => o.label));
-      }
-    } else if (opt.value === "eth") {
-      list.push(opt.label);
-    } else {
-      list.push(opt.label);
-    }
-  }
-  return list;
-}
-
-/** Build card payment copy for product accordion. */
-function getCardList(visibility?: PaymentVisibility | null): string[] {
-  const hideCard = visibility
-    ? !visibility.creditCard
-    : HIDDEN_PAYMENT_OPTIONS.creditCard;
-  const hidePaypal = visibility
-    ? !visibility.paypal
-    : HIDDEN_PAYMENT_OPTIONS.paypal;
-  if (hideCard && hidePaypal) return [];
-  const cards: string[] = [];
-  if (!hideCard) {
-    cards.push("Visa", "MasterCard", "American Express", "Discover", "Diners");
-  }
-  if (!hidePaypal) {
-    cards.push("PayPal");
-  }
-  return cards;
-}
-
-/** Build stablecoins list for product accordion (network names from visibility). */
-function getStablecoinsList(visibility?: PaymentVisibility | null): string[] {
-  const list: string[] = [];
-  if (visibility) {
-    if (visibility.stablecoinUsdc) {
-      const usdcOpts = visibleUsdcNetworks(visibility);
-      const names = usdcOpts.map((o) => o.label).join(", ");
-      list.push(names ? `USDC (${names})` : "USDC");
-    }
-    if (visibility.stablecoinUsdt) {
-      const usdtOpts = visibleUsdtNetworks(visibility);
-      const names = usdtOpts.map((o) => o.label).join(", ");
-      list.push(names ? `USDT (${names})` : "USDT");
-    }
-  } else {
-    list.push(
-      "USDC (Solana, Ethereum, Arbitrum, Base, Polygon)",
-      "USDT (Ethereum, Arbitrum, BNB, Polygon)",
-    );
-  }
-  return list;
+export interface PaymentIconItem {
+  alt: string;
+  src: string;
+  type: "card" | "crypto";
 }
 
 export interface PaymentOptionsForDisplay {
-  crypto: string[];
   card: string[];
+  crypto: string[];
   stablecoins: string[];
-}
-
-/** Payment options derived from checkout config for use on product page accordion. */
-export function getPaymentOptionsForDisplay(
-  visibility?: PaymentVisibility | null,
-): PaymentOptionsForDisplay {
-  return {
-    crypto: getCryptoList(visibility),
-    card: getCardList(visibility),
-    stablecoins: getStablecoinsList(visibility),
-  };
-}
-
-export type PaymentIconItem = {
-  src: string;
-  alt: string;
-  type: "card" | "crypto";
-};
-
-/** Icon paths for payment methods (for product page "Secure Checkout" strip). Only visible methods. */
-export function getPaymentIconPaths(
-  visibility?: PaymentVisibility | null,
-): PaymentIconItem[] {
-  const hideCard = visibility
-    ? !visibility.creditCard
-    : HIDDEN_PAYMENT_OPTIONS.creditCard;
-  const icons: PaymentIconItem[] = [];
-  if (!hideCard) {
-    icons.push(
-      { src: "/payments/visa.svg", alt: "Visa", type: "card" },
-      { src: "/payments/mastercard.svg", alt: "Mastercard", type: "card" },
-      { src: "/payments/amex.svg", alt: "American Express", type: "card" },
-    );
-  }
-  if (visibility) {
-    if (visibility.cryptoBitcoin)
-      icons.push({
-        src: "/crypto/bitcoin/bitcoin-logo.svg",
-        alt: "Bitcoin",
-        type: "crypto",
-      });
-    if (visibility.cryptoEthereum)
-      icons.push({
-        src: "/crypto/ethereum/ethereum-logo.svg",
-        alt: "Ethereum",
-        type: "crypto",
-      });
-    if (visibility.cryptoSolana)
-      icons.push({
-        src: "/crypto/solana/solanaLogoMark.svg",
-        alt: "Solana",
-        type: "crypto",
-      });
-    if (visibility.cryptoDogecoin)
-      icons.push({
-        src: "/payments/doge.svg",
-        alt: "Dogecoin",
-        type: "crypto",
-      });
-    if (visibility.cryptoMonero)
-      icons.push({
-        src: "/crypto/monero/monero-xmr-logo.svg",
-        alt: "Monero",
-        type: "crypto",
-      });
-    if (visibility.cryptoCrust)
-      icons.push({
-        src: "/crypto/solana/solanaLogoMark.svg",
-        alt: "CRUST",
-        type: "crypto",
-      });
-    if (visibility.cryptoPump)
-      icons.push({
-        src: "/crypto/pump/pump-logomark.svg",
-        alt: "Pump",
-        type: "crypto",
-      });
-    if (visibility.cryptoTroll)
-      icons.push({
-        src: "/crypto/troll/troll-logomark.png",
-        alt: "Troll",
-        type: "crypto",
-      });
-    if (visibility.cryptoSoluna)
-      icons.push({
-        src: "/crypto/soluna/soluna-logo.png",
-        alt: "SOLUNA",
-        type: "crypto",
-      });
-    if (visibility.cryptoSeeker)
-      icons.push({
-        src: "/crypto/seeker/S_Token_Circle_White.svg",
-        alt: "Seeker (SKR)",
-        type: "crypto",
-      });
-    if (visibility.stablecoinUsdc)
-      icons.push({
-        src: "/crypto/usdc/usdc-logo.svg",
-        alt: "USDC",
-        type: "crypto",
-      });
-    if (visibility.stablecoinUsdt)
-      icons.push({
-        src: "/crypto/usdt/tether-usdt-logo.svg",
-        alt: "USDT",
-        type: "crypto",
-      });
-  } else {
-    if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin) {
-      icons.push({
-        src: "/crypto/bitcoin/bitcoin-logo.svg",
-        alt: "Bitcoin",
-        type: "crypto",
-      });
-    }
-    icons.push(
-      {
-        src: "/crypto/ethereum/ethereum-logo.svg",
-        alt: "Ethereum",
-        type: "crypto",
-      },
-      {
-        src: "/crypto/solana/solanaLogoMark.svg",
-        alt: "Solana",
-        type: "crypto",
-      },
-    );
-    if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin) {
-      icons.push({
-        src: "/payments/doge.svg",
-        alt: "Dogecoin",
-        type: "crypto",
-      });
-    }
-    if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero) {
-      icons.push({
-        src: "/crypto/monero/monero-xmr-logo.svg",
-        alt: "Monero",
-        type: "crypto",
-      });
-    }
-    icons.push(
-      { src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" },
-      { src: "/crypto/usdt/tether-usdt-logo.svg", alt: "USDT", type: "crypto" },
-    );
-  }
-  return icons;
 }
 
 /** Footer payment items: same size/format, filtered by checkout visibility. CC logos shown when creditCard OR paypal enabled (PayPal allows CC). */
 export function getFooterPaymentItems(
-  visibility: PaymentVisibility | null,
-): Array<{ name: string; title?: string; src: string }> {
+  visibility: null | PaymentVisibility,
+): { name: string; src: string; title?: string }[] {
   const showCc =
     visibility !== null
       ? visibility.creditCard || visibility.paypal
@@ -459,7 +192,7 @@ export function getFooterPaymentItems(
   const showPaypal =
     visibility !== null ? visibility.paypal : !HIDDEN_PAYMENT_OPTIONS.paypal;
 
-  const items: Array<{ name: string; title?: string; src: string }> = [];
+  const items: { name: string; src: string; title?: string }[] = [];
 
   if (visibility === null) {
     // Before API load: use HIDDEN_PAYMENT_OPTIONS for crypto; always use Solana logo mark
@@ -468,8 +201,8 @@ export function getFooterPaymentItems(
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin)
       items.push({
         name: "Dogecoin",
-        title: "Much wow. Such spend.",
         src: "/payments/doge.svg",
+        title: "Much wow. Such spend.",
       });
     if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero)
       items.push({ name: "Monero", src: "/payments/monero.svg" });
@@ -487,8 +220,8 @@ export function getFooterPaymentItems(
     if (visibility.cryptoDogecoin)
       items.push({
         name: "Dogecoin",
-        title: "Much wow. Such spend.",
         src: "/payments/doge.svg",
+        title: "Much wow. Such spend.",
       });
     if (visibility.cryptoMonero)
       items.push({ name: "Monero", src: "/payments/monero.svg" });
@@ -535,4 +268,271 @@ export function getFooterPaymentItems(
   }
 
   return items;
+}
+
+/** Icon paths for payment methods (for product page "Secure Checkout" strip). Only visible methods. */
+export function getPaymentIconPaths(
+  visibility?: null | PaymentVisibility,
+): PaymentIconItem[] {
+  const hideCard = visibility
+    ? !visibility.creditCard
+    : HIDDEN_PAYMENT_OPTIONS.creditCard;
+  const icons: PaymentIconItem[] = [];
+  if (!hideCard) {
+    icons.push(
+      { alt: "Visa", src: "/payments/visa.svg", type: "card" },
+      { alt: "Mastercard", src: "/payments/mastercard.svg", type: "card" },
+      { alt: "American Express", src: "/payments/amex.svg", type: "card" },
+    );
+  }
+  if (visibility) {
+    if (visibility.cryptoBitcoin)
+      icons.push({
+        alt: "Bitcoin",
+        src: "/crypto/bitcoin/bitcoin-logo.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoEthereum)
+      icons.push({
+        alt: "Ethereum",
+        src: "/crypto/ethereum/ethereum-logo.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoSolana)
+      icons.push({
+        alt: "Solana",
+        src: "/crypto/solana/solanaLogoMark.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoDogecoin)
+      icons.push({
+        alt: "Dogecoin",
+        src: "/payments/doge.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoMonero)
+      icons.push({
+        alt: "Monero",
+        src: "/crypto/monero/monero-xmr-logo.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoCrust)
+      icons.push({
+        alt: "CRUST",
+        src: "/crypto/solana/solanaLogoMark.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoPump)
+      icons.push({
+        alt: "Pump",
+        src: "/crypto/pump/pump-logomark.svg",
+        type: "crypto",
+      });
+    if (visibility.cryptoTroll)
+      icons.push({
+        alt: "Troll",
+        src: "/crypto/troll/troll-logomark.png",
+        type: "crypto",
+      });
+    if (visibility.cryptoSoluna)
+      icons.push({
+        alt: "SOLUNA",
+        src: "/crypto/soluna/soluna-logo.png",
+        type: "crypto",
+      });
+    if (visibility.cryptoSeeker)
+      icons.push({
+        alt: "Seeker (SKR)",
+        src: "/crypto/seeker/S_Token_Circle_White.svg",
+        type: "crypto",
+      });
+    if (visibility.stablecoinUsdc)
+      icons.push({
+        alt: "USDC",
+        src: "/crypto/usdc/usdc-logo.svg",
+        type: "crypto",
+      });
+    if (visibility.stablecoinUsdt)
+      icons.push({
+        alt: "USDT",
+        src: "/crypto/usdt/tether-usdt-logo.svg",
+        type: "crypto",
+      });
+  } else {
+    if (!HIDDEN_PAYMENT_OPTIONS.cryptoBitcoin) {
+      icons.push({
+        alt: "Bitcoin",
+        src: "/crypto/bitcoin/bitcoin-logo.svg",
+        type: "crypto",
+      });
+    }
+    icons.push(
+      {
+        alt: "Ethereum",
+        src: "/crypto/ethereum/ethereum-logo.svg",
+        type: "crypto",
+      },
+      {
+        alt: "Solana",
+        src: "/crypto/solana/solanaLogoMark.svg",
+        type: "crypto",
+      },
+    );
+    if (!HIDDEN_PAYMENT_OPTIONS.cryptoDogecoin) {
+      icons.push({
+        alt: "Dogecoin",
+        src: "/payments/doge.svg",
+        type: "crypto",
+      });
+    }
+    if (!HIDDEN_PAYMENT_OPTIONS.cryptoMonero) {
+      icons.push({
+        alt: "Monero",
+        src: "/crypto/monero/monero-xmr-logo.svg",
+        type: "crypto",
+      });
+    }
+    icons.push(
+      { alt: "USDC", src: "/crypto/usdc/usdc-logo.svg", type: "crypto" },
+      { alt: "USDT", src: "/crypto/usdt/tether-usdt-logo.svg", type: "crypto" },
+    );
+  }
+  return icons;
+}
+
+/** Payment options derived from checkout config for use on product page accordion. */
+export function getPaymentOptionsForDisplay(
+  visibility?: null | PaymentVisibility,
+): PaymentOptionsForDisplay {
+  return {
+    card: getCardList(visibility),
+    crypto: getCryptoList(visibility),
+    stablecoins: getStablecoinsList(visibility),
+  };
+}
+
+export function hasAnyCryptoEnabled(v: PaymentVisibility): boolean {
+  return (
+    v.cryptoBitcoin ||
+    v.cryptoDogecoin ||
+    v.cryptoEthereum ||
+    v.cryptoSolana ||
+    v.cryptoMonero ||
+    v.cryptoCrust ||
+    v.cryptoPump ||
+    v.cryptoTroll ||
+    v.cryptoSoluna ||
+    v.cryptoSeeker ||
+    v.cryptoSui ||
+    v.cryptoTon
+  );
+}
+
+export function hasAnyStablecoinEnabled(v: PaymentVisibility): boolean {
+  return v.stablecoinUsdc || v.stablecoinUsdt;
+}
+
+/** Visible crypto sub-options for checkout when using API visibility. */
+export function visibleCryptoSubFromVisibility(v: PaymentVisibility) {
+  return CRYPTO_SUB_OPTIONS.filter((opt) => {
+    if (opt.value === "bitcoin") return v.cryptoBitcoin;
+    if (opt.value === "dogecoin") return v.cryptoDogecoin;
+    if (opt.value === "eth") return v.cryptoEthereum;
+    if (opt.value === "solana") return v.cryptoSolana;
+    if (opt.value === "monero") return v.cryptoMonero;
+    if (opt.value === "crust") return v.cryptoCrust;
+    if (opt.value === "pump") return v.cryptoPump;
+    if (opt.value === "troll") return v.cryptoTroll;
+    if (opt.value === "soluna") return v.cryptoSoluna;
+    if (opt.value === "seeker") return v.cryptoSeeker;
+    if (opt.value === "other") return v.cryptoSui || v.cryptoTon;
+    return true;
+  });
+}
+
+/** USDC network options filtered by admin-enabled networks. Null/empty = all. */
+export function visibleUsdcNetworks(
+  v: null | PaymentVisibility,
+): { label: string; value: string }[] {
+  const opts = USDC_SUB_OPTIONS;
+  if (!v) return opts;
+  const allowed = v.enabledUsdcNetworks;
+  if (!allowed || allowed.length === 0) return opts;
+  return opts.filter((o) => allowed.includes(o.value));
+}
+
+/** USDT network options filtered by admin-enabled networks. Null/empty = all. */
+export function visibleUsdtNetworks(
+  v: null | PaymentVisibility,
+): { label: string; value: string }[] {
+  const opts = USDT_SUB_OPTIONS;
+  if (!v) return opts;
+  const allowed = v.enabledUsdtNetworks;
+  if (!allowed || allowed.length === 0) return opts;
+  return opts.filter((o) => allowed.includes(o.value));
+}
+
+/** Build card payment copy for product accordion. */
+function getCardList(visibility?: null | PaymentVisibility): string[] {
+  const hideCard = visibility
+    ? !visibility.creditCard
+    : HIDDEN_PAYMENT_OPTIONS.creditCard;
+  const hidePaypal = visibility
+    ? !visibility.paypal
+    : HIDDEN_PAYMENT_OPTIONS.paypal;
+  if (hideCard && hidePaypal) return [];
+  const cards: string[] = [];
+  if (!hideCard) {
+    cards.push("Visa", "MasterCard", "American Express", "Discover", "Diners");
+  }
+  if (!hidePaypal) {
+    cards.push("PayPal");
+  }
+  return cards;
+}
+
+/** Build crypto payment copy for product accordion: list of accepted cryptocurrencies. */
+function getCryptoList(visibility?: null | PaymentVisibility): string[] {
+  const opts = visibility
+    ? visibleCryptoSubFromVisibility(visibility)
+    : VISIBLE_CRYPTO_SUB_OPTIONS;
+  const list: string[] = [];
+  for (const opt of opts) {
+    if (opt.value === "other") {
+      if (visibility) {
+        if (visibility.cryptoSui) list.push("Sui (SUI)");
+        if (visibility.cryptoTon) list.push("TON");
+      } else {
+        list.push(...OTHER_CRYPTO_OPTIONS.map((o) => o.label));
+      }
+    } else if (opt.value === "eth") {
+      list.push(opt.label);
+    } else {
+      list.push(opt.label);
+    }
+  }
+  return list;
+}
+
+/** Build stablecoins list for product accordion (network names from visibility). */
+function getStablecoinsList(visibility?: null | PaymentVisibility): string[] {
+  const list: string[] = [];
+  if (visibility) {
+    if (visibility.stablecoinUsdc) {
+      const usdcOpts = visibleUsdcNetworks(visibility);
+      const names = usdcOpts.map((o) => o.label).join(", ");
+      list.push(names ? `USDC (${names})` : "USDC");
+    }
+    if (visibility.stablecoinUsdt) {
+      const usdtOpts = visibleUsdtNetworks(visibility);
+      const names = usdtOpts.map((o) => o.label).join(", ");
+      list.push(names ? `USDT (${names})` : "USDT");
+    }
+  } else {
+    list.push(
+      "USDC (Solana, Ethereum, Arbitrum, Base, Polygon)",
+      "USDT (Ethereum, Arbitrum, BNB, Polygon)",
+    );
+  }
+  return list;
 }

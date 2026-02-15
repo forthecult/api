@@ -2,8 +2,8 @@
 
 import { ArrowLeft, HandHelping } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { getMainAppUrl } from "~/lib/env";
@@ -12,51 +12,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 
 const API_BASE = getMainAppUrl();
 
-interface Message {
+interface ConversationDetail {
+  createdAt: string;
+  customer: null | { email: string; id: string; name: string };
+  guestId?: string;
   id: string;
-  role: string;
+  messages: Message[];
+  orders: OrderSummary[];
+  status: string;
+  takenOverBy?: string;
+  updatedAt: string;
+}
+
+interface Message {
   content: string;
   createdAt: string;
-  staffUser?: { firstName: string; lastName: string; image: string | null };
+  id: string;
+  role: string;
+  staffUser?: { firstName: string; image: null | string; lastName: string };
 }
 
 interface OrderSummary {
-  id: string;
+  createdAt: string;
   email: string;
-  status: string;
-  paymentStatus?: string;
-  totalCents: number;
-  createdAt: string;
-}
-
-interface ConversationDetail {
   id: string;
+  paymentStatus?: string;
   status: string;
-  takenOverBy?: string;
-  createdAt: string;
-  updatedAt: string;
-  customer: { id: string; name: string; email: string } | null;
-  guestId?: string;
-  messages: Message[];
-  orders: OrderSummary[];
-}
-
-function formatDate(s: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
-}
-
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(cents / 100);
+  totalCents: number;
 }
 
 export default function AdminSupportChatDetailPage() {
@@ -64,7 +46,7 @@ export default function AdminSupportChatDetailPage() {
   const id = typeof params?.id === "string" ? params.id : null;
   const [conv, setConv] = useState<ConversationDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [staffInput, setStaffInput] = useState("");
   const [sending, setSending] = useState(false);
   const [takingOver, setTakingOver] = useState(false);
@@ -114,7 +96,7 @@ export default function AdminSupportChatDetailPage() {
     try {
       const res = await fetch(
         `${API_BASE}/api/admin/support-chat/conversations/${id}/takeover`,
-        { method: "POST", credentials: "include" },
+        { credentials: "include", method: "POST" },
       );
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { error?: string };
@@ -129,17 +111,17 @@ export default function AdminSupportChatDetailPage() {
   }, [id, fetchConversation]);
 
   const updateStatus = useCallback(
-    async (status: "open" | "closed") => {
+    async (status: "closed" | "open") => {
       if (!id) return;
       setUpdatingStatus(true);
       try {
         const res = await fetch(
           `${API_BASE}/api/admin/support-chat/conversations/${id}`,
           {
-            method: "PATCH",
+            body: JSON.stringify({ status }),
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ status }),
+            method: "PATCH",
           },
         );
         if (!res.ok) {
@@ -177,10 +159,10 @@ export default function AdminSupportChatDetailPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/support-chat/conversations/${id}/messages`,
         {
-          method: "POST",
+          body: JSON.stringify({ content: text }),
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: text }),
+          method: "POST",
         },
       );
       if (!res.ok) {
@@ -197,7 +179,12 @@ export default function AdminSupportChatDetailPage() {
 
   if (!id) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+      <div
+        className={`
+        rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-800
+        dark:bg-amber-900/20 dark:text-amber-200
+      `}
+      >
         Missing conversation id.
         <Link className="ml-2 underline" href="/support-chat">
           Back to Support Chat
@@ -209,7 +196,12 @@ export default function AdminSupportChatDetailPage() {
   if (error && !conv) {
     return (
       <div className="space-y-4">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:bg-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+          dark:bg-red-800 dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
           <Button
             className="mt-2"
@@ -220,7 +212,10 @@ export default function AdminSupportChatDetailPage() {
           </Button>
         </div>
         <Link
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+          className={`
+            inline-flex items-center gap-1 text-sm text-muted-foreground
+            hover:text-foreground
+          `}
           href="/support-chat"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Support Chat
@@ -231,7 +226,11 @@ export default function AdminSupportChatDetailPage() {
 
   if (loading && !conv) {
     return (
-      <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+      <div
+        className={`
+        flex min-h-[200px] items-center justify-center text-muted-foreground
+      `}
+      >
         Loading…
       </div>
     );
@@ -246,9 +245,12 @@ export default function AdminSupportChatDetailPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            className="rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
-            href="/support-chat"
             aria-label="Back to Support Chat"
+            className={`
+              rounded p-1.5 text-muted-foreground
+              hover:bg-muted hover:text-foreground
+            `}
+            href="/support-chat"
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
@@ -260,24 +262,32 @@ export default function AdminSupportChatDetailPage() {
               className={cn(
                 "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
                 conv.status === "open" &&
-                  "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+                  `
+                    bg-amber-100 text-amber-800
+                    dark:bg-amber-900/40 dark:text-amber-200
+                  `,
                 conv.status === "closed" && "bg-muted text-muted-foreground",
               )}
             >
               {conv.status}
             </span>
-            <label htmlFor="chat-status" className="sr-only">
+            <label className="sr-only" htmlFor="chat-status">
               Chat status
             </label>
             <select
-              id="chat-status"
-              className="rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+              className={`
+                rounded-md border border-input bg-background px-2.5 py-1 text-xs
+                font-medium
+                focus:ring-2 focus:ring-ring focus:outline-none
+                disabled:opacity-50
+              `}
               disabled={updatingStatus}
-              value={conv.status}
+              id="chat-status"
               onChange={(e) => {
-                const v = e.target.value as "open" | "closed";
+                const v = e.target.value as "closed" | "open";
                 if (v) void updateStatus(v);
               }}
+              value={conv.status}
             >
               <option value="open">Open</option>
               <option value="closed">Closed</option>
@@ -286,37 +296,57 @@ export default function AdminSupportChatDetailPage() {
         </div>
         {!conv.takenOverBy && (
           <Button
+            className="inline-flex items-center gap-2"
+            disabled={takingOver}
+            onClick={() => void handleTakeover()}
             type="button"
             variant="default"
-            onClick={() => void handleTakeover()}
-            disabled={takingOver}
-            className="inline-flex items-center gap-2"
           >
             <HandHelping className="h-4 w-4" />
             Take over from AI
           </Button>
         )}
         {conv.takenOverBy && (
-          <span className="rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 dark:bg-blue-900/40 dark:text-blue-200">
+          <span
+            className={`
+            rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800
+            dark:bg-blue-900/40 dark:text-blue-200
+          `}
+          >
             You are replying as staff
           </span>
         )}
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:bg-red-950/30 dark:text-red-200">
+        <div
+          className={`
+          rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800
+          dark:bg-red-950/30 dark:text-red-200
+        `}
+        >
           {error}
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div
+        className={`
+        grid gap-6
+        lg:grid-cols-3
+      `}
+      >
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Messages</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="max-h-[400px] overflow-y-auto space-y-3 rounded-md border bg-muted/30 p-3">
+              <div
+                className={`
+                max-h-[400px] space-y-3 overflow-y-auto rounded-md border
+                bg-muted/30 p-3
+              `}
+              >
                 {conv.messages.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No messages yet.
@@ -324,7 +354,6 @@ export default function AdminSupportChatDetailPage() {
                 ) : (
                   conv.messages.map((m) => (
                     <div
-                      key={m.id}
                       className={cn(
                         "rounded-lg px-3 py-2 text-sm",
                         m.role === "customer" &&
@@ -332,8 +361,12 @@ export default function AdminSupportChatDetailPage() {
                         m.role === "ai" &&
                           "mr-8 bg-muted text-muted-foreground",
                         m.role === "staff" &&
-                          "mr-8 bg-blue-100 text-blue-900 dark:bg-blue-900/40 dark:text-blue-100",
+                          `
+                            mr-8 bg-blue-100 text-blue-900
+                            dark:bg-blue-900/40 dark:text-blue-100
+                          `,
                       )}
+                      key={m.id}
                     >
                       <span className="font-medium">
                         {m.role === "staff" && m.staffUser
@@ -355,11 +388,15 @@ export default function AdminSupportChatDetailPage() {
               <div className="flex gap-2">
                 <input
                   className={cn(
-                    "flex-1 min-w-0 rounded-md border border-input bg-background px-3 py-2 text-sm",
-                    "placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring",
+                    `
+                      min-w-0 flex-1 rounded-md border border-input
+                      bg-background px-3 py-2 text-sm
+                    `,
+                    `
+                      placeholder:text-muted-foreground
+                      focus:ring-2 focus:ring-ring focus:outline-none
+                    `,
                   )}
-                  placeholder="Reply as staff…"
-                  value={staffInput}
                   onChange={(e) => setStaffInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
@@ -367,11 +404,13 @@ export default function AdminSupportChatDetailPage() {
                       void handleSendStaffMessage();
                     }
                   }}
+                  placeholder="Reply as staff…"
+                  value={staffInput}
                 />
                 <Button
-                  type="button"
-                  onClick={() => void handleSendStaffMessage()}
                   disabled={sending || !staffInput.trim()}
+                  onClick={() => void handleSendStaffMessage()}
+                  type="button"
                 >
                   {sending ? "Sending…" : "Send"}
                 </Button>
@@ -391,8 +430,11 @@ export default function AdminSupportChatDetailPage() {
                   <p className="font-medium">{conv.customer.name || "—"}</p>
                   <p className="text-muted-foreground">{conv.customer.email}</p>
                   <Link
+                    className={`
+                      text-primary underline-offset-2
+                      hover:underline
+                    `}
                     href={`/customers/${conv.customer.id}`}
-                    className="text-primary underline-offset-2 hover:underline"
                   >
                     View customer →
                   </Link>
@@ -414,12 +456,19 @@ export default function AdminSupportChatDetailPage() {
                 <ul className="space-y-2 text-sm">
                   {conv.orders.map((o) => (
                     <li
+                      className={`
+                        flex flex-wrap items-center justify-between gap-2
+                        border-b pb-2
+                        last:border-0
+                      `}
                       key={o.id}
-                      className="flex flex-wrap items-center justify-between gap-2 border-b pb-2 last:border-0"
                     >
                       <Link
+                        className={`
+                          font-medium text-primary underline-offset-2
+                          hover:underline
+                        `}
                         href={`/orders/${o.id}`}
-                        className="font-medium text-primary underline-offset-2 hover:underline"
                       >
                         {o.id.slice(0, 8)}…
                       </Link>
@@ -440,4 +489,22 @@ export default function AdminSupportChatDetailPage() {
       </div>
     </div>
   );
+}
+
+function formatCents(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    style: "currency",
+  }).format(cents / 100);
+}
+
+function formatDate(s: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
 }

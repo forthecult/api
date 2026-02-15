@@ -9,27 +9,33 @@ import {
 } from "~/ui/primitives/dialog";
 
 interface PolicyPopupProps {
-  title: string;
+  children: React.ReactNode;
   /** Plain-text content (legacy). Prefer richContent for formatted policies. */
   content?: string;
-  /** Rich JSX content for formatted policy display. Takes precedence over content. */
-  richContent?: React.ReactNode;
   /** If set, shows a "Read full policy" link that opens in a new tab. */
   fullPolicyHref?: string;
-  children: React.ReactNode;
+  /** Rich JSX content for formatted policy display. Takes precedence over content. */
+  richContent?: React.ReactNode;
+  title: string;
 }
 
 export function PolicyPopup({
-  title,
-  content,
-  richContent,
-  fullPolicyHref,
   children,
+  content,
+  fullPolicyHref,
+  richContent,
+  title,
 }: PolicyPopupProps) {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <button className="text-primary hover:underline" type="button">
+        <button
+          className={`
+          text-primary
+          hover:underline
+        `}
+          type="button"
+        >
           {children}
         </button>
       </DialogTrigger>
@@ -41,17 +47,20 @@ export function PolicyPopup({
           {richContent ? (
             <div className="text-sm text-foreground">{richContent}</div>
           ) : content ? (
-            <p className="whitespace-pre-line text-sm text-foreground">
+            <p className="text-sm whitespace-pre-line text-foreground">
               {content}
             </p>
           ) : null}
           {fullPolicyHref ? (
             <p className="text-sm">
               <a
+                className={`
+                  font-medium text-primary underline-offset-4
+                  hover:underline
+                `}
                 href={fullPolicyHref}
-                target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-primary underline-offset-4 hover:underline"
+                target="_blank"
               >
                 Read full policy
               </a>

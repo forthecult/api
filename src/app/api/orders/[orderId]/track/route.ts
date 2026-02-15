@@ -41,32 +41,32 @@ export async function GET(
 
     const [order] = await db
       .select({
-        id: ordersTable.id,
-        status: ordersTable.status,
         createdAt: ordersTable.createdAt,
-        updatedAt: ordersTable.updatedAt,
+        deliveredAt: ordersTable.deliveredAt,
         email: ordersTable.email,
-        totalCents: ordersTable.totalCents,
-        shippingFeeCents: ordersTable.shippingFeeCents,
-        shippingName: ordersTable.shippingName,
+        estimatedDeliveryFrom: ordersTable.estimatedDeliveryFrom,
+        estimatedDeliveryTo: ordersTable.estimatedDeliveryTo,
+        fulfillmentStatus: ordersTable.fulfillmentStatus,
+        id: ordersTable.id,
+        shippedAt: ordersTable.shippedAt,
         shippingAddress1: ordersTable.shippingAddress1,
         shippingAddress2: ordersTable.shippingAddress2,
         shippingCity: ordersTable.shippingCity,
+        shippingCountryCode: ordersTable.shippingCountryCode,
+        shippingFeeCents: ordersTable.shippingFeeCents,
+        shippingName: ordersTable.shippingName,
+        shippingPhone: ordersTable.shippingPhone,
         shippingStateCode: ordersTable.shippingStateCode,
         shippingZip: ordersTable.shippingZip,
-        shippingCountryCode: ordersTable.shippingCountryCode,
-        shippingPhone: ordersTable.shippingPhone,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
+        status: ordersTable.status,
+        totalCents: ordersTable.totalCents,
+        trackingCarrier: ordersTable.trackingCarrier,
+        trackingEventsJson: ordersTable.trackingEventsJson,
         // Tracking
         trackingNumber: ordersTable.trackingNumber,
         trackingUrl: ordersTable.trackingUrl,
-        trackingCarrier: ordersTable.trackingCarrier,
-        shippedAt: ordersTable.shippedAt,
-        deliveredAt: ordersTable.deliveredAt,
-        estimatedDeliveryFrom: ordersTable.estimatedDeliveryFrom,
-        estimatedDeliveryTo: ordersTable.estimatedDeliveryTo,
-        trackingEventsJson: ordersTable.trackingEventsJson,
-        fulfillmentStatus: ordersTable.fulfillmentStatus,
+        updatedAt: ordersTable.updatedAt,
       })
       .from(ordersTable)
       .where(eq(ordersTable.id, orderId.trim()))
@@ -80,10 +80,10 @@ export async function GET(
     }
 
     const statusMap: Record<string, string> = {
-      pending: "awaiting_payment",
-      paid: "paid",
-      fulfilled: "shipped",
       cancelled: "cancelled",
+      fulfilled: "shipped",
+      paid: "paid",
+      pending: "awaiting_payment",
     };
     let status = statusMap[order.status] ?? order.status;
     if (order.status === "pending") {
@@ -93,10 +93,10 @@ export async function GET(
 
     const items = await db
       .select({
-        productId: orderItemsTable.productId,
         name: orderItemsTable.name,
-        quantity: orderItemsTable.quantity,
         priceCents: orderItemsTable.priceCents,
+        productId: orderItemsTable.productId,
+        quantity: orderItemsTable.quantity,
       })
       .from(orderItemsTable)
       .where(eq(orderItemsTable.orderId, order.id));
@@ -120,57 +120,57 @@ export async function GET(
     }
 
     return NextResponse.json({
-      orderId: order.id,
-      status,
       createdAt: order.createdAt.toISOString(),
-      paidAt,
       email: order.email ?? undefined,
       items: items.map((i) => ({
-        productId: i.productId,
         name: i.name,
-        quantity: i.quantity,
         priceUsd: i.priceCents / 100,
+        productId: i.productId,
+        quantity: i.quantity,
         subtotalUsd: (i.priceCents * i.quantity) / 100,
       })),
+      orderId: order.id,
+      paidAt,
+      payment: order.solanaPayDepositAddress
+        ? {
+            amountUsd: totalUsd,
+            chain: "solana",
+            token: "USDC",
+            transactionSignature: undefined,
+          }
+        : undefined,
       shipping:
         order.shippingName ||
         order.shippingAddress1 ||
         order.shippingCity ||
         order.shippingCountryCode
           ? {
-              name: order.shippingName ?? undefined,
               address1: order.shippingAddress1 ?? undefined,
               address2: order.shippingAddress2 ?? undefined,
               city: order.shippingCity ?? undefined,
+              countryCode: order.shippingCountryCode ?? undefined,
+              name: order.shippingName ?? undefined,
+              phone: order.shippingPhone ?? undefined,
               stateCode: order.shippingStateCode ?? undefined,
               zip: order.shippingZip ?? undefined,
-              countryCode: order.shippingCountryCode ?? undefined,
-              phone: order.shippingPhone ?? undefined,
             }
           : undefined,
+      status,
       totals: {
-        subtotalUsd,
         shippingUsd,
+        subtotalUsd,
         totalUsd,
       },
       tracking: order.trackingNumber
         ? {
-            trackingNumber: order.trackingNumber,
-            trackingUrl: order.trackingUrl ?? undefined,
             carrier: order.trackingCarrier ?? undefined,
-            shippedAt: order.shippedAt?.toISOString() ?? undefined,
             deliveredAt: order.deliveredAt?.toISOString() ?? undefined,
             estimatedDeliveryFrom: order.estimatedDeliveryFrom ?? undefined,
             estimatedDeliveryTo: order.estimatedDeliveryTo ?? undefined,
             events: order.trackingEventsJson ?? undefined,
-          }
-        : undefined,
-      payment: order.solanaPayDepositAddress
-        ? {
-            chain: "solana",
-            token: "USDC",
-            amountUsd: totalUsd,
-            transactionSignature: undefined,
+            shippedAt: order.shippedAt?.toISOString() ?? undefined,
+            trackingNumber: order.trackingNumber,
+            trackingUrl: order.trackingUrl ?? undefined,
           }
         : undefined,
     });

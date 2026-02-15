@@ -5,30 +5,52 @@ import path from "pathe";
 
 const configPath = "./src/lib/auth.ts";
 const schemaPath = "./src/db/schema/users/tables.ts";
+// Generate to a temp file so the CLI can read auth.ts (which imports from schema)
+// without the schema being clobbered mid-run.
+const tempSchemaPath = "./src/db/schema/users/tables.generated.ts";
 
 async function main() {
+  // 1. Generate to a TEMP file (auth.ts imports from schema, so the real tables.ts must stay valid)
   await execaCommand(
-    `npx @better-auth/cli@latest generate --config ${configPath} --output ${schemaPath}`,
+    `npx @better-auth/cli@latest generate --config ${configPath} --output ${tempSchemaPath}`,
     { stdio: "inherit" },
   );
 
-  const filePath = path.resolve(schemaPath);
-  const originalContent = await fs.readFile(filePath, "utf8");
+  const tempFilePath = path.resolve(tempSchemaPath);
+  let content = await fs.readFile(tempFilePath, "utf8");
 
-  const s = new MagicString(originalContent);
+  // 2. Remove generated relations block (relations live in users/relations.ts)
+  const relationsIdx = content.indexOf(
+    "export const userRelations = relations(",
+  );
+  if (relationsIdx !== -1) {
+    // Find the start of the line (include preceding newlines)
+    let start = relationsIdx;
+    while (start > 0 && content[start - 1] === "\n") start--;
+    content = content.slice(0, start).replace(/\n+$/, "") + "\n";
+  }
+  // Remove the relations import (no longer needed)
+  content = content.replace(
+    /\n?import \{ relations \} from "drizzle-orm";\n?/,
+    "\n",
+  );
+
+  // 3. Post-process with MagicString
+  const s = new MagicString(content);
 
   const notice = `/**
  * THIS FILE IS AUTO-GENERATED - DO NOT EDIT DIRECTLY
- * 
+ *
  * To modify the schema, edit src/lib/auth.ts instead,
  * then run 'bun db:auth' to regenerate this file.
- * 
+ *
  * Any direct changes to this file will be overwritten.
  */
 
 `;
   s.prepend(notice);
 
+  // Rename table exports: user -> userTable, session -> sessionTable, etc.
   s.replace(
     /export const (\w+) = pgTable/g,
     (_match: string, tableName: string) => {
@@ -36,39 +58,23 @@ async function main() {
     },
   );
 
+  // Collect original table names for reference renaming
   const tableNames: string[] = [];
-  const tableMatches = originalContent.matchAll(
-    /export const (\w+) = pgTable/g,
-  );
-
+  const tableMatches = content.matchAll(/export const (\w+) = pgTable/g);
   for (const match of tableMatches) {
-    if (match[1]) {
-      tableNames.push(match[1]);
-    }
+    if (match[1]) tableNames.push(match[1]);
   }
-
   console.log("√ Ensured better-auth tables:", tableNames);
 
+  // Rename references: () => user.id -> () => userTable.id
   for (const tableName of tableNames) {
     s.replace(
       new RegExp(`\\(\\)\\s*=>\\s*${tableName}\\s*\\.`, "g"),
-      (match: string) => {
-        return match.replace(tableName, `${tableName}Table`);
-      },
+      (match: string) => match.replace(tableName, `${tableName}Table`),
     );
   }
 
-  // Remove generated relations block so we don't duplicate users/relations.ts
-  // and so we don't reference undefined table names (user vs userTable).
-  const str = s.toString();
-  const relationsStart = str.indexOf("\nexport const userRelations = relations(");
-  if (relationsStart !== -1) {
-    s.remove(relationsStart, str.length);
-  }
-  s.replace(/\nimport \{ relations \} from "drizzle-orm";\n/, "\n");
-
-  // Inject business-only user columns (managed by admin/checkout, not auth).
-  // These are not in auth.ts additionalFields so they stay out of auth config.
+  // 4. Inject business-only user columns (notification prefs, theme, etc.)
   const userTableClose =
     / {2}twoFactorEnabled: boolean\("two_factor_enabled"\),\n\}\);/;
   if (userTableClose.test(s.toString())) {
@@ -93,13 +99,18 @@ async function main() {
   receiveMarketing: boolean("receive_marketing").notNull().default(false),
   receiveSmsMarketing: boolean("receive_sms_marketing").notNull().default(false),
   receiveOrderNotificationsViaTelegram: boolean("receive_order_notifications_via_telegram").notNull().default(false),
+  /** UI theme: "light" | "dark" | "system". Persisted for logged-in users. */
   theme: text("theme").default("system"),
 });`,
     );
   }
 
-  await fs.writeFile(filePath, s.toString(), "utf8");
+  // 5. Write the final file to the real schema path, then clean up temp
+  const finalPath = path.resolve(schemaPath);
+  await fs.writeFile(finalPath, s.toString(), "utf8");
+  await fs.remove(tempFilePath);
 
+  // 6. Format
   await execaCommand("bun biome check --write .", {
     stdio: "inherit",
   });

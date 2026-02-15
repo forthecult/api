@@ -17,9 +17,9 @@ import { db } from "~/db";
 import { productsTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
-  uploadProductMockupsForProduct,
   isProviderImageUrl,
   isUploadThingUrl,
+  uploadProductMockupsForProduct,
 } from "~/lib/upload-product-mockups";
 import {
   getUploadThingToken,
@@ -40,8 +40,8 @@ export async function POST(
     const [byId] = await db
       .select({
         id: productsTable.id,
-        source: productsTable.source,
         imageUrl: productsTable.imageUrl,
+        source: productsTable.source,
       })
       .from(productsTable)
       .where(eq(productsTable.id, param))
@@ -51,8 +51,8 @@ export async function POST(
       : await db
           .select({
             id: productsTable.id,
-            source: productsTable.source,
             imageUrl: productsTable.imageUrl,
+            source: productsTable.source,
           })
           .from(productsTable)
           .where(eq(productsTable.slug, param))
@@ -100,19 +100,19 @@ export async function POST(
       const alreadyUploadThing =
         product.imageUrl && isUploadThingUrl(product.imageUrl);
       return NextResponse.json({
-        success: true,
         message: alreadyUploadThing
           ? "Images are already hosted on UploadThing."
           : hasProviderUrl
             ? "No provider image URLs to process (check product images and variants)."
             : "No POD provider image URLs found for this product.",
+        success: true,
         ...result,
       });
     }
 
     return NextResponse.json({
-      success: true,
       message: `Re-hosted ${result.uploaded} image(s) to UploadThing.`,
+      success: true,
       ...result,
     });
   } catch (err) {

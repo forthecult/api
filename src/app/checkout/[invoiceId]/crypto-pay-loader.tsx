@@ -66,29 +66,11 @@ const TonPayClient = dynamic(
   },
 );
 
-// Detect payment type from hash when present: #eth, #btcpay, #ton, #solana, #sui-...
-// When no hash, fetch order and use paymentType from API (no crypto in URL).
-function getPaymentTypeFromHash(): "eth" | "btcpay" | "ton" | "solana" | null {
-  if (typeof window === "undefined") return null;
-  const hash = window.location.hash.slice(1).toLowerCase();
-  if (hash === "eth") return "eth";
-  if (
-    hash === "bitcoin" ||
-    hash === "doge" ||
-    hash === "dogecoin" ||
-    hash === "monero"
-  )
-    return "btcpay";
-  if (hash === "ton") return "ton";
-  if (hash === "solana" || hash.startsWith("sui-")) return "solana";
-  return null;
-}
-
 export function CryptoPayLoader() {
   const params = useParams();
   const orderId = (params?.invoiceId as string) ?? "";
   const [paymentType, setPaymentType] = useState<
-    "eth" | "btcpay" | "ton" | "solana" | null
+    "btcpay" | "eth" | "solana" | "ton" | null
   >(() => getPaymentTypeFromHash());
 
   // When no hash, get payment type from order API
@@ -101,7 +83,7 @@ export function CryptoPayLoader() {
     let cancelled = false;
     fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((data: { paymentType?: string } | null) => {
+      .then((data: null | { paymentType?: string }) => {
         if (cancelled || !data?.paymentType) {
           if (!cancelled) setPaymentType("solana");
           return;
@@ -135,8 +117,26 @@ export function CryptoPayLoader() {
 
   return (
     <div className="container mx-auto py-8">
-      <Skeleton className="h-10 w-48 mb-4" />
+      <Skeleton className="mb-4 h-10 w-48" />
       <Skeleton className="h-64 w-full" />
     </div>
   );
+}
+
+// Detect payment type from hash when present: #eth, #btcpay, #ton, #solana, #sui-...
+// When no hash, fetch order and use paymentType from API (no crypto in URL).
+function getPaymentTypeFromHash(): "btcpay" | "eth" | "solana" | "ton" | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.slice(1).toLowerCase();
+  if (hash === "eth") return "eth";
+  if (
+    hash === "bitcoin" ||
+    hash === "doge" ||
+    hash === "dogecoin" ||
+    hash === "monero"
+  )
+    return "btcpay";
+  if (hash === "ton") return "ton";
+  if (hash === "solana" || hash.startsWith("sui-")) return "solana";
+  return null;
 }

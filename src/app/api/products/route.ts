@@ -11,12 +11,19 @@ import {
 } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { db } from "~/db";
+import {
+  categoriesTable,
+  orderItemsTable,
+  productCategoriesTable,
+  productsTable,
+  productTokenGateTable,
+} from "~/db/schema";
+import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import {
   publicApiCorsPreflight,
   withPublicApiCors,
 } from "~/lib/cors-public-api";
-import { db } from "~/db";
-import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import {
   computeCategoryIdAndDescendantIds,
   computeCryptoCategoryIdsIncludingDescendants,
@@ -24,16 +31,17 @@ import {
 } from "~/lib/storefront-categories";
 import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
 import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
-import {
-  categoriesTable,
-  orderItemsTable,
-  productCategoriesTable,
-  productTokenGateTable,
-  productsTable,
-} from "~/db/schema";
 
 const DEFAULT_LIMIT = 12;
 const MAX_LIMIT = 48;
+
+export type ProductsSort =
+  | "best_selling"
+  | "manual"
+  | "newest"
+  | "price_asc"
+  | "price_desc"
+  | "rating";
 
 function isMissingTableError(err: unknown): boolean {
   const code =
@@ -43,14 +51,6 @@ function isMissingTableError(err: unknown): boolean {
   return code === "42P01";
 }
 
-export type ProductsSort =
-  | "newest"
-  | "price_asc"
-  | "price_desc"
-  | "best_selling"
-  | "rating"
-  | "manual";
-
 /**
  * Public API: returns only published products for the storefront.
  * Query: page, limit, category (optional).
@@ -58,10 +58,6 @@ export type ProductsSort =
  */
 export const dynamic = "force-dynamic";
 export const revalidate = 60;
-
-export async function OPTIONS() {
-  return publicApiCorsPreflight();
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -91,12 +87,12 @@ export async function GET(request: NextRequest) {
     const sortParam = (searchParams.get("sort")?.trim() ||
       "newest") as ProductsSort;
     const sort: ProductsSort = [
+      "best_selling",
+      "manual",
       "newest",
       "price_asc",
       "price_desc",
-      "best_selling",
       "rating",
-      "manual",
     ].includes(sortParam)
       ? sortParam
       : "newest";
@@ -109,7 +105,7 @@ export async function GET(request: NextRequest) {
     // if the sort_order column hasn't been added yet (requires db:push).
     let manualSortMap: Map<string, number> | null = null;
 
-    let productIdsFilter: string[] | null = null;
+    let productIdsFilter: null | string[] = null;
 
     // Special token: "__featured__" means "products in any category with featured = true"
     if (categorySlugToFilter === "__featured__") {
@@ -131,8 +127,8 @@ export async function GET(request: NextRequest) {
       const categoryRows = await db
         .select({
           id: categoriesTable.id,
-          slug: categoriesTable.slug,
           parentId: categoriesTable.parentId,
+          slug: categoriesTable.slug,
         })
         .from(categoriesTable);
       const categoryIdsIncludingDescendants = computeCategoryIdAndDescendantIds(
@@ -142,14 +138,14 @@ export async function GET(request: NextRequest) {
       if (categoryIdsIncludingDescendants.size === 0) {
         return withPublicApiCors(
           NextResponse.json({
-            items: [],
-            total: 0,
-            page: 1,
-            limit,
-            totalPages: 0,
             categories: await getCategoriesWithProductsAndDisplayImage({
               topLevelOnly: true,
             }),
+            items: [],
+            limit,
+            page: 1,
+            total: 0,
+            totalPages: 0,
           }),
         );
       }
@@ -165,14 +161,14 @@ export async function GET(request: NextRequest) {
       if (productIdsFilter.length === 0) {
         return withPublicApiCors(
           NextResponse.json({
-            items: [],
-            total: 0,
-            page: 1,
-            limit,
-            totalPages: 0,
             categories: await getCategoriesWithProductsAndDisplayImage({
               topLevelOnly: true,
             }),
+            items: [],
+            limit,
+            page: 1,
+            total: 0,
+            totalPages: 0,
           }),
         );
       }
@@ -370,10 +366,10 @@ export async function GET(request: NextRequest) {
       }
     } else {
       rows = await db.query.productsTable.findMany({
-        where: whereClause,
-        orderBy,
         limit,
         offset,
+        orderBy,
+        where: whereClause,
         with: {
           productCategories: {
             with: { category: true },
@@ -404,10 +400,10 @@ export async function GET(request: NextRequest) {
         if (productIdsWithTokenGates.size > 0) {
           const gateRows = await db
             .select({
-              productId: productTokenGateTable.productId,
-              tokenSymbol: productTokenGateTable.tokenSymbol,
-              quantity: productTokenGateTable.quantity,
               network: productTokenGateTable.network,
+              productId: productTokenGateTable.productId,
+              quantity: productTokenGateTable.quantity,
+              tokenSymbol: productTokenGateTable.tokenSymbol,
             })
             .from(productTokenGateTable)
             .where(
@@ -417,18 +413,18 @@ export async function GET(request: NextRequest) {
             );
           const gatesByProduct = new Map<
             string,
-            Array<{
-              tokenSymbol: string;
+            {
+              network: null | string;
               quantity: number;
-              network: string | null;
-            }>
+              tokenSymbol: string;
+            }[]
           >();
           for (const g of gateRows) {
             const list = gatesByProduct.get(g.productId) ?? [];
             list.push({
-              tokenSymbol: g.tokenSymbol,
-              quantity: g.quantity,
               network: g.network,
+              quantity: g.quantity,
+              tokenSymbol: g.tokenSymbol,
             });
             gatesByProduct.set(g.productId, list);
           }
@@ -445,11 +441,11 @@ export async function GET(request: NextRequest) {
     }
 
     type ProductWithRelations = (typeof rows)[number] & {
-      productCategories?: Array<{
-        isMain?: boolean;
+      productCategories?: {
         category?: { name?: string; slug?: string };
-      }>;
-      productVariants?: Array<{ stockQuantity?: number | null }>;
+        isMain?: boolean;
+      }[];
+      productVariants?: { stockQuantity?: null | number }[];
     };
     const rawItems = rows.map((p: ProductWithRelations) => {
       const mainPc =
@@ -467,23 +463,23 @@ export async function GET(request: NextRequest) {
         return (p.quantity ?? 0) > 0;
       })();
       return {
-        id: p.id,
-        slug: p.slug ?? undefined,
-        name: p.name,
-        image: p.imageUrl ?? "/placeholder.svg",
+        category: mainPc?.category?.name ?? "Uncategorized",
+        categorySlug: mainPc?.category?.slug ?? undefined,
         createdAt: p.createdAt
           ? new Date(p.createdAt).toISOString()
           : undefined,
-        category: mainPc?.category?.name ?? "Uncategorized",
-        categorySlug: mainPc?.category?.slug ?? undefined,
-        price: p.priceCents / 100,
+        hasVariants: p.hasVariants ?? false,
+        id: p.id,
+        image: p.imageUrl ?? "/placeholder.svg",
+        inStock,
+        name: p.name,
         originalPrice:
           p.compareAtPriceCents != null
             ? p.compareAtPriceCents / 100
             : undefined,
-        hasVariants: p.hasVariants ?? false,
-        inStock,
+        price: p.priceCents / 100,
         rating: 0,
+        slug: p.slug ?? undefined,
         tokenGated,
         ...(tokenGated && tokenGateSummaryByProductId.has(p.id)
           ? { tokenGateSummary: tokenGateSummaryByProductId.get(p.id) }
@@ -512,16 +508,16 @@ export async function GET(request: NextRequest) {
     return withPublicApiCors(
       NextResponse.json(
         {
-          items,
-          total,
-          page,
-          limit,
-          totalPages,
           categories: categoriesWithImage.map((c) => ({
-            slug: c.slug,
             name: c.name,
+            slug: c.slug,
             ...(c.image ? { image: c.image } : {}),
           })),
+          items,
+          limit,
+          page,
+          total,
+          totalPages,
         },
         {
           headers: {
@@ -547,12 +543,12 @@ export async function GET(request: NextRequest) {
       return withPublicApiCors(
         NextResponse.json(
           {
-            items: [],
-            total: 0,
-            page: 1,
-            limit,
-            totalPages: 0,
             categories: [],
+            items: [],
+            limit,
+            page: 1,
+            total: 0,
+            totalPages: 0,
           },
           {
             headers: {
@@ -567,6 +563,10 @@ export async function GET(request: NextRequest) {
       NextResponse.json({ error: "Failed to load products" }, { status: 500 }),
     );
   }
+}
+
+export async function OPTIONS() {
+  return publicApiCorsPreflight();
 }
 
 /** All categories with slug (for filter dropdown and category pages). */

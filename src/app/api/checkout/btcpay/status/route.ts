@@ -4,15 +4,15 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "~/db";
 import { ordersTable } from "~/db/schema";
 import {
-  getBtcpayInvoiceStatus,
   getBtcpayConfig,
-  isInvoiceSettled,
+  getBtcpayInvoiceStatus,
   type InvoiceStatus,
+  isInvoiceSettled,
 } from "~/lib/btcpay";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -45,17 +45,17 @@ export async function GET(request: NextRequest) {
     if (invoiceId && configured) {
       const status = await getBtcpayInvoiceStatus(invoiceId);
       return NextResponse.json({
-        status: status ?? "invalid",
         settled: isInvoiceSettled(status),
+        status: status ?? "invalid",
       });
     }
 
     if (orderId) {
       const [order] = await db
         .select({
+          btcpayInvoiceId: ordersTable.btcpayInvoiceId,
           id: ordersTable.id,
           status: ordersTable.status,
-          btcpayInvoiceId: ordersTable.btcpayInvoiceId,
         })
         .from(ordersTable)
         .where(eq(ordersTable.id, orderId))
@@ -67,32 +67,32 @@ export async function GET(request: NextRequest) {
 
       if (order.status !== "pending") {
         return NextResponse.json({
-          status: "paid" as InvoiceStatus,
-          settled: true,
           orderStatus: order.status,
+          settled: true,
+          status: "paid" as InvoiceStatus,
         });
       }
 
       if (!configured) {
         return NextResponse.json({
-          status: "not_configured",
           settled: false,
+          status: "not_configured",
         });
       }
 
       const invId = order.btcpayInvoiceId?.trim();
       if (!invId) {
         return NextResponse.json({
-          status: "no_invoice",
           settled: false,
+          status: "no_invoice",
         });
       }
 
       const status = await getBtcpayInvoiceStatus(invId);
       return NextResponse.json({
-        status: status ?? "invalid",
-        settled: isInvoiceSettled(status),
         invoiceId: invId,
+        settled: isInvoiceSettled(status),
+        status: status ?? "invalid",
       });
     }
 

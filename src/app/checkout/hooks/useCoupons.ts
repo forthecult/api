@@ -1,57 +1,58 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
 import type { AppliedCoupon } from "../checkout-shared";
 
 export interface TierDiscountLine {
-  id: string;
-  label: string | null;
-  scope: string;
   discountCents: number;
+  id: string;
+  label: null | string;
+  scope: string;
 }
 
 export interface UseCouponsArgs {
-  subtotal: number;
-  shippingCents: number;
-  items: Array<{
-    productId?: string;
+  items: {
     id: string;
-    quantity?: number;
     /** Unit price in dollars (e.g. 9.99). Used to compute per-product discounts. */
     price: number;
-  }>;
+    productId?: string;
+    quantity?: number;
+  }[];
   /**
    * The selected payment method key (from PAYMENT_METHOD_DEFAULTS).
    * Used to match automatic discounts with a payment method restriction.
    * e.g. "crypto_troll", "crypto_solana", "stripe", etc.
    */
-  paymentMethodKey?: string | null;
+  paymentMethodKey?: null | string;
+  shippingCents: number;
+  subtotal: number;
   /** Staking wallet (e.g. Solana) for CULT member tier; when set, tier-based discounts are fetched and stacked. */
-  wallet?: string | null;
+  wallet?: null | string;
 }
 
 export interface UseCouponsResult {
   appliedCoupon: AppliedCoupon | null;
+  automaticCouponLoading: boolean;
+  couponError: string;
+  couponLoading: boolean;
+  discountCodeInput: string;
+  handleApplyCoupon: () => Promise<void>;
+  removeCoupon: () => void;
+  setDiscountCodeInput: (value: string) => void;
+  setShowDiscountCode: (value: boolean) => void;
+  showDiscountCode: boolean;
   /** Member tier discounts (stacked). Empty when no wallet or no tier discounts. */
   tierDiscounts: TierDiscountLine[];
   /** Total cents from tier discounts. */
   tierDiscountTotalCents: number;
-  discountCodeInput: string;
-  setDiscountCodeInput: (value: string) => void;
-  couponError: string;
-  couponLoading: boolean;
-  showDiscountCode: boolean;
-  setShowDiscountCode: (value: boolean) => void;
-  automaticCouponLoading: boolean;
-  handleApplyCoupon: () => Promise<void>;
-  removeCoupon: () => void;
 }
 
 export function useCoupons({
-  subtotal,
-  shippingCents,
   items,
   paymentMethodKey,
+  shippingCents,
+  subtotal,
   wallet,
 }: UseCouponsArgs): UseCouponsResult {
   const [discountCodeInput, setDiscountCodeInput] = useState("");
@@ -73,46 +74,46 @@ export function useCoupons({
     setCouponLoading(true);
     try {
       const res = await fetch("/api/checkout/coupons/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           code,
-          subtotalCents: Math.round(subtotal * 100),
-          shippingFeeCents: Math.round(shippingCents),
-          productIds: items.map((i) => i.productId ?? i.id),
-          paymentMethodKey: paymentMethodKey || undefined,
           items: items.map((i) => ({
-            productId: i.productId ?? i.id,
             priceCents: Math.round(i.price * 100),
+            productId: i.productId ?? i.id,
             quantity: i.quantity ?? 1,
           })),
+          paymentMethodKey: paymentMethodKey || undefined,
+          productIds: items.map((i) => i.productId ?? i.id),
+          shippingFeeCents: Math.round(shippingCents),
+          subtotalCents: Math.round(subtotal * 100),
         }),
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
       const data = (await res.json()) as
         | {
-            valid: true;
-            couponId: string;
             code: string;
+            couponId: string;
+            discountCents: number;
             discountKind: string;
             discountType: string;
             discountValue: number;
-            discountCents: number;
             freeShipping: boolean;
             totalAfterDiscountCents: number;
+            valid: true;
           }
-        | { valid: false; error?: string };
+        | { error?: string; valid: false };
       if (data.valid) {
         setAppliedCoupon({
-          couponId: data.couponId,
           code: data.code,
+          couponId: data.couponId,
+          discountCents: data.discountCents,
           discountKind: data.discountKind,
           discountType: data.discountType,
           discountValue: data.discountValue,
-          discountCents: data.discountCents,
           freeShipping: data.freeShipping,
-          totalAfterDiscountCents: data.totalAfterDiscountCents,
           source: "code",
+          totalAfterDiscountCents: data.totalAfterDiscountCents,
         });
         setDiscountCodeInput("");
         setTierDiscounts([]);
@@ -157,25 +158,25 @@ export function useCoupons({
     setAutomaticCouponLoading(true);
     const productCount = items.reduce((sum, i) => sum + (i.quantity ?? 1), 0);
     fetch("/api/checkout/coupons/automatic", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
-        subtotalCents: Math.round(subtotal * 100),
-        shippingFeeCents: Math.round(shippingCents),
-        productCount,
-        productIds: items.map((i) => i.productId ?? i.id),
-        paymentMethodKey: paymentMethodKey || undefined,
-        wallet: wallet?.trim() || undefined,
         items: items.map((i) => ({
-          productId: i.productId ?? i.id,
           priceCents: Math.round(i.price * 100),
+          productId: i.productId ?? i.id,
           quantity: i.quantity ?? 1,
         })),
+        paymentMethodKey: paymentMethodKey || undefined,
+        productCount,
+        productIds: items.map((i) => i.productId ?? i.id),
+        shippingFeeCents: Math.round(shippingCents),
+        subtotalCents: Math.round(subtotal * 100),
+        wallet: wallet?.trim() || undefined,
       }),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     })
       .then((res) => res.json())
-      .then((data: { applied: boolean } & Record<string, unknown>) => {
+      .then((data: Record<string, unknown> & { applied: boolean }) => {
         if (cancelled) return;
         const tierList = Array.isArray(data.tierDiscounts)
           ? (data.tierDiscounts as TierDiscountLine[])
@@ -188,20 +189,20 @@ export function useCoupons({
         setTierDiscountTotalCents(tierTotal);
         if (data.applied && data.couponId != null && data.code != null) {
           setAppliedCoupon({
-            couponId: data.couponId as string,
             code: data.code as string,
+            couponId: data.couponId as string,
+            discountCents:
+              typeof data.discountCents === "number" ? data.discountCents : 0,
             discountKind: (data.discountKind as string) ?? "amount_off_order",
             discountType: (data.discountType as string) ?? "percent",
             discountValue:
               typeof data.discountValue === "number" ? data.discountValue : 0,
-            discountCents:
-              typeof data.discountCents === "number" ? data.discountCents : 0,
             freeShipping: data.freeShipping === true,
+            source: "automatic",
             totalAfterDiscountCents:
               typeof data.totalAfterDiscountCents === "number"
                 ? data.totalAfterDiscountCents
                 : 0,
-            source: "automatic",
           });
         } else {
           setAppliedCoupon(null);
@@ -231,16 +232,16 @@ export function useCoupons({
 
   return {
     appliedCoupon,
-    tierDiscounts,
-    tierDiscountTotalCents,
-    discountCodeInput,
-    setDiscountCodeInput: setDiscountCodeInputWithClearError,
+    automaticCouponLoading,
     couponError,
     couponLoading,
-    showDiscountCode,
-    setShowDiscountCode,
-    automaticCouponLoading,
+    discountCodeInput,
     handleApplyCoupon,
     removeCoupon,
+    setDiscountCodeInput: setDiscountCodeInputWithClearError,
+    setShowDiscountCode,
+    showDiscountCode,
+    tierDiscounts,
+    tierDiscountTotalCents,
   };
 }

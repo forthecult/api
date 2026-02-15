@@ -30,31 +30,31 @@ export async function GET(request: Request) {
 
     const rows = await db.query.productReviewsTable.findMany({
       columns: {
-        id: true,
-        comment: true,
-        rating: true,
-        customerName: true,
         author: true,
+        comment: true,
+        customerName: true,
+        id: true,
+        rating: true,
         showName: true,
         ...(includeProductName && { productName: true }),
       },
-      where: eq(productReviewsTable.visible, true),
-      orderBy: [desc(productReviewsTable.createdAt)],
       limit,
+      orderBy: [desc(productReviewsTable.createdAt)],
+      where: eq(productReviewsTable.visible, true),
     });
 
     const items = rows.map((r) => ({
-      id: r.id,
       comment: r.comment,
-      rating: r.rating,
       displayName: getReviewDisplayName({
-        id: r.id,
-        customerName: r.customerName,
-        showName: r.showName,
         author: r.author ?? undefined,
+        customerName: r.customerName,
+        id: r.id,
+        showName: r.showName,
       }),
+      id: r.id,
+      rating: r.rating,
       ...(includeProductName && {
-        productName: (r as { productName?: string | null }).productName ?? null,
+        productName: (r as { productName?: null | string }).productName ?? null,
       }),
     }));
 

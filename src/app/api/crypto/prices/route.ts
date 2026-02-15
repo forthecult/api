@@ -12,8 +12,8 @@ import {
 } from "~/lib/coingecko";
 import { getPumpTokenPriceInSol } from "~/lib/pump-price";
 import {
-  getSolanaRpcUrlServer,
   CRUST_MINT_MAINNET,
+  getSolanaRpcUrlServer,
   PUMP_MINT_MAINNET,
   SKR_MINT_MAINNET,
   SOLUNA_MINT_MAINNET,
@@ -33,38 +33,38 @@ const COINGECKO_IDS = [
 
 export const revalidate = 60;
 
-export type CryptoPricesResponse = {
+export interface CryptoPricesResponse {
   BTC?: number;
-  ETH?: number;
-  SOL?: number;
-  DOGE?: number;
-  TON?: number;
   CRUST?: number;
+  DOGE?: number;
+  ETH?: number;
   PUMP?: number;
-  TROLL?: number;
-  SOLUNA?: number;
   SKR?: number;
-  XMR?: number;
-  /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
-  XAU?: number;
+  SOL?: number;
+  SOLUNA?: number;
+  TON?: number;
+  TROLL?: number;
   /** Silver (XAG) USD per troy oz via Kinesis Silver (KAG) */
   XAG?: number;
-};
+  /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
+  XAU?: number;
+  XMR?: number;
+}
 
 // Fallback prices to return immediately if external APIs are slow (XAU = USD per troy oz)
 const FALLBACK_PRICES: CryptoPricesResponse = {
   BTC: 100000,
-  ETH: 3500,
-  SOL: 200,
-  DOGE: 0.35,
-  TON: 5.5,
   CRUST: 0.0001,
+  DOGE: 0.35,
+  ETH: 3500,
   PUMP: 0.01,
-  TROLL: 1,
-  SOLUNA: 0.01,
   SKR: 0.01,
-  XMR: 150,
+  SOL: 200,
+  SOLUNA: 0.01,
+  TON: 5.5,
+  TROLL: 1,
   XAU: 2650,
+  XMR: 150,
 };
 
 export async function GET() {

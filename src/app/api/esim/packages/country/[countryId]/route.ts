@@ -32,24 +32,24 @@ export async function GET(
     const enriched = await Promise.all(
       result.data.map(async (pkg) => {
         const { available, has5g } = await checkPackageAvailability(pkg.id);
-        return { pkg, available, has5g };
+        return { available, has5g, pkg };
       }),
     );
 
     const data = enriched
       .filter((e) => e.available)
-      .map(({ pkg, has5g }) => ({
+      .map(({ has5g, pkg }) => ({
         ...pkg,
-        reseller_price: pkg.price,
-        price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
         has5g,
+        price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
+        reseller_price: pkg.price,
       }));
 
     return NextResponse.json({ ...result, data });
   } catch (error) {
     console.error("eSIM country packages error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to fetch country packages" },
+      { message: "Failed to fetch country packages", status: false },
       { status: 500 },
     );
   }

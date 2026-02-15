@@ -23,8 +23,6 @@ import { and, eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { getCurrentUser } from "~/lib/auth";
-import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { db } from "~/db";
 import {
   esimOrdersTable,
@@ -32,12 +30,14 @@ import {
   orderItemsTable,
   ordersTable,
 } from "~/db/schema";
-import { fetchTokenMarketData } from "~/lib/market-cap";
-import { computeTierPricing } from "~/lib/membership-pricing";
-import { getActiveToken } from "~/lib/token-config";
+import { getCurrentUser } from "~/lib/auth";
+import { fetchUserStake, getStakingProgramId } from "~/lib/cult-staking";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 import { fulfillEsimOrder } from "~/lib/esim-fulfillment";
+import { fetchTokenMarketData } from "~/lib/market-cap";
+import { computeTierPricing } from "~/lib/membership-pricing";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getActiveToken } from "~/lib/token-config";
 
 // ---------------------------------------------------------------------------
 // Tier detection using live pricing
@@ -53,7 +53,7 @@ const MIN_CLAIM_TIER = 2;
 function detectTierFromPricing(
   stakedTokens: number,
   tiers: { tierId: number; tokensNeeded: number }[],
-): number | null {
+): null | number {
   // tiers are ordered 4→1 (entry→best); check from best first
   const sorted = [...tiers].sort((a, b) => a.tierId - b.tierId);
   for (const t of sorted) {
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
   const user = await getCurrentUser();
   if (!user?.id || !user.email) {
     return NextResponse.json(
-      { status: false, message: "Authentication required" },
+      { message: "Authentication required", status: false },
       { status: 401 },
     );
   }
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { status: false, message: "Invalid JSON" },
+      { message: "Invalid JSON", status: false },
       { status: 400 },
     );
   }
@@ -93,20 +93,20 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json(
       {
-        status: false,
-        message: "Invalid body",
         details: parsed.error.flatten(),
+        message: "Invalid body",
+        status: false,
       },
       { status: 400 },
     );
   }
-  const { wallet, packageId } = parsed.data;
+  const { packageId, wallet } = parsed.data;
 
   // 3. Verify on-chain staking
   const programId = getStakingProgramId();
   if (!programId) {
     return NextResponse.json(
-      { status: false, message: "Staking program not configured" },
+      { message: "Staking program not configured", status: false },
       { status: 503 },
     );
   }
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
   const stakeData = await fetchUserStake(connection, programId, wallet);
   if (!stakeData || stakeData.amount === 0n) {
     return NextResponse.json(
-      { status: false, message: "No active stake found for this wallet" },
+      { message: "No active stake found for this wallet", status: false },
       { status: 403 },
     );
   }
@@ -126,8 +126,8 @@ export async function POST(request: Request) {
   if (!market || market.priceUsd <= 0) {
     return NextResponse.json(
       {
-        status: false,
         message: "Unable to fetch token price data. Please try again.",
+        status: false,
       },
       { status: 503 },
     );
@@ -145,8 +145,8 @@ export async function POST(request: Request) {
   if (tier === null || tier > MIN_CLAIM_TIER) {
     return NextResponse.json(
       {
-        status: false,
         message: `Tier 2 or above required to claim a free eSIM. Your current stake qualifies for ${tier ? `Tier ${tier}` : "no tier"}.`,
+        status: false,
       },
       { status: 403 },
     );
@@ -170,9 +170,9 @@ export async function POST(request: Request) {
   if (existingClaims.length > 0) {
     return NextResponse.json(
       {
-        status: false,
         message:
           "You have already claimed your free eSIM for this staking period. Your claim will renew if you re-stake.",
+        status: false,
       },
       { status: 409 },
     );
@@ -182,7 +182,7 @@ export async function POST(request: Request) {
   const pkgResult = await getEsimPackageDetail(packageId);
   if (!pkgResult.status || !pkgResult.data) {
     return NextResponse.json(
-      { status: false, message: "eSIM package not found" },
+      { message: "eSIM package not found", status: false },
       { status: 404 },
     );
   }
@@ -209,15 +209,15 @@ export async function POST(request: Request) {
   try {
     // 6. Create order records (membership claim = $0 to the user)
     await db.insert(ordersTable).values({
-      id: orderId,
       createdAt: now,
       email: user.email.toLowerCase(),
       fulfillmentStatus: "unfulfilled",
+      id: orderId,
       paymentMethod: "membership_claim",
       paymentStatus: "paid", // Free — no payment needed
+      shippingFeeCents: 0,
       status: "confirmed",
       totalCents: 0, // Free to the member
-      shippingFeeCents: 0,
       updatedAt: now,
       userId: user.id,
     });
@@ -232,36 +232,36 @@ export async function POST(request: Request) {
     });
 
     await db.insert(esimOrdersTable).values({
+      costCents,
+      countryName,
+      createdAt: now,
+      currency: "USD",
+      dataQuantity: Number.isNaN(dataQuantity) ? 0 : dataQuantity,
+      dataUnit,
       id: esimOrderId,
-      userId: user.id,
       orderId,
       packageId,
       packageName: String(pkg.name ?? "eSIM"),
       packageType: packageTypeVal as "DATA-ONLY" | "DATA-VOICE-SMS",
-      dataQuantity: Number.isNaN(dataQuantity) ? 0 : dataQuantity,
-      dataUnit,
-      validityDays,
-      countryName,
-      costCents,
-      priceCents: 0, // Free to the member
-      currency: "USD",
       paymentMethod: "membership_claim",
       paymentStatus: "paid",
+      priceCents: 0, // Free to the member
       status: "pending", // Will be fulfilled immediately
-      createdAt: now,
       updatedAt: now,
+      userId: user.id,
+      validityDays,
     });
 
     // Record the claim
     await db.insert(membershipEsimClaimsTable).values({
+      createdAt: now,
+      esimOrderId,
       id: claimId,
+      stakePeriodKey,
+      status: "claimed",
+      tier,
       userId: user.id,
       wallet,
-      tier,
-      stakePeriodKey,
-      esimOrderId,
-      status: "claimed",
-      createdAt: now,
     });
 
     // 7. Provision immediately (same as post-payment fulfillment)
@@ -280,23 +280,23 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      status: true,
       data: {
         claimId,
-        orderId,
         esimOrderId,
-        tier,
-        packageName: pkg.name,
         fulfilled: fulfillResult.success,
         message: fulfillResult.success
           ? "Your free eSIM has been provisioned! Check your email for the activation link, or visit your eSIM dashboard."
           : "Your claim was recorded but provisioning is pending. Check your eSIM dashboard shortly.",
+        orderId,
+        packageName: pkg.name,
+        tier,
       },
+      status: true,
     });
   } catch (error) {
     console.error("[membership-claim] Error:", error);
     return NextResponse.json(
-      { status: false, message: "Failed to process eSIM claim" },
+      { message: "Failed to process eSIM claim", status: false },
       { status: 500 },
     );
   }

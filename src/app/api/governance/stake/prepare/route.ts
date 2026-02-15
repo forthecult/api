@@ -11,22 +11,22 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
-  LOCK_12_MONTHS,
-  LOCK_30_DAYS,
   getStakingProgramId,
   isValidLockDuration,
+  LOCK_12_MONTHS,
+  LOCK_30_DAYS,
   type LockDuration,
 } from "~/lib/cult-staking";
 import { buildStakeTransaction } from "~/lib/cult-staking-instructions";
-import { getActiveToken } from "~/lib/token-config";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getActiveToken } from "~/lib/token-config";
 
 const bodySchema = z.object({
-  wallet: z.string().min(32).max(44),
   amount: z.string().min(1),
   lockDuration: z.number().refine(isValidLockDuration, {
     message: `Lock duration must be ${LOCK_30_DAYS} (30 days) or ${LOCK_12_MONTHS} (12 months)`,
   }),
+  wallet: z.string().min(32).max(44),
 });
 
 export async function POST(request: Request) {
@@ -46,11 +46,11 @@ export async function POST(request: Request) {
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
-      { error: "Invalid body", details: parsed.error.flatten() },
+      { details: parsed.error.flatten(), error: "Invalid body" },
       { status: 400 },
     );
   }
-  const { wallet, amount, lockDuration } = parsed.data;
+  const { amount, lockDuration, wallet } = parsed.data;
   const token = getActiveToken();
   const amountNum = Number.parseFloat(amount);
   if (!Number.isFinite(amountNum) || amountNum <= 0) {
@@ -72,13 +72,13 @@ export async function POST(request: Request) {
     const owner = new PublicKey(wallet);
 
     const tx = buildStakeTransaction({
-      programId,
-      mint,
-      owner,
       amount: amountRaw,
-      lockDuration: lockDuration as LockDuration,
       blockhash,
       lastValidBlockHeight,
+      lockDuration: lockDuration as LockDuration,
+      mint,
+      owner,
+      programId,
     });
 
     const serialized = tx.serialize({

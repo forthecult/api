@@ -1,29 +1,30 @@
 "use client";
 
 import React from "react";
+
 import { getMainAppUrl } from "~/lib/env";
 
 const API_BASE = getMainAppUrl();
 
-type Template = {
+interface Response {
+  all: Template[];
+  marketing: Template[];
+  transactional: Template[];
+}
+
+interface Template {
+  body: string;
+  emailBody?: string;
+  emailSubject?: string;
   id: string;
   title: string;
-  body: string;
-  emailSubject?: string;
-  emailBody?: string;
   transactional: boolean;
-};
-
-type Response = {
-  transactional: Template[];
-  marketing: Template[];
-  all: Template[];
-};
+}
 
 export default function AdminNotificationsPage() {
-  const [data, setData] = React.useState<Response | null>(null);
+  const [data, setData] = React.useState<null | Response>(null);
   const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState<string | null>(null);
+  const [error, setError] = React.useState<null | string>(null);
 
   React.useEffect(() => {
     fetch(`${API_BASE}/api/admin/notification-templates`, {
@@ -106,13 +107,18 @@ function TemplateCard({ template }: { template: Template }) {
     <li className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
       <div className="flex items-center justify-between">
         <span className="font-medium">{template.title}</span>
-        <span className="text-muted-foreground text-sm">({template.id})</span>
+        <span className="text-sm text-muted-foreground">({template.id})</span>
       </div>
 
       {/* Notifications: widget + Telegram */}
       <div className="mt-4 rounded-md border border-border/60 bg-muted/30 p-3">
         <div className="mb-1.5 flex items-center gap-2">
-          <span className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <span
+            className={`
+            inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5
+            text-xs font-medium text-primary
+          `}
+          >
             Notifications
           </span>
           <span className="text-xs text-muted-foreground">
@@ -127,7 +133,13 @@ function TemplateCard({ template }: { template: Template }) {
       {hasEmail && (
         <div className="mt-3 rounded-md border border-border/60 bg-muted/30 p-3">
           <div className="mb-1.5 flex items-center gap-2">
-            <span className="inline-flex items-center rounded-md bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-400">
+            <span
+              className={`
+              inline-flex items-center rounded-md bg-blue-500/10 px-2 py-0.5
+              text-xs font-medium text-blue-600
+              dark:text-blue-400
+            `}
+            >
               Email
             </span>
             <span className="text-xs text-muted-foreground">
@@ -143,7 +155,11 @@ function TemplateCard({ template }: { template: Template }) {
             </p>
           )}
           {template.emailBody != null && (
-            <p className="mt-2 whitespace-pre-wrap text-sm text-muted-foreground">
+            <p
+              className={`
+              mt-2 text-sm whitespace-pre-wrap text-muted-foreground
+            `}
+            >
               {template.emailBody}
             </p>
           )}

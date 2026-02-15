@@ -5,16 +5,17 @@ import { z } from "zod";
 import { db } from "~/db";
 import { productsTable } from "~/db/schema";
 import { auth } from "~/lib/auth";
+import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
-import { generateOrderConfirmationToken } from "~/lib/order-confirmation-token";
 import { getStripe } from "~/lib/stripe";
 
 const createCheckoutBodySchema = z.object({
+  affiliateCode: z.string().max(64).optional(),
   lineItems: z
     .array(
       z.object({
@@ -25,10 +26,9 @@ const createCheckoutBodySchema = z.object({
     )
     .min(1)
     .max(50),
-  userId: z.string().optional(),
-  affiliateCode: z.string().max(64).optional(),
   /** When "paypal", Stripe Checkout shows PayPal only. Omit for card. */
   paymentMethod: z.enum(["card", "paypal"]).optional(),
+  userId: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
     if (!parsed.success) {
       return NextResponse.json(
         {
-          error: "Invalid request body",
           details: parsed.error.flatten().fieldErrors,
+          error: "Invalid request body",
         },
         { status: 400 },
       );
@@ -84,10 +84,10 @@ export async function POST(request: NextRequest) {
     const productMap = new Map(products.map((p) => [p.id, p]));
 
     const orderItems: {
-      productId: string;
-      productVariantId?: string;
       name: string;
       priceCents: number;
+      productId: string;
+      productVariantId?: string;
       quantity: number;
     }[] = [];
     const stripeLineItems: {
@@ -103,10 +103,10 @@ export async function POST(request: NextRequest) {
       const product = productMap.get(item.productId);
       if (!product) continue;
       orderItems.push({
-        productId: product.id,
-        productVariantId: item.productVariantId,
         name: product.name,
         priceCents: product.priceCents,
+        productId: product.id,
+        productVariantId: item.productVariantId,
         quantity: item.quantity,
       });
       stripeLineItems.push({
@@ -144,19 +144,19 @@ export async function POST(request: NextRequest) {
     }
 
     const checkoutSession = await stripe.checkout.sessions.create({
+      cancel_url: `${baseUrl}/checkout/cancelled`,
       line_items: stripeLineItems,
+      metadata,
       mode: "payment",
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/checkout/cancelled`,
-      metadata,
       ...(parsed.data.paymentMethod === "paypal"
         ? { payment_method_types: ["paypal"] as const }
         : {}),
     });
 
     return NextResponse.json({
-      url: checkoutSession.url,
       confirmationToken: generateOrderConfirmationToken(checkoutSession.id),
+      url: checkoutSession.url,
     });
   } catch (err) {
     if (err instanceof Error && err.message.includes("STRIPE_SECRET_KEY")) {

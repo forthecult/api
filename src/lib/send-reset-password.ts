@@ -19,7 +19,7 @@ import { notifyTransactionalTelegram } from "~/lib/telegram-notify";
 export async function sendResetPasswordEmail(params: {
   to: string;
   url: string;
-  user: { name?: string | null; email: string; id?: string };
+  user: { email: string; id?: string; name?: null | string };
 }): Promise<void> {
   const { to, url, user } = params;
 
@@ -29,10 +29,10 @@ export async function sendResetPasswordEmail(params: {
     if (await userWantsTransactionalWebsite(userId)) {
       const t = getNotificationTemplate("password_reset");
       await createUserNotification({
-        userId,
-        type: "password_reset",
-        title: t.title,
         description: t.body,
+        title: t.title,
+        type: "password_reset",
+        userId,
       });
     }
   } else {
@@ -46,10 +46,10 @@ export async function sendResetPasswordEmail(params: {
       if (await userWantsTransactionalWebsite(row.id)) {
         const t = getNotificationTemplate("password_reset");
         await createUserNotification({
-          userId: row.id,
-          type: "password_reset",
-          title: t.title,
           description: t.body,
+          title: t.title,
+          type: "password_reset",
+          userId: row.id,
         });
       }
     }
@@ -66,10 +66,10 @@ export async function sendResetPasswordEmail(params: {
           : "onboarding@resend.dev";
       void resend.emails.send({
         from,
-        to,
-        subject: "Change your password",
         html: `<!DOCTYPE html><html><body><p>Click the link below to set a new password:</p><p><a href="${url}">${url}</a></p><p>This link expires in 1 hour. If you didn't request this, you can ignore this email.</p></body></html>`,
+        subject: "Change your password",
         text: `Click the link to set a new password: ${url}\n\nThis link expires in 1 hour.`,
+        to,
       });
     } catch (err) {
       console.error("[sendResetPassword] Resend send failed:", err);

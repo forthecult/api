@@ -214,7 +214,6 @@ export function defineMeta<
     type: TType;
   },
 ): ColumnMeta<TData, TVal>;
-
 // overload 2: accessorKey (string path)
 export function defineMeta<
   TData extends RowData,
@@ -227,7 +226,6 @@ export function defineMeta<
     type: TType;
   },
 ): ColumnMeta<TData, TVal>;
-
 // implementation
 export function defineMeta<TData extends RowData, TType extends ColumnDataType>(
   accessor: AccessorFn<TData, unknown> | DeepKeys<TData>,

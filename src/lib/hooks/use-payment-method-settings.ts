@@ -2,20 +2,21 @@
 
 import { useCallback, useEffect, useState } from "react";
 
-import type { PaymentMethodSetting } from "~/lib/payment-method-settings";
-import { getPaymentVisibility } from "~/lib/checkout-payment-options";
 import type { PaymentVisibility } from "~/lib/checkout-payment-options";
+import type { PaymentMethodSetting } from "~/lib/payment-method-settings";
+
+import { getPaymentVisibility } from "~/lib/checkout-payment-options";
 
 export function usePaymentMethodSettings(): {
-  data: PaymentMethodSetting[] | null;
-  visibility: PaymentVisibility | null;
+  data: null | PaymentMethodSetting[];
+  error: null | string;
   loading: boolean;
-  error: string | null;
   refetch: () => Promise<void>;
+  visibility: null | PaymentVisibility;
 } {
-  const [data, setData] = useState<PaymentMethodSetting[] | null>(null);
+  const [data, setData] = useState<null | PaymentMethodSetting[]>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const fetchMethods = useCallback(async () => {
     setLoading(true);
@@ -49,9 +50,9 @@ export function usePaymentMethodSettings(): {
 
   return {
     data,
-    visibility,
-    loading,
     error,
+    loading,
     refetch: fetchMethods,
+    visibility,
   };
 }

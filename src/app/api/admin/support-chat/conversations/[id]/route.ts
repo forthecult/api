@@ -34,13 +34,13 @@ export async function GET(
 
     const [conv] = await db
       .select({
-        id: supportChatConversationTable.id,
-        userId: supportChatConversationTable.userId,
+        createdAt: supportChatConversationTable.createdAt,
         guestId: supportChatConversationTable.guestId,
+        id: supportChatConversationTable.id,
         status: supportChatConversationTable.status,
         takenOverBy: supportChatConversationTable.takenOverBy,
-        createdAt: supportChatConversationTable.createdAt,
         updatedAt: supportChatConversationTable.updatedAt,
+        userId: supportChatConversationTable.userId,
       })
       .from(supportChatConversationTable)
       .where(eq(supportChatConversationTable.id, conversationId))
@@ -56,14 +56,14 @@ export async function GET(
     const [messageRows, customer, orders] = await Promise.all([
       db
         .select({
-          id: supportChatMessageTable.id,
-          role: supportChatMessageTable.role,
-          userId: supportChatMessageTable.userId,
           content: supportChatMessageTable.content,
           createdAt: supportChatMessageTable.createdAt,
+          id: supportChatMessageTable.id,
+          role: supportChatMessageTable.role,
           staffFirstName: userTable.firstName,
-          staffLastName: userTable.lastName,
           staffImage: userTable.image,
+          staffLastName: userTable.lastName,
+          userId: supportChatMessageTable.userId,
         })
         .from(supportChatMessageTable)
         .leftJoin(userTable, eq(supportChatMessageTable.userId, userTable.id))
@@ -72,9 +72,9 @@ export async function GET(
       conv.userId
         ? db
             .select({
+              email: userTable.email,
               id: userTable.id,
               name: userTable.name,
-              email: userTable.email,
             })
             .from(userTable)
             .where(eq(userTable.id, conv.userId))
@@ -83,12 +83,12 @@ export async function GET(
       conv.userId
         ? db
             .select({
-              id: ordersTable.id,
-              email: ordersTable.email,
-              status: ordersTable.status,
-              paymentStatus: ordersTable.paymentStatus,
-              totalCents: ordersTable.totalCents,
               createdAt: ordersTable.createdAt,
+              email: ordersTable.email,
+              id: ordersTable.id,
+              paymentStatus: ordersTable.paymentStatus,
+              status: ordersTable.status,
+              totalCents: ordersTable.totalCents,
             })
             .from(ordersTable)
             .where(eq(ordersTable.userId, conv.userId))
@@ -99,17 +99,17 @@ export async function GET(
 
     const customerInfo = customer[0]
       ? {
+          email: customer[0].email ?? "",
           id: customer[0].id,
           name: customer[0].name ?? "",
-          email: customer[0].email ?? "",
         }
       : null;
 
     const messages = messageRows.reverse().map((m) => ({
-      id: m.id,
-      role: m.role,
       content: m.content,
       createdAt: m.createdAt,
+      id: m.id,
+      role: m.role,
       ...(m.role === "staff" &&
       (m.staffFirstName != null ||
         m.staffLastName != null ||
@@ -117,30 +117,30 @@ export async function GET(
         ? {
             staffUser: {
               firstName: m.staffFirstName ?? "",
-              lastName: m.staffLastName ?? "",
               image: m.staffImage ?? null,
+              lastName: m.staffLastName ?? "",
             },
           }
         : {}),
     }));
 
     return NextResponse.json({
-      id: conv.id,
-      status: conv.status,
-      takenOverBy: conv.takenOverBy ?? undefined,
       createdAt: conv.createdAt,
-      updatedAt: conv.updatedAt,
       customer: customerInfo,
       guestId: conv.guestId ?? undefined,
+      id: conv.id,
       messages,
       orders: orders.map((o) => ({
-        id: o.id,
-        email: o.email,
-        status: o.status,
-        paymentStatus: o.paymentStatus ?? undefined,
-        totalCents: o.totalCents,
         createdAt: o.createdAt,
+        email: o.email,
+        id: o.id,
+        paymentStatus: o.paymentStatus ?? undefined,
+        status: o.status,
+        totalCents: o.totalCents,
       })),
+      status: conv.status,
+      takenOverBy: conv.takenOverBy ?? undefined,
+      updatedAt: conv.updatedAt,
     });
   } catch (err) {
     console.error("Admin support-chat conversation GET:", err);

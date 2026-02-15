@@ -12,11 +12,11 @@
 import { Connection } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 
+import { fetchPoolStats, getStakingProgramId } from "~/lib/cult-staking";
 import { fetchTokenMarketData } from "~/lib/market-cap";
 import { computeTierPricing } from "~/lib/membership-pricing";
-import { getActiveToken } from "~/lib/token-config";
-import { fetchPoolStats, getStakingProgramId } from "~/lib/cult-staking";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getActiveToken } from "~/lib/token-config";
 
 export const dynamic = "force-dynamic";
 
@@ -28,12 +28,12 @@ export async function GET() {
   if (!market) {
     return NextResponse.json(
       {
-        status: false,
         message:
           "Unable to fetch market data. The token may not be listed on a DEX yet.",
+        status: false,
         token: {
-          symbol: token.symbol,
           mint: token.mint,
+          symbol: token.symbol,
         },
       },
       { status: 503 },
@@ -64,34 +64,34 @@ export async function GET() {
   );
 
   return NextResponse.json({
-    status: true,
     data: {
-      token: {
-        symbol: token.symbol,
-        mint: token.mint,
-        decimals: token.decimals,
-        priceUsd: market.priceUsd,
-      },
+      fetchedAt: market.fetchedAt,
       market: {
+        dexId: market.dexId,
+        liquidityUsd: market.liquidityUsd,
         marketCapUsd: market.marketCapUsd,
         volume24hUsd: market.volume24hUsd,
-        liquidityUsd: market.liquidityUsd,
-        dexId: market.dexId,
-      },
-      staking: {
-        stakerCount,
-        programConfigured: !!programId,
       },
       pricing: {
         bracket: pricing.marketCapBracket,
         tiers: pricing.tiers.map((t) => ({
-          tierId: t.tierId,
           costUsd: t.costUsd,
+          tierId: t.tierId,
           tokensNeeded: t.tokensNeeded,
           tokensRaw: t.tokensRaw.toString(),
         })),
       },
-      fetchedAt: market.fetchedAt,
+      staking: {
+        programConfigured: !!programId,
+        stakerCount,
+      },
+      token: {
+        decimals: token.decimals,
+        mint: token.mint,
+        priceUsd: market.priceUsd,
+        symbol: token.symbol,
+      },
     },
+    status: true,
   });
 }

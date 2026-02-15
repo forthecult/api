@@ -3,18 +3,18 @@
  * Uses node:crypto for sighash — do not import this from client components.
  */
 
-import { createHash } from "node:crypto";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import {
   type PublicKey as PublicKeyClass,
   SystemProgram,
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
-} from "@solana/spl-token";
+import { createHash } from "node:crypto";
 
 import {
   getPoolPda,
@@ -41,26 +41,26 @@ const UNSTAKE_IX_DISCRIMINATOR = anchorSighash("unstake");
 // ---------------------------------------------------------------------------
 
 export function buildStakeInstruction(params: {
-  programId: PublicKeyClass;
-  poolPda: PublicKeyClass;
-  mint: PublicKeyClass;
-  vault: PublicKeyClass;
-  owner: PublicKeyClass;
-  userTokenAccount: PublicKeyClass;
-  userStakePda: PublicKeyClass;
-  tokenProgram?: PublicKeyClass;
   amount: bigint;
   lockDuration: LockDuration;
+  mint: PublicKeyClass;
+  owner: PublicKeyClass;
+  poolPda: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
+  userStakePda: PublicKeyClass;
+  userTokenAccount: PublicKeyClass;
+  vault: PublicKeyClass;
 }): TransactionInstruction {
   const {
-    programId,
-    poolPda,
     mint,
-    vault,
     owner,
-    userTokenAccount,
-    userStakePda,
+    poolPda,
+    programId,
     tokenProgram = TOKEN_PROGRAM_ID,
+    userStakePda,
+    userTokenAccount,
+    vault,
   } = params;
   if (params.amount <= 0n) throw new Error("Stake amount must be positive");
   if (!isValidLockDuration(params.lockDuration))
@@ -72,76 +72,30 @@ export function buildStakeInstruction(params: {
   data.writeBigUInt64LE(BigInt(params.lockDuration), 16);
 
   return new TransactionInstruction({
-    programId,
-    keys: [
-      { pubkey: owner, isSigner: true, isWritable: true },
-      { pubkey: poolPda, isSigner: false, isWritable: true },
-      { pubkey: mint, isSigner: false, isWritable: false },
-      { pubkey: vault, isSigner: false, isWritable: true },
-      { pubkey: userTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: userStakePda, isSigner: false, isWritable: true },
-      { pubkey: tokenProgram, isSigner: false, isWritable: false },
-      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-    ],
     data,
+    keys: [
+      { isSigner: true, isWritable: true, pubkey: owner },
+      { isSigner: false, isWritable: true, pubkey: poolPda },
+      { isSigner: false, isWritable: false, pubkey: mint },
+      { isSigner: false, isWritable: true, pubkey: vault },
+      { isSigner: false, isWritable: true, pubkey: userTokenAccount },
+      { isSigner: false, isWritable: true, pubkey: userStakePda },
+      { isSigner: false, isWritable: false, pubkey: tokenProgram },
+      { isSigner: false, isWritable: false, pubkey: SystemProgram.programId },
+    ],
+    programId,
   });
 }
-
-export function buildUnstakeInstruction(params: {
-  programId: PublicKeyClass;
-  poolPda: PublicKeyClass;
-  mint: PublicKeyClass;
-  vault: PublicKeyClass;
-  owner: PublicKeyClass;
-  userTokenAccount: PublicKeyClass;
-  userStakePda: PublicKeyClass;
-  tokenProgram?: PublicKeyClass;
-  amount: bigint;
-}): TransactionInstruction {
-  const {
-    programId,
-    poolPda,
-    mint,
-    vault,
-    owner,
-    userTokenAccount,
-    userStakePda,
-    tokenProgram = TOKEN_PROGRAM_ID,
-  } = params;
-  if (params.amount <= 0n) throw new Error("Unstake amount must be positive");
-
-  const data = Buffer.alloc(16);
-  UNSTAKE_IX_DISCRIMINATOR.copy(data, 0);
-  data.writeBigUInt64LE(params.amount, 8);
-
-  return new TransactionInstruction({
-    programId,
-    keys: [
-      { pubkey: owner, isSigner: true, isWritable: true },
-      { pubkey: poolPda, isSigner: false, isWritable: true },
-      { pubkey: mint, isSigner: false, isWritable: false },
-      { pubkey: vault, isSigner: false, isWritable: true },
-      { pubkey: userTokenAccount, isSigner: false, isWritable: true },
-      { pubkey: userStakePda, isSigner: false, isWritable: true },
-      { pubkey: tokenProgram, isSigner: false, isWritable: false },
-    ],
-    data,
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Transaction builders
-// ---------------------------------------------------------------------------
 
 export function buildStakeTransaction(params: {
-  programId: PublicKeyClass;
-  mint: PublicKeyClass;
-  owner: PublicKeyClass;
   amount: bigint;
-  lockDuration: LockDuration;
-  tokenProgram?: PublicKeyClass;
   blockhash: string;
   lastValidBlockHeight: number;
+  lockDuration: LockDuration;
+  mint: PublicKeyClass;
+  owner: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
 }): Transaction {
   const programId = params.programId;
   if (!programId) throw new Error("Staking program ID not set");
@@ -159,16 +113,16 @@ export function buildStakeTransaction(params: {
   const [userStakePda] = getUserStakePda(programId, poolPda, owner);
 
   const ix = buildStakeInstruction({
-    programId,
-    poolPda,
-    mint,
-    vault,
-    owner,
-    userTokenAccount,
-    userStakePda,
-    tokenProgram: params.tokenProgram,
     amount: params.amount,
     lockDuration: params.lockDuration,
+    mint,
+    owner,
+    poolPda,
+    programId,
+    tokenProgram: params.tokenProgram,
+    userStakePda,
+    userTokenAccount,
+    vault,
   });
 
   const tx = new Transaction();
@@ -179,14 +133,60 @@ export function buildStakeTransaction(params: {
   return tx;
 }
 
-export function buildUnstakeTransaction(params: {
-  programId: PublicKeyClass;
+// ---------------------------------------------------------------------------
+// Transaction builders
+// ---------------------------------------------------------------------------
+
+export function buildUnstakeInstruction(params: {
+  amount: bigint;
   mint: PublicKeyClass;
   owner: PublicKeyClass;
-  amount: bigint;
+  poolPda: PublicKeyClass;
+  programId: PublicKeyClass;
   tokenProgram?: PublicKeyClass;
+  userStakePda: PublicKeyClass;
+  userTokenAccount: PublicKeyClass;
+  vault: PublicKeyClass;
+}): TransactionInstruction {
+  const {
+    mint,
+    owner,
+    poolPda,
+    programId,
+    tokenProgram = TOKEN_PROGRAM_ID,
+    userStakePda,
+    userTokenAccount,
+    vault,
+  } = params;
+  if (params.amount <= 0n) throw new Error("Unstake amount must be positive");
+
+  const data = Buffer.alloc(16);
+  UNSTAKE_IX_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(params.amount, 8);
+
+  return new TransactionInstruction({
+    data,
+    keys: [
+      { isSigner: true, isWritable: true, pubkey: owner },
+      { isSigner: false, isWritable: true, pubkey: poolPda },
+      { isSigner: false, isWritable: false, pubkey: mint },
+      { isSigner: false, isWritable: true, pubkey: vault },
+      { isSigner: false, isWritable: true, pubkey: userTokenAccount },
+      { isSigner: false, isWritable: true, pubkey: userStakePda },
+      { isSigner: false, isWritable: false, pubkey: tokenProgram },
+    ],
+    programId,
+  });
+}
+
+export function buildUnstakeTransaction(params: {
+  amount: bigint;
   blockhash: string;
   lastValidBlockHeight: number;
+  mint: PublicKeyClass;
+  owner: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
 }): Transaction {
   const programId = params.programId;
   const mint = params.mint;
@@ -203,15 +203,15 @@ export function buildUnstakeTransaction(params: {
   const [userStakePda] = getUserStakePda(programId, poolPda, owner);
 
   const ix = buildUnstakeInstruction({
-    programId,
-    poolPda,
-    mint,
-    vault,
-    owner,
-    userTokenAccount,
-    userStakePda,
-    tokenProgram: params.tokenProgram,
     amount: params.amount,
+    mint,
+    owner,
+    poolPda,
+    programId,
+    tokenProgram: params.tokenProgram,
+    userStakePda,
+    userTokenAccount,
+    vault,
   });
 
   const tx = new Transaction();

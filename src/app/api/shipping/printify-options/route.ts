@@ -28,23 +28,23 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as {
-      items?: Array<{
-        printifyProductId: string;
-        printifyVariantId: number;
-        quantity: number;
-      }>;
       address?: {
+        city?: string;
         country: string;
         region?: string;
         zip?: string;
-        city?: string;
       };
+      items?: {
+        printifyProductId: string;
+        printifyVariantId: number;
+        quantity: number;
+      }[];
     };
 
     if (!body.items?.length || !body.address?.country) {
       return withPublicApiCors(
         NextResponse.json(
-          { options: [], error: "Missing items or address.country" },
+          { error: "Missing items or address.country", options: [] },
           { status: 400 },
         ),
       );
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     console.error("Printify shipping options error:", err);
     return withPublicApiCors(
       NextResponse.json(
-        { options: [], error: "Failed to calculate shipping options" },
+        { error: "Failed to calculate shipping options", options: [] },
         { status: 500 },
       ),
     );

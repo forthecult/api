@@ -12,40 +12,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 const API_BASE = getMainAppUrl();
 
 interface ChatRow {
-  id: string;
-  status: string;
-  takenOverBy: string | null;
   createdAt: string;
-  updatedAt: string;
-  lastMessageRole: string | null;
-  lastMessageAt: string | null;
-  customer: { id: string | null; name: string; email: string | null };
+  customer: { email: null | string; id: null | string; name: string };
   guestId?: string;
+  id: string;
+  lastMessageAt: null | string;
+  lastMessageRole: null | string;
+  status: string;
+  takenOverBy: null | string;
+  updatedAt: string;
 }
 
 interface SupportChatListResponse {
   items: ChatRow[];
-  page: number;
   limit: number;
+  page: number;
   totalCount: number;
   totalPages: number;
 }
 
-function formatDate(s: string): string {
-  try {
-    return new Intl.DateTimeFormat("en-US", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date(s));
-  } catch {
-    return "—";
-  }
-}
-
 export default function AdminSupportChatPage() {
-  const [data, setData] = useState<SupportChatListResponse | null>(null);
+  const [data, setData] = useState<null | SupportChatListResponse>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
   const [page, setPage] = useState(1);
   const [widgetVisible, setWidgetVisible] = useState<boolean>(true);
   const [widgetToggleLoading, setWidgetToggleLoading] = useState(false);
@@ -73,10 +62,10 @@ export default function AdminSupportChatPage() {
       const res = await fetch(
         `${API_BASE}/api/admin/support-chat/widget-visible`,
         {
-          method: "PATCH",
+          body: JSON.stringify({ visible }),
           credentials: "include",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ visible }),
+          method: "PATCH",
         },
       );
       if (res.ok) {
@@ -93,7 +82,7 @@ export default function AdminSupportChatPage() {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "20" });
+      const params = new URLSearchParams({ limit: "20", page: String(page) });
       const res = await fetch(
         `${API_BASE}/api/admin/support-chat/conversations?${params.toString()}`,
         { credentials: "include" },
@@ -122,7 +111,12 @@ export default function AdminSupportChatPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -137,7 +131,12 @@ export default function AdminSupportChatPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div className="flex items-center gap-2">
           <MessageCircle className="h-7 w-7" />
           <h2 className="text-2xl font-semibold tracking-tight">
@@ -150,11 +149,11 @@ export default function AdminSupportChatPage() {
           </span>
           <label className="flex cursor-pointer items-center gap-2">
             <input
-              type="checkbox"
               checked={widgetVisible}
+              className="size-4 rounded border-input"
               disabled={widgetToggleLoading}
               onChange={(e) => setWidgetVisibleToggle(e.target.checked)}
-              className="size-4 rounded border-input"
+              type="checkbox"
             />
             <span className="text-sm font-medium">
               {widgetVisible ? "Visible" : "Hidden"}
@@ -169,7 +168,12 @@ export default function AdminSupportChatPage() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="flex min-h-[200px] items-center justify-center text-muted-foreground">
+            <div
+              className={`
+              flex min-h-[200px] items-center justify-center
+              text-muted-foreground
+            `}
+            >
               Loading…
             </div>
           ) : data ? (
@@ -177,34 +181,40 @@ export default function AdminSupportChatPage() {
               <div className="overflow-x-auto rounded-md border border-border">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-border bg-muted/50 text-left text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    <tr
+                      className={`
+                      border-b border-border bg-muted/50 text-left text-xs
+                      font-semibold tracking-wider text-muted-foreground
+                      uppercase
+                    `}
+                    >
                       <th
+                        className="p-4 font-medium whitespace-nowrap"
                         scope="col"
-                        className="whitespace-nowrap p-4 font-medium"
                       >
                         Customer
                       </th>
                       <th
+                        className="p-4 font-medium whitespace-nowrap"
                         scope="col"
-                        className="whitespace-nowrap p-4 font-medium"
                       >
                         Status
                       </th>
                       <th
+                        className="p-4 font-medium whitespace-nowrap"
                         scope="col"
-                        className="whitespace-nowrap p-4 font-medium"
                       >
                         Mode
                       </th>
                       <th
+                        className="p-4 font-medium whitespace-nowrap"
                         scope="col"
-                        className="whitespace-nowrap p-4 font-medium"
                       >
                         Updated
                       </th>
                       <th
+                        className="p-4 text-right font-medium whitespace-nowrap"
                         scope="col"
-                        className="whitespace-nowrap p-4 font-medium text-right"
                       >
                         Action
                       </th>
@@ -222,18 +232,32 @@ export default function AdminSupportChatPage() {
                       </tr>
                     ) : (
                       data.items.map((row) => (
-                        <tr key={row.id} className="border-b last:border-0">
+                        <tr
+                          className={`
+                          border-b
+                          last:border-0
+                        `}
+                          key={row.id}
+                        >
                           <td className="p-4">
                             <div className="flex flex-col">
                               {row.customer.id ? (
                                 <>
                                   <Link
+                                    className={`
+                                      font-medium text-primary
+                                      underline-offset-2
+                                      hover:underline
+                                    `}
                                     href={`/customers/${row.customer.id}`}
-                                    className="font-medium text-primary underline-offset-2 hover:underline"
                                   >
                                     {row.customer.name || "—"}
                                   </Link>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span
+                                    className={`
+                                    text-xs text-muted-foreground
+                                  `}
+                                  >
                                     {row.customer.email ?? "—"}
                                   </span>
                                 </>
@@ -250,9 +274,15 @@ export default function AdminSupportChatPage() {
                           <td className="p-4">
                             <span
                               className={cn(
-                                "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                `
+                                  inline-flex rounded-full px-2.5 py-0.5 text-xs
+                                  font-medium
+                                `,
                                 row.status === "open" &&
-                                  "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200",
+                                  `
+                                    bg-amber-100 text-amber-800
+                                    dark:bg-amber-900/40 dark:text-amber-200
+                                  `,
                                 row.status === "closed" &&
                                   "bg-muted text-muted-foreground",
                               )}
@@ -262,7 +292,12 @@ export default function AdminSupportChatPage() {
                           </td>
                           <td className="p-4">
                             {row.takenOverBy ? (
-                              <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                              <span
+                                className={`
+                                text-xs font-medium text-blue-600
+                                dark:text-blue-400
+                              `}
+                              >
                                 Human
                               </span>
                             ) : (
@@ -271,14 +306,22 @@ export default function AdminSupportChatPage() {
                               </span>
                             )}
                           </td>
-                          <td className="whitespace-nowrap p-4 text-muted-foreground">
+                          <td
+                            className={`
+                            p-4 whitespace-nowrap text-muted-foreground
+                          `}
+                          >
                             {formatDate(row.updatedAt)}
                           </td>
                           <td className="p-4 text-right">
                             <Link
-                              className="inline-flex rounded p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                              href={`/support-chat/${row.id}`}
                               aria-label={`Open chat ${row.id}`}
+                              className={`
+                                inline-flex rounded p-1.5 text-muted-foreground
+                                transition-colors
+                                hover:bg-muted hover:text-foreground
+                              `}
+                              href={`/support-chat/${row.id}`}
                             >
                               Open
                             </Link>
@@ -291,15 +334,19 @@ export default function AdminSupportChatPage() {
               </div>
 
               {data.items.length > 0 && data.totalPages > 1 && (
-                <div className="mt-4 flex items-center justify-center gap-2 border-t pt-4">
+                <div
+                  className={`
+                  mt-4 flex items-center justify-center gap-2 border-t pt-4
+                `}
+                >
                   <Button
+                    aria-label="Previous page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Previous page"
                   >
                     ←
                   </Button>
@@ -307,6 +354,8 @@ export default function AdminSupportChatPage() {
                     Page {data.page} of {data.totalPages}
                   </span>
                   <Button
+                    aria-label="Next page"
+                    className="h-8 w-8 p-0"
                     disabled={data.page >= data.totalPages}
                     onClick={() =>
                       setPage((p) => Math.min(data.totalPages, p + 1))
@@ -314,8 +363,6 @@ export default function AdminSupportChatPage() {
                     size="sm"
                     type="button"
                     variant="outline"
-                    className="h-8 w-8 p-0"
-                    aria-label="Next page"
                   >
                     →
                   </Button>
@@ -327,4 +374,15 @@ export default function AdminSupportChatPage() {
       </Card>
     </div>
   );
+}
+
+function formatDate(s: string): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(s));
+  } catch {
+    return "—";
+  }
 }

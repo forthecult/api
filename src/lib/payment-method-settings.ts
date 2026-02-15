@@ -2,70 +2,70 @@
  * Payment method keys and labels. Used by admin UI and API.
  * When a method is disabled in admin, it is hidden from checkout and product pages.
  */
-export const PAYMENT_METHOD_DEFAULTS: Array<{
-  methodKey: string;
-  label: string;
+export const PAYMENT_METHOD_DEFAULTS: {
   displayOrder: number;
-}> = [
+  label: string;
+  methodKey: string;
+}[] = [
   {
-    methodKey: "stripe",
-    label: "Stripe (Credit / Debit card)",
     displayOrder: 0,
+    label: "Stripe (Credit / Debit card)",
+    methodKey: "stripe",
   },
-  { methodKey: "paypal", label: "PayPal", displayOrder: 1 },
-  { methodKey: "crypto_bitcoin", label: "Bitcoin (BTC)", displayOrder: 10 },
-  { methodKey: "crypto_dogecoin", label: "Dogecoin (DOGE)", displayOrder: 11 },
-  { methodKey: "crypto_ethereum", label: "Ethereum (ETH)", displayOrder: 12 },
-  { methodKey: "crypto_solana", label: "Solana (SOL)", displayOrder: 13 },
-  { methodKey: "crypto_monero", label: "Monero (XMR)", displayOrder: 14 },
+  { displayOrder: 1, label: "PayPal", methodKey: "paypal" },
+  { displayOrder: 10, label: "Bitcoin (BTC)", methodKey: "crypto_bitcoin" },
+  { displayOrder: 11, label: "Dogecoin (DOGE)", methodKey: "crypto_dogecoin" },
+  { displayOrder: 12, label: "Ethereum (ETH)", methodKey: "crypto_ethereum" },
+  { displayOrder: 13, label: "Solana (SOL)", methodKey: "crypto_solana" },
+  { displayOrder: 14, label: "Monero (XMR)", methodKey: "crypto_monero" },
   {
-    methodKey: "crypto_crust",
-    label: "Crustafarian (CRUST)",
     displayOrder: 15,
+    label: "Crustafarian (CRUST)",
+    methodKey: "crypto_crust",
   },
-  { methodKey: "crypto_pump", label: "Pump (PUMP)", displayOrder: 16 },
-  { methodKey: "crypto_troll", label: "Troll (TROLL)", displayOrder: 17 },
-  { methodKey: "crypto_soluna", label: "SOLUNA (SOLUNA)", displayOrder: 18 },
-  { methodKey: "crypto_seeker", label: "Seeker (SKR)", displayOrder: 19 },
-  { methodKey: "crypto_sui", label: "Sui (SUI)", displayOrder: 20 },
-  { methodKey: "crypto_ton", label: "TON", displayOrder: 21 },
+  { displayOrder: 16, label: "Pump (PUMP)", methodKey: "crypto_pump" },
+  { displayOrder: 17, label: "Troll (TROLL)", methodKey: "crypto_troll" },
+  { displayOrder: 18, label: "SOLUNA (SOLUNA)", methodKey: "crypto_soluna" },
+  { displayOrder: 19, label: "Seeker (SKR)", methodKey: "crypto_seeker" },
+  { displayOrder: 20, label: "Sui (SUI)", methodKey: "crypto_sui" },
+  { displayOrder: 21, label: "TON", methodKey: "crypto_ton" },
   {
-    methodKey: "stablecoin_usdc",
-    label: "USDC (Stablecoin)",
     displayOrder: 22,
+    label: "USDC (Stablecoin)",
+    methodKey: "stablecoin_usdc",
   },
   {
-    methodKey: "stablecoin_usdt",
-    label: "USDT (Stablecoin)",
     displayOrder: 23,
+    label: "USDT (Stablecoin)",
+    methodKey: "stablecoin_usdt",
   },
 ];
 
 /** Network options for payment methods that support multiple networks. Used by admin and checkout. */
 export const PAYMENT_METHOD_NETWORKS: Record<
   string,
-  { value: string; label: string }[]
+  { label: string; value: string }[]
 > = {
   stablecoin_usdc: [
-    { value: "solana", label: "Solana" },
-    { value: "ethereum", label: "Ethereum" },
-    { value: "arbitrum", label: "Arbitrum" },
-    { value: "base", label: "Base" },
-    { value: "polygon", label: "Polygon" },
+    { label: "Solana", value: "solana" },
+    { label: "Ethereum", value: "ethereum" },
+    { label: "Arbitrum", value: "arbitrum" },
+    { label: "Base", value: "base" },
+    { label: "Polygon", value: "polygon" },
   ],
   stablecoin_usdt: [
-    { value: "ethereum", label: "Ethereum" },
-    { value: "arbitrum", label: "Arbitrum" },
-    { value: "bnb", label: "BNB Smart Chain" },
-    { value: "polygon", label: "Polygon" },
+    { label: "Ethereum", value: "ethereum" },
+    { label: "Arbitrum", value: "arbitrum" },
+    { label: "BNB Smart Chain", value: "bnb" },
+    { label: "Polygon", value: "polygon" },
   ],
 };
 
-export type PaymentMethodSetting = {
-  methodKey: string;
-  label: string;
+export interface PaymentMethodSetting {
+  displayOrder: number;
   enabled: boolean;
   /** For multi-network methods: enabled network keys. Null/empty = all supported. */
-  enabledNetworks?: string[] | null;
-  displayOrder: number;
-};
+  enabledNetworks?: null | string[];
+  label: string;
+  methodKey: string;
+}

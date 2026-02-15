@@ -1,24 +1,24 @@
 "use client";
 
-import { useSDK } from "~/lib/metamask-sdk";
-import { ChevronRight, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
+  useAccount,
+  useChainId,
   useConnect,
   useConnection,
   useConnectors,
   useDisconnect,
-  useAccount,
-  useChainId,
 } from "wagmi";
-import { ChevronDown } from "lucide-react";
 
 import { SEO_CONFIG } from "~/app";
 import { useCurrentUser } from "~/lib/auth-client";
-import { useEthPay, type EthPayOrder } from "~/lib/hooks/use-eth-pay";
+import { type EthPayOrder, useEthPay } from "~/lib/hooks/use-eth-pay";
+import { useSDK } from "~/lib/metamask-sdk";
 import { Button } from "~/ui/primitives/button";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 import {
@@ -43,9 +43,9 @@ function truncateAddress(address: string): string {
 }
 
 const CHAIN_LABELS: Record<string, string> = {
-  ethereum: "Ethereum",
   arbitrum: "Arbitrum",
   base: "Base",
+  ethereum: "Ethereum",
   polygon: "Polygon",
 };
 
@@ -56,52 +56,70 @@ const TOKEN_LABELS: Record<string, string> = {
 };
 
 const MULTI_CHAIN_WALLET_NAMES = new Set([
-  "Phantom",
   "Ctrl Wallet",
-  "Trust Wallet",
+  "Phantom",
   "Ronin Wallet",
+  "Trust Wallet",
 ]);
 
+interface OrderData {
+  chain: string;
+  chainId?: number;
+  cryptoAmount?: null | string;
+  depositAddress: string;
+  email?: string;
+  expiresAt: string;
+  orderId: string;
+  paymentStatus?: string;
+  token: string;
+  tokenAddress?: null | string;
+  totalCents: number;
+}
+
 function ConnectorIcon({
-  connector,
   className,
+  connector,
 }: {
-  connector: { icon?: string; type: string; name: string };
   className?: string;
+  connector: { icon?: string; name: string; type: string };
 }) {
   if (connector.name === "MetaMask") {
     return (
       <img
-        src={METAMASK_LOGO}
         alt="MetaMask"
         className={className}
-        width={32}
         height={32}
+        src={METAMASK_LOGO}
+        width={32}
       />
     );
   }
   if (connector.icon) {
     return (
       <img
-        src={connector.icon}
         alt=""
         className={className}
-        width={32}
         height={32}
+        src={connector.icon}
+        width={32}
       />
     );
   }
   if (connector.type === "walletConnect") {
     return (
       <div
-        className={`flex size-8 items-center justify-center rounded-md bg-[#3396FF] text-white ${className ?? ""}`}
         aria-hidden
+        className={`
+          flex size-8 items-center justify-center rounded-md bg-[#3396FF]
+          text-white
+          ${className ?? ""}
+        `}
       >
         <svg
-          viewBox="0 0 32 32"
+          aria-hidden
           className="size-5"
           fill="currentColor"
-          aria-hidden
+          viewBox="0 0 32 32"
         >
           <path d="M9.5 12.5a4.5 4.5 0 1 1 4.5 4.5h-4.5v-4.5Zm13 0v4.5h4.5a4.5 4.5 0 1 0-4.5-4.5Zm-13 13a4.5 4.5 0 1 0 4.5-4.5h-4.5v4.5Zm13-4.5a4.5 4.5 0 1 1-4.5 4.5v-4.5h4.5Z" />
         </svg>
@@ -111,7 +129,7 @@ function ConnectorIcon({
   return (
     <Image
       alt={connector.name}
-      className={className ?? "size-8 shrink-0 object-contain rounded-md"}
+      className={className ?? "size-8 shrink-0 rounded-md object-contain"}
       height={32}
       src="/crypto/ethereum/ethereum-logo.svg"
       width={32}
@@ -119,28 +137,14 @@ function ConnectorIcon({
   );
 }
 
-interface OrderData {
-  orderId: string;
-  depositAddress: string;
-  totalCents: number;
-  email?: string;
-  expiresAt: string;
-  chain: string;
-  token: string;
-  chainId?: number;
-  cryptoAmount?: string | null;
-  tokenAddress?: string | null;
-  paymentStatus?: string;
-}
-
 // Chain ID mapping
 const CHAIN_ID_MAP: Record<string, number> = {
-  ethereum: 1,
   arbitrum: 42161,
   base: 8453,
-  polygon: 137,
   bnb: 56,
+  ethereum: 1,
   optimism: 10,
+  polygon: 137,
 };
 
 export function EthPayClient() {
@@ -150,9 +154,9 @@ export function EthPayClient() {
   const orderId = (params?.invoiceId as string) ?? "";
 
   // Fetch order data from API
-  const [order, setOrder] = useState<OrderData | null>(null);
+  const [order, setOrder] = useState<null | OrderData>(null);
   const [orderLoading, setOrderLoading] = useState(true);
-  const [orderError, setOrderError] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<null | string>(null);
 
   useEffect(() => {
     if (!orderId) {
@@ -181,17 +185,17 @@ export function EthPayClient() {
           "ethereum"
         ).toLowerCase();
         setOrder({
-          orderId: data.orderId ?? data.id,
-          depositAddress: data.depositAddress ?? data.solanaPayDepositAddress,
-          totalCents: data.totalCents,
-          email: data.email,
-          expiresAt: data.expiresAt,
           chain: chainName,
-          token: (data.token ?? data.cryptoCurrency ?? "eth").toLowerCase(),
           chainId: data.chainId ?? CHAIN_ID_MAP[chainName] ?? 1,
           cryptoAmount: data.cryptoAmount,
-          tokenAddress: data.tokenAddress,
+          depositAddress: data.depositAddress ?? data.solanaPayDepositAddress,
+          email: data.email,
+          expiresAt: data.expiresAt,
+          orderId: data.orderId ?? data.id,
           paymentStatus: data.paymentStatus,
+          token: (data.token ?? data.cryptoCurrency ?? "eth").toLowerCase(),
+          tokenAddress: data.tokenAddress,
+          totalCents: data.totalCents,
         });
         setOrderLoading(false);
       })
@@ -213,7 +217,7 @@ export function EthPayClient() {
   const token = (order?.token || "eth").toLowerCase();
   const depositAddress = order?.depositAddress || "";
 
-  const [ethUsdRate, setEthUsdRate] = useState<number | null>(null);
+  const [ethUsdRate, setEthUsdRate] = useState<null | number>(null);
 
   const chainLabel = CHAIN_LABELS[chain] ?? chain;
   const tokenLabel = TOKEN_LABELS[token] ?? token.toUpperCase();
@@ -223,7 +227,7 @@ export function EthPayClient() {
 
   const { address: wagmiAddress } = useConnection();
   const connectors = useConnectors();
-  const { mutate: connect, isPending: wagmiConnecting } = useConnect();
+  const { isPending: wagmiConnecting, mutate: connect } = useConnect();
   const { disconnect } = useDisconnect();
   const sdkState = useSDK();
   const sdk = sdkState?.sdk;
@@ -232,11 +236,11 @@ export function EthPayClient() {
   const metaMaskAccounts =
     (sdkState as { accounts?: string[] })?.accounts ?? undefined;
   const [connectModalOpen, setConnectModalOpen] = useState(false);
-  const [connectStep, setConnectStep] = useState<"wallets" | "network">(
+  const [connectStep, setConnectStep] = useState<"network" | "wallets">(
     "wallets",
   );
   const [multiChainConnectorForNetwork, setMultiChainConnectorForNetwork] =
-    useState<ReturnType<typeof useConnectors>[number] | null>(null);
+    useState<null | ReturnType<typeof useConnectors>[number]>(null);
   // Track if wallet was connected when modal opened (to avoid auto-closing when adding new wallet)
   const [wasConnectedOnModalOpen, setWasConnectedOnModalOpen] = useState(false);
 
@@ -256,48 +260,48 @@ export function EthPayClient() {
   const rate = ethUsdRate ?? ETH_USD_FALLBACK;
   const amountEth = amountUsd > 0 && rate > 0 ? amountUsd / rate : 0;
   const amountEthStr = amountEth.toFixed(6);
-  const rateLabel = `1 ETH = ${rate.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
+  const rateLabel = `1 ETH = ${rate.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} USD`;
 
   const ethPayOrderForHook: EthPayOrder | null = order
     ? {
-        orderId: order.orderId,
-        depositAddress: order.depositAddress as `0x${string}`,
         chainId: order.chainId ?? 1,
+        cryptoAmount: order.cryptoAmount ?? null,
+        depositAddress: order.depositAddress as `0x${string}`,
+        expiresAt: order.expiresAt,
+        orderId: order.orderId,
         token:
           order.token === "usdc"
             ? "USDC"
             : order.token === "usdt"
               ? "USDT"
               : "ETH",
-        totalCents: order.totalCents,
-        cryptoAmount: order.cryptoAmount ?? null,
         tokenAddress: order.tokenAddress ?? null,
-        expiresAt: order.expiresAt,
+        totalCents: order.totalCents,
       }
     : null;
 
   const {
-    paymentStatus,
-    isProcessing,
-    sendPayment,
-    needsChainSwitch,
     displayAmount,
+    isProcessing,
+    needsChainSwitch,
+    paymentStatus,
+    sendPayment,
     txHash: paymentTxHash,
   } = useEthPay({
-    order: ethPayOrderForHook ?? {
-      orderId: "",
-      depositAddress:
-        "0x0000000000000000000000000000000000000000" as `0x${string}`,
-      chainId: 1,
-      token: "ETH",
-      totalCents: 0,
-      expiresAt: new Date().toISOString(),
-    },
     ethPriceUsd: rate,
+    onError: () => {},
     onSuccess: (txHash) => {
       router.push(`/checkout/${orderId}/confirmation?tx=${txHash}`);
     },
-    onError: () => {},
+    order: ethPayOrderForHook ?? {
+      chainId: 1,
+      depositAddress:
+        "0x0000000000000000000000000000000000000000" as `0x${string}`,
+      expiresAt: new Date().toISOString(),
+      orderId: "",
+      token: "ETH",
+      totalCents: 0,
+    },
   });
 
   const { user } = useCurrentUser();
@@ -430,9 +434,18 @@ export function EthPayClient() {
   // Loading state
   if (orderLoading) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background">
-        <div className="text-center space-y-4">
-          <div className="animate-spin size-8 border-4 border-primary border-t-transparent rounded-full mx-auto" />
+      <div
+        className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+      >
+        <div className="space-y-4 text-center">
+          <div
+            className={`
+            mx-auto size-8 animate-spin rounded-full border-4 border-primary
+            border-t-transparent
+          `}
+          />
           <p className="text-muted-foreground">Loading order...</p>
         </div>
       </div>
@@ -442,9 +455,13 @@ export function EthPayClient() {
   // Error state
   if (orderError || !order) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-background">
-        <div className="text-center space-y-4 max-w-md px-4">
-          <div className="text-destructive text-4xl">⚠️</div>
+      <div
+        className={`
+        flex min-h-screen w-full items-center justify-center bg-background
+      `}
+      >
+        <div className="max-w-md space-y-4 px-4 text-center">
+          <div className="text-4xl text-destructive">⚠️</div>
           <h1 className="text-xl font-semibold">Order Not Found</h1>
           <p className="text-muted-foreground">
             {orderError || "This order could not be found or has expired."}
@@ -459,49 +476,75 @@ export function EthPayClient() {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden bg-background">
-      <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <header
+        className={`
+        sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur
+        supports-[backdrop-filter]:bg-background/60
+      `}
+      >
+        <div
+          className={`
+          container mx-auto max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
+        >
           <div className="flex h-16 items-center justify-between">
             <Link
-              href="/checkout"
-              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
               aria-label="Back to checkout"
+              className={`
+                rounded p-1 text-muted-foreground
+                hover:bg-muted hover:text-foreground
+              `}
+              href="/checkout"
             >
               <svg
+                aria-hidden
                 className="size-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                aria-hidden
               >
                 <path
+                  d="M15 19l-7-7 7-7"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
                 />
               </svg>
             </Link>
             <Link className="flex items-center gap-2" href="/">
               {SEO_CONFIG.brandLogoUrl ? (
                 <Image
-                  src={SEO_CONFIG.brandLogoUrl}
                   alt={SEO_CONFIG.name}
-                  width={140}
-                  height={32}
                   className="h-8 w-auto object-contain"
+                  height={32}
+                  src={SEO_CONFIG.brandLogoUrl}
+                  width={140}
                 />
               ) : (
-                <span className="font-heading text-lg font-bold uppercase tracking-[0.2em] text-[#1A1611] dark:text-[#F5F1EB]">
+                <span
+                  className={`
+                  font-heading text-lg font-bold tracking-[0.2em] text-[#1A1611]
+                  uppercase
+                  dark:text-[#F5F1EB]
+                `}
+                >
                   {SEO_CONFIG.name}
                 </span>
               )}
             </Link>
             {address ? (
-              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+              <DropdownMenu onOpenChange={setDropdownOpen} open={dropdownOpen}>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    className="gap-2 font-mono shadow-none hover:shadow-none focus:shadow-none focus-visible:shadow-none active:shadow-none"
+                    className={`
+                      gap-2 font-mono shadow-none
+                      hover:shadow-none
+                      focus:shadow-none
+                      focus-visible:shadow-none
+                      active:shadow-none
+                    `}
                     size="sm"
                     type="button"
                     variant="outline"
@@ -513,31 +556,46 @@ export function EthPayClient() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <DropdownMenuLabel
+                    className={`
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
+                  >
                     Connected
                   </DropdownMenuLabel>
-                  <div className="flex items-center justify-between gap-2 px-2 py-2">
+                  <div
+                    className={`
+                    flex items-center justify-between gap-2 px-2 py-2
+                  `}
+                  >
                     <span
-                      className="min-w-0 truncate font-mono text-sm text-foreground"
+                      className={`
+                        min-w-0 truncate font-mono text-sm text-foreground
+                      `}
                       title={address}
                     >
                       {truncateAddress(address)}
                     </span>
                     <Button
                       className="shrink-0"
+                      onClick={() => disconnect()}
                       size="sm"
                       type="button"
                       variant="outline"
-                      onClick={() => disconnect()}
                     >
                       Disconnect
                     </Button>
                   </div>
                   <DropdownMenuSeparator />
                   <button
-                    type="button"
+                    className={`
+                      block w-full rounded-sm px-2 py-1.5 text-left text-sm
+                      font-medium
+                      hover:bg-accent hover:text-accent-foreground
+                    `}
                     onClick={handleAddNewWallet}
-                    className="block w-full rounded-sm px-2 py-1.5 text-left text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+                    type="button"
                   >
                     Add a new wallet
                   </button>
@@ -545,7 +603,13 @@ export function EthPayClient() {
               </DropdownMenu>
             ) : (
               <Button
-                className="border border-border shadow-none hover:shadow-none focus:shadow-none focus-visible:shadow-none active:shadow-none"
+                className={`
+                  border border-border shadow-none
+                  hover:shadow-none
+                  focus:shadow-none
+                  focus-visible:shadow-none
+                  active:shadow-none
+                `}
                 disabled={connecting}
                 onClick={handleOpenConnectModal}
                 type="button"
@@ -558,9 +622,24 @@ export function EthPayClient() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-5">
-        <div className="flex min-w-0 flex-col gap-6 min-[560px]:flex-row min-[560px]:items-start">
-          <div className="min-w-0 flex-1 rounded-xl border border-border bg-card p-6 min-[560px]:min-w-[560px]">
+      <div
+        className={`
+        mx-auto w-full max-w-6xl px-4 py-8
+        sm:px-5
+      `}
+      >
+        <div
+          className={`
+          flex min-w-0 flex-col gap-6
+          min-[560px]:flex-row min-[560px]:items-start
+        `}
+        >
+          <div
+            className={`
+            min-w-0 flex-1 rounded-xl border border-border bg-card p-6
+            min-[560px]:min-w-[560px]
+          `}
+          >
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
                 <Image
@@ -570,7 +649,12 @@ export function EthPayClient() {
                   src="/crypto/ethereum/ethereum-logo.svg"
                   width={40}
                 />
-                <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">
+                <h1
+                  className={`
+                  text-2xl font-semibold tracking-tight
+                  md:text-3xl
+                `}
+                >
                   {paymentTitle}
                 </h1>
               </div>
@@ -598,7 +682,13 @@ export function EthPayClient() {
 
               {/* Payment Status Messages */}
               {paymentStatus.status === "confirmed" && (
-                <div className="flex items-center gap-3 rounded-lg border border-green-500/30 bg-green-500/10 p-4 text-green-700 dark:text-green-400">
+                <div
+                  className={`
+                  flex items-center gap-3 rounded-lg border border-green-500/30
+                  bg-green-500/10 p-4 text-green-700
+                  dark:text-green-400
+                `}
+                >
                   <CheckCircle2 className="size-5 shrink-0" />
                   <div>
                     <p className="font-medium">Payment confirmed!</p>
@@ -610,7 +700,12 @@ export function EthPayClient() {
               )}
 
               {paymentStatus.status === "error" && (
-                <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-destructive">
+                <div
+                  className={`
+                  flex items-center gap-3 rounded-lg border
+                  border-destructive/30 bg-destructive/10 p-4 text-destructive
+                `}
+                >
                   <AlertCircle className="size-5 shrink-0" />
                   <div>
                     <p className="font-medium">Payment failed</p>
@@ -623,19 +718,19 @@ export function EthPayClient() {
                 {!address ? (
                   <Button
                     className="min-w-[12rem]"
+                    disabled={connecting}
+                    onClick={handleOpenConnectModal}
                     size="lg"
                     type="button"
-                    onClick={handleOpenConnectModal}
-                    disabled={connecting}
                   >
                     {connecting ? "Connecting…" : "Connect wallet"}
                   </Button>
                 ) : paymentStatus.status === "confirmed" ? (
                   <Button
                     className="min-w-[12rem]"
+                    disabled
                     size="lg"
                     type="button"
-                    disabled
                   >
                     <CheckCircle2 className="mr-2 size-4" />
                     Payment Complete
@@ -643,10 +738,10 @@ export function EthPayClient() {
                 ) : (
                   <Button
                     className="min-w-[12rem]"
-                    size="lg"
-                    type="button"
                     disabled={isProcessing || !order}
                     onClick={sendPayment}
+                    size="lg"
+                    type="button"
                   >
                     {isProcessing ? (
                       <>
@@ -676,10 +771,13 @@ export function EthPayClient() {
                   <p className="text-sm text-muted-foreground">
                     Transaction:{" "}
                     <a
+                      className={`
+                        font-mono text-primary
+                        hover:underline
+                      `}
                       href={`https://${chain === "ethereum" ? "" : chain + "."}etherscan.io/tx/${paymentTxHash}`}
-                      target="_blank"
                       rel="noopener noreferrer"
-                      className="font-mono text-primary hover:underline"
+                      target="_blank"
                     >
                       {paymentTxHash.slice(0, 10)}...{paymentTxHash.slice(-8)}
                     </a>
@@ -689,55 +787,88 @@ export function EthPayClient() {
             </div>
           </div>
 
-          <div className="min-w-0 shrink-0 min-[560px]:w-[510px] min-[560px]:sticky min-[560px]:top-8 min-[560px]:self-start">
+          <div
+            className={`
+            min-w-0 shrink-0
+            min-[560px]:sticky min-[560px]:top-8 min-[560px]:w-[510px]
+            min-[560px]:self-start
+          `}
+          >
             <div className="rounded-xl border border-border bg-card px-6 py-5">
               <h2 className="mb-4 text-xl font-semibold">Order details</h2>
               <dl className="space-y-3 text-base">
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2
+                `}
+                >
                   <dt className="text-muted-foreground">Email address</dt>
                   <dd className="flex items-center gap-2">
                     <span>{email || "—"}</span>
                     {!user?.email && (
                       <button
-                        type="button"
+                        className={`
+                          text-primary underline
+                          hover:underline
+                        `}
                         onClick={() => router.push("/checkout")}
-                        className="text-primary underline hover:underline"
+                        type="button"
                       >
                         Change
                       </button>
                     )}
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2
+                `}
+                >
                   <dt className="text-muted-foreground">Payment method</dt>
                   <dd className="flex items-center gap-2">
                     <span>
                       {tokenLabel} ({chainLabel})
                     </span>
                     <button
-                      type="button"
+                      className={`
+                        text-primary underline
+                        hover:underline
+                      `}
                       onClick={() => router.push("/checkout")}
-                      className="text-primary underline hover:underline"
+                      type="button"
                     >
                       Change
                     </button>
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2
+                `}
+                >
                   <dt className="text-muted-foreground">Invoice id</dt>
                   <dd>
-                    <code className="break-all font-mono text-xs">
+                    <code className="font-mono text-xs break-all">
                       {orderId || "—"}
                     </code>
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2 border-t
+                  border-border pt-3
+                `}
+                >
                   <dt className="text-muted-foreground">Fiat value</dt>
                   <dd className="font-medium">
                     USD {amountUsd > 0 ? amountUsd.toFixed(2) : "0.00"}
                   </dd>
                 </div>
-                <div className="flex flex-wrap items-center justify-between gap-2 text-lg">
+                <div
+                  className={`
+                  flex flex-wrap items-center justify-between gap-2 text-lg
+                `}
+                >
                   <dt className="font-medium">Total</dt>
                   <dd className="font-semibold">
                     {isStablecoin
@@ -747,7 +878,11 @@ export function EthPayClient() {
                 </div>
               </dl>
               {!isStablecoin && (
-                <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                <p
+                  className={`
+                  mt-4 flex items-center gap-2 text-sm text-muted-foreground
+                `}
+                >
                   We&apos;ve converted this price from USD to ETH at our rate of
                   approximately {rateLabel}.
                 </p>
@@ -758,7 +893,6 @@ export function EthPayClient() {
       </div>
 
       <Dialog
-        open={connectModalOpen}
         onOpenChange={(open) => {
           if (!open) {
             setConnectStep("wallets");
@@ -766,18 +900,29 @@ export function EthPayClient() {
           }
           setConnectModalOpen(open);
         }}
+        open={connectModalOpen}
       >
         <DialogContent
-          className="max-w-[400px] gap-0 border-border bg-card p-0 sm:max-w-[400px]"
           aria-describedby={undefined}
+          className={`
+            max-w-[400px] gap-0 border-border bg-card p-0
+            sm:max-w-[400px]
+          `}
         >
-          <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+          <div
+            className={`
+            flex items-center gap-2 border-b border-border px-5 py-4
+          `}
+          >
             {connectStep === "network" && (
               <button
-                type="button"
-                onClick={() => setConnectStep("wallets")}
-                className="-ml-1 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
                 aria-label="Back"
+                className={`
+                  -ml-1 rounded p-1 text-muted-foreground
+                  hover:bg-muted hover:text-foreground
+                `}
+                onClick={() => setConnectStep("wallets")}
+                type="button"
               >
                 <ChevronRight className="size-5 rotate-180" />
               </button>
@@ -790,85 +935,156 @@ export function EthPayClient() {
             {connectStep === "wallets" ? (
               <>
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p
+                    className={`
+                    mb-2 text-xs font-medium tracking-wider
+                    text-muted-foreground uppercase
+                  `}
+                  >
                     Suggested
                   </p>
                   <div className="flex flex-col gap-2">
                     <button
-                      type="button"
-                      onClick={handleMetaMaskClick}
+                      className={`
+                        flex w-full items-center gap-3 rounded-lg border
+                        border-border bg-card px-4 py-3 text-left
+                        transition-colors
+                        hover:bg-muted/50
+                        disabled:opacity-50
+                      `}
                       disabled={connecting}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+                      onClick={handleMetaMaskClick}
+                      type="button"
                     >
                       <ConnectorIcon
+                        className="size-8 shrink-0 rounded-md object-contain"
                         connector={
                           metaMaskConnector ?? {
                             name: "MetaMask",
                             type: "injected",
                           }
                         }
-                        className="size-8 shrink-0 rounded-md object-contain"
                       />
                       <span className="flex-1 font-medium">MetaMask</span>
                       {isMetaMaskDetected && (
-                        <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-                          <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
+                        <span
+                          className={`
+                          flex items-center gap-1.5 rounded-full bg-green-500/15
+                          px-2 py-0.5 text-xs font-medium text-green-700
+                          dark:text-green-400
+                        `}
+                        >
+                          <span
+                            className={`
+                            size-1.5 shrink-0 rounded-full bg-green-500
+                          `}
+                          />
                           Detected
                         </span>
                       )}
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      <ChevronRight
+                        className={`
+                        size-4 shrink-0 text-muted-foreground
+                      `}
+                      />
                     </button>
                     <button
-                      type="button"
-                      onClick={handlePhantomClick}
+                      className={`
+                        flex w-full items-center gap-3 rounded-lg border
+                        border-border bg-card px-4 py-3 text-left
+                        transition-colors
+                        hover:bg-muted/50
+                        disabled:opacity-50
+                      `}
                       disabled={connecting}
-                      className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+                      onClick={handlePhantomClick}
+                      type="button"
                     >
                       <img
-                        src={phantomConnector?.icon ?? PHANTOM_LOGO}
                         alt=""
                         className="size-8 shrink-0 rounded-md object-contain"
-                        width={32}
                         height={32}
+                        src={phantomConnector?.icon ?? PHANTOM_LOGO}
+                        width={32}
                       />
                       <span className="flex-1 font-medium">Phantom</span>
                       {phantomConnector && (
-                        <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-                          <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
+                        <span
+                          className={`
+                          flex items-center gap-1.5 rounded-full bg-green-500/15
+                          px-2 py-0.5 text-xs font-medium text-green-700
+                          dark:text-green-400
+                        `}
+                        >
+                          <span
+                            className={`
+                            size-1.5 shrink-0 rounded-full bg-green-500
+                          `}
+                          />
                           Detected
                         </span>
                       )}
-                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                      <ChevronRight
+                        className={`
+                        size-4 shrink-0 text-muted-foreground
+                      `}
+                      />
                     </button>
                   </div>
                 </div>
                 <div>
-                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  <p
+                    className={`
+                    mb-2 text-xs font-medium tracking-wider
+                    text-muted-foreground uppercase
+                  `}
+                  >
                     Others
                   </p>
                   <div className="flex flex-col gap-2">
                     {othersConnectors.map((connector) => (
                       <button
-                        key={connector.uid}
-                        type="button"
-                        onClick={() => handleSelectConnector(connector)}
+                        className={`
+                          flex w-full items-center gap-3 rounded-lg border
+                          border-border bg-card px-4 py-3 text-left
+                          transition-colors
+                          hover:bg-muted/50
+                          disabled:opacity-50
+                        `}
                         disabled={connecting}
-                        className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+                        key={connector.uid}
+                        onClick={() => handleSelectConnector(connector)}
+                        type="button"
                       >
                         <ConnectorIcon
-                          connector={connector}
                           className="size-8 shrink-0 rounded-md object-contain"
+                          connector={connector}
                         />
                         <span className="flex-1 font-medium">
                           {connector.name}
                         </span>
                         {connector.type === "injected" && (
-                          <span className="flex items-center gap-1.5 rounded-full bg-green-500/15 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
-                            <span className="size-1.5 shrink-0 rounded-full bg-green-500" />
+                          <span
+                            className={`
+                            flex items-center gap-1.5 rounded-full
+                            bg-green-500/15 px-2 py-0.5 text-xs font-medium
+                            text-green-700
+                            dark:text-green-400
+                          `}
+                          >
+                            <span
+                              className={`
+                              size-1.5 shrink-0 rounded-full bg-green-500
+                            `}
+                            />
                             Detected
                           </span>
                         )}
-                        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+                        <ChevronRight
+                          className={`
+                          size-4 shrink-0 text-muted-foreground
+                        `}
+                        />
                       </button>
                     ))}
                   </div>
@@ -882,14 +1098,24 @@ export function EthPayClient() {
               </>
             ) : (
               <div className="space-y-2">
-                <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                <p
+                  className={`
+                  mb-3 text-xs font-medium tracking-wider text-muted-foreground
+                  uppercase
+                `}
+                >
                   Connect {multiChainConnectorForNetwork?.name ?? "wallet"} to
                 </p>
                 <button
-                  type="button"
-                  onClick={handleNetworkEvms}
+                  className={`
+                    flex w-full items-center gap-3 rounded-lg border
+                    border-border bg-card px-4 py-3 text-left transition-colors
+                    hover:bg-muted/50
+                    disabled:opacity-50
+                  `}
                   disabled={connecting}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+                  onClick={handleNetworkEvms}
+                  type="button"
                 >
                   <Image
                     alt="EVMs"
@@ -899,12 +1125,20 @@ export function EthPayClient() {
                     width={32}
                   />
                   <span className="font-medium">Ethereum (this page)</span>
-                  <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                  <ChevronRight
+                    className={`
+                    ml-auto size-4 shrink-0 text-muted-foreground
+                  `}
+                  />
                 </button>
                 <button
-                  type="button"
+                  className={`
+                    flex w-full items-center gap-3 rounded-lg border
+                    border-border bg-card px-4 py-3 text-left transition-colors
+                    hover:bg-muted/50
+                  `}
                   onClick={handleNetworkSolana}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                  type="button"
                 >
                   <Image
                     alt="Solana"
@@ -914,12 +1148,20 @@ export function EthPayClient() {
                     width={32}
                   />
                   <span className="font-medium">Solana</span>
-                  <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                  <ChevronRight
+                    className={`
+                    ml-auto size-4 shrink-0 text-muted-foreground
+                  `}
+                  />
                 </button>
                 <button
-                  type="button"
+                  className={`
+                    flex w-full items-center gap-3 rounded-lg border
+                    border-border bg-card px-4 py-3 text-left transition-colors
+                    hover:bg-muted/50
+                  `}
                   onClick={handleNetworkSui}
-                  className="flex w-full items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/50"
+                  type="button"
                 >
                   <Image
                     alt="Sui"
@@ -929,7 +1171,11 @@ export function EthPayClient() {
                     width={32}
                   />
                   <span className="font-medium">Sui</span>
-                  <ChevronRight className="ml-auto size-4 shrink-0 text-muted-foreground" />
+                  <ChevronRight
+                    className={`
+                    ml-auto size-4 shrink-0 text-muted-foreground
+                  `}
+                  />
                 </button>
               </div>
             )}

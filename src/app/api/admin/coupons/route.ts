@@ -53,24 +53,24 @@ export async function GET(request: NextRequest) {
 
     const couponRows = await db
       .select({
-        id: couponsTable.id,
-        label: couponsTable.label,
-        method: couponsTable.method,
+        appliesTo: couponsTable.appliesTo,
+        buyQuantity: couponsTable.buyQuantity,
         code: couponsTable.code,
-        dateStart: couponsTable.dateStart,
+        createdAt: couponsTable.createdAt,
         dateEnd: couponsTable.dateEnd,
+        dateStart: couponsTable.dateStart,
         discountKind: couponsTable.discountKind,
         discountType: couponsTable.discountType,
         discountValue: couponsTable.discountValue,
-        appliesTo: couponsTable.appliesTo,
-        buyQuantity: couponsTable.buyQuantity,
-        getQuantity: couponsTable.getQuantity,
         getDiscountType: couponsTable.getDiscountType,
         getDiscountValue: couponsTable.getDiscountValue,
+        getQuantity: couponsTable.getQuantity,
+        id: couponsTable.id,
+        label: couponsTable.label,
         maxUses: couponsTable.maxUses,
         maxUsesPerCustomer: couponsTable.maxUsesPerCustomer,
         maxUsesPerCustomerType: couponsTable.maxUsesPerCustomerType,
-        createdAt: couponsTable.createdAt,
+        method: couponsTable.method,
         updatedAt: couponsTable.updatedAt,
       })
       .from(couponsTable)
@@ -82,8 +82,8 @@ export async function GET(request: NextRequest) {
       coupons.length > 0
         ? await db
             .select({
-              couponId: couponRedemptionTable.couponId,
               count: sql<number>`count(*)::int`.as("count"),
+              couponId: couponRedemptionTable.couponId,
             })
             .from(couponRedemptionTable)
             .where(
@@ -100,25 +100,25 @@ export async function GET(request: NextRequest) {
     );
 
     let items = coupons.map((c) => ({
-      id: c.id,
-      label: c.label ?? null,
-      method: c.method ?? "code",
+      appliesTo: c.appliesTo,
+      buyQuantity: c.buyQuantity ?? null,
       code: c.code,
-      dateStart: c.dateStart?.toISOString() ?? null,
+      createdAt: c.createdAt?.toISOString?.() ?? new Date().toISOString(),
       dateEnd: c.dateEnd?.toISOString() ?? null,
+      dateStart: c.dateStart?.toISOString() ?? null,
       discountKind: c.discountKind ?? "amount_off_order",
       discountType: c.discountType,
       discountValue: c.discountValue,
-      appliesTo: c.appliesTo,
-      buyQuantity: c.buyQuantity ?? null,
-      getQuantity: c.getQuantity ?? null,
       getDiscountType: c.getDiscountType ?? null,
       getDiscountValue: c.getDiscountValue ?? null,
+      getQuantity: c.getQuantity ?? null,
+      id: c.id,
+      label: c.label ?? null,
       maxUses: c.maxUses,
       maxUsesPerCustomer: c.maxUsesPerCustomer,
       maxUsesPerCustomerType: c.maxUsesPerCustomerType ?? null,
+      method: c.method ?? "code",
       redemptionCount: countByCoupon.get(c.id) ?? 0,
-      createdAt: c.createdAt?.toISOString?.() ?? new Date().toISOString(),
       updatedAt: c.updatedAt?.toISOString?.() ?? new Date().toISOString(),
     }));
 
@@ -155,41 +155,41 @@ export async function POST(request: NextRequest) {
     if (!authResult?.ok) return adminAuthFailureResponse(authResult);
 
     const body = (await request.json()) as {
-      label?: string | null;
-      method?: "automatic" | "code";
+      appliesTo?: "shipping" | "subtotal";
+      buyQuantity?: null | number;
+      categoryIds?: string[];
       code?: string;
-      dateStart?: string | null;
-      dateEnd?: string | null;
+      dateEnd?: null | string;
+      dateStart?: null | string;
       discountKind?:
-        | "amount_off_products"
         | "amount_off_order"
+        | "amount_off_products"
         | "buy_x_get_y"
         | "free_shipping";
-      discountType?: "percent" | "fixed";
+      discountType?: "fixed" | "percent";
       discountValue?: number;
-      appliesTo?: "subtotal" | "shipping";
-      buyQuantity?: number | null;
-      getQuantity?: number | null;
-      getDiscountType?: "percent" | "fixed" | null;
-      getDiscountValue?: number | null;
-      maxUses?: number | null;
-      maxUsesPerCustomer?: number | null;
+      getDiscountType?: "fixed" | "percent" | null;
+      getDiscountValue?: null | number;
+      getQuantity?: null | number;
+      label?: null | string;
+      maxUses?: null | number;
+      maxUsesPerCustomer?: null | number;
       maxUsesPerCustomerType?: "account" | "phone" | "shipping_address" | null;
-      tokenHolderChain?: string | null;
-      tokenHolderTokenAddress?: string | null;
-      tokenHolderMinBalance?: string | null;
-      categoryIds?: string[];
+      method?: "automatic" | "code";
       productIds?: string[];
-      rulePaymentMethodKey?: string | null;
-      ruleSubtotalMinCents?: number | null;
-      ruleSubtotalMaxCents?: number | null;
-      ruleShippingMinCents?: number | null;
-      ruleShippingMaxCents?: number | null;
-      ruleProductCountMin?: number | null;
-      ruleProductCountMax?: number | null;
-      ruleOrderTotalMinCents?: number | null;
-      ruleOrderTotalMaxCents?: number | null;
-      ruleAppliesToEsim?: number | null;
+      ruleAppliesToEsim?: null | number;
+      ruleOrderTotalMaxCents?: null | number;
+      ruleOrderTotalMinCents?: null | number;
+      rulePaymentMethodKey?: null | string;
+      ruleProductCountMax?: null | number;
+      ruleProductCountMin?: null | number;
+      ruleShippingMaxCents?: null | number;
+      ruleShippingMinCents?: null | number;
+      ruleSubtotalMaxCents?: null | number;
+      ruleSubtotalMinCents?: null | number;
+      tokenHolderChain?: null | string;
+      tokenHolderMinBalance?: null | string;
+      tokenHolderTokenAddress?: null | string;
     };
 
     const method = body.method === "automatic" ? "automatic" : "code";
@@ -268,43 +268,43 @@ export async function POST(request: NextRequest) {
         : null;
 
     await db.insert(couponsTable).values({
-      id,
-      label,
-      method,
+      appliesTo,
+      buyQuantity,
       code: codeRaw,
-      dateStart,
+      createdAt: now,
       dateEnd,
+      dateStart,
       discountKind,
       discountType,
       discountValue,
-      appliesTo,
-      buyQuantity,
-      getQuantity,
       getDiscountType,
       getDiscountValue,
+      getQuantity,
+      id,
+      label,
       maxUses: body.maxUses ?? null,
       maxUsesPerCustomer: body.maxUsesPerCustomer ?? null,
       maxUsesPerCustomerType: body.maxUsesPerCustomerType ?? null,
-      tokenHolderChain: body.tokenHolderChain ?? null,
-      tokenHolderTokenAddress: body.tokenHolderTokenAddress ?? null,
-      tokenHolderMinBalance: body.tokenHolderMinBalance ?? null,
-      rulePaymentMethodKey: body.rulePaymentMethodKey ?? null,
-      ruleSubtotalMinCents: body.ruleSubtotalMinCents ?? null,
-      ruleSubtotalMaxCents: body.ruleSubtotalMaxCents ?? null,
-      ruleShippingMinCents: body.ruleShippingMinCents ?? null,
-      ruleShippingMaxCents: body.ruleShippingMaxCents ?? null,
-      ruleProductCountMin: body.ruleProductCountMin ?? null,
-      ruleProductCountMax: body.ruleProductCountMax ?? null,
-      ruleOrderTotalMinCents: body.ruleOrderTotalMinCents ?? null,
-      ruleOrderTotalMaxCents: body.ruleOrderTotalMaxCents ?? null,
+      method,
       ruleAppliesToEsim: body.ruleAppliesToEsim === 1 ? 1 : null,
-      createdAt: now,
+      ruleOrderTotalMaxCents: body.ruleOrderTotalMaxCents ?? null,
+      ruleOrderTotalMinCents: body.ruleOrderTotalMinCents ?? null,
+      rulePaymentMethodKey: body.rulePaymentMethodKey ?? null,
+      ruleProductCountMax: body.ruleProductCountMax ?? null,
+      ruleProductCountMin: body.ruleProductCountMin ?? null,
+      ruleShippingMaxCents: body.ruleShippingMaxCents ?? null,
+      ruleShippingMinCents: body.ruleShippingMinCents ?? null,
+      ruleSubtotalMaxCents: body.ruleSubtotalMaxCents ?? null,
+      ruleSubtotalMinCents: body.ruleSubtotalMinCents ?? null,
+      tokenHolderChain: body.tokenHolderChain ?? null,
+      tokenHolderMinBalance: body.tokenHolderMinBalance ?? null,
+      tokenHolderTokenAddress: body.tokenHolderTokenAddress ?? null,
       updatedAt: now,
     });
 
     const categoryIds = [...new Set((body.categoryIds ?? []).filter(Boolean))];
     for (const categoryId of categoryIds) {
-      await db.insert(couponCategoryTable).values({ couponId: id, categoryId });
+      await db.insert(couponCategoryTable).values({ categoryId, couponId: id });
     }
 
     const productIds = [...new Set((body.productIds ?? []).filter(Boolean))];
@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { id, method, code: codeRaw, discountKind },
+      { code: codeRaw, discountKind, id, method },
       { status: 201 },
     );
   } catch (err) {

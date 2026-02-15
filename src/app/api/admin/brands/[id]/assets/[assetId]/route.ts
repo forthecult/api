@@ -7,7 +7,7 @@ import { getAdminAuth } from "~/lib/admin-api-auth";
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string; assetId: string }> },
+  { params }: { params: Promise<{ assetId: string; id: string }> },
 ) {
   try {
     const authResult = await getAdminAuth(_request);
@@ -15,7 +15,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id: brandId, assetId } = await params;
+    const { assetId, id: brandId } = await params;
     const deletedRows = await db
       .delete(brandAssetTable)
       .where(

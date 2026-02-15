@@ -65,12 +65,12 @@ export async function POST(
         : null;
 
     await db.insert(supportTicketMessageTable).values({
-      id: messageId,
-      ticketId,
-      role: "staff",
-      userId: staffUserId,
       content,
       createdAt: now,
+      id: messageId,
+      role: "staff",
+      ticketId,
+      userId: staffUserId,
     });
 
     await db
@@ -82,10 +82,10 @@ export async function POST(
     void onSupportTicketReply(ticketId, { messagePreview: content });
 
     return NextResponse.json({
-      id: messageId,
-      role: "staff",
       content,
       createdAt: now.toISOString(),
+      id: messageId,
+      role: "staff",
     });
   } catch (err) {
     console.error("Admin support-tickets [id] messages POST:", err);

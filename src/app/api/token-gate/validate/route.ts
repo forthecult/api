@@ -1,94 +1,20 @@
 import { PublicKey } from "@solana/web3.js";
 import bs58 from "bs58";
-import nacl from "tweetnacl";
 import { NextResponse } from "next/server";
+import nacl from "tweetnacl";
 
+import {
+  getTokenGateConfig,
+  type TokenGateResourceType,
+  walletPassesTokenGates,
+} from "~/lib/token-gate";
 import {
   buildTokenGateSetCookie,
   COOKIE_NAME as TOKEN_GATE_COOKIE_NAME,
 } from "~/lib/token-gate-cookie";
-import {
-  getTokenGateConfig,
-  walletPassesTokenGates,
-  type TokenGateResourceType,
-} from "~/lib/token-gate";
 
 const MESSAGE_PREFIX = "Sign to prove wallet ownership for token gate:\n";
 const CHALLENGE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
-
-function getSignatureBytes(params: {
-  signature?: string;
-  signatureBase58?: string;
-}): Uint8Array | null {
-  if (params.signatureBase58) {
-    try {
-      const decoded = bs58.decode(params.signatureBase58);
-      if (decoded.length < 64) return null;
-      return decoded.length === 64 ? decoded : decoded.slice(0, 64);
-    } catch {
-      return null;
-    }
-  }
-  if (params.signature) {
-    try {
-      const buf = Buffer.from(params.signature, "base64");
-      if (buf.length < 64) return null;
-      return new Uint8Array(buf.length === 64 ? buf : buf.subarray(0, 64));
-    } catch {
-      return null;
-    }
-  }
-  return null;
-}
-
-/** Parse challenge message: timestamp always; resourceType/resourceId when present (bound signature). */
-function parseMessagePayload(message: string): {
-  timestamp: number | null;
-  resourceType: string | null;
-  resourceId: string | null;
-} {
-  if (!message.startsWith(MESSAGE_PREFIX)) {
-    return { timestamp: null, resourceType: null, resourceId: null };
-  }
-  const rest = message.slice(MESSAGE_PREFIX.length).trim();
-  let timestamp: number | null = null;
-  let resourceType: string | null = null;
-  let resourceId: string | null = null;
-  for (const line of rest.split("\n")) {
-    const t = line.trim();
-    if (t.startsWith("resourceType: ")) {
-      resourceType = t.slice("resourceType: ".length).trim();
-    } else if (t.startsWith("resourceId: ")) {
-      resourceId = t.slice("resourceId: ".length).trim();
-    } else if (t.startsWith("timestamp: ")) {
-      const date = new Date(t.slice("timestamp: ".length).trim());
-      timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
-    }
-  }
-  if (timestamp === null && resourceType === null && resourceId === null) {
-    const date = new Date(rest);
-    timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
-  }
-  return { timestamp, resourceType, resourceId };
-}
-
-function verifySolanaSignature(params: {
-  address: string;
-  message: string;
-  signature?: string;
-  signatureBase58?: string;
-}): boolean {
-  const signature = getSignatureBytes(params);
-  if (!signature || signature.length !== 64) return false;
-  try {
-    const publicKey = new PublicKey(params.address);
-    const publicKeyBytes = publicKey.toBytes();
-    const messageBytes = new TextEncoder().encode(params.message);
-    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
-  } catch {
-    return false;
-  }
-}
 
 /**
  * POST /api/token-gate/validate
@@ -101,17 +27,17 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       address?: string;
       message?: string;
+      resourceId?: string;
+      resourceType?: string;
       signature?: string;
       signatureBase58?: string;
-      resourceType?: string;
-      resourceId?: string;
     };
 
     const address = typeof body.address === "string" ? body.address.trim() : "";
     const message = typeof body.message === "string" ? body.message : "";
     const resourceType = (body.resourceType ?? "").toLowerCase() as
-      | TokenGateResourceType
-      | "";
+      | ""
+      | TokenGateResourceType;
     const resourceId =
       typeof body.resourceId === "string" ? body.resourceId.trim() : "";
 
@@ -133,7 +59,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    if (!["product", "category", "page"].includes(resourceType)) {
+    if (!["category", "page", "product"].includes(resourceType)) {
       return NextResponse.json(
         { error: "resourceType must be product, category, or page" },
         { status: 400 },
@@ -186,13 +112,13 @@ export async function POST(request: Request) {
     );
     if (!config.tokenGated || config.gates.length === 0) {
       return NextResponse.json({
-        valid: true,
-        passedGate: null,
         message: "Resource is not token gated",
+        passedGate: null,
+        valid: true,
       });
     }
 
-    const { valid, passedGate } = await walletPassesTokenGates(
+    const { passedGate, valid } = await walletPassesTokenGates(
       address,
       config.gates,
     );
@@ -210,10 +136,10 @@ export async function POST(request: Request) {
         );
       }
       return NextResponse.json({
-        valid: false,
-        passedGate: null,
         error:
           "We couldn't verify your token balance. Connect the wallet that holds the required tokens and try again.",
+        passedGate: null,
+        valid: false,
       });
     }
 
@@ -235,13 +161,13 @@ export async function POST(request: Request) {
     );
 
     const res = NextResponse.json({
-      valid: true,
       passedGate: passedGate
         ? {
-            tokenSymbol: passedGate.tokenSymbol,
             quantity: passedGate.quantity,
+            tokenSymbol: passedGate.tokenSymbol,
           }
         : null,
+      valid: true,
     });
     res.headers.append("Set-Cookie", setCookie);
     return res;
@@ -251,5 +177,79 @@ export async function POST(request: Request) {
       { error: "Validation failed", valid: false },
       { status: 500 },
     );
+  }
+}
+
+function getSignatureBytes(params: {
+  signature?: string;
+  signatureBase58?: string;
+}): null | Uint8Array {
+  if (params.signatureBase58) {
+    try {
+      const decoded = bs58.decode(params.signatureBase58);
+      if (decoded.length < 64) return null;
+      return decoded.length === 64 ? decoded : decoded.slice(0, 64);
+    } catch {
+      return null;
+    }
+  }
+  if (params.signature) {
+    try {
+      const buf = Buffer.from(params.signature, "base64");
+      if (buf.length < 64) return null;
+      return new Uint8Array(buf.length === 64 ? buf : buf.subarray(0, 64));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/** Parse challenge message: timestamp always; resourceType/resourceId when present (bound signature). */
+function parseMessagePayload(message: string): {
+  resourceId: null | string;
+  resourceType: null | string;
+  timestamp: null | number;
+} {
+  if (!message.startsWith(MESSAGE_PREFIX)) {
+    return { resourceId: null, resourceType: null, timestamp: null };
+  }
+  const rest = message.slice(MESSAGE_PREFIX.length).trim();
+  let timestamp: null | number = null;
+  let resourceType: null | string = null;
+  let resourceId: null | string = null;
+  for (const line of rest.split("\n")) {
+    const t = line.trim();
+    if (t.startsWith("resourceType: ")) {
+      resourceType = t.slice("resourceType: ".length).trim();
+    } else if (t.startsWith("resourceId: ")) {
+      resourceId = t.slice("resourceId: ".length).trim();
+    } else if (t.startsWith("timestamp: ")) {
+      const date = new Date(t.slice("timestamp: ".length).trim());
+      timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
+    }
+  }
+  if (timestamp === null && resourceType === null && resourceId === null) {
+    const date = new Date(rest);
+    timestamp = Number.isNaN(date.getTime()) ? null : date.getTime();
+  }
+  return { resourceId, resourceType, timestamp };
+}
+
+function verifySolanaSignature(params: {
+  address: string;
+  message: string;
+  signature?: string;
+  signatureBase58?: string;
+}): boolean {
+  const signature = getSignatureBytes(params);
+  if (!signature || signature.length !== 64) return false;
+  try {
+    const publicKey = new PublicKey(params.address);
+    const publicKeyBytes = publicKey.toBytes();
+    const messageBytes = new TextEncoder().encode(params.message);
+    return nacl.sign.detached.verify(messageBytes, signature, publicKeyBytes);
+  } catch {
+    return false;
   }
 }

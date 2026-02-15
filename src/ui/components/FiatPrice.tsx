@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 
 interface FiatPriceProps {
-  usdAmount: number;
   className?: string;
+  usdAmount: number;
 }
 
-export function FiatPrice({ usdAmount, className }: FiatPriceProps) {
+export function FiatPrice({ className, usdAmount }: FiatPriceProps) {
   const [mounted, setMounted] = useState(false);
   const { convertUsdToFiat, formatFiat } = useCountryCurrency();
 
@@ -20,9 +20,9 @@ export function FiatPrice({ usdAmount, className }: FiatPriceProps) {
   if (!mounted) {
     return (
       <span
+        aria-hidden
         className={className ?? ""}
         data-fiat-price
-        aria-hidden
         style={{ minWidth: "4ch" }}
       >
         {"\u00A0"}
@@ -34,9 +34,9 @@ export function FiatPrice({ usdAmount, className }: FiatPriceProps) {
   if (fiatAmount == null) {
     return (
       <span
+        aria-hidden
         className={className ?? ""}
         data-fiat-price
-        aria-hidden
         style={{ minWidth: "4ch" }}
       >
         {"\u00A0"}

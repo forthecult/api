@@ -10,6 +10,38 @@ import {
 } from "~/db/schema";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
+    const { id } = await params;
+
+    const [deleted] = await db
+      .delete(couponsTable)
+      .where(eq(couponsTable.id, id))
+      .returning({ id: couponsTable.id });
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Discount not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin discount delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete discount" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -21,37 +53,37 @@ export async function GET(
     const { id } = await params;
     const [coupon] = await db
       .select({
-        id: couponsTable.id,
-        label: couponsTable.label,
-        method: couponsTable.method,
+        appliesTo: couponsTable.appliesTo,
+        buyQuantity: couponsTable.buyQuantity,
         code: couponsTable.code,
-        dateStart: couponsTable.dateStart,
+        createdAt: couponsTable.createdAt,
         dateEnd: couponsTable.dateEnd,
+        dateStart: couponsTable.dateStart,
         discountKind: couponsTable.discountKind,
         discountType: couponsTable.discountType,
         discountValue: couponsTable.discountValue,
-        appliesTo: couponsTable.appliesTo,
-        buyQuantity: couponsTable.buyQuantity,
-        getQuantity: couponsTable.getQuantity,
         getDiscountType: couponsTable.getDiscountType,
         getDiscountValue: couponsTable.getDiscountValue,
+        getQuantity: couponsTable.getQuantity,
+        id: couponsTable.id,
+        label: couponsTable.label,
         maxUses: couponsTable.maxUses,
         maxUsesPerCustomer: couponsTable.maxUsesPerCustomer,
         maxUsesPerCustomerType: couponsTable.maxUsesPerCustomerType,
-        tokenHolderChain: couponsTable.tokenHolderChain,
-        tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
-        tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
-        rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
-        ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
-        ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
-        ruleShippingMinCents: couponsTable.ruleShippingMinCents,
-        ruleShippingMaxCents: couponsTable.ruleShippingMaxCents,
-        ruleProductCountMin: couponsTable.ruleProductCountMin,
-        ruleProductCountMax: couponsTable.ruleProductCountMax,
-        ruleOrderTotalMinCents: couponsTable.ruleOrderTotalMinCents,
-        ruleOrderTotalMaxCents: couponsTable.ruleOrderTotalMaxCents,
+        method: couponsTable.method,
         ruleAppliesToEsim: couponsTable.ruleAppliesToEsim,
-        createdAt: couponsTable.createdAt,
+        ruleOrderTotalMaxCents: couponsTable.ruleOrderTotalMaxCents,
+        ruleOrderTotalMinCents: couponsTable.ruleOrderTotalMinCents,
+        rulePaymentMethodKey: couponsTable.rulePaymentMethodKey,
+        ruleProductCountMax: couponsTable.ruleProductCountMax,
+        ruleProductCountMin: couponsTable.ruleProductCountMin,
+        ruleShippingMaxCents: couponsTable.ruleShippingMaxCents,
+        ruleShippingMinCents: couponsTable.ruleShippingMinCents,
+        ruleSubtotalMaxCents: couponsTable.ruleSubtotalMaxCents,
+        ruleSubtotalMinCents: couponsTable.ruleSubtotalMinCents,
+        tokenHolderChain: couponsTable.tokenHolderChain,
+        tokenHolderMinBalance: couponsTable.tokenHolderMinBalance,
+        tokenHolderTokenAddress: couponsTable.tokenHolderTokenAddress,
         updatedAt: couponsTable.updatedAt,
       })
       .from(couponsTable)
@@ -83,40 +115,40 @@ export async function GET(
     const redemptionTotal = redemptionCount[0]?.count ?? 0;
 
     return NextResponse.json({
-      id: coupon.id,
-      label: coupon.label ?? null,
-      method: coupon.method ?? "code",
+      appliesTo: coupon.appliesTo,
+      buyQuantity: coupon.buyQuantity ?? null,
+      categoryIds: categoryRows.map((r) => r.categoryId),
       code: coupon.code,
-      dateStart: coupon.dateStart?.toISOString() ?? null,
+      createdAt: coupon.createdAt.toISOString(),
       dateEnd: coupon.dateEnd?.toISOString() ?? null,
+      dateStart: coupon.dateStart?.toISOString() ?? null,
       discountKind: coupon.discountKind ?? "amount_off_order",
       discountType: coupon.discountType,
       discountValue: coupon.discountValue,
-      appliesTo: coupon.appliesTo,
-      buyQuantity: coupon.buyQuantity ?? null,
-      getQuantity: coupon.getQuantity ?? null,
       getDiscountType: coupon.getDiscountType ?? null,
       getDiscountValue: coupon.getDiscountValue ?? null,
+      getQuantity: coupon.getQuantity ?? null,
+      id: coupon.id,
+      label: coupon.label ?? null,
       maxUses: coupon.maxUses,
       maxUsesPerCustomer: coupon.maxUsesPerCustomer,
       maxUsesPerCustomerType: coupon.maxUsesPerCustomerType,
-      tokenHolderChain: coupon.tokenHolderChain ?? null,
-      tokenHolderTokenAddress: coupon.tokenHolderTokenAddress ?? null,
-      tokenHolderMinBalance: coupon.tokenHolderMinBalance ?? null,
-      rulePaymentMethodKey: coupon.rulePaymentMethodKey ?? null,
-      ruleSubtotalMinCents: coupon.ruleSubtotalMinCents ?? null,
-      ruleSubtotalMaxCents: coupon.ruleSubtotalMaxCents ?? null,
-      ruleShippingMinCents: coupon.ruleShippingMinCents ?? null,
-      ruleShippingMaxCents: coupon.ruleShippingMaxCents ?? null,
-      ruleProductCountMin: coupon.ruleProductCountMin ?? null,
-      ruleProductCountMax: coupon.ruleProductCountMax ?? null,
-      ruleOrderTotalMinCents: coupon.ruleOrderTotalMinCents ?? null,
-      ruleOrderTotalMaxCents: coupon.ruleOrderTotalMaxCents ?? null,
-      ruleAppliesToEsim: coupon.ruleAppliesToEsim ?? null,
-      categoryIds: categoryRows.map((r) => r.categoryId),
+      method: coupon.method ?? "code",
       productIds: productRows.map((r) => r.productId),
       redemptionCount: redemptionTotal,
-      createdAt: coupon.createdAt.toISOString(),
+      ruleAppliesToEsim: coupon.ruleAppliesToEsim ?? null,
+      ruleOrderTotalMaxCents: coupon.ruleOrderTotalMaxCents ?? null,
+      ruleOrderTotalMinCents: coupon.ruleOrderTotalMinCents ?? null,
+      rulePaymentMethodKey: coupon.rulePaymentMethodKey ?? null,
+      ruleProductCountMax: coupon.ruleProductCountMax ?? null,
+      ruleProductCountMin: coupon.ruleProductCountMin ?? null,
+      ruleShippingMaxCents: coupon.ruleShippingMaxCents ?? null,
+      ruleShippingMinCents: coupon.ruleShippingMinCents ?? null,
+      ruleSubtotalMaxCents: coupon.ruleSubtotalMaxCents ?? null,
+      ruleSubtotalMinCents: coupon.ruleSubtotalMinCents ?? null,
+      tokenHolderChain: coupon.tokenHolderChain ?? null,
+      tokenHolderMinBalance: coupon.tokenHolderMinBalance ?? null,
+      tokenHolderTokenAddress: coupon.tokenHolderTokenAddress ?? null,
       updatedAt: coupon.updatedAt.toISOString(),
     });
   } catch (err) {
@@ -138,41 +170,41 @@ export async function PATCH(
 
     const { id } = await params;
     const body = (await request.json()) as {
-      label?: string | null;
-      method?: "automatic" | "code";
+      appliesTo?: "shipping" | "subtotal";
+      buyQuantity?: null | number;
+      categoryIds?: string[];
       code?: string;
-      dateStart?: string | null;
-      dateEnd?: string | null;
+      dateEnd?: null | string;
+      dateStart?: null | string;
       discountKind?:
-        | "amount_off_products"
         | "amount_off_order"
+        | "amount_off_products"
         | "buy_x_get_y"
         | "free_shipping";
-      discountType?: "percent" | "fixed";
+      discountType?: "fixed" | "percent";
       discountValue?: number;
-      appliesTo?: "subtotal" | "shipping";
-      buyQuantity?: number | null;
-      getQuantity?: number | null;
-      getDiscountType?: "percent" | "fixed" | null;
-      getDiscountValue?: number | null;
-      maxUses?: number | null;
-      maxUsesPerCustomer?: number | null;
+      getDiscountType?: "fixed" | "percent" | null;
+      getDiscountValue?: null | number;
+      getQuantity?: null | number;
+      label?: null | string;
+      maxUses?: null | number;
+      maxUsesPerCustomer?: null | number;
       maxUsesPerCustomerType?: "account" | "phone" | "shipping_address" | null;
-      tokenHolderChain?: string | null;
-      tokenHolderTokenAddress?: string | null;
-      tokenHolderMinBalance?: string | null;
-      rulePaymentMethodKey?: string | null;
-      categoryIds?: string[];
+      method?: "automatic" | "code";
       productIds?: string[];
-      ruleSubtotalMinCents?: number | null;
-      ruleSubtotalMaxCents?: number | null;
-      ruleShippingMinCents?: number | null;
-      ruleShippingMaxCents?: number | null;
-      ruleProductCountMin?: number | null;
-      ruleProductCountMax?: number | null;
-      ruleOrderTotalMinCents?: number | null;
-      ruleOrderTotalMaxCents?: number | null;
-      ruleAppliesToEsim?: number | null;
+      ruleAppliesToEsim?: null | number;
+      ruleOrderTotalMaxCents?: null | number;
+      ruleOrderTotalMinCents?: null | number;
+      rulePaymentMethodKey?: null | string;
+      ruleProductCountMax?: null | number;
+      ruleProductCountMin?: null | number;
+      ruleShippingMaxCents?: null | number;
+      ruleShippingMinCents?: null | number;
+      ruleSubtotalMaxCents?: null | number;
+      ruleSubtotalMinCents?: null | number;
+      tokenHolderChain?: null | string;
+      tokenHolderMinBalance?: null | string;
+      tokenHolderTokenAddress?: null | string;
     };
 
     const [existing] = await db
@@ -287,7 +319,7 @@ export async function PATCH(
       for (const categoryId of categoryIds) {
         await db
           .insert(couponCategoryTable)
-          .values({ couponId: id, categoryId });
+          .values({ categoryId, couponId: id });
       }
     }
 
@@ -326,72 +358,40 @@ export async function PATCH(
     ]);
 
     return NextResponse.json({
-      id: updated.id,
-      method: updated.method ?? "code",
+      appliesTo: updated.appliesTo,
+      buyQuantity: updated.buyQuantity ?? null,
+      categoryIds: categoryRows.map((r) => r.categoryId),
       code: updated.code,
-      dateStart: updated.dateStart?.toISOString() ?? null,
+      createdAt: updated.createdAt.toISOString(),
       dateEnd: updated.dateEnd?.toISOString() ?? null,
+      dateStart: updated.dateStart?.toISOString() ?? null,
       discountKind: updated.discountKind ?? "amount_off_order",
       discountType: updated.discountType,
       discountValue: updated.discountValue,
-      appliesTo: updated.appliesTo,
-      buyQuantity: updated.buyQuantity ?? null,
-      getQuantity: updated.getQuantity ?? null,
       getDiscountType: updated.getDiscountType ?? null,
       getDiscountValue: updated.getDiscountValue ?? null,
+      getQuantity: updated.getQuantity ?? null,
+      id: updated.id,
       maxUses: updated.maxUses,
       maxUsesPerCustomer: updated.maxUsesPerCustomer,
       maxUsesPerCustomerType: updated.maxUsesPerCustomerType,
-      rulePaymentMethodKey: updated.rulePaymentMethodKey ?? null,
-      ruleSubtotalMinCents: updated.ruleSubtotalMinCents ?? null,
-      ruleSubtotalMaxCents: updated.ruleSubtotalMaxCents ?? null,
-      ruleShippingMinCents: updated.ruleShippingMinCents ?? null,
-      ruleShippingMaxCents: updated.ruleShippingMaxCents ?? null,
-      ruleProductCountMin: updated.ruleProductCountMin ?? null,
-      ruleProductCountMax: updated.ruleProductCountMax ?? null,
-      ruleOrderTotalMinCents: updated.ruleOrderTotalMinCents ?? null,
-      ruleOrderTotalMaxCents: updated.ruleOrderTotalMaxCents ?? null,
-      categoryIds: categoryRows.map((r) => r.categoryId),
+      method: updated.method ?? "code",
       productIds: productRows.map((r) => r.productId),
-      createdAt: updated.createdAt.toISOString(),
+      ruleOrderTotalMaxCents: updated.ruleOrderTotalMaxCents ?? null,
+      ruleOrderTotalMinCents: updated.ruleOrderTotalMinCents ?? null,
+      rulePaymentMethodKey: updated.rulePaymentMethodKey ?? null,
+      ruleProductCountMax: updated.ruleProductCountMax ?? null,
+      ruleProductCountMin: updated.ruleProductCountMin ?? null,
+      ruleShippingMaxCents: updated.ruleShippingMaxCents ?? null,
+      ruleShippingMinCents: updated.ruleShippingMinCents ?? null,
+      ruleSubtotalMaxCents: updated.ruleSubtotalMaxCents ?? null,
+      ruleSubtotalMinCents: updated.ruleSubtotalMinCents ?? null,
       updatedAt: updated.updatedAt.toISOString(),
     });
   } catch (err) {
     console.error("Admin discount update error:", err);
     return NextResponse.json(
       { error: "Failed to update discount" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
-
-    const { id } = await params;
-
-    const [deleted] = await db
-      .delete(couponsTable)
-      .where(eq(couponsTable.id, id))
-      .returning({ id: couponsTable.id });
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: "Discount not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Admin discount delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete discount" },
       { status: 500 },
     );
   }

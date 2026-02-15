@@ -21,7 +21,7 @@ export default function AdminCreateOrderPage() {
   const [email, setEmail] = useState("");
   const [userId, setUserId] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -30,13 +30,13 @@ export default function AdminCreateOrderPage() {
       setSubmitting(true);
       try {
         const res = await fetch(`${API_BASE}/api/admin/orders`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
             email: email.trim() || "draft@admin.local",
             userId: userId.trim() || null,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -57,11 +57,19 @@ export default function AdminCreateOrderPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div className="flex items-center gap-4">
           <Link
+            className={`
+              text-sm font-medium text-muted-foreground
+              hover:text-foreground
+            `}
             href="/orders"
-            className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
             ← Back to orders
           </Link>
@@ -74,7 +82,10 @@ export default function AdminCreateOrderPage() {
       {error && (
         <div
           className={cn(
-            "rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800",
+            `
+              rounded-lg border border-red-200 bg-red-50 p-4 text-sm
+              text-red-800
+            `,
             "dark:border-red-800 dark:bg-red-950/30 dark:text-red-200",
           )}
         >
@@ -89,40 +100,40 @@ export default function AdminCreateOrderPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label htmlFor="email" className={labelClass}>
+              <label className={labelClass} htmlFor="email">
                 Customer email
               </label>
               <input
-                id="email"
-                type="email"
-                placeholder="hal@finney.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 className={inputClass}
+                id="email"
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="hal@finney.com"
                 required
+                type="email"
+                value={email}
               />
             </div>
             <div>
-              <label htmlFor="userId" className={labelClass}>
+              <label className={labelClass} htmlFor="userId">
                 Customer ID (optional)
               </label>
               <input
-                id="userId"
-                type="text"
-                placeholder="Leave empty for guest order"
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
                 className={inputClass}
+                id="userId"
+                onChange={(e) => setUserId(e.target.value)}
+                placeholder="Leave empty for guest order"
+                type="text"
+                value={userId}
               />
             </div>
             <p className="text-xs text-muted-foreground">
               A new draft order will be created. You can add products, set
               shipping, and update status on the order detail page.
             </p>
-            <Button type="submit" disabled={submitting}>
+            <Button disabled={submitting} type="submit">
               {submitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  <Loader2 aria-hidden className="mr-2 h-4 w-4 animate-spin" />
                   Creating…
                 </>
               ) : (

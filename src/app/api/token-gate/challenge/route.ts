@@ -2,15 +2,6 @@ import { NextResponse } from "next/server";
 
 const MESSAGE_PREFIX = "Sign to prove wallet ownership for token gate:\n";
 
-/** Build challenge message; when resourceType/resourceId are provided, bind signature to that resource (replay protection). */
-function buildMessage(resourceType: string, resourceId: string): string {
-  const timestamp = new Date().toISOString();
-  if (!resourceType || !resourceId) {
-    return MESSAGE_PREFIX + timestamp;
-  }
-  return `${MESSAGE_PREFIX}resourceType: ${resourceType}\nresourceId: ${resourceId}\ntimestamp: ${timestamp}`;
-}
-
 /**
  * POST /api/token-gate/challenge
  * Body: { address: string, resourceType?: string, resourceId?: string }
@@ -20,8 +11,8 @@ export async function POST(request: Request) {
   try {
     const body = (await request.json()) as {
       address?: string;
-      resourceType?: string;
       resourceId?: string;
+      resourceType?: string;
     };
     const address = typeof body.address === "string" ? body.address.trim() : "";
     if (!address || address.length < 32) {
@@ -39,4 +30,13 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
+}
+
+/** Build challenge message; when resourceType/resourceId are provided, bind signature to that resource (replay protection). */
+function buildMessage(resourceType: string, resourceId: string): string {
+  const timestamp = new Date().toISOString();
+  if (!resourceType || !resourceId) {
+    return MESSAGE_PREFIX + timestamp;
+  }
+  return `${MESSAGE_PREFIX}resourceType: ${resourceType}\nresourceId: ${resourceId}\ntimestamp: ${timestamp}`;
 }

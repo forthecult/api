@@ -19,7 +19,7 @@ export function calculatePosition(
   imageHeight: number,
   printSpec: PrintSpec,
   strategy: PlacementStrategy,
-  options?: { padding?: number; maxScale?: number },
+  options?: { maxScale?: number; padding?: number },
 ): PositionResult {
   const padding = options?.padding ?? DEFAULT_PADDING_PERCENT;
   const maxScale = options?.maxScale ?? 1;
@@ -35,25 +35,6 @@ export function calculatePosition(
   let scale: number;
 
   switch (strategy) {
-    case "fill": {
-      width = areaW;
-      height = areaH;
-      x = 0;
-      y = 0;
-      scale = 1;
-      break;
-    }
-    case "fit": {
-      const scaleW = areaW / imageWidth;
-      const scaleH = areaH / imageHeight;
-      const s = Math.min(scaleW, scaleH, maxScale);
-      width = Math.round(imageWidth * s);
-      height = Math.round(imageHeight * s);
-      x = (areaW - width) / 2;
-      y = (areaH - height) / 2;
-      scale = s;
-      break;
-    }
     case "center": {
       const padW = areaW * padding;
       const padH = areaH * padding;
@@ -80,6 +61,25 @@ export function calculatePosition(
       height = Math.round(imageHeight * s);
       x = padW + (innerW - width) / 2;
       y = areaH * 0.15;
+      scale = s;
+      break;
+    }
+    case "fill": {
+      width = areaW;
+      height = areaH;
+      x = 0;
+      y = 0;
+      scale = 1;
+      break;
+    }
+    case "fit": {
+      const scaleW = areaW / imageWidth;
+      const scaleH = areaH / imageHeight;
+      const s = Math.min(scaleW, scaleH, maxScale);
+      width = Math.round(imageWidth * s);
+      height = Math.round(imageHeight * s);
+      x = (areaW - width) / 2;
+      y = (areaH - height) / 2;
       scale = s;
       break;
     }
@@ -118,56 +118,12 @@ export function calculatePosition(
   }
 
   return {
-    x,
-    y,
-    width,
+    angle: 0,
     height,
     scale: Math.min(scale, maxScale),
-    angle: 0,
-  };
-}
-
-/**
- * Normalize position result to Printify format (0-1 relative coordinates).
- */
-export function toPrintifyPosition(
-  pos: PositionResult,
-  printSpec: PrintSpec,
-): {
-  x: number;
-  y: number;
-  scale: number;
-  angle: number;
-} {
-  return {
-    x: pos.x / printSpec.width + pos.width / printSpec.width / 2,
-    y: pos.y / printSpec.height + pos.height / printSpec.height / 2,
-    scale: pos.scale,
-    angle: pos.angle,
-  };
-}
-
-/**
- * Normalize position result to Printful format (pixel position for order API).
- */
-export function toPrintfulPosition(
-  pos: PositionResult,
-  printSpec: PrintSpec,
-): {
-  area_width: number;
-  area_height: number;
-  width: number;
-  height: number;
-  top: number;
-  left: number;
-} {
-  return {
-    area_width: printSpec.width,
-    area_height: printSpec.height,
-    width: pos.width,
-    height: pos.height,
-    top: Math.round(pos.y),
-    left: Math.round(pos.x),
+    width,
+    x,
+    y,
   };
 }
 
@@ -204,4 +160,48 @@ export function suggestStrategy(
   if (type.includes("mug") || type.includes("all-over")) return "fill";
 
   return "center";
+}
+
+/**
+ * Normalize position result to Printful format (pixel position for order API).
+ */
+export function toPrintfulPosition(
+  pos: PositionResult,
+  printSpec: PrintSpec,
+): {
+  area_height: number;
+  area_width: number;
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+} {
+  return {
+    area_height: printSpec.height,
+    area_width: printSpec.width,
+    height: pos.height,
+    left: Math.round(pos.x),
+    top: Math.round(pos.y),
+    width: pos.width,
+  };
+}
+
+/**
+ * Normalize position result to Printify format (0-1 relative coordinates).
+ */
+export function toPrintifyPosition(
+  pos: PositionResult,
+  printSpec: PrintSpec,
+): {
+  angle: number;
+  scale: number;
+  x: number;
+  y: number;
+} {
+  return {
+    angle: pos.angle,
+    scale: pos.scale,
+    x: pos.x / printSpec.width + pos.width / printSpec.width / 2,
+    y: pos.y / printSpec.height + pos.height / printSpec.height / 2,
+  };
 }

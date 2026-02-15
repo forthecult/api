@@ -11,11 +11,11 @@ const projectId =
 
 // ANKR RPC endpoints (no signup phone required; set in .env for paid sub later)
 const ANKR_DEFAULTS: Record<number, string> = {
-  [mainnet.id]: "https://rpc.ankr.com/eth",
   [arbitrum.id]: "https://rpc.ankr.com/arbitrum_one",
   [base.id]: "https://rpc.ankr.com/base",
-  [polygon.id]: "https://rpc.ankr.com/polygon",
   [bsc.id]: "https://rpc.ankr.com/bsc",
+  [mainnet.id]: "https://rpc.ankr.com/eth",
+  [polygon.id]: "https://rpc.ankr.com/polygon",
 };
 
 function getRpcUrl(chainId: number): string {
@@ -41,11 +41,11 @@ function getRpcUrl(chainId: number): string {
 }
 
 const rpcConfig = {
-  [mainnet.id]: getRpcUrl(mainnet.id),
   [arbitrum.id]: getRpcUrl(arbitrum.id),
   [base.id]: getRpcUrl(base.id),
-  [polygon.id]: getRpcUrl(polygon.id),
   [bsc.id]: getRpcUrl(bsc.id),
+  [mainnet.id]: getRpcUrl(mainnet.id),
+  [polygon.id]: getRpcUrl(polygon.id),
 } as const;
 
 // Supported chains for the application
@@ -67,13 +67,13 @@ export const wagmiConfig = createConfig({
     ...(projectId
       ? [
           walletConnect({
-            projectId,
             metadata: {
-              name: "For the Culture",
               description: "Checkout with crypto",
-              url: typeof window !== "undefined" ? window.location.origin : "",
               icons: [],
+              name: "For the Culture",
+              url: typeof window !== "undefined" ? window.location.origin : "",
             },
+            projectId,
             showQrModal: true,
             // Disable Pulse/analytics to avoid tracker flags and ERR_BLOCKED_BY_CLIENT when
             // ad blockers or privacy extensions block pulse.walletconnect.org.
@@ -84,11 +84,11 @@ export const wagmiConfig = createConfig({
   ],
   multiInjectedProviderDiscovery: true,
   transports: {
-    [mainnet.id]: http(rpcConfig[mainnet.id]),
     [arbitrum.id]: http(rpcConfig[arbitrum.id]),
     [base.id]: http(rpcConfig[base.id]),
-    [polygon.id]: http(rpcConfig[polygon.id]),
     [bsc.id]: http(rpcConfig[bsc.id]),
+    [mainnet.id]: http(rpcConfig[mainnet.id]),
+    [polygon.id]: http(rpcConfig[polygon.id]),
   },
 });
 
@@ -97,11 +97,11 @@ export const SUPPORTED_CHAIN_IDS = chains.map((c) => c.id);
 
 // Export chain names for display
 export const CHAIN_NAMES: Record<number, string> = {
-  [mainnet.id]: "Ethereum",
   [arbitrum.id]: "Arbitrum",
   [base.id]: "Base",
-  [polygon.id]: "Polygon",
   [bsc.id]: "BNB Chain",
+  [mainnet.id]: "Ethereum",
+  [polygon.id]: "Polygon",
 };
 
 /**

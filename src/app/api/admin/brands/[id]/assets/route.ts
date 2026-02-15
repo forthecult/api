@@ -1,10 +1,10 @@
+import { createId } from "@paralleldrive/cuid2";
 import { eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { brandAssetTable, brandTable } from "~/db/schema";
 import { getAdminAuth } from "~/lib/admin-api-auth";
-import { createId } from "@paralleldrive/cuid2";
 
 export async function POST(
   request: NextRequest,
@@ -28,9 +28,9 @@ export async function POST(
     }
 
     const body = (await request.json()) as {
-      url: string;
-      type?: string;
       sortOrder?: number;
+      type?: string;
+      url: string;
     };
 
     if (typeof body.url !== "string" || !body.url.trim()) {
@@ -43,7 +43,7 @@ export async function POST(
     const assetId = createId();
     const [maxRow] = await db
       .select({
-        maxOrder: sql<number | null>`max(${brandAssetTable.sortOrder})::int`,
+        maxOrder: sql<null | number>`max(${brandAssetTable.sortOrder})::int`,
       })
       .from(brandAssetTable)
       .where(eq(brandAssetTable.brandId, brandId));
@@ -53,20 +53,20 @@ export async function POST(
       : (maxRow?.maxOrder ?? -1) + 1;
 
     await db.insert(brandAssetTable).values({
-      id: assetId,
       brandId,
-      url: body.url.trim(),
-      type: (body.type?.trim() || "other").slice(0, 32),
+      id: assetId,
       sortOrder: nextOrder,
+      type: (body.type?.trim() || "other").slice(0, 32),
+      url: body.url.trim(),
     });
 
     return NextResponse.json(
       {
-        id: assetId,
         brandId,
-        url: body.url.trim(),
-        type: body.type?.trim() || "other",
+        id: assetId,
         sortOrder: nextOrder,
+        type: body.type?.trim() || "other",
+        url: body.url.trim(),
       },
       { status: 201 },
     );

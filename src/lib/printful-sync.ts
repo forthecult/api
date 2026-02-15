@@ -9,35 +9,36 @@
  * blank catalog items. This service syncs those finished products to your store.
  */
 
-import { eq, and, isNotNull } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 import { conn, db } from "~/db";
-import { slugify } from "~/lib/slugify";
 import {
   productAvailableCountryTable,
+  productImagesTable,
   productsTable,
   productVariantsTable,
-  productImagesTable,
   sizeChartsTable,
 } from "~/db/schema";
 import { applyCategoryAutoRules } from "~/lib/category-auto-assign";
 import { POD_SHIPPING_COUNTRY_CODES } from "~/lib/pod-shipping-countries";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { slugify } from "~/lib/slugify";
+
 import {
-  fetchSyncProducts,
-  fetchSyncProduct,
   fetchCatalogProduct,
-  fetchCatalogVariants,
   fetchCatalogProductShippingCountries,
   fetchCatalogProductShippingCustoms,
+  fetchCatalogVariants,
   fetchProductSizeGuideSafe,
+  fetchSyncProduct,
+  fetchSyncProducts,
   fetchVariantPrices,
-  updateSyncProduct,
   getPrintfulIfConfigured,
+  type PrintfulCatalogVariant,
   type PrintfulSyncProduct,
   type PrintfulSyncVariant,
-  type PrintfulCatalogVariant,
+  updateSyncProduct,
 } from "./printful";
 
 /**
@@ -45,55 +46,59 @@ import {
  * BIGINT is required because Printful sync variant IDs exceed 32-bit INTEGER max (2,147,483,647).
  * Runs once per process; safe to call repeatedly.
  */
-let ensureColumnsPromise: Promise<void> | null = null;
-async function ensurePrintfulColumns(): Promise<void> {
-  if (ensureColumnsPromise != null) return ensureColumnsPromise;
-  ensureColumnsPromise = (async () => {
-    const stmts = [
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
-      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
-      `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
-    ];
-    for (const sql of stmts) {
-      try {
-        await conn.unsafe(sql);
-      } catch (e) {
-        console.warn(
-          "[Printful sync] Column setup failed. Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql",
-          (e as Error).message,
-        );
-      }
-    }
-    // Best-effort: upgrade product table too
-    try {
-      await conn.unsafe(
-        `ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`,
-      );
-    } catch {
-      /* non-blocking */
-    }
-  })();
-  return ensureColumnsPromise;
+let ensureColumnsPromise: null | Promise<void> = null;
+export interface ProductExportResult {
+  error?: string;
+  printfulSyncProductId?: number;
+  success: boolean;
 }
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type SyncResult = {
-  success: boolean;
-  imported: number;
-  updated: number;
-  skipped: number;
+export interface SyncResult {
   errors: string[];
-};
-
-export type ProductExportResult = {
+  imported: number;
+  skipped: number;
   success: boolean;
-  printfulSyncProductId?: number;
-  error?: string;
-};
+  updated: number;
+}
+
+/**
+ * Fix miscapitalized display names on existing size charts.
+ * The old title-casing bug produced names like "HOodies", "POlos", "CAnvas".
+ * This applies correct title casing to every stored display name and updates
+ * any that changed. Safe to call multiple times (idempotent).
+ */
+export async function fixSizeChartDisplayNames(): Promise<{
+  fixed: number;
+  total: number;
+}> {
+  const allCharts = await db
+    .select({
+      displayName: sizeChartsTable.displayName,
+      id: sizeChartsTable.id,
+    })
+    .from(sizeChartsTable);
+
+  let fixed = 0;
+  for (const chart of allCharts) {
+    // Re-apply correct title casing: lowercase the whole thing, then uppercase first letter of each word
+    const corrected = chart.displayName
+      .toLowerCase()
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+    if (corrected !== chart.displayName) {
+      await db
+        .update(sizeChartsTable)
+        .set({ displayName: corrected, updatedAt: new Date() })
+        .where(eq(sizeChartsTable.id, chart.id));
+      fixed++;
+    }
+  }
+
+  return { fixed, total: allCharts.length };
+}
 
 // ============================================================================
 // Import: Printful → Backend
@@ -105,29 +110,29 @@ export type ProductExportResult = {
  */
 export async function importAllPrintfulProducts(
   options: {
-    /** Only import products in "synced" status */
-    syncedOnly?: boolean;
     /** Overwrite existing product data (name, description, etc.) */
     overwriteExisting?: boolean;
+    /** Only import products in "synced" status */
+    syncedOnly?: boolean;
   } = {},
 ): Promise<SyncResult> {
   const pf = getPrintfulIfConfigured();
   if (!pf) {
     return {
-      success: false,
-      imported: 0,
-      updated: 0,
-      skipped: 0,
       errors: ["Printful not configured"],
+      imported: 0,
+      skipped: 0,
+      success: false,
+      updated: 0,
     };
   }
 
   const result: SyncResult = {
-    success: true,
-    imported: 0,
-    updated: 0,
-    skipped: 0,
     errors: [],
+    imported: 0,
+    skipped: 0,
+    success: true,
+    updated: 0,
   };
 
   try {
@@ -137,10 +142,10 @@ export async function importAllPrintfulProducts(
     let hasMore = true;
 
     while (hasMore) {
-      const { products, paging } = await fetchSyncProducts({
-        status: options.syncedOnly ? "synced" : "all",
-        offset,
+      const { paging, products } = await fetchSyncProducts({
         limit,
+        offset,
+        status: options.syncedOnly ? "synced" : "all",
       });
 
       for (const syncProduct of products) {
@@ -177,18 +182,77 @@ export async function importAllPrintfulProducts(
 }
 
 /**
+ * Import size chart for a single Printful product by our product id.
+ * Uses the product's stored externalId (catalog product id), brand, and model.
+ * Call this after a single-product resync to ensure the size chart is pulled even if the in-flow import was skipped or failed.
+ */
+export async function importSizeChartForPrintfulProduct(
+  productId: string,
+): Promise<{ error?: string; success: boolean }> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return { error: "Printful not configured", success: false };
+  }
+
+  const [row] = await db
+    .select({
+      brand: productsTable.brand,
+      externalId: productsTable.externalId,
+      model: productsTable.model,
+      source: productsTable.source,
+    })
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (!row || row.source !== "printful" || row.externalId == null) {
+    return {
+      error: "Product not found or is not a Printful product with catalog id",
+      success: false,
+    };
+  }
+
+  const catalogProductId = Number.parseInt(String(row.externalId), 10);
+  if (!Number.isFinite(catalogProductId) || catalogProductId <= 0) {
+    return { error: "Invalid catalog product id", success: false };
+  }
+
+  const brand = (row.brand?.trim() || "Printful").trim() || "Printful";
+  const model =
+    (row.model?.trim() || String(catalogProductId)).trim() ||
+    String(catalogProductId);
+
+  try {
+    const upserted = await upsertPrintfulSizeChart(
+      catalogProductId,
+      brand,
+      model,
+    );
+    return upserted
+      ? { success: true }
+      : {
+          error: "Printful returned no size guide for this catalog product",
+          success: false,
+        };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message, success: false };
+  }
+}
+
+/**
  * Backfill size charts for all existing Printful products.
  * Fetches size guides from Printful for each distinct catalog product (brand+model) and upserts into size_chart.
  * Call this after a resync if size charts were not imported (e.g. products were skipped).
  */
 export async function importSizeChartsForAllPrintfulProducts(): Promise<{
+  errors: string[];
   success: boolean;
   upserted: number;
-  errors: string[];
 }> {
   const pf = getPrintfulIfConfigured();
   if (!pf) {
-    return { success: false, upserted: 0, errors: ["Printful not configured"] };
+    return { errors: ["Printful not configured"], success: false, upserted: 0 };
   }
 
   const errors: string[] = [];
@@ -197,8 +261,8 @@ export async function importSizeChartsForAllPrintfulProducts(): Promise<{
   try {
     const rows = await db
       .select({
-        externalId: productsTable.externalId,
         brand: productsTable.brand,
+        externalId: productsTable.externalId,
         model: productsTable.model,
       })
       .from(productsTable)
@@ -238,108 +302,45 @@ export async function importSizeChartsForAllPrintfulProducts(): Promise<{
     }
 
     return {
+      errors,
       success: errors.length === 0,
       upserted,
-      errors,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    return { success: false, upserted, errors: [message] };
+    return { errors: [message], success: false, upserted };
   }
 }
 
-/**
- * Fix miscapitalized display names on existing size charts.
- * The old title-casing bug produced names like "HOodies", "POlos", "CAnvas".
- * This applies correct title casing to every stored display name and updates
- * any that changed. Safe to call multiple times (idempotent).
- */
-export async function fixSizeChartDisplayNames(): Promise<{
-  fixed: number;
-  total: number;
-}> {
-  const allCharts = await db
-    .select({
-      id: sizeChartsTable.id,
-      displayName: sizeChartsTable.displayName,
-    })
-    .from(sizeChartsTable);
-
-  let fixed = 0;
-  for (const chart of allCharts) {
-    // Re-apply correct title casing: lowercase the whole thing, then uppercase first letter of each word
-    const corrected = chart.displayName
-      .toLowerCase()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-    if (corrected !== chart.displayName) {
-      await db
-        .update(sizeChartsTable)
-        .set({ displayName: corrected, updatedAt: new Date() })
-        .where(eq(sizeChartsTable.id, chart.id));
-      fixed++;
+async function ensurePrintfulColumns(): Promise<void> {
+  if (ensureColumnsPromise != null) return ensureColumnsPromise;
+  ensureColumnsPromise = (async () => {
+    const stmts = [
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printful_sync_variant_id BIGINT`,
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS printify_variant_id TEXT`,
+      `ALTER TABLE product_variant ADD COLUMN IF NOT EXISTS external_id TEXT`,
+      `ALTER TABLE product_variant ALTER COLUMN printful_sync_variant_id TYPE BIGINT`,
+    ];
+    for (const sql of stmts) {
+      try {
+        await conn.unsafe(sql);
+      } catch (e) {
+        console.warn(
+          "[Printful sync] Column setup failed. Run: psql $DATABASE_URL -f scripts/migrate-printful-printify-sync.sql",
+          (e as Error).message,
+        );
+      }
     }
-  }
-
-  return { fixed, total: allCharts.length };
-}
-
-/**
- * Import size chart for a single Printful product by our product id.
- * Uses the product's stored externalId (catalog product id), brand, and model.
- * Call this after a single-product resync to ensure the size chart is pulled even if the in-flow import was skipped or failed.
- */
-export async function importSizeChartForPrintfulProduct(
-  productId: string,
-): Promise<{ success: boolean; error?: string }> {
-  const pf = getPrintfulIfConfigured();
-  if (!pf) {
-    return { success: false, error: "Printful not configured" };
-  }
-
-  const [row] = await db
-    .select({
-      source: productsTable.source,
-      externalId: productsTable.externalId,
-      brand: productsTable.brand,
-      model: productsTable.model,
-    })
-    .from(productsTable)
-    .where(eq(productsTable.id, productId))
-    .limit(1);
-
-  if (!row || row.source !== "printful" || row.externalId == null) {
-    return {
-      success: false,
-      error: "Product not found or is not a Printful product with catalog id",
-    };
-  }
-
-  const catalogProductId = Number.parseInt(String(row.externalId), 10);
-  if (!Number.isFinite(catalogProductId) || catalogProductId <= 0) {
-    return { success: false, error: "Invalid catalog product id" };
-  }
-
-  const brand = (row.brand?.trim() || "Printful").trim() || "Printful";
-  const model =
-    (row.model?.trim() || String(catalogProductId)).trim() ||
-    String(catalogProductId);
-
-  try {
-    const upserted = await upsertPrintfulSizeChart(
-      catalogProductId,
-      brand,
-      model,
-    );
-    return upserted
-      ? { success: true }
-      : {
-          success: false,
-          error: "Printful returned no size guide for this catalog product",
-        };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { success: false, error: message };
-  }
+    // Best-effort: upgrade product table too
+    try {
+      await conn.unsafe(
+        `ALTER TABLE product ALTER COLUMN printful_sync_product_id TYPE BIGINT`,
+      );
+    } catch {
+      /* non-blocking */
+    }
+  })();
+  return ensureColumnsPromise;
 }
 
 /**
@@ -348,10 +349,269 @@ export async function importSizeChartForPrintfulProduct(
  */
 const PRINTFUL_VARIANT_RETRY_DELAYS_MS = [2000, 5000, 10000];
 
+/**
+ * Push price changes for all Printful products to Printful.
+ */
+export async function exportAllPrintfulProducts(): Promise<SyncResult> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return {
+      errors: ["Printful not configured"],
+      imported: 0,
+      skipped: 0,
+      success: false,
+      updated: 0,
+    };
+  }
+
+  const result: SyncResult = {
+    errors: [],
+    imported: 0,
+    skipped: 0,
+    success: true,
+    updated: 0,
+  };
+
+  // Get all Printful products
+  const products = await db
+    .select({
+      id: productsTable.id,
+      printfulSyncProductId: productsTable.printfulSyncProductId,
+    })
+    .from(productsTable)
+    .where(
+      and(
+        eq(productsTable.source, "printful"),
+        // Only products with sync product ID
+      ),
+    );
+
+  for (const product of products) {
+    if (!product.printfulSyncProductId) {
+      result.skipped++;
+      continue;
+    }
+
+    const exportResult = await exportProductToPrintful(product.id);
+    if (exportResult.success) {
+      result.updated++;
+    } else {
+      result.errors.push(`Product ${product.id}: ${exportResult.error}`);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Push local product changes to Printful.
+ *
+ * Updates:
+ * - Product name (sync_product.name)
+ * - Product thumbnail (sync_product.thumbnail) - if imageUrl is set
+ * - Variant retail_price
+ * - Variant SKU
+ *
+ * Note: Printful Sync Products API (V1) does NOT support description or tags.
+ * These fields are not part of the sync product model. If you need description/tags,
+ * they must be managed directly in Printful's dashboard.
+ */
+export async function exportProductToPrintful(
+  productId: string,
+): Promise<ProductExportResult> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return { error: "Printful not configured", success: false };
+  }
+
+  // Get product
+  const [product] = await db
+    .select()
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (!product) {
+    return { error: "Product not found", success: false };
+  }
+
+  if (product.source !== "printful" || !product.printfulSyncProductId) {
+    return { error: "Product is not a Printful sync product", success: false };
+  }
+
+  // Get variants
+  const variants = await db
+    .select()
+    .from(productVariantsTable)
+    .where(eq(productVariantsTable.productId, productId));
+
+  const storeId = (() => {
+    const raw = process.env.PRINTFUL_STORE_ID?.trim();
+    if (!raw) return undefined;
+    const n = Number.parseInt(raw, 10);
+    return Number.isNaN(n) ? undefined : n;
+  })();
+
+  try {
+    // Update product-level fields (name, thumbnail)
+    // Note: Printful V1 Sync Products API only supports: name, thumbnail, external_id, is_ignored
+    await updateSyncProduct(
+      product.printfulSyncProductId,
+      {
+        sync_product: {
+          name: product.name,
+          ...(product.imageUrl && { thumbnail: product.imageUrl }),
+        },
+        // When updating sync_variants, we must include all variant IDs to keep them
+        // Only specify IDs of existing variants to prevent deletion
+        sync_variants: variants
+          .filter((v) => v.printfulSyncVariantId)
+          .map((v) => ({
+            id: v.printfulSyncVariantId!,
+            retail_price: (v.priceCents / 100).toFixed(2),
+            sku: v.sku || undefined,
+          })),
+      },
+      storeId,
+    );
+
+    // Update product last synced timestamp
+    await db
+      .update(productsTable)
+      .set({ lastSyncedAt: new Date(), updatedAt: new Date() })
+      .where(eq(productsTable.id, productId));
+
+    return {
+      printfulSyncProductId: product.printfulSyncProductId,
+      success: true,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message, success: false };
+  }
+}
+
+/**
+ * Get sync status for a product.
+ */
+export async function getProductSyncStatus(productId: string): Promise<{
+  error?: string;
+  lastSyncedAt: Date | null;
+  printfulSyncProductId: null | number;
+  synced: boolean;
+}> {
+  const [product] = await db
+    .select({
+      lastSyncedAt: productsTable.lastSyncedAt,
+      printfulSyncProductId: productsTable.printfulSyncProductId,
+      source: productsTable.source,
+    })
+    .from(productsTable)
+    .where(eq(productsTable.id, productId))
+    .limit(1);
+
+  if (!product) {
+    return {
+      error: "Product not found",
+      lastSyncedAt: null,
+      printfulSyncProductId: null,
+      synced: false,
+    };
+  }
+
+  return {
+    lastSyncedAt: product.lastSyncedAt,
+    printfulSyncProductId: product.printfulSyncProductId,
+    synced:
+      product.source === "printful" && product.printfulSyncProductId != null,
+  };
+}
+
+/**
+ * Handle Printful product_deleted webhook event.
+ * Called when a product is deleted in Printful.
+ */
+export async function handleProductDeleted(data: {
+  sync_product: { id: number };
+}): Promise<{ error?: string; success: boolean }> {
+  try {
+    // Find and unpublish (or delete) the local product
+    const [product] = await db
+      .select()
+      .from(productsTable)
+      .where(eq(productsTable.printfulSyncProductId, data.sync_product.id))
+      .limit(1);
+
+    if (!product) {
+      // Product doesn't exist locally - nothing to do
+      return { success: true };
+    }
+
+    // Option 1: Unpublish the product (safer - keeps historical data)
+    await db
+      .update(productsTable)
+      .set({
+        printfulSyncProductId: null, // Unlink from Printful
+        published: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(productsTable.id, product.id));
+
+    console.log(
+      `Unpublished product ${product.id} (Printful sync product deleted)`,
+    );
+
+    // Option 2: Delete the product (uncomment to use)
+    // await db.delete(productsTable).where(eq(productsTable.id, product.id));
+    // console.log(`Deleted product ${product.id} (Printful sync product deleted)`);
+
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Failed to handle product_deleted:", message);
+    return { error: message, success: false };
+  }
+}
+
+/**
+ * Handle Printful product_synced webhook event.
+ * Called when a product is synced (created) in Printful.
+ */
+export async function handleProductSynced(data: {
+  sync_product: PrintfulSyncProduct;
+}): Promise<{ error?: string; success: boolean }> {
+  try {
+    await importSinglePrintfulProduct(data.sync_product.id, false);
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Failed to handle product_synced:", message);
+    return { error: message, success: false };
+  }
+}
+
+/**
+ * Handle Printful product_updated webhook event.
+ * Called when a product is updated in Printful.
+ */
+export async function handleProductUpdated(data: {
+  sync_product: PrintfulSyncProduct;
+}): Promise<{ error?: string; success: boolean }> {
+  try {
+    // Import with overwrite to update existing
+    await importSinglePrintfulProduct(data.sync_product.id, true);
+    return { success: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Failed to handle product_updated:", message);
+    return { error: message, success: false };
+  }
+}
+
 export async function importSinglePrintfulProduct(
   printfulSyncProductId: number,
   overwriteExisting = false,
-): Promise<{ action: "imported" | "updated" | "skipped"; productId: string }> {
+): Promise<{ action: "imported" | "skipped" | "updated"; productId: string }> {
   await ensurePrintfulColumns();
   // Fetch full product details including variants. Printful often returns empty sync_variants
   // right after publish; retry with delays so admin sync reliably gets size/color for the storefront.
@@ -373,15 +633,15 @@ export async function importSinglePrintfulProduct(
   }
 
   // Fetch catalog product for description/brand/model/type and shipping/customs. Brand/model required for size chart + product page.
-  let catalogProduct: {
+  let catalogProduct: null | {
     brand: string;
-    model: string;
-    description: string | null;
-    countryOfOrigin: string | null;
-    hsCode: string | null;
-    productType: string | null;
+    countryOfOrigin: null | string;
+    description: null | string;
+    hsCode: null | string;
     isDiscontinued: boolean;
-  } | null = null;
+    model: string;
+    productType: null | string;
+  } = null;
   /** Map of catalog_variant_id → catalog variant details (for colorCode, weight). */
   const catalogVariantMap = new Map<number, PrintfulCatalogVariant>();
   const catalogProductId = syncVariants[0]?.product?.product_id;
@@ -400,22 +660,22 @@ export async function importSinglePrintfulProduct(
           String(catalogProductId);
         catalogProduct = {
           brand,
-          model,
-          description: catalog.data.description ?? null,
           countryOfOrigin: customs.countryOfOrigin,
+          description: catalog.data.description ?? null,
           hsCode: customs.hsCode,
-          productType: catalog.data.type ?? null,
           isDiscontinued: catalog.data.is_discontinued ?? false,
+          model,
+          productType: catalog.data.type ?? null,
         };
       } else {
         catalogProduct = {
           brand: "Printful",
-          model: String(catalogProductId),
-          description: null,
           countryOfOrigin: null,
+          description: null,
           hsCode: null,
-          productType: null,
           isDiscontinued: false,
+          model: String(catalogProductId),
+          productType: null,
         };
       }
       // Build variant lookup for colorCode/colorCode2
@@ -432,12 +692,12 @@ export async function importSinglePrintfulProduct(
       );
       catalogProduct = {
         brand: "Printful",
-        model: String(catalogProductId),
-        description: null,
         countryOfOrigin: null,
+        description: null,
         hsCode: null,
-        productType: null,
         isDiscontinued: false,
+        model: String(catalogProductId),
+        productType: null,
       };
     }
   }
@@ -503,40 +763,47 @@ export async function importSinglePrintfulProduct(
   return { action: "imported", productId };
 }
 
-/** Coerce option value to string (Printful can return string | boolean). */
-function optionValueToString(
-  opt: { id?: string; value?: string | boolean } | null,
-): string | null {
-  if (opt == null) return null;
-  const v = opt.value;
-  if (v == null) return null;
-  const s = typeof v === "string" ? v : String(v);
-  const t = s.trim();
-  return t.length > 0 ? t : null;
-}
+/**
+ * List all Printful sync products from the API (not local DB).
+ * Useful for admin UI to show what's available to import.
+ */
+export async function listAvailablePrintfulProducts(): Promise<{
+  error?: string;
+  products: PrintfulSyncProduct[];
+}> {
+  const pf = getPrintfulIfConfigured();
+  if (!pf) {
+    return { error: "Printful not configured", products: [] };
+  }
 
-/** Get size from sync variant: top-level or options array (Printful may use options only). */
-function getVariantSize(v: PrintfulSyncVariant): string | null {
-  if (v.size?.trim()) return v.size.trim();
-  const opts = v.options ?? [];
-  const idLower = (id: string | undefined) => (id ?? "").toLowerCase();
-  const sizeOpt = opts.find((o) => idLower(o?.id).includes("size"));
-  return optionValueToString(sizeOpt ?? null);
-}
+  try {
+    const allProducts: PrintfulSyncProduct[] = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
 
-/** Get color from sync variant: top-level or options array (Printful may use options only). */
-function getVariantColor(v: PrintfulSyncVariant): string | null {
-  if (v.color?.trim()) return v.color.trim();
-  const opts = v.options ?? [];
-  const idLower = (id: string | undefined) => (id ?? "").toLowerCase();
-  const colorOpt = opts.find((o) => idLower(o?.id).includes("color"));
-  return optionValueToString(colorOpt ?? null);
+    while (hasMore) {
+      const { paging, products } = await fetchSyncProducts({
+        limit,
+        offset,
+        status: "synced",
+      });
+      allProducts.push(...products);
+      offset += products.length;
+      hasMore = offset < paging.total;
+    }
+
+    return { products: allProducts };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    return { error: message, products: [] };
+  }
 }
 
 /** Build option definitions (Size, Color) from sync variants for storefront and admin. Fallback to variant names when size/color not extracted. */
 function buildOptionDefinitionsFromVariants(
   syncVariants: PrintfulSyncVariant[],
-): Array<{ name: string; values: string[] }> {
+): { name: string; values: string[] }[] {
   const sizeValues = new Set<string>();
   const colorValues = new Set<string>();
   for (const v of syncVariants) {
@@ -545,7 +812,7 @@ function buildOptionDefinitionsFromVariants(
     if (size) sizeValues.add(size);
     if (color) colorValues.add(color);
   }
-  const options: Array<{ name: string; values: string[] }> = [];
+  const options: { name: string; values: string[] }[] = [];
   if (sizeValues.size > 0) {
     options.push({ name: "Size", values: [...sizeValues].sort() });
   }
@@ -565,270 +832,18 @@ function buildOptionDefinitionsFromVariants(
   return options;
 }
 
-/**
- * Get variant image URL: prefer product mockup (product-with-design) over print file (design-only).
- * Order: mockup > preview > default. Avoid using the "default" file when it's the print/design file.
- */
-function getPrintfulVariantImageUrl(
-  syncVariant: PrintfulSyncVariant,
-): string | null {
-  const files = syncVariant.files ?? [];
-  const mockupOrPreview =
-    files.find((f) => f.type === "mockup" || f.type === "preview") ??
-    files.find((f) => f.type === "default");
-  const file = mockupOrPreview ?? files[0];
-  const fromFile =
-    file?.preview_url || file?.thumbnail_url || file?.url || null;
-  if (fromFile) return fromFile;
-  return syncVariant.product?.image ?? null;
-}
-
-/**
- * Normalize Printful size guide API response to our stored JSON shape.
- * Supports: res.data (v2), res.result (v1), or direct payload (size_tables at top level).
- */
-function normalizeSizeGuideData(
-  res: {
-    data?: {
-      available_sizes?: string[];
-      size_tables?: Array<{
-        type: string;
-        unit: string;
-        description?: string;
-        image_url?: string;
-        measurements?: unknown;
-      }>;
-    };
-    result?: {
-      available_sizes?: string[];
-      size_tables?: Array<{
-        type: string;
-        unit: string;
-        description?: string;
-        image_url?: string;
-        measurements?: unknown;
-      }>;
-    };
-    available_sizes?: string[];
-    size_tables?: Array<{
-      type: string;
-      unit: string;
-      description?: string;
-      image_url?: string;
-      measurements?: unknown;
-    }>;
-  } | null,
-): {
-  availableSizes: string[];
-  sizeTables: Array<{
-    type: string;
-    unit: string;
-    description?: string;
-    image_url?: string;
-    measurements?: unknown;
-  }>;
-} | null {
-  type Payload = {
-    available_sizes?: string[];
-    size_tables?: Array<{
-      type: string;
-      unit: string;
-      description?: string;
-      image_url?: string;
-      measurements?: unknown;
-    }>;
-  };
-  const raw =
-    res == null
-      ? null
-      : ((res as { data?: Payload; result?: Payload }).data ??
-        (res as { result?: Payload }).result ??
-        (res as Payload));
-  const payload: Payload | null = raw;
-  if (!payload?.size_tables?.length) return null;
-  return {
-    availableSizes: payload.available_sizes ?? [],
-    sizeTables: payload.size_tables.map((t) => ({
-      type: t.type,
-      unit: t.unit,
-      description: t.description,
-      image_url: t.image_url,
-      measurements: t.measurements,
-    })),
-  };
-}
-
-/**
- * Derive size chart display name from Printful catalog product type/name.
- * Prefers product-type keywords (Hoodie, Sweatshirt, etc.) so hoodies don't show as "T-Shirts".
- * Examples: "Hoodie" → "Hoodies", "Unisex Hoodie" → "Hoodies", "T-Shirt" → "T-Shirts".
- */
-function sizeChartDisplayNameFromCatalog(
-  type: string | null | undefined,
-  name: string | null | undefined,
-): string {
-  const typeRaw = (type ?? "").trim();
-  const nameRaw = (name ?? "").trim();
-  const combined = [typeRaw, nameRaw].filter(Boolean).join(" ");
-  if (!combined) return "T-Shirts";
-
-  // Prefer product-type keywords so "Unisex Hoodie" / "HOODIE" → "Hoodies", not "Unisex Hoodies"
-  const lower = combined.toLowerCase();
-  const productTypeKeywords = [
-    "hoodie",
-    "sweatshirt",
-    "sweat shirt",
-    "long sleeve",
-    "t-shirt",
-    "t shirt",
-    "tank",
-    "polo",
-    "shirt",
-    "jacket",
-    "zip",
-    "fleece",
-    "joggers",
-    "leggings",
-    "shorts",
-    "pants",
-    "dress",
-    "skirt",
-    "hat",
-    "cap",
-    "bag",
-    "tote",
-    "poster",
-    "canvas",
-    "shoes",
-    "sneakers",
-    "sandals",
-  ];
-  for (const keyword of productTypeKeywords) {
-    if (lower.includes(keyword)) {
-      const word = keyword.replace(/\s+/g, " ");
-      const titleCased = word.replace(/\b\w/g, (c) => c.toUpperCase());
-      return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
-    }
-  }
-
-  // Fallback: title-case the first word of type or name
-  const first = (typeRaw || nameRaw).split(/[\s-]+/)[0] ?? "";
-  const titleCased = first
-    ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
-    : "";
-  if (!titleCased) return "T-Shirts";
-  return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
-}
-
-/** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). Returns true if a size chart was upserted. */
-async function upsertPrintfulSizeChart(
-  catalogProductId: number,
-  brand: string,
-  model: string,
-): Promise<boolean> {
-  try {
-    // Fetch catalog product for display name (type/name: e.g. Hoodie, T-Shirt, Shoes)
-    let displayName = "T-Shirts";
-    try {
-      const catalogRes = await fetchCatalogProduct(catalogProductId);
-      const catalog = catalogRes?.data;
-      if (catalog) {
-        displayName = sizeChartDisplayNameFromCatalog(
-          catalog.type ?? null,
-          catalog.name ?? null,
-        );
-      }
-    } catch {
-      // keep default
-    }
-
-    // Try without unit first (some catalog products only return one format)
-    const noUnitRes = await fetchProductSizeGuideSafe(catalogProductId, {});
-    const fromNoUnit = normalizeSizeGuideData(noUnitRes);
-    const hasImperial = fromNoUnit?.sizeTables.some(
-      (t) => t.unit !== "cm" && t.unit !== "metric",
-    );
-    const hasMetric = fromNoUnit?.sizeTables.some(
-      (t) => t.unit === "cm" || t.unit === "metric",
-    );
-    let dataImperial = fromNoUnit && hasImperial ? fromNoUnit : null;
-    let dataMetric = fromNoUnit && hasMetric ? fromNoUnit : null;
-    // If we don't have both, try explicit units in parallel
-    if (dataImperial == null || dataMetric == null) {
-      const [imperialRes, metricRes] = await Promise.all([
-        fetchProductSizeGuideSafe(catalogProductId, { unit: "inches" }),
-        fetchProductSizeGuideSafe(catalogProductId, { unit: "cm" }),
-      ]);
-      if (dataImperial == null)
-        dataImperial = normalizeSizeGuideData(imperialRes);
-      if (dataMetric == null) dataMetric = normalizeSizeGuideData(metricRes);
-    }
-
-    if (dataImperial == null && dataMetric == null) {
-      console.warn(
-        "Printful size guide empty for catalog product",
-        catalogProductId,
-        "brand:",
-        brand,
-        "model:",
-        model,
-      );
-      return false;
-    }
-    const id = nanoid();
-    const now = new Date();
-    const brandTrimmed = brand.trim() || "Printful";
-    const modelTrimmed = model.trim() || String(catalogProductId);
-    await db
-      .insert(sizeChartsTable)
-      .values({
-        id,
-        provider: "printful",
-        brand: brandTrimmed,
-        model: modelTrimmed,
-        displayName,
-        dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
-        dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [
-          sizeChartsTable.provider,
-          sizeChartsTable.brand,
-          sizeChartsTable.model,
-        ],
-        set: {
-          dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
-          dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
-          updatedAt: now,
-          // Don't overwrite displayName with "T-Shirts" so hoodies/sweatshirts keep correct label
-          ...(displayName !== "T-Shirts" && { displayName }),
-        },
-      });
-    return true;
-  } catch (err) {
-    console.warn(
-      "Printful size chart import failed for catalog product",
-      catalogProductId,
-      err,
-    );
-    return false;
-  }
-}
-
 async function createLocalProductFromPrintful(
   syncProduct: PrintfulSyncProduct,
   syncVariants: PrintfulSyncVariant[],
-  catalogProduct: {
-    brand: string | null;
-    model: string | null;
-    description: string | null;
-    countryOfOrigin: string | null;
-    hsCode: string | null;
-    productType: string | null;
+  catalogProduct: null | {
+    brand: null | string;
+    countryOfOrigin: null | string;
+    description: null | string;
+    hsCode: null | string;
     isDiscontinued: boolean;
-  } | null,
+    model: null | string;
+    productType: null | string;
+  },
   catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
 ): Promise<string> {
   const productId = nanoid();
@@ -889,7 +904,7 @@ async function createLocalProductFromPrintful(
     syncProduct.thumbnail_url;
 
   // Cost per item from first variant's catalog price (wholesale/technique price)
-  let costPerItemCents: number | null = null;
+  let costPerItemCents: null | number = null;
   const catalogVariantId = firstVariant?.product?.variant_id;
   if (catalogVariantId != null) {
     try {
@@ -924,53 +939,53 @@ async function createLocalProductFromPrintful(
   // Create product (vendor, page title, description, brand, sku from catalog/sync)
   // Printful fulfillment typically 2–5 business days; default transit 3–7 for estimates
   await db.insert(productsTable).values({
-    id: productId,
-    name: syncProduct.name,
+    brand,
+    continueSellingWhenOutOfStock: true, // POD products are made to order
+    costPerItemCents,
+    countryOfOrigin: catalogProduct?.countryOfOrigin ?? null,
+    createdAt: now,
     description,
+    externalId: catalogProductId ? String(catalogProductId) : null,
+    handlingDaysMax: 5,
+    handlingDaysMin: 2,
+    hasVariants,
+    hsCode: catalogProduct?.hsCode ?? null,
+    id: productId,
+    imageUrl: productImageUrl,
+    isDiscontinued: catalogProduct?.isDiscontinued ?? false,
+    lastSyncedAt: now,
+    metaDescription,
+    model,
+    name: syncProduct.name,
+    optionDefinitionsJson,
+    pageTitle: syncProduct.name,
+    physicalProduct: true,
+    priceCents,
+    printfulSyncProductId: syncProduct.id,
+    productType: catalogProduct?.productType ?? null,
+    published: !syncProduct.is_ignored, // is_ignored = hidden in store
+    sku: productSku,
     slug,
     source: "printful",
-    externalId: catalogProductId ? String(catalogProductId) : null,
-    printfulSyncProductId: syncProduct.id,
-    priceCents,
-    costPerItemCents,
-    hasVariants,
-    optionDefinitionsJson,
-    published: !syncProduct.is_ignored, // is_ignored = hidden in store
-    imageUrl: productImageUrl,
-    pageTitle: syncProduct.name,
-    metaDescription,
-    vendor: "Printful",
-    brand,
-    model,
-    sku: productSku,
-    countryOfOrigin: catalogProduct?.countryOfOrigin ?? null,
-    hsCode: catalogProduct?.hsCode ?? null,
-    productType: catalogProduct?.productType ?? null,
-    isDiscontinued: catalogProduct?.isDiscontinued ?? false,
-    createdAt: now,
-    updatedAt: now,
-    lastSyncedAt: now,
-    physicalProduct: true,
     trackQuantity: false, // Printful manages inventory
-    continueSellingWhenOutOfStock: true, // POD products are made to order
-    handlingDaysMin: 2,
-    handlingDaysMax: 5,
-    transitDaysMin: 3,
     transitDaysMax: 7,
+    transitDaysMin: 3,
+    updatedAt: now,
+    vendor: "Printful",
   });
 
   await applyCategoryAutoRules({
-    id: productId,
-    name: syncProduct.name,
     brand,
     createdAt: now,
+    id: productId,
+    name: syncProduct.name,
   });
 
   // Markets first so they are always set even if variant creation fails later
   for (const code of marketCountryCodes) {
     await db.insert(productAvailableCountryTable).values({
-      productId,
       countryCode: code,
+      productId,
     });
   }
 
@@ -1000,11 +1015,11 @@ async function createLocalProductFromPrintful(
   let sortOrder = 0;
   for (const url of imageUrlsOrdered) {
     await db.insert(productImagesTable).values({
+      alt: syncProduct.name,
       id: nanoid(),
       productId,
-      url,
-      alt: syncProduct.name,
       sortOrder: sortOrder++,
+      url,
     });
   }
 
@@ -1020,6 +1035,317 @@ async function createLocalProductFromPrintful(
 }
 
 /**
+ * Create or update a local variant from Printful sync variant data.
+ * Stores two Printful IDs: printfulSyncVariantId (sync variant id) and externalId (catalog_variant_id for shipping).
+ * Uses upsert pattern: find existing by printfulSyncVariantId → update, else insert.
+ */
+async function createLocalVariantFromPrintful(
+  productId: string,
+  syncVariant: PrintfulSyncVariant,
+  catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
+): Promise<string> {
+  const now = new Date();
+  const priceCents = Math.round(
+    Number.parseFloat(String(syncVariant.retail_price || "0")) * 100,
+  );
+  const safePriceCents = Number.isFinite(priceCents) ? priceCents : 0;
+  const imageUrl = getPrintfulVariantImageUrl(syncVariant);
+  const size = getVariantSize(syncVariant);
+  const color = getVariantColor(syncVariant);
+  const labelRaw = (syncVariant.name ?? "").trim();
+  const label =
+    labelRaw || [size, color].filter(Boolean).join(" / ") || "Variant";
+  const externalId = String(syncVariant.variant_id);
+  const printfulSyncVariantId = syncVariant.id;
+
+  // Get catalog variant details for colorCode, colorCode2
+  const catalogVariant = catalogVariantMap?.get(syncVariant.variant_id);
+
+  const variantFields = {
+    availabilityStatus: syncVariant.availability_status ?? null,
+    color: color ?? null,
+    colorCode: catalogVariant?.color_code ?? null,
+    colorCode2: catalogVariant?.color_code2 ?? null,
+    externalId,
+    imageUrl: imageUrl ?? null,
+    label,
+    priceCents: safePriceCents,
+    printfulSyncVariantId,
+    size: size ?? null,
+    sku: syncVariant.sku ?? null,
+    updatedAt: now,
+  };
+
+  // 1) Find existing variant by (productId, printfulSyncVariantId) → update
+  const [existing] = await db
+    .select({ id: productVariantsTable.id })
+    .from(productVariantsTable)
+    .where(
+      and(
+        eq(productVariantsTable.productId, productId),
+        eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
+      ),
+    )
+    .limit(1);
+
+  if (existing) {
+    await db
+      .update(productVariantsTable)
+      .set(variantFields)
+      .where(eq(productVariantsTable.id, existing.id));
+    return existing.id;
+  }
+
+  // 2) No existing row → insert
+  const variantId = nanoid();
+  try {
+    await db.insert(productVariantsTable).values({
+      id: variantId,
+      productId,
+      ...variantFields,
+      createdAt: now,
+    });
+    return variantId;
+  } catch (err) {
+    // Race condition: another process inserted between our SELECT and INSERT
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("duplicate") || msg.includes("unique constraint")) {
+      const [found] = await db
+        .select({ id: productVariantsTable.id })
+        .from(productVariantsTable)
+        .where(
+          and(
+            eq(productVariantsTable.productId, productId),
+            eq(
+              productVariantsTable.printfulSyncVariantId,
+              printfulSyncVariantId,
+            ),
+          ),
+        )
+        .limit(1);
+      if (found) {
+        await db
+          .update(productVariantsTable)
+          .set(variantFields)
+          .where(eq(productVariantsTable.id, found.id));
+        return found.id;
+      }
+    }
+    throw err;
+  }
+}
+
+/**
+ * Delete product variants that are not referenced in any order.
+ * Used when find/update repeatedly fails so we can replace with fresh rows from Printful.
+ * Returns number of variants deleted.
+ */
+async function deleteUnreferencedPrintfulVariants(
+  productId: string,
+): Promise<number> {
+  const rows = await conn`
+    DELETE FROM product_variant
+    WHERE product_id = ${productId}
+      AND id NOT IN (SELECT product_variant_id FROM order_item WHERE product_variant_id IS NOT NULL)
+    RETURNING id
+  `;
+  return Array.isArray(rows) ? rows.length : 0;
+}
+
+/**
+ * Get variant image URL: prefer product mockup (product-with-design) over print file (design-only).
+ * Order: mockup > preview > default. Avoid using the "default" file when it's the print/design file.
+ */
+function getPrintfulVariantImageUrl(
+  syncVariant: PrintfulSyncVariant,
+): null | string {
+  const files = syncVariant.files ?? [];
+  const mockupOrPreview =
+    files.find((f) => f.type === "mockup" || f.type === "preview") ??
+    files.find((f) => f.type === "default");
+  const file = mockupOrPreview ?? files[0];
+  const fromFile =
+    file?.preview_url || file?.thumbnail_url || file?.url || null;
+  if (fromFile) return fromFile;
+  return syncVariant.product?.image ?? null;
+}
+
+/** Get color from sync variant: top-level or options array (Printful may use options only). */
+function getVariantColor(v: PrintfulSyncVariant): null | string {
+  if (v.color?.trim()) return v.color.trim();
+  const opts = v.options ?? [];
+  const idLower = (id: string | undefined) => (id ?? "").toLowerCase();
+  const colorOpt = opts.find((o) => idLower(o?.id).includes("color"));
+  return optionValueToString(colorOpt ?? null);
+}
+
+// ============================================================================
+// Export: Backend → Printful
+// ============================================================================
+
+/** Get size from sync variant: top-level or options array (Printful may use options only). */
+function getVariantSize(v: PrintfulSyncVariant): null | string {
+  if (v.size?.trim()) return v.size.trim();
+  const opts = v.options ?? [];
+  const idLower = (id: string | undefined) => (id ?? "").toLowerCase();
+  const sizeOpt = opts.find((o) => idLower(o?.id).includes("size"));
+  return optionValueToString(sizeOpt ?? null);
+}
+
+/**
+ * Normalize Printful size guide API response to our stored JSON shape.
+ * Supports: res.data (v2), res.result (v1), or direct payload (size_tables at top level).
+ */
+function normalizeSizeGuideData(
+  res: null | {
+    available_sizes?: string[];
+    data?: {
+      available_sizes?: string[];
+      size_tables?: {
+        description?: string;
+        image_url?: string;
+        measurements?: unknown;
+        type: string;
+        unit: string;
+      }[];
+    };
+    result?: {
+      available_sizes?: string[];
+      size_tables?: {
+        description?: string;
+        image_url?: string;
+        measurements?: unknown;
+        type: string;
+        unit: string;
+      }[];
+    };
+    size_tables?: {
+      description?: string;
+      image_url?: string;
+      measurements?: unknown;
+      type: string;
+      unit: string;
+    }[];
+  },
+): null | {
+  availableSizes: string[];
+  sizeTables: {
+    description?: string;
+    image_url?: string;
+    measurements?: unknown;
+    type: string;
+    unit: string;
+  }[];
+} {
+  interface Payload {
+    available_sizes?: string[];
+    size_tables?: {
+      description?: string;
+      image_url?: string;
+      measurements?: unknown;
+      type: string;
+      unit: string;
+    }[];
+  }
+  const raw =
+    res == null
+      ? null
+      : ((res as { data?: Payload; result?: Payload }).data ??
+        (res as { result?: Payload }).result ??
+        (res as Payload));
+  const payload: null | Payload = raw;
+  if (!payload?.size_tables?.length) return null;
+  return {
+    availableSizes: payload.available_sizes ?? [],
+    sizeTables: payload.size_tables.map((t) => ({
+      description: t.description,
+      image_url: t.image_url,
+      measurements: t.measurements,
+      type: t.type,
+      unit: t.unit,
+    })),
+  };
+}
+
+// ============================================================================
+// Webhook Handlers
+// ============================================================================
+
+/** Coerce option value to string (Printful can return string | boolean). */
+function optionValueToString(
+  opt: null | { id?: string; value?: boolean | string },
+): null | string {
+  if (opt == null) return null;
+  const v = opt.value;
+  if (v == null) return null;
+  const s = typeof v === "string" ? v : String(v);
+  const t = s.trim();
+  return t.length > 0 ? t : null;
+}
+
+/**
+ * Derive size chart display name from Printful catalog product type/name.
+ * Prefers product-type keywords (Hoodie, Sweatshirt, etc.) so hoodies don't show as "T-Shirts".
+ * Examples: "Hoodie" → "Hoodies", "Unisex Hoodie" → "Hoodies", "T-Shirt" → "T-Shirts".
+ */
+function sizeChartDisplayNameFromCatalog(
+  type: null | string | undefined,
+  name: null | string | undefined,
+): string {
+  const typeRaw = (type ?? "").trim();
+  const nameRaw = (name ?? "").trim();
+  const combined = [typeRaw, nameRaw].filter(Boolean).join(" ");
+  if (!combined) return "T-Shirts";
+
+  // Prefer product-type keywords so "Unisex Hoodie" / "HOODIE" → "Hoodies", not "Unisex Hoodies"
+  const lower = combined.toLowerCase();
+  const productTypeKeywords = [
+    "hoodie",
+    "sweatshirt",
+    "sweat shirt",
+    "long sleeve",
+    "t-shirt",
+    "t shirt",
+    "tank",
+    "polo",
+    "shirt",
+    "jacket",
+    "zip",
+    "fleece",
+    "joggers",
+    "leggings",
+    "shorts",
+    "pants",
+    "dress",
+    "skirt",
+    "hat",
+    "cap",
+    "bag",
+    "tote",
+    "poster",
+    "canvas",
+    "shoes",
+    "sneakers",
+    "sandals",
+  ];
+  for (const keyword of productTypeKeywords) {
+    if (lower.includes(keyword)) {
+      const word = keyword.replace(/\s+/g, " ");
+      const titleCased = word.replace(/\b\w/g, (c) => c.toUpperCase());
+      return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
+    }
+  }
+
+  // Fallback: title-case the first word of type or name
+  const first = (typeRaw || nameRaw).split(/[\s-]+/)[0] ?? "";
+  const titleCased = first
+    ? first.charAt(0).toUpperCase() + first.slice(1).toLowerCase()
+    : "";
+  if (!titleCased) return "T-Shirts";
+  return titleCased.endsWith("s") ? titleCased : `${titleCased}s`;
+}
+
+/**
  * Update an existing local product from Printful sync product data.
  *
  * Updates: name, imageUrl, published, hasVariants, priceCents, pageTitle, vendor, sku.
@@ -1030,15 +1356,15 @@ async function updateLocalProductFromPrintful(
   productId: string,
   syncProduct: PrintfulSyncProduct,
   syncVariants: PrintfulSyncVariant[],
-  catalogProduct: {
-    brand: string | null;
-    model: string | null;
-    description: string | null;
-    countryOfOrigin: string | null;
-    hsCode: string | null;
-    productType: string | null;
+  catalogProduct: null | {
+    brand: null | string;
+    countryOfOrigin: null | string;
+    description: null | string;
+    hsCode: null | string;
     isDiscontinued: boolean;
-  } | null,
+    model: null | string;
+    productType: null | string;
+  },
   catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
 ): Promise<void> {
   const now = new Date();
@@ -1088,7 +1414,7 @@ async function updateLocalProductFromPrintful(
       : undefined) ?? syncProduct.thumbnail_url;
 
   // Cost per item from first variant's catalog price (optional update)
-  let costPerItemCents: number | null | undefined;
+  let costPerItemCents: null | number | undefined;
   const firstVariant = syncVariants[0];
   const catalogVariantId = firstVariant?.product?.variant_id;
   if (catalogVariantId != null) {
@@ -1110,8 +1436,8 @@ async function updateLocalProductFromPrintful(
   await db
     .update(productsTable)
     .set({
-      name: syncProduct.name,
       imageUrl: productImageUrl ?? syncProduct.thumbnail_url,
+      name: syncProduct.name,
       published: !syncProduct.is_ignored,
       ...(hasVariantsFromApi && {
         hasVariants: syncVariants.length > 1,
@@ -1127,13 +1453,13 @@ async function updateLocalProductFromPrintful(
       ...(catalogProduct != null && {
         countryOfOrigin: catalogProduct.countryOfOrigin,
         hsCode: catalogProduct.hsCode,
-        productType: catalogProduct.productType,
         isDiscontinued: catalogProduct.isDiscontinued,
+        productType: catalogProduct.productType,
       }),
       ...(priceCents != null && { priceCents }),
       ...(costPerItemCents !== undefined && { costPerItemCents }),
-      updatedAt: now,
       lastSyncedAt: now,
+      updatedAt: now,
     })
     .where(eq(productsTable.id, productId));
 
@@ -1158,11 +1484,11 @@ async function updateLocalProductFromPrintful(
     let sortOrder = 0;
     for (const url of imageUrlsOrdered) {
       await db.insert(productImagesTable).values({
+        alt: syncProduct.name,
         id: nanoid(),
         productId,
-        url,
-        alt: syncProduct.name,
         sortOrder: sortOrder++,
+        url,
       });
     }
   }
@@ -1186,8 +1512,8 @@ async function updateLocalProductFromPrintful(
     .where(eq(productAvailableCountryTable.productId, productId));
   for (const code of marketCountryCodes) {
     await db.insert(productAvailableCountryTable).values({
-      productId,
       countryCode: code,
+      productId,
     });
   }
 
@@ -1206,7 +1532,7 @@ async function updateLocalProductFromPrintful(
       existingVariants: (typeof productVariantsTable.$inferSelect)[],
     ) => {
       type VariantRow = (typeof existingVariants)[number];
-      const existingVariantMap = new Map<number | null, VariantRow[]>();
+      const existingVariantMap = new Map<null | number, VariantRow[]>();
       for (const v of existingVariants) {
         const key = v.printfulSyncVariantId ?? null;
         const list = existingVariantMap.get(key) ?? [];
@@ -1306,123 +1632,9 @@ async function updateLocalProductFromPrintful(
   );
 }
 
-/**
- * Delete product variants that are not referenced in any order.
- * Used when find/update repeatedly fails so we can replace with fresh rows from Printful.
- * Returns number of variants deleted.
- */
-async function deleteUnreferencedPrintfulVariants(
-  productId: string,
-): Promise<number> {
-  const rows = await conn`
-    DELETE FROM product_variant
-    WHERE product_id = ${productId}
-      AND id NOT IN (SELECT product_variant_id FROM order_item WHERE product_variant_id IS NOT NULL)
-    RETURNING id
-  `;
-  return Array.isArray(rows) ? rows.length : 0;
-}
-
-/**
- * Create or update a local variant from Printful sync variant data.
- * Stores two Printful IDs: printfulSyncVariantId (sync variant id) and externalId (catalog_variant_id for shipping).
- * Uses upsert pattern: find existing by printfulSyncVariantId → update, else insert.
- */
-async function createLocalVariantFromPrintful(
-  productId: string,
-  syncVariant: PrintfulSyncVariant,
-  catalogVariantMap?: Map<number, PrintfulCatalogVariant>,
-): Promise<string> {
-  const now = new Date();
-  const priceCents = Math.round(
-    Number.parseFloat(String(syncVariant.retail_price || "0")) * 100,
-  );
-  const safePriceCents = Number.isFinite(priceCents) ? priceCents : 0;
-  const imageUrl = getPrintfulVariantImageUrl(syncVariant);
-  const size = getVariantSize(syncVariant);
-  const color = getVariantColor(syncVariant);
-  const labelRaw = (syncVariant.name ?? "").trim();
-  const label =
-    labelRaw || [size, color].filter(Boolean).join(" / ") || "Variant";
-  const externalId = String(syncVariant.variant_id);
-  const printfulSyncVariantId = syncVariant.id;
-
-  // Get catalog variant details for colorCode, colorCode2
-  const catalogVariant = catalogVariantMap?.get(syncVariant.variant_id);
-
-  const variantFields = {
-    externalId,
-    printfulSyncVariantId,
-    size: size ?? null,
-    color: color ?? null,
-    colorCode: catalogVariant?.color_code ?? null,
-    colorCode2: catalogVariant?.color_code2 ?? null,
-    sku: syncVariant.sku ?? null,
-    label,
-    priceCents: safePriceCents,
-    imageUrl: imageUrl ?? null,
-    availabilityStatus: syncVariant.availability_status ?? null,
-    updatedAt: now,
-  };
-
-  // 1) Find existing variant by (productId, printfulSyncVariantId) → update
-  const [existing] = await db
-    .select({ id: productVariantsTable.id })
-    .from(productVariantsTable)
-    .where(
-      and(
-        eq(productVariantsTable.productId, productId),
-        eq(productVariantsTable.printfulSyncVariantId, printfulSyncVariantId),
-      ),
-    )
-    .limit(1);
-
-  if (existing) {
-    await db
-      .update(productVariantsTable)
-      .set(variantFields)
-      .where(eq(productVariantsTable.id, existing.id));
-    return existing.id;
-  }
-
-  // 2) No existing row → insert
-  const variantId = nanoid();
-  try {
-    await db.insert(productVariantsTable).values({
-      id: variantId,
-      productId,
-      ...variantFields,
-      createdAt: now,
-    });
-    return variantId;
-  } catch (err) {
-    // Race condition: another process inserted between our SELECT and INSERT
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("duplicate") || msg.includes("unique constraint")) {
-      const [found] = await db
-        .select({ id: productVariantsTable.id })
-        .from(productVariantsTable)
-        .where(
-          and(
-            eq(productVariantsTable.productId, productId),
-            eq(
-              productVariantsTable.printfulSyncVariantId,
-              printfulSyncVariantId,
-            ),
-          ),
-        )
-        .limit(1);
-      if (found) {
-        await db
-          .update(productVariantsTable)
-          .set(variantFields)
-          .where(eq(productVariantsTable.id, found.id));
-        return found.id;
-      }
-    }
-    throw err;
-  }
-}
+// ============================================================================
+// Utilities
+// ============================================================================
 
 /**
  * Update a local variant from Printful sync variant data.
@@ -1449,326 +1661,115 @@ async function updateLocalVariantFromPrintful(
   await db
     .update(productVariantsTable)
     .set({
-      externalId: String(syncVariant.variant_id),
-      printfulSyncVariantId: syncVariant.id,
-      size,
+      availabilityStatus: syncVariant.availability_status ?? undefined,
       color,
       colorCode: catalogVariant?.color_code ?? undefined,
       colorCode2: catalogVariant?.color_code2 ?? undefined,
-      sku: syncVariant.sku,
+      externalId: String(syncVariant.variant_id),
+      imageUrl: imageUrl ?? undefined,
       label: syncVariant.name ?? undefined,
       priceCents,
-      imageUrl: imageUrl ?? undefined,
-      availabilityStatus: syncVariant.availability_status ?? undefined,
+      printfulSyncVariantId: syncVariant.id,
+      size,
+      sku: syncVariant.sku,
       updatedAt: now,
     })
     .where(eq(productVariantsTable.id, variantId));
 }
 
-// ============================================================================
-// Export: Backend → Printful
-// ============================================================================
-
-/**
- * Push local product changes to Printful.
- *
- * Updates:
- * - Product name (sync_product.name)
- * - Product thumbnail (sync_product.thumbnail) - if imageUrl is set
- * - Variant retail_price
- * - Variant SKU
- *
- * Note: Printful Sync Products API (V1) does NOT support description or tags.
- * These fields are not part of the sync product model. If you need description/tags,
- * they must be managed directly in Printful's dashboard.
- */
-export async function exportProductToPrintful(
-  productId: string,
-): Promise<ProductExportResult> {
-  const pf = getPrintfulIfConfigured();
-  if (!pf) {
-    return { success: false, error: "Printful not configured" };
-  }
-
-  // Get product
-  const [product] = await db
-    .select()
-    .from(productsTable)
-    .where(eq(productsTable.id, productId))
-    .limit(1);
-
-  if (!product) {
-    return { success: false, error: "Product not found" };
-  }
-
-  if (product.source !== "printful" || !product.printfulSyncProductId) {
-    return { success: false, error: "Product is not a Printful sync product" };
-  }
-
-  // Get variants
-  const variants = await db
-    .select()
-    .from(productVariantsTable)
-    .where(eq(productVariantsTable.productId, productId));
-
-  const storeId = (() => {
-    const raw = process.env.PRINTFUL_STORE_ID?.trim();
-    if (!raw) return undefined;
-    const n = Number.parseInt(raw, 10);
-    return Number.isNaN(n) ? undefined : n;
-  })();
-
+/** Normalize Printful size guide response to our stored JSON shape and upsert size_charts for (printful, brand, model). Returns true if a size chart was upserted. */
+async function upsertPrintfulSizeChart(
+  catalogProductId: number,
+  brand: string,
+  model: string,
+): Promise<boolean> {
   try {
-    // Update product-level fields (name, thumbnail)
-    // Note: Printful V1 Sync Products API only supports: name, thumbnail, external_id, is_ignored
-    await updateSyncProduct(
-      product.printfulSyncProductId,
-      {
-        sync_product: {
-          name: product.name,
-          ...(product.imageUrl && { thumbnail: product.imageUrl }),
-        },
-        // When updating sync_variants, we must include all variant IDs to keep them
-        // Only specify IDs of existing variants to prevent deletion
-        sync_variants: variants
-          .filter((v) => v.printfulSyncVariantId)
-          .map((v) => ({
-            id: v.printfulSyncVariantId!,
-            retail_price: (v.priceCents / 100).toFixed(2),
-            sku: v.sku || undefined,
-          })),
-      },
-      storeId,
+    // Fetch catalog product for display name (type/name: e.g. Hoodie, T-Shirt, Shoes)
+    let displayName = "T-Shirts";
+    try {
+      const catalogRes = await fetchCatalogProduct(catalogProductId);
+      const catalog = catalogRes?.data;
+      if (catalog) {
+        displayName = sizeChartDisplayNameFromCatalog(
+          catalog.type ?? null,
+          catalog.name ?? null,
+        );
+      }
+    } catch {
+      // keep default
+    }
+
+    // Try without unit first (some catalog products only return one format)
+    const noUnitRes = await fetchProductSizeGuideSafe(catalogProductId, {});
+    const fromNoUnit = normalizeSizeGuideData(noUnitRes);
+    const hasImperial = fromNoUnit?.sizeTables.some(
+      (t) => t.unit !== "cm" && t.unit !== "metric",
     );
-
-    // Update product last synced timestamp
-    await db
-      .update(productsTable)
-      .set({ lastSyncedAt: new Date(), updatedAt: new Date() })
-      .where(eq(productsTable.id, productId));
-
-    return {
-      success: true,
-      printfulSyncProductId: product.printfulSyncProductId,
-    };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { success: false, error: message };
-  }
-}
-
-/**
- * Push price changes for all Printful products to Printful.
- */
-export async function exportAllPrintfulProducts(): Promise<SyncResult> {
-  const pf = getPrintfulIfConfigured();
-  if (!pf) {
-    return {
-      success: false,
-      imported: 0,
-      updated: 0,
-      skipped: 0,
-      errors: ["Printful not configured"],
-    };
-  }
-
-  const result: SyncResult = {
-    success: true,
-    imported: 0,
-    updated: 0,
-    skipped: 0,
-    errors: [],
-  };
-
-  // Get all Printful products
-  const products = await db
-    .select({
-      id: productsTable.id,
-      printfulSyncProductId: productsTable.printfulSyncProductId,
-    })
-    .from(productsTable)
-    .where(
-      and(
-        eq(productsTable.source, "printful"),
-        // Only products with sync product ID
-      ),
+    const hasMetric = fromNoUnit?.sizeTables.some(
+      (t) => t.unit === "cm" || t.unit === "metric",
     );
-
-  for (const product of products) {
-    if (!product.printfulSyncProductId) {
-      result.skipped++;
-      continue;
+    let dataImperial = fromNoUnit && hasImperial ? fromNoUnit : null;
+    let dataMetric = fromNoUnit && hasMetric ? fromNoUnit : null;
+    // If we don't have both, try explicit units in parallel
+    if (dataImperial == null || dataMetric == null) {
+      const [imperialRes, metricRes] = await Promise.all([
+        fetchProductSizeGuideSafe(catalogProductId, { unit: "inches" }),
+        fetchProductSizeGuideSafe(catalogProductId, { unit: "cm" }),
+      ]);
+      if (dataImperial == null)
+        dataImperial = normalizeSizeGuideData(imperialRes);
+      if (dataMetric == null) dataMetric = normalizeSizeGuideData(metricRes);
     }
 
-    const exportResult = await exportProductToPrintful(product.id);
-    if (exportResult.success) {
-      result.updated++;
-    } else {
-      result.errors.push(`Product ${product.id}: ${exportResult.error}`);
+    if (dataImperial == null && dataMetric == null) {
+      console.warn(
+        "Printful size guide empty for catalog product",
+        catalogProductId,
+        "brand:",
+        brand,
+        "model:",
+        model,
+      );
+      return false;
     }
-  }
-
-  return result;
-}
-
-// ============================================================================
-// Webhook Handlers
-// ============================================================================
-
-/**
- * Handle Printful product_synced webhook event.
- * Called when a product is synced (created) in Printful.
- */
-export async function handleProductSynced(data: {
-  sync_product: PrintfulSyncProduct;
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    await importSinglePrintfulProduct(data.sync_product.id, false);
-    return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Failed to handle product_synced:", message);
-    return { success: false, error: message };
-  }
-}
-
-/**
- * Handle Printful product_updated webhook event.
- * Called when a product is updated in Printful.
- */
-export async function handleProductUpdated(data: {
-  sync_product: PrintfulSyncProduct;
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Import with overwrite to update existing
-    await importSinglePrintfulProduct(data.sync_product.id, true);
-    return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Failed to handle product_updated:", message);
-    return { success: false, error: message };
-  }
-}
-
-/**
- * Handle Printful product_deleted webhook event.
- * Called when a product is deleted in Printful.
- */
-export async function handleProductDeleted(data: {
-  sync_product: { id: number };
-}): Promise<{ success: boolean; error?: string }> {
-  try {
-    // Find and unpublish (or delete) the local product
-    const [product] = await db
-      .select()
-      .from(productsTable)
-      .where(eq(productsTable.printfulSyncProductId, data.sync_product.id))
-      .limit(1);
-
-    if (!product) {
-      // Product doesn't exist locally - nothing to do
-      return { success: true };
-    }
-
-    // Option 1: Unpublish the product (safer - keeps historical data)
+    const id = nanoid();
+    const now = new Date();
+    const brandTrimmed = brand.trim() || "Printful";
+    const modelTrimmed = model.trim() || String(catalogProductId);
     await db
-      .update(productsTable)
-      .set({
-        published: false,
-        updatedAt: new Date(),
-        printfulSyncProductId: null, // Unlink from Printful
+      .insert(sizeChartsTable)
+      .values({
+        brand: brandTrimmed,
+        createdAt: now,
+        dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
+        dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
+        displayName,
+        id,
+        model: modelTrimmed,
+        provider: "printful",
+        updatedAt: now,
       })
-      .where(eq(productsTable.id, product.id));
-
-    console.log(
-      `Unpublished product ${product.id} (Printful sync product deleted)`,
-    );
-
-    // Option 2: Delete the product (uncomment to use)
-    // await db.delete(productsTable).where(eq(productsTable.id, product.id));
-    // console.log(`Deleted product ${product.id} (Printful sync product deleted)`);
-
-    return { success: true };
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error("Failed to handle product_deleted:", message);
-    return { success: false, error: message };
-  }
-}
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-/**
- * Get sync status for a product.
- */
-export async function getProductSyncStatus(productId: string): Promise<{
-  synced: boolean;
-  printfulSyncProductId: number | null;
-  lastSyncedAt: Date | null;
-  error?: string;
-}> {
-  const [product] = await db
-    .select({
-      printfulSyncProductId: productsTable.printfulSyncProductId,
-      lastSyncedAt: productsTable.lastSyncedAt,
-      source: productsTable.source,
-    })
-    .from(productsTable)
-    .where(eq(productsTable.id, productId))
-    .limit(1);
-
-  if (!product) {
-    return {
-      synced: false,
-      printfulSyncProductId: null,
-      lastSyncedAt: null,
-      error: "Product not found",
-    };
-  }
-
-  return {
-    synced:
-      product.source === "printful" && product.printfulSyncProductId != null,
-    printfulSyncProductId: product.printfulSyncProductId,
-    lastSyncedAt: product.lastSyncedAt,
-  };
-}
-
-/**
- * List all Printful sync products from the API (not local DB).
- * Useful for admin UI to show what's available to import.
- */
-export async function listAvailablePrintfulProducts(): Promise<{
-  products: PrintfulSyncProduct[];
-  error?: string;
-}> {
-  const pf = getPrintfulIfConfigured();
-  if (!pf) {
-    return { products: [], error: "Printful not configured" };
-  }
-
-  try {
-    const allProducts: PrintfulSyncProduct[] = [];
-    let offset = 0;
-    const limit = 100;
-    let hasMore = true;
-
-    while (hasMore) {
-      const { products, paging } = await fetchSyncProducts({
-        offset,
-        limit,
-        status: "synced",
+      .onConflictDoUpdate({
+        set: {
+          dataImperial: dataImperial ? JSON.stringify(dataImperial) : null,
+          dataMetric: dataMetric ? JSON.stringify(dataMetric) : null,
+          updatedAt: now,
+          // Don't overwrite displayName with "T-Shirts" so hoodies/sweatshirts keep correct label
+          ...(displayName !== "T-Shirts" && { displayName }),
+        },
+        target: [
+          sizeChartsTable.provider,
+          sizeChartsTable.brand,
+          sizeChartsTable.model,
+        ],
       });
-      allProducts.push(...products);
-      offset += products.length;
-      hasMore = offset < paging.total;
-    }
-
-    return { products: allProducts };
+    return true;
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return { products: [], error: message };
+    console.warn(
+      "Printful size chart import failed for catalog product",
+      catalogProductId,
+      err,
+    );
+    return false;
   }
 }

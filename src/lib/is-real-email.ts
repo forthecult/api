@@ -2,7 +2,7 @@
  * True if the value looks like a real email address (e.g. user@domain.com),
  * not a crypto/wallet placeholder like solana_xxx@wallet.local or ethereum_xxx@wallet.local.
  */
-export function isRealEmail(value: string | null | undefined): boolean {
+export function isRealEmail(value: null | string | undefined): boolean {
   if (!value || typeof value !== "string") return false;
   const trimmed = value.trim();
   if (!trimmed) return false;

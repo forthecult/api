@@ -14,100 +14,50 @@ const IDENTITY_HEADER = "x-moltbook-identity";
 
 /** Verified agent profile returned by Moltbook (subset of full response). */
 export interface MoltbookAgent {
-  id: string;
-  name: string;
-  description?: string;
-  karma: number;
   avatar_url?: string;
-  is_claimed: boolean;
   created_at?: string;
+  description?: string;
   follower_count?: number;
   following_count?: number;
-  stats?: { posts: number; comments: number };
+  human?: {
+    email_verified?: boolean;
+    username?: string;
+  };
+  id: string;
+  is_claimed: boolean;
+  karma: number;
+  name: string;
   owner?: {
+    x_avatar?: string;
+    x_follower_count?: number;
     x_handle?: string;
     x_name?: string;
-    x_avatar?: string;
     x_verified?: boolean;
-    x_follower_count?: number;
   };
-  human?: {
-    username?: string;
-    email_verified?: boolean;
-  };
+  stats?: { comments: number; posts: number };
 }
 
 /** Response shape from Moltbook verify-identity API. */
 interface MoltbookVerifyResponse {
-  success?: boolean;
-  valid: boolean;
   agent?: MoltbookAgent;
   error?: string;
   hint?: string;
+  success?: boolean;
+  valid: boolean;
 }
 
 /** Known error codes from Moltbook (for appropriate HTTP status/messages). */
 const MOLTBOOK_ERROR_STATUS: Record<string, number> = {
-  identity_token_expired: 401,
-  invalid_token: 401,
-  invalid_app_key: 401,
-  missing_app_key: 401,
-  agent_not_found: 404,
   agent_deactivated: 403,
-  audience_required: 401,
+  agent_not_found: 404,
   audience_mismatch: 401,
+  audience_required: 401,
+  identity_token_expired: 401,
+  invalid_app_key: 401,
+  invalid_token: 401,
+  missing_app_key: 401,
   rate_limit_exceeded: 429,
 };
-
-/**
- * Verify an identity token with Moltbook.
- * Uses MOLTBOOK_APP_KEY; optionally pass audience (recommended) to match token audience.
- */
-export async function verifyMoltbookToken(
-  token: string,
-  options?: { audience?: string },
-): Promise<
-  | { valid: true; agent: MoltbookAgent }
-  | { valid: false; error: string; status: number }
-> {
-  const appKey = process.env.MOLTBOOK_APP_KEY?.trim();
-  if (!appKey) {
-    return { valid: false, error: "missing_app_key", status: 401 };
-  }
-
-  const body: { token: string; audience?: string } = { token };
-  if (options?.audience) body.audience = options.audience;
-
-  let res: Response;
-  try {
-    res = await fetch(MOLTBOOK_VERIFY_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Moltbook-App-Key": appKey,
-      },
-      body: JSON.stringify(body),
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return { valid: false, error: `verify_failed: ${message}`, status: 502 };
-  }
-
-  let data: MoltbookVerifyResponse;
-  try {
-    data = (await res.json()) as MoltbookVerifyResponse;
-  } catch {
-    return { valid: false, error: "invalid_response", status: 502 };
-  }
-
-  if (data.valid && data.agent) {
-    return { valid: true, agent: data.agent };
-  }
-
-  const errorCode = data.error ?? "invalid_token";
-  const status = MOLTBOOK_ERROR_STATUS[errorCode] ?? 401;
-  return { valid: false, error: errorCode, status };
-}
 
 /**
  * Extract X-Moltbook-Identity from request, verify with Moltbook, and return either
@@ -127,7 +77,7 @@ export async function getMoltbookAgentFromRequest(
   if (!token) {
     return {
       error: NextResponse.json(
-        { error: "No identity token provided", code: "missing_identity" },
+        { code: "missing_identity", error: "No identity token provided" },
         { status: 401 },
       ),
     };
@@ -182,4 +132,54 @@ export async function getOptionalMoltbookAgentFromRequest(
   const result = await verifyMoltbookToken(token, { audience });
   if (result.valid) return { agent: result.agent };
   return { agent: null };
+}
+
+/**
+ * Verify an identity token with Moltbook.
+ * Uses MOLTBOOK_APP_KEY; optionally pass audience (recommended) to match token audience.
+ */
+export async function verifyMoltbookToken(
+  token: string,
+  options?: { audience?: string },
+): Promise<
+  | { agent: MoltbookAgent; valid: true }
+  | { error: string; status: number; valid: false }
+> {
+  const appKey = process.env.MOLTBOOK_APP_KEY?.trim();
+  if (!appKey) {
+    return { error: "missing_app_key", status: 401, valid: false };
+  }
+
+  const body: { audience?: string; token: string } = { token };
+  if (options?.audience) body.audience = options.audience;
+
+  let res: Response;
+  try {
+    res = await fetch(MOLTBOOK_VERIFY_URL, {
+      body: JSON.stringify(body),
+      headers: {
+        "Content-Type": "application/json",
+        "X-Moltbook-App-Key": appKey,
+      },
+      method: "POST",
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { error: `verify_failed: ${message}`, status: 502, valid: false };
+  }
+
+  let data: MoltbookVerifyResponse;
+  try {
+    data = (await res.json()) as MoltbookVerifyResponse;
+  } catch {
+    return { error: "invalid_response", status: 502, valid: false };
+  }
+
+  if (data.valid && data.agent) {
+    return { agent: data.agent, valid: true };
+  }
+
+  const errorCode = data.error ?? "invalid_token";
+  const status = MOLTBOOK_ERROR_STATUS[errorCode] ?? 401;
+  return { error: errorCode, status, valid: false };
 }

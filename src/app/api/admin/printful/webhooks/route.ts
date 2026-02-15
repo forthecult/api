@@ -1,15 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { getAdminAuth } from "~/lib/admin-api-auth";
 import {
-  getWebhookConfig,
-  setWebhookConfig,
   disableWebhook,
-  setWebhookConfigV2,
-  getWebhookConfigV2,
   disableWebhookV2,
   getPrintfulIfConfigured,
+  getWebhookConfig,
+  getWebhookConfigV2,
+  setWebhookConfig,
+  setWebhookConfigV2,
 } from "~/lib/printful";
-import { getAdminAuth } from "~/lib/admin-api-auth";
 
 /**
  * All webhook event types we want to subscribe to for full order/product/catalog sync.
@@ -79,18 +79,18 @@ export async function GET(request: NextRequest) {
     );
 
     return NextResponse.json({
-      configured: config != null,
-      url: config?.url ?? null,
-      types: config?.types ?? [],
-      missingTypes,
       allRegistered: config != null && missingTypes.length === 0,
-      webhookEndpoint: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/printful`,
+      configured: config != null,
+      missingTypes,
       requiredTypes: REQUIRED_WEBHOOK_TYPES,
+      types: config?.types ?? [],
+      url: config?.url ?? null,
+      webhookEndpoint: `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/printful`,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Failed to get webhook config", detail: message },
+      { detail: message, error: "Failed to get webhook config" },
       { status: 500 },
     );
   }
@@ -121,8 +121,8 @@ export async function POST(request: NextRequest) {
 
   let body: {
     action: string;
-    types?: string[];
     customUrl?: string;
+    types?: string[];
   };
 
   try {
@@ -150,23 +150,23 @@ export async function POST(request: NextRequest) {
 
       try {
         const config = await setWebhookConfig({
-          url: webhookUrl,
           types: REQUIRED_WEBHOOK_TYPES,
+          url: webhookUrl,
         });
 
         console.log(`Printful webhooks registered: ${config.types.join(", ")}`);
 
         return NextResponse.json({
           success: true,
-          url: config.url,
           types: config.types,
+          url: config.url,
           webhookUrl,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         console.error("Failed to register Printful webhooks:", message);
         return NextResponse.json(
-          { success: false, error: message },
+          { error: message, success: false },
           { status: 500 },
         );
       }
@@ -188,20 +188,20 @@ export async function POST(request: NextRequest) {
         const uniqueTypes = [...new Set(newTypes)];
 
         const config = await setWebhookConfig({
-          url: webhookUrl,
           types: uniqueTypes,
+          url: webhookUrl,
         });
 
         return NextResponse.json({
           success: true,
-          url: config.url,
           types: config.types,
+          url: config.url,
           webhookUrl,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return NextResponse.json(
-          { success: false, error: message },
+          { error: message, success: false },
           { status: 500 },
         );
       }
@@ -213,11 +213,11 @@ export async function POST(request: NextRequest) {
       try {
         await disableWebhook();
         console.log("Printful webhooks disabled");
-        return NextResponse.json({ success: true, disabled: true });
+        return NextResponse.json({ disabled: true, success: true });
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         return NextResponse.json(
-          { success: false, error: message },
+          { error: message, success: false },
           { status: 500 },
         );
       }

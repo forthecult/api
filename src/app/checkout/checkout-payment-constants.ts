@@ -6,39 +6,39 @@
 /** Fallback when payment method API has not loaded; hide card/paypal/crypto by default. */
 export const HIDDEN_PAYMENT_OPTIONS = {
   creditCard: true,
-  paypal: true,
   cryptoBitcoin: true,
   cryptoDogecoin: true,
   cryptoMonero: true,
+  paypal: true,
 } as const;
 
 /** Top-level crypto options; "eth" = nested chain choices, "other" = Sui, TON, etc. */
 export const CRYPTO_SUB_OPTIONS: {
+  label: string;
   value:
     | "bitcoin"
+    | "crust"
     | "dogecoin"
     | "eth"
-    | "solana"
     | "monero"
-    | "crust"
+    | "other"
     | "pump"
-    | "troll"
-    | "soluna"
     | "seeker"
-    | "other";
-  label: string;
+    | "solana"
+    | "soluna"
+    | "troll";
 }[] = [
-  { value: "bitcoin", label: "Bitcoin (BTC)" },
-  { value: "dogecoin", label: "Dogecoin (DOGE)" },
-  { value: "eth", label: "Ethereum (ETH)" },
-  { value: "solana", label: "Solana (SOL)" },
-  { value: "monero", label: "Monero (XMR)" },
-  { value: "crust", label: "Crustafarian (CRUST)" },
-  { value: "pump", label: "Pump (PUMP)" },
-  { value: "troll", label: "Troll (TROLL)" },
-  { value: "soluna", label: "SOLUNA (SOLUNA)" },
-  { value: "seeker", label: "Seeker (SKR)" },
-  { value: "other", label: "Other" },
+  { label: "Bitcoin (BTC)", value: "bitcoin" },
+  { label: "Dogecoin (DOGE)", value: "dogecoin" },
+  { label: "Ethereum (ETH)", value: "eth" },
+  { label: "Solana (SOL)", value: "solana" },
+  { label: "Monero (XMR)", value: "monero" },
+  { label: "Crustafarian (CRUST)", value: "crust" },
+  { label: "Pump (PUMP)", value: "pump" },
+  { label: "Troll (TROLL)", value: "troll" },
+  { label: "SOLUNA (SOLUNA)", value: "soluna" },
+  { label: "Seeker (SKR)", value: "seeker" },
+  { label: "Other", value: "other" },
 ];
 
 /** Crypto sub-options visible in UI when using fallback (hidden options filtered out). */
@@ -55,99 +55,99 @@ export const VISIBLE_CRYPTO_SUB_OPTIONS = CRYPTO_SUB_OPTIONS.filter((opt) => {
 export const INITIAL_CRYPTO_SUB = (VISIBLE_CRYPTO_SUB_OPTIONS[0]?.value ??
   "eth") as
   | "bitcoin"
+  | "crust"
   | "dogecoin"
   | "eth"
-  | "solana"
   | "monero"
-  | "crust"
+  | "other"
   | "pump"
-  | "troll"
-  | "soluna"
   | "seeker"
-  | "other";
+  | "solana"
+  | "soluna"
+  | "troll";
 
 /** Options under Crypto → Other */
-export const OTHER_SUB_OPTIONS: { value: "sui" | "ton"; label: string }[] = [
-  { value: "sui", label: "Sui (SUI)" },
-  { value: "ton", label: "TON" },
+export const OTHER_SUB_OPTIONS: { label: string; value: "sui" | "ton" }[] = [
+  { label: "Sui (SUI)", value: "sui" },
+  { label: "TON", value: "ton" },
 ];
 
 /** Chains under Crypto → Ethereum (ETH) */
 export const ETH_CHAIN_OPTIONS: {
-  value: "ethereum" | "arbitrum" | "base" | "polygon";
   label: string;
+  value: "arbitrum" | "base" | "ethereum" | "polygon";
 }[] = [
-  { value: "ethereum", label: "ETH (Ethereum)" },
-  { value: "arbitrum", label: "ETH (Arbitrum)" },
-  { value: "base", label: "ETH (Base)" },
-  { value: "polygon", label: "ETH (Polygon)" },
+  { label: "ETH (Ethereum)", value: "ethereum" },
+  { label: "ETH (Arbitrum)", value: "arbitrum" },
+  { label: "ETH (Base)", value: "base" },
+  { label: "ETH (Polygon)", value: "polygon" },
 ];
 
 /** Crypto option value → logo path (top-level and other sub-options) */
 export const CRYPTO_LOGO_SRC: Partial<
   Record<
     | "bitcoin"
+    | "crust"
     | "dogecoin"
     | "eth"
+    | "monero"
+    | "other"
+    | "pump"
+    | "seeker"
     | "solana"
+    | "soluna"
     | "sui"
     | "ton"
-    | "monero"
-    | "crust"
-    | "pump"
-    | "troll"
-    | "soluna"
-    | "seeker"
-    | "other",
+    | "troll",
     string
   >
 > = {
   bitcoin: "/crypto/bitcoin/bitcoin-logo.svg",
+  crust: "/crypto/solana/solanaLogoMark.svg",
   dogecoin: "/payments/doge.svg",
   eth: "/crypto/ethereum/ethereum-logo.svg",
+  monero: "/crypto/monero/monero-xmr-logo.svg",
+  pump: "/crypto/pump/pump-logomark.svg",
+  seeker: "/crypto/seeker/S_Token_Circle_White.svg",
   solana: "/crypto/solana/solanaLogoMark.svg",
+  soluna: "/crypto/soluna/soluna-logo.png",
   sui: "/crypto/sui/sui-logo.svg",
   ton: "/crypto/ton/ton_logo.svg",
-  monero: "/crypto/monero/monero-xmr-logo.svg",
-  crust: "/crypto/solana/solanaLogoMark.svg",
-  pump: "/crypto/pump/pump-logomark.svg",
   troll: "/crypto/troll/troll-logomark.png",
-  soluna: "/crypto/soluna/soluna-logo.png",
-  seeker: "/crypto/seeker/S_Token_Circle_White.svg",
 };
 
 export const USDC_SUB_OPTIONS: {
-  value: "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
   label: string;
+  value: "arbitrum" | "base" | "ethereum" | "polygon" | "solana";
 }[] = [
-  { value: "solana", label: "USDC (Solana)" },
-  { value: "ethereum", label: "USDC (Ethereum)" },
-  { value: "arbitrum", label: "USDC (Arbitrum)" },
-  { value: "base", label: "USDC (Base)" },
-  { value: "polygon", label: "USDC (Polygon)" },
+  { label: "USDC (Solana)", value: "solana" },
+  { label: "USDC (Ethereum)", value: "ethereum" },
+  { label: "USDC (Arbitrum)", value: "arbitrum" },
+  { label: "USDC (Base)", value: "base" },
+  { label: "USDC (Polygon)", value: "polygon" },
 ];
 
 export const USDT_SUB_OPTIONS: {
-  value: "ethereum" | "arbitrum" | "bnb" | "polygon";
   label: string;
+  value: "arbitrum" | "bnb" | "ethereum" | "polygon";
 }[] = [
-  { value: "ethereum", label: "USDT (Ethereum)" },
-  { value: "arbitrum", label: "USDT (Arbitrum)" },
-  { value: "bnb", label: "USDT (BNB Smart Chain)" },
-  { value: "polygon", label: "USDT (Polygon)" },
+  { label: "USDT (Ethereum)", value: "ethereum" },
+  { label: "USDT (Arbitrum)", value: "arbitrum" },
+  { label: "USDT (BNB Smart Chain)", value: "bnb" },
+  { label: "USDT (Polygon)", value: "polygon" },
 ];
 
 /** Chain logo for stablecoin network options (USDC/USDT). Solana and EVM chains. */
 export const STABLECOIN_CHAIN_LOGO: Record<
-  "solana" | "ethereum" | "arbitrum" | "base" | "polygon" | "bnb",
+  "arbitrum" | "base" | "bnb" | "ethereum" | "polygon" | "solana",
   string
 > = {
-  solana: "/crypto/solana/solanaLogoMark.svg",
-  ethereum: "/crypto/ethereum/ethereum-logo.svg",
   arbitrum: "/crypto/ethereum/ethereum-logo.svg",
   base: "/crypto/ethereum/ethereum-logo.svg",
-  polygon: "/crypto/polygon/polygon-logo.svg",
   bnb: "/crypto/bnb/bnb-smart-chain.svg",
+  ethereum: "/crypto/ethereum/ethereum-logo.svg",
+  polygon: "/crypto/polygon/polygon-logo.svg",
+  solana: "/crypto/solana/solanaLogoMark.svg",
 };
 
 /** Stablecoin token logo (for USDC / USDT labels). */

@@ -3,47 +3,48 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { LoqateFindItem, MappedShippingAddress } from "~/lib/loqate";
+
 import { mapRetrieveToShipping } from "~/lib/loqate";
 
 const LOQATE_FIND_TIMEOUT_MS = 10_000;
 const LOQATE_DEBOUNCE_MS = 200;
 
 interface UseLoqateAutocompleteOptions {
-  /** Current street/address text to search */
-  text: string;
   /** ISO country code to bias results */
   country?: string;
   /** Whether autocomplete is active (e.g. form is visible) */
   enabled?: boolean;
   /** Called when a full address is retrieved from Loqate */
   onSelect?: (address: MappedShippingAddress) => void;
+  /** Current street/address text to search */
+  text: string;
 }
 
 interface UseLoqateAutocompleteReturn {
-  suggestions: LoqateFindItem[];
-  loading: boolean;
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  /** Call when user selects a suggestion by its Loqate Id */
-  selectAddress: (id: string) => void;
-  /** Reset suggestions and close dropdown */
-  reset: () => void;
-  /** Ref to track if address input is focused (controls auto-open) */
-  inputFocusedRef: React.RefObject<boolean>;
   /** Ref for the container div (useful for click-outside detection) */
   containerRef: React.RefObject<HTMLDivElement | null>;
+  /** Ref to track if address input is focused (controls auto-open) */
+  inputFocusedRef: React.RefObject<boolean>;
+  loading: boolean;
+  open: boolean;
+  /** Reset suggestions and close dropdown */
+  reset: () => void;
+  /** Call when user selects a suggestion by its Loqate Id */
+  selectAddress: (id: string) => void;
+  setOpen: (open: boolean) => void;
+  suggestions: LoqateFindItem[];
 }
 
 export function useLoqateAutocomplete({
-  text,
   country,
   enabled = true,
   onSelect,
+  text,
 }: UseLoqateAutocompleteOptions): UseLoqateAutocompleteReturn {
   const [suggestions, setSuggestions] = useState<LoqateFindItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debounceRef = useRef<null | ReturnType<typeof setTimeout>>(null);
   const skipNextFindRef = useRef(false);
   const inputFocusedRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -70,7 +71,7 @@ export function useLoqateAutocomplete({
       }
       setLoading(true);
       if (inputFocusedRef.current) setOpen(true);
-      const params = new URLSearchParams({ text: trimmed, limit: "6" });
+      const params = new URLSearchParams({ limit: "6", text: trimmed });
       if (country?.trim()) params.set("countries", country.trim());
       const ac = new AbortController();
       const timeoutId = setTimeout(() => ac.abort(), LOQATE_FIND_TIMEOUT_MS);
@@ -121,13 +122,13 @@ export function useLoqateAutocomplete({
   }, []);
 
   return {
-    suggestions,
+    containerRef,
+    inputFocusedRef,
     loading,
     open,
-    setOpen,
-    selectAddress,
     reset,
-    inputFocusedRef,
-    containerRef,
+    selectAddress,
+    setOpen,
+    suggestions,
   };
 }

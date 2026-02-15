@@ -9,7 +9,7 @@ import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
 import { ProductQuickView } from "~/ui/components/product-quick-view";
 
-type Product = {
+interface Product {
   category: string;
   hasVariants?: boolean;
   id: string;
@@ -22,14 +22,14 @@ type Product = {
   slug?: string;
   tokenGated?: boolean;
   tokenGatePassed?: boolean;
-};
+}
 
 export function FeaturedProductsSection({ products }: { products: Product[] }) {
   const { addItem } = useCart();
-  const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
+  const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
 
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
-  const [quickViewSlug, setQuickViewSlug] = React.useState<string | null>(null);
+  const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
 
   const handleQuickView = useCallback((slugOrId: string) => {
     setQuickViewSlug(slugOrId);
@@ -94,19 +94,19 @@ export function FeaturedProductsSection({ products }: { products: Product[] }) {
     <>
       {products.map((product) => (
         <ProductCard
+          isInWishlist={isInWishlist(product.id)}
           key={product.id}
           onAddToCart={handleAddToCart}
           onAddToWishlist={handleAddToWishlist}
-          onRemoveFromWishlist={handleRemoveFromWishlist}
           onQuickView={handleQuickView}
-          isInWishlist={isInWishlist(product.id)}
+          onRemoveFromWishlist={handleRemoveFromWishlist}
           product={product}
         />
       ))}
 
       <ProductQuickView
-        open={quickViewOpen}
         onOpenChange={setQuickViewOpen}
+        open={quickViewOpen}
         productSlugOrId={quickViewSlug}
       />
     </>

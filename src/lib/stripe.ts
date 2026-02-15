@@ -14,15 +14,8 @@ export function getStripe(): Stripe {
   return new Stripe(stripeSecretKey);
 }
 
-export function getStripeWebhookSecret(): string {
-  if (!stripeWebhookSecret || stripeWebhookSecret === "") {
-    throw new Error("STRIPE_WEBHOOK_SECRET is not set");
-  }
-  return stripeWebhookSecret;
-}
-
 /** use when you need Stripe only if configured (e.g. optional checkout) */
-export function getStripeIfConfigured(): Stripe | null {
+export function getStripeIfConfigured(): null | Stripe {
   if (
     !stripeSecretKey ||
     stripeSecretKey === "" ||
@@ -31,4 +24,11 @@ export function getStripeIfConfigured(): Stripe | null {
     return null;
   }
   return new Stripe(stripeSecretKey);
+}
+
+export function getStripeWebhookSecret(): string {
+  if (!stripeWebhookSecret || stripeWebhookSecret === "") {
+    throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+  }
+  return stripeWebhookSecret;
 }

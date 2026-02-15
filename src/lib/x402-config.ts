@@ -4,13 +4,14 @@
  */
 
 import type { NextRequest } from "next/server";
+
 import { withX402 } from "x402-next";
 
 const EVM_NETWORKS = ["base", "base-sepolia"] as const;
 const SOLANA_NETWORKS = ["solana", "solana-devnet"] as const;
+export type X402Network = X402NetworkEvm | X402NetworkSolana;
 export type X402NetworkEvm = (typeof EVM_NETWORKS)[number];
 export type X402NetworkSolana = (typeof SOLANA_NETWORKS)[number];
-export type X402Network = X402NetworkEvm | X402NetworkSolana;
 
 /** x402 receiving address: EVM (0x...) or Solana (base58). */
 const X402_PAY_TO_EVM = process.env.X402_PAY_TO_ADDRESS?.trim();
@@ -36,7 +37,7 @@ export const x402Enabled = Boolean(
 );
 
 /** Pay-to address for the selected network (0x for EVM, base58 for Solana). */
-export const x402PayTo: `0x${string}` | string | null = x402Enabled
+export const x402PayTo: `0x${string}` | null | string = x402Enabled
   ? isEvm
     ? (X402_PAY_TO_EVM as `0x${string}`)
     : (X402_PAY_TO_SOLANA ?? null)
@@ -47,22 +48,22 @@ export const x402NetworkKind = isEvm ? ("evm" as const) : ("solana" as const);
 
 /** Base config for paid data endpoints. Supports Base (EVM) and Solana. */
 const defaultRouteConfig = {
-  price: "$0.01" as const,
-  network: X402_NETWORK,
   config: {
     description: "For the Cult — paid data API",
     maxTimeoutSeconds: 120,
   },
+  network: X402_NETWORK,
+  price: "$0.01" as const,
 };
 
 /** Per-route descriptions for 402 paywall. Exchange rates and metals only; product prices, shipping, catalog are free. */
 export const x402RouteConfigs = {
-  "x402/rates/fiat": {
+  "x402/rates/crypto": {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
       description:
-        "Fiat-to-fiat exchange rates — GET /api/x402/rates/fiat?from=USD&to=EUR",
+        "Crypto-to-crypto rates — GET /api/x402/rates/crypto?from=ETH&to=BTC",
     },
   },
   "x402/rates/crypto-fiat": {
@@ -73,20 +74,12 @@ export const x402RouteConfigs = {
         "Crypto-to-fiat rates — GET /api/x402/rates/crypto-fiat?crypto=ETH&fiat=USD",
     },
   },
-  "x402/rates/crypto": {
+  "x402/rates/fiat": {
     ...defaultRouteConfig,
     config: {
       ...defaultRouteConfig.config,
       description:
-        "Crypto-to-crypto rates — GET /api/x402/rates/crypto?from=ETH&to=BTC",
-    },
-  },
-  "x402/rates/metals-fiat": {
-    ...defaultRouteConfig,
-    config: {
-      ...defaultRouteConfig.config,
-      description:
-        "Precious metals to fiat (XAU, XAG) — GET /api/x402/rates/metals-fiat?metal=XAU&fiat=USD",
+        "Fiat-to-fiat exchange rates — GET /api/x402/rates/fiat?from=USD&to=EUR",
     },
   },
   "x402/rates/metals-crypto": {
@@ -97,11 +90,21 @@ export const x402RouteConfigs = {
         "Precious metals to crypto — GET /api/x402/rates/metals-crypto?metal=XAU&crypto=ETH",
     },
   },
+  "x402/rates/metals-fiat": {
+    ...defaultRouteConfig,
+    config: {
+      ...defaultRouteConfig.config,
+      description:
+        "Precious metals to fiat (XAU, XAG) — GET /api/x402/rates/metals-fiat?metal=XAU&fiat=USD",
+    },
+  },
 } as const;
 
 export type X402RouteKey = keyof typeof x402RouteConfigs;
 
-type RouteContext = { params?: Promise<Record<string, string>> };
+interface RouteContext {
+  params?: Promise<Record<string, string>>;
+}
 type RouteHandler = (
   request: NextRequest,
   context?: RouteContext,

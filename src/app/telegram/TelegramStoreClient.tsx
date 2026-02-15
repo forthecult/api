@@ -1,40 +1,38 @@
 "use client";
 
-import * as React from "react";
+import { ChevronRight, ShoppingBag, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronRight, ShoppingBag, ShoppingCart } from "lucide-react";
+import * as React from "react";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { ProductCard } from "~/ui/components/product-card";
 import { Button } from "~/ui/primitives/button";
 
-type Product = {
-  id: string;
+interface CategoryOption {
   name: string;
-  image?: string;
-  category?: string;
-  price?: number;
-  originalPrice?: number;
-  inStock?: boolean;
-  rating?: number;
-};
+  slug: string;
+}
 
-type CategoryOption = { slug: string; name: string };
+interface Product {
+  category?: string;
+  id: string;
+  image?: string;
+  inStock?: boolean;
+  name: string;
+  originalPrice?: number;
+  price?: number;
+  rating?: number;
+}
 
 const LIMIT = 12;
-
-function getAppUrl(): string {
-  if (typeof window === "undefined") return "";
-  return window.location.origin;
-}
 
 export function TelegramStoreClient() {
   const router = useRouter();
   const { addItem, itemCount, subtotal } = useCart();
   const [products, setProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<CategoryOption[]>([
-    { slug: "all", name: "All" },
+    { name: "All", slug: "all" },
   ]);
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
   const [page, setPage] = React.useState(1);
@@ -99,16 +97,16 @@ export function TelegramStoreClient() {
       const setLoadingState = append ? setLoadingMore : setLoading;
       setLoadingState(true);
       const params = new URLSearchParams({
-        page: String(newPage),
         limit: String(LIMIT),
+        page: String(newPage),
       });
       if (categorySlug !== "all") params.set("category", categorySlug);
       fetch(`${base}/api/products?${params}`)
         .then((res) => res.json())
         .then(
           (data: {
-            items?: Product[];
             categories?: CategoryOption[];
+            items?: Product[];
             total?: number;
             totalPages?: number;
           }) => {
@@ -123,7 +121,7 @@ export function TelegramStoreClient() {
               setProducts(items);
               if (data.categories && data.categories.length > 0) {
                 setCategories([
-                  { slug: "all", name: "All" },
+                  { name: "All", slug: "all" },
                   ...data.categories,
                 ]);
               }
@@ -182,20 +180,36 @@ export function TelegramStoreClient() {
 
   return (
     <div className="flex min-h-screen flex-col pb-24">
-      <header className="sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20 bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3">
+      <header
+        className={`
+        sticky top-0 z-10 border-b border-[var(--tg-theme-hint-color,#999)]/20
+        bg-[var(--tg-theme-bg-color,#fff)] px-4 py-3
+      `}
+      >
         <div className="flex items-center justify-between">
           <span className="font-semibold text-[var(--tg-theme-text-color,#000)]">
             Shop
           </span>
           {inTelegram ? (
             <Link
-              href="/telegram/cart"
-              className="relative flex items-center justify-center rounded-full p-2 text-[var(--tg-theme-text-color,#000)] hover:bg-[var(--tg-theme-hint-color,#999)]/10"
               aria-label={`Cart, ${itemCount} items`}
+              className={`
+                relative flex items-center justify-center rounded-full p-2
+                text-[var(--tg-theme-text-color,#000)]
+                hover:bg-[var(--tg-theme-hint-color,#999)]/10
+              `}
+              href="/telegram/cart"
             >
               <ShoppingCart className="size-6" />
               {itemCount > 0 ? (
-                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--tg-theme-button-color,#3390ec)] px-1 text-[10px] font-bold text-[var(--tg-theme-button-text-color,#fff)]">
+                <span
+                  className={`
+                  absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center
+                  justify-center rounded-full
+                  bg-[var(--tg-theme-button-color,#3390ec)] px-1 text-[10px]
+                  font-bold text-[var(--tg-theme-button-text-color,#fff)]
+                `}
+                >
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
               ) : null}
@@ -209,7 +223,11 @@ export function TelegramStoreClient() {
       </header>
 
       <div className="flex-1 px-4 py-6">
-        <h1 className="mb-3 text-lg font-semibold text-[var(--tg-theme-text-color,#000)]">
+        <h1
+          className={`
+          mb-3 text-lg font-semibold text-[var(--tg-theme-text-color,#000)]
+        `}
+        >
           Products
         </h1>
 
@@ -218,17 +236,23 @@ export function TelegramStoreClient() {
           <div className="flex gap-2">
             {categories.map((cat) => (
               <button
-                key={cat.slug}
-                type="button"
-                onClick={() => handleCategoryChange(cat.slug)}
                 className={`
                   shrink-0 rounded-full px-3 py-1.5 text-sm font-medium
                   ${
                     cat.slug === selectedCategory
-                      ? "bg-[var(--tg-theme-button-color,#3390ec)] text-[var(--tg-theme-button-text-color,#fff)]"
-                      : "bg-[var(--tg-theme-secondary-bg-color,#eee)] text-[var(--tg-theme-text-color,#000)]"
+                      ? `
+                        bg-[var(--tg-theme-button-color,#3390ec)]
+                        text-[var(--tg-theme-button-text-color,#fff)]
+                      `
+                      : `
+                        bg-[var(--tg-theme-secondary-bg-color,#eee)]
+                        text-[var(--tg-theme-text-color,#000)]
+                      `
                   }
                 `}
+                key={cat.slug}
+                onClick={() => handleCategoryChange(cat.slug)}
+                type="button"
               >
                 {cat.name}
               </button>
@@ -237,11 +261,19 @@ export function TelegramStoreClient() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <div
+            className={`
+            grid grid-cols-2 gap-4
+            sm:grid-cols-3
+          `}
+          >
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
+                className={`
+                  h-48 animate-pulse rounded-lg
+                  bg-[var(--tg-theme-secondary-bg-color,#eee)]
+                `}
                 key={i}
-                className="h-48 animate-pulse rounded-lg bg-[var(--tg-theme-secondary-bg-color,#eee)]"
               />
             ))}
           </div>
@@ -251,10 +283,16 @@ export function TelegramStoreClient() {
           </p>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            <div
+              className={`
+              grid grid-cols-2 gap-4
+              sm:grid-cols-3
+            `}
+            >
               {products.map((p) => (
                 <ProductCard
                   key={p.id}
+                  onAddToCart={() => handleAddToCart(p, 1)}
                   product={{
                     category: p.category ?? "Uncategorized",
                     id: p.id,
@@ -265,17 +303,16 @@ export function TelegramStoreClient() {
                     price: p.price ?? 0,
                     rating: p.rating ?? 0,
                   }}
-                  onAddToCart={() => handleAddToCart(p, 1)}
                 />
               ))}
             </div>
             {hasMore && (
               <div className="mt-6">
                 <Button
-                  variant="outline"
                   className="w-full"
-                  onClick={handleLoadMore}
                   disabled={loadingMore}
+                  onClick={handleLoadMore}
+                  variant="outline"
                 >
                   {loadingMore ? (
                     "Loading…"
@@ -291,11 +328,15 @@ export function TelegramStoreClient() {
           </>
         )}
 
-        <div className="mt-8 border-t border-[var(--tg-theme-hint-color,#999)]/20 pt-6">
+        <div
+          className={`
+          mt-8 border-t border-[var(--tg-theme-hint-color,#999)]/20 pt-6
+        `}
+        >
           <Button
-            variant="ghost"
-            className="w-full text-sm text-[var(--tg-theme-hint-color,#999)]"
             asChild
+            className="w-full text-sm text-[var(--tg-theme-hint-color,#999)]"
+            variant="ghost"
           >
             <Link href="/products?source=telegram">
               <ShoppingBag className="mr-2 size-4" />
@@ -306,4 +347,9 @@ export function TelegramStoreClient() {
       </div>
     </div>
   );
+}
+
+function getAppUrl(): string {
+  if (typeof window === "undefined") return "";
+  return window.location.origin;
 }

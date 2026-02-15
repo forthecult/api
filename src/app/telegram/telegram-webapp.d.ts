@@ -6,62 +6,62 @@ declare global {
   interface Window {
     Telegram?: {
       WebApp: {
-        ready: () => void;
-        expand: () => void;
-        close: () => void;
-        setHeaderColor: (color: string) => void;
-        setBackgroundColor: (color: string) => void;
-        themeParams: {
-          bg_color?: string;
-          text_color?: string;
-          hint_color?: string;
-          link_color?: string;
-          button_color?: string;
-          button_text_color?: string;
-          secondary_bg_color?: string;
+        BackButton: {
+          hide: () => void;
+          offClick: (cb: () => void) => void;
+          onClick: (cb: () => void) => void;
+          show: () => void;
+          visible: boolean;
         };
+        close: () => void;
+        expand: () => void;
         initData: string;
         initDataUnsafe: {
           user?: {
-            id: number;
             first_name?: string;
+            id: number;
+            language_code?: string;
             last_name?: string;
             username?: string;
-            language_code?: string;
           };
         };
         MainButton: {
-          text: string;
           color: string;
+          disable: () => void;
+          enable: () => void;
+          hide: () => void;
+          hideProgress: () => void;
+          offClick: (cb: () => void) => void;
+          onClick: (cb: () => void) => void;
+          setText: (text: string) => void;
+          show: () => void;
+          showProgress: (leaveActive?: boolean) => void;
+          text: string;
           textColor: string;
           visible: boolean;
-          show: () => void;
-          hide: () => void;
-          enable: () => void;
-          disable: () => void;
-          showProgress: (leaveActive?: boolean) => void;
-          hideProgress: () => void;
-          setText: (text: string) => void;
-          onClick: (cb: () => void) => void;
-          offClick: (cb: () => void) => void;
         };
-        BackButton: {
-          visible: boolean;
-          show: () => void;
-          hide: () => void;
-          onClick: (cb: () => void) => void;
-          offClick: (cb: () => void) => void;
-        };
-        openLink: (url: string) => void;
         openInvoice: (url: string, callback?: (status: string) => void) => void;
+        openLink: (url: string) => void;
+        ready: () => void;
+        setBackgroundColor: (color: string) => void;
+        setHeaderColor: (color: string) => void;
         showPopup: (
           params: {
-            title?: string;
+            buttons?: { id?: string; text: string; type?: string }[];
             message: string;
-            buttons?: Array<{ id?: string; type?: string; text: string }>;
+            title?: string;
           },
           callback?: (buttonId: string) => void,
         ) => void;
+        themeParams: {
+          bg_color?: string;
+          button_color?: string;
+          button_text_color?: string;
+          hint_color?: string;
+          link_color?: string;
+          secondary_bg_color?: string;
+          text_color?: string;
+        };
       };
     };
   }

@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  checkRateLimit,
   getClientIp,
   RATE_LIMITS,
-  checkRateLimit,
   rateLimitResponse,
 } from "~/lib/rate-limit";
 
@@ -26,20 +26,20 @@ const SOLANA_RPC_URL =
 
 // Allowed JSON-RPC methods (whitelist to prevent abuse)
 const ALLOWED_METHODS = new Set([
-  "getBalance",
   "getAccountInfo",
+  "getBalance",
+  "getBlockHeight",
   "getLatestBlockhash",
-  "getSignatureStatuses",
+  "getRecentPrioritizationFees",
   "getSignaturesForAddress",
+  "getSignatureStatuses",
+  "getSlot",
   "getTokenAccountBalance",
   "getTokenAccountsByOwner",
   "getTransaction",
+  "isBlockhashValid",
   "sendTransaction",
   "simulateTransaction",
-  "getSlot",
-  "getBlockHeight",
-  "getRecentPrioritizationFees",
-  "isBlockhashValid",
 ]);
 
 export async function POST(request: NextRequest) {
@@ -48,10 +48,10 @@ export async function POST(request: NextRequest) {
   if (!rl.success) return rateLimitResponse(rl);
 
   let body: {
-    method?: string;
-    params?: unknown;
     id?: unknown;
     jsonrpc?: string;
+    method?: string;
+    params?: unknown;
   };
   try {
     body = (await request.json()) as typeof body;
@@ -68,14 +68,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const rpcResponse = await fetch(SOLANA_RPC_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        jsonrpc: body.jsonrpc ?? "2.0",
         id: body.id ?? 1,
+        jsonrpc: body.jsonrpc ?? "2.0",
         method: body.method,
         params: body.params ?? [],
       }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     });
 
     const data = await rpcResponse.json();

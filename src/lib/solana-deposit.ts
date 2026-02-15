@@ -12,6 +12,10 @@
 import { Keypair } from "@solana/web3.js";
 import { createHash } from "node:crypto";
 
+export function deriveDepositAddress(orderId: string): string {
+  return deriveDepositKeypair(orderId).publicKey.toBase58();
+}
+
 export function deriveDepositKeypair(orderId: string): Keypair {
   const secret = process.env.SOLANA_DEPOSIT_SECRET;
   if (!secret) {
@@ -23,8 +27,4 @@ export function deriveDepositKeypair(orderId: string): Keypair {
     .update(orderId + secret)
     .digest();
   return Keypair.fromSeed(new Uint8Array(seed));
-}
-
-export function deriveDepositAddress(orderId: string): string {
-  return deriveDepositKeypair(orderId).publicKey.toBase58();
 }

@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+
 import { headers } from "next/headers";
 
 import {
@@ -14,7 +15,7 @@ const isStaging =
 export default async function robots(): Promise<MetadataRoute.Robots> {
   if (isStaging) {
     return {
-      rules: [{ userAgent: "*", disallow: ["/"] }],
+      rules: [{ disallow: ["/"], userAgent: "*" }],
     };
   }
 
@@ -24,9 +25,9 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
   const baseUrl = isAgent ? getAgentBaseUrl() : getPublicSiteUrl();
 
   return {
+    host: baseUrl,
     rules: [
       {
-        userAgent: "*",
         allow: "/",
         disallow: [
           "/api/",
@@ -37,9 +38,9 @@ export default async function robots(): Promise<MetadataRoute.Robots> {
           "/login",
           "/signup",
         ],
+        userAgent: "*",
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
-    host: baseUrl,
   };
 }

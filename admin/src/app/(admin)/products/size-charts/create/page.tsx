@@ -8,8 +8,8 @@ import { getMainAppUrl } from "~/lib/env";
 import { Button } from "~/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "~/ui/card";
 import {
-  SizeChartDataEditor,
   type SizeChartData,
+  SizeChartDataEditor,
 } from "~/ui/size-chart-editor";
 
 const API_BASE = getMainAppUrl();
@@ -20,15 +20,15 @@ const labelClass = "mb-1.5 block text-sm font-medium";
 export default function AdminSizeChartsCreatePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [provider, setProvider] = useState<"printful" | "printify" | "manual">(
+  const [error, setError] = useState<null | string>(null);
+  const [provider, setProvider] = useState<"manual" | "printful" | "printify">(
     "manual",
   );
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [dataImperial, setDataImperial] = useState<SizeChartData | null>(null);
-  const [dataMetric, setDataMetric] = useState<SizeChartData | null>(null);
+  const [dataImperial, setDataImperial] = useState<null | SizeChartData>(null);
+  const [dataMetric, setDataMetric] = useState<null | SizeChartData>(null);
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -41,17 +41,17 @@ export default function AdminSizeChartsCreatePage() {
       setError(null);
       try {
         const res = await fetch(`${API_BASE}/api/admin/size-charts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
           body: JSON.stringify({
-            provider,
             brand: brand.trim(),
-            model: model.trim(),
-            displayName: displayName.trim(),
             dataImperial: dataImperial ?? undefined,
             dataMetric: dataMetric ?? undefined,
+            displayName: displayName.trim(),
+            model: model.trim(),
+            provider,
           }),
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
         });
         if (!res.ok) {
           const body = (await res.json().catch(() => ({}))) as {
@@ -73,7 +73,7 @@ export default function AdminSizeChartsCreatePage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Link href="/products/size-charts">
-          <Button type="button" variant="ghost" size="sm">
+          <Button size="sm" type="button" variant="ghost">
             ← Size Charts
           </Button>
         </Link>
@@ -82,9 +82,14 @@ export default function AdminSizeChartsCreatePage() {
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
         {error && (
-          <p className="rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <p
+            className={`
+            rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2
+            text-sm text-destructive
+          `}
+          >
             {error}
           </p>
         )}
@@ -99,20 +104,25 @@ export default function AdminSizeChartsCreatePage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div
+              className={`
+              grid gap-4
+              sm:grid-cols-3
+            `}
+            >
               <div>
-                <label htmlFor="provider" className={labelClass}>
+                <label className={labelClass} htmlFor="provider">
                   Provider
                 </label>
                 <select
+                  className={inputClass}
                   id="provider"
-                  value={provider}
                   onChange={(e) =>
                     setProvider(
-                      e.target.value as "printful" | "printify" | "manual",
+                      e.target.value as "manual" | "printful" | "printify",
                     )
                   }
-                  className={inputClass}
+                  value={provider}
                 >
                   <option value="printful">Printful</option>
                   <option value="printify">Printify</option>
@@ -120,47 +130,47 @@ export default function AdminSizeChartsCreatePage() {
                 </select>
               </div>
               <div>
-                <label htmlFor="brand" className={labelClass}>
+                <label className={labelClass} htmlFor="brand">
                   Brand <span className="text-destructive">*</span>
                 </label>
                 <input
+                  className={inputClass}
                   id="brand"
-                  type="text"
-                  value={brand}
                   onChange={(e) => setBrand(e.target.value)}
                   placeholder="e.g. Bella + Canvas"
-                  className={inputClass}
                   required
+                  type="text"
+                  value={brand}
                 />
               </div>
               <div>
-                <label htmlFor="model" className={labelClass}>
+                <label className={labelClass} htmlFor="model">
                   Model <span className="text-destructive">*</span>
                 </label>
                 <input
+                  className={inputClass}
                   id="model"
-                  type="text"
-                  value={model}
                   onChange={(e) => setModel(e.target.value)}
                   placeholder="e.g. 3001"
-                  className={inputClass}
                   required
+                  type="text"
+                  value={model}
                 />
               </div>
             </div>
             <div>
-              <label htmlFor="displayName" className={labelClass}>
+              <label className={labelClass} htmlFor="displayName">
                 Display name (shown in accordion){" "}
                 <span className="text-destructive">*</span>
               </label>
               <input
+                className={inputClass}
                 id="displayName"
-                type="text"
-                value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="e.g. Hoodies"
-                className={inputClass}
                 required
+                type="text"
+                value={displayName}
               />
             </div>
           </CardContent>
@@ -170,8 +180,8 @@ export default function AdminSizeChartsCreatePage() {
         <Card>
           <CardContent className="pt-6">
             <SizeChartDataEditor
-              label="Imperial (inches)"
               data={dataImperial}
+              label="Imperial (inches)"
               onChange={setDataImperial}
             />
           </CardContent>
@@ -181,8 +191,8 @@ export default function AdminSizeChartsCreatePage() {
         <Card>
           <CardContent className="pt-6">
             <SizeChartDataEditor
-              label="Metric (cm)"
               data={dataMetric}
+              label="Metric (cm)"
               onChange={setDataMetric}
             />
           </CardContent>
@@ -190,7 +200,7 @@ export default function AdminSizeChartsCreatePage() {
 
         {/* Actions */}
         <div className="flex items-center gap-3">
-          <Button type="submit" disabled={saving}>
+          <Button disabled={saving} type="submit">
             {saving ? "Creating…" : "Create size chart"}
           </Button>
           <Link href="/products/size-charts">

@@ -23,54 +23,38 @@ import {
 
 const API_BASE = getMainAppUrl();
 
-type Range = "daily" | "monthly" | "yearly";
-
 interface DashboardStats {
-  visits: number;
-  totalSalesCents: number;
   averageOrderValueCents: number;
-  orderCount: number;
-  soldItems: number;
   grossSaleCents: number;
-  totalShippingCents: number;
-  weeklySalesCents: number;
-  productShare: number;
   marketShare: number;
-  recentOrders: Array<{
-    id: string;
+  orderCount: number;
+  productShare: number;
+  recentOrders: {
     createdAt: string;
     email: string;
-    status: string;
-    totalCents: number;
-    items: Array<{
+    id: string;
+    items: {
       id: string;
       name: string;
       priceCents: number;
       quantity: number;
-    }>;
-  }>;
-  stockOutProducts: Array<{
+    }[];
+    status: string;
+    totalCents: number;
+  }[];
+  soldItems: number;
+  stockOutProducts: {
+    amountCents?: number;
     name: string;
     stock?: number;
-    amountCents?: number;
-  }>;
+  }[];
+  totalSalesCents: number;
+  totalShippingCents: number;
+  visits: number;
+  weeklySalesCents: number;
 }
 
-function formatCents(cents: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(cents / 100);
-}
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good Morning";
-  if (h < 18) return "Good Afternoon";
-  return "Good Evening";
-}
+type Range = "daily" | "monthly" | "yearly";
 
 export default function DashboardPage() {
   const { data, isPending } = useSession();
@@ -78,7 +62,7 @@ export default function DashboardPage() {
   const [range, setRange] = useState<Range>("monthly");
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<null | string>(null);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
@@ -122,7 +106,12 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-200">
+      <div
+        className={`
+        rounded-lg border border-red-200 bg-red-50 p-4 text-red-800
+        dark:border-red-800 dark:bg-red-950/30 dark:text-red-200
+      `}
+      >
         {error}
         <Button
           className="mt-2"
@@ -137,7 +126,12 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div
+        className={`
+        flex flex-col gap-4
+        sm:flex-row sm:items-center sm:justify-between
+      `}
+      >
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             {greeting()}, {name}!
@@ -150,14 +144,17 @@ export default function DashboardPage() {
         <div className="flex gap-2">
           {(["daily", "monthly", "yearly"] as const).map((r) => (
             <Button
-              key={r}
-              onClick={() => setRange(r)}
-              type="button"
               className={
                 range === r
                   ? "bg-primary text-primary-foreground"
-                  : "border border-border bg-background text-foreground hover:bg-muted hover:text-foreground"
+                  : `
+                    border border-border bg-background text-foreground
+                    hover:bg-muted hover:text-foreground
+                  `
               }
+              key={r}
+              onClick={() => setRange(r)}
+              type="button"
             >
               {r === "daily" ? "Daily" : r === "monthly" ? "Monthly" : "Yearly"}
             </Button>
@@ -166,9 +163,15 @@ export default function DashboardPage() {
       </div>
 
       {loading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={`
+          grid gap-4
+          md:grid-cols-2
+          lg:grid-cols-4
+        `}
+        >
           {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card className="animate-pulse" key={i}>
               <CardHeader className="pb-2">
                 <div className="h-4 w-24 rounded bg-muted" />
               </CardHeader>
@@ -180,9 +183,18 @@ export default function DashboardPage() {
         </div>
       ) : stats ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div
+            className={`
+            grid gap-4
+            md:grid-cols-2
+          `}
+          >
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader
+                className={`
+                flex flex-row items-center justify-between pb-2
+              `}
+              >
                 <CardTitle className="text-sm font-medium">
                   {rangeLabel} visits
                 </CardTitle>
@@ -196,7 +208,11 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader
+                className={`
+                flex flex-row items-center justify-between pb-2
+              `}
+              >
                 <CardTitle className="text-sm font-medium">
                   {rangeLabel} total sales
                 </CardTitle>
@@ -210,9 +226,19 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+          <div
+            className={`
+            grid gap-4
+            md:grid-cols-2
+            lg:grid-cols-5
+          `}
+          >
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader
+                className={`
+                flex flex-row items-center justify-between pb-2
+              `}
+              >
                 <CardTitle className="text-sm font-medium">Orders</CardTitle>
                 <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -223,7 +249,11 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader
+                className={`
+                flex flex-row items-center justify-between pb-2
+              `}
+              >
                 <CardTitle className="text-sm font-medium">
                   Average order value
                 </CardTitle>
@@ -238,7 +268,11 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardHeader
+                className={`
+                flex flex-row items-center justify-between pb-2
+              `}
+              >
                 <CardTitle className="text-sm font-medium">
                   Sold items
                 </CardTitle>
@@ -300,13 +334,19 @@ export default function DashboardPage() {
                     <tbody>
                       {stats.recentOrders.map((order) => (
                         <tr
+                          className={`
+                            border-b
+                            hover:bg-muted/50
+                          `}
                           key={order.id}
-                          className="border-b hover:bg-muted/50"
                         >
                           <td className="p-2 font-mono text-xs">
                             <Link
+                              className={`
+                                text-primary
+                                hover:underline
+                              `}
                               href={`/orders/${order.id}`}
-                              className="text-primary hover:underline"
                             >
                               #{order.id.slice(-8)}
                             </Link>
@@ -344,4 +384,20 @@ export default function DashboardPage() {
       ) : null}
     </div>
   );
+}
+
+function formatCents(cents: number): string {
+  return new Intl.NumberFormat("en-US", {
+    currency: "USD",
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 2,
+    style: "currency",
+  }).format(cents / 100);
+}
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good Morning";
+  if (h < 18) return "Good Afternoon";
+  return "Good Evening";
 }

@@ -7,49 +7,49 @@ import type { ProductBySlugResult } from "~/lib/product-by-slug";
 
 /** Product shape for the storefront product detail page (both /products/[id] and [slug]). */
 export interface PageProduct {
-  id: string;
-  slug?: string;
-  name: string;
+  availableCountryCodes?: string[];
+  brand?: null | string;
+  category: string;
+  continueSellingWhenOutOfStock?: boolean;
   description: string;
   features: string[];
+  handlingDaysMax?: null | number;
+  handlingDaysMin?: null | number;
+  hasVariants?: boolean;
+  id: string;
   image: string;
   images?: string[];
-  mainImageAlt?: string | null;
   inStock: boolean;
-  continueSellingWhenOutOfStock?: boolean;
+  mainImageAlt?: null | string;
+  metaDescription?: null | string;
+  model?: null | string;
+  name: string;
+  optionDefinitions?: { name: string; values: string[] }[];
   originalPrice?: number;
+  pageLayout?: null | string;
+  pageTitle?: null | string;
   price: number;
   rating: number;
-  specs: Record<string, string>;
-  category: string;
-  hasVariants?: boolean;
-  optionDefinitions?: { name: string; values: string[] }[];
-  variants?: Array<{
-    id: string;
-    size?: string;
-    color?: string;
-    gender?: string;
-    label?: string;
-    priceCents: number;
-    stockQuantity?: number;
-    imageUrl?: string;
-  }>;
-  shipsFrom?: string | null;
-  handlingDaysMin?: number | null;
-  handlingDaysMax?: number | null;
-  transitDaysMin?: number | null;
-  transitDaysMax?: number | null;
-  availableCountryCodes?: string[];
-  brand?: string | null;
-  model?: string | null;
-  metaDescription?: string | null;
-  pageTitle?: string | null;
-  pageLayout?: string | null;
-  sizeChart?: {
-    displayName: string;
+  shipsFrom?: null | string;
+  sizeChart?: null | {
     dataImperial: unknown;
     dataMetric: unknown;
-  } | null;
+    displayName: string;
+  };
+  slug?: string;
+  specs: Record<string, string>;
+  transitDaysMax?: null | number;
+  transitDaysMin?: null | number;
+  variants?: {
+    color?: string;
+    gender?: string;
+    id: string;
+    imageUrl?: string;
+    label?: string;
+    priceCents: number;
+    size?: string;
+    stockQuantity?: number;
+  }[];
 }
 
 const PLACEHOLDER_IMAGE = "/placeholder.svg";
@@ -74,35 +74,35 @@ export function mapProductBySlugResultToPageProduct(
         : [PLACEHOLDER_IMAGE];
 
   return {
-    id: data.id,
-    slug: data.slug,
-    name: data.name,
-    description: data.description ?? "",
-    features: data.features ?? [],
-    image: data.imageUrl ?? PLACEHOLDER_IMAGE,
-    images,
-    mainImageAlt: data.mainImageAlt ?? undefined,
-    inStock: data.inStock ?? true,
-    continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
-    originalPrice,
-    price,
-    rating: 0,
-    specs: {},
-    category: data.category ?? "Uncategorized",
-    hasVariants: data.hasVariants ?? false,
-    optionDefinitions: data.optionDefinitions ?? undefined,
-    variants: data.variants ?? undefined,
-    shipsFrom: data.shipsFrom ?? null,
-    handlingDaysMin: data.handlingDaysMin ?? undefined,
-    handlingDaysMax: data.handlingDaysMax ?? undefined,
-    transitDaysMin: data.transitDaysMin ?? undefined,
-    transitDaysMax: data.transitDaysMax ?? undefined,
     availableCountryCodes: data.availableCountryCodes ?? [],
     brand: data.brand ?? undefined,
-    model: data.model ?? undefined,
+    category: data.category ?? "Uncategorized",
+    continueSellingWhenOutOfStock: data.continueSellingWhenOutOfStock ?? false,
+    description: data.description ?? "",
+    features: data.features ?? [],
+    handlingDaysMax: data.handlingDaysMax ?? undefined,
+    handlingDaysMin: data.handlingDaysMin ?? undefined,
+    hasVariants: data.hasVariants ?? false,
+    id: data.id,
+    image: data.imageUrl ?? PLACEHOLDER_IMAGE,
+    images,
+    inStock: data.inStock ?? true,
+    mainImageAlt: data.mainImageAlt ?? undefined,
     metaDescription: data.metaDescription ?? undefined,
-    pageTitle: data.pageTitle ?? undefined,
+    model: data.model ?? undefined,
+    name: data.name,
+    optionDefinitions: data.optionDefinitions ?? undefined,
+    originalPrice,
     pageLayout: data.pageLayout ?? undefined,
+    pageTitle: data.pageTitle ?? undefined,
+    price,
+    rating: 0,
+    shipsFrom: data.shipsFrom ?? null,
     sizeChart: data.sizeChart ?? undefined,
+    slug: data.slug,
+    specs: {},
+    transitDaysMax: data.transitDaysMax ?? undefined,
+    transitDaysMin: data.transitDaysMin ?? undefined,
+    variants: data.variants ?? undefined,
   };
 }

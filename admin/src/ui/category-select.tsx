@@ -9,38 +9,38 @@ export interface CategoryOption {
   id: string;
   name: string;
   /** When set, show "parentName → name" in the dropdown so subcategories are distinguishable. */
-  parentName?: string | null;
+  parentName?: null | string;
   /** Optional slug; used to disambiguate when two options have the same display label (e.g. two "Hoodies" under same parent). */
-  slug?: string | null;
+  slug?: null | string;
 }
 
 interface CategorySelectProps {
-  value: string;
-  onChange: (value: string) => void;
-  options: CategoryOption[];
-  id?: string;
   className?: string;
-  inputClass?: string;
-  labelClass?: string;
   disabled?: boolean;
-  placeholder?: string;
   /** When value is empty, show this instead of "None" (e.g. "Add a category…"). */
   emptyLabel?: string;
+  id?: string;
+  inputClass?: string;
+  labelClass?: string;
+  onChange: (value: string) => void;
+  options: CategoryOption[];
+  placeholder?: string;
+  value: string;
 }
 
 const MAX_VISIBLE = 100;
 
 export function CategorySelect({
-  value,
-  onChange,
-  options,
-  id = "categoryId",
   className,
+  disabled = false,
+  emptyLabel,
+  id = "categoryId",
   inputClass = "w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
   labelClass,
-  disabled = false,
+  onChange,
+  options,
   placeholder = "Search categories…",
-  emptyLabel,
+  value,
 }: CategorySelectProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -171,36 +171,44 @@ export function CategorySelect({
   );
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
+    <div className={cn("relative", className)} ref={containerRef}>
       <div
-        className={cn(
-          "flex min-h-[40px] cursor-pointer items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring",
-          disabled && "cursor-not-allowed opacity-50",
-        )}
-        role="combobox"
+        aria-controls={`${id}-listbox`}
         aria-expanded={open}
         aria-haspopup="listbox"
-        aria-controls={`${id}-listbox`}
         aria-labelledby={`${id}-label`}
+        className={cn(
+          `
+            flex min-h-[40px] cursor-pointer items-center gap-2 rounded-md
+            border border-input bg-background px-3 py-2 text-sm
+            ring-offset-background
+            focus-within:ring-2 focus-within:ring-ring
+          `,
+          disabled && "cursor-not-allowed opacity-50",
+        )}
         id={id}
-        tabIndex={disabled ? -1 : 0}
-        onKeyDown={handleKeyDown}
         onClick={() => {
           if (disabled) return;
           if (!open) setFocusedIndex(0);
           setOpen((o) => !o);
         }}
+        onKeyDown={handleKeyDown}
+        role="combobox"
+        tabIndex={disabled ? -1 : 0}
       >
         {open ? (
           <input
-            type="text"
-            className="min-w-0 flex-1 bg-transparent focus:outline-none"
-            placeholder={placeholder}
-            value={searchQuery}
+            aria-label="Search categories"
+            autoFocus
+            className={`
+              min-w-0 flex-1 bg-transparent
+              focus:outline-none
+            `}
             onChange={(e) => {
               setSearchQuery(e.target.value);
               setFocusedIndex(0);
             }}
+            onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => {
               if (e.key === "Escape") close();
               if (
@@ -211,55 +219,58 @@ export function CategorySelect({
                 e.stopPropagation();
               }
             }}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Search categories"
-            autoFocus
+            placeholder={placeholder}
+            type="text"
+            value={searchQuery}
           />
         ) : (
           <span className="flex-1 truncate text-left">{selectedLabel}</span>
         )}
         <ChevronDown
+          aria-hidden
           className={cn(
             "h-4 w-4 shrink-0 text-muted-foreground",
             open && "rotate-180",
           )}
-          aria-hidden
         />
       </div>
       {open && (
         <ul
-          ref={listRef}
+          className={`
+            absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border
+            border-input bg-background py-1 shadow-lg
+          `}
           id={`${id}-listbox`}
+          ref={listRef}
           role="listbox"
-          className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-input bg-background py-1 shadow-lg"
         >
           <li
-            role="option"
             aria-selected={value === ""}
-            data-index={0}
             className={cn(
               "cursor-pointer px-3 py-2 text-sm",
               value === "" && "bg-muted",
               focusedIndex === 0 && "bg-muted",
             )}
+            data-index={0}
             onClick={() => handleSelect("")}
             onMouseEnter={() => setFocusedIndex(0)}
+            role="option"
           >
             None
           </li>
           {visible.map((c, i) => (
             <li
-              key={c.id}
-              role="option"
               aria-selected={value === c.id}
-              data-index={i + 1}
               className={cn(
                 "cursor-pointer px-3 py-2 text-sm",
                 value === c.id && "bg-muted",
                 focusedIndex === i + 1 && "bg-muted",
               )}
+              data-index={i + 1}
+              key={c.id}
               onClick={() => handleSelect(c.id)}
               onMouseEnter={() => setFocusedIndex(i + 1)}
+              role="option"
             >
               {displayName(c)}
             </li>

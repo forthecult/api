@@ -4,17 +4,20 @@
  * pulling in the server-only products/[id]/page.tsx.
  */
 
-export type ProductVariantOption = {
-  id: string;
-  size?: string;
+export interface ProductOptionDefinition {
+  name: string;
+  values: string[];
+}
+
+export interface ProductVariantOption {
   color?: string;
   /** Gender/style option (e.g. Men's / Women's). */
   gender?: string;
+  id: string;
+  imageUrl?: string;
   /** Display label (e.g. "Bella + Canvas 3001 / Black / S") – used when size/color not available. */
   label?: string;
   priceCents: number;
+  size?: string;
   stockQuantity?: number;
-  imageUrl?: string;
-};
-
-export type ProductOptionDefinition = { name: string; values: string[] };
+}

@@ -8,6 +8,38 @@ import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
 const SCOPES = ["shipping", "order", "category", "product"] as const;
 const DISCOUNT_TYPES = ["percent", "fixed"] as const;
 
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  try {
+    const authResult = await getAdminAuth(_request);
+    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
+
+    const { id } = await params;
+
+    const [deleted] = await db
+      .delete(memberTierDiscountTable)
+      .where(eq(memberTierDiscountTable.id, id))
+      .returning({ id: memberTierDiscountTable.id });
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Tier discount not found" },
+        { status: 404 },
+      );
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("Admin tier discount delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete tier discount" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -31,16 +63,16 @@ export async function GET(
     }
 
     return NextResponse.json({
-      id: row.id,
-      memberTier: row.memberTier,
-      label: row.label ?? null,
-      scope: row.scope,
+      appliesToEsim: row.appliesToEsim ?? null,
+      categoryId: row.categoryId ?? null,
+      createdAt: row.createdAt.toISOString(),
       discountType: row.discountType,
       discountValue: row.discountValue,
-      categoryId: row.categoryId ?? null,
+      id: row.id,
+      label: row.label ?? null,
+      memberTier: row.memberTier,
       productId: row.productId ?? null,
-      appliesToEsim: row.appliesToEsim ?? null,
-      createdAt: row.createdAt.toISOString(),
+      scope: row.scope,
       updatedAt: row.updatedAt.toISOString(),
     });
   } catch (err) {
@@ -62,14 +94,14 @@ export async function PATCH(
 
     const { id } = await params;
     const body = (await request.json()) as {
-      memberTier?: number;
-      label?: string | null;
-      scope?: string;
+      appliesToEsim?: null | number;
+      categoryId?: null | string;
       discountType?: string;
       discountValue?: number;
-      categoryId?: string | null;
-      productId?: string | null;
-      appliesToEsim?: number | null;
+      label?: null | string;
+      memberTier?: number;
+      productId?: null | string;
+      scope?: string;
     };
 
     const [existing] = await db
@@ -152,54 +184,22 @@ export async function PATCH(
     }
 
     return NextResponse.json({
-      id: updated.id,
-      memberTier: updated.memberTier,
-      label: updated.label ?? null,
-      scope: updated.scope,
+      appliesToEsim: updated.appliesToEsim ?? null,
+      categoryId: updated.categoryId ?? null,
+      createdAt: updated.createdAt.toISOString(),
       discountType: updated.discountType,
       discountValue: updated.discountValue,
-      categoryId: updated.categoryId ?? null,
+      id: updated.id,
+      label: updated.label ?? null,
+      memberTier: updated.memberTier,
       productId: updated.productId ?? null,
-      appliesToEsim: updated.appliesToEsim ?? null,
-      createdAt: updated.createdAt.toISOString(),
+      scope: updated.scope,
       updatedAt: updated.updatedAt.toISOString(),
     });
   } catch (err) {
     console.error("Admin tier discount update error:", err);
     return NextResponse.json(
       { error: "Failed to update tier discount" },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const authResult = await getAdminAuth(_request);
-    if (!authResult?.ok) return adminAuthFailureResponse(authResult);
-
-    const { id } = await params;
-
-    const [deleted] = await db
-      .delete(memberTierDiscountTable)
-      .where(eq(memberTierDiscountTable.id, id))
-      .returning({ id: memberTierDiscountTable.id });
-
-    if (!deleted) {
-      return NextResponse.json(
-        { error: "Tier discount not found" },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("Admin tier discount delete error:", err);
-    return NextResponse.json(
-      { error: "Failed to delete tier discount" },
       { status: 500 },
     );
   }

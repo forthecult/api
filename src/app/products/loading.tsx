@@ -2,7 +2,13 @@ export default function ProductsLoading() {
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1 py-10">
-        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div
+          className={`
+          mx-auto w-full max-w-7xl px-4
+          sm:px-6
+          lg:px-8
+        `}
+        >
           {/* Header skeleton */}
           <div className="mb-6">
             <div className="h-8 w-48 animate-pulse rounded bg-muted" />
@@ -13,18 +19,25 @@ export default function ProductsLoading() {
           <div className="mb-6 flex flex-wrap gap-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <div
-                key={i}
                 className="h-9 w-24 animate-pulse rounded-full bg-muted"
+                key={i}
               />
             ))}
           </div>
 
           {/* Product grid skeleton */}
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div
+            className={`
+            grid grid-cols-1 gap-6
+            sm:grid-cols-2
+            md:grid-cols-3
+            lg:grid-cols-4
+          `}
+          >
             {Array.from({ length: 8 }).map((_, i) => (
               <div
-                key={i}
                 className="flex flex-col overflow-hidden rounded-lg border"
+                key={i}
               >
                 <div className="aspect-square animate-pulse bg-muted" />
                 <div className="space-y-2 p-4">

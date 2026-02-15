@@ -1,7 +1,8 @@
-import { readFileSync, existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import type { LookbookImage } from "~/lib/lookbook-data";
+
 import { LOOKBOOK_IMAGES } from "~/lib/lookbook-data";
 
 const DATA_PATH = join(process.cwd(), "data", "lookbook-images.json");

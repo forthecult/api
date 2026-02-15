@@ -40,12 +40,12 @@ export async function POST(request: NextRequest) {
     // Do not send raw error details to client (could contain env or internal state)
     return NextResponse.json(
       {
-        ok: false,
-        dryRun: false,
-        scope: "paid",
         configError: "Sweep failed. Check server logs.",
+        dryRun: false,
+        ok: false,
         ordersCount: 0,
         results: [],
+        scope: "paid",
       },
       { status: 500 },
     );

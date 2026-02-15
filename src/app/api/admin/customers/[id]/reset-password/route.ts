@@ -27,7 +27,7 @@ export async function POST(
 
     const { id } = await params;
     const [user] = await db
-      .select({ id: userTable.id, email: userTable.email })
+      .select({ email: userTable.email, id: userTable.id })
       .from(userTable)
       .where(eq(userTable.id, id))
       .limit(1);
@@ -51,9 +51,9 @@ export async function POST(
     const res = await fetch(
       `${MAIN_APP_BASE}/api/auth/request-password-reset`,
       {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, redirectTo }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       },
     );
 

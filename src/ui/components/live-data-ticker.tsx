@@ -29,9 +29,14 @@ export function LiveDataTicker() {
 
   const tickerContent = (
     <>
-      <span className="inline-flex items-center gap-2 font-[family-name:var(--font-mono-crypto),ui-monospace,monospace] text-muted-foreground">
+      <span
+        className={`
+        inline-flex items-center gap-2 text-muted-foreground
+        font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]
+      `}
+      >
         <span className="inline-flex items-center gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-[#14F195]" aria-hidden />
+          <span aria-hidden className="h-2 w-2 rounded-full bg-[#14F195]" />
           <span>LIVE</span>
         </span>
         <span className="text-foreground">
@@ -44,8 +49,11 @@ export function LiveDataTicker() {
       </span>
       {TICKER_ITEMS.map((item, i) => (
         <span
+          className={`
+            font-[family-name:var(--font-mono-crypto),ui-monospace,monospace]
+            text-muted-foreground
+          `}
           key={i}
-          className="font-[family-name:var(--font-mono-crypto),ui-monospace,monospace] text-muted-foreground"
         >
           {item}
         </span>
@@ -55,12 +63,20 @@ export function LiveDataTicker() {
 
   return (
     <div
-      className="relative w-full overflow-hidden border-y border-border py-2 text-sm dark:border-[#222] dark:bg-[#0A0A0A]"
       aria-live="polite"
+      className={`
+        relative w-full overflow-hidden border-y border-border py-2 text-sm
+        dark:border-[#222] dark:bg-[#0A0A0A]
+      `}
     >
-      <div className="flex w-max hover:[animation-play-state:paused] animate-marquee-ticker gap-8 whitespace-nowrap">
+      <div
+        className={`
+        animate-marquee-ticker flex w-max gap-8 whitespace-nowrap
+        hover:[animation-play-state:paused]
+      `}
+      >
         <div className="flex gap-8">{tickerContent}</div>
-        <div className="flex gap-8" aria-hidden>
+        <div aria-hidden className="flex gap-8">
           {tickerContent}
         </div>
       </div>

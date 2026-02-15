@@ -14,18 +14,18 @@ export function useCryptoPrices({
 }: {
   enabled?: boolean;
 } = {}): {
-  solUsdRate: number | null;
-  suiUsdRate: number | null;
-  crustPriceUsd: number | null;
-  pumpPriceUsd: number | null;
-  solunaPriceUsd: number | null;
-  seekerPriceUsd: number | null;
+  crustPriceUsd: null | number;
+  pumpPriceUsd: null | number;
+  seekerPriceUsd: null | number;
+  solunaPriceUsd: null | number;
+  solUsdRate: null | number;
+  suiUsdRate: null | number;
 } {
-  const [solUsdRate, setSolUsdRate] = useState<number | null>(null);
-  const [crustPriceUsd, setCrustPriceUsd] = useState<number | null>(null);
-  const [pumpPriceUsd, setPumpPriceUsd] = useState<number | null>(null);
-  const [solunaPriceUsd, setSolunaPriceUsd] = useState<number | null>(null);
-  const [seekerPriceUsd, setSeekerPriceUsd] = useState<number | null>(null);
+  const [solUsdRate, setSolUsdRate] = useState<null | number>(null);
+  const [crustPriceUsd, setCrustPriceUsd] = useState<null | number>(null);
+  const [pumpPriceUsd, setPumpPriceUsd] = useState<null | number>(null);
+  const [solunaPriceUsd, setSolunaPriceUsd] = useState<null | number>(null);
+  const [seekerPriceUsd, setSeekerPriceUsd] = useState<null | number>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -34,11 +34,11 @@ export function useCryptoPrices({
       .then((res) => res.json())
       .then(
         (data: {
-          SOL?: number;
           CRUST?: number;
           PUMP?: number;
-          SOLUNA?: number;
           SKR?: number;
+          SOL?: number;
+          SOLUNA?: number;
         }) => {
           if (typeof data?.SOL === "number" && data.SOL > 0)
             setSolUsdRate(data.SOL);
@@ -65,11 +65,11 @@ export function useCryptoPrices({
 
   // suiUsdRate: not currently provided by the prices API
   return {
-    solUsdRate,
-    suiUsdRate: null,
     crustPriceUsd,
     pumpPriceUsd,
-    solunaPriceUsd,
     seekerPriceUsd,
+    solunaPriceUsd,
+    solUsdRate,
+    suiUsdRate: null,
   };
 }

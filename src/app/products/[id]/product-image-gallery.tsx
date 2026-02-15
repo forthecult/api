@@ -4,36 +4,26 @@ import Image from "next/image";
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
+
 import { useProductVariantImage } from "./product-variant-image-context";
 
 const PLACEHOLDER_SRC = "/placeholder.svg";
 
-function isExternalImageUrl(src: string): boolean {
-  return /^https?:\/\//i.test(src?.trim() ?? "");
-}
-
-/** Prefer https for external URLs to avoid mixed-content blocking on HTTPS pages. */
-function normalizeImageSrc(src: string): string {
-  const s = src?.trim() ?? "";
-  if (s.startsWith("http://")) return "https://" + s.slice(7);
-  return s;
-}
-
 export interface ProductImageGalleryProps {
-  images: string[];
-  productName: string;
-  /** SEO: alt text for the main (first) product image. Falls back to productName when not set. */
-  mainImageAlt?: string | null;
-  discountPercentage?: number;
   className?: string;
+  discountPercentage?: number;
+  images: string[];
+  /** SEO: alt text for the main (first) product image. Falls back to productName when not set. */
+  mainImageAlt?: null | string;
+  productName: string;
 }
 
 export function ProductImageGallery({
-  images,
-  productName,
-  mainImageAlt,
-  discountPercentage = 0,
   className,
+  discountPercentage = 0,
+  images,
+  mainImageAlt,
+  productName,
 }: ProductImageGalleryProps) {
   const { selectedVariant } = useProductVariantImage();
   const [selectedIndex, setSelectedIndex] = React.useState(0);
@@ -66,7 +56,7 @@ export function ProductImageGallery({
   }, [baseList, selectedVariant?.imageUrl]);
 
   // Reset to first image when selected variant (and thus list) changes so the variant image is shown
-  const prevVariantIdRef = React.useRef<string | null>(null);
+  const prevVariantIdRef = React.useRef<null | string>(null);
   React.useEffect(() => {
     const id = selectedVariant?.id ?? null;
     if (id !== prevVariantIdRef.current) {
@@ -104,34 +94,39 @@ export function ProductImageGallery({
     <div className={cn("flex flex-col gap-3", className)}>
       {/* Main image with hover zoom */}
       <div
-        ref={containerRef}
         className="relative aspect-square overflow-hidden rounded-lg bg-white"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={() => setZoomOpen(false)}
-        onMouseEnter={() => setZoomOpen(true)}
         onClick={() => hasMultiple && setZoomOpen((v) => !v)}
+        onMouseEnter={() => setZoomOpen(true)}
+        onMouseLeave={() => setZoomOpen(false)}
+        onMouseMove={handleMouseMove}
+        ref={containerRef}
       >
         <Image
-          key={selectedVariant?.id ?? mainSrc ?? "main"}
           alt={mainAlt}
           className={cn(
             "object-contain transition-transform duration-150",
-            zoomOpen && "cursor-zoom-out scale-150",
+            zoomOpen && "scale-150 cursor-zoom-out",
           )}
           fill
+          key={selectedVariant?.id ?? mainSrc ?? "main"}
+          onError={handleMainImageError}
           priority={!selectedVariant?.id}
           sizes="(max-width: 768px) 100vw, 50vw"
           src={mainSrc}
-          unoptimized={isExternalImageUrl(mainSrc)}
-          onError={handleMainImageError}
           style={
             zoomOpen
               ? { transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` }
               : undefined
           }
+          unoptimized={isExternalImageUrl(mainSrc)}
         />
         {discountPercentage > 0 && (
-          <div className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">
+          <div
+            className={`
+            absolute top-2 left-2 rounded-full bg-red-500 px-2 py-1 text-xs
+            font-bold text-white
+          `}
+          >
             -{discountPercentage}%
           </div>
         )}
@@ -145,27 +140,33 @@ export function ProductImageGallery({
               failedUrls.has(src) || !src?.trim() ? PLACEHOLDER_SRC : src;
             return (
               <button
-                key={i}
-                type="button"
-                onClick={() => setSelectedIndex(i)}
+                aria-label={`View image ${i + 1} of ${list.length}`}
                 className={cn(
-                  "relative h-16 w-16 shrink-0 overflow-hidden rounded-md border-2 transition-colors",
+                  `
+                    relative h-16 w-16 shrink-0 overflow-hidden rounded-md
+                    border-2 transition-colors
+                  `,
                   selectedIndex === i
                     ? "border-primary"
-                    : "border-transparent hover:border-muted-foreground/50",
+                    : `
+                      border-transparent
+                      hover:border-muted-foreground/50
+                    `,
                 )}
-                aria-label={`View image ${i + 1} of ${list.length}`}
+                key={i}
+                onClick={() => setSelectedIndex(i)}
+                type="button"
               >
                 <Image
                   alt=""
                   className="object-cover"
                   fill
-                  sizes="64px"
-                  src={thumbSrc}
-                  unoptimized={isExternalImageUrl(thumbSrc)}
                   onError={() =>
                     setFailedUrls((prev) => new Set(prev).add(src))
                   }
+                  sizes="64px"
+                  src={thumbSrc}
+                  unoptimized={isExternalImageUrl(thumbSrc)}
                 />
               </button>
             );
@@ -174,4 +175,15 @@ export function ProductImageGallery({
       )}
     </div>
   );
+}
+
+function isExternalImageUrl(src: string): boolean {
+  return /^https?:\/\//i.test(src?.trim() ?? "");
+}
+
+/** Prefer https for external URLs to avoid mixed-content blocking on HTTPS pages. */
+function normalizeImageSrc(src: string): string {
+  const s = src?.trim() ?? "";
+  if (s.startsWith("http://")) return "https://" + s.slice(7);
+  return s;
 }

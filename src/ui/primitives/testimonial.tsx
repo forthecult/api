@@ -49,16 +49,20 @@ export function TestimonialCard({
       )}
     >
       {productTitle && (
-        <p className="mb-3 text-xs font-medium uppercase tracking-wide text-[#8A857E]">
+        <p
+          className={`
+          mb-3 text-xs font-medium tracking-wide text-[#8A857E] uppercase
+        `}
+        >
           {productTitle}
         </p>
       )}
       <div className="flex items-center gap-3">
         {author.avatar ? (
           <img
-            src={author.avatar}
             alt=""
             className="h-12 w-12 shrink-0 rounded-full object-cover"
+            src={author.avatar}
           />
         ) : null}
         <div className="flex min-w-0 flex-1 flex-col items-start">
@@ -67,19 +71,19 @@ export function TestimonialCard({
           </h3>
           {rating != null && rating > 0 && (
             <div
-              className="mt-1.5 flex items-center gap-0.5"
               aria-label={`${stars} out of 5 stars`}
+              className="mt-1.5 flex items-center gap-0.5"
             >
               {[1, 2, 3, 4, 5].map((i) => (
                 <Star
-                  key={i}
+                  aria-hidden
                   className={cn(
                     "h-4 w-4",
                     i <= stars
                       ? "fill-amber-400 text-amber-400"
                       : "text-muted-foreground/40",
                   )}
-                  aria-hidden
+                  key={i}
                 />
               ))}
             </div>

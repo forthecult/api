@@ -68,11 +68,11 @@ export async function POST(
     const now = new Date();
 
     await db.insert(supportTicketMessageTable).values({
-      id: messageId,
-      ticketId,
-      role: "customer",
       content,
       createdAt: now,
+      id: messageId,
+      role: "customer",
+      ticketId,
     });
 
     await db
@@ -81,10 +81,10 @@ export async function POST(
       .where(eq(supportTicketTable.id, ticketId));
 
     return NextResponse.json({
-      id: messageId,
-      role: "customer",
       content,
       createdAt: now.toISOString(),
+      id: messageId,
+      role: "customer",
     });
   } catch (err) {
     console.error("Support ticket message POST:", err);
