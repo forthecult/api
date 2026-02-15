@@ -26,7 +26,9 @@ import {
   WebSiteStructuredData,
 } from "~/ui/components/structured-data";
 import { WagmiProvider } from "~/lib/wagmi-provider";
+import { getCurrentUserTheme } from "~/lib/get-current-user-theme";
 import { ThemeProvider } from "~/ui/components/theme-provider";
+import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { Toaster } from "~/ui/primitives/sonner";
 
 const geistSans = Geist({
@@ -193,6 +195,8 @@ export default async function RootLayout({
     );
   }
 
+  const initialUserTheme = await getCurrentUserTheme();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -212,6 +216,7 @@ export default async function RootLayout({
           disableTransitionOnChange
           enableSystem
         >
+          <ThemePersistSync initialUserTheme={initialUserTheme} />
           <CriticalRoutePrefetcher />
           <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <CartProvider>

@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       image: userTable.image,
       email: userTable.email,
       phone: userTable.phone,
+      theme: userTable.theme,
     })
     .from(userTable)
     .where(eq(userTable.id, session.user.id))
@@ -38,6 +39,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const theme =
+    user.theme === "light" || user.theme === "dark" || user.theme === "system"
+      ? user.theme
+      : "system";
+
   return NextResponse.json({
     id: user.id,
     firstName: user.firstName ?? "",
@@ -46,6 +52,7 @@ export async function GET(request: NextRequest) {
     image: user.image ?? null,
     email: user.email ?? "",
     phone: user.phone ?? "",
+    theme,
   });
 }
 
@@ -70,6 +77,7 @@ export async function PATCH(request: NextRequest) {
     lastName?: string;
     image?: string | null;
     phone?: string | null;
+    theme?: "light" | "dark" | "system";
   };
   try {
     body = (await request.json()) as typeof body;
@@ -89,6 +97,13 @@ export async function PATCH(request: NextRequest) {
   }
   if (body.phone !== undefined) {
     updates.phone = typeof body.phone === "string" && body.phone.trim() ? body.phone.trim() : null;
+  }
+  if (
+    body.theme === "light" ||
+    body.theme === "dark" ||
+    body.theme === "system"
+  ) {
+    updates.theme = body.theme;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -120,16 +135,25 @@ export async function PATCH(request: NextRequest) {
       lastName: userTable.lastName,
       name: userTable.name,
       image: userTable.image,
+      theme: userTable.theme,
     });
 
   if (!updated) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
+  const theme =
+    updated.theme === "light" ||
+    updated.theme === "dark" ||
+    updated.theme === "system"
+      ? updated.theme
+      : "system";
+
   return NextResponse.json({
     firstName: updated.firstName ?? "",
     lastName: updated.lastName ?? "",
     name: updated.name ?? "",
     image: updated.image ?? null,
+    theme,
   });
 }

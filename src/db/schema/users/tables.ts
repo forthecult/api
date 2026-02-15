@@ -53,6 +53,8 @@ export const userTable = pgTable("user", {
   )
     .notNull()
     .default(false),
+  /** UI theme: "light" | "dark" | "system". Persisted for logged-in users. */
+  theme: text("theme").default("system"),
 });
 
 export const sessionTable = pgTable("session", {

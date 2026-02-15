@@ -493,6 +493,13 @@ export const auth = betterAuth({
         type: "boolean",
         defaultValue: false,
       },
+      /** UI theme: "light" | "dark" | "system". Persisted for logged-in users. */
+      theme: {
+        input: false,
+        required: false,
+        type: "string",
+        defaultValue: "system",
+      },
     },
   },
 

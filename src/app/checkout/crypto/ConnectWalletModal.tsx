@@ -169,11 +169,9 @@ export function ConnectWalletModal({
   const chain = tokenToChain(token);
   const allowedNames = chain ? CHAIN_WALLET_NAMES[chain] : [];
   const walletsToShow = wallets.filter((w) => {
-    // Hide the MWA transport entry — it's used under-the-hood on mobile, not user-facing
-    if (w.adapter.name === "Mobile Wallet Adapter") return false;
     if (!allowedNames.includes(w.adapter.name)) return false;
     // On desktop, only show Solflare when the extension is detected
-    // On mobile, show it regardless (MWA handles the actual connection)
+    // On mobile, show it regardless (MWA can handle connection)
     if (w.adapter.name === "Solflare" && !isMobile)
       return w.readyState === WalletReadyState.Installed;
     return true;

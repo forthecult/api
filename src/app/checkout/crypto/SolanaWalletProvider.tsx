@@ -7,10 +7,14 @@ import {
   useConnection,
   useWallet,
 } from "@solana/wallet-adapter-react";
-import type { WalletAdapter } from "@solana/wallet-adapter-base";
+import {
+  WalletAdapterNetwork,
+  type WalletAdapter,
+} from "@solana/wallet-adapter-base";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
+  WalletConnectWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
 import { toast } from "sonner";
 
@@ -113,6 +117,22 @@ export function SolanaWalletProvider({
         // MWA not available (e.g. non-Android or build issue)
         if (process.env.NODE_ENV === "development") {
           console.warn("[Solana] Mobile Wallet Adapter not available", e);
+        }
+      }
+    }
+    // WalletConnect for Solana: Trust, Rainbow, etc. can connect via WalletConnect
+    const wcProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
+    if (wcProjectId) {
+      try {
+        list.push(
+          new WalletConnectWalletAdapter({
+            network: WalletAdapterNetwork.Mainnet,
+            options: { projectId: wcProjectId },
+          }),
+        );
+      } catch (e) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Solana] WalletConnect adapter init failed", e);
         }
       }
     }

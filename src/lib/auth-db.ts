@@ -84,6 +84,7 @@ async function main() {
   receiveMarketing: boolean("receive_marketing").notNull().default(false),
   receiveSmsMarketing: boolean("receive_sms_marketing").notNull().default(false),
   receiveOrderNotificationsViaTelegram: boolean("receive_order_notifications_via_telegram").notNull().default(false),
+  theme: text("theme").default("system"),
 });`,
     );
   }

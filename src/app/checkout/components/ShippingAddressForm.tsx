@@ -1,6 +1,6 @@
 "use client";
 
-import { CircleHelp, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ChevronDown, CircleHelp, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   useCallback,
   useEffect,
@@ -290,6 +290,7 @@ export const ShippingAddressForm = forwardRef<
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   /** Selected saved address id; empty string = manual entry. */
   const [selectedSavedAddressId, setSelectedSavedAddressId] = useState("");
+  const [savedAddressPopoverOpen, setSavedAddressPopoverOpen] = useState(false);
   /** "Save this address for next time" — persisted to sessionStorage for success page. */
   const [saveAddressForNextTime, setSaveAddressForNextTime] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -673,27 +674,85 @@ export const ShippingAddressForm = forwardRef<
               <Label className="text-sm font-medium text-muted-foreground">
                 Use a saved address
               </Label>
-              <select
-                aria-label="Use a saved address"
-                value={selectedSavedAddressId}
-                onChange={(e) => {
-                  const id = e.target.value;
-                  setSelectedSavedAddressId(id);
-                  if (id) {
-                    const addr = savedAddresses.find((a) => a.id === id);
-                    if (addr) applySavedAddress(addr);
-                  }
-                }}
-                className={cn(selectInputClass, "mt-1.5")}
+              <Popover
+                open={savedAddressPopoverOpen}
+                onOpenChange={setSavedAddressPopoverOpen}
               >
-                <option value="">Enter address manually</option>
-                {savedAddresses.map((addr) => (
-                  <option key={addr.id} value={addr.id}>
-                    {addr.label || "Address"} — {addr.address1}, {addr.city}
-                    {addr.isDefault ? " (Default)" : ""}
-                  </option>
-                ))}
-              </select>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="Use a saved address"
+                    aria-haspopup="listbox"
+                    aria-expanded={savedAddressPopoverOpen}
+                    className={cn(
+                      selectInputClass,
+                      "mt-1.5 flex w-full items-center justify-between gap-2 text-left",
+                    )}
+                  >
+                    <span className="truncate">
+                      {selectedSavedAddressId
+                        ? (() => {
+                            const addr = savedAddresses.find(
+                              (a) => a.id === selectedSavedAddressId,
+                            );
+                            return addr
+                              ? `${addr.label || "Address"} — ${addr.address1}, ${addr.city}${addr.isDefault ? " (Default)" : ""}`
+                              : "Enter address manually";
+                          })()
+                        : "Enter address manually"}
+                    </span>
+                    <ChevronDown className="size-4 shrink-0 opacity-50" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="max-h-[min(60vh,320px)] w-[var(--radix-popover-trigger-width)] overflow-auto p-0"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
+                  <ul
+                    role="listbox"
+                    aria-label="Use a saved address"
+                    className="py-1"
+                  >
+                    <li role="option">
+                      <button
+                        type="button"
+                        className={cn(
+                          "w-full px-3 py-2 text-left text-sm hover:bg-muted/80",
+                          !selectedSavedAddressId && "bg-muted/50",
+                        )}
+                        onClick={() => {
+                          setSelectedSavedAddressId("");
+                          setSavedAddressPopoverOpen(false);
+                        }}
+                      >
+                        Enter address manually
+                      </button>
+                    </li>
+                    {savedAddresses.map((addr) => (
+                      <li key={addr.id} role="option">
+                        <button
+                          type="button"
+                          className={cn(
+                            "w-full px-3 py-2 text-left text-sm hover:bg-muted/80",
+                            selectedSavedAddressId === addr.id &&
+                              "bg-muted/50",
+                          )}
+                          onClick={() => {
+                            setSelectedSavedAddressId(addr.id);
+                            applySavedAddress(addr);
+                            setSavedAddressPopoverOpen(false);
+                          }}
+                        >
+                          {addr.label || "Address"} — {addr.address1},{" "}
+                          {addr.city}
+                          {addr.isDefault ? " (Default)" : ""}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
           <div className="sm:col-span-2">
