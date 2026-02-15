@@ -13,6 +13,7 @@ import {
   getSolanaRpcUrlServer,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
+  SKR_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
@@ -153,7 +154,9 @@ export async function GET(request: Request) {
             ? PUMP_MINT_MAINNET
             : splTokenParam === TROLL_MINT_MAINNET
               ? TROLL_MINT_MAINNET
-              : USDC_MINT_MAINNET;
+              : splTokenParam === SKR_MINT_MAINNET
+                ? SKR_MINT_MAINNET
+                : USDC_MINT_MAINNET;
 
   if (!amount) {
     return NextResponse.json(

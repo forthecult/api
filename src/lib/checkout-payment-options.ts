@@ -27,6 +27,7 @@ export type PaymentVisibility = {
   cryptoPump: boolean;
   cryptoTroll: boolean;
   cryptoSoluna: boolean;
+  cryptoSeeker: boolean;
   cryptoSui: boolean;
   cryptoTon: boolean;
   stablecoinUsdc: boolean;
@@ -49,6 +50,7 @@ const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
   crypto_pump: "cryptoPump",
   crypto_troll: "cryptoTroll",
   crypto_soluna: "cryptoSoluna",
+  crypto_seeker: "cryptoSeeker",
   crypto_sui: "cryptoSui",
   crypto_ton: "cryptoTon",
   stablecoin_usdc: "stablecoinUsdc",
@@ -67,6 +69,7 @@ const DEFAULT_VISIBILITY: PaymentVisibility = {
   cryptoPump: true,
   cryptoTroll: true,
   cryptoSoluna: true,
+  cryptoSeeker: true,
   cryptoSui: true,
   cryptoTon: true,
   stablecoinUsdc: true,
@@ -125,6 +128,7 @@ const CRYPTO_SUB_OPTIONS: {
   { value: "pump", label: "Pump (PUMP)" },
   { value: "troll", label: "Troll (TROLL)" },
   { value: "soluna", label: "SOLUNA (SOLUNA)" },
+  { value: "seeker", label: "Seeker (SKR)" },
   { value: "other", label: "Other" },
 ];
 
@@ -177,6 +181,7 @@ export function visibleCryptoSubFromVisibility(v: PaymentVisibility) {
     if (opt.value === "pump") return v.cryptoPump;
     if (opt.value === "troll") return v.cryptoTroll;
     if (opt.value === "soluna") return v.cryptoSoluna;
+    if (opt.value === "seeker") return v.cryptoSeeker;
     if (opt.value === "other") return v.cryptoSui || v.cryptoTon;
     return true;
   });
@@ -193,6 +198,7 @@ export function hasAnyCryptoEnabled(v: PaymentVisibility): boolean {
     v.cryptoPump ||
     v.cryptoTroll ||
     v.cryptoSoluna ||
+    v.cryptoSeeker ||
     v.cryptoSui ||
     v.cryptoTon
   );
@@ -332,6 +338,8 @@ export function getPaymentIconPaths(
       icons.push({ src: "/crypto/troll/troll-logomark.png", alt: "Troll", type: "crypto" });
     if (visibility.cryptoSoluna)
       icons.push({ src: "/crypto/soluna/soluna-logo.png", alt: "SOLUNA", type: "crypto" });
+    if (visibility.cryptoSeeker)
+      icons.push({ src: "/crypto/seeker/S_Token_Circle_White.svg", alt: "Seeker (SKR)", type: "crypto" });
     if (visibility.stablecoinUsdc)
       icons.push({ src: "/crypto/usdc/usdc-logo.svg", alt: "USDC", type: "crypto" });
     if (visibility.stablecoinUsdt)
@@ -387,6 +395,7 @@ export function getFooterPaymentItems(
     items.push({ name: "Solana", src: "/crypto/solana/solanaLogoMark.svg" });
     items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
+    items.push({ name: "Seeker (SKR)", src: "/crypto/seeker/S_Token_Circle_White.svg" });
   } else {
     if (visibility.cryptoBitcoin) items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
     if (visibility.cryptoDogecoin)
@@ -401,6 +410,8 @@ export function getFooterPaymentItems(
       items.push({ name: "Pump", src: "/crypto/pump/pump-logomark.svg" });
     if (visibility.cryptoTroll)
       items.push({ name: "Troll", src: "/crypto/troll/troll-logomark.png" });
+    if (visibility.cryptoSeeker)
+      items.push({ name: "Seeker (SKR)", src: "/crypto/seeker/S_Token_Circle_White.svg" });
   }
 
   // Stablecoins (USDC, USDT)

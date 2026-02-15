@@ -38,6 +38,10 @@ export const TROLL_MINT_MAINNET =
 export const SOLUNA_MINT_MAINNET =
   "2qT8JVotQ2C1gKbqpuqNatkpSBWxiKHbXkCyTqH9pump";
 
+/** Seeker (SKR) SPL token on Solana. CA: SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3 */
+export const SKR_MINT_MAINNET =
+  "SKRbvo6Gf7GondiT3BbTfuRDPqLWei4j2Qy2NPGZhW3";
+
 export function getSolanaPayRecipient(): string | undefined {
   return typeof process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT === "string"
     ? process.env.NEXT_PUBLIC_SOLANA_PAY_RECIPIENT.trim() || undefined

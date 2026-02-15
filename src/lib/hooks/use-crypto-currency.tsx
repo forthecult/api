@@ -13,10 +13,11 @@ export type CryptoCode =
   | "TON"
   | "XMR"
   | "XAU"
-  | "XAG";
+  | "XAG"
+  | "SKR";
 
 const COINGECKO_IDS: Record<
-  Exclude<CryptoCode, "CRUST" | "PUMP" | "TROLL" | "XAU" | "XAG">,
+  Exclude<CryptoCode, "CRUST" | "PUMP" | "TROLL" | "XAU" | "XAG" | "SKR">,
   string
 > = {
   BTC: "bitcoin",
@@ -56,6 +57,7 @@ const DECIMAL_MAP: Record<CryptoCode, number> = {
   XMR: 6,
   XAU: 2,
   XAG: 2,
+  SKR: 6,
 };
 
 /** Fallback when API fails; also used as initial state so consumers never see empty rates. */
@@ -71,6 +73,7 @@ const FALLBACK_RATES: Record<CryptoCode, number> = {
   XMR: 150,
   XAU: 2_650,
   XAG: 31,
+  SKR: 0.01,
 };
 
 export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
@@ -96,7 +99,8 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
           code === "TON" ||
           code === "XMR" ||
           code === "XAU" ||
-          code === "XAG"
+          code === "XAG" ||
+          code === "SKR"
         ) {
           setSelectedCryptoState(code as CryptoCode);
           if (code !== raw) localStorage.setItem(STORAGE_KEY, code);
@@ -134,7 +138,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
         }
         const next: Rates = { ...FALLBACK_RATES };
         (
-          ["BTC", "ETH", "SOL", "DOGE", "CRUST", "PUMP", "TROLL", "TON", "XMR", "XAU", "XAG"] as const
+          ["BTC", "ETH", "SOL", "DOGE", "CRUST", "PUMP", "TROLL", "TON", "XMR", "XAU", "XAG", "SKR"] as const
         ).forEach((code) => {
           const v = data[code];
           if (typeof v === "number" && v > 0) next[code] = v;
@@ -251,6 +255,11 @@ export const CRYPTO_OPTIONS: {
     code: "TROLL",
     label: "Troll (TROLL)",
     iconSrc: "/crypto/troll/troll-logomark.png",
+  },
+  {
+    code: "SKR",
+    label: "Seeker (SKR)",
+    iconSrc: "/crypto/seeker/S_Token_Circle_White.svg",
   },
   {
     code: "XMR",

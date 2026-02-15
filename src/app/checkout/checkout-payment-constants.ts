@@ -14,7 +14,7 @@ export const HIDDEN_PAYMENT_OPTIONS = {
 
 /** Top-level crypto options; "eth" = nested chain choices, "other" = Sui, TON, etc. */
 export const CRYPTO_SUB_OPTIONS: {
-  value: "bitcoin" | "dogecoin" | "eth" | "solana" | "monero" | "crust" | "pump" | "troll" | "soluna" | "other";
+  value: "bitcoin" | "dogecoin" | "eth" | "solana" | "monero" | "crust" | "pump" | "troll" | "soluna" | "seeker" | "other";
   label: string;
 }[] = [
   { value: "bitcoin", label: "Bitcoin (BTC)" },
@@ -26,6 +26,7 @@ export const CRYPTO_SUB_OPTIONS: {
   { value: "pump", label: "Pump (PUMP)" },
   { value: "troll", label: "Troll (TROLL)" },
   { value: "soluna", label: "SOLUNA (SOLUNA)" },
+  { value: "seeker", label: "Seeker (SKR)" },
   { value: "other", label: "Other" },
 ];
 
@@ -50,6 +51,7 @@ export const INITIAL_CRYPTO_SUB = (VISIBLE_CRYPTO_SUB_OPTIONS[0]?.value ?? "eth"
   | "pump"
   | "troll"
   | "soluna"
+  | "seeker"
   | "other";
 
 /** Options under Crypto → Other */
@@ -83,6 +85,7 @@ export const CRYPTO_LOGO_SRC: Partial<
     | "pump"
     | "troll"
     | "soluna"
+    | "seeker"
     | "other",
     string
   >
@@ -98,6 +101,7 @@ export const CRYPTO_LOGO_SRC: Partial<
   pump: "/crypto/pump/pump-logomark.svg",
   troll: "/crypto/troll/troll-logomark.png",
   soluna: "/crypto/soluna/soluna-logo.png",
+  seeker: "/crypto/seeker/S_Token_Circle_White.svg",
 };
 
 export const USDC_SUB_OPTIONS: {

@@ -114,13 +114,18 @@ function getVariantDisplayLabel(v: ProductVariantOption): string {
   return parts.join(" / ") || "";
 }
 
-/** Set of non-empty variant field values (color, size, gender, label). */
+/** Set of non-empty variant field values. Splits combined values like "Charcoal Heather / L" so they match UI selections. */
 function getVariantValueSet(v: ProductVariantOption): Set<string> {
-  return new Set(
-    [v.color, v.size, v.gender, v.label]
-      .filter((x): x is string => x != null && String(x).trim() !== "")
-      .map((s) => String(s).trim()),
-  );
+  const parts: string[] = [];
+  for (const raw of [v.color, v.size, v.gender, v.label]) {
+    if (raw == null || String(raw).trim() === "") continue;
+    const s = String(raw).trim();
+    for (const p of s.split(/\s*\/\s*/)) {
+      const t = p.trim();
+      if (t) parts.push(t);
+    }
+  }
+  return new Set(parts);
 }
 
 /**

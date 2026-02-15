@@ -37,6 +37,7 @@ import {
   USDC_MINT_MAINNET,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
+  SKR_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   WHITEWHALE_MINT_MAINNET,
 } from "~/lib/solana-pay";
@@ -204,7 +205,9 @@ export async function POST(request: NextRequest) {
               ? PUMP_MINT_MAINNET
               : splToken === TROLL_MINT_MAINNET
                 ? TROLL_MINT_MAINNET
-                : USDC_MINT_MAINNET;
+                : splToken === SKR_MINT_MAINNET
+                  ? SKR_MINT_MAINNET
+                  : USDC_MINT_MAINNET;
 
     try {
       const connection = new Connection(getSolanaRpcUrlServer(), {

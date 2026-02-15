@@ -100,6 +100,7 @@ type CryptoSub =
   | "pump"
   | "troll"
   | "soluna"
+  | "seeker"
   | "other";
 type UsdcSub = "solana" | "ethereum" | "arbitrum" | "base" | "polygon";
 type UsdtSub = "ethereum" | "arbitrum" | "bnb" | "polygon";

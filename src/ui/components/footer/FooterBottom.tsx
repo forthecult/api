@@ -49,6 +49,7 @@ const CRYPTO_COLORS: Record<CryptoCode, string> = {
   XMR: "#FF6600",
   XAU: "#FFD700",
   XAG: "#C0C0C0",
+  SKR: "#0EA5E9",
 };
 
 export function FooterBottom() {

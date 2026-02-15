@@ -1,5 +1,5 @@
 /**
- * All crypto prices in USD: CoinGecko (BTC, ETH, SOL, DOGE, etc. + PUMP token by contract) + CRUST via pump.fun.
+ * All crypto prices in USD: CoinGecko (BTC, ETH, SOL, DOGE, etc. + PUMP/SKR by contract) + CRUST etc. via pump.fun.
  * Cached 60s (ISR). Used by CryptoCurrencyProvider so client makes one request.
  */
 
@@ -15,6 +15,7 @@ import {
   getSolanaRpcUrlServer,
   CRUST_MINT_MAINNET,
   PUMP_MINT_MAINNET,
+  SKR_MINT_MAINNET,
   SOLUNA_MINT_MAINNET,
   TROLL_MINT_MAINNET,
 } from "~/lib/solana-pay";
@@ -42,6 +43,7 @@ export type CryptoPricesResponse = {
   PUMP?: number;
   TROLL?: number;
   SOLUNA?: number;
+  SKR?: number;
   XMR?: number;
   /** Gold (XAU) spot USD per troy oz via PAX Gold (PAXG) */
   XAU?: number;
@@ -60,6 +62,7 @@ const FALLBACK_PRICES: CryptoPricesResponse = {
   PUMP: 0.01,
   TROLL: 1,
   SOLUNA: 0.01,
+  SKR: 0.01,
   XMR: 150,
   XAU: 2650,
 };
@@ -68,10 +71,10 @@ export async function GET() {
   const FETCH_TIMEOUT = 5000; // 5 second timeout for external APIs
 
   try {
-    // Fetch via shared client (60s cache, 30/min rate limit)
-    const [d, pumpTokenPrices] = await Promise.all([
+    // Fetch via shared client (60s cache, 30/min rate limit). SKR from CoinGecko (not pump.fun).
+    const [d, solanaTokenPrices] = await Promise.all([
       getCoinGeckoSimplePrice(COINGECKO_IDS),
-      getCoinGeckoTokenPrice("solana", [PUMP_MINT_MAINNET]),
+      getCoinGeckoTokenPrice("solana", [PUMP_MINT_MAINNET, SKR_MINT_MAINNET]),
     ]);
 
     if (!d) {
@@ -90,10 +93,18 @@ export async function GET() {
 
     // PUMP: prefer CoinGecko token price (keys are often lowercase); fallback to pump.fun DEX if missing
     const pumpEntry =
-      pumpTokenPrices?.[PUMP_MINT_MAINNET.toLowerCase()] ??
-      pumpTokenPrices?.[PUMP_MINT_MAINNET];
+      solanaTokenPrices?.[PUMP_MINT_MAINNET.toLowerCase()] ??
+      solanaTokenPrices?.[PUMP_MINT_MAINNET];
     if (pumpEntry?.usd != null && pumpEntry.usd > 0) {
       prices.PUMP = pumpEntry.usd;
+    }
+
+    // SKR (Seeker): from CoinGecko by Solana contract (not a pump.fun token)
+    const skrEntry =
+      solanaTokenPrices?.[SKR_MINT_MAINNET.toLowerCase()] ??
+      solanaTokenPrices?.[SKR_MINT_MAINNET];
+    if (skrEntry?.usd != null && skrEntry.usd > 0) {
+      prices.SKR = skrEntry.usd;
     }
 
     // CRUST via pump.fun LP (no CoinGecko listing); PUMP fallback from pump.fun when CoinGecko doesn't return it
@@ -163,6 +174,11 @@ export async function GET() {
     // SOLUNA fallback when pump.fun doesn't return a price
     if (prices.SOLUNA == null || prices.SOLUNA <= 0) {
       prices.SOLUNA = FALLBACK_PRICES.SOLUNA ?? 0.01;
+    }
+
+    // SKR (Seeker) fallback when CoinGecko doesn't return a price
+    if (prices.SKR == null || prices.SKR <= 0) {
+      prices.SKR = FALLBACK_PRICES.SKR ?? 0.01;
     }
 
     return NextResponse.json(prices);
