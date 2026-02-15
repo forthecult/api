@@ -19,11 +19,14 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import BigNumber from "bignumber.js";
-import { AlertCircle, ArrowLeftRight, Check, Clock, Info } from "lucide-react";
+import { AlertCircle, ArrowLeftRight, Check, Clock, Info, QrCode } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+
+import { useIsMobile } from "~/lib/hooks/use-mobile";
+import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
 
 import {
   getSuiPayLabel,
@@ -162,6 +165,8 @@ export function CryptoPayClient() {
     "sol_for_fees" | "token" | null
   >(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [showQrDialog, setShowQrDialog] = useState(false);
+  const isMobile = useIsMobile();
 
   const { order, loading: orderLoading, error: orderError } = useCryptoOrder({
     orderId: pathId,
@@ -1242,6 +1247,26 @@ export function CryptoPayClient() {
                           connection and refresh.
                         </p>
                       </div>
+                    ) : isMobile && token !== "sui" ? (
+                      <div className="flex min-h-[200px] flex-col items-center justify-center gap-4 py-6">
+                        {qrDataUrl ? (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="lg"
+                            className="gap-2"
+                            onClick={() => setShowQrDialog(true)}
+                          >
+                            <QrCode className="size-5" aria-hidden />
+                            Scan QR with another device
+                          </Button>
+                        ) : (
+                          <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                            <div className="size-6 animate-spin rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground" />
+                            <span className="text-sm">Loading QR code…</span>
+                          </div>
+                        )}
+                      </div>
                     ) : qrDataUrl ? (
                       <div className="relative inline-block">
                         <img
@@ -1276,6 +1301,45 @@ export function CryptoPayClient() {
                       </div>
                     )}
                   </div>
+                  {isMobile && token !== "sui" && qrDataUrl && (
+                    <Dialog open={showQrDialog} onOpenChange={setShowQrDialog}>
+                      <DialogContent className="flex max-w-[min(360px,100vw)] flex-col items-center gap-4 p-6">
+                        <DialogTitle className="sr-only">
+                          Payment QR code
+                        </DialogTitle>
+                        <p className="text-center text-sm text-muted-foreground">
+                          Scan this QR code with another device to pay
+                        </p>
+                        <div className="relative inline-block rounded-lg bg-white p-2">
+                          <img
+                            src={qrDataUrl}
+                            alt="Payment QR code"
+                            width={280}
+                            height={280}
+                            className="rounded-lg"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="rounded-full bg-white p-1.5 shadow-sm">
+                              <img
+                                src={logo.src}
+                                alt=""
+                                width={32}
+                                height={32}
+                                className="size-8 object-contain"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setShowQrDialog(false)}
+                        >
+                          Close
+                        </Button>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                   <div className="rounded-lg border border-border bg-muted/30 p-5">
                     <h2 className="mb-5 text-lg font-semibold">
                       Payment details
@@ -1321,7 +1385,8 @@ export function CryptoPayClient() {
                             disabled={
                               (token === "crust" && crustSolPerToken == null) ||
                               (token === "pump" && pumpSolPerToken == null) ||
-                              (token === "soluna" && solunaSolPerToken == null)
+                              (token === "soluna" && solunaSolPerToken == null) ||
+                              (token === "seeker" && seekerSolPerToken == null)
                             }
                           >
                             {copied === "amount" ? (

@@ -7,9 +7,11 @@ import {
   useConnection,
   useWallet,
 } from "@solana/wallet-adapter-react";
+import type { WalletAdapter } from "@solana/wallet-adapter-base";
 import { SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
 import { toast } from "sonner";
 
+import { useIsMobile } from "~/lib/hooks/use-mobile";
 import { getSolanaRpcUrl, isPublicSolanaRpc } from "~/lib/solana-pay";
 
 // Expected Solana cluster for mainnet
@@ -72,20 +74,44 @@ function NetworkValidator({
 
 /**
  * Solana wallet provider with network validation.
- * We pass only Solflare explicitly; WalletProvider also merges in Standard Wallets
- * (Phantom, Trust, etc.), so we avoid duplicate registration and "Standard Wallet"
- * console warnings.
+ * We pass Solflare; on mobile we also add the Mobile Wallet Adapter (MWA) so
+ * users opening the site in a wallet's in-app browser (e.g. Phantom) can connect via MWA.
+ * WalletProvider also merges in Standard Wallets (Phantom, Trust, etc.).
  */
 export function SolanaWalletProvider({
   children,
 }: { children: React.ReactNode }) {
+  const isMobile = useIsMobile();
   // Get RPC endpoint from config (ANKR default; override via NEXT_PUBLIC_SOLANA_RPC_URL)
   const rpcEndpoint = useMemo(() => getSolanaRpcUrl(), []);
 
-  const wallets = useMemo(
-    () => [new SolflareWalletAdapter()],
-    [],
-  );
+  const wallets = useMemo((): WalletAdapter[] => {
+    const list: WalletAdapter[] = [new SolflareWalletAdapter()];
+    if (typeof window !== "undefined" && isMobile) {
+      try {
+        const mobile = require("@solana-mobile/wallet-adapter-mobile");
+        list.push(
+          new mobile.SolanaMobileWalletAdapter({
+            appIdentity: {
+              name: "For the Cult",
+              uri: window.location.origin,
+              icon: `${window.location.origin}/favicon.ico`,
+            },
+            authorizationResultCache: mobile.createDefaultAuthorizationResultCache(),
+            addressSelector: mobile.createDefaultAddressSelector(),
+            chain: "solana:mainnet",
+            onWalletNotFound: mobile.createDefaultWalletNotFoundHandler(),
+          }),
+        );
+      } catch (e) {
+        // MWA not available (e.g. non-Android or build issue)
+        if (process.env.NODE_ENV === "development") {
+          console.warn("[Solana] Mobile Wallet Adapter not available", e);
+        }
+      }
+    }
+    return list;
+  }, [isMobile]);
 
   // Error handler for wallet connection issues
   const onError = useCallback((error: Error) => {

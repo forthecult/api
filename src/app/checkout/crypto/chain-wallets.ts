@@ -21,6 +21,7 @@ export function tokenToChain(token: string): PaymentChain | null {
  */
 export const CHAIN_WALLET_NAMES: Record<PaymentChain, string[]> = {
   solana: [
+    "Mobile Wallet Adapter", // MWA: in-app browser (e.g. Phantom app) on mobile
     "Phantom",
     "Solflare",
     "Backpack",
