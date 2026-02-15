@@ -111,6 +111,11 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
   const [guestEmail, setGuestEmail] = useState("");
+  /** When user selects a payment method with an automatic eSIM discount (e.g. Seeker). */
+  const [discountPreview, setDiscountPreview] = useState<{
+    discountCents: number;
+    totalAfterDiscountCents: number;
+  } | null>(null);
 
   // Visibility flags from admin settings
   const showCard = paymentVisibility?.creditCard !== false;
@@ -285,6 +290,69 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     stablecoinToken,
     stablecoinChain,
   ]);
+
+  const paymentMethodKey = useMemo(() => {
+    const map: Record<string, string> = {
+      crust: "crypto_crust",
+      pump: "crypto_pump",
+      seeker: "crypto_seeker",
+      solana: "crypto_solana",
+      soluna: "crypto_soluna",
+      troll: "crypto_troll",
+      usdc: "stablecoin_usdc",
+      usdt: "stablecoin_usdt",
+    };
+    if ("token" in resolvedPayment && resolvedPayment.token)
+      return map[resolvedPayment.token.toLowerCase()] ?? null;
+    return null;
+  }, [resolvedPayment]);
+
+  // Fetch automatic discount preview when package and payment method are set (e.g. 5% with Seeker).
+  useEffect(() => {
+    if (!pkg || !paymentMethodKey) {
+      setDiscountPreview(null);
+      return;
+    }
+    const subtotalCents = Math.round(Number(pkg.price) * 100);
+    const productId = `esim_${packageId}`;
+    fetch("/api/checkout/coupons/automatic", {
+      body: JSON.stringify({
+        items: [
+          { priceCents: subtotalCents, productId, quantity: 1 },
+        ],
+        paymentMethodKey,
+        productCount: 1,
+        productIds: [productId],
+        shippingFeeCents: 0,
+        subtotalCents,
+      }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    })
+      .then((res) => res.json())
+      .then(
+        (data: {
+          applied?: boolean;
+          discountCents?: number;
+          totalAfterDiscountCents?: number;
+        }) => {
+          if (
+            data.applied &&
+            typeof data.discountCents === "number" &&
+            typeof data.totalAfterDiscountCents === "number" &&
+            data.discountCents > 0
+          ) {
+            setDiscountPreview({
+              discountCents: data.discountCents,
+              totalAfterDiscountCents: data.totalAfterDiscountCents,
+            });
+          } else {
+            setDiscountPreview(null);
+          }
+        },
+      )
+      .catch(() => setDiscountPreview(null));
+  }, [pkg, packageId, paymentMethodKey]);
 
   const handlePurchase = useCallback(async () => {
     if (!pkg) return;
@@ -659,11 +727,38 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
               <CardContent className="space-y-5 p-6">
                 <div>
                   <p className="text-sm text-muted-foreground">Price</p>
-                  <p className="text-3xl font-bold text-primary">
-                    ${pkg.price}
-                  </p>
+                  <div className="flex flex-wrap items-baseline gap-2">
+                    {discountPreview ? (
+                      <>
+                        <span className="text-lg text-muted-foreground line-through">
+                          ${pkg.price}
+                        </span>
+                        <p className="text-3xl font-bold text-primary">
+                          $
+                          {(
+                            discountPreview.totalAfterDiscountCents / 100
+                          ).toFixed(2)}
+                        </p>
+                        <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
+                          {Math.round(
+                            (discountPreview.discountCents /
+                              (Number(pkg.price) * 100)) *
+                              100,
+                          )}
+                          % off with selected payment
+                        </span>
+                      </>
+                    ) : (
+                      <p className="text-3xl font-bold text-primary">
+                        ${pkg.price}
+                      </p>
+                    )}
+                  </div>
                   {currency !== "USD" && (() => {
-                    const localAmount = convertUsdToFiat(Number(pkg.price));
+                    const amount = discountPreview
+                      ? discountPreview.totalAfterDiscountCents / 100
+                      : Number(pkg.price);
+                    const localAmount = convertUsdToFiat(amount);
                     return localAmount != null ? (
                       <p className="mt-1 text-sm text-muted-foreground">
                         ≈ {formatFiat(localAmount)}
@@ -671,7 +766,13 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                     ) : null;
                   })()}
                   <p className="mt-1 text-xs text-muted-foreground">
-                    ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
+                    $
+                    {(
+                      (discountPreview
+                        ? discountPreview.totalAfterDiscountCents / 100
+                        : Number(pkg.price)) / pkg.package_validity
+                    ).toFixed(2)}
+                    /day
                   </p>
                 </div>
 
@@ -989,6 +1090,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Preparing checkout...
                     </>
+                  ) : discountPreview ? (
+                    `Buy eSIM — $${(discountPreview.totalAfterDiscountCents / 100).toFixed(2)}`
                   ) : (
                     `Buy eSIM — $${pkg.price}`
                   )}

@@ -232,13 +232,17 @@ export async function generateMetadata({
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
 
-  // Resolve OG image: category image → best-selling product → newest product
+  // Resolve OG image: category image → best-selling product → newest product → site default
+  const defaultOgImagePath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
   let categoryImageUrl: string | undefined;
   if (category?.imageUrl) {
     categoryImageUrl = category.imageUrl;
   } else if (category) {
     const fallback = await getCategoryProductImage(category.id);
     if (fallback) categoryImageUrl = fallback;
+  }
+  if (!categoryImageUrl) {
+    categoryImageUrl = defaultOgImagePath;
   }
   // Ensure absolute URL for OG tags
   if (categoryImageUrl && !categoryImageUrl.startsWith("http")) {
@@ -254,6 +258,7 @@ export async function generateMetadata({
       description,
       title,
       type: "website",
+      url: `${siteUrl}/${slug}`,
       ...(categoryImageUrl && {
         images: [
           {
