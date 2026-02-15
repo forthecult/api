@@ -115,7 +115,7 @@ export async function POST(request: Request) {
         );
       }
       const depositAddress = deriveDepositAddress(orderId);
-      // Map token name to cryptoCurrency for the checkout page (USDC, CRUST, PUMP, TROLL, SOL)
+      // Map token name to cryptoCurrency for the checkout page (USDC, CRUST, PUMP, TROLL, SOLUNA, SKR, SOL)
       const solToken = (token ?? "solana").toLowerCase();
       const cryptoCurrency =
         solToken === "usdc"
@@ -126,7 +126,11 @@ export async function POST(request: Request) {
               ? "PUMP"
               : solToken === "troll"
                 ? "TROLL"
-                : "SOL";
+                : solToken === "soluna"
+                  ? "SOLUNA"
+                  : solToken === "seeker"
+                    ? "SKR"
+                    : "SOL";
       await db
         .update(ordersTable)
         .set({

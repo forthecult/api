@@ -1,14 +1,15 @@
 import { eq } from "drizzle-orm";
-import { CreditCard } from "lucide-react";
+import { CreditCard, ExternalLink, Smartphone } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { db } from "~/db";
-import { ordersTable } from "~/db/schema";
+import { esimOrdersTable, ordersTable } from "~/db/schema";
 import { getCurrentUserOrRedirect } from "~/lib/auth";
 import { formatCents, formatDateLong } from "~/lib/format";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
+import { Badge } from "~/ui/primitives/badge";
 
 import { ReorderButton } from "../ReorderButton";
 
@@ -46,6 +47,23 @@ export default async function OrderDetailPage({
   }
 
   const isUnpaid = order.paymentStatus?.toLowerCase() === "pending";
+
+  // eSIM-only: all line items are eSIM (name starts with "eSIM:")
+  const isEsimOnlyOrder =
+    order.items.length > 0 &&
+    order.items.every((i) => (i.name ?? "").startsWith("eSIM:"));
+
+  const esimOrders = isEsimOnlyOrder
+    ? await db
+        .select({
+          activationLink: esimOrdersTable.activationLink,
+          id: esimOrdersTable.id,
+          packageName: esimOrdersTable.packageName,
+          status: esimOrdersTable.status,
+        })
+        .from(esimOrdersTable)
+        .where(eq(esimOrdersTable.orderId, order.id))
+    : [];
 
   return (
     <div className="space-y-6">
@@ -131,6 +149,68 @@ export default async function OrderDetailPage({
           </ul>
         </CardContent>
       </Card>
+
+      {/* eSIM details — activate from order page when order is eSIM-only */}
+      {esimOrders.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-2 space-y-0 pb-2">
+            <Smartphone className="size-5 text-muted-foreground" />
+            <div>
+              <h2 className="text-lg font-medium">eSIM details</h2>
+              <p className="text-sm text-muted-foreground">
+                Activate your eSIM from this page — tap below to install on this
+                device (no QR code needed).
+              </p>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {esimOrders.map((esim) => (
+              <div
+                key={esim.id}
+                className="flex flex-col gap-2 rounded-lg border border-border bg-muted/30 p-3"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-medium">{esim.packageName}</p>
+                  <Badge
+                    variant={
+                      esim.status === "active"
+                        ? "default"
+                        : esim.status === "failed" || esim.status === "expired"
+                          ? "destructive"
+                          : "secondary"
+                    }
+                  >
+                    {esim.status === "active"
+                      ? "Ready"
+                      : esim.status === "processing" || esim.status === "pending"
+                        ? "Preparing"
+                        : esim.status}
+                  </Badge>
+                </div>
+                {(esim.status === "active" || esim.status === "processing") &&
+                  esim.activationLink && (
+                    <Button asChild size="sm" className="w-fit">
+                      <a
+                        href={esim.activationLink}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        Install on this device
+                        <ExternalLink className="ml-1.5 size-3.5" />
+                      </a>
+                    </Button>
+                  )}
+              </div>
+            ))}
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/esim">
+                <Smartphone className="mr-1.5 size-3.5" />
+                View in eSIM dashboard
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tracking information */}
       {order.trackingNumber && (

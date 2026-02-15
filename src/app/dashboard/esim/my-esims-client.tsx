@@ -202,21 +202,14 @@ export function MyEsimsClient() {
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
           <p>
-            Each eSIM card above shows a <strong>QR code</strong> and an{" "}
-            <strong>activation link</strong>. Use the QR code on this page (scan
-            it with your phone) for the most reliable setup on both iPhone and
-            Android.
+            <strong>On the same phone you&apos;ll use?</strong> Tap &quot;Install
+            on this device&quot; in the card — no QR code needed. The link opens
+            your carrier&apos;s installer directly.
           </p>
           <p>
-            <strong>iPhone:</strong> Settings → Cellular → Add eSIM → Use QR
-            Code, then scan the QR code in the card. Or tap &quot;Open
-            activation link&quot; (may open in a new tab).
-          </p>
-          <p>
-            <strong>Android:</strong> Settings → Network &amp; internet → SIMs →
-            Add eSIM, then &quot;Scan QR code&quot; and scan the QR code in the
-            card. If your phone has no QR option, copy the activation link and
-            open it in Chrome on your phone.
+            <strong>On another device?</strong> Use the QR code in the card and
+            scan it with the phone you want to use, or copy the activation link
+            and open it on that device.
           </p>
           <p>
             <strong>Note:</strong> Use Wi‑Fi and ensure your device is eSIM
@@ -421,7 +414,7 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
           </div>
         </div>
 
-        {/* Activate: QR code + instructions (when we have an activation link) */}
+        {/* Activate: install on this device (no QR) + optional QR for another device */}
         {order.activationLink && (order.status === "active" || order.status === "processing") && (
           <div
             className={`
@@ -429,6 +422,32 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
           `}
           >
             <h4 className="mb-3 text-sm font-semibold">Activate your eSIM</h4>
+
+            {/* Primary: Install on this device — no QR code needed (e.g. purchased on phone) */}
+            <div className="mb-4 rounded-lg border border-green-200 bg-green-50/50 p-4 dark:border-green-900/50 dark:bg-green-950/20">
+              <p className="mb-2 text-sm font-medium text-green-800 dark:text-green-300">
+                On this phone? Install without a QR code
+              </p>
+              <p className="mb-3 text-xs text-green-700/90 dark:text-green-400/90">
+                Tap below to open the installer on this device. Your carrier will
+                add the eSIM — no need to scan anything.
+              </p>
+              <Button asChild size="sm">
+                <a
+                  href={order.activationLink}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Install on this device
+                  <ExternalLink className="ml-1.5 size-3.5" />
+                </a>
+              </Button>
+            </div>
+
+            {/* Secondary: QR code for another device or desktop */}
+            <p className="mb-2 text-xs font-medium text-muted-foreground">
+              Or install on another device (scan QR code)
+            </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
               {qrDataUrl && (
                 <div className="flex shrink-0 flex-col items-center gap-1">
@@ -440,29 +459,26 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
                     width={200}
                   />
                   <span className="text-xs text-muted-foreground">
-                    Scan with your phone camera or eSIM installer
+                    Scan with the device you want to use
                   </span>
                 </div>
               )}
               {qrError && (
                 <p className="text-xs text-muted-foreground">
-                  {qrError}. Use &quot;Copy link&quot; or &quot;Open activation link&quot; instead.
+                  {qrError}. Use &quot;Copy link&quot; above and open it on the
+                  device you want to use.
                 </p>
               )}
               <div className="min-w-0 flex-1 space-y-2 text-sm text-muted-foreground">
                 <p>
-                  <strong className="text-foreground">iPhone:</strong> Open
-                  Settings → Cellular → Add eSIM → Use QR Code, then scan the QR
-                  code above. Or tap &quot;Open activation link&quot; (may open
-                  in Apple&apos;s installer).
+                  <strong className="text-foreground">iPhone:</strong> Settings →
+                  Cellular → Add eSIM → Use QR Code, or tap &quot;Install on this
+                  device&quot; above if you&apos;re on the phone already.
                 </p>
                 <p>
-                  <strong className="text-foreground">Android:</strong> Open
-                  Settings → Network &amp; internet → SIMs → Add eSIM (or
-                  Settings → Connections → SIM manager → Add eSIM). Choose &quot;Scan
-                  QR code&quot; and scan the QR code above. If your device has no
-                  QR option, copy the activation link and open it in Chrome on
-                  your phone.
+                  <strong className="text-foreground">Android:</strong> Settings
+                  → Network &amp; internet → SIMs → Add eSIM, then scan QR or
+                  tap &quot;Install on this device&quot; on this phone.
                 </p>
                 <p className="text-xs">
                   Use Wi‑Fi when installing. Your device must support eSIM.

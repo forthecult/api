@@ -90,7 +90,7 @@ export function TestimonialsSection({
                 [gap:var(--gap)]
               `}
             >
-              {[...Array(4)].map((_, setIndex) =>
+              {[...Array(2)].map((_, setIndex) =>
                 testimonials.map((testimonial, i) => (
                   <TestimonialCard
                     author={testimonial.author}

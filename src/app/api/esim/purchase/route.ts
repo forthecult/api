@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { esimOrdersTable, orderItemsTable, ordersTable } from "~/db/schema";
+import { postOrderBookkeeping } from "~/lib/checkout/create-order-helpers";
 import { getCurrentUser } from "~/lib/auth";
+import { resolveAutomaticCouponForCheckout } from "~/lib/coupon";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 
 interface PurchaseBody {
@@ -12,6 +14,8 @@ interface PurchaseBody {
   packageId: string;
   packageType?: "DATA-ONLY" | "DATA-VOICE-SMS";
   paymentMethod: string; // "stripe" | "solana_pay" | "eth_pay" | "btcpay" | "ton_pay"
+  /** Payment method key for discount resolution (e.g. crypto_seeker). Sent when paying with a specific crypto so automatic coupons can apply. */
+  paymentMethodKey?: null | string;
 }
 
 /**
@@ -31,6 +35,7 @@ export async function POST(request: Request) {
       packageId,
       packageType = "DATA-ONLY",
       paymentMethod = "stripe",
+      paymentMethodKey: bodyPaymentMethodKey,
     } = body;
 
     if (!packageId) {
@@ -68,6 +73,31 @@ export async function POST(request: Request) {
     const costCents = Math.round(Number(pkg.price) * 100);
     const priceCents = Math.round(costCents * (1 + markup / 100));
 
+    // Resolve automatic coupon (e.g. 5% eSIM discount when paying with Seeker)
+    const paymentMethodKey = bodyPaymentMethodKey?.trim() || null;
+    let orderTotalCents = priceCents;
+    let couponResult: Awaited<
+      ReturnType<typeof resolveAutomaticCouponForCheckout>
+    > = null;
+    if (paymentMethodKey) {
+      const productId = `esim_${packageId}`;
+      const automaticResult = await resolveAutomaticCouponForCheckout({
+        items: [
+          { priceCents, productId, quantity: 1 },
+        ],
+        paymentMethodKey,
+        productCount: 1,
+        productIds: [productId],
+        shippingFeeCents: 0,
+        subtotalCents: priceCents,
+        userId: user?.id ?? undefined,
+      });
+      if (automaticResult) {
+        orderTotalCents = automaticResult.totalAfterDiscountCents;
+        couponResult = automaticResult;
+      }
+    }
+
     // Coerce API values (external API may return strings or omit fields)
     const dataQuantity = Number(pkg.data_quantity);
     const validityDays = Number(pkg.package_validity) || 1;
@@ -98,7 +128,7 @@ export async function POST(request: Request) {
       paymentStatus: "pending",
       shippingFeeCents: 0,
       status: "pending",
-      totalCents: priceCents,
+      totalCents: orderTotalCents,
       updatedAt: now,
       userId: user?.id ?? null,
     });
@@ -135,14 +165,24 @@ export async function POST(request: Request) {
       validityDays,
     });
 
+    // Record coupon redemption when an automatic discount was applied
+    if (couponResult) {
+      await postOrderBookkeeping({
+        affiliateResult: null,
+        couponResult,
+        orderId,
+        userId: user?.id ?? null,
+      });
+    }
+
     return NextResponse.json({
       data: {
         esimOrderId,
         orderId,
         packageName: pkg.name,
         paymentMethod,
-        priceCents,
-        priceUsd: (priceCents / 100).toFixed(2),
+        priceCents: orderTotalCents,
+        priceUsd: (orderTotalCents / 100).toFixed(2),
       },
       status: true,
     });

@@ -262,7 +262,7 @@ export default function TokenPage() {
             </h1>
             <p className="text-muted-foreground">
               Holding CULT gives free shipping. Spending CULT gives up to 20%
-              discount on eligible purchases. We kept 13.37% for the team. You
+              discount on eligible purchases. We kept 13.37% supply for the team, locked for 1 year. You
               get the rest.
             </p>
           </div>

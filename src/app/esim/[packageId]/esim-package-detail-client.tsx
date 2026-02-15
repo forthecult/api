@@ -33,6 +33,7 @@ import {
 } from "~/lib/checkout-payment-options";
 import { formatEsimPackageName } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { usePaymentMethodSettings } from "~/lib/hooks/use-payment-method-settings";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
@@ -57,7 +58,9 @@ type CryptoSub =
   | "monero"
   | "other"
   | "pump"
+  | "seeker"
   | "solana"
+  | "soluna"
   | "troll";
 
 // ---------- Types ----------
@@ -97,6 +100,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const searchParams = useSearchParams();
   const { user } = useCurrentUser();
   const { addItem, openCart } = useCart();
+  const { convertUsdToFiat, currency, formatFiat } = useCountryCurrency();
   const { visibility: paymentVisibility } = usePaymentMethodSettings();
   const backToStoreQuery = searchParams.toString();
   const backToStoreHref = backToStoreQuery
@@ -264,6 +268,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       return { hash: "#solana", method: "solana_pay" as const, token: "pump" };
     if (cryptoSub === "troll")
       return { hash: "#solana", method: "solana_pay" as const, token: "troll" };
+    if (cryptoSub === "soluna")
+      return { hash: "#solana", method: "solana_pay" as const, token: "soluna" };
+    if (cryptoSub === "seeker")
+      return { hash: "#solana", method: "solana_pay" as const, token: "seeker" };
     if (cryptoSub === "other" && cryptoOtherSub === "ton")
       return { hash: "#ton", method: "ton_pay" as const };
     if (cryptoSub === "other" && cryptoOtherSub === "sui")
@@ -292,6 +300,22 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
     setPurchasing(true);
     try {
+      // Derive payment method key for discount resolution (e.g. crypto_seeker for 5% eSIM discount)
+      const PAYMENT_METHOD_KEY_MAP: Record<string, string> = {
+        crust: "crypto_crust",
+        pump: "crypto_pump",
+        seeker: "crypto_seeker",
+        solana: "crypto_solana",
+        soluna: "crypto_soluna",
+        troll: "crypto_troll",
+        usdc: "stablecoin_usdc",
+        usdt: "stablecoin_usdt",
+      };
+      const paymentMethodKey =
+        "token" in resolvedPayment && resolvedPayment.token
+          ? PAYMENT_METHOD_KEY_MAP[resolvedPayment.token.toLowerCase()]
+          : undefined;
+
       // 1. Create the order
       const orderRes = await fetch("/api/esim/purchase", {
         body: JSON.stringify({
@@ -301,6 +325,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
             resolvedPayment.method === "sui"
               ? "solana_pay"
               : resolvedPayment.method,
+          ...(paymentMethodKey ? { paymentMethodKey } : {}),
           ...(user ? {} : { email: guestEmail.trim() }),
         }),
         headers: { "Content-Type": "application/json" },
@@ -637,6 +662,14 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
                   <p className="text-3xl font-bold text-primary">
                     ${pkg.price}
                   </p>
+                  {currency !== "USD" && (() => {
+                    const localAmount = convertUsdToFiat(Number(pkg.price));
+                    return localAmount != null ? (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        ≈ {formatFiat(localAmount)}
+                      </p>
+                    ) : null;
+                  })()}
                   <p className="mt-1 text-xs text-muted-foreground">
                     ${(Number(pkg.price) / pkg.package_validity).toFixed(2)}/day
                   </p>

@@ -111,8 +111,8 @@ export function ProductReviewsCarousel({
               [gap:var(--gap)]
             `}
             >
-              {/* Duplicate reviews 4x for seamless loop */}
-              {[...Array(4)].map((_, setIndex) =>
+              {/* Duplicate reviews 2x for seamless marquee loop */}
+              {[...Array(2)].map((_, setIndex) =>
                 reviews.map((review, i) => (
                   <ReviewCard
                     key={`review-${review.id}-${setIndex}-${i}`}
