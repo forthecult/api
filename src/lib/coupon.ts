@@ -136,7 +136,11 @@ export async function resolveAutomaticCouponForCheckout(
       if (!selectedKey || selectedKey !== requiredPaymentMethodKey) continue;
     }
 
-    const productIds = input.productIds ?? [];
+    // Use productIds from input; when empty, derive from items so eSIM-only coupons still match
+    const productIds =
+      (input.productIds?.length ?? 0) > 0
+        ? (input.productIds ?? [])
+        : (input.items?.map((i) => i.productId).filter(Boolean) ?? []);
     const hasEsimRule = coupon.ruleAppliesToEsim === 1;
     const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)

@@ -74,11 +74,20 @@ export async function POST(request: NextRequest) {
 
     const items = validateSchema.items(body?.items);
 
+    // Derive productIds from items when client sends items but productIds empty (e.g. ensures eSIM rule works)
+    const resolvedProductIds =
+      productIds.length > 0
+        ? productIds
+        : (items.length > 0
+            ? items.map((i) => i.productId).filter(Boolean)
+            : []);
+
     const input: AutomaticCouponInput = {
       items: items.length > 0 ? items : undefined,
       paymentMethodKey,
       productCount,
-      productIds: productIds.length > 0 ? productIds : undefined,
+      productIds:
+        resolvedProductIds.length > 0 ? resolvedProductIds : undefined,
       shippingFeeCents,
       subtotalCents,
       userId: session?.user?.id ?? undefined,
