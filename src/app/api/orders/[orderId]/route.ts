@@ -198,7 +198,7 @@ export async function GET(
           : undefined,
       paymentMethod: order.paymentMethod ?? undefined,
       cryptoCurrency: order.cryptoCurrency ?? undefined,
-      accessLevel,
+      // accessLevel omitted from response to avoid leaking internal auth model
       items: items.map((i) => ({
         productId: i.productId,
         name: i.name,
