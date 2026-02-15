@@ -150,7 +150,7 @@ export async function resolveAutomaticCouponForCheckout(
       (input.productIds?.length ?? 0) > 0
         ? (input.productIds ?? [])
         : (input.items?.map((i) => i.productId).filter(Boolean) ?? []);
-    const hasEsimRule = coupon.ruleAppliesToEsim === 1;
+    const hasEsimRule = Number(coupon.ruleAppliesToEsim) === 1;
     const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
     // Also compute the qualifying subtotal for per-product discounts (amount_off_products).
@@ -368,7 +368,7 @@ export async function resolveCouponForCheckout(
   }
 
   const productIds = options.productIds ?? [];
-  const hasEsimRule = coupon.ruleAppliesToEsim === 1;
+  const hasEsimRule = Number(coupon.ruleAppliesToEsim) === 1;
   const cartHasEsim = productIds.some((id) => id.startsWith("esim_"));
   let qualifyingSubtotalCents: number | undefined;
   if (productIds.length > 0) {
@@ -456,7 +456,11 @@ export async function resolveCouponForCheckout(
   const couponPaymentMethodKey = coupon.rulePaymentMethodKey?.trim();
   if (couponPaymentMethodKey) {
     const selectedKey = options.paymentMethodKey?.trim();
-    if (!selectedKey || selectedKey !== couponPaymentMethodKey) return null;
+    if (
+      !selectedKey ||
+      selectedKey.toLowerCase() !== couponPaymentMethodKey.toLowerCase()
+    )
+      return null;
   }
 
   const { discountCents, freeShipping } = computeDiscountFromCoupon(

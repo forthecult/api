@@ -262,7 +262,13 @@ export function ConnectWalletModal({
             setConnectError(
               `Connection is taking a while. Open the ${timeoutName} extension to approve, or use Back to try again.`,
             );
-            setStep("network");
+            // Solana-only wallets (e.g. MWA) never showed the network step; go back to wallet list
+            if (SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+              setStep("wallet");
+              setSelectedWallet(null);
+            } else {
+              setStep("network");
+            }
           }
         } catch (err) {
           const catchName = wallet?.adapter.name ?? "your wallet";
@@ -276,7 +282,13 @@ export function ConnectWalletModal({
               ? `Please approve the connection in your ${catchName} window. If you closed it without approving, click Connect again and approve when prompted.`
               : `Connection failed. Open the ${catchName} extension and try again, or use another wallet.`,
           );
-          setStep("network");
+          // Solana-only wallets (e.g. MWA) never showed the network step; go back to wallet list
+          if (SOLANA_ONLY_WALLETS.includes(wallet.adapter.name)) {
+            setStep("wallet");
+            setSelectedWallet(null);
+          } else {
+            setStep("network");
+          }
         } finally {
           setConnectingWallet(null);
           setConnectingToNetwork(null);

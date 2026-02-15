@@ -55,6 +55,7 @@ interface Product {
   availableCountryCodes?: string[];
   barcode: null | string;
   brand: null | string;
+  model: null | string;
   categoryId: null | string;
   categoryIds?: string[];
   compareAtPriceCents: null | number;
@@ -173,6 +174,7 @@ export default function AdminProductEditPage() {
   const [published, setPublished] = useState(true);
   const [hidden, setHidden] = useState(false);
   const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
   const [vendor, setVendor] = useState("");
   const [slug, setSlug] = useState("");
   const [sku, setSku] = useState("");
@@ -334,6 +336,7 @@ export default function AdminProductEditPage() {
       setPublished(data.published);
       setHidden(data.hidden ?? false);
       setBrand(data.brand ?? "");
+      setModel(data.model ?? "");
       setVendor(data.vendor ?? "");
       setSlug(data.slug ?? slugFromName(data.name));
       setSku(data.sku ?? "");
@@ -762,6 +765,7 @@ export default function AdminProductEditPage() {
           ),
           barcode: barcode.trim() || null,
           brand: brand.trim() || null,
+          model: model.trim() || null,
           categoryIds,
           compareAtPriceCents: compareAtPriceCents.trim()
             ? Number.parseInt(compareAtPriceCents, 10)
@@ -922,6 +926,7 @@ export default function AdminProductEditPage() {
       published,
       hidden,
       brand,
+      model,
       vendor,
       slug,
       sku,
@@ -2183,6 +2188,7 @@ export default function AdminProductEditPage() {
               className={`
               grid gap-4
               sm:grid-cols-2
+              lg:grid-cols-3
             `}
             >
               <div>
@@ -2193,6 +2199,22 @@ export default function AdminProductEditPage() {
                   onChange={setBrand}
                   value={brand}
                 />
+              </div>
+              <div className="space-y-2">
+                <label className={labelClass} htmlFor="model">
+                  Model
+                </label>
+                <input
+                  className={inputClass}
+                  id="model"
+                  onChange={(e) => setModel(e.target.value)}
+                  placeholder="e.g. 3001, 582 — used for size chart lookup"
+                  type="text"
+                  value={model}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Blank product model; must match size chart (provider + brand + model).
+                </p>
               </div>
               <div className="space-y-2">
                 <label className={labelClass} htmlFor="vendor">

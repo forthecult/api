@@ -136,6 +136,7 @@ export async function GET(
         .filter((c) => !isShippingExcluded(c)),
       barcode: product.barcode,
       brand: product.brand,
+      model: product.model ?? null,
       categoryId:
         productCategoriesRows.find((r) => r.isMain)?.categoryId ??
         productCategoriesRows[0]?.categoryId ??
@@ -247,6 +248,7 @@ export async function PATCH(
       availableCountryCodes?: string[];
       barcode?: null | string;
       brand?: null | string;
+      model?: null | string;
       categoryId?: null | string;
       categoryIds?: string[];
       compareAtPriceCents?: null | number;
@@ -356,6 +358,7 @@ export async function PATCH(
     if (body.costPerItemCents !== undefined)
       updates.costPerItemCents = body.costPerItemCents ?? null;
     if (body.brand !== undefined) updates.brand = body.brand ?? null;
+    if (body.model !== undefined) updates.model = body.model ?? null;
     if (body.vendor !== undefined) updates.vendor = body.vendor ?? null;
     if (body.slug !== undefined) updates.slug = body.slug?.trim() || null;
     if (body.sku !== undefined) updates.sku = body.sku?.trim() || null;
