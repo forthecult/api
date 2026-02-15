@@ -30,13 +30,15 @@ import {
 
 import type { CartItem } from "./cart";
 
-/** Show only the variant (e.g. "2XL") when variantLabel repeats the product name. */
-function variantDisplayOnly(productName: string, variantLabel: string): string {
+/** Show only the size/variant (e.g. "2XL", "M") in cart — strip title/category before " / ". */
+function variantDisplayOnly(_productName: string, variantLabel: string): string {
   if (!variantLabel?.trim()) return variantLabel ?? "";
-  const name = (productName ?? "").trim();
-  if (!name || !variantLabel.startsWith(name)) return variantLabel;
-  const rest = variantLabel.slice(name.length).replace(/^\s*\/\s*/, "").trim();
-  return rest || variantLabel;
+  const lastSlash = variantLabel.lastIndexOf(" / ");
+  if (lastSlash >= 0) {
+    const after = variantLabel.slice(lastSlash + 3).trim();
+    if (after) return after;
+  }
+  return variantLabel;
 }
 
 interface CartClientProps {

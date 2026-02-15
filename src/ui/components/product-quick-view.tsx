@@ -601,13 +601,21 @@ export function ProductQuickView({
           </div>
         )}
 
-        {product && !loading && (
+        {product && !loading && (() => {
+          const baseImages = (product.images ?? (product.imageUrl ? [product.imageUrl] : [])).filter(Boolean) as string[];
+          const variantImage = selectedVariant?.imageUrl?.trim();
+          const galleryImages = variantImage
+            ? [variantImage, ...baseImages.filter((u) => u?.trim() !== variantImage)]
+            : baseImages.length > 0
+              ? baseImages
+              : ["/placeholder.svg"];
+          return (
           <div className="flex max-h-[90vh] flex-col md:flex-row">
-            {/* Left: image gallery */}
+            {/* Left: image gallery — show selected variant image when it has one */}
             <div className="w-full shrink-0 md:w-[48%] md:max-h-[90vh] bg-muted/30">
               <div className="sticky top-0 p-4 md:p-5">
                 <MiniGallery
-                  images={product.images ?? [product.imageUrl ?? "/placeholder.svg"]}
+                  images={galleryImages}
                   productName={product.name}
                 />
               </div>
@@ -772,7 +780,8 @@ export function ProductQuickView({
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
       </DialogContent>
     </Dialog>
   );
