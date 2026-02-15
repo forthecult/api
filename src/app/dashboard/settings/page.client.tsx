@@ -202,8 +202,107 @@ export function SettingsPageClient() {
               {notificationSaving && (
                 <p className="text-sm text-muted-foreground">Saving...</p>
               )}
-              {/* Notification matrix: channels × (Transactional | Marketing) */}
-              <div className="rounded-lg border">
+              {/* Mobile: stacked by channel (no horizontal scroll) */}
+              <div className="space-y-4 md:hidden">
+                {NOTIFICATION_CHANNELS.map((channel) => {
+                  const Icon = channel.icon;
+                  const disabled = isChannelDisabled(channel);
+                  return (
+                    <div
+                      key={channel.id}
+                      className="rounded-lg border bg-card p-4"
+                    >
+                      <div className="mb-3 flex items-center gap-3">
+                        <div
+                          className={`
+                            flex h-9 w-9 shrink-0 items-center justify-center rounded-lg
+                            ${
+                              disabled
+                                ? "bg-muted text-muted-foreground"
+                                : "bg-primary/10 text-primary"
+                            }
+                          `}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`
+                              font-medium
+                              ${disabled ? "text-muted-foreground" : ""}
+                            `}
+                          >
+                            {channel.label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {channel.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-3 border-t pt-3">
+                        <label
+                          className={`
+                            flex items-center justify-between gap-3
+                            ${disabled || notificationSaving ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                          `}
+                        >
+                          <span className="text-sm">
+                            <span className="font-medium">Transactional</span>
+                            <span className="ml-1.5 text-muted-foreground">
+                              — Orders, shipping, account
+                            </span>
+                          </span>
+                          <Checkbox
+                            aria-label={`${channel.label} transactional notifications`}
+                            checked={
+                              notificationPrefs?.transactional[channel.id] ??
+                              false
+                            }
+                            disabled={disabled || notificationSaving}
+                            onCheckedChange={(checked) =>
+                              updateNotificationPref(
+                                "transactional",
+                                channel.id,
+                                checked === true,
+                              )
+                            }
+                          />
+                        </label>
+                        <label
+                          className={`
+                            flex items-center justify-between gap-3
+                            ${disabled || notificationSaving ? "cursor-not-allowed opacity-60" : "cursor-pointer"}
+                          `}
+                        >
+                          <span className="text-sm">
+                            <span className="font-medium">Marketing</span>
+                            <span className="ml-1.5 text-muted-foreground">
+                              — Promotions, news, offers
+                            </span>
+                          </span>
+                          <Checkbox
+                            aria-label={`${channel.label} marketing notifications`}
+                            checked={
+                              notificationPrefs?.marketing[channel.id] ?? false
+                            }
+                            disabled={disabled || notificationSaving}
+                            onCheckedChange={(checked) =>
+                              updateNotificationPref(
+                                "marketing",
+                                channel.id,
+                                checked === true,
+                              )
+                            }
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop: table (channel × transactional × marketing) */}
+              <div className="hidden rounded-lg border md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -211,11 +310,7 @@ export function SettingsPageClient() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-semibold">Transactional</span>
-                          <span
-                            className={`
-                            text-xs font-normal text-muted-foreground
-                          `}
-                          >
+                          <span className="text-xs font-normal text-muted-foreground">
                             Orders, shipping, account
                           </span>
                         </div>
@@ -223,11 +318,7 @@ export function SettingsPageClient() {
                       <TableHead className="text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className="font-semibold">Marketing</span>
-                          <span
-                            className={`
-                            text-xs font-normal text-muted-foreground
-                          `}
-                          >
+                          <span className="text-xs font-normal text-muted-foreground">
                             Promotions, news, offers
                           </span>
                         </div>
@@ -238,21 +329,17 @@ export function SettingsPageClient() {
                     {NOTIFICATION_CHANNELS.map((channel) => {
                       const Icon = channel.icon;
                       const disabled = isChannelDisabled(channel);
-
                       return (
                         <TableRow key={channel.id}>
                           <TableCell>
                             <div className="flex items-center gap-3">
                               <div
                                 className={`
-                                  flex h-9 w-9 items-center justify-center
-                                  rounded-lg
+                                  flex h-9 w-9 items-center justify-center rounded-lg
                                   ${
                                     disabled
-                                      ? `bg-muted text-muted-foreground`
-                                      : `
-                                    bg-primary/10 text-primary
-                                  `
+                                      ? "bg-muted text-muted-foreground"
+                                      : "bg-primary/10 text-primary"
                                   }
                                 `}
                               >
@@ -262,7 +349,7 @@ export function SettingsPageClient() {
                                 <span
                                   className={`
                                     font-medium
-                                    ${disabled ? `text-muted-foreground` : ""}
+                                    ${disabled ? "text-muted-foreground" : ""}
                                   `}
                                 >
                                   {channel.label}

@@ -232,6 +232,23 @@ export function FooterBottom() {
           />
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4">
+          <button
+            type="button"
+            id="sideshift-modal-button"
+            className="
+              appearance-none mx-auto flex h-12 min-w-[13rem] cursor-pointer
+              items-center justify-center rounded border-none bg-[#e85a43] px-4
+              py-3.5 text-center text-base font-medium leading-6 uppercase
+              text-[#110b0b] no-underline transition-all duration-150 ease-out
+              hover:opacity-90
+            "
+            onClick={() =>
+              (window as unknown as { sideshift?: { show: () => void } })
+                .sideshift?.show()
+            }
+          >
+            Shift Crypto
+          </button>
           <Link className="hover:text-foreground" href="/policies/privacy">
             Privacy
           </Link>

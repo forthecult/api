@@ -215,6 +215,65 @@ export function solanaAuthPlugin() {
 
             if (!user) {
               const email = `solana_${addressTrim.slice(0, 8)}@wallet.local`;
+              // User may exist from a previous partial sign-in (e.g. session creation failed).
+              // Look up by synthetic email first to avoid duplicate key and to recover.
+              const existingUserByEmail = (await adapter.findOne({
+                model: "user",
+                where: [{ field: "email", value: email }],
+              })) as null | UserRecord;
+              if (existingUserByEmail) {
+                user = existingUserByEmail;
+                const existingAccountForWallet = (await adapter.findOne({
+                  model: "account",
+                  where: [
+                    { field: "providerId", value: SOLANA_PROVIDER_ID },
+                    { field: "accountId", value: addressTrim },
+                  ],
+                })) as AccountRecord | null;
+                if (!existingAccountForWallet) {
+                  const accountId = generateId({ model: "account" });
+                  const now = new Date();
+                  try {
+                    await (
+                      ctx.context.internalAdapter as {
+                        createAccount: (data: {
+                          accountId: string;
+                          createdAt: Date;
+                          id: string;
+                          providerId: string;
+                          updatedAt: Date;
+                          userId: string;
+                        }) => Promise<unknown>;
+                      }
+                    ).createAccount({
+                      accountId: addressTrim,
+                      createdAt: now,
+                      id: accountId,
+                      providerId: SOLANA_PROVIDER_ID,
+                      updatedAt: now,
+                      userId: existingUserByEmail.id,
+                    });
+                  } catch (createAccountErr) {
+                    if (isDuplicateAccountError(createAccountErr)) {
+                      console.log(
+                        "[solana-auth] Account already linked for",
+                        addressTrim,
+                        "— proceeding to session",
+                      );
+                    } else {
+                      console.error(
+                        "[solana-auth] createAccount (recover existing user) failed:",
+                        createAccountErr,
+                      );
+                      throw createAccountErr;
+                    }
+                  }
+                }
+              }
+            }
+
+            if (!user) {
+              const email = `solana_${addressTrim.slice(0, 8)}@wallet.local`;
               const now = new Date();
               const userId = generateId({ model: "user" });
               console.log(
@@ -302,11 +361,20 @@ export function solanaAuthPlugin() {
                           userId: existingUser.id,
                         });
                       } catch (linkAccountErr) {
-                        console.error(
-                          "[solana-auth] createAccount (link existing user) failed:",
-                          linkAccountErr,
-                        );
-                        throw linkAccountErr;
+                        if (isDuplicateAccountError(linkAccountErr)) {
+                          // Account already exists (e.g. findOne missed it); proceed to session
+                          console.log(
+                            "[solana-auth] Account already linked for",
+                            addressTrim,
+                            "— proceeding to session",
+                          );
+                        } else {
+                          console.error(
+                            "[solana-auth] createAccount (link existing user) failed:",
+                            linkAccountErr,
+                          );
+                          throw linkAccountErr;
+                        }
                       }
                     }
                   }
@@ -495,11 +563,28 @@ function isDuplicateUserEmailError(err: unknown): boolean {
     /duplicate key|unique constraint/i.test(msg)
   )
     return true;
-  const code =
-    err && typeof err === "object" && "code" in err
-      ? String((err as { code: string }).code)
-      : "";
+  const code = getErrorCode(err);
   if (code === "23505") return true; // PostgreSQL unique_violation
+  return false;
+}
+
+/** True if this error is a DB unique constraint on account (providerId + accountId). */
+function isDuplicateAccountError(err: unknown): boolean {
+  const msg = getFullErrorMessage(err);
+  if (
+    /account.*unique|unique.*account|duplicate key|unique constraint/i.test(
+      msg,
+    )
+  )
+    return true;
+  const code = getErrorCode(err);
+  if (code === "23505") return true;
+  return false;
+}
+
+function getErrorCode(err: unknown): string {
+  if (err && typeof err === "object" && "code" in err)
+    return String((err as { code: string }).code);
   const cause =
     err && typeof err === "object" && "cause" in err
       ? (err as { cause: unknown }).cause
@@ -507,11 +592,10 @@ function isDuplicateUserEmailError(err: unknown): boolean {
   if (
     cause &&
     typeof cause === "object" &&
-    "code" in cause &&
-    String((cause as { code: string }).code) === "23505"
+    "code" in cause
   )
-    return true;
-  return false;
+    return String((cause as { code: string }).code);
+  return "";
 }
 
 function makeMessage(nonce: string): string {

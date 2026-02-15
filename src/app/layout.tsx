@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { SpeedInsights } from "@vercel/speed-insights/next";
@@ -200,6 +201,17 @@ export default async function RootLayout({
         </ThemeProvider>
         {/* SpeedInsights only on Vercel; script 404s on other hosts (e.g. Railway) and can cause console noise */}
         {process.env.NEXT_PUBLIC_VERCEL === "1" ? <SpeedInsights /> : null}
+        {/* Sideshift: config must be set before main.js loads */}
+        <script
+          type="text/javascript"
+          dangerouslySetInnerHTML={{
+            __html: `window.__SIDESHIFT__ = { parentAffiliateId: "03RoxqMia", defaultDepositMethodId: "sol", defaultSettleMethodId: "eth", settleAddress: undefined, type: "variable", settleAmount: undefined, commissionRate: undefined, theme: "light" };`,
+          }}
+        />
+        <Script
+          src="https://sideshift.ai/static/js/main.js"
+          strategy="afterInteractive"
+        />
         {/* Structured data for search engines */}
         <OrganizationStructuredData />
         <WebSiteStructuredData />
