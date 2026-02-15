@@ -518,12 +518,12 @@ export function CheckoutClient() {
         {/* Sticky Place order bar — visible total + CTA so checkout is always obvious */}
         <div
           className={`
-            sticky bottom-0 z-10 mt-6 flex flex-wrap items-center justify-between
+            sticky bottom-0 z-10 mt-6 flex flex-nowrap items-center justify-between
             gap-4 border-t border-border bg-background/95 px-4 py-4
             backdrop-blur supports-[backdrop-filter]:bg-background/80
           `}
         >
-          <div className="flex flex-col gap-0.5">
+          <div className="flex min-w-0 shrink flex-col gap-0.5">
             <div className="flex items-baseline gap-2">
               <span className="text-sm font-medium text-muted-foreground">
                 Total

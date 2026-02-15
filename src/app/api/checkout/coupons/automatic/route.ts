@@ -23,31 +23,19 @@ const validateSchema = {
         } =>
           typeof item === "object" &&
           item !== null &&
-          typeof (item as Record<string, unknown>).productId === "string",
+          typeof (item as Record<string, unknown>).productId === "string" &&
+          typeof (item as Record<string, unknown>).priceCents === "number" &&
+          typeof (item as Record<string, unknown>).quantity === "number",
       )
-      .map((item) => {
-        const rec = item as Record<string, unknown>;
-        const priceCents =
-          typeof rec.priceCents === "number"
-            ? rec.priceCents
-            : Number(rec.priceCents);
-        const quantity =
-          typeof rec.quantity === "number" ? rec.quantity : Number(rec.quantity);
-        return {
-          priceCents: Number.isFinite(priceCents)
-            ? Math.round(priceCents)
-            : 0,
-          productId: String(rec.productId),
-          quantity: Math.max(1, Number.isFinite(quantity) ? Math.round(quantity) : 1),
-        };
-      })
+      .map((item) => ({
+        priceCents: Math.round((item as CartLineItem).priceCents),
+        productId: (item as CartLineItem).productId,
+        quantity: Math.max(1, Math.round((item as CartLineItem).quantity)),
+      }))
       .filter((item) => item.productId.length > 0);
   },
-  paymentMethodKey: (v: unknown) => {
-    if (v == null) return undefined;
-    const s = typeof v === "string" ? v : String(v).trim();
-    return s.length > 0 ? s : undefined;
-  },
+  paymentMethodKey: (v: unknown) =>
+    typeof v === "string" && v.trim().length > 0 ? v.trim() : undefined,
   productCount: (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
   productIds: (v: unknown) =>
@@ -58,10 +46,8 @@ const validateSchema = {
       : [],
   shippingFeeCents: (v: unknown) =>
     typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
-  subtotalCents: (v: unknown) => {
-    const n = typeof v === "number" ? v : Number(v);
-    return Number.isFinite(n) && n >= 0 ? Math.round(n) : 0;
-  },
+  subtotalCents: (v: unknown) =>
+    typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.round(v) : 0,
 };
 
 /**

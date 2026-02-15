@@ -625,6 +625,7 @@ function findVariant(
     return true;
   });
   if (match) return match;
+  // 2. Subset: variant set ⊆ selected (phone cases: variant has "iPhone 16 Pro Max", selected has that)
   let best: null | QuickViewVariant = null;
   let bestSize = 0;
   for (const v of variants) {
@@ -648,7 +649,30 @@ function findVariant(
       }
     }
   }
-  return best;
+  if (best) return best;
+
+  // 3. Superset: selected set ⊆ variant (apparel: UI shows only Size "L", variant has size "L" + color "Black")
+  for (const v of variants) {
+    const variantSet = getVariantValueSet(v);
+    let allSelectedInVariant = true;
+    for (const s of selectedSet) {
+      const sLower = s.toLowerCase();
+      const inVariant =
+        variantSet.has(s) ||
+        [...variantSet].some(
+          (vVal) =>
+            vVal.toLowerCase() === sLower ||
+            expandSizeValueForMatching(s).includes(vVal.toLowerCase()),
+        );
+      if (!inVariant) {
+        allSelectedInVariant = false;
+        break;
+      }
+    }
+    if (allSelectedInVariant) return v;
+  }
+
+  return null;
 }
 
 /** Set of non-empty variant field values. Splits combined values like "Charcoal Heather / L" so they match UI selections. */

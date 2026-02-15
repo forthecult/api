@@ -151,10 +151,7 @@ export async function resolveAutomaticCouponForCheckout(
         ? (input.productIds ?? [])
         : (input.items?.map((i) => i.productId).filter(Boolean) ?? []);
     const hasEsimRule = Number(coupon.ruleAppliesToEsim) === 1;
-    const cartHasEsim =
-      productIds.some((id) => String(id).startsWith("esim_")) ||
-      (input.items?.some((i) => String(i.productId).startsWith("esim_")) ??
-        false);
+    const cartHasEsim = productIds.some((id) => String(id).startsWith("esim_"));
     // Rule: cart must contain at least one of these products and/or at least one product from these categories (if any are set)
     // Also compute the qualifying subtotal for per-product discounts (amount_off_products).
     let qualifyingSubtotalCents: number | undefined;
@@ -370,12 +367,12 @@ export async function resolveCouponForCheckout(
     if ((userRedemptions?.count ?? 0) >= coupon.maxUsesPerCustomer) return null;
   }
 
-  const productIds = options.productIds ?? [];
+  const productIds =
+    (options.productIds?.length ?? 0) > 0
+      ? (options.productIds ?? [])
+      : (options.items?.map((i) => i.productId).filter(Boolean) ?? []);
   const hasEsimRule = Number(coupon.ruleAppliesToEsim) === 1;
-  const cartHasEsim =
-    productIds.some((id) => String(id).startsWith("esim_")) ||
-    (options.items?.some((i) => String(i.productId).startsWith("esim_")) ??
-      false);
+  const cartHasEsim = productIds.some((id) => String(id).startsWith("esim_"));
   let qualifyingSubtotalCents: number | undefined;
   if (productIds.length > 0) {
     const [allowedProductIds, couponCategoryIds] = await Promise.all([

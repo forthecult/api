@@ -116,7 +116,6 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     discountCents: number;
     totalAfterDiscountCents: number;
   } | null>(null);
-  const paymentMethodKeyRef = useRef<string | null>(null);
 
   // Visibility flags from admin settings
   const showCard = paymentVisibility?.creditCard !== false;
@@ -307,7 +306,6 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       return map[resolvedPayment.token.toLowerCase()] ?? null;
     return null;
   }, [resolvedPayment]);
-  paymentMethodKeyRef.current = paymentMethodKey;
 
   // Fetch automatic discount preview when package and payment method are set (e.g. 5% with Seeker).
   useEffect(() => {
@@ -315,16 +313,13 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       setDiscountPreview(null);
       return;
     }
-    const abortController = new AbortController();
-    const currentKey = paymentMethodKey;
+    const ac = new AbortController();
     const subtotalCents = Math.round(Number(pkg.price) * 100);
     const productId = `esim_${packageId}`;
     fetch("/api/checkout/coupons/automatic", {
       body: JSON.stringify({
-        items: [
-          { priceCents: subtotalCents, productId, quantity: 1 },
-        ],
-        paymentMethodKey: currentKey,
+        items: [{ priceCents: subtotalCents, productId, quantity: 1 }],
+        paymentMethodKey,
         productCount: 1,
         productIds: [productId],
         shippingFeeCents: 0,
@@ -333,7 +328,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
-      signal: abortController.signal,
+      signal: ac.signal,
     })
       .then((res) => res.json())
       .then(
@@ -342,12 +337,11 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           discountCents?: number;
           totalAfterDiscountCents?: number;
         }) => {
-          if (paymentMethodKeyRef.current !== currentKey) return;
           if (
             data.applied &&
             typeof data.discountCents === "number" &&
-            typeof data.totalAfterDiscountCents === "number" &&
-            data.discountCents > 0
+            data.discountCents > 0 &&
+            typeof data.totalAfterDiscountCents === "number"
           ) {
             setDiscountPreview({
               discountCents: data.discountCents,
@@ -359,12 +353,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         },
       )
       .catch((err: unknown) => {
-        const isAbort =
-          err instanceof DOMException && err.name === "AbortError";
-        if (!isAbort && paymentMethodKeyRef.current === currentKey)
+        if (!(err instanceof DOMException && err.name === "AbortError"))
           setDiscountPreview(null);
       });
-    return () => abortController.abort();
+    return () => ac.abort();
   }, [pkg, packageId, paymentMethodKey]);
 
   const handlePurchase = useCallback(async () => {
