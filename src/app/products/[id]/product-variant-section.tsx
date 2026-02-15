@@ -41,6 +41,7 @@ export interface ProductVariantSectionProps {
     name: string;
     originalPrice?: number;
     price: number;
+    /** Product slug for cart/checkout links. */
     slug?: string;
   };
   variants: ProductVariantOption[];
@@ -349,12 +350,18 @@ function deriveOptionDefinitionsFromVariants(
   return opts;
 }
 
+/** Normalize a set of strings to lowercase for case-insensitive comparison. */
+function toLowerSet(set: Set<string>): Set<string> {
+  return new Set([...set].map((s) => s.toLowerCase()));
+}
+
 /**
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names (Brand, Model, Finishes, etc.) are not tied to
  * specific columns — any option values can live in color/size/gender/label.
  * Uses set equality when sizes match; otherwise allows variant set to be a
  * subset of selected (e.g. UI has Brand + Model but variant only stores full model name).
+ * Comparison is case-insensitive so "XL" matches variant size "xl" (e.g. from sync).
  */
 function findVariant(
   variants: ProductVariantOption[],
@@ -366,12 +373,14 @@ function findVariant(
       .map((s) => String(s).trim()),
   );
   if (selectedSet.size === 0) return null;
-  // Exact match: variant's values exactly equal selected
+  const selectedLower = toLowerSet(selectedSet);
+  // Exact match: variant's values exactly equal selected (case-insensitive)
   const match = variants.find((v) => {
     const variantSet = getVariantValueSet(v);
-    if (variantSet.size !== selectedSet.size) return false;
-    for (const s of selectedSet) {
-      if (!variantSet.has(s)) return false;
+    const variantLower = toLowerSet(variantSet);
+    if (variantLower.size !== selectedLower.size) return false;
+    for (const s of selectedLower) {
+      if (!variantLower.has(s)) return false;
     }
     return true;
   });
@@ -381,17 +390,18 @@ function findVariant(
   let bestSize = 0;
   for (const v of variants) {
     const variantSet = getVariantValueSet(v);
-    if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
+    const variantLower = toLowerSet(variantSet);
+    if (variantLower.size > bestSize && variantLower.size <= selectedLower.size) {
       let allIn = true;
-      for (const x of variantSet) {
-        if (!selectedSet.has(x)) {
+      for (const x of variantLower) {
+        if (!selectedLower.has(x)) {
           allIn = false;
           break;
         }
       }
       if (allIn) {
         best = v;
-        bestSize = variantSet.size;
+        bestSize = variantLower.size;
       }
     }
   }

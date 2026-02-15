@@ -349,6 +349,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                       name: product.name,
                       originalPrice: product.originalPrice,
                       price: product.price,
+                      slug: product.slug,
                     }}
                     variants={product.variants ?? []}
                   />
