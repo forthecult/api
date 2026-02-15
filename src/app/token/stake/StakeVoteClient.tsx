@@ -1,7 +1,5 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Transaction } from "@solana/web3.js";
 import {
   ArrowRight,
   CheckCircle2,
@@ -13,9 +11,11 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
-import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import { formatDateTime, formatPower } from "~/lib/format";
+import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -26,32 +26,10 @@ import {
 } from "~/ui/primitives/card";
 import { Input } from "~/ui/primitives/input";
 import { Skeleton } from "~/ui/primitives/skeleton";
-import { toast } from "sonner";
 
-// ─── Constants & Helpers ────────────────────────────────────────────
+// ─── Constants ──────────────────────────────────────────────────────
 
 const CULT_DECIMALS = 6;
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
-function formatPower(raw: number): string {
-  const human = raw / Math.pow(10, CULT_DECIMALS);
-  if (human >= 1e6) return (human / 1e6).toFixed(2) + "M";
-  if (human >= 1e3) return (human / 1e3).toFixed(2) + "K";
-  return human.toFixed(2);
-}
-
-function formatDate(s: string): string {
-  return new Date(s).toLocaleDateString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -76,108 +54,42 @@ type ProposalDetail = Proposal & {
 
 type StakeFormProps = {
   wallet: string | null;
-  sendTransaction: ReturnType<typeof useWallet>["sendTransaction"];
-  connection: ReturnType<typeof useConnection>["connection"];
   openConnectModal: () => void;
   refreshBalances: () => void;
+  stake: (amount: string, lockDuration: number) => Promise<boolean>;
+  unstake: (amount: string) => Promise<boolean>;
+  stakePending: boolean;
+  unstakePending: boolean;
 };
 
 function StakeForm({
   wallet,
-  sendTransaction,
-  connection,
   openConnectModal,
   refreshBalances,
+  stake,
+  unstake,
+  stakePending,
+  unstakePending,
 }: StakeFormProps) {
   const [stakeAmount, setStakeAmount] = useState("");
   const [unstakeAmount, setUnstakeAmount] = useState("");
   const [lockDuration, setLockDuration] = useState<number>(LOCK_30_DAYS);
-  const [stakeTxPending, setStakeTxPending] = useState(false);
-  const [unstakeTxPending, setUnstakeTxPending] = useState(false);
 
   const handleStake = useCallback(async () => {
-    if (!wallet || !sendTransaction) {
-      openConnectModal();
-      return;
-    }
-    const amount = stakeAmount.trim();
-    if (!amount || Number.parseFloat(amount) <= 0) {
-      toast.error("Enter a positive amount");
-      return;
-    }
-    setStakeTxPending(true);
-    try {
-      const res = await fetch("/api/governance/stake/prepare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet, amount, lockDuration }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (res.status === 503) {
-          toast.error("Staking is not available yet. Deploy the program and set CULT_STAKING_PROGRAM_ID.");
-        } else {
-          toast.error(data.error ?? "Failed to prepare stake");
-        }
-        return;
-      }
-      const txBuf = base64ToUint8Array(data.transaction);
-      const tx = Transaction.from(txBuf);
-      const sig = await sendTransaction(tx, connection, {
-        skipPreflight: false,
-        preflightCommitment: "confirmed",
-      });
-      toast.success("Stake submitted: " + sig.slice(0, 8) + "…");
+    const ok = await stake(stakeAmount, lockDuration);
+    if (ok) {
       setStakeAmount("");
       refreshBalances();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Stake failed");
-    } finally {
-      setStakeTxPending(false);
     }
-  }, [wallet, sendTransaction, connection, stakeAmount, lockDuration, openConnectModal, refreshBalances]);
+  }, [stake, stakeAmount, lockDuration, refreshBalances]);
 
   const handleUnstake = useCallback(async () => {
-    if (!wallet || !sendTransaction) {
-      openConnectModal();
-      return;
-    }
-    const amount = unstakeAmount.trim();
-    if (!amount || Number.parseFloat(amount) <= 0) {
-      toast.error("Enter a positive amount");
-      return;
-    }
-    setUnstakeTxPending(true);
-    try {
-      const res = await fetch("/api/governance/unstake/prepare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet, amount }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (res.status === 503) {
-          toast.error("Staking is not available yet.");
-        } else {
-          toast.error(data.error ?? "Failed to prepare unstake");
-        }
-        return;
-      }
-      const txBuf = base64ToUint8Array(data.transaction);
-      const tx = Transaction.from(txBuf);
-      const sig = await sendTransaction(tx, connection, {
-        skipPreflight: false,
-        preflightCommitment: "confirmed",
-      });
-      toast.success("Unstake submitted: " + sig.slice(0, 8) + "…");
+    const ok = await unstake(unstakeAmount);
+    if (ok) {
       setUnstakeAmount("");
       refreshBalances();
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Unstake failed");
-    } finally {
-      setUnstakeTxPending(false);
     }
-  }, [wallet, sendTransaction, connection, unstakeAmount, openConnectModal, refreshBalances]);
+  }, [unstake, unstakeAmount, refreshBalances]);
 
   return (
     <Card className="border-border bg-card">
@@ -234,9 +146,9 @@ function StakeForm({
               />
               <Button
                 onClick={handleStake}
-                disabled={stakeTxPending || !stakeAmount.trim()}
+                disabled={stakePending || !stakeAmount.trim()}
               >
-                {stakeTxPending ? "Sending…" : "Stake"}
+                {stakePending ? "Sending…" : "Stake"}
               </Button>
             </div>
           </div>
@@ -255,9 +167,9 @@ function StakeForm({
               <Button
                 variant="secondary"
                 onClick={handleUnstake}
-                disabled={unstakeTxPending || !unstakeAmount.trim()}
+                disabled={unstakePending || !unstakeAmount.trim()}
               >
-                {unstakeTxPending ? "Sending…" : "Unstake"}
+                {unstakePending ? "Sending…" : "Unstake"}
               </Button>
             </div>
           </div>
@@ -311,7 +223,7 @@ function ProposalCard({
           {proposal.description}
         </CardDescription>
         <p className="text-xs text-muted-foreground">
-          Ends: {formatDate(proposal.endAt)}
+          Ends: {formatDateTime(proposal.endAt)}
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -320,10 +232,10 @@ function ProposalCard({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">
-                  For {formatPower(detail.totals.for)} · Against{" "}
-                  {formatPower(detail.totals.against)}
+                  For {formatPower(detail.totals.for, CULT_DECIMALS)} · Against{" "}
+                  {formatPower(detail.totals.against, CULT_DECIMALS)}
                   {detail.totals.abstain > 0 &&
-                    ` · Abstain ${formatPower(detail.totals.abstain)}`}
+                    ` · Abstain ${formatPower(detail.totals.abstain, CULT_DECIMALS)}`}
                 </span>
               </div>
               <div
@@ -402,9 +314,14 @@ function ProposalCard({
 // ─── Main Component ─────────────────────────────────────────────────
 
 export function StakeVoteClient() {
-  const { connection } = useConnection();
-  const { publicKey, connected, sendTransaction } = useWallet();
-  const wallet = publicKey?.toBase58() ?? null;
+  const {
+    wallet,
+    openConnectModal,
+    stake,
+    unstake,
+    stakePending,
+    unstakePending,
+  } = useStakeTransaction();
 
   const [votingPower, setVotingPower] = useState<number | null>(null);
   const [walletBalanceRaw, setWalletBalanceRaw] = useState<number | null>(null);
@@ -414,10 +331,6 @@ export function StakeVoteClient() {
   const [proposalsLoading, setProposalsLoading] = useState(true);
   const [details, setDetails] = useState<Record<string, ProposalDetail>>({});
   const [votingId, setVotingId] = useState<string | null>(null);
-
-  const openConnectModal = useCallback(() => {
-    window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
-  }, []);
 
   const refreshBalances = useCallback(() => {
     if (!wallet) return;
@@ -550,7 +463,7 @@ export function StakeVoteClient() {
                 Connect your Solana wallet to stake and vote.
               </CardDescription>
             </div>
-            {!connected ? (
+            {!wallet ? (
               <Button onClick={openConnectModal} className="gap-2">
                 <Wallet className="h-4 w-4" />
                 Connect wallet
@@ -571,7 +484,7 @@ export function StakeVoteClient() {
               </div>
             )}
           </div>
-          {connected && (
+          {wallet && (
             <CardContent className="pt-0">
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span>
@@ -611,10 +524,12 @@ export function StakeVoteClient() {
       {/* On-chain staking — always visible; connect wallet to use */}
       <StakeForm
         wallet={wallet}
-        sendTransaction={sendTransaction}
-        connection={connection}
         openConnectModal={openConnectModal}
         refreshBalances={refreshBalances}
+        stake={stake}
+        unstake={unstake}
+        stakePending={stakePending}
+        unstakePending={unstakePending}
       />
 
       {/* Proposals */}

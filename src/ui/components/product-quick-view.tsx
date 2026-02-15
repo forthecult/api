@@ -158,28 +158,57 @@ function MiniGallery({
 /*                         Variant Selector (simplified)                       */
 /* -------------------------------------------------------------------------- */
 
-/** Map option definition name to variant field (same as product-variant-section). */
-function getVariantKey(
-  optionName: string,
-  index: number,
-): "color" | "size" | "gender" | "label" {
-  const lower = optionName.toLowerCase();
-  if (lower.includes("color") || lower.includes("finish")) return "color";
-  if (lower.includes("size")) return "size";
-  if (lower === "option") return "gender";
-  if (
-    lower.includes("men") ||
-    lower.includes("women") ||
-    lower.includes("gender") ||
-    lower.includes("style") ||
-    lower.includes("phone") ||
-    lower.includes("model") ||
-    lower.includes("device") ||
-    lower.includes("grind")
-  )
-    return "gender";
-  if (lower === "variant") return "label";
-  return index === 0 ? "color" : index === 1 ? "gender" : "size";
+/** Set of non-empty variant field values (color, size, gender, label). */
+function getVariantValueSet(v: QuickViewVariant): Set<string> {
+  return new Set(
+    [v.color, v.size, v.gender, v.label]
+      .filter((x): x is string => x != null && String(x).trim() !== "")
+      .map((s) => String(s).trim()),
+  );
+}
+
+/**
+ * Find variant by matching the set of selected option values to the variant's
+ * field values. Option names are not tied to specific columns.
+ */
+function findVariant(
+  variants: QuickViewVariant[],
+  selectedByIndex: Record<number, string>,
+): QuickViewVariant | null {
+  const selectedSet = new Set(
+    Object.values(selectedByIndex)
+      .filter(Boolean)
+      .map((s) => String(s).trim()),
+  );
+  if (selectedSet.size === 0) return null;
+  let match = variants.find((v) => {
+    const variantSet = getVariantValueSet(v);
+    if (variantSet.size !== selectedSet.size) return false;
+    for (const s of selectedSet) {
+      if (!variantSet.has(s)) return false;
+    }
+    return true;
+  });
+  if (match) return match;
+  let best: QuickViewVariant | null = null;
+  let bestSize = 0;
+  for (const v of variants) {
+    const variantSet = getVariantValueSet(v);
+    if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
+      let allIn = true;
+      for (const x of variantSet) {
+        if (!selectedSet.has(x)) {
+          allIn = false;
+          break;
+        }
+      }
+      if (allIn) {
+        best = v;
+        bestSize = variantSet.size;
+      }
+    }
+  }
+  return best;
 }
 
 function VariantSelector({
@@ -214,7 +243,7 @@ function VariantSelector({
     if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
   }, [optionDefinitions]);
 
-  // When selections change, find matching variant (use getVariantKey so "Men/Women" -> gender, etc.)
+  // When selections change, find matching variant by value set (option names not tied to columns)
   React.useEffect(() => {
     if (
       Object.keys(selectedByIndex).length < optionDefinitions.length
@@ -222,25 +251,9 @@ function VariantSelector({
       onSelectVariant(null);
       return;
     }
-    const match = variants.find((v) => {
-      return optionDefinitions.every((opt, idx) => {
-        const sel = selectedByIndex[idx];
-        if (!sel) return false;
-        if (opt.name === "Variant") return (v.label ?? "") === sel;
-        const key = getVariantKey(opt.name, idx);
-        const variantValue =
-          key === "color"
-            ? v.color
-            : key === "size"
-              ? v.size
-              : key === "gender"
-                ? v.gender
-                : v.label;
-        return (variantValue ?? "") === sel;
-      });
-    });
-    onSelectVariant(match ?? null);
-  }, [selectedByIndex, optionDefinitions, variants, onSelectVariant]);
+    const match = findVariant(variants, selectedByIndex);
+    onSelectVariant(match);
+  }, [selectedByIndex, optionDefinitions.length, variants, onSelectVariant]);
 
   // Sync phone option selection when displayed fallback model differs from current (e.g. brand switch)
   React.useEffect(() => {

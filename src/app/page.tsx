@@ -8,6 +8,7 @@ import Link from "next/link";
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
+import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories";
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
 
 import {
@@ -224,8 +225,8 @@ export default async function HomePage() {
     ]);
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
-  // Shop by category: only categories that have products; exclude Currency/Network/Application Token
-  const EXCLUDED_SLUGS = ["currency", "network", "dapp"];
+  // Shop by category: only categories that have products; exclude Currency/Network/Application Token and show-in-all-products (internal)
+  const EXCLUDED_SLUGS = ["currency", "network", "dapp", SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG];
   const topLevelShopFiltered = shopCategories.filter(
     (c) =>
       c.slug &&

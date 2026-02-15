@@ -17,36 +17,6 @@ import { ProductActions, ProductPriceDisplay } from "./product-detail-client";
 import { SecureCheckoutLine } from "./secure-checkout-line";
 import type { ProductOptionDefinition, ProductVariantOption } from "./types";
 
-/** Map option definition to variant field: "color" | "size" | "gender" | "label". */
-function getVariantKey(
-  optionName: string,
-  index: number,
-): "color" | "size" | "gender" | "label" {
-  const lower = optionName.toLowerCase();
-  if (lower.includes("color") || lower.includes("finish")) return "color";
-  if (lower.includes("size")) return "size";
-  // Output, connection type, etc. are their own option type (stored in label, or size for legacy)
-  if (
-    lower.includes("output") ||
-    lower.includes("connection") ||
-    lower.includes("connector")
-  )
-    return "label";
-  if (lower === "option") return "gender"; // neutral fallback when real label unknown (Grind, Device, etc.)
-  if (
-    lower.includes("men") ||
-    lower.includes("women") ||
-    lower.includes("gender") ||
-    lower.includes("style") ||
-    lower.includes("phone") ||
-    lower.includes("model") ||
-    lower.includes("device") ||
-    lower.includes("grind")
-  )
-    return "gender";
-  return index === 0 ? "color" : index === 1 ? "gender" : "size";
-}
-
 const SELECT_STYLES =
   "w-full min-w-0 rounded-md border border-[#2A2A2A] bg-[#1A1A1A] px-3 py-2 text-sm text-[#F5F1EB] focus:border-[#C4873A] focus:outline-none focus:ring-1 focus:ring-[#C4873A]";
 
@@ -144,29 +114,62 @@ function getVariantDisplayLabel(v: ProductVariantOption): string {
   return parts.join(" / ") || "";
 }
 
+/** Set of non-empty variant field values (color, size, gender, label). */
+function getVariantValueSet(v: ProductVariantOption): Set<string> {
+  return new Set(
+    [v.color, v.size, v.gender, v.label]
+      .filter((x): x is string => x != null && String(x).trim() !== "")
+      .map((s) => String(s).trim()),
+  );
+}
+
+/**
+ * Find variant by matching the set of selected option values to the variant's
+ * field values. Option names (Brand, Model, Finishes, etc.) are not tied to
+ * specific columns — any option values can live in color/size/gender/label.
+ * Uses set equality when sizes match; otherwise allows variant set to be a
+ * subset of selected (e.g. UI has Brand + Model but variant only stores full model name).
+ */
 function findVariant(
   variants: ProductVariantOption[],
-  optionDefinitions: ProductOptionDefinition[],
   selectedByIndex: Record<number, string>,
 ): ProductVariantOption | null {
-  const selected = variants.find((v) => {
-    return optionDefinitions.every((opt, idx) => {
-      const value = selectedByIndex[idx];
-      if (value == null) return false;
-      if (opt.name === "Variant") return v.label === value;
-      const key = getVariantKey(opt.name, idx);
-      const variantValue =
-        key === "color"
-          ? v.color
-          : key === "gender"
-            ? v.gender
-            : key === "label"
-              ? (v.label ?? v.size)
-              : v.size;
-      return variantValue === value;
-    });
+  const selectedSet = new Set(
+    Object.values(selectedByIndex)
+      .filter(Boolean)
+      .map((s) => String(s).trim()),
+  );
+  if (selectedSet.size === 0) return null;
+  // Exact match: variant's values exactly equal selected
+  let match = variants.find((v) => {
+    const variantSet = getVariantValueSet(v);
+    if (variantSet.size !== selectedSet.size) return false;
+    for (const s of selectedSet) {
+      if (!variantSet.has(s)) return false;
+    }
+    return true;
   });
-  return selected ?? null;
+  if (match) return match;
+  // Subset match: variant's values all appear in selected (e.g. Brand+Model in UI, variant has only model name)
+  let best: ProductVariantOption | null = null;
+  let bestSize = 0;
+  for (const v of variants) {
+    const variantSet = getVariantValueSet(v);
+    if (variantSet.size > bestSize && variantSet.size <= selectedSet.size) {
+      let allIn = true;
+      for (const x of variantSet) {
+        if (!selectedSet.has(x)) {
+          allIn = false;
+          break;
+        }
+      }
+      if (allIn) {
+        best = v;
+        bestSize = variantSet.size;
+      }
+    }
+  }
+  return best;
 }
 
 export interface ProductVariantSectionProps {
@@ -276,7 +279,7 @@ export function ProductVariantSection({
 
   const selectedVariant =
     hasVariants && optionDefinitions.length > 0 && variants.length > 0
-      ? findVariant(variants, optionDefinitions, selectedByIndex)
+      ? findVariant(variants, selectedByIndex)
       : null;
 
   // Depend on primitive fields to avoid infinite re-renders from new object references
@@ -390,7 +393,7 @@ export function ProductVariantSection({
                     selectedValue={selectedByIndex[optionIndex]}
                     onSelect={(value) => handleOptionSelect(optionIndex, value)}
                     findVariantForValue={(value) =>
-                      findVariant(variants, optionDefinitions, {
+                      findVariant(variants, {
                         ...selectedByIndex,
                         [optionIndex]: value,
                       })
@@ -413,7 +416,6 @@ export function ProductVariantSection({
                       };
                       const variantForValue = findVariant(
                         variants,
-                        optionDefinitions,
                         testSelection,
                       );
                       const outOfStock =

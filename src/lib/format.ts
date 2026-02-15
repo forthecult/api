@@ -43,3 +43,35 @@ export function formatCents(cents: number): string {
   }).format(cents / 100);
 }
 
+/** Compact token amount: 1.5M, 2.3K, 0.001, 0 */
+export function formatTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${Math.round(n).toLocaleString()}`;
+  if (n >= 1) return n.toFixed(1);
+  if (n > 0) return n.toFixed(4);
+  return "0";
+}
+
+/** USD with sensible precision: $1.23, $0.01, $0.000001 */
+export function formatUsd(n: number): string {
+  if (n >= 1) return `$${n.toFixed(2)}`;
+  if (n >= 0.01) return `$${n.toFixed(2)}`;
+  if (n > 0) return `$${n.toFixed(6)}`;
+  return "$0.00";
+}
+
+/** Compact market cap: $1.5M, $2.3k */
+export function formatMarketCap(n: number): string {
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
+  return `$${n.toFixed(0)}`;
+}
+
+/** Raw token amount with decimals (e.g. voting power): 1.5M, 2.3K, 1.00 */
+export function formatPower(raw: number, decimals: number = 6): string {
+  const human = raw / Math.pow(10, decimals);
+  if (human >= 1e6) return (human / 1e6).toFixed(2) + "M";
+  if (human >= 1e3) return (human / 1e3).toFixed(2) + "K";
+  return human.toFixed(2);
+}
+

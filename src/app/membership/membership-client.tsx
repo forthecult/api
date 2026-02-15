@@ -4,12 +4,10 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  Coins,
   Crown,
   Globe,
   Minus,
   Shield,
-  Signal,
   Smartphone,
   Sparkles,
   Star,
@@ -20,15 +18,22 @@ import {
   Wallet,
   Zap,
 } from "lucide-react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { Transaction } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { cn } from "~/lib/cn";
-import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import {
+  formatMarketCap,
+  formatTokens,
+  formatUsd,
+} from "~/lib/format";
+import {
+  MEMBERSHIP_BENEFIT_ROWS,
+  MEMBERSHIP_FAQ,
+  MEMBERSHIP_TIERS,
+} from "~/lib/membership-tiers";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -47,178 +52,10 @@ import {
   TableRow,
 } from "~/ui/primitives/table";
 
-// ---------------------------------------------------------------------------
-// Tier definitions
-// ---------------------------------------------------------------------------
-
-interface Tier {
-  id: number;
-  name: string;
-  tagline: string;
-  accent: string;
-  accentBg: string;
-  accentBorder: string;
-  icon: React.ElementType;
-  benefits: {
-    esim: string;
-    esimDetail: string;
-    shipping: string;
-    shippingDetail: string;
-    extras: string[];
-  };
-  popular?: boolean;
-}
-
-const TIERS: Tier[] = [
-  {
-    id: 4,
-    name: "Tier 4",
-    tagline: "Start your journey",
-    accent: "text-muted-foreground",
-    accentBg: "bg-muted/60",
-    accentBorder: "border-border",
-    icon: Signal,
-    benefits: {
-      esim: "10% off",
-      esimDetail: "10% discount on all eSIM data plans",
-      shipping: "Standard rates",
-      shippingDetail: "Standard shipping rates apply",
-      extras: ["Community access", "Governance voting"],
-    },
-  },
-  {
-    id: 3,
-    name: "Tier 3",
-    tagline: "Level up your membership",
-    accent: "text-chart-2",
-    accentBg: "bg-chart-2/10",
-    accentBorder: "border-chart-2/30",
-    icon: Shield,
-    benefits: {
-      esim: "15% off",
-      esimDetail: "15% discount on all eSIM data plans",
-      shipping: "20% off",
-      shippingDetail: "20% off all shipping costs",
-      extras: [
-        "Community access",
-        "Governance voting",
-        "Early product access",
-      ],
-    },
-  },
-  {
-    id: 2,
-    name: "Tier 2",
-    tagline: "Unlock serious value",
-    accent: "text-chart-4",
-    accentBg: "bg-chart-4/10",
-    accentBorder: "border-chart-4/30",
-    icon: Star,
-    popular: true,
-    benefits: {
-      esim: "Free eSIM",
-      esimDetail: "One free eSIM card included with your membership",
-      shipping: "50% off",
-      shippingDetail: "50% off all shipping costs",
-      extras: [
-        "Community access",
-        "Governance voting",
-        "Early product access",
-        "Member-only drops",
-      ],
-    },
-  },
-  {
-    id: 1,
-    name: "Tier 1",
-    tagline: "The ultimate membership",
-    accent: "text-chart-1",
-    accentBg: "bg-chart-1/10",
-    accentBorder: "border-chart-1/30",
-    icon: Crown,
-    benefits: {
-      esim: "Premium eSIM",
-      esimDetail:
-        "Premium free eSIM card with higher data allowance included",
-      shipping: "Free",
-      shippingDetail: "Free shipping on every order, worldwide",
-      extras: [
-        "Community access",
-        "Governance voting",
-        "Early product access",
-        "Member-only drops",
-        "Priority support",
-        "Exclusive product access",
-        "Daily SOL creator fee distribution",
-      ],
-    },
-  },
-];
-
-// Display order: Tier 4 (entry) on left → Tier 1 (premium) on right (worst to best)
-const TIERS_DISPLAY = TIERS;
+import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 
 // ---------------------------------------------------------------------------
-// Benefits comparison rows for table
-// ---------------------------------------------------------------------------
-
-type BenefitRow = {
-  label: string;
-  icon: React.ElementType;
-  /** Values per tier id (1-4) */
-  values: Record<number, string | boolean>;
-};
-
-const BENEFIT_ROWS: BenefitRow[] = [
-  {
-    label: "eSIM Discount",
-    icon: Smartphone,
-    values: { 4: "10% off", 3: "15% off", 2: "Free eSIM", 1: "Premium eSIM" },
-  },
-  {
-    label: "Shipping",
-    icon: Truck,
-    values: {
-      4: "Standard",
-      3: "20% off",
-      2: "50% off",
-      1: "Free",
-    },
-  },
-  {
-    label: "Community Access",
-    icon: Users,
-    values: { 4: true, 3: true, 2: true, 1: true },
-  },
-  {
-    label: "Voting",
-    icon: Shield,
-    values: { 4: true, 3: true, 2: true, 1: true },
-  },
-  {
-    label: "Early Product Access",
-    icon: Zap,
-    values: { 4: false, 3: true, 2: true, 1: true },
-  },
-  {
-    label: "Member-Only Drops",
-    icon: Sparkles,
-    values: { 4: false, 3: false, 2: true, 1: true },
-  },
-  {
-    label: "Exclusive Products",
-    icon: Crown,
-    values: { 4: false, 3: false, 2: false, 1: true },
-  },
-  {
-    label: "Creator Fee Distribution",
-    icon: Coins,
-    values: { 4: false, 3: false, 2: false, 1: true },
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Live pricing types + helpers
+// Live pricing types
 // ---------------------------------------------------------------------------
 
 /** Shape of the /api/governance/token-price response */
@@ -236,73 +73,9 @@ interface TokenPriceResponse {
   };
 }
 
-function formatTokens(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n).toLocaleString()}`;
-  if (n >= 1) return n.toFixed(1);
-  if (n > 0) return n.toFixed(4);
-  return "0";
-}
-
-function formatUsd(n: number): string {
-  if (n >= 1) return `$${n.toFixed(2)}`;
-  if (n >= 0.01) return `$${n.toFixed(2)}`;
-  if (n > 0) return `$${n.toFixed(6)}`;
-  return "$0.00";
-}
-
-function formatMarketCap(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
-}
-
-// ---------------------------------------------------------------------------
-// FAQ
-// ---------------------------------------------------------------------------
-
-const FAQ_ITEMS = [
-  {
-    q: "How does staking work?",
-    a: "When you stake tokens, they are locked in a smart contract on Solana for your chosen duration (30 days or 12 months). Your membership tier is active for the entire staking period. When the period ends, you can unstake to retrieve your tokens or re-stake to maintain your membership.",
-  },
-  {
-    q: "Why are staking requirements dynamic?",
-    a: "The required stake amount adjusts based on the token's market cap and the number of existing stakers—similar to a bonding curve. This ensures membership remains accessible as the price fluctuates and rewards early adopters.",
-  },
-  {
-    q: "What happens when my staking period ends?",
-    a: "Your membership benefits remain active until the end of the staking period. You'll receive a notification before it expires so you can choose to re-stake. Your tokens are returned to your wallet when you unstake.",
-  },
-  {
-    q: "Can I upgrade my tier?",
-    a: "Yes. You can stake additional tokens to move up to a higher tier at any time. The additional tokens will be locked for the same duration as your original stake.",
-  },
-  {
-    q: "What eSIM card do I get?",
-    a: "Tier 2 members receive a standard eSIM card. Tier 1 members receive a premium eSIM card with higher data allowances. Both are activated instantly and work in 200+ countries.",
-  },
-  {
-    q: "Why stake for 12 months?",
-    a: "Staking for 12 months gives you 14 months of eSIM coverage—that's 2 extra months free. It also demonstrates long-term commitment to the community, which strengthens the ecosystem for everyone.",
-  },
-];
-
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
-}
-
 export function MembershipClient() {
   const [selectedTier, setSelectedTier] = useState<number>(2);
   const [stakeDuration, setStakeDuration] = useState<"30d" | "12m">("30d");
-  const [stakePending, setStakePending] = useState(false);
 
   // eSIM claim state
   const [claimEligible, setClaimEligible] = useState(false);
@@ -315,9 +88,7 @@ export function MembershipClient() {
   const [pricingData, setPricingData] = useState<TokenPriceResponse["data"] | null>(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
-  const wallet = publicKey?.toBase58() ?? null;
+  const { wallet, openConnectModal, stake, stakePending } = useStakeTransaction();
 
   // Fetch live pricing from the API (polls every 30s)
   useEffect(() => {
@@ -368,7 +139,6 @@ export function MembershipClient() {
   const tokenSymbol = pricingData?.token.symbol ?? "TOKEN";
   const tokenPrice = pricingData?.token.priceUsd ?? 0;
   const marketCap = pricingData?.market.marketCapUsd ?? 0;
-  const stakerCount = pricingData?.staking.stakerCount ?? 0;
   const pricingBracket = pricingData?.pricing.bracket ?? "";
 
   const tierPriceMap = useMemo(() => {
@@ -385,15 +155,11 @@ export function MembershipClient() {
   const stakeAmount = selectedTierPrice?.tokensNeeded ?? 0;
 
   const selectedTierData = useMemo(
-    () => TIERS.find((t) => t.id === selectedTier)!,
+    () => MEMBERSHIP_TIERS.find((t) => t.id === selectedTier)!,
     [selectedTier],
   );
 
   const lockDuration = stakeDuration === "12m" ? LOCK_12_MONTHS : LOCK_30_DAYS;
-
-  const openConnectModal = useCallback(() => {
-    window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
-  }, []);
 
   const scrollToTiers = useCallback(() => {
     document.getElementById("tiers")?.scrollIntoView({ behavior: "smooth" });
@@ -404,45 +170,8 @@ export function MembershipClient() {
   }, []);
 
   const handleStake = useCallback(async () => {
-    if (!wallet || !sendTransaction) {
-      openConnectModal();
-      return;
-    }
-    setStakePending(true);
-    try {
-      const res = await fetch("/api/governance/stake/prepare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          wallet,
-          amount: stakeAmount.toString(),
-          lockDuration,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        if (res.status === 503) {
-          toast.error("Staking is not available yet.");
-        } else {
-          toast.error(data.error ?? "Failed to prepare stake transaction");
-        }
-        return;
-      }
-      const txBuf = base64ToUint8Array(data.transaction);
-      const tx = Transaction.from(txBuf);
-      const sig = await sendTransaction(tx, connection, {
-        skipPreflight: false,
-        preflightCommitment: "confirmed",
-      });
-      toast.success(
-        `Staked ${formatTokens(stakeAmount)} ${tokenSymbol} for ${stakeDuration === "12m" ? "12 months" : "30 days"}! Tx: ${sig.slice(0, 8)}…`,
-      );
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Stake failed");
-    } finally {
-      setStakePending(false);
-    }
-  }, [wallet, sendTransaction, connection, stakeAmount, lockDuration, stakeDuration, openConnectModal, tokenSymbol]);
+    await stake(stakeAmount.toString(), lockDuration);
+  }, [stake, stakeAmount, lockDuration]);
 
   // ------ eSIM Claim handler ------
   const handleClaimEsim = useCallback(async () => {
@@ -570,7 +299,7 @@ export function MembershipClient() {
                     Tier
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {TIERS_DISPLAY.map((tier) => {
+                    {MEMBERSHIP_TIERS.map((tier) => {
                       const Icon = tier.icon;
                       const isSelected = selectedTier === tier.id;
                       return (
@@ -666,11 +395,11 @@ export function MembershipClient() {
                         {extraUsd > 0
                           ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
                           : "Upgrade to "}
-                        {TIERS.find((t) => t.id === selectedTier - 1)?.name}
+                        {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier - 1)?.name}
                         {" — "}
-                        {TIERS.find((t) => t.id === selectedTier - 1)?.benefits.esimDetail}
+                        {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier - 1)?.benefits.esimDetail}
                         {" and "}
-                        {TIERS.find((t) => t.id === selectedTier - 1)?.benefits.shippingDetail.toLowerCase()}.
+                        {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier - 1)?.benefits.shippingDetail.toLowerCase()}.
                       </p>
                     </div>
                   );
@@ -823,7 +552,7 @@ export function MembershipClient() {
           </div>
 
           <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {TIERS_DISPLAY.map((tier) => {
+            {MEMBERSHIP_TIERS.map((tier) => {
               const Icon = tier.icon;
               const isSelected = selectedTier === tier.id;
               const tierPrice = tierPriceMap[tier.id];
@@ -977,7 +706,7 @@ export function MembershipClient() {
                   <TableHead className="min-w-[180px] bg-muted/30">
                     Benefit
                   </TableHead>
-                  {TIERS_DISPLAY.map((tier) => {
+                  {MEMBERSHIP_TIERS.map((tier) => {
                     const Icon = tier.icon;
                     return (
                       <TableHead
@@ -1005,7 +734,7 @@ export function MembershipClient() {
                       Stake Required
                     </div>
                   </TableCell>
-                  {TIERS_DISPLAY.map((tier) => {
+                  {MEMBERSHIP_TIERS.map((tier) => {
                     const tp = tierPriceMap[tier.id];
                     return (
                       <TableCell
@@ -1030,7 +759,7 @@ export function MembershipClient() {
                   })}
                 </TableRow>
 
-                {BENEFIT_ROWS.map((row) => {
+                {MEMBERSHIP_BENEFIT_ROWS.map((row) => {
                   const Icon = row.icon;
                   return (
                     <TableRow key={row.label}>
@@ -1040,7 +769,7 @@ export function MembershipClient() {
                           {row.label}
                         </div>
                       </TableCell>
-                      {TIERS_DISPLAY.map((tier) => {
+                      {MEMBERSHIP_TIERS.map((tier) => {
                         const val = row.values[tier.id];
                         return (
                           <TableCell
@@ -1114,7 +843,7 @@ export function MembershipClient() {
               {/* Right: visual grid */}
               <div className="flex items-center justify-center bg-muted/20 p-8 md:p-12">
                 <div className="grid w-full max-w-xs grid-cols-2 gap-4">
-                  {TIERS_DISPLAY.map((tier) => {
+                  {MEMBERSHIP_TIERS.map((tier) => {
                     const Icon = tier.icon;
                     return (
                       <div
@@ -1341,7 +1070,7 @@ export function MembershipClient() {
             </h2>
 
             <div className="mt-10 space-y-0 rounded-xl border border-border">
-              {FAQ_ITEMS.map(({ q, a }) => (
+              {MEMBERSHIP_FAQ.map(({ q, a }) => (
                 <details
                   key={q}
                   className="group border-b border-border last:border-b-0 [&[open]_svg]:rotate-180"
