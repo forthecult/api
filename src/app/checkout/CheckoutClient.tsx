@@ -21,6 +21,7 @@ import {
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
+import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -37,7 +38,10 @@ import {
   type BillingAddressFormRef,
 } from "./components/BillingAddressForm";
 import { OrderSummary } from "./components/OrderSummary";
-import { PaymentMethodSection } from "./components/PaymentMethodSection";
+import {
+  type PaymentMethodSectionRef,
+  PaymentMethodSection,
+} from "./components/PaymentMethodSection";
 import {
   ShippingAddressForm,
   type ShippingAddressFormRef,
@@ -123,6 +127,8 @@ export function CheckoutClient() {
     true;
   const shippingFormRef = useRef<ShippingAddressFormRef>(null);
   const billingFormRef = useRef<BillingAddressFormRef>(null);
+  const paymentSectionRef = useRef<PaymentMethodSectionRef>(null);
+  const [canPlaceOrder, setCanPlaceOrder] = useState(false);
 
   const [checkoutState, dispatch] = useReducer(
     checkoutReducer,
@@ -453,6 +459,7 @@ export function CheckoutClient() {
             )}
 
             <PaymentMethodSection
+              ref={paymentSectionRef}
               billingFormRef={billingFormRef}
               buildOrderPayload={buildOrderPayload}
               canShipToCountry={canShipToCountry}
@@ -461,6 +468,7 @@ export function CheckoutClient() {
               navigatingToPay={navigatingToPay}
               onCryptoTotalLabelChange={setCryptoTotalLabel}
               onPaymentMethodKeyChange={setSelectedPaymentMethodKey}
+              onPaymentReadyChange={setCanPlaceOrder}
               setNavigatingToPay={setNavigatingToPay}
               setValidationErrors={setValidationErrors}
               shippingFormRef={shippingFormRef}
@@ -503,6 +511,33 @@ export function CheckoutClient() {
               total={total}
             />
           </div>
+        </div>
+
+        {/* Sticky Place order bar — visible total + CTA so checkout is always obvious */}
+        <div
+          className={`
+            sticky bottom-0 z-10 mt-6 flex flex-wrap items-center justify-between
+            gap-4 border-t border-border bg-background/95 px-4 py-4
+            backdrop-blur supports-[backdrop-filter]:bg-background/80
+          `}
+        >
+          <div className="flex items-baseline gap-2">
+            <span className="text-sm font-medium text-muted-foreground">
+              Total
+            </span>
+            <span className="text-lg font-semibold">
+              <FiatPrice usdAmount={total} />
+            </span>
+          </div>
+          <Button
+            className="min-w-[12rem] shrink-0"
+            disabled={!canPlaceOrder}
+            onClick={() => paymentSectionRef.current?.triggerPay()}
+            size="lg"
+            type="button"
+          >
+            {canPlaceOrder ? "Place order" : "Select a payment method"}
+          </Button>
         </div>
       </div>
     </div>

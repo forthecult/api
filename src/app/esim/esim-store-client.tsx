@@ -15,7 +15,9 @@ import {
   getUnlimitedPlanGroupKey,
 } from "~/lib/esim-format";
 import { useCart } from "~/lib/hooks/use-cart";
+import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
+import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
@@ -217,6 +219,7 @@ function PackageCard({
   /** Query string to append so Back from detail returns to same filters (e.g. tab=countries&country=5). */
   returnQuery?: string;
 }) {
+  const { currency } = useCountryCurrency();
   const detailHref = returnQuery
     ? `/esim/${pkg.id}?${returnQuery}`
     : `/esim/${pkg.id}`;
@@ -304,6 +307,11 @@ function PackageCard({
               <span className="text-xl font-bold text-primary">
                 ${pkg.price}
               </span>
+              {currency !== "USD" && (
+                <span className="text-sm text-muted-foreground">
+                  ≈ <FiatPrice usdAmount={Number(pkg.price)} />
+                </span>
+              )}
               <CryptoPrice
                 className="text-sm text-muted-foreground"
                 usdAmount={Number(pkg.price)}
@@ -348,6 +356,7 @@ function UnlimitedPlanCard({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const selected = groupPackages[selectedIndex] ?? groupPackages[0]!;
   const has5g = groupPackages.some((p) => p.has5g);
+  const { currency } = useCountryCurrency();
   const detailHref = selected
     ? returnQuery
       ? `/esim/${selected.id}?${returnQuery}`
@@ -390,6 +399,11 @@ function UnlimitedPlanCard({
             </span>
             <span className="text-xs text-muted-foreground">USD</span>
           </div>
+          {currency !== "USD" && (
+            <span className="text-sm text-muted-foreground">
+              ≈ <FiatPrice usdAmount={Number(selected.price)} />
+            </span>
+          )}
           <CryptoPrice
             className="text-sm text-muted-foreground"
             usdAmount={Number(selected.price)}

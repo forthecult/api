@@ -7,7 +7,15 @@ import { PublicKey } from "@solana/web3-compat";
 import { Loader2, Lock } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import { PAYMENT_CONFIG } from "~/app";
 import {
@@ -115,6 +123,8 @@ export interface PaymentMethodSectionProps {
   onCryptoTotalLabelChange?: (label: null | string) => void;
   /** Callback when the selected payment method key changes (for discount resolution). */
   onPaymentMethodKeyChange?: (key: null | string) => void;
+  /** Called when user can place order (payment method + sub-option selected). Used for sticky Place order bar. */
+  onPaymentReadyChange?: (canPlaceOrder: boolean) => void;
   setNavigatingToPay: (v: boolean) => void;
   setValidationErrors: (errors: string[]) => void;
   shippingFormRef: React.RefObject<null | ShippingAddressFormRef>;
@@ -123,23 +133,36 @@ export interface PaymentMethodSectionProps {
   validationErrors: string[];
 }
 
-export function PaymentMethodSection({
-  billingFormRef,
-  buildOrderPayload,
-  canShipToCountry,
-  countryOptions,
-  hasEsimInCart = false,
-  navigatingToPay,
-  onCryptoTotalLabelChange,
-  onPaymentMethodKeyChange,
-  setNavigatingToPay,
-  setValidationErrors,
-  shippingFormRef,
-  total,
-  totalCents,
-  validationErrors,
-}: PaymentMethodSectionProps) {
+export interface PaymentMethodSectionRef {
+  canPlaceOrder: boolean;
+  triggerPay: () => void;
+}
+
+export const PaymentMethodSection = forwardRef<
+  PaymentMethodSectionRef,
+  PaymentMethodSectionProps
+>(function PaymentMethodSection(
+  {
+    billingFormRef,
+    buildOrderPayload,
+    canShipToCountry,
+    countryOptions,
+    hasEsimInCart = false,
+    navigatingToPay,
+    onCryptoTotalLabelChange,
+    onPaymentMethodKeyChange,
+    onPaymentReadyChange,
+    setNavigatingToPay,
+    setValidationErrors,
+    shippingFormRef,
+    total,
+    totalCents,
+    validationErrors,
+  },
+  ref,
+) {
   const router = useRouter();
+  const payHandlerRef = useRef<() => void>(() => {});
 
   const [paymentMethod, setPaymentMethod] = useState<"" | PaymentMethodTop>("");
   const [stablecoinToken, setStablecoinToken] = useState<"usdc" | "usdt">(
@@ -227,6 +250,25 @@ export function PaymentMethodSection({
     [visibility],
   );
   const solanaPayConfigured = Boolean(getSolanaPayRecipient());
+
+  const canPlaceOrder = Boolean(
+    paymentMethod !== "" &&
+      (paymentMethod !== "crypto" || paymentSubOption !== "") &&
+      (paymentMethod !== "stablecoins" || paymentSubOption !== ""),
+  );
+
+  useEffect(() => {
+    onPaymentReadyChange?.(canPlaceOrder);
+  }, [canPlaceOrder, onPaymentReadyChange]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      canPlaceOrder,
+      triggerPay: () => payHandlerRef.current(),
+    }),
+    [canPlaceOrder],
+  );
 
   useEffect(() => {
     if (paymentMethod !== "crypto") return;
@@ -1452,6 +1494,7 @@ export function PaymentMethodSection({
           </div>
         )}
         {paymentMethod === "credit-card" ? (
+          (payHandlerRef.current = handleCardPayment),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay}
@@ -1472,6 +1515,7 @@ export function PaymentMethodSection({
             )}
           </Button>
         ) : paymentMethod === "paypal" && PAYMENT_CONFIG.paypalEnabled ? (
+          (payHandlerRef.current = handlePlaceOrder),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay}
@@ -1498,6 +1542,7 @@ export function PaymentMethodSection({
             )}
           </Button>
         ) : isBtcPaySupported ? (
+          (payHandlerRef.current = handleGoToBtcPay),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay}
@@ -1519,6 +1564,7 @@ export function PaymentMethodSection({
             )}
           </Button>
         ) : isEvmPaySupported ? (
+          (payHandlerRef.current = handleGoToEthPay),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay || !canShipToCountry}
@@ -1541,6 +1587,7 @@ export function PaymentMethodSection({
             )}
           </Button>
         ) : isSolanaPaySupported ? (
+          (payHandlerRef.current = handleGoToCryptoPay),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay || !canShipToCountry}
@@ -1569,6 +1616,7 @@ export function PaymentMethodSection({
                           : "Pay with Solana"}
           </Button>
         ) : isSuiPaySupported ? (
+          (payHandlerRef.current = handleGoToCryptoPay),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay || !canShipToCountry}
@@ -1579,6 +1627,7 @@ export function PaymentMethodSection({
             {navigatingToPay ? "Redirecting…" : "Pay with SUI"}
           </Button>
         ) : isTonPaySupported ? (
+          (payHandlerRef.current = handleGoToTonPay),
           <Button
             className={paymentButtonClass}
             disabled={navigatingToPay || !canShipToCountry}
@@ -1589,6 +1638,7 @@ export function PaymentMethodSection({
             {navigatingToPay ? "Redirecting…" : "Pay with TON"}
           </Button>
         ) : paymentMethod === "" ? (
+          (payHandlerRef.current = () => {}),
           <p
             className={`
             rounded-md border border-border bg-muted/50 px-4 py-3.5 text-base
@@ -1598,6 +1648,7 @@ export function PaymentMethodSection({
             Select a payment method above.
           </p>
         ) : paymentMethod === "crypto" && paymentSubOption === "" ? (
+          (payHandlerRef.current = () => {}),
           <p
             className={`
             rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
@@ -1607,6 +1658,7 @@ export function PaymentMethodSection({
             Select a crypto option above (e.g. Ethereum, Solana, Crustafarian).
           </p>
         ) : paymentMethod === "stablecoins" ? (
+          (payHandlerRef.current = () => {}),
           <p
             className={`
             rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
@@ -1616,6 +1668,7 @@ export function PaymentMethodSection({
             Select USDC or USDT and a network above.
           </p>
         ) : (
+          (payHandlerRef.current = () => {}),
           <p
             className={`
             rounded-md border border-border bg-muted/50 px-4 py-3 text-sm
@@ -2033,4 +2086,4 @@ export function PaymentMethodSection({
       />
     </>
   );
-}
+});
