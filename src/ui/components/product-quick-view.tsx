@@ -258,6 +258,13 @@ export function ProductQuickView({
             data-[state=closed]:animate-out data-[state=closed]:fade-out-0
             data-[state=closed]:zoom-out-95
           `,
+          "quickview-dialog",
+          "[&_[data-slot=dialog-close]]:size-10",
+          "[&_[data-slot=dialog-close]]:rounded-full",
+          "[&_[data-slot=dialog-close]]:border-2 [&_[data-slot=dialog-close]]:border-border",
+          "[&_[data-slot=dialog-close]]:bg-background [&_[data-slot=dialog-close]]:opacity-100",
+          "[&_[data-slot=dialog-close]]:shadow-lg",
+          "[&_[data-slot=dialog-close]]:hover:bg-muted",
         )}
       >
         <DialogTitle className="sr-only">
@@ -597,6 +604,18 @@ function expandedSelectedSet(selectedSet: Set<string>): Set<string> {
   return out;
 }
 
+/** True if selected value s is contained in variantSet (exact, or when s contains " / ", all parts of s are in variantSet — Printify-style combined values). */
+function selectedValueInVariantSet(s: string, variantSet: Set<string>): boolean {
+  const sLower = s.toLowerCase().trim();
+  const variantLower = new Set([...variantSet].map((v) => v.toLowerCase()));
+  if (variantSet.has(s) || variantLower.has(sLower)) return true;
+  const expanded = expandSizeValueForMatching(s);
+  if (expanded.some((e) => variantSet.has(e) || variantLower.has(e))) return true;
+  const parts = s.split(/\s*\/\s*/).map((p) => p.trim().toLowerCase()).filter(Boolean);
+  if (parts.length > 1 && parts.every((p) => variantLower.has(p))) return true;
+  return false;
+}
+
 /**
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names are not tied to specific columns.
@@ -651,20 +670,12 @@ function findVariant(
   }
   if (best) return best;
 
-  // 3. Superset: selected set ⊆ variant (apparel: UI shows only Size "L", variant has size "L" + color "Black")
+  // 3. Superset: selected set ⊆ variant (apparel: Size "L"; Printify: option "8\" x 0.75\" / 38 - 40 mm" matches variant parts)
   for (const v of variants) {
     const variantSet = getVariantValueSet(v);
     let allSelectedInVariant = true;
     for (const s of selectedSet) {
-      const sLower = s.toLowerCase();
-      const inVariant =
-        variantSet.has(s) ||
-        [...variantSet].some(
-          (vVal) =>
-            vVal.toLowerCase() === sLower ||
-            expandSizeValueForMatching(s).includes(vVal.toLowerCase()),
-        );
-      if (!inVariant) {
+      if (!selectedValueInVariantSet(s, variantSet)) {
         allSelectedInVariant = false;
         break;
       }
@@ -839,19 +850,13 @@ function VariantSelector({
     Record<number, string>
   >({});
 
-  // Auto-select single-value options; for phone models use first brand's latest model, else first value
+  // Auto-select only single-value options (hidden from UI); do not pre-select any multi-value option — customer must choose
   React.useEffect(() => {
     const initial: Record<number, string> = {};
     optionDefinitions.forEach((opt, idx) => {
       const values = (opt.values ?? []).filter(Boolean);
-      if (values.length < 1) return;
-      if (isPhoneModelsOption(opt.name, values)) {
-        const groups = groupPhoneModelsByBrand(values);
-        const first = groups[0]?.models[0];
-        if (first) initial[idx] = first;
-      } else {
-        initial[idx] = values[0]!;
-      }
+      if (values.length !== 1) return;
+      initial[idx] = values[0]!;
     });
     if (Object.keys(initial).length > 0) setSelectedByIndex(initial);
   }, [optionDefinitions]);

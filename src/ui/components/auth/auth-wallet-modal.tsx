@@ -269,10 +269,12 @@ export function AuthWalletModal({
       solanaConnectStartedRef.current = false;
       const adapterName = wallet.adapter.name;
       setPendingSolanaConnect(true);
-      // Defer select() to avoid wallet extension redefinition errors on first interaction.
+      // Defer select() so the wallet extension (e.g. Phantom) has time to settle and
+      // we avoid "Cannot redefine property: phantom" / first-click-does-nothing.
+      const DEFER_MS = 50;
       setTimeout(() => {
         select(adapterName);
-      }, 0);
+      }, DEFER_MS);
     },
     [selectedWallet, select],
   );
@@ -896,11 +898,27 @@ export function AuthWalletModal({
                       disabled:opacity-50
                     `,
                   )}
-                  disabled={connecting}
+                  disabled={
+                    connecting ||
+                    (selectedChain === "solana" && pendingSolanaConnect)
+                  }
                   onClick={() => handleSelectNetwork("solana")}
                   type="button"
                 >
-                  <span className="flex-1 font-medium">Solana</span>
+                  <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
+                    <Image
+                      src="/crypto/solana/solanaLogoMark.svg"
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
+                  <span className="flex-1 font-medium">
+                    {selectedChain === "solana" && pendingSolanaConnect
+                      ? "Connecting…"
+                      : "Solana"}
+                  </span>
                   <ChevronRight
                     className={`
                     size-4 shrink-0 text-muted-foreground
@@ -923,6 +941,15 @@ export function AuthWalletModal({
                   onClick={() => handleSelectNetwork("ethereum")}
                   type="button"
                 >
+                  <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/20">
+                    <Image
+                      src="/crypto/ethereum/ethereum-logo.svg"
+                      alt=""
+                      width={32}
+                      height={32}
+                      className="object-contain"
+                    />
+                  </div>
                   <span className="flex-1 font-medium">Ethereum (EVM)</span>
                   <ChevronRight
                     className={`

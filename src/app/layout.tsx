@@ -20,6 +20,7 @@ import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
 import { CriticalRoutePrefetcher } from "~/ui/components/critical-route-prefetcher";
+import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
 import { ConditionalHeader } from "~/ui/components/header/conditional-header";
 import {
   OrganizationStructuredData,
@@ -229,7 +230,9 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
     <>
       <ConditionalHeader showAuth={true} />
       <main className="flex min-h-screen flex-col bg-background">
-        {children}
+        <MainWithDogePadding className="flex flex-1 flex-col">
+          {children}
+        </MainWithDogePadding>
       </main>
       <ConditionalFooter />
       <SupportChatWidgetWrapper />

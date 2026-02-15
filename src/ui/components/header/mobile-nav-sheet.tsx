@@ -18,6 +18,7 @@ import * as React from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";
+import { orderCategoriesBySection } from "~/lib/shop-sections";
 import { countryFlag } from "~/lib/country-flag";
 import {
   COUNTRY_OPTIONS_ALPHABETICAL,
@@ -240,7 +241,7 @@ export function MobileNavSheet({
               </button>
               {shopExpanded && (
                 <ul className="mt-1 ml-2 space-y-0.5 border-l border-muted pl-3">
-                  {categories.map((cat) => {
+                  {orderCategoriesBySection(categories).map((cat) => {
                     const href = cat.slug ? `/${cat.slug}` : "/products";
                     return (
                       <li key={cat.id}>

@@ -385,6 +385,19 @@ function expandedSelectedLower(selectedSet: Set<string>): Set<string> {
   return out;
 }
 
+/** True if selected value s (lowercase) is in variantLower, or when s contains " / ", all parts of s are in variantLower (Printify-style combined option values). */
+function selectedValueInVariantSetLower(
+  s: string,
+  variantLower: Set<string>,
+): boolean {
+  if (variantLower.has(s)) return true;
+  if ([...variantLower].some((vVal) => expandSizeValueForMatching(s).includes(vVal)))
+    return true;
+  const parts = s.split(/\s*\/\s*/).map((p) => p.trim().toLowerCase()).filter(Boolean);
+  if (parts.length > 1 && parts.every((p) => variantLower.has(p))) return true;
+  return false;
+}
+
 /**
  * Find variant by matching the set of selected option values to the variant's
  * field values. Option names (Brand, Model, Finishes, etc.) are not tied to
@@ -441,15 +454,12 @@ function findVariant(
   }
   if (bestSubset) return bestSubset;
 
-  // 3. Selected set ⊆ variant (apparel: UI shows only Size, variant has size "L" + color "Black")
+  // 3. Selected set ⊆ variant (apparel: Size "L"; Printify: "8\" x 0.75\" / 38 - 40 mm" matches variant parts)
   for (const v of variants) {
     const variantLower = toLowerSet(getVariantValueSet(v));
     let allSelectedInVariant = true;
     for (const s of selectedLower) {
-      const match =
-        variantLower.has(s) ||
-        [...variantLower].some((vVal) => expandSizeValueForMatching(s).includes(vVal));
-      if (!match) {
+      if (!selectedValueInVariantSetLower(s, variantLower)) {
         allSelectedInVariant = false;
         break;
       }

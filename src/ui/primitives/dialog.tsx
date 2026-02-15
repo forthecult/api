@@ -58,6 +58,7 @@ function DialogContent({
             [&_svg]:pointer-events-none [&_svg]:shrink-0
             [&_svg:not([class*='size-'])]:size-4
           `}
+          data-slot="dialog-close"
         >
           <XIcon />
           <span className="sr-only">Close</span>

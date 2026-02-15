@@ -251,6 +251,7 @@ export function solanaAuthPlugin() {
                     transactionalSms: false,
                     transactionalTelegram: false,
                     transactionalWebsite: true,
+                    twoFactorEnabled: false,
                     updatedAt: now,
                   },
                   model: "user",
