@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "relivator",
+      "name": "ftc",
       "dependencies": {
         "@better-auth/passkey": "^1.4.18",
         "@metamask/sdk": "^0.34.0",

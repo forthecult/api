@@ -50,10 +50,10 @@ type CouponRow = {
 };
 
 const DISCOUNT_KIND_LABELS: Record<DiscountKind, string> = {
-  amount_off_products: "Amount off products",
-  amount_off_order: "Amount off order",
+  amount_off_products: "Amount of products",
+  amount_off_order: "Amount of subtotal",
   buy_x_get_y: "Buy X, get Y",
-  free_shipping: "Free shipping",
+  free_shipping: "Shipping discount",
 };
 
 type ListResponse = { items: CouponRow[] };

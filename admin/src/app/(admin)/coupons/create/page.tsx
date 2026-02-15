@@ -74,9 +74,6 @@ export default function AdminDiscountCreatePage() {
   const [maxUsesPerCustomerType, setMaxUsesPerCustomerType] = useState<
     "account" | "phone" | "shipping_address" | ""
   >("");
-  const [appliesTo, setAppliesTo] = useState<
-    "subtotal" | "shipping" | "product"
-  >("subtotal");
   const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [productIds, setProductIds] = useState<string[]>([]);
   const [ruleAppliesToEsim, setRuleAppliesToEsim] = useState(false);
@@ -126,17 +123,13 @@ export default function AdminDiscountCreatePage() {
     void fetchOptions();
   }, [fetchOptions]);
 
-  // Sync discountKind ↔ appliesTo bidirectionally
-  const handleAppliesToChange = useCallback(
-    (value: "subtotal" | "shipping" | "product") => {
-      setAppliesTo(value);
-      if (value === "shipping") {
-        setDiscountKind("free_shipping");
-        // Default to 100% (free shipping) but let user change it
+  const handleDiscountKindChange = useCallback(
+    (value: DiscountKind) => {
+      setDiscountKind(value);
+      if (value === "free_shipping") {
         if (!discountValue) setDiscountValue("100");
         setDiscountType("percent");
-      } else if (value === "product") setDiscountKind("amount_off_products");
-      else setDiscountKind("amount_off_order");
+      }
     },
     [discountValue],
   );
@@ -193,7 +186,11 @@ export default function AdminDiscountCreatePage() {
           discountType,
           discountValue: val,
           appliesTo:
-            discountKind === "free_shipping" ? "shipping" : appliesTo,
+            discountKind === "free_shipping"
+              ? "shipping"
+              : discountKind === "amount_off_products"
+                ? "product"
+                : "subtotal",
           maxUses: maxUses.trim() ? Number.parseInt(maxUses, 10) : null,
           maxUsesPerCustomer: maxUsesPerCustomer.trim()
             ? Number.parseInt(maxUsesPerCustomer, 10)
@@ -289,7 +286,6 @@ export default function AdminDiscountCreatePage() {
       ruleProductCountMax,
       ruleOrderTotalMin,
       ruleOrderTotalMax,
-      appliesTo,
       router,
     ],
   );
@@ -408,28 +404,25 @@ export default function AdminDiscountCreatePage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor="appliesTo" className={labelClass}>
-                  Applies to
+                <label htmlFor="discountKind" className={labelClass}>
+                  Discount type
                 </label>
                 <select
-                  id="appliesTo"
-                  value={appliesTo}
+                  id="discountKind"
+                  value={discountKind}
                   onChange={(e) =>
-                    handleAppliesToChange(
-                      e.target.value as "subtotal" | "shipping" | "product",
-                    )
+                    handleDiscountKindChange(e.target.value as DiscountKind)
                   }
                   className={inputClass}
                 >
-                  <option value="subtotal">Order subtotal</option>
-                  <option value="product">
-                    Product (specific items / categories)
+                  <option value="amount_off_products">
+                    Amount of products
                   </option>
-                  <option value="shipping">
-                    Shipping discount (% or $ off shipping)
-                  </option>
+                  <option value="amount_off_order">Amount of subtotal</option>
+                  <option value="free_shipping">Shipping discount</option>
+                  <option value="buy_x_get_y">Buy X, get Y</option>
                 </select>
-                {appliesTo === "product" && (
+                {discountKind === "amount_off_products" && (
                   <p className="text-xs text-muted-foreground">
                     Discount is calculated on qualifying products only.
                     Select products or categories below to restrict which

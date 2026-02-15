@@ -519,11 +519,11 @@ export default function AdminDiscountDetailPage() {
                   className={inputClass}
                 >
                   <option value="amount_off_products">
-                    Amount off products
+                    Amount of products
                   </option>
-                  <option value="amount_off_order">Amount off order</option>
-                  <option value="buy_x_get_y">Buy X, get Y</option>
+                  <option value="amount_off_order">Amount of subtotal</option>
                   <option value="free_shipping">Shipping discount</option>
+                  <option value="buy_x_get_y">Buy X, get Y</option>
                 </select>
               </div>
             </div>
