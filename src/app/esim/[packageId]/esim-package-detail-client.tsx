@@ -326,6 +326,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         shippingFeeCents: 0,
         subtotalCents,
       }),
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       method: "POST",
     })
@@ -552,16 +553,11 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       <div
         className={`
         grid gap-8
-        lg:grid-cols-5
+        lg:grid-cols-2
       `}
       >
         {/* Package Info - Left */}
-        <div
-          className={`
-          space-y-6
-          lg:col-span-2
-        `}
-        >
+        <div className="min-w-0 space-y-6">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">{displayName}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -720,8 +716,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
           )}
         </div>
 
-        {/* Purchase Card - Right (wider so price + CTA can sit above the fold on desktop) */}
-        <div className="lg:col-span-3">
+        {/* Purchase Card - Right */}
+        <div className="min-w-0">
           <div className="sticky top-24">
             <Card className="border-primary/20">
               <CardContent className="space-y-5 p-6">

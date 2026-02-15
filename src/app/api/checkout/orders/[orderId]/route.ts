@@ -77,6 +77,7 @@ export async function GET(
     const SOLANA_CURRENCY_TO_TOKEN: Record<string, string> = {
       CRUST: "crust",
       PUMP: "pump",
+      SKR: "seeker",
       SOL: "solana",
       SOLUNA: "soluna",
       TROLL: "troll",

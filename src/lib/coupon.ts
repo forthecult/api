@@ -137,7 +137,7 @@ export async function resolveAutomaticCouponForCheckout(
     if (selectedKey) {
       if (
         !requiredPaymentMethodKey ||
-        requiredPaymentMethodKey !== selectedKey
+        requiredPaymentMethodKey.toLowerCase() !== selectedKey.toLowerCase()
       ) {
         continue;
       }
@@ -219,6 +219,24 @@ export async function resolveAutomaticCouponForCheckout(
       }
     }
     if (hasEsimRule && !cartHasEsim) continue;
+
+    // Fallback: for eSIM-only coupons, ensure we have qualifying subtotal from eSIM items when it wasn't set above
+    if (
+      hasEsimRule &&
+      qualifyingSubtotalCents === undefined &&
+      input.items &&
+      input.items.length > 0 &&
+      (coupon.discountKind === "amount_off_products" ||
+        coupon.appliesTo === "product")
+    ) {
+      const esimProductIds = productIds.filter((id) => id.startsWith("esim_"));
+      if (esimProductIds.length > 0) {
+        const esimSet = new Set(esimProductIds);
+        qualifyingSubtotalCents = input.items
+          .filter((item) => esimSet.has(item.productId))
+          .reduce((sum, item) => sum + item.priceCents * item.quantity, 0);
+      }
+    }
 
     const tokenChain = coupon.tokenHolderChain?.trim();
     const tokenAddress = coupon.tokenHolderTokenAddress?.trim();

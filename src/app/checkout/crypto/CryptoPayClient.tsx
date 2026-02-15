@@ -1292,7 +1292,7 @@ export function CryptoPayClient() {
                     />
                     <div>
                       <p className="font-semibold">
-                        If you did already send a payment
+                        If you already sent a payment
                       </p>
                       <p className="mt-1 text-sm text-muted-foreground">
                         Please keep this screen open, once we detect it on the

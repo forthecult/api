@@ -28,6 +28,7 @@ This guide covers adding a new payment option (e.g. a new cryptocurrency) so it 
 
 - **`src/app/checkout/components/PaymentMethodSection.tsx`**
   - **Payment method key (useEffect)**: when `paymentMethod === "crypto"` and the user selects the new option, set the key passed to the parent, e.g. `else if (sub === "seeker") key = "crypto_seeker"`.
+  - **Create-order token (Solana Pay only)** — **required**: In `handleGoToCryptoPay`, the `token` variable sent in the request body to `/api/checkout/solana-pay/create-order` must include a branch for the new option. Add e.g. `: paymentMethod === "crypto" && paymentSubOption === "seeker" ? "seeker"` before the final `"solana"` fallback. **If you skip this, the payment page will show “Pay with SOL” instead of the selected token.**
   - **Supported flag**: add the new option to the condition that determines whether the “Pay with …” button is shown (e.g. for Solana Pay: `(paymentMethod === "crypto" && paymentSubOption === "seeker")` in `isSolanaPaySupported`).
   - **Pay button label**: in the branch that renders the main pay button (e.g. Solana Pay), add a label for the new option, e.g. `: paymentMethod === "crypto" && paymentSubOption === "seeker" ? "Pay with Seeker (SKR)" : ...`.
   - **Crypto total label (optional)**: if the order total should be shown in the new token (e.g. “≈ 123 SKR”), add a case in the `cryptoTotalLabel` useMemo: fetch price from your prices API, then `return \`≈ ${formatCrypto(amount, 6)} SKR\``. Add the price key to the `cryptoPrices` state type and to the fetch callback type.
@@ -51,7 +52,12 @@ This guide covers adding a new payment option (e.g. a new cryptocurrency) so it 
 - **`src/app/api/checkout/solana-pay/create-order/route.ts`** (or the route for your chain)
   - Map the token to the payment method key stored on the order, e.g. `seeker: "crypto_seeker"`, so coupons and reporting use the correct method.
 
-### 1.5 Crypto prices (if the new token has a USD price)
+### 1.5 Order fetch API (payment page token) — Solana / SPL tokens only
+
+- **`src/app/api/checkout/orders/[orderId]/route.ts`**
+  - In **SOLANA_CURRENCY_TO_TOKEN**, add the mapping from the stored `cryptoCurrency` (e.g. `"SKR"`) to the frontend token value (e.g. `"seeker"`): e.g. `SKR: "seeker"`. The payment page uses this to show the correct token (amount, label, QR). **If you skip this, the payment page may show the wrong currency (e.g. SOL) even when the order was created with the new token.**
+
+### 1.6 Crypto prices (if the new token has a USD price)
 
 - **`src/app/api/crypto/prices/route.ts`**
   - Add the token to the response type and fetch its price (e.g. from CoinGecko or another provider).
@@ -96,10 +102,11 @@ This guide covers adding a new payment option (e.g. a new cryptocurrency) so it 
 |------|--------|-------------|
 | Registry | `src/lib/payment-method-settings.ts` | Entry in `PAYMENT_METHOD_DEFAULTS` |
 | Visibility & options | `src/lib/checkout-payment-options.ts` | PaymentVisibility, METHOD_KEY_MAP, CRYPTO_SUB_OPTIONS, visibleCryptoSubFromVisibility, hasAnyCryptoEnabled, getFooterPaymentItems, getPaymentOptionsForDisplay (and icons if needed) |
-| Checkout section | `src/app/checkout/components/PaymentMethodSection.tsx` | Key mapping, isSolanaPaySupported (or other branch), button label, cryptoTotalLabel, cryptoRowIcons |
+| Checkout section | `src/app/checkout/components/PaymentMethodSection.tsx` | Key mapping, **create-order token in `handleGoToCryptoPay`** (Solana Pay), isSolanaPaySupported, button label, cryptoTotalLabel, cryptoRowIcons |
 | Payment constants | `src/app/checkout/checkout-payment-constants.ts` | Option value/label and icon path |
 | Crypto pay client | `src/app/checkout/crypto/CryptoPayClient.tsx` | Token, labels, icons, price, create-order payload |
-| Create-order API | e.g. `src/app/api/checkout/solana-pay/create-order/route.ts` | Token → payment method key |
+| Create-order API | e.g. `src/app/api/checkout/solana-pay/create-order/route.ts` | Token → payment method key (and token → cryptoCurrency if applicable) |
+| **Order fetch API** | **`src/app/api/checkout/orders/[orderId]/route.ts`** | **`SOLANA_CURRENCY_TO_TOKEN`: add e.g. `SKR: "seeker"` so payment page shows correct token** |
 | Prices API | `src/app/api/crypto/prices/route.ts` | Price fetch and response key (if applicable) |
 | Admin coupons | `admin/.../coupons/create/page.tsx`, `admin/.../coupons/[id]/page.tsx` | Entry in `PAYMENT_METHOD_OPTIONS` |
 | Footer | Handled via `getFooterPaymentItems` in checkout-payment-options | No separate footer file change |

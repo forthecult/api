@@ -621,11 +621,13 @@ export const PaymentMethodSection = forwardRef<
             ? "troll"
             : paymentMethod === "crypto" && paymentSubOption === "soluna"
               ? "soluna"
-              : paymentMethod === "stablecoins" &&
-                  stablecoinToken === "usdc" &&
-                  paymentSubOption === "solana"
-                ? "usdc"
-                : "solana";
+              : paymentMethod === "crypto" && paymentSubOption === "seeker"
+                ? "seeker"
+                : paymentMethod === "stablecoins" &&
+                    stablecoinToken === "usdc" &&
+                    paymentSubOption === "solana"
+                  ? "usdc"
+                  : "solana";
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         body: JSON.stringify({
