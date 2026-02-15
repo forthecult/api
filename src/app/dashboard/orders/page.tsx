@@ -11,6 +11,7 @@ import { ordersTable } from "~/db/schema";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent, CardHeader } from "~/ui/primitives/card";
 
+import { CancelOrderButton } from "./CancelOrderButton";
 import { ReorderButton } from "./ReorderButton";
 
 export const dynamic = "force-dynamic";
@@ -130,13 +131,20 @@ export default async function OrdersPage() {
                       </span>
                       <div className="ml-auto flex shrink-0 items-center gap-2">
                         {paymentPending ? (
-                          <Button asChild size="sm" variant="outline">
-                            <Link href={`/checkout/${order.id}`}>
-                              <CreditCard className="mr-1.5 size-3.5" aria-hidden />
-                              Pay Now
-                              <span className="sr-only"> for order {order.id}</span>
-                            </Link>
-                          </Button>
+                          <>
+                            <Button asChild size="sm" variant="outline">
+                              <Link href={`/checkout/${order.id}`}>
+                                <CreditCard className="mr-1.5 size-3.5" aria-hidden />
+                                Pay Now
+                                <span className="sr-only"> for order {order.id}</span>
+                              </Link>
+                            </Button>
+                            <CancelOrderButton
+                              orderId={order.id}
+                              orderShortId={order.id.slice(0, 8)}
+                              size="sm"
+                            />
+                          </>
                         ) : (
                           <ReorderButton orderId={order.id} />
                         )}

@@ -1,15 +1,17 @@
 "use client";
 
-import { Heart, Loader2, Trash2 } from "lucide-react";
+import { Heart, Loader2, ShoppingCart, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import { CryptoPrice } from "~/ui/components/CryptoPrice";
 import { FiatPrice } from "~/ui/components/FiatPrice";
 import { Button } from "~/ui/primitives/button";
 import { Card, CardContent } from "~/ui/primitives/card";
 import { cn } from "~/lib/cn";
+import { useCart } from "~/lib/hooks/use-cart";
 
 type WishlistItem = {
   productId: string;
@@ -20,6 +22,7 @@ type WishlistItem = {
     name: string;
     imageUrl: string | null;
     priceCents: number;
+    hasVariants?: boolean;
   };
 };
 
@@ -27,6 +30,8 @@ export function WishlistPageClient() {
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [addingId, setAddingId] = useState<string | null>(null);
+  const { addItem, openCart } = useCart();
 
   const fetchWishlist = useCallback(async () => {
     setLoading(true);
@@ -66,6 +71,33 @@ export function WishlistPageClient() {
       }
     },
     [fetchWishlist],
+  );
+
+  const handleAddToCart = useCallback(
+    (item: WishlistItem) => {
+      const p = item.product;
+      if (p.hasVariants) {
+        // Product has size/color etc — send user to product page to choose
+        return;
+      }
+      setAddingId(p.id);
+      addItem(
+        {
+          category: "Products",
+          id: p.id,
+          image: p.imageUrl ?? "",
+          name: p.name,
+          price: p.priceCents / 100,
+          productId: p.id,
+          ...(p.slug && { slug: p.slug }),
+        },
+        1,
+      );
+      toast.success(`${p.name} added to cart`);
+      openCart();
+      setAddingId(null);
+    },
+    [addItem, openCart],
   );
 
   if (loading) {
@@ -143,7 +175,30 @@ export function WishlistPageClient() {
                         className="text-sm text-muted-foreground"
                       />
                     </div>
-                    <div className="flex items-center justify-between gap-2 pt-2">
+                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                      {item.product.hasVariants ? (
+                        <Button asChild size="sm" variant="default" className="gap-1.5">
+                          <Link href={`/${item.product.slug ?? item.product.id}`}>
+                            <ShoppingCart className="size-3.5" aria-hidden />
+                            Select options
+                          </Link>
+                        </Button>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="default"
+                          className="gap-1.5"
+                          disabled={addingId === item.product.id}
+                          onClick={() => handleAddToCart(item)}
+                        >
+                          {addingId === item.product.id ? (
+                            <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                          ) : (
+                            <ShoppingCart className="size-3.5" aria-hidden />
+                          )}
+                          Add to Cart
+                        </Button>
+                      )}
                       <Button asChild size="sm" variant="outline">
                         <Link href={`/${item.product.slug ?? item.product.id}`}>
                           View product

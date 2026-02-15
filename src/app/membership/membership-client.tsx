@@ -28,7 +28,7 @@ import { toast } from "sonner";
 
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { cn } from "~/lib/cn";
-import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -392,7 +392,7 @@ export function MembershipClient() {
   const lockDuration = stakeDuration === "12m" ? LOCK_12_MONTHS : LOCK_30_DAYS;
 
   const openConnectModal = useCallback(() => {
-    window.dispatchEvent(new CustomEvent(OPEN_AUTH_WALLET_MODAL));
+    window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
   }, []);
 
   const scrollToTiers = useCallback(() => {

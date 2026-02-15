@@ -104,6 +104,8 @@ const API_BASE =
       : "";
 
 export const OPEN_AUTH_WALLET_MODAL = "open-auth-wallet-modal";
+/** Dispatch to open the modal showing only Solana wallets (for staking, not auth). */
+export const OPEN_SOLANA_WALLET_MODAL = "open-solana-wallet-modal";
 /** Dispatch this from dashboard to open the modal in link mode (connect wallet to current account). */
 export const OPEN_LINK_WALLET_MODAL = "open-link-wallet-modal";
 /** Dispatched when a wallet is successfully linked to refresh account lists. */
@@ -114,6 +116,8 @@ type AuthWalletModalProps = {
   onOpenChange: (open: boolean) => void;
   /** When true, link wallet to current account instead of signing in */
   link?: boolean;
+  /** When true, only show Solana wallets (no EVM options). Used for staking flows. */
+  solanaOnly?: boolean;
 };
 
 function WalletOption({
@@ -164,6 +168,7 @@ export function AuthWalletModal({
   open,
   onOpenChange,
   link = false,
+  solanaOnly = false,
 }: AuthWalletModalProps) {
   const router = useRouter();
   const {
@@ -236,7 +241,8 @@ export function AuthWalletModal({
       setSelectedWallet(wallet);
       solanaConnectStartedRef.current = false;
       const name = wallet.adapter.name;
-      if (isMultiChainWallet(name)) {
+      // In solanaOnly mode, skip the network selection step even for multi-chain wallets
+      if (!solanaOnly && isMultiChainWallet(name)) {
         setStep("network");
         return;
       }
@@ -249,7 +255,7 @@ export function AuthWalletModal({
         select(adapterName);
       }, 0);
     },
-    [select],
+    [select, solanaOnly],
   );
 
   const handleSelectNetwork = useCallback(
@@ -824,7 +830,11 @@ export function AuthWalletModal({
       >
         <div className="border-b border-border px-5 py-4">
           <DialogTitle className="text-lg font-semibold">
-            {link ? "Connect wallet to account" : "Sign in with wallet"}
+            {solanaOnly
+              ? "Connect Solana wallet"
+              : link
+                ? "Connect wallet to account"
+                : "Sign in with wallet"}
           </DialogTitle>
         </div>
         <div className="flex flex-col gap-4 px-5 py-4">
@@ -903,13 +913,15 @@ export function AuthWalletModal({
                       }
                     />
                   ))}
-                <EthereumOptionButton
-                  name="MetaMask"
-                  icon={ETHEREUM_WALLET_OPTIONS[1].icon}
-                  isDetected={isMetaMaskDetected}
-                  onClick={() => handleSelectEthereumOption("injected")}
-                  disabled={connecting}
-                />
+                {!solanaOnly && (
+                  <EthereumOptionButton
+                    name="MetaMask"
+                    icon={ETHEREUM_WALLET_OPTIONS[1].icon}
+                    isDetected={isMetaMaskDetected}
+                    onClick={() => handleSelectEthereumOption("injected")}
+                    disabled={connecting}
+                  />
+                )}
               </div>
               <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 Others
@@ -935,7 +947,7 @@ export function AuthWalletModal({
                       }
                     />
                   ))}
-                {ETHEREUM_WALLET_OPTIONS.filter(
+                {!solanaOnly && ETHEREUM_WALLET_OPTIONS.filter(
                   (o) =>
                     o.name !== "MetaMask" &&
                     !SOLANA_WALLET_NAMES_TO_SKIP.includes(o.name),

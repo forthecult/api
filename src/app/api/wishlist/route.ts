@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
               slug: true,
               imageUrl: true,
               priceCents: true,
+              hasVariants: true,
             },
           },
         },
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
           name: i.product!.name,
           imageUrl: i.product!.imageUrl,
           priceCents: i.product!.priceCents,
+          hasVariants: i.product!.hasVariants ?? false,
         },
       }));
 

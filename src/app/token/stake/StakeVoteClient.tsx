@@ -15,7 +15,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
-import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -416,7 +416,7 @@ export function StakeVoteClient() {
   const [votingId, setVotingId] = useState<string | null>(null);
 
   const openConnectModal = useCallback(() => {
-    window.dispatchEvent(new CustomEvent(OPEN_AUTH_WALLET_MODAL));
+    window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
   }, []);
 
   const refreshBalances = useCallback(() => {
