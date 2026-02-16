@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-
+import nextDynamic from "next/dynamic";
 import {
   ArrowRight,
   Clock,
@@ -29,9 +29,28 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
+import { Skeleton } from "~/ui/primitives/skeleton";
 
-import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
 import { testimonials as mockTestimonials } from "./mocks";
+
+const FeaturedProductsSection = nextDynamic(
+  () =>
+    import("~/app/FeaturedProductsSection").then((m) => ({
+      default: m.FeaturedProductsSection,
+    })),
+  {
+    loading: () => (
+      <div
+        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      >
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton className="h-80 w-full rounded-lg" key={i} />
+        ))}
+      </div>
+    ),
+    ssr: true,
+  },
+);
 
 // Avoid build-time SSG timeout when API/DB unreachable (e.g. Railway build)
 export const dynamic = "force-dynamic";

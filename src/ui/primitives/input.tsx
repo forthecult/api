@@ -1,11 +1,14 @@
 import type * as React from "react";
+import { forwardRef } from "react";
 
 import { cn } from "~/lib/cn";
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  return (
-    <input
-      className={cn(
+const Input = forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+  function Input({ className, type, ...props }, ref) {
+    return (
+      <input
+        ref={ref}
+        className={cn(
         `
           flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent
           px-3 py-1 text-base shadow-xs transition-[color,box-shadow]
@@ -28,12 +31,13 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
           dark:aria-invalid:ring-destructive/40
         `,
         className,
-      )}
-      data-slot="input"
-      type={type}
-      {...props}
-    />
-  );
-}
+        )}
+        data-slot="input"
+        type={type}
+        {...props}
+      />
+    );
+  },
+);
 
 export { Input };

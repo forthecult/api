@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { cn } from "~/lib/cn";
 import { countryFlag } from "~/lib/country-flag";
@@ -39,6 +39,7 @@ export function FooterPreferencesModal({
   const [draftCurrency, setDraftCurrency] = useState(currency);
   const [countrySearch, setCountrySearch] = useState("");
   const [currencySearch, setCurrencySearch] = useState("");
+  const countrySearchInputRef = useRef<HTMLInputElement>(null);
 
   const currentCountryOption = useMemo(
     () => COUNTRY_OPTIONS_ALPHABETICAL.find((o) => o.code === draftCountry),
@@ -112,6 +113,12 @@ export function FooterPreferencesModal({
       setView("main");
     }
   }, [open, selectedCountry, currency]);
+
+  useEffect(() => {
+    if (view === "country") {
+      countrySearchInputRef.current?.focus();
+    }
+  }, [view]);
 
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
@@ -238,6 +245,7 @@ export function FooterPreferencesModal({
               `}
               />
               <Input
+                ref={countrySearchInputRef}
                 className="pl-9"
                 onChange={(e) => setCountrySearch(e.target.value)}
                 placeholder="Search country"

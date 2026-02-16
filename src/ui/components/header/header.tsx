@@ -20,6 +20,7 @@ import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
+/** Chunk loads only when this component mounts — i.e. when user is authorized and websiteNotificationsOn is true (see render guard below). */
 const NotificationsWidget = dynamic(
   () =>
     import("../notifications/notifications-widget").then((m) => ({
@@ -37,7 +38,14 @@ import { HeaderSearch } from "./header-search";
 import { HeaderUserDropdown } from "./header-user";
 import { MobileNavSheet } from "./mobile-nav-sheet";
 import { ShopByCryptoMenu } from "./shop-by-crypto-menu";
-import { ShopMegaMenu } from "./shop-mega-menu";
+
+const ShopMegaMenu = dynamic(
+  () =>
+    import("./shop-mega-menu").then((m) => ({
+      default: m.ShopMegaMenu,
+    })),
+  { ssr: false },
+);
 
 /** Throttle function for scroll handlers */
 function throttle<T extends (...args: unknown[]) => void>(
@@ -88,6 +96,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
   const [mobileSearchQuery, setMobileSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
   const [cartRequested, setCartRequested] = useState(false);
+  const [shopMegaMenuRequested, setShopMegaMenuRequested] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -487,13 +496,33 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                   ) : (
                     <>
                       <li
-                        onFocus={fetchCategories}
-                        onMouseEnter={fetchCategories}
+                        onFocus={() => {
+                          fetchCategories();
+                          setShopMegaMenuRequested(true);
+                        }}
+                        onMouseEnter={() => {
+                          fetchCategories();
+                          setShopMegaMenuRequested(true);
+                        }}
                       >
-                        <ShopMegaMenu
-                          categories={filteredShopCategories}
-                          isActive={isShopActive}
-                        />
+                        {shopMegaMenuRequested ? (
+                          <ShopMegaMenu
+                            categories={filteredShopCategories}
+                            isActive={isShopActive}
+                          />
+                        ) : (
+                          <Link
+                            className={cn(
+                              "accent-underline text-base font-medium tracking-wider transition-colors hover:text-primary",
+                              isShopActive
+                                ? "font-semibold text-primary"
+                                : "text-muted-foreground",
+                            )}
+                            href="/products"
+                          >
+                            Shop
+                          </Link>
+                        )}
                       </li>
                       {user &&
                         hasWeb3Auth === true &&
@@ -572,6 +601,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                     <HeaderSearch />
                   </div>
                 )}
+                {/* Notifications chunk loads only when authorized + notifications enabled (no load for guests or when off). */}
                 {!isCheckout && user && websiteNotificationsOn === true && (
                   <div
                     className={`

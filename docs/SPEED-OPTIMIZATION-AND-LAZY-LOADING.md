@@ -109,14 +109,14 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Header** | `header.tsx` | `Cart` and `NotificationsWidget` are dynamic with `ssr: false` so cart and notifications code are not in the main bundle. Categories fetch only on hover/focus on the Shop nav item or when opening the mobile menu (not on mount). Notification preferences are cached in sessionStorage. |
+| **Header** | `header.tsx` | `Cart` loads when requested (preload event or on hover). `ShopMegaMenu` is dynamic and mounts only after first hover/focus on Shop (chunk loads then). `NotificationsWidget` is dynamic and only mounts when user is authorized and has website notifications enabled (chunk not loaded for guests or when off). Categories fetch only on hover/focus on Shop or when opening the mobile menu (not on mount). Notification preferences are cached in sessionStorage. |
 | **Mobile nav** | `mobile-nav-sheet.tsx` | `Cart` and `FooterPreferencesModal` are dynamic; modal loads only when the user opens preferences. |
 
 ### 5.3 Home and marketing
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `TestimonialsSection` is a direct import; `FeaturedProductsSection` receives the pre-fetched products. |
+| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` is loaded via `next/dynamic` with a skeleton (separate chunk, faster initial parse). `TestimonialsSection` is a direct import. |
 
 ### 5.4 Products and catalog
 
@@ -287,7 +287,19 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 
 ---
 
-## 12. Ideas for further improvement
+## 12. Further options (considered, not applied)
+
+- **Homepage above-the-fold:** Featured products section is now in a separate chunk (dynamic import with skeleton). Hero, lookbook, and first category images already use `priority`. LCP is largely limited by main-bundle parse (Wagmi + layout).
+- **Wagmi lazy load:** Loading Wagmi in a separate chunk after first paint would reduce initial JS but causes a full-app remount when the chunk loads; we do not do this.
+- **Homepage Suspense streaming:** Would improve TTFB but caused image flashing and ordering issues; we use fetch-all-then-render.
+- **Checkout:** Already prefetched via `CriticalRoutePrefetcher`; CheckoutClient and PaymentMethodSection are dynamic; Stripe loads only when card is selected.
+- **Payment page:** Pay clients (CryptoPayClient, etc.) are dynamic and prefetched on payment-method selection. Conditional wallet providers were reverted (tree stability).
+- **Preconnect:** `next.config.ts` already sends `dns-prefetch` / `preconnect` for image CDNs (utfs.io, Printify, etc.). Same-origin API calls do not need preconnect.
+- **Fonts:** Manrope is limited to 600/700/800; `next/font` handles loading. No further reduction without design change.
+
+---
+
+## 13. Ideas for further improvement
 
 - **More route prefetching:** If analytics show other routes (e.g. category or collection pages) as common first clicks, consider prefetching them in `CriticalRoutePrefetcher` or on hover/focus of nav links.
 - **Checkout:** If you add a cart or session API, consider starting that request from the checkout layout or a small client component so data is in flight before CheckoutClient mounts.
@@ -295,3 +307,4 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 - **Support chat:** The 10s defer and visibility check could be tuned (e.g. by route or user segment) if you want the widget to load sooner on some pages.
 - **Server-side crypto prices:** Move the crypto price fetch to a server component or API route with ISR so the client doesn't need to fetch at all on first render.
 - **Partial prerendering:** When Next.js stabilizes PPR, consider enabling it for the homepage so the static shell is served from the edge while dynamic sections load, if it can be done without reintroducing the flashing/ordering issues we avoided by removing Suspense there.
+- **Header shell split:** The header could be split so a minimal shell (logo, nav links) renders first and Cart/Notifications/mega menu load in a separate chunk; would require refactor and may not help much while Wagmi remains in the main bundle.
