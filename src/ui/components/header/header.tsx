@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, Search, ShoppingCart, UserIcon } from "lucide-react";
+import { ChevronDown, Menu, Search, ShoppingCart, UserIcon } from "lucide-react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -44,7 +44,21 @@ const ShopMegaMenu = dynamic(
     import("./shop-mega-menu").then((m) => ({
       default: m.ShopMegaMenu,
     })),
-  { ssr: false },
+  {
+    ssr: false,
+    // Match the real trigger (Shop + chevron) so no flash when chunk loads
+    loading: () => (
+      <span
+        className={cn(
+          "accent-underline inline-flex items-center gap-1 py-1.5 text-base font-medium tracking-wider text-[#8A857E]",
+          "transition-colors hover:text-[#C4873A]",
+        )}
+      >
+        Shop
+        <ChevronDown aria-hidden className="h-5 w-5" />
+      </span>
+    ),
+  },
 );
 
 /** Throttle function for scroll handlers */
@@ -97,6 +111,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
   const [mounted, setMounted] = useState(false);
   const [cartRequested, setCartRequested] = useState(false);
   const [shopMegaMenuRequested, setShopMegaMenuRequested] = useState(false);
+  const [shopLiHovered, setShopLiHovered] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -502,12 +517,15 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                         }}
                         onMouseEnter={() => {
                           fetchCategories();
+                          setShopLiHovered(true);
                           setShopMegaMenuRequested(true);
                         }}
+                        onMouseLeave={() => setShopLiHovered(false)}
                       >
                         {shopMegaMenuRequested ? (
                           <ShopMegaMenu
                             categories={filteredShopCategories}
+                            initialOpen={shopLiHovered}
                             isActive={isShopActive}
                           />
                         ) : (

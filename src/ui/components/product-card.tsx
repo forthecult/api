@@ -130,6 +130,7 @@ function ProductCardInner({
   const [localWishlist, setLocalWishlist] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [hoverImageError, setHoverImageError] = React.useState(false);
+  const [primaryImageLoaded, setPrimaryImageLoaded] = React.useState(false);
   const [tokenGateOpen, setTokenGateOpen] = React.useState(false);
 
   const isInWishlist =
@@ -157,6 +158,7 @@ function ProductCardInner({
   React.useEffect(() => {
     setImageError(false);
     setHoverImageError(false);
+    setPrimaryImageLoaded(false);
   }, [product.id, product.image]);
 
   /** External URLs: load in browser directly (like admin) to avoid Next Image proxy/CDN issues. */
@@ -241,6 +243,16 @@ function ProductCardInner({
               isGated ? "rounded-lg" : "rounded-t-lg",
             )}
           >
+            {/* Blur layer so real image fades in over it instead of popping over white */}
+            {imageSrc !== "/placeholder.svg" && (
+              <div
+                className="absolute inset-0 bg-cover bg-center opacity-100"
+                style={{
+                  backgroundImage: `url(${BLUR_DATA_URL})`,
+                }}
+                aria-hidden
+              />
+            )}
             {(imageSrc === "/placeholder.svg" || product.image) && (
               <Image
                 alt={product.name}
@@ -249,11 +261,16 @@ function ProductCardInner({
                 }
                 className={cn(
                   "object-contain transition-all duration-300 ease-in-out",
+                  "transition-opacity duration-300",
+                  (imageSrc !== "/placeholder.svg" && !primaryImageLoaded) ||
+                    (isHovered && hoverImage && !hoverImageError)
+                    ? "opacity-0"
+                    : "opacity-100",
                   isHovered && !isGated && "scale-105",
-                  isHovered && hoverImage && !hoverImageError && "opacity-0",
                 )}
                 fill
                 onError={() => setImageError(true)}
+                onLoad={() => setPrimaryImageLoaded(true)}
                 placeholder={
                   imageSrc !== "/placeholder.svg" ? "blur" : "empty"
                 }

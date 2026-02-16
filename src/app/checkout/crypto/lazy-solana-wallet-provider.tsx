@@ -31,7 +31,7 @@ export function LazySolanaWalletProvider({ children }: { children: ReactNode }) 
       import("./SolanaWalletProvider").then((mod) => {
         setRealProvider(() => mod.SolanaWalletProvider);
       });
-    }, 1500);
+    }, 2500);
   }, []);
 
   if (RealProvider) {

@@ -95,6 +95,25 @@ export function CryptoPayLoader() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
+  // Remove crypto hash from URL for all crypto payment methods (clean URL)
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.location.hash) return;
+    const hash = window.location.hash.slice(1).toLowerCase();
+    if (
+      hash === "eth" ||
+      hash === "solana" ||
+      hash === "ton" ||
+      hash.startsWith("sui-") ||
+      hash === "bitcoin" ||
+      hash === "doge" ||
+      hash === "dogecoin" ||
+      hash === "monero"
+    ) {
+      const url = window.location.pathname + window.location.search;
+      window.history.replaceState(null, "", url);
+    }
+  }, []);
+
   const initialOrder = prefetch?.order ?? undefined;
   if (paymentType === "eth") return <EthPayClient initialOrder={initialOrder} />;
   if (paymentType === "btcpay")

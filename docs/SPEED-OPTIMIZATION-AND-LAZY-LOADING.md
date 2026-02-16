@@ -313,12 +313,23 @@ When running desktop PageSpeed, the following have been addressed or documented:
 | **Reduce unused JavaScript / long main-thread tasks** | Code-splitting and lazy loading are in place (sections 2–5). Homepage: `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` so their JS is in separate chunks. Run `bun run analyze` to see which modules land in which chunks and find further split opportunities. |
 | **Forced reflow** | Avoid reading layout (e.g. `getBoundingClientRect`, `offsetWidth`) immediately after DOM writes; batch reads or use `requestAnimationFrame`. Some reflows come from third-party chunks. |
 
+### Desktop (PageSpeed desktop)
+
+Same findings as mobile, with the same mitigations:
+
+- **Reduce unused JavaScript (~623 KiB est.):** Chunks 8886 (~267 KiB), ed9f2dc4 (225.6 KiB entirely), 55459, 49821, 30156, 3a91511d. Global prefetcher prefetches only `/products`; checkout/crypto (e.g. ed9f2dc4) loads only on checkout or intent. Lazy Solana (2.5s), deferred SpeedInsights and prefetcher.
+- **Forced reflow:** Chunks 55459 and 66609 contribute reflow time. Defer layout reads to `requestAnimationFrame` where we read after DOM changes; some reflow is from framework/deps.
+- **Wasted bytes (12.7 KiB):** Same as mobile; `browserslist` is modern-only to reduce polyfill transpilation.
+- **Use efficient cache lifetimes (159 KiB est.):** Our static assets use long cache; ufs.sh/CDN cache is third-party.
+
 ### Mobile-specific (PageSpeed mobile)
 
-- **LCP breakdown:** Element render delay (~2.7s) is the main cost; TTFB is 0 ms. The LCP element is the hero `<h1>`. Reducing main-thread work (JS execution) is the primary lever — see “Reduce JavaScript execution time” and long tasks.
-- **Reduce JavaScript execution time:** Chunk `93794` (or similar IDs after rebuild) is often the largest (parse + eval). Applied mitigations: (1) **TestimonialsSection** is lazy on the homepage; (2) **SpeedInsights** loads after `requestIdleCallback` via `DeferredSpeedInsights`; (3) **CriticalRoutePrefetcher** loads after idle via `DeferredCriticalRoutePrefetcher`; (4) **Solana** wallet adapters load after idle via `LazySolanaWalletProvider` (stub renders first). Run `ANALYZE=true bun run build` and open `.next/analyze/*.html` to find further split opportunities. ufs.sh cache TTL is controlled by the CDN.
-- **Improve image delivery (mobile):** Product detail main image uses `sizes` capped at `900px` for large viewports to avoid overserving. Product cards use `320px` cap for grid. Ensure all `next/image` instances have appropriate `sizes` for their layout.
-- **Legacy JavaScript / cache:** Same as desktop: `browserslist` targets modern browsers; ufs.sh cache is third-party.
+- **LCP breakdown:** Element render delay (~2.7–3s) is the main cost; TTFB is 0 ms. The LCP element is often the hero `<h1>` or brand `<h2>`. Reducing main-thread work (JS execution) is the primary lever — see “Reduce JavaScript execution time” and long tasks.
+- **Reduce JavaScript execution time:** Large chunks (e.g. 55459, 8886, ed9f2dc4) dominate parse + eval. Applied mitigations: (1) **TestimonialsSection** is lazy; (2) **SpeedInsights** loads after idle via `DeferredSpeedInsights`; (3) **CriticalRoutePrefetcher** prefetches **only `/products`** (not `/checkout`) so checkout/crypto chunks are not loaded on every page; (4) **Solana** wallet adapters load after idle (2.5s) via `LazySolanaWalletProvider`. Checkout is prefetched only on intent (cart open, checkout link hover). Run `ANALYZE=true bun run build` for further split opportunities.
+- **Reduce unused JavaScript (~601 KiB est.):** Global prefetcher no longer prefetches `/checkout`; checkout/crypto bundle loads only on checkout or prefetch intent.
+- **Minimize main-thread work / Wasted bytes:** `browserslist` is modern-only (`chrome >= 87`, etc.) to reduce polyfill transpilation. Forced reflow: batch layout reads.
+- **Improve image delivery (mobile):** Product detail main image uses `sizes` capped at `900px`; product cards use `320px` cap for grid.
+- **Legacy JavaScript / cache:** Same as desktop; ufs.sh cache is third-party.
 
 ---
 

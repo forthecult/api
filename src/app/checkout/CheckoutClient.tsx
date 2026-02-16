@@ -307,11 +307,12 @@ export function CheckoutClient() {
       (coupons.tierDiscountTotalCents ?? 0);
     const shippingFeeCentsRounded = Math.round(shippingCents);
     const taxCentsRounded = Math.round(taxCents);
-    const orderTotalCents =
+    const orderTotalCents = Math.round(
       subtotalCents -
-      discountCentsForOrder +
-      shippingFeeCentsRounded +
-      taxCentsRounded;
+        discountCentsForOrder +
+        shippingFeeCentsRounded +
+        taxCentsRounded,
+    );
     const emailRaw = form?.email?.trim();
     const emailValid =
       typeof emailRaw === "string" &&

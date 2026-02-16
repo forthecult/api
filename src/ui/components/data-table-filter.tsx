@@ -152,14 +152,18 @@ export function ActiveFiltersMobileContainer({
   const [showLeftBlur, setShowLeftBlur] = useState(false);
   const [showRightBlur, setShowRightBlur] = useState(true);
 
-  // Wrap checkScroll in useCallback
+  // Defer layout read to next frame to avoid forced reflow (PageSpeed)
   const checkScroll = useCallback(() => {
-    if (scrollContainerRef.current) {
-      const { clientWidth, scrollLeft, scrollWidth } =
-        scrollContainerRef.current;
-      setShowLeftBlur(scrollLeft > 0);
-      setShowRightBlur(scrollLeft + clientWidth < scrollWidth - 1);
-    }
+    let rafId: number;
+    rafId = requestAnimationFrame(() => {
+      if (scrollContainerRef.current) {
+        const { clientWidth, scrollLeft, scrollWidth } =
+          scrollContainerRef.current;
+        setShowLeftBlur(scrollLeft > 0);
+        setShowRightBlur(scrollLeft + clientWidth < scrollWidth - 1);
+      }
+    });
+    return () => cancelAnimationFrame(rafId);
   }, []);
 
   // Set up ResizeObserver to monitor container size
@@ -177,7 +181,10 @@ export function ActiveFiltersMobileContainer({
 
   // Update blur states when children change
   useEffect(() => {
-    checkScroll();
+    const cancel = checkScroll();
+    return () => {
+      cancel();
+    };
   }, [checkScroll]);
 
   return (

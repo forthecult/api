@@ -90,13 +90,16 @@ const MAX_SUBS = 6;
 export function ShopMegaMenu({
   categories,
   className,
+  initialOpen = false,
   isActive,
 }: {
   categories: CategoryItem[];
   className?: string;
+  /** When true (e.g. user hovered to load), open the popover immediately so it doesn’t flash closed. */
+  initialOpen?: boolean;
   isActive: boolean;
 }) {
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(initialOpen);
 
   /* Map slug → category for fast lookup */
   const catBySlug = useMemo(() => {

@@ -4,6 +4,7 @@ import { CircleHelp, Loader2, Minus, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import * as React from "react";
 
+import { cn } from "~/lib/cn";
 import type { CartItem } from "~/ui/components/cart";
 
 import { FiatPrice } from "~/ui/components/FiatPrice";
@@ -97,6 +98,9 @@ export function OrderSummary({
   const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
     () => new Set(),
   );
+  const [loadedImageIds, setLoadedImageIds] = React.useState<Set<string>>(
+    () => new Set(),
+  );
 
   return (
     <Card className="shadow-none">
@@ -119,6 +123,13 @@ export function OrderSummary({
               relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white
             `}
             >
+              {item.image?.trim() && !failedImageIds.has(item.id) && (
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-cover bg-center"
+                  style={{ backgroundImage: `url(${BLUR_DATA_URL})` }}
+                />
+              )}
               <Image
                 alt={item.name}
                 blurDataURL={
@@ -126,10 +137,20 @@ export function OrderSummary({
                     ? BLUR_DATA_URL
                     : undefined
                 }
-                className="object-contain"
+                className={cn(
+                  "object-contain transition-opacity duration-300",
+                  item.image?.trim() &&
+                    !failedImageIds.has(item.id) &&
+                    !loadedImageIds.has(item.id)
+                    ? "opacity-0"
+                    : "opacity-100",
+                )}
                 fill
                 onError={() =>
                   setFailedImageIds((prev) => new Set(prev).add(item.id))
+                }
+                onLoad={() =>
+                  setLoadedImageIds((prev) => new Set(prev).add(item.id))
                 }
                 placeholder={
                   item.image?.trim() && !failedImageIds.has(item.id)

@@ -1171,7 +1171,9 @@ export function CryptoPayClient({
   }
 
   // Show loading until order AND payment data are ready (avoids flash of "Loading QR code...")
-  const pricesReady = token === "sui" || solUsdRate !== null;
+  // For non-Sui we allow fallback rate so we don't stay stuck if price API is slow/blocked
+  const pricesReady =
+    token === "sui" || solUsdRate !== null || (order != null && !orderError);
   const qrReady =
     token === "sui" ||
     qrDataUrl !== null ||

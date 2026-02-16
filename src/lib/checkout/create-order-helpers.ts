@@ -725,7 +725,15 @@ export function validateTotal(params: {
     extraCents = 0,
     toleranceCents = 100,
   } = params;
-  const expectedTotal = base + extraCents;
-  const valid = Math.abs(clientTotalCents - expectedTotal) <= toleranceCents;
+  // Round to avoid float mismatch (e.g. tier/coupon stacking)
+  const expectedTotal = Math.round(base + extraCents);
+  const diff = Math.abs(clientTotalCents - expectedTotal);
+  const valid = diff <= toleranceCents;
+  if (!valid) {
+    console.warn(
+      "[checkout] total mismatch:",
+      { clientTotalCents, expectedTotal, diff, toleranceCents },
+    );
+  }
   return { expectedTotal, valid };
 }

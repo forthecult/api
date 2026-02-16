@@ -4,15 +4,15 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 /**
- * Eagerly prefetches critical routes as soon as the app is interactive,
- * so navigation to checkout/products feels instant instead of waiting for
- * viewport-based prefetch or full route load on first click.
+ * Prefetches /products only. Keeps deferred prefetch small to avoid loading
+ * heavy checkout/crypto chunks on every page (mobile LCP and unused JS).
+ * Checkout is prefetched on intent (cart open, checkout link hover) in
+ * prefetch-checkout.ts.
  */
 export function CriticalRoutePrefetcher() {
   const router = useRouter();
 
   useEffect(() => {
-    router.prefetch("/checkout");
     router.prefetch("/products");
   }, [router]);
 
