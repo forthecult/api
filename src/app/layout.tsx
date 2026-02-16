@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono, JetBrains_Mono, Manrope } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
@@ -12,9 +11,10 @@ import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
 import { CryptoCurrencyProvider } from "~/lib/hooks/use-crypto-currency";
 import "~/css/globals.css";
 import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
+import { DeferredSpeedInsights } from "~/ui/components/deferred-speed-insights";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
-import { CriticalRoutePrefetcher } from "~/ui/components/critical-route-prefetcher";
+import { DeferredCriticalRoutePrefetcher } from "~/ui/components/deferred-critical-route-prefetcher";
 import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
 import { ConditionalHeader } from "~/ui/components/header/conditional-header";
 import {
@@ -28,7 +28,7 @@ import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler"
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
 import { LazyWagmiProvider } from "~/lib/lazy-wagmi-provider";
 import { Toaster } from "~/ui/primitives/sonner";
-import { SolanaWalletProvider } from "~/app/checkout/crypto/SolanaWalletProvider";
+import { LazySolanaWalletProvider } from "~/app/checkout/crypto/lazy-solana-wallet-provider";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -178,7 +178,7 @@ export default async function RootLayout({
           enableSystem
         >
           <ThemePersistSync initialUserTheme={initialUserTheme} />
-          <CriticalRoutePrefetcher />
+          <DeferredCriticalRoutePrefetcher />
           <CartProvider>
             <CryptoCurrencyProvider>
               <Suspense
@@ -195,8 +195,10 @@ export default async function RootLayout({
             </CryptoCurrencyProvider>
           </CartProvider>
         </ThemeProvider>
-        {/* SpeedInsights only on Vercel; script 404s on other hosts (e.g. Railway) and can cause console noise */}
-        {process.env.NEXT_PUBLIC_VERCEL === "1" ? <SpeedInsights /> : null}
+        {/* SpeedInsights deferred until idle so it doesn't compete with LCP; only on Vercel */}
+        {process.env.NEXT_PUBLIC_VERCEL === "1" ? (
+          <DeferredSpeedInsights />
+        ) : null}
         {/* Structured data for search engines */}
         <OrganizationStructuredData />
         <WebSiteStructuredData />
@@ -245,11 +247,11 @@ function StoreLayoutWrapper({
   return (
     <WalletErrorBoundary>
       <LazyWagmiProvider>
-        <SolanaWalletProvider>
+        <LazySolanaWalletProvider>
           <AuthWalletModalProvider>
             <LayoutShell>{children}</LayoutShell>
           </AuthWalletModalProvider>
-        </SolanaWalletProvider>
+        </LazySolanaWalletProvider>
       </LazyWagmiProvider>
     </WalletErrorBoundary>
   );

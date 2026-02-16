@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,8 +23,12 @@
       }
     ],
     "paths": {
-      "~/*": ["./src/*"],
-      "@/*": ["./src/*"]
+      "~/*": [
+        "./src/*"
+      ],
+      "@/*": [
+        "./src/*"
+      ]
     }
   },
   "include": [
@@ -29,10 +37,13 @@
     "x402-next.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
     "eslint.config.js",
-    "reset.d.ts",
-    ".next/dev/types/**/*.ts"
+    "reset.d.ts"
   ],
-  "exclude": ["node_modules", "admin", "contracts", "scripts"]
+  "exclude": [
+    "node_modules",
+    "admin",
+    "contracts",
+    "scripts"
+  ]
 }

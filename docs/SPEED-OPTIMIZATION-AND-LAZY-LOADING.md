@@ -43,10 +43,11 @@ The root layout wraps every page. Theme, cart, crypto/currency, prefetcher, auth
 | `CartProvider` | ~3KB | Cart is used site-wide |
 | `CryptoCurrencyProvider` | ~5KB | Crypto price display in footer/products; API fetch on mount |
 | `CountryCurrencyProvider` | ~15KB | Currency display site-wide; reads cookie, defers exchange-rate fetch |
-| `CriticalRoutePrefetcher` | ~1KB | Prefetches `/checkout`, `/products` |
+| `DeferredCriticalRoutePrefetcher` | 0 KB initial | Prefetches `/checkout`, `/products`; chunk loads after **requestIdleCallback** so it doesn’t compete with LCP. |
 | `AuthWalletModalProvider` | ~2KB | Event listener only; modal shell is dynamic |
 | `WalletErrorBoundary` | ~1KB | Lightweight error boundary |
 | `LazyWagmiProvider` | 0 KB initial | Wagmi + viem + chains are **not** in the initial bundle. The gate listens for `PRELOAD_AUTH_WALLET_MODAL` / `OPEN_AUTH_WALLET_MODAL` (e.g. hover or click "Connect wallet"); only then does it dynamic-import `wagmi-provider` and mount it. Once loaded, the provider stays mounted for the session. The auth modal shell shows a loading state until Wagmi is ready. |
+| `LazySolanaWalletProvider` | Stub only initial | Renders a tiny **stub** (WalletContext only) so `useWallet()` doesn’t throw; the real Solana provider (adapters, Phantom, Solflare, etc.) loads after **requestIdleCallback** (~1.5s timeout), then swaps in. Reduces initial JS on every store page. |
 
 ### What is NOT in the root layout (scoped to routes)
 
@@ -67,11 +68,11 @@ The root layout wraps every page. Theme, cart, crypto/currency, prefetcher, auth
 
 ## 3. Route prefetching
 
-**File:** `src/ui/components/critical-route-prefetcher.tsx`
+**Files:** `src/ui/components/critical-route-prefetcher.tsx`, `src/ui/components/deferred-critical-route-prefetcher.tsx`
 
-- **What:** A client component that runs once the app is interactive and prefetches critical routes with the Next.js router.
+- **What:** A client component that prefetches critical routes with the Next.js router. The root layout uses **DeferredCriticalRoutePrefetcher**, which loads the prefetcher chunk after `requestIdleCallback` so it doesn’t compete with LCP.
 - **Routes prefetched:** `/checkout`, `/products`.
-- **Where used:** Rendered in the root layout so these routes are prefetched soon after first paint, making the first click to checkout or products faster.
+- **Where used:** Rendered in the root layout; prefetch runs soon after idle.
 
 **Maintenance:** If you add another high-value route (e.g. a new shop or collection entry point), consider adding it to the prefetcher. Do not prefetch too many routes or you will waste bandwidth; keep it to a small set of primary navigation targets.
 
@@ -315,7 +316,7 @@ When running desktop PageSpeed, the following have been addressed or documented:
 ### Mobile-specific (PageSpeed mobile)
 
 - **LCP breakdown:** Element render delay (~2.7s) is the main cost; TTFB is 0 ms. The LCP element is the hero `<h1>`. Reducing main-thread work (JS execution) is the primary lever — see “Reduce JavaScript execution time” and long tasks.
-- **Reduce JavaScript execution time:** Chunk `93794` (or similar IDs after rebuild) is often the largest (parse + eval). Run `ANALYZE=true bun run build` (or `bun run analyze` if configured) and open the generated report to see which modules are in the largest chunks; then add `next/dynamic` for heavy below-the-fold sections (e.g. `TestimonialsSection` is now lazy on the homepage). ufs.sh cache TTL is controlled by the CDN.
+- **Reduce JavaScript execution time:** Chunk `93794` (or similar IDs after rebuild) is often the largest (parse + eval). Applied mitigations: (1) **TestimonialsSection** is lazy on the homepage; (2) **SpeedInsights** loads after `requestIdleCallback` via `DeferredSpeedInsights`; (3) **CriticalRoutePrefetcher** loads after idle via `DeferredCriticalRoutePrefetcher`; (4) **Solana** wallet adapters load after idle via `LazySolanaWalletProvider` (stub renders first). Run `ANALYZE=true bun run build` and open `.next/analyze/*.html` to find further split opportunities. ufs.sh cache TTL is controlled by the CDN.
 - **Improve image delivery (mobile):** Product detail main image uses `sizes` capped at `900px` for large viewports to avoid overserving. Product cards use `320px` cap for grid. Ensure all `next/image` instances have appropriate `sizes` for their layout.
 - **Legacy JavaScript / cache:** Same as desktop: `browserslist` targets modern browsers; ufs.sh cache is third-party.
 
