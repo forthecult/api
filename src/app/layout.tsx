@@ -16,7 +16,7 @@ import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
 import { DeferredCriticalRoutePrefetcher } from "~/ui/components/deferred-critical-route-prefetcher";
 import { MainWithDogePadding } from "~/ui/components/main-with-doge-padding";
-import { DeferredHeader } from "~/ui/components/header/deferred-header";
+import { ConditionalHeader } from "~/ui/components/header/conditional-header";
 import {
   OrganizationStructuredData,
   WebSiteStructuredData,
@@ -227,7 +227,7 @@ async function CookieCountryProvider({
 function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <>
-      <DeferredHeader showAuth={true} />
+      <ConditionalHeader showAuth={true} />
       <main className="flex min-h-screen flex-col bg-background">
         <MainWithDogePadding className="flex flex-1 flex-col">
           {children}
