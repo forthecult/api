@@ -135,18 +135,27 @@ const DigitalOnlyStubRef = function DigitalOnlyStubRef({
 };
 
 /**
- * Safe wallet address reader. Uses useContext(WalletContext) directly instead of
- * useWallet() because the main /checkout page has NO SolanaWalletProvider.
- * useWallet() triggers console.error getters on the default context; reading the
- * raw context value and checking publicKey with a try-catch avoids the noise.
- * Returns the base58 address when a wallet is connected (e.g. on
- * /checkout/[invoiceId] which has SolanaWalletProvider), or undefined otherwise.
+ * Safe wallet address reader that avoids the console.error noise from the
+ * Solana wallet adapter's default context.
+ *
+ * When no SolanaWalletProvider is in the tree (e.g. on /checkout), the adapter's
+ * default context defines `publicKey` as a getter that calls console.error before
+ * returning null. We detect this by checking if `publicKey` is defined as a
+ * getter (Object.getOwnPropertyDescriptor) and skip the read entirely.
+ *
+ * When a real provider IS present (e.g. /checkout/[invoiceId]), publicKey is a
+ * regular property set by the provider, and we read it normally.
  */
 function useOptionalWalletAddress(): string | undefined {
   const ctx = useContext(WalletContext);
+  if (!ctx) return undefined;
+  // Default context (no provider) uses Object.defineProperty with a getter that
+  // console.errors. A real provider sets publicKey as a data property. Skip the
+  // read if it's a getter to avoid console noise.
+  const desc = Object.getOwnPropertyDescriptor(ctx, "publicKey");
+  if (desc?.get) return undefined;
   try {
-    const pk = ctx?.publicKey;
-    return pk?.toBase58() ?? undefined;
+    return ctx.publicKey?.toBase58() ?? undefined;
   } catch {
     return undefined;
   }
