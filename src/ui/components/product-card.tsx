@@ -100,6 +100,10 @@ const StarRating = React.memo(function StarRating({
 /** Number of days a product is considered "New". */
 const NEW_PRODUCT_DAYS = 14;
 
+/** Minimal gray blur placeholder to avoid image pop-in flash on category/checkout. */
+const BLUR_DATA_URL =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMAAAQ";
+
 function ProductCardInner({
   className,
   imageAspect = "square",
@@ -240,6 +244,9 @@ function ProductCardInner({
             {(imageSrc === "/placeholder.svg" || product.image) && (
               <Image
                 alt={product.name}
+                blurDataURL={
+                  imageSrc !== "/placeholder.svg" ? BLUR_DATA_URL : undefined
+                }
                 className={cn(
                   "object-contain transition-all duration-300 ease-in-out",
                   isHovered && !isGated && "scale-105",
@@ -247,6 +254,9 @@ function ProductCardInner({
                 )}
                 fill
                 onError={() => setImageError(true)}
+                placeholder={
+                  imageSrc !== "/placeholder.svg" ? "blur" : "empty"
+                }
                 priority={priority}
                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 320px"
                 src={imageSrc}

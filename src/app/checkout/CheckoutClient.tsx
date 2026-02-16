@@ -36,6 +36,7 @@ import {
 
 import { checkoutReducer, initialCheckoutState } from "./checkout-reducer";
 import { defaultForm } from "./checkout-shared";
+import { preloadStripe } from "./stripe-preload";
 import {
   BillingAddressForm,
   type BillingAddressFormRef,
@@ -207,6 +208,11 @@ export function CheckoutClient() {
   }, []);
   const setNavigatingToPay = useCallback((navigating: boolean) => {
     dispatch({ navigating, type: "SET_NAVIGATING" });
+  }, []);
+
+  // Start loading Stripe as soon as checkout page mounts so the card form is ready when they select it
+  useEffect(() => {
+    preloadStripe();
   }, []);
 
   const [shipping, setShipping] = useState<ShippingUpdate>({

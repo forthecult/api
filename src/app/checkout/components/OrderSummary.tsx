@@ -30,6 +30,10 @@ import { type AppliedCoupon, checkoutFieldHeight } from "../checkout-shared";
 
 const placeholderSrc = "/placeholder.svg";
 
+/** Minimal blur placeholder to avoid thumbnail flash while loading. */
+const BLUR_DATA_URL =
+  "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMAAAQ";
+
 function variantDisplayOnly(name: string, variantLabel: string): string {
   if (!variantLabel?.trim()) return name;
   return variantLabel.trim();
@@ -115,27 +119,35 @@ export function OrderSummary({
               relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-white
             `}
             >
-              {failedImageIds.has(item.id) || !item.image?.trim() ? (
-                <Image
-                  alt={item.name}
-                  className="object-contain"
-                  fill
-                  sizes="64px"
-                  src={placeholderSrc}
-                />
-              ) : (
-                <Image
-                  alt={item.name}
-                  className="object-contain"
-                  fill
-                  onError={() =>
-                    setFailedImageIds((prev) => new Set(prev).add(item.id))
-                  }
-                  sizes="64px"
-                  src={item.image.trim()}
-                  unoptimized={/^https?:\/\//i.test(item.image)}
-                />
-              )}
+              <Image
+                alt={item.name}
+                blurDataURL={
+                  item.image?.trim() && !failedImageIds.has(item.id)
+                    ? BLUR_DATA_URL
+                    : undefined
+                }
+                className="object-contain"
+                fill
+                onError={() =>
+                  setFailedImageIds((prev) => new Set(prev).add(item.id))
+                }
+                placeholder={
+                  item.image?.trim() && !failedImageIds.has(item.id)
+                    ? "blur"
+                    : "empty"
+                }
+                sizes="64px"
+                src={
+                  failedImageIds.has(item.id) || !item.image?.trim()
+                    ? placeholderSrc
+                    : item.image.trim()
+                }
+                unoptimized={
+                  !item.image?.trim()
+                    ? false
+                    : /^https?:\/\//i.test(item.image)
+                }
+              />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm leading-tight font-medium">{item.name}</p>

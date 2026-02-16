@@ -18,8 +18,10 @@ function whenIdle(cb: () => void, timeout: number): () => void {
 
 /**
  * Renders children with a stub Solana context immediately, then loads the real
- * SolanaWalletProvider after the main thread is idle and swaps it in. Reduces
- * initial JS by deferring the Solana adapter chunk (Phantom, Solflare, etc.).
+ * SolanaWalletProvider after the main thread is idle (requestIdleCallback, 1.5s
+ * timeout) and swaps it in. Used only in the root layout for store browsing.
+ * Checkout/payment page has its own real SolanaWalletProvider in the invoice
+ * layout and preloads it when the user selects crypto (prefetchCryptoPayClient).
  */
 export function LazySolanaWalletProvider({ children }: { children: ReactNode }) {
   const [RealProvider, setRealProvider] = useState<SolanaProviderComponent | null>(null);

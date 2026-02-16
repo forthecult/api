@@ -4,6 +4,8 @@
  * or selects a payment method).
  */
 
+import { preloadStripe } from "./stripe-preload";
+
 let checkoutPrefetched = false;
 let cryptoPayPrefetched = false;
 let ethPayPrefetched = false;
@@ -14,12 +16,16 @@ export function prefetchCheckout(): void {
   if (checkoutPrefetched || typeof window === "undefined") return;
   checkoutPrefetched = true;
   void import("~/app/checkout/CheckoutClient");
+  // Start loading Stripe as soon as checkout intent is shown so the card form is ready when they select it
+  preloadStripe();
 }
 
 export function prefetchCryptoPayClient(): void {
   if (cryptoPayPrefetched || typeof window === "undefined") return;
   cryptoPayPrefetched = true;
   void import("~/app/checkout/crypto/CryptoPayClient");
+  // Preload Solana wallet provider so it’s ready when user lands on payment page
+  void import("~/app/checkout/crypto/SolanaWalletProvider");
 }
 
 export function prefetchEthPayClient(): void {

@@ -315,6 +315,48 @@ export function solanaAuthPlugin() {
                   },
                   model: "user",
                 });
+                // Fetch the user we just created so the row is visible before creating the account
+                // (avoids FK violation if createAccount runs on a different connection or before commit)
+                user = (await adapter.findOne({
+                  model: "user",
+                  where: [{ field: "id", value: userId }],
+                })) as null | UserRecord;
+                if (user) {
+                  const accountId = generateId({ model: "account" });
+                  const accountNow = new Date();
+                  try {
+                    await (
+                      ctx.context.internalAdapter as {
+                        createAccount: (data: {
+                          accountId: string;
+                          createdAt: Date;
+                          id: string;
+                          providerId: string;
+                          updatedAt: Date;
+                          userId: string;
+                        }) => Promise<unknown>;
+                      }
+                    ).createAccount({
+                      accountId: addressTrim,
+                      createdAt: accountNow,
+                      id: accountId,
+                      providerId: SOLANA_PROVIDER_ID,
+                      updatedAt: accountNow,
+                      userId: user.id,
+                    });
+                  } catch (createAccountErr) {
+                    console.error(
+                      "[solana-auth] createAccount failed after user create:",
+                      createAccountErr,
+                    );
+                    throw createAccountErr;
+                  }
+                } else {
+                  throw new APIError("INTERNAL_SERVER_ERROR", {
+                    message:
+                      "User creation succeeded but user could not be retrieved. Please try again.",
+                  });
+                }
               } catch (createUserErr) {
                 console.error(
                   "[solana-auth] User creation failed:",

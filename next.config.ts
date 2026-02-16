@@ -165,6 +165,7 @@ const config = {
               "<https://images-api.printify.com>; rel=dns-prefetch",
               "<https://cdn.shopify.com>; rel=dns-prefetch",
               "<https://assets.coingecko.com>; rel=dns-prefetch",
+              "<https://js.stripe.com>; rel=preconnect",
             ].join(", "),
           },
           // Block crawlers on staging only (VERCEL_ENV=preview or STAGING=1)
