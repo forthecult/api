@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import * as React from "react";
 import { useCallback } from "react";
 import { toast } from "sonner";
@@ -7,7 +8,14 @@ import { toast } from "sonner";
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
-import { ProductQuickView } from "~/ui/components/product-quick-view";
+
+const ProductQuickView = dynamic(
+  () =>
+    import("~/ui/components/product-quick-view").then((m) => ({
+      default: m.ProductQuickView,
+    })),
+  { ssr: false },
+);
 
 interface Product {
   category: string;
@@ -30,6 +38,7 @@ export function FeaturedProductsSection({ products }: { products: Product[] }) {
 
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
   const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
+  const [preloadQuickView, setPreloadQuickView] = React.useState(false);
 
   const handleQuickView = useCallback((slugOrId: string) => {
     setQuickViewSlug(slugOrId);
@@ -98,17 +107,20 @@ export function FeaturedProductsSection({ products }: { products: Product[] }) {
           key={product.id}
           onAddToCart={handleAddToCart}
           onAddToWishlist={handleAddToWishlist}
+          onPreloadQuickView={() => setPreloadQuickView(true)}
           onQuickView={handleQuickView}
           onRemoveFromWishlist={handleRemoveFromWishlist}
           product={product}
         />
       ))}
 
-      <ProductQuickView
-        onOpenChange={setQuickViewOpen}
-        open={quickViewOpen}
-        productSlugOrId={quickViewSlug}
-      />
+      {(quickViewOpen || preloadQuickView) && (
+        <ProductQuickView
+          onOpenChange={setQuickViewOpen}
+          open={quickViewOpen}
+          productSlugOrId={quickViewSlug}
+        />
+      )}
     </>
   );
 }

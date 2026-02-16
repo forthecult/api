@@ -2,6 +2,9 @@ import { cn } from "~/lib/cn";
 
 import { CartClient } from "./cart-client";
 
+/** Dispatch to start loading the cart chunk (e.g. on hover over cart icon or add-to-cart). */
+export const PRELOAD_CART = "preload-cart";
+
 export interface CartItem {
   category: string;
   /** True for digital products (eSIM, downloads) — skip shipping at checkout */

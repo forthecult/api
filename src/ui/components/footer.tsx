@@ -1,14 +1,27 @@
+"use client";
+
+import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useState } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { cn } from "~/lib/cn";
 import { FooterBottom } from "~/ui/components/footer/FooterBottom";
-import { FooterDogePeek } from "~/ui/components/footer/FooterDogePeek";
 import { FooterPaymentsBar } from "~/ui/components/footer/FooterPaymentsBar";
 import { GitHubIcon } from "~/ui/components/icons/github";
 import { Button } from "~/ui/primitives/button";
 
+const FooterDogePeek = dynamic(
+  () =>
+    import("~/ui/components/footer/FooterDogePeek").then((m) => ({
+      default: m.FooterDogePeek,
+    })),
+  { ssr: false },
+);
+
 export function Footer({ className }: { className?: string }) {
+  const [showDogePeek, setShowDogePeek] = useState(false);
+
   return (
     <footer
       className={cn(
@@ -19,7 +32,7 @@ export function Footer({ className }: { className?: string }) {
         className,
       )}
     >
-      <FooterDogePeek />
+      {showDogePeek && <FooterDogePeek />}
       <div
         className={`
           container mx-auto max-w-7xl px-4 py-12
@@ -322,7 +335,7 @@ export function Footer({ className }: { className?: string }) {
           <div className="mb-6">
             <FooterPaymentsBar />
           </div>
-          <FooterBottom />
+          <FooterBottom onCryptoDropdownOpen={() => setShowDogePeek(true)} />
         </div>
       </div>
     </footer>

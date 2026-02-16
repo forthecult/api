@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import * as React from "react";
 
 import { cn } from "~/lib/cn";
+import { PRELOAD_CART } from "~/ui/components/cart";
 import { useCountryCurrency } from "~/lib/hooks/use-country-currency";
 import { useShippingCountry } from "~/lib/hooks/use-shipping-country";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
@@ -27,6 +28,8 @@ type ProductCardProps = Omit<
   isInWishlist?: boolean;
   onAddToCart?: (productId: string) => void;
   onAddToWishlist?: (productId: string) => void;
+  /** Callback when user hovers near the card — use to preload Quick View. */
+  onPreloadQuickView?: () => void;
   /** Callback to open Quick View. Receives the product slug or id. */
   onQuickView?: (slugOrId: string) => void;
   onRemoveFromWishlist?: (productId: string) => void;
@@ -103,6 +106,7 @@ function ProductCardInner({
   isInWishlist: isInWishlistProp,
   onAddToCart,
   onAddToWishlist,
+  onPreloadQuickView,
   onQuickView,
   onRemoveFromWishlist,
   priority = false,
@@ -220,7 +224,10 @@ function ProductCardInner({
             `,
             isHovered && "border-[#C4873A]/20 ring-1 ring-[#C4873A]/20",
           )}
-          onMouseEnter={() => setIsHovered(true)}
+          onMouseEnter={() => {
+            setIsHovered(true);
+            onPreloadQuickView?.();
+          }}
           onMouseLeave={() => setIsHovered(false)}
         >
           <div
@@ -486,6 +493,11 @@ function ProductCardInner({
                   isAddingToCart && "opacity-70",
                 )}
                 disabled={isAddingToCart || product.inStock === false}
+                onMouseEnter={() => {
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent(PRELOAD_CART));
+                  }
+                }}
                 onClick={handleAddToCart}
                 variant={product.hasVariants ? "outline" : "default"}
               >
@@ -546,6 +558,11 @@ function ProductCardInner({
                   <Button
                     className="h-8 w-8 rounded-full"
                     disabled={isAddingToCart}
+                    onMouseEnter={() => {
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(new CustomEvent(PRELOAD_CART));
+                      }
+                    }}
                     onClick={handleAddToCart}
                     size="icon"
                     variant="ghost"

@@ -1,12 +1,21 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import * as React from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
-import { ProductQuickView } from "~/ui/components/product-quick-view";
+
+const ProductQuickView = dynamic(
+  () =>
+    import("~/ui/components/product-quick-view").then((m) => ({
+      default: m.ProductQuickView,
+    })),
+  { ssr: false },
+);
 
 export interface RelatedProduct {
   category: string;
@@ -35,6 +44,21 @@ export function RelatedProductsSection({
 
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
   const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
+  const [preloadQuickView, setPreloadQuickView] = React.useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setPreloadQuickView(true);
+      },
+      { rootMargin: "100px", threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const handleQuickView = React.useCallback((slugOrId: string) => {
     setQuickViewSlug(slugOrId);
@@ -88,6 +112,7 @@ export function RelatedProductsSection({
           </p>
         ) : (
           <div
+            ref={gridRef}
             className={`
             grid grid-cols-1 gap-x-8 gap-y-6
             sm:grid-cols-2 sm:gap-x-10
@@ -102,6 +127,7 @@ export function RelatedProductsSection({
                 key={product.id}
                 onAddToCart={handleAddToCart}
                 onAddToWishlist={addToWishlist}
+                onPreloadQuickView={() => setPreloadQuickView(true)}
                 onQuickView={handleQuickView}
                 onRemoveFromWishlist={removeFromWishlist}
                 product={{
@@ -115,11 +141,13 @@ export function RelatedProductsSection({
         )}
       </div>
 
-      <ProductQuickView
-        onOpenChange={setQuickViewOpen}
-        open={quickViewOpen}
-        productSlugOrId={quickViewSlug}
-      />
+      {(quickViewOpen || preloadQuickView) && (
+        <ProductQuickView
+          onOpenChange={setQuickViewOpen}
+          open={quickViewOpen}
+          productSlugOrId={quickViewSlug}
+        />
+      )}
     </section>
   );
 }

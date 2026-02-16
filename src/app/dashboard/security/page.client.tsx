@@ -23,7 +23,7 @@ import { isRealEmail } from "~/lib/is-real-email";
 import {
   OPEN_LINK_WALLET_MODAL,
   WALLET_LINKED_EVENT,
-} from "~/ui/components/auth/auth-wallet-modal";
+} from "~/ui/components/auth/auth-wallet-modal-events";
 import {
   getTelegramBotUsername,
   TelegramLoginWidget,

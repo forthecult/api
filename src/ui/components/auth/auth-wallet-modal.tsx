@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAccount, useConnect, useConnectors, useSignMessage } from "wagmi";
 
 import { SYSTEM_CONFIG } from "~/app";
+import { WALLET_LINKED_EVENT } from "~/ui/components/auth/auth-wallet-modal-events";
 import { cn } from "~/lib/cn";
 import { Button } from "~/ui/primitives/button";
 import { Dialog, DialogContent, DialogTitle } from "~/ui/primitives/dialog";
@@ -139,13 +140,12 @@ const API_BASE =
       ? process.env.NEXT_PUBLIC_APP_URL
       : "";
 
-export const OPEN_AUTH_WALLET_MODAL = "open-auth-wallet-modal";
-/** Dispatch to open the modal showing only Solana wallets (for staking, not auth). */
-export const OPEN_SOLANA_WALLET_MODAL = "open-solana-wallet-modal";
-/** Dispatch this from dashboard to open the modal in link mode (connect wallet to current account). */
-export const OPEN_LINK_WALLET_MODAL = "open-link-wallet-modal";
-/** Dispatched when a wallet is successfully linked to refresh account lists. */
-export const WALLET_LINKED_EVENT = "wallet-linked";
+export {
+  OPEN_AUTH_WALLET_MODAL,
+  OPEN_LINK_WALLET_MODAL,
+  OPEN_SOLANA_WALLET_MODAL,
+  WALLET_LINKED_EVENT,
+} from "~/ui/components/auth/auth-wallet-modal-events";
 
 interface AuthWalletModalProps {
   /** When true, link wallet to current account instead of signing in */

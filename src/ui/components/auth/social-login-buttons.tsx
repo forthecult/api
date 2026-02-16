@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { openConnectWalletModal } from "~/app/checkout/crypto/open-wallet-modal";
 import { signIn } from "~/lib/auth-client";
-import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal-events";
 import {
   getTelegramBotUsername,
   TelegramLoginWidget,

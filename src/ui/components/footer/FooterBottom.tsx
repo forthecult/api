@@ -26,8 +26,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "~/ui/primitives/dropdown-menu";
-import { SideshiftBackdropOverlay } from "~/ui/components/footer/SideshiftBackdropOverlay";
-
 // Lazy load FooterPreferencesModal - only needed when user opens preferences
 const FooterPreferencesModal = dynamic(
   () =>
@@ -51,6 +49,11 @@ const SIDESHIFT_CONFIG = {
 } as const;
 
 const SIDESHIFT_SCRIPT_URL = "https://sideshift.ai/static/js/main.js";
+
+/** On mobile we open Sideshift in a new tab (full site is better than the embed). Affiliate ID at end. */
+const SIDESHIFT_AFFILIATE_URL = "https://sideshift.ai/sol/eth/a/03RoxqMia";
+
+const MOBILE_BREAKPOINT_PX = 768;
 
 /** Load Sideshift script on demand and open the widget. No network cost until first click. */
 function loadSideshiftAndShow(): void {
@@ -88,10 +91,13 @@ const CRYPTO_COLORS: Record<CryptoCode, string> = {
   XMR: "#FF6600",
 };
 
-export function FooterBottom() {
+export function FooterBottom({
+  onCryptoDropdownOpen,
+}: {
+  onCryptoDropdownOpen?: () => void;
+} = {}) {
   const [mounted, setMounted] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
-  const [sideshiftOverlayOpen, setSideshiftOverlayOpen] = useState(false);
   const { rates, selectedCrypto, setSelectedCrypto } = useCryptoCurrency();
   const { convertUsdToFiat, currency, formatFiat, selectedCountry } =
     useCountryCurrency();
@@ -173,7 +179,13 @@ export function FooterBottom() {
             `}
             style={{ color: CRYPTO_COLORS[selectedCrypto] }}
             onClick={() => {
-              setSideshiftOverlayOpen(true);
+              if (
+                typeof window !== "undefined" &&
+                window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT_PX - 1}px)`).matches
+              ) {
+                window.open(SIDESHIFT_AFFILIATE_URL, "_blank", "noopener,noreferrer");
+                return;
+              }
               loadSideshiftAndShow();
             }}
           >
@@ -196,7 +208,11 @@ export function FooterBottom() {
           md:flex-row md:gap-4
         `}
         >
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (open) onCryptoDropdownOpen?.();
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 className={`
@@ -274,9 +290,6 @@ export function FooterBottom() {
             open={prefsOpen}
           />
         </div>
-        {sideshiftOverlayOpen && (
-          <SideshiftBackdropOverlay onClose={() => setSideshiftOverlayOpen(false)} />
-        )}
         <div className="flex flex-wrap items-center justify-center gap-4">
           <Link className="hover:text-foreground" href="/policies/privacy">
             Privacy

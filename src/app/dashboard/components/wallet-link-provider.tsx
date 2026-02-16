@@ -3,10 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { SolanaWalletProvider } from "~/app/checkout/crypto/SolanaWalletProvider";
-import {
-  AuthWalletModal,
-  OPEN_LINK_WALLET_MODAL,
-} from "~/ui/components/auth/auth-wallet-modal";
+import { OPEN_LINK_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal-events";
+import { AuthWalletModal } from "~/ui/components/auth/auth-wallet-modal";
 
 export function DashboardWalletLinkProvider({
   children,

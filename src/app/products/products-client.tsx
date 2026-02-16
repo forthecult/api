@@ -8,6 +8,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import * as React from "react";
@@ -17,9 +18,16 @@ import { useCart } from "~/lib/hooks/use-cart";
 import { useWishlist } from "~/lib/hooks/use-wishlist";
 import { ProductCard } from "~/ui/components/product-card";
 import { ProductGridSkeleton } from "~/ui/components/product-card-skeleton";
-import { ProductQuickView } from "~/ui/components/product-quick-view";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
+
+const ProductQuickView = dynamic(
+  () =>
+    import("~/ui/components/product-quick-view").then((m) => ({
+      default: m.ProductQuickView,
+    })),
+  { ssr: false },
+);
 
 export type SortOption =
   | "best_selling"
@@ -128,9 +136,24 @@ export function ProductsClient({
   /** When true, next sync from server props is skipped (we just did Load More and updated URL). */
   const skipNextSyncRef = React.useRef(false);
 
-  // Quick View state
+  // Quick View state; preload when grid in view or card hovered
   const [quickViewOpen, setQuickViewOpen] = React.useState(false);
   const [quickViewSlug, setQuickViewSlug] = React.useState<null | string>(null);
+  const [preloadQuickView, setPreloadQuickView] = React.useState(false);
+  const productGridRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const el = productGridRef.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) setPreloadQuickView(true);
+      },
+      { rootMargin: "100px", threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
   const handleQuickView = React.useCallback((slugOrId: string) => {
     setQuickViewSlug(slugOrId);
@@ -673,6 +696,7 @@ export function ProductsClient({
             ) : (
               <>
                 <div
+                  ref={productGridRef}
                   className={`
                   grid grid-cols-1 gap-6
                   sm:grid-cols-2
@@ -686,6 +710,7 @@ export function ProductsClient({
                       key={product.id}
                       onAddToCart={handleAddToCart}
                       onAddToWishlist={handleAddToWishlist}
+                      onPreloadQuickView={() => setPreloadQuickView(true)}
                       onQuickView={handleQuickView}
                       onRemoveFromWishlist={handleRemoveFromWishlist}
                       priority={index < 4}
@@ -803,12 +828,14 @@ export function ProductsClient({
         </div>
       </main>
 
-      {/* Quick View drawer */}
-      <ProductQuickView
-        onOpenChange={setQuickViewOpen}
-        open={quickViewOpen}
-        productSlugOrId={quickViewSlug}
-      />
+      {/* Quick View drawer — lazy load when grid in view or card hovered */}
+      {(quickViewOpen || preloadQuickView) && (
+        <ProductQuickView
+          onOpenChange={setQuickViewOpen}
+          open={quickViewOpen}
+          productSlugOrId={quickViewSlug}
+        />
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu, Search, UserIcon } from "lucide-react";
+import { Menu, Search, ShoppingCart, UserIcon } from "lucide-react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -14,12 +15,23 @@ import {
   CRYPTO_CATEGORY_NAMES_SET,
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 } from "~/lib/storefront-categories";
-import { Cart } from "~/ui/components/cart";
+import { PRELOAD_CART } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
-import { NotificationsWidget } from "../notifications/notifications-widget";
+const NotificationsWidget = dynamic(
+  () =>
+    import("../notifications/notifications-widget").then((m) => ({
+      default: m.NotificationsWidget,
+    })),
+  { ssr: false },
+);
+
+const Cart = dynamic(
+  () => import("~/ui/components/cart").then((m) => ({ default: m.Cart })),
+  { ssr: false },
+);
 import { HeaderGuestDropdown } from "./header-guest-dropdown";
 import { HeaderSearch } from "./header-search";
 import { HeaderUserDropdown } from "./header-user";
@@ -75,9 +87,17 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileSearchQuery, setMobileSearchQuery] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [cartRequested, setCartRequested] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setCartRequested(true);
+    const handler = () => setCartRequested(true);
+    window.addEventListener(PRELOAD_CART, handler);
+    return () => window.removeEventListener(PRELOAD_CART, handler);
   }, []);
 
   // avoid hydration mismatch: server and first client render don't have session
@@ -551,7 +571,29 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                     )}
                   </div>
                 )}
-                {!isCheckout && <Cart />}
+                {!isCheckout && (
+                  <div
+                    className="flex items-center"
+                    onMouseEnter={() => {
+                      if (typeof window !== "undefined") {
+                        window.dispatchEvent(new CustomEvent(PRELOAD_CART));
+                      }
+                    }}
+                  >
+                    {cartRequested ? (
+                      <Cart />
+                    ) : (
+                      <Button
+                        aria-label="Cart"
+                        className="h-9 w-9 rounded-full"
+                        size="icon"
+                        variant="ghost"
+                      >
+                        <ShoppingCart className="h-5 w-5" />
+                      </Button>
+                    )}
+                  </div>
+                )}
               </>
             )}
           </div>

@@ -6,7 +6,7 @@ import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { base64ToUint8Array } from "~/lib/solana-tx";
-import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import { OPEN_SOLANA_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal-events";
 
 const SEND_OPTS = {
   preflightCommitment: "confirmed" as const,

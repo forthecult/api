@@ -5,7 +5,10 @@ import { useTheme } from "next-themes";
 import Link from "next/link";
 import * as React from "react";
 
-import { OPEN_AUTH_WALLET_MODAL } from "~/ui/components/auth/auth-wallet-modal";
+import {
+  OPEN_AUTH_WALLET_MODAL,
+  PRELOAD_AUTH_WALLET_MODAL,
+} from "~/ui/components/auth/auth-wallet-modal-events";
 import { Button } from "~/ui/primitives/button";
 import {
   DropdownMenu,
@@ -37,6 +40,11 @@ export function HeaderGuestDropdown() {
           `}
           size="icon"
           variant="ghost"
+          onMouseEnter={() => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent(PRELOAD_AUTH_WALLET_MODAL));
+            }
+          }}
         >
           <UserIcon className="h-5 w-5" />
           <span className="sr-only">Account</span>

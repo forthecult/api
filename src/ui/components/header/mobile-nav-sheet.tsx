@@ -25,7 +25,7 @@ import {
   CURRENCY_OPTIONS,
   useCountryCurrency,
 } from "~/lib/hooks/use-country-currency";
-import { Cart } from "~/ui/components/cart";
+import { PRELOAD_CART } from "~/ui/components/cart";
 import { Button } from "~/ui/primitives/button";
 import { Input } from "~/ui/primitives/input";
 import { Sheet, SheetClose, SheetContent } from "~/ui/primitives/sheet";
@@ -36,6 +36,11 @@ const FooterPreferencesModal = dynamic(
     import("~/ui/components/footer/FooterPreferencesModal").then(
       (mod) => mod.FooterPreferencesModal,
     ),
+  { ssr: false },
+);
+
+const Cart = dynamic(
+  () => import("~/ui/components/cart").then((m) => ({ default: m.Cart })),
   { ssr: false },
 );
 
@@ -81,6 +86,16 @@ export function MobileNavSheet({
   const [shopExpanded, setShopExpanded] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [prefsOpen, setPrefsOpen] = React.useState(false);
+  const [cartRequested, setCartRequested] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) setCartRequested(true);
+  }, [open]);
+  React.useEffect(() => {
+    const handler = () => setCartRequested(true);
+    window.addEventListener(PRELOAD_CART, handler);
+    return () => window.removeEventListener(PRELOAD_CART, handler);
+  }, []);
 
   const { currency, selectedCountry } = useCountryCurrency();
   const currentCountry = mounted
@@ -169,7 +184,7 @@ export function MobileNavSheet({
                 </>
               )}
               <div className="[&_.border-rounded]:rounded-full">
-                <Cart />
+                {cartRequested && <Cart />}
               </div>
             </div>
           </div>
