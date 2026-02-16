@@ -196,6 +196,7 @@ function ReviewCard({
             <div
               aria-label={`${stars} out of 5 stars`}
               className="mt-1.5 flex items-center gap-0.5"
+              role="img"
             >
               {[1, 2, 3, 4, 5].map((i) => (
                 <Star

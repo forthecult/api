@@ -187,7 +187,7 @@ Not all API calls need to fire on mount. Deferring non-critical fetches reduces 
   - Auth sign-in/sign-up and about page: hero/logo images use `priority`.
   - Product detail gallery: `priority={!selectedVariant?.id}` for the main image.
 - **Product card** (`product-card.tsx`) accepts a `priority` prop and passes it to `next/image`; callers set it for above-the-fold items.
-- **Sizes:** Use appropriate `sizes` where it improves layout and reduces unnecessary large loads.
+- **Sizes:** Use appropriate `sizes` where it improves layout and reduces unnecessary large loads. Product cards use a cap of `320px` for the grid slot so images are not requested larger than displayed (~284px).
 
 **Maintenance:** For new high-impact images (e.g. new hero or first-screen product grid), set `priority` only for the few that affect LCP; leave the rest to default lazy loading.
 
@@ -294,12 +294,34 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 - **Homepage Suspense streaming:** Would improve TTFB but caused image flashing and ordering issues; we use fetch-all-then-render.
 - **Checkout:** Already prefetched via `CriticalRoutePrefetcher`; CheckoutClient and PaymentMethodSection are dynamic; Stripe loads only when card is selected.
 - **Payment page:** Pay clients (CryptoPayClient, etc.) are dynamic and prefetched on payment-method selection. Conditional wallet providers were reverted (tree stability).
-- **Preconnect:** `next.config.ts` already sends `dns-prefetch` / `preconnect` for image CDNs (utfs.io, Printify, etc.). Same-origin API calls do not need preconnect.
-- **Fonts:** Manrope is limited to 600/700/800; `next/font` handles loading. No further reduction without design change.
+- **Preconnect:** `next.config.ts` already sends `dns-prefetch` / `preconnect` for image CDNs (utfs.io, 9qeynzupxi.ufs.sh, Printify, etc.). Same-origin API calls do not need preconnect.
+- **Fonts:** Manrope is limited to 600/700/800 and uses `display: "swap"`; `next/font` handles loading. No further reduction without design change.
 
 ---
 
-## 13. Ideas for further improvement
+## 13. Google PageSpeed Insights – desktop findings and mitigations
+
+When running desktop PageSpeed, the following have been addressed or documented:
+
+| Finding | Mitigation |
+|--------|------------|
+| **LCP element render delay** (hero `<h1>`) | LCP is the hero heading. Reduce main-thread work (see long tasks / unused JS). Manrope uses `display: "swap"` so text can paint with fallback while font loads. |
+| **Improve image delivery / responsive images** | Product card images use `sizes` capped at `320px` for grid (displayed ~284px). Use `sizes` on all `next/image` so the optimizer serves appropriate widths. |
+| **Use efficient cache lifetimes** | Our static assets (`/_next/static/*`, images, fonts) use `Cache-Control: public, max-age=31536000, immutable`. Third-party image CDN (e.g. ufs.sh) sets its own headers; we cannot change those. |
+| **Legacy JavaScript (polyfills)** | `package.json` includes a modern `browserslist` so tooling can avoid transpiling baseline features. Remaining polyfills may come from dependencies. |
+| **Reduce unused JavaScript / long main-thread tasks** | Code-splitting and lazy loading are in place (sections 2–5). Large chunks (e.g. framework, Wagmi, payment clients) are loaded on demand. Run `bun run analyze` to find further split opportunities. |
+| **Forced reflow** | Avoid reading layout (e.g. `getBoundingClientRect`, `offsetWidth`) immediately after DOM writes; batch reads or use `requestAnimationFrame`. Some reflows come from third-party chunks. |
+
+### Mobile-specific (PageSpeed mobile)
+
+- **LCP breakdown:** Element render delay (~2.7s) is the main cost; TTFB is 0 ms. The LCP element is the hero `<h1>`. Reducing main-thread work (JS execution) is the primary lever — see “Reduce JavaScript execution time” and long tasks.
+- **Reduce JavaScript execution time:** Chunk `93794` is often the largest (parse + eval). Run `bun run analyze` to see what it contains; consider further code-splitting or deferring non-critical scripts. Our static cache and image `sizes` already help; ufs.sh cache TTL is controlled by the CDN.
+- **Improve image delivery (mobile):** Product detail main image uses `sizes` capped at `900px` for large viewports to avoid overserving. Product cards use `320px` cap for grid. Ensure all `next/image` instances have appropriate `sizes` for their layout.
+- **Legacy JavaScript / cache:** Same as desktop: `browserslist` targets modern browsers; ufs.sh cache is third-party.
+
+---
+
+## 14. Ideas for further improvement
 
 - **More route prefetching:** If analytics show other routes (e.g. category or collection pages) as common first clicks, consider prefetching them in `CriticalRoutePrefetcher` or on hover/focus of nav links.
 - **Checkout:** If you add a cart or session API, consider starting that request from the checkout layout or a small client component so data is in flight before CheckoutClient mounts.

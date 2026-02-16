@@ -161,6 +161,7 @@ const config = {
             key: "Link",
             value: [
               "<https://utfs.io>; rel=preconnect",
+              "<https://9qeynzupxi.ufs.sh>; rel=preconnect",
               "<https://images-api.printify.com>; rel=dns-prefetch",
               "<https://cdn.shopify.com>; rel=dns-prefetch",
               "<https://assets.coingecko.com>; rel=dns-prefetch",

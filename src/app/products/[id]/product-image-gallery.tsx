@@ -111,7 +111,7 @@ export function ProductImageGallery({
           key={selectedVariant?.id ?? mainSrc ?? "main"}
           onError={handleMainImageError}
           priority={!selectedVariant?.id}
-          sizes="(max-width: 768px) 100vw, 50vw"
+          sizes="(max-width: 768px) 100vw, (max-width: 1800px) 50vw, 900px"
           src={mainSrc}
           style={
             zoomOpen

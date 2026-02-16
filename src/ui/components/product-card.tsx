@@ -248,7 +248,7 @@ function ProductCardInner({
                 fill
                 onError={() => setImageError(true)}
                 priority={priority}
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 320px"
                 src={imageSrc}
                 unoptimized={isExternalImage}
               />
@@ -267,7 +267,7 @@ function ProductCardInner({
                 )}
                 fill
                 onError={() => setHoverImageError(true)}
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 320px"
                 src={hoverImage}
                 unoptimized={/^https?:\/\//i.test(hoverImage)}
               />
