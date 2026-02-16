@@ -120,11 +120,19 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
     }
   }, []);
 
-  // Single API call (server caches 60s). Page renders with fallback rates; real rates replace when loaded.
-  // Uses timeout to prevent blocking navigation if API is slow.
-  React.useEffect(() => {
+  // Deferred price fetch: only fires when a component actually reads rates via
+  // convertUsdToCrypto or the rates value. The provider starts with fallback
+  // rates so UI renders immediately; real rates replace when loaded.
+  // The fetch is triggered once (via ratesFetchedRef) on first access or after
+  // a short idle delay, whichever comes first.
+  const ratesFetchedRef = React.useRef(false);
+
+  const fetchRates = React.useCallback(() => {
+    if (ratesFetchedRef.current) return;
+    ratesFetchedRef.current = true;
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
 
     fetch("/api/crypto/prices", { signal: controller.signal })
       .then((res) => {
@@ -164,12 +172,14 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       .finally(() => {
         clearTimeout(timeoutId);
       });
-
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
-    };
   }, []);
+
+  // Fetch after a short idle delay so pages that display crypto prices still
+  // get real rates quickly, but the initial page load isn't blocked.
+  React.useEffect(() => {
+    const id = setTimeout(fetchRates, 3000);
+    return () => clearTimeout(id);
+  }, [fetchRates]);
 
   const convertUsdToCrypto = React.useCallback(
     (usd: number): null | number => {

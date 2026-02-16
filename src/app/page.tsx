@@ -13,17 +13,14 @@ import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
-import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
 import { getCategoriesWithProductsAndDisplayImage } from "~/lib/categories";
 import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories";
 import {
   PageContainer,
-  PageSection,
-  SectionHeading,
-  SectionHeadingBlock,
 } from "~/ui/components/layout/page-container";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -33,6 +30,31 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
+import { Skeleton } from "~/ui/primitives/skeleton";
+
+const FeaturedProductsSection = nextDynamic(
+  () =>
+    import("~/app/FeaturedProductsSection").then(
+      (m) => m.FeaturedProductsSection,
+    ),
+  {
+    loading: () => (
+      <div
+        className={`
+        grid grid-cols-1 gap-6
+        sm:grid-cols-2
+        lg:grid-cols-3
+        xl:grid-cols-4
+      `}
+      >
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton className="h-80 w-full rounded-lg" key={i} />
+        ))}
+      </div>
+    ),
+    ssr: true,
+  },
+);
 
 const TestimonialsSection = nextDynamic(
   () =>
@@ -223,33 +245,25 @@ const featuresWhyChooseUs = [
   },
 ];
 
-export default async function HomePage() {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
+/* ---------------------------------------------------------------------------
+ * Streamed async sections — each fetches its own data and renders inside a
+ * Suspense boundary so the hero + brand statement ship to the browser
+ * immediately while these sections load in the background.
+ * ------------------------------------------------------------------------- */
 
-  const [
-    featuredProducts,
-    shopCategories,
-    reviewTestimonials,
-    categoriesWithImage,
-  ] = await Promise.all([
-    fetchFeaturedProducts(cookieHeader),
+const EXCLUDED_SLUGS = [
+  "currency",
+  "network",
+  "dapp",
+  SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
+];
+
+async function StreamedCategoriesSection() {
+  const [shopCategories, categoriesWithImage] = await Promise.all([
     fetchCategories(),
-    fetchReviewsForTestimonials(),
     getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
   ]);
-  const testimonials: TestimonialItem[] =
-    reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
-  // Shop by category: only categories that have products; exclude Currency/Network/Application Token and show-in-all-products (internal)
-  const EXCLUDED_SLUGS = [
-    "currency",
-    "network",
-    "dapp",
-    SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
-  ];
+
   const topLevelShopFiltered = shopCategories.filter(
     (c) => c.slug && c.productCount > 0 && !EXCLUDED_SLUGS.includes(c.slug),
   );
@@ -264,9 +278,169 @@ export default async function HomePage() {
   }));
 
   return (
+    <div
+      className={`
+      grid grid-cols-2 gap-4
+      md:grid-cols-3 md:gap-5
+      lg:grid-cols-6
+    `}
+    >
+      {topLevelShop.length > 0 ? (
+        topLevelShop.map((category, index) => (
+          <Link
+            aria-label={`Browse ${category.name} products`}
+            className={`
+              cult-glow group flex flex-col overflow-hidden rounded-lg
+              border border-border bg-card transition-all duration-300
+            `}
+            href={`/${category.slug ?? category.id}`}
+            key={category.id}
+          >
+            {category.image ? (
+              <div
+                className={`
+                relative aspect-[4/3] w-full shrink-0 bg-white
+              `}
+              >
+                <Image
+                  alt=""
+                  className={`
+                    object-contain transition-transform duration-300
+                    group-hover:scale-105
+                  `}
+                  fill
+                  priority={index < 2}
+                  sizes="(max-width: 768px) 50vw, 16vw"
+                  src={category.image}
+                  unoptimized={
+                    category.image.startsWith("data:") ||
+                    category.image.startsWith("http://") ||
+                    category.image.startsWith("https://")
+                  }
+                />
+              </div>
+            ) : null}
+            <div className="flex flex-col p-5">
+              <div
+                className={`
+                text-base font-medium text-foreground transition-colors
+                group-hover:text-primary
+              `}
+              >
+                {category.name}
+              </div>
+              <p
+                className={`
+                font-mono-crypto mt-1 text-xs text-muted-foreground
+              `}
+              >
+                {category.productCount} products
+              </p>
+            </div>
+          </Link>
+        ))
+      ) : (
+        <Link
+          className={`
+            cult-glow rounded-lg border border-border bg-card p-5
+          `}
+          href="/products"
+        >
+          <div className="text-base font-medium text-foreground">
+            All Products
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Browse the store
+          </p>
+        </Link>
+      )}
+    </div>
+  );
+}
+
+async function StreamedFeaturedProducts() {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  const featuredProducts = await fetchFeaturedProducts(cookieHeader);
+
+  return <FeaturedProductsSection products={featuredProducts} />;
+}
+
+async function StreamedTestimonials() {
+  const reviewTestimonials = await fetchReviewsForTestimonials();
+  const testimonials: TestimonialItem[] =
+    reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
+
+  return (
+    <TestimonialsSection
+      className="py-0"
+      description="Reviews from people who've ordered"
+      testimonials={testimonials}
+      title="From the community"
+    />
+  );
+}
+
+/* ---------------------------------------------------------------------------
+ * Skeleton placeholders for Suspense boundaries
+ * ------------------------------------------------------------------------- */
+
+function CategoriesSkeleton() {
+  return (
+    <div
+      className={`
+      grid grid-cols-2 gap-4
+      md:grid-cols-3 md:gap-5
+      lg:grid-cols-6
+    `}
+    >
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div className="overflow-hidden rounded-lg border border-border bg-card" key={i}>
+          <Skeleton className="aspect-[4/3] w-full" />
+          <div className="p-5 space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-3 w-14" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function FeaturedProductsSkeleton() {
+  return (
+    <div
+      className={`
+      grid grid-cols-1 gap-6
+      sm:grid-cols-2
+      lg:grid-cols-3
+      xl:grid-cols-4
+    `}
+    >
+      {Array.from({ length: 8 }).map((_, i) => (
+        <Skeleton className="h-80 w-full rounded-lg" key={i} />
+      ))}
+    </div>
+  );
+}
+
+function TestimonialsSkeleton() {
+  return <div className="min-h-[200px]" />;
+}
+
+/* ---------------------------------------------------------------------------
+ * Main page — hero + brand statement stream immediately; data sections follow
+ * ------------------------------------------------------------------------- */
+
+export default function HomePage() {
+  return (
     <>
       <div className="flex min-h-screen flex-col bg-background">
-        {/* Hero */}
+        {/* Hero — immediate, no data needed */}
         <section
           className={`
           hero-scanlines relative overflow-hidden py-28
@@ -393,7 +567,7 @@ export default async function HomePage() {
           />
         </section>
 
-        {/* Brand statement */}
+        {/* Brand statement — immediate, no data needed */}
         <section
           className={`
           py-20
@@ -449,7 +623,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* Lookbook */}
+        {/* Lookbook — immediate, no data needed */}
         <section
           className={`
           bg-background py-20
@@ -514,6 +688,7 @@ export default async function HomePage() {
                     group-hover:scale-[1.02]
                   `}
                   height={600}
+                  priority
                   sizes="(max-width: 896px) 100vw, 900px"
                   src="/lookbook/culture-lookbook-lifestyle-and-apparel.jpg"
                   title="Culture lookbook"
@@ -527,7 +702,7 @@ export default async function HomePage() {
           </PageContainer>
         </section>
 
-        {/* Featured categories */}
+        {/* Featured categories — streamed (needs categories API) */}
         <section
           className={`
           py-20
@@ -562,82 +737,9 @@ export default async function HomePage() {
                 category chosen for quality
               </p>
             </div>
-            <div
-              className={`
-              grid grid-cols-2 gap-4
-              md:grid-cols-3 md:gap-5
-              lg:grid-cols-6
-            `}
-            >
-              {topLevelShop.length > 0 ? (
-                topLevelShop.map((category) => (
-                  <Link
-                    aria-label={`Browse ${category.name} products`}
-                    className={`
-                      cult-glow group flex flex-col overflow-hidden rounded-lg
-                      border border-border bg-card transition-all duration-300
-                    `}
-                    href={`/${category.slug ?? category.id}`}
-                    key={category.id}
-                  >
-                    {category.image ? (
-                      <div
-                        className={`
-                        relative aspect-[4/3] w-full shrink-0 bg-white
-                      `}
-                      >
-                        <Image
-                          alt=""
-                          className={`
-                            object-contain transition-transform duration-300
-                            group-hover:scale-105
-                          `}
-                          fill
-                          sizes="(max-width: 768px) 50vw, 16vw"
-                          src={category.image}
-                          unoptimized={
-                            category.image.startsWith("data:") ||
-                            category.image.startsWith("http://") ||
-                            category.image.startsWith("https://")
-                          }
-                        />
-                      </div>
-                    ) : null}
-                    <div className="flex flex-col p-5">
-                      <div
-                        className={`
-                        text-base font-medium text-foreground transition-colors
-                        group-hover:text-primary
-                      `}
-                      >
-                        {category.name}
-                      </div>
-                      <p
-                        className={`
-                        font-mono-crypto mt-1 text-xs text-muted-foreground
-                      `}
-                      >
-                        {category.productCount} products
-                      </p>
-                    </div>
-                  </Link>
-                ))
-              ) : (
-                <Link
-                  className={`
-                    cult-glow rounded-lg border border-border bg-card p-5
-                  `}
-                  href="/products"
-                >
-                  <div className="text-base font-medium text-foreground">
-                    All Products
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Browse the store
-                  </p>
-                </Link>
-              )}
-            </div>
+            <Suspense fallback={<CategoriesSkeleton />}>
+              <StreamedCategoriesSection />
+            </Suspense>
           </PageContainer>
         </section>
 
@@ -649,7 +751,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* Featured products */}
+        {/* Featured products — streamed (needs products API) */}
         <section
           className={`
           bg-background py-20
@@ -689,16 +791,9 @@ export default async function HomePage() {
                 Tech, apparel, wellness, and travel gear for how you live
               </p>
             </div>
-            <div
-              className={`
-              grid grid-cols-1 gap-6
-              sm:grid-cols-2
-              lg:grid-cols-3
-              xl:grid-cols-4
-            `}
-            >
-              <FeaturedProductsSection products={featuredProducts} />
-            </div>
+            <Suspense fallback={<FeaturedProductsSkeleton />}>
+              <StreamedFeaturedProducts />
+            </Suspense>
             <div className="mt-12 flex justify-center">
               <Link href="/products">
                 <Button
@@ -719,7 +814,7 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* Why choose us */}
+        {/* Why choose us — immediate, no data needed */}
         <section
           className={`
           py-20
@@ -818,7 +913,7 @@ export default async function HomePage() {
         `}
         />
 
-        {/* Testimonials */}
+        {/* Testimonials — streamed (needs reviews API) */}
         <section
           className={`
           bg-background py-20
@@ -832,16 +927,13 @@ export default async function HomePage() {
             lg:px-8
           `}
           >
-            <TestimonialsSection
-              className="py-0"
-              description="Reviews from people who've ordered"
-              testimonials={testimonials}
-              title="From the community"
-            />
+            <Suspense fallback={<TestimonialsSkeleton />}>
+              <StreamedTestimonials />
+            </Suspense>
           </div>
         </section>
 
-        {/* CTA */}
+        {/* CTA — immediate, no data needed */}
         <section
           className={`
           py-20

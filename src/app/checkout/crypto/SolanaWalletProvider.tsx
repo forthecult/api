@@ -68,17 +68,19 @@ export function SolanaWalletProvider({
         }
       }
     }
-    // WalletConnect for Solana: Trust, Rainbow, etc. can connect via WalletConnect
+    // WalletConnect for Solana: Trust, Rainbow, etc. can connect via WalletConnect.
+    // Set NEXT_PUBLIC_SOLANA_WALLETCONNECT_ENABLED=false to disable (stops pulse.walletconnect.org from loading).
+    const wcEnabled =
+      process.env.NEXT_PUBLIC_SOLANA_WALLETCONNECT_ENABLED !== "false";
     const wcProjectId =
       process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID?.trim();
-    if (wcProjectId) {
+    if (wcEnabled && wcProjectId) {
       try {
         list.push(
           new WalletConnectWalletAdapter({
             network: WalletAdapterNetwork.Mainnet,
             options: {
               projectId: wcProjectId,
-              // Disable Pulse (pulse.walletconnect.org) so Brave Shield / privacy tools don't flag or block it.
               telemetryEnabled: false,
             },
           }),

@@ -138,6 +138,10 @@ export function CheckoutClient() {
     useCart();
   const { isPending: authPending, user } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
+  // Wallet address for tier-based discounts (staking balance → coupon).
+  // Safe without a SolanaWalletProvider: the adapter context defaults to {}
+  // so publicKey is undefined, and the coupon API simply skips wallet-based
+  // discounts. On /checkout/[invoiceId] a provider IS present.
   const { publicKey } = useWallet();
   const wallet = publicKey?.toBase58() ?? undefined;
   const isMobile = useIsMobile();

@@ -75,7 +75,8 @@ export const wagmiConfig = createConfig({
             },
             projectId,
             showQrModal: true,
-            // Disable Pulse (pulse.walletconnect.org) so Brave Shield / privacy tools don't flag or block it.
+            // Disable Pulse (pulse.walletconnect.org) so it doesn't load and Brave Shield / privacy tools don't flag it.
+            qrModalOptions: { enableExplorer: false },
             telemetryEnabled: false,
           }),
         ]

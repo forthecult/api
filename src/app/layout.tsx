@@ -1,21 +1,16 @@
 import type { Metadata } from "next";
 
-import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono, JetBrains_Mono, Manrope } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { Suspense } from "react";
-import { extractRouterConfig } from "uploadthing/server";
-
 import { SEO_CONFIG } from "~/app";
-import { ourFileRouter } from "~/app/api/uploadthing/core";
 import { getPublicSiteUrl, isAgentSubdomain } from "~/lib/app-url";
 import { getCurrentUserTheme } from "~/lib/get-current-user-theme";
 import { CartProvider } from "~/lib/hooks/use-cart";
 import { CountryCurrencyProvider } from "~/lib/hooks/use-country-currency";
 import { CryptoCurrencyProvider } from "~/lib/hooks/use-crypto-currency";
 import "~/css/globals.css";
-import { WagmiProvider } from "~/lib/wagmi-provider";
 import { AgentSubdomainLayout } from "~/ui/components/agent-subdomain-layout";
 import { AuthWalletModalProvider } from "~/ui/components/auth/auth-wallet-modal-provider";
 import { ConditionalFooter } from "~/ui/components/conditional-footer";
@@ -51,7 +46,7 @@ const jetbrainsMono = JetBrains_Mono({
 const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-heading",
-  weight: ["400", "500", "600", "700", "800"],
+  weight: ["600", "700", "800"],
 });
 
 // getPublicSiteUrl() ensures full https:// URL and handles host-only env values (e.g. Railway)
@@ -181,7 +176,6 @@ export default async function RootLayout({
         >
           <ThemePersistSync initialUserTheme={initialUserTheme} />
           <CriticalRoutePrefetcher />
-          <NextSSRPlugin routerConfig={extractRouterConfig(ourFileRouter)} />
           <CartProvider>
             <CryptoCurrencyProvider>
               <Suspense
@@ -241,17 +235,18 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-/** Single wrapper for store layout: wallet boundary + wagmi + auth modal + shell. Avoids duplicating the tree in fallback vs actual. */
+/** Single wrapper for store layout: wallet boundary + auth modal + shell.
+ * WagmiProvider is NOT here — it loads lazily inside AuthWalletModalShell (when
+ * the user opens the wallet modal) and inside the checkout invoice layout. This
+ * keeps wagmi + viem (~200KB) out of the initial bundle for every page. */
 function StoreLayoutWrapper({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <WalletErrorBoundary>
-      <WagmiProvider>
-        <AuthWalletModalProvider>
-          <LayoutShell>{children}</LayoutShell>
-        </AuthWalletModalProvider>
-      </WagmiProvider>
+      <AuthWalletModalProvider>
+        <LayoutShell>{children}</LayoutShell>
+      </AuthWalletModalProvider>
     </WalletErrorBoundary>
   );
 }

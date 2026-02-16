@@ -6,11 +6,12 @@ import {
   useElements,
   useStripe,
 } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
+import type { Stripe } from "@stripe/stripe-js";
 import { useTheme } from "next-themes";
 import {
   forwardRef,
   useCallback,
+  useEffect,
   useImperativeHandle,
   useMemo,
   useState,
@@ -249,9 +250,18 @@ export const StripeCardPayment = function StripeCardPayment({
 }: StripeCardPaymentProps & {
   ref?: React.RefObject<null | StripeCardPaymentRef>;
 }) {
-  const [stripePromise] = useState(() =>
-    STRIPE_PUBLISHABLE_KEY ? loadStripe(STRIPE_PUBLISHABLE_KEY) : null,
-  );
+  // Lazy-load Stripe SDK: only download when credit card form is visible.
+  // StripeCardPayment is already rendered conditionally (paymentMethod === "credit-card"),
+  // so this defers the SDK download until the user actually selects card payment.
+  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(null);
+  useEffect(() => {
+    if (!STRIPE_PUBLISHABLE_KEY) return;
+    let cancelled = false;
+    import("@stripe/stripe-js").then(({ loadStripe }) => {
+      if (!cancelled) setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY));
+    });
+    return () => { cancelled = true; };
+  }, []);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 

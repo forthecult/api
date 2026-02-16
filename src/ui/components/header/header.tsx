@@ -208,16 +208,39 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
     }));
   }, [shopCategories]);
 
-  // Website notification prefs: show header widget only if transactional or marketing website is enabled
+  // Website notification prefs: show header widget only if the user has enabled
+  // transactional or marketing website notifications in their settings.
+  // Cached in sessionStorage to avoid a fetch on every navigation.
+  const NOTIF_CACHE_KEY = "header-notif-prefs";
   const [websiteNotificationsOn, setWebsiteNotificationsOn] = useState<
     boolean | null
-  >(null);
+  >(() => {
+    if (typeof window === "undefined" || !user?.id) return null;
+    try {
+      const cached = sessionStorage.getItem(NOTIF_CACHE_KEY);
+      if (cached !== null) return cached === "1";
+    } catch { /* ignore */ }
+    return null;
+  });
 
-  const fetchNotificationPrefs = useCallback((): (() => void) | undefined => {
+  const fetchNotificationPrefs = useCallback((forceRefresh = false): (() => void) | undefined => {
     if (!user?.id) {
       setWebsiteNotificationsOn(null);
+      try { sessionStorage.removeItem(NOTIF_CACHE_KEY); } catch { /* ignore */ }
       return undefined;
     }
+
+    // Use cached value unless force-refreshing (e.g. after settings change)
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(NOTIF_CACHE_KEY);
+        if (cached !== null) {
+          setWebsiteNotificationsOn(cached === "1");
+          return undefined;
+        }
+      } catch { /* ignore */ }
+    }
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -236,7 +259,9 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
           if (!data) return;
           const transactional = data.transactional?.website ?? true;
           const marketing = data.marketing?.website ?? false;
-          setWebsiteNotificationsOn(Boolean(transactional || marketing));
+          const enabled = Boolean(transactional || marketing);
+          setWebsiteNotificationsOn(enabled);
+          try { sessionStorage.setItem(NOTIF_CACHE_KEY, enabled ? "1" : "0"); } catch { /* ignore */ }
         },
       )
       .catch(() => setWebsiteNotificationsOn(null))
@@ -253,18 +278,23 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
     return () => cleanup?.();
   }, [fetchNotificationPrefs]);
 
-  // Refetch when user updates notification prefs (e.g. from Dashboard → Settings)
+  // Refetch (bypass cache) when user updates notification prefs
   useEffect(() => {
     const handler = () => {
-      fetchNotificationPrefs();
+      fetchNotificationPrefs(true);
     };
     window.addEventListener(NOTIFICATION_PREFS_UPDATED, handler);
     return () =>
       window.removeEventListener(NOTIFICATION_PREFS_UPDATED, handler);
   }, [fetchNotificationPrefs]);
 
-  // Fetch categories with timeout to prevent blocking navigation
-  useEffect(() => {
+  // Lazy-load categories: only fetch when user hovers/focuses the shop nav area.
+  // Avoids an API call on every page load since the mega menu is hidden until interaction.
+  const categoriesFetchedRef = useRef(false);
+  const fetchCategories = useCallback(() => {
+    if (categoriesFetchedRef.current) return;
+    categoriesFetchedRef.current = true;
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
 
@@ -278,11 +308,6 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       })
       .catch(() => {})
       .finally(() => clearTimeout(timeoutId));
-
-    return () => {
-      clearTimeout(timeoutId);
-      controller.abort();
-    };
   }, []);
 
   const isDashboard = useAuthState && user && pathname.startsWith("/dashboard");
@@ -404,7 +429,10 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                   md:hidden
                   dark:text-[#F5F1EB]
                 `}
-                onClick={() => setMobileMenuOpen(true)}
+                onClick={() => {
+                  fetchCategories();
+                  setMobileMenuOpen(true);
+                }}
                 size="icon"
                 variant="ghost"
               >
@@ -459,7 +487,10 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                     </>
                   ) : (
                     <>
-                      <li>
+                      <li
+                        onFocus={fetchCategories}
+                        onMouseEnter={fetchCategories}
+                      >
                         <ShopMegaMenu
                           categories={filteredShopCategories}
                           isActive={isShopActive}
