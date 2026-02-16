@@ -9,6 +9,7 @@ Checkout was split from a single 3,500+ line component into smaller pieces for p
 - **components/OrderSummary.tsx** – Pure display. Receives items, totals, discount state, and callbacks; no local state.
 - **components/ShippingAddressForm.tsx** – Owns shipping/contact state (form, emailNews, textNews) and runs the shipping API. Exposes `getForm()`, `getEmailNews()`, `getTextNews()`, `validate()`, `persistForm()` via ref. Notifies parent of shipping/tax via `onShippingUpdate`.
 - **components/BillingAddressForm.tsx** – Owns billing state (`billingForm`, `useShippingAsBilling`). Exposes `getBilling()`, `getUseShippingAsBilling()`, `validate()` via ref. Rendered inside the Payment card when credit card is selected.
+- **components/PaymentMethodSelector.tsx** – The payment card: credit card, crypto, stablecoins, PayPal, CTAs, policy links. Owns payment method state; ref exposes `triggerPay()`, `canPlaceOrder`, `getPaymentMethod()`, `validate()`, `getStripeCardRef()`. Used by CheckoutClient via **components/PaymentMethodSection.tsx**, which re-exports it for backward compatibility.
 
 ## Speed optimizations and lazy loading
 
@@ -16,8 +17,6 @@ Checkout and payment use **prefetch on intent** (cart open / hover checkout, pay
 
 For full detail on checkout/payment behavior and maintenance (prefetch-checkout.ts, loaders, initialOrder, new payment methods), see **[docs/SPEED-OPTIMIZATION-AND-LAZY-LOADING.md](../../../docs/SPEED-OPTIMIZATION-AND-LAZY-LOADING.md)**. That doc also covers site-wide speed optimizations (route prefetching, lazy loading, images, build config).
 
-## Possible next step
+## Possible next steps
 
-- **PaymentMethodSelector** – The Payment card (credit card, crypto, stablecoins, PayPal, CTA buttons, policy links) is still inline in `CheckoutClient.tsx`. A future refactor can extract it into `components/PaymentMethodSelector.tsx` that either:
-  - Receives payment state and callbacks as props (controlled), or
-  - Owns payment state and exposes `getPaymentMethod()`, `getCardForm()`, `validateCreditCard()`, etc. via ref.
+- **Payment card** – The Payment card lives in `PaymentMethodSelector.tsx`; `PaymentMethodSection.tsx` re-exports it. The ref already exposes `triggerPay()`, `canPlaceOrder`, `getPaymentMethod()`, `validate()` (shipping + billing), and `getStripeCardRef()` for programmatic use. Further refinements (e.g. credit-card-only validation via ref) can be added on top of this.
