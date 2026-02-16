@@ -367,7 +367,18 @@ async function StreamedFeaturedProducts() {
 
   const featuredProducts = await fetchFeaturedProducts(cookieHeader);
 
-  return <FeaturedProductsSection products={featuredProducts} />;
+  return (
+    <div
+      className={`
+      grid grid-cols-1 gap-6
+      sm:grid-cols-2
+      lg:grid-cols-3
+      xl:grid-cols-4
+    `}
+    >
+      <FeaturedProductsSection products={featuredProducts} />
+    </div>
+  );
 }
 
 async function StreamedTestimonials() {
