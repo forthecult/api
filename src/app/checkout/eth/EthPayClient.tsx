@@ -147,18 +147,46 @@ const CHAIN_ID_MAP: Record<string, number> = {
   polygon: 137,
 };
 
-export function EthPayClient() {
+function normalizeEthOrder(
+  data: Record<string, unknown> & Partial<OrderData>,
+): OrderData {
+  const chainRaw = data.chain ?? data.cryptoCurrencyNetwork ?? "ethereum";
+  const chainName = String(chainRaw).toLowerCase();
+  const tokenRaw = data.token ?? data.cryptoCurrency ?? "eth";
+  return {
+    chain: chainName,
+    chainId: (data.chainId as number) ?? CHAIN_ID_MAP[chainName] ?? 1,
+    cryptoAmount: data.cryptoAmount,
+    depositAddress:
+      (data.depositAddress as string) ??
+      (data.solanaPayDepositAddress as string) ??
+      "",
+    email: data.email,
+    expiresAt: String(data.expiresAt ?? ""),
+    orderId: String(data.orderId ?? data.id ?? ""),
+    paymentStatus: data.paymentStatus,
+    token: String(tokenRaw).toLowerCase(),
+    tokenAddress: data.tokenAddress,
+    totalCents: Number(data.totalCents) || 0,
+  };
+}
+
+export function EthPayClient({
+  initialOrder,
+}: { initialOrder?: Record<string, unknown> } = {}) {
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = (params?.invoiceId as string) ?? "";
 
-  // Fetch order data from API
-  const [order, setOrder] = useState<null | OrderData>(null);
-  const [orderLoading, setOrderLoading] = useState(true);
+  const [order, setOrder] = useState<null | OrderData>(() =>
+    initialOrder ? normalizeEthOrder(initialOrder) : null,
+  );
+  const [orderLoading, setOrderLoading] = useState(!initialOrder);
   const [orderError, setOrderError] = useState<null | string>(null);
 
   useEffect(() => {
+    if (initialOrder) return;
     if (!orderId) {
       setOrderLoading(false);
       setOrderError("No order ID");
@@ -179,24 +207,7 @@ export function EthPayClient() {
       })
       .then((data) => {
         if (cancelled) return;
-        const chainName = (
-          data.chain ??
-          data.cryptoCurrencyNetwork ??
-          "ethereum"
-        ).toLowerCase();
-        setOrder({
-          chain: chainName,
-          chainId: data.chainId ?? CHAIN_ID_MAP[chainName] ?? 1,
-          cryptoAmount: data.cryptoAmount,
-          depositAddress: data.depositAddress ?? data.solanaPayDepositAddress,
-          email: data.email,
-          expiresAt: data.expiresAt,
-          orderId: data.orderId ?? data.id,
-          paymentStatus: data.paymentStatus,
-          token: (data.token ?? data.cryptoCurrency ?? "eth").toLowerCase(),
-          tokenAddress: data.tokenAddress,
-          totalCents: data.totalCents,
-        });
+        setOrder(normalizeEthOrder(data));
         setOrderLoading(false);
       })
       .catch((err) => {
@@ -210,7 +221,7 @@ export function EthPayClient() {
     return () => {
       cancelled = true;
     };
-  }, [orderId]);
+  }, [orderId, initialOrder]);
 
   const amountUsd = order ? order.totalCents / 100 : 0;
   const chain = (order?.chain || "ethereum").toLowerCase();

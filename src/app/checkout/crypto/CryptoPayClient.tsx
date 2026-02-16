@@ -32,6 +32,7 @@ import { useParams, useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { InitialOrderLike } from "~/hooks/use-crypto-order";
 import {
   type OrderPaymentInfo,
   useCryptoOrder,
@@ -119,7 +120,9 @@ type PayStatus =
   | "sent"
   | "sufficient";
 
-export function CryptoPayClient() {
+export function CryptoPayClient({
+  initialOrder,
+}: { initialOrder?: InitialOrderLike } = {}) {
   const { connection } = useConnection();
   const { connected, disconnect, publicKey, sendTransaction, wallet } =
     useWallet();
@@ -162,6 +165,7 @@ export function CryptoPayClient() {
     order,
   } = useCryptoOrder({
     enabled: true,
+    initialOrder: initialOrder as InitialOrderLike | undefined,
     orderId: pathId,
     suiFromHash,
     token,

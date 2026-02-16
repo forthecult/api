@@ -2,6 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   forwardRef,
@@ -41,7 +42,6 @@ import {
 import { OrderSummary } from "./components/OrderSummary";
 import {
   type PaymentMethodSectionRef,
-  PaymentMethodSection,
 } from "./components/PaymentMethodSection";
 import {
   ShippingAddressForm,
@@ -49,6 +49,29 @@ import {
   type ShippingUpdate,
 } from "./components/ShippingAddressForm";
 import { useCoupons } from "./hooks/useCoupons";
+import { Skeleton } from "~/ui/primitives/skeleton";
+
+const PaymentMethodSection = dynamic(
+  () =>
+    import("./components/PaymentMethodSection").then((m) => ({
+      default: m.PaymentMethodSection,
+    })),
+  {
+    loading: () => (
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="mt-2 h-4 w-64" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    ),
+    ssr: false,
+  },
+);
 
 function getAffiliatePayload(): { affiliateCode?: string } {
   const code = getAffiliateCodeFromDocument();

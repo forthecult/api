@@ -19,6 +19,12 @@ import {
 
 import { PAYMENT_CONFIG } from "~/app";
 import {
+  prefetchBtcPayClient,
+  prefetchCryptoPayClient,
+  prefetchEthPayClient,
+  prefetchTonPayClient,
+} from "~/app/checkout/prefetch-checkout";
+import {
   getHiddenFromVisibility,
   hasAnyCryptoEnabled,
   hasAnyStablecoinEnabled,
@@ -608,6 +614,7 @@ export const PaymentMethodSection = forwardRef<
 
   const handleGoToCryptoPay = useCallback(async () => {
     if (!validateForPayment()) return;
+    prefetchCryptoPayClient();
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
     const isSui = paymentMethod === "crypto" && cryptoOtherSubOption === "sui";
@@ -706,6 +713,7 @@ export const PaymentMethodSection = forwardRef<
 
   const handleGoToBtcPay = useCallback(async () => {
     if (!validateForPayment()) return;
+    prefetchBtcPayClient();
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
     const { commonBody, form } = buildOrderPayload();
@@ -775,6 +783,7 @@ export const PaymentMethodSection = forwardRef<
 
   const handleGoToEthPay = useCallback(async () => {
     if (!validateForPayment()) return;
+    prefetchEthPayClient();
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
     const chain =
@@ -852,6 +861,7 @@ export const PaymentMethodSection = forwardRef<
 
   const handleGoToTonPay = useCallback(async () => {
     if (!validateForPayment()) return;
+    prefetchTonPayClient();
     setNavigatingToPay(true);
     shippingFormRef.current?.persistForm();
     const { commonBody, form } = buildOrderPayload();

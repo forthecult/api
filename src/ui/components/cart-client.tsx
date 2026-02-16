@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import * as React from "react";
 
+import { prefetchCheckout } from "~/app/checkout/prefetch-checkout";
 import { cn } from "~/lib/cn";
 import { useCart } from "~/lib/hooks/use-cart";
 import { useMediaQuery } from "~/lib/hooks/use-media-query";
@@ -69,6 +70,10 @@ export function CartClient({ className }: CartClientProps) {
   React.useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  React.useEffect(() => {
+    if (isOpen) prefetchCheckout();
+  }, [isOpen]);
 
   const handleUpdateQuantity = (id: string, newQuantity: number) => {
     if (newQuantity < 1) return;
@@ -315,7 +320,12 @@ export function CartClient({ className }: CartClientProps) {
               <div className="space-y-6 pt-1">
                 {isDesktop ? (
                   <SheetClose asChild>
-                    <Link href="/checkout" onClick={() => setIsOpen(false)}>
+                    <Link
+                      href="/checkout"
+                      onFocus={() => prefetchCheckout()}
+                      onMouseEnter={() => prefetchCheckout()}
+                      onClick={() => setIsOpen(false)}
+                    >
                       <Button className="w-full" size="lg">
                         Checkout
                       </Button>
@@ -323,7 +333,12 @@ export function CartClient({ className }: CartClientProps) {
                   </SheetClose>
                 ) : (
                   <DrawerClose asChild>
-                    <Link href="/checkout" onClick={() => setIsOpen(false)}>
+                    <Link
+                      href="/checkout"
+                      onFocus={() => prefetchCheckout()}
+                      onMouseEnter={() => prefetchCheckout()}
+                      onClick={() => setIsOpen(false)}
+                    >
                       <Button className="w-full" size="lg">
                         Checkout
                       </Button>

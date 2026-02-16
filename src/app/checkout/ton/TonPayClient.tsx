@@ -24,19 +24,41 @@ interface OrderPaymentInfo {
   totalCents: number;
 }
 
-export function TonPayClient() {
+function normalizeTonOrder(raw: Record<string, unknown>): OrderPaymentInfo {
+  return {
+    comment: raw.comment as string | undefined,
+    depositAddress: raw.depositAddress as string | undefined,
+    email: raw.email as string | undefined,
+    expiresAt: String(raw.expiresAt ?? ""),
+    orderId: String(raw.orderId ?? ""),
+    paymentType: raw.paymentType as string | undefined,
+    tonAmount: raw.tonAmount as string | undefined,
+    totalCents: Number(raw.totalCents) || 0,
+  };
+}
+
+export function TonPayClient({
+  initialOrder,
+}: { initialOrder?: Record<string, unknown> } = {}) {
   const params = useParams();
   const router = useRouter();
   const pathId = (params?.invoiceId as string) ?? "";
-  const [order, setOrder] = useState<null | OrderPaymentInfo>(null);
-  const [orderLoading, setOrderLoading] = useState(true);
+  const [order, setOrder] = useState<null | OrderPaymentInfo>(() =>
+    initialOrder ? normalizeTonOrder(initialOrder) : null,
+  );
+  const [orderLoading, setOrderLoading] = useState(!initialOrder);
   const [orderError, setOrderError] = useState<null | string>(null);
-  const [timeLeft, setTimeLeft] = useState(EXPIRY_MINUTES * 60);
+  const [timeLeft, setTimeLeft] = useState(() =>
+    initialOrder?.expiresAt
+      ? getInitialTimeLeft(String(initialOrder.expiresAt))
+      : EXPIRY_MINUTES * 60,
+  );
   const [copied, setCopied] = useState<"address" | "comment" | null>(null);
   const pollRef = useRef<null | ReturnType<typeof setInterval>>(null);
   const { user } = useCurrentUser();
 
   useEffect(() => {
+    if (initialOrder) return;
     if (!pathId?.trim()) {
       setOrderLoading(false);
       setOrderError("Missing order");
@@ -71,7 +93,7 @@ export function TonPayClient() {
     return () => {
       cancelled = true;
     };
-  }, [pathId]);
+  }, [pathId, initialOrder]);
 
   useEffect(() => {
     if (timeLeft <= 0) return;

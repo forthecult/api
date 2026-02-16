@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { useOrderPrefetch } from "./order-prefetch-context";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
 const CryptoPayClient = dynamic(
@@ -66,37 +67,24 @@ const TonPayClient = dynamic(
 export function CryptoPayLoader() {
   const params = useParams();
   const orderId = (params?.invoiceId as string) ?? "";
+  const prefetch = useOrderPrefetch();
   const [paymentType, setPaymentType] = useState<
     "btcpay" | "eth" | "solana" | "ton" | null
   >(() => getPaymentTypeFromHash());
 
-  // When no hash, get payment type from order API
+  // When no hash, get payment type from prefetched order (layout already fetched)
   useEffect(() => {
     if (paymentType !== null) return;
     if (!orderId?.trim()) {
       setPaymentType("solana");
       return;
     }
-    let cancelled = false;
-    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: null | { paymentType?: string }) => {
-        if (cancelled || !data?.paymentType) {
-          if (!cancelled) setPaymentType("solana");
-          return;
-        }
-        const pt = data.paymentType.toLowerCase();
-        if (pt === "eth" || pt === "btcpay" || pt === "ton" || pt === "solana")
-          setPaymentType(pt);
-        else setPaymentType("solana");
-      })
-      .catch(() => {
-        if (!cancelled) setPaymentType("solana");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [orderId, paymentType]);
+    if (prefetch?.orderLoading) return;
+    const pt = prefetch?.order?.paymentType?.toLowerCase();
+    if (pt === "eth" || pt === "btcpay" || pt === "ton" || pt === "solana")
+      setPaymentType(pt);
+    else setPaymentType("solana");
+  }, [orderId, paymentType, prefetch?.order?.paymentType, prefetch?.orderLoading]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -107,10 +95,13 @@ export function CryptoPayLoader() {
     return () => window.removeEventListener("hashchange", handleHashChange);
   }, []);
 
-  if (paymentType === "eth") return <EthPayClient />;
-  if (paymentType === "btcpay") return <BtcPayClient />;
-  if (paymentType === "ton") return <TonPayClient />;
-  if (paymentType === "solana") return <CryptoPayClient />;
+  const initialOrder = prefetch?.order ?? undefined;
+  if (paymentType === "eth") return <EthPayClient initialOrder={initialOrder} />;
+  if (paymentType === "btcpay")
+    return <BtcPayClient initialOrder={initialOrder} />;
+  if (paymentType === "ton") return <TonPayClient initialOrder={initialOrder} />;
+  if (paymentType === "solana")
+    return <CryptoPayClient initialOrder={initialOrder} />;
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-background">

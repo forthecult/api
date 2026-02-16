@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-
+import createBundleAnalyzer from "@next/bundle-analyzer";
 import path from "node:path";
 
 const wagmiStub = path.resolve(
@@ -259,4 +259,8 @@ const config = {
   },
 } as NextConfig;
 
-export default config;
+const withBundleAnalyzer = createBundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
+
+export default withBundleAnalyzer(config);

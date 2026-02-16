@@ -16,6 +16,10 @@ import {
 } from "../crypto/open-wallet-modal";
 import { SolanaWalletProvider } from "../crypto/SolanaWalletProvider";
 import { SuiWalletProvider } from "../crypto/SuiWalletProvider";
+import {
+  OrderPrefetchProvider,
+  useOrderPrefetch,
+} from "./order-prefetch-context";
 
 export default function CheckoutInvoiceLayout({
   children,
@@ -24,28 +28,31 @@ export default function CheckoutInvoiceLayout({
 }) {
   const params = useParams();
   const orderId = (params?.invoiceId as string) ?? "";
+  return (
+    <OrderPrefetchProvider orderId={orderId}>
+      <CheckoutInvoiceLayoutInner>{children}</CheckoutInvoiceLayoutInner>
+    </OrderPrefetchProvider>
+  );
+}
+
+function CheckoutInvoiceLayoutInner({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const prefetch = useOrderPrefetch();
   const [open, setOpen] = useState(false);
   const [isEvm, setIsEvm] = useState(false);
   const openModal = useCallback(() => setOpen(true), []);
 
+  // Derive isEvm from hash (immediate) or from prefetched order (one fetch for layout + pay clients)
   useEffect(() => {
     if (isEvmFromHash()) {
       setIsEvm(true);
       return;
     }
-    if (!orderId?.trim()) return;
-    let cancelled = false;
-    fetch(`/api/checkout/orders/${encodeURIComponent(orderId)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: null | { paymentType?: string }) => {
-        if (!cancelled && data?.paymentType?.toLowerCase() === "eth")
-          setIsEvm(true);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [orderId]);
+    if (prefetch?.order?.paymentType?.toLowerCase() === "eth") setIsEvm(true);
+  }, [prefetch?.order?.paymentType]);
 
   useEffect(() => {
     const handleHashChange = () => {
