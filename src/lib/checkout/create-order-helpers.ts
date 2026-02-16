@@ -311,9 +311,10 @@ export async function createOrderTransaction(params: {
 
     if (couponResult) {
       const redemptionId = createId();
+      const userIdParam = userId ?? null;
       await tx.execute(sql`
         INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
-        SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userId}, ${now}
+        SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userIdParam}, ${now}
         WHERE (
           SELECT COALESCE(${couponsTable.maxUses}, 0) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
         ) = 0
@@ -457,13 +458,15 @@ export async function postOrderBookkeeping(
   }
 
   // Coupon redemption (atomic guard against max-uses TOCTOU race) -----------
+  // Coerce userId to null when undefined so node-pg never receives undefined (ERR_INVALID_ARG_TYPE).
   if (couponResult) {
     const redemptionId = createId();
+    const userIdParam = userId ?? null;
     // Use conditional INSERT to atomically enforce maxUses:
     // only insert if the current redemption count is below the coupon's maxUses.
     await db.execute(sql`
       INSERT INTO ${couponRedemptionTable} (id, coupon_id, order_id, user_id, created_at)
-      SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userId}, ${now}
+      SELECT ${redemptionId}, ${couponResult.couponId}, ${orderId}, ${userIdParam}, ${now}
       WHERE (
         SELECT COALESCE(${couponsTable.maxUses}, 0) FROM ${couponsTable} WHERE ${couponsTable.id} = ${couponResult.couponId}
       ) = 0
