@@ -224,7 +224,7 @@ Checkout and payment routes use **prefetch-on-intent**, **code-splitting**, **la
 
 ### Lazy SDK loading
 
-- **Stripe SDK** (`@stripe/stripe-js`): Loaded lazily via dynamic `import()` in `StripeCardPayment.tsx` and `ExpressCheckout.tsx`. The SDK only downloads when the card form becomes visible (credit card selected) or when Express Checkout renders with `stripeEnabled` and a valid total. **Do not switch back to a top-level `import { loadStripe }` — this would download the Stripe SDK on every checkout page load.**
+- **Stripe SDK** (`@stripe/stripe-js`): Loaded lazily via dynamic `import()`; shared cache in `stripe-preload.ts`. **Preload on intent:** when the user hovers or focuses the "Credit/debit card" option, `preloadStripe()` runs so the SDK starts loading before they click. When they select credit card, `StripeCardPayment` and `ExpressCheckout` use the cached promise so the form appears quickly. **Do not switch back to a top-level `import { loadStripe }`** — that would download the Stripe SDK on every checkout page load.
 - **Wallet SDKs**: See Provider Scoping (section 2).
 
 ### Wallet providers (invoice layout)

@@ -9,6 +9,10 @@ import {
 import type { Stripe } from "@stripe/stripe-js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import {
+  getStripePromise,
+  setStripePromiseFromLoad,
+} from "../stripe-preload";
 import type { OrderPayload } from "../checkout-shared";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
 
@@ -32,17 +36,23 @@ export function ExpressCheckout({
   stripeEnabled,
   totalCents,
 }: ExpressCheckoutProps) {
-  // Lazy-load Stripe SDK: only download when the component is actually visible
-  // and Stripe is enabled, instead of eagerly on PaymentMethodSelector mount.
-  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(null);
+  // Use preloaded Stripe promise if available; otherwise load when visible and enabled.
+  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(
+    () => getStripePromise() ?? null,
+  );
   useEffect(() => {
     if (!stripeEnabled || !STRIPE_PUBLISHABLE_KEY || totalCents <= 0) return;
+    if (stripePromise) return;
     let cancelled = false;
     import("@stripe/stripe-js").then(({ loadStripe }) => {
-      if (!cancelled) setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY));
+      if (!cancelled) {
+        const p = loadStripe(STRIPE_PUBLISHABLE_KEY);
+        setStripePromiseFromLoad(p);
+        setStripePromise(p);
+      }
     });
     return () => { cancelled = true; };
-  }, [stripeEnabled, totalCents]);
+  }, [stripeEnabled, totalCents, stripePromise]);
 
   const elementsOptions = useMemo(
     () =>

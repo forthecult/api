@@ -44,7 +44,7 @@ const FeaturedProductsSection = nextDynamic(
         className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
       >
         {Array.from({ length: 8 }, (_, i) => (
-          <Skeleton className="h-80 w-full rounded-lg" key={i} />
+          <Skeleton className="h-80 w-full rounded-lg" key={`fp-skeleton-${i}`} />
         ))}
       </div>
     ),

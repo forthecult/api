@@ -15,6 +15,7 @@ import type { MappedShippingAddress } from "~/lib/loqate";
 
 import { useLoqateAutocomplete } from "~/hooks/use-loqate-autocomplete";
 import { signIn } from "~/lib/auth-client";
+import { preloadStripe } from "../stripe-preload";
 import { cn } from "~/lib/cn";
 import { isShippingExcluded } from "~/lib/shipping-restrictions";
 import { FiatPrice } from "~/ui/components/FiatPrice";
@@ -691,6 +692,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                 inputMode="email"
                 onBlur={() => markTouched("email")}
                 onChange={(e) => update("email", e.target.value)}
+                onFocus={() => preloadStripe()}
                 placeholder="Email"
                 type="email"
                 value={form.email}
@@ -728,7 +730,10 @@ export const ShippingAddressForm = function ShippingAddressForm({
                     Use a saved address
                   </Label>
                   <Popover
-                    onOpenChange={setSavedAddressPopoverOpen}
+                    onOpenChange={(open) => {
+                      if (open) preloadStripe();
+                      setSavedAddressPopoverOpen(open);
+                    }}
                     open={savedAddressPopoverOpen}
                   >
                     <PopoverTrigger asChild>
@@ -834,6 +839,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                       !canShipToCountry) &&
                       "border-destructive",
                   )}
+                  onFocus={() => preloadStripe()}
                   onChange={(e) => update("country", e.target.value)}
                   value={form.country}
                 >
@@ -864,6 +870,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                   )}
                   onBlur={() => markTouched("firstName")}
                   onChange={(e) => update("firstName", e.target.value)}
+                  onFocus={() => preloadStripe()}
                   placeholder="First name"
                   value={form.firstName}
                 />
@@ -888,6 +895,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                   )}
                   onBlur={() => markTouched("lastName")}
                   onChange={(e) => update("lastName", e.target.value)}
+                  onFocus={() => preloadStripe()}
                   placeholder="Last name"
                   value={form.lastName}
                 />
@@ -954,6 +962,7 @@ export const ShippingAddressForm = function ShippingAddressForm({
                   }}
                   onChange={(e) => update("street", e.target.value)}
                   onFocus={() => {
+                    preloadStripe();
                     shippingLoqate.inputFocusedRef.current = true;
                     if (shippingLoqate.suggestions.length > 0)
                       shippingLoqate.setOpen(true);

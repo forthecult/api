@@ -17,6 +17,11 @@ import {
   useState,
 } from "react";
 
+import {
+  getStripePromise,
+  preloadStripe,
+  setStripePromiseFromLoad,
+} from "../stripe-preload";
 import type { OrderPayload } from "../checkout-shared";
 import type { BillingAddressFormRef } from "./BillingAddressForm";
 import type { ShippingAddressFormRef } from "./ShippingAddressForm";
@@ -250,18 +255,22 @@ export const StripeCardPayment = function StripeCardPayment({
 }: StripeCardPaymentProps & {
   ref?: React.RefObject<null | StripeCardPaymentRef>;
 }) {
-  // Lazy-load Stripe SDK: only download when credit card form is visible.
-  // StripeCardPayment is already rendered conditionally (paymentMethod === "credit-card"),
-  // so this defers the SDK download until the user actually selects card payment.
-  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(null);
+  // Use preloaded Stripe promise if available (from hover/focus on credit card option); otherwise load now.
+  const [stripePromise, setStripePromise] = useState<null | Promise<Stripe | null>>(
+    () => getStripePromise() ?? null,
+  );
   useEffect(() => {
-    if (!STRIPE_PUBLISHABLE_KEY) return;
+    if (stripePromise || !STRIPE_PUBLISHABLE_KEY) return;
     let cancelled = false;
     import("@stripe/stripe-js").then(({ loadStripe }) => {
-      if (!cancelled) setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY));
+      if (!cancelled) {
+        const p = loadStripe(STRIPE_PUBLISHABLE_KEY);
+        setStripePromiseFromLoad(p);
+        setStripePromise(p);
+      }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [stripePromise]);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
 

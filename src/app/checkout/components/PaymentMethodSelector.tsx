@@ -81,6 +81,7 @@ import {
   paymentOptionRowClass,
 } from "../checkout-shared";
 import { useSolanaPayCheckout } from "../hooks/useSolanaPayCheckout";
+import { preloadStripe } from "../stripe-preload";
 import {
   BillingAddressForm,
   type BillingAddressFormRef,
@@ -966,7 +967,11 @@ export const PaymentMethodSelector = forwardRef<
           )}
           {!hiddenOptions.creditCard && (
             <div className="space-y-0">
-              <label className={paymentOptionRowClass}>
+              <label
+                className={paymentOptionRowClass}
+                onFocus={() => preloadStripe()}
+                onMouseEnter={() => preloadStripe()}
+              >
                 <div className="flex items-center gap-3">
                   <input
                     checked={paymentMethod === "credit-card"}
