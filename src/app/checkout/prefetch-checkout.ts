@@ -16,6 +16,8 @@ export function prefetchCheckout(): void {
   if (checkoutPrefetched || typeof window === "undefined") return;
   checkoutPrefetched = true;
   void import("~/app/checkout/CheckoutClient");
+  // Preload payment card chunk so credit card UI is ready as soon as checkout loads
+  void import("~/app/checkout/components/PaymentMethodSection");
   // Start loading Stripe as soon as checkout intent is shown so the card form is ready when they select it
   preloadStripe();
 }

@@ -333,6 +333,11 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       .finally(() => clearTimeout(timeoutId));
   }, []);
 
+  // When user has Web3 auth, fetch categories so "Shop by Crypto" shows without needing to hover the Shop nav
+  useEffect(() => {
+    if (hasWeb3Auth === true) fetchCategories();
+  }, [hasWeb3Auth, fetchCategories]);
+
   const isDashboard = useAuthState && user && pathname.startsWith("/dashboard");
   const isCheckout =
     pathname?.startsWith("/checkout") &&
@@ -382,8 +387,8 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
     lastScrollYRef.current = window.scrollY;
     scrollAccumRef.current = 0;
 
-    // Throttle scroll handler to 16ms (~60fps) for better performance
-    const throttledScroll = throttle(processScroll, 16);
+    // Throttle scroll handler to reduce main-thread work and scroll lag (32ms ≈ 30fps)
+    const throttledScroll = throttle(processScroll, 32);
 
     window.addEventListener("scroll", throttledScroll, { passive: true });
     return () => {
@@ -427,6 +432,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
           supports-[backdrop-filter]:bg-background/80
         `,
         !isCheckout && "sticky top-0 z-40",
+        "[contain:layout]",
       )}
     >
       <div

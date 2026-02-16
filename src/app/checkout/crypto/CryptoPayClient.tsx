@@ -39,7 +39,7 @@ import {
 } from "~/hooks/use-crypto-order";
 import { useCryptoPrices } from "~/hooks/use-crypto-prices";
 import { usePaymentCountdown } from "~/hooks/use-payment-countdown";
-import { useCurrentUser } from "~/lib/auth-client";
+import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
 import { useIsMobile } from "~/lib/hooks/use-mobile";
 import {
   CRUST_MINT_MAINNET,
@@ -124,8 +124,17 @@ export function CryptoPayClient({
   initialOrder,
 }: { initialOrder?: InitialOrderLike } = {}) {
   const { connection } = useConnection();
-  const { connected, disconnect, publicKey, sendTransaction, wallet } =
-    useWallet();
+  const {
+    connect,
+    connected,
+    connecting,
+    disconnect,
+    publicKey,
+    select,
+    sendTransaction,
+    wallet,
+    wallets,
+  } = useWallet();
   const params = useParams();
   const router = useRouter();
   const pathId = (params?.invoiceId as string) ?? "";
@@ -157,7 +166,63 @@ export function CryptoPayClient({
   >(null);
   const [qrDataUrl, setQrDataUrl] = useState<null | string>(null);
   const [showQrDialog, setShowQrDialog] = useState(false);
+  /** User's Solana account from auth (when signed in with wallet). Used to auto-connect on pay page. */
+  const [userSolanaAccountId, setUserSolanaAccountId] = useState<
+    null | string
+  >(null);
+  const autoConnectAttemptedRef = useRef(false);
   const isMobile = useIsMobile();
+
+  const { user } = useCurrentUser();
+
+  // Resolve current user's Solana account so we can auto-connect when paying with Solana
+  useEffect(() => {
+    if (!user?.id) {
+      setUserSolanaAccountId(null);
+      return;
+    }
+    let cancelled = false;
+    listUserAccounts()
+      .then((res) => {
+        if (cancelled || res.error) return;
+        const solana = (res.data ?? []).find(
+          (a: { providerId?: string }) => a.providerId === "solana",
+        ) as { accountId: string } | undefined;
+        if (!cancelled && solana?.accountId)
+          setUserSolanaAccountId(solana.accountId);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  // When user is signed in with Solana and we're on Solana pay, try to connect wallet once (same account they auth'd with)
+  useEffect(() => {
+    if (
+      !userSolanaAccountId ||
+      token === "sui" ||
+      connected ||
+      connecting ||
+      !wallets?.length ||
+      autoConnectAttemptedRef.current
+    )
+      return;
+    autoConnectAttemptedRef.current = true;
+    const first = wallets[0];
+    if (first) {
+      select(first.adapter.name);
+      connect();
+    }
+  }, [
+    userSolanaAccountId,
+    token,
+    connected,
+    connecting,
+    wallets,
+    select,
+    connect,
+  ]);
 
   const {
     error: orderError,
@@ -294,7 +359,6 @@ export function CryptoPayClient({
                   ? "1 TROLL ≈ 1 USD"
                   : `1 SOL = ${rate.toLocaleString("en-US", { maximumFractionDigits: 2, minimumFractionDigits: 2 })} USD`;
 
-  const { user } = useCurrentUser();
   const email = user?.email ?? order?.email ?? "";
   const paymentMethodLabel =
     token === "usdc"
@@ -942,9 +1006,7 @@ export function CryptoPayClient({
           sufficient: solBalance >= requiredLamports,
         };
       }
-      // SPL token: need enough SOL for fees first, then enough token balance
-      if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS)
-        return { reason: "sol_for_fees", sufficient: false };
+      // SPL token: check token balance first, then SOL for fees (so we show "not enough USDC" when they have neither)
       let splTokenMint: PublicKeyType;
       // amountBaseUnits: the amount already in smallest token units (e.g. 1 USDC = 1_000_000)
       // These helper functions (usdcAmountFromUsd, tokenAmountFromUsd, tokenAmountFromUsdWithPrice)
@@ -1040,10 +1102,11 @@ export function CryptoPayClient({
       // amountBaseUnits is already in smallest token units — do NOT multiply by 10^decimals again
       const requiredTokens = amountBaseUnits.integerValue(BigNumber.ROUND_CEIL);
       const tokenSufficient = BigInt(requiredTokens.toString()) <= balance;
-      return {
-        reason: tokenSufficient ? undefined : "token",
-        sufficient: tokenSufficient,
-      };
+      if (!tokenSufficient)
+        return { reason: "token", sufficient: false };
+      if (solBalance < MIN_SOL_FOR_TOKEN_TX_LAMPORTS)
+        return { reason: "sol_for_fees", sufficient: false };
+      return { sufficient: true };
     } catch {
       return { reason: "token", sufficient: false };
     }
