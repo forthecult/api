@@ -26,7 +26,7 @@ import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { ThemeProvider } from "~/ui/components/theme-provider";
 import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler";
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
-import { WagmiProvider } from "~/lib/wagmi-provider";
+import { LazyWagmiProvider } from "~/lib/lazy-wagmi-provider";
 import { Toaster } from "~/ui/primitives/sonner";
 import { SolanaWalletProvider } from "~/app/checkout/crypto/SolanaWalletProvider";
 
@@ -237,19 +237,19 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-/** Single wrapper for store layout: wallet boundary + Wagmi + Solana (token-gating) + auth modal + shell. */
+/** Single wrapper for store layout: wallet boundary + Wagmi (lazy) + Solana (token-gating) + auth modal + shell. */
 function StoreLayoutWrapper({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <WalletErrorBoundary>
-      <WagmiProvider>
+      <LazyWagmiProvider>
         <SolanaWalletProvider>
           <AuthWalletModalProvider>
             <LayoutShell>{children}</LayoutShell>
           </AuthWalletModalProvider>
         </SolanaWalletProvider>
-      </WagmiProvider>
+      </LazyWagmiProvider>
     </WalletErrorBoundary>
   );
 }

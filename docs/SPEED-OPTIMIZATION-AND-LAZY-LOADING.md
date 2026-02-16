@@ -46,7 +46,7 @@ The root layout wraps every page. Theme, cart, crypto/currency, prefetcher, auth
 | `CriticalRoutePrefetcher` | ~1KB | Prefetches `/checkout`, `/products` |
 | `AuthWalletModalProvider` | ~2KB | Event listener only; modal shell is dynamic |
 | `WalletErrorBoundary` | ~1KB | Lightweight error boundary |
-| `WagmiProvider` | ~200KB | Wagmi + viem + chains; in root (`StoreLayoutWrapper`) so wallet modal and auth have one stable context. Scoping it out caused wallet/context errors and flashing. |
+| `LazyWagmiProvider` | 0 KB initial | Wagmi + viem + chains are **not** in the initial bundle. The gate listens for `PRELOAD_AUTH_WALLET_MODAL` / `OPEN_AUTH_WALLET_MODAL` (e.g. hover or click "Connect wallet"); only then does it dynamic-import `wagmi-provider` and mount it. Once loaded, the provider stays mounted for the session. The auth modal shell shows a loading state until Wagmi is ready. |
 
 ### What is NOT in the root layout (scoped to routes)
 
@@ -57,10 +57,10 @@ The root layout wraps every page. Theme, cart, crypto/currency, prefetcher, auth
 | **SuiWalletProvider** | `checkout/[invoiceId]/layout.tsx` | Only needed for Sui payments |
 | **MetaMaskProvider** | `checkout/[invoiceId]/layout.tsx` | Only needed for EVM payments |
 
-**Note:** WagmiProvider is in the root layout on purpose. Scoping it only to the auth modal and checkout led to context/wallet errors and flashing; the root provides a single stable tree. The tradeoff is ~200KB of client JS on every page.
+**Note:** The root uses `LazyWagmiProvider`, which defers loading the Wagmi chunk until the user opens or preloads the auth wallet modal. This keeps ~200KB (Wagmi + viem + chains) out of the initial bundle. Checkout invoice layout still has its own `WagmiProvider` for payment pages.
 
 **Maintenance:**
-- When adding a new heavy provider (chart library, etc.), scope it to the route that needs it. Do not remove WagmiProvider from the root without re-testing wallet connect and checkout flows.
+- When adding a new heavy provider (chart library, etc.), scope it to the route that needs it. Do not remove `LazyWagmiProvider` from the root without re-testing wallet connect and checkout flows.
 - NextSSRPlugin stays in dashboard layout only.
 
 ---
@@ -103,7 +103,7 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 | **Footer** | `conditional-footer.tsx` | Footer is not in the initial bundle. A sentinel is rendered; when the user scrolls to ~60% (IntersectionObserver), the Footer is loaded via `next/dynamic` (`LazyFooter`). Sideshift widget loads on first click and retries if the script sets `window.sideshift` asynchronously. |
 | **Footer content** | `footer.tsx` | `FooterDogePeek` is dynamic with `ssr: false`. |
 | **Support chat** | `support-chat-widget-wrapper.tsx` | Widget is dynamic; loading is deferred 10s after mount, then visibility is fetched and the widget chunk is loaded only if visible. Hidden on `/telegram`. |
-| **Auth wallet modal** | `auth-wallet-modal-provider.tsx` | `AuthWalletModalShell` is dynamic; loads when the modal is opened or when `PRELOAD_AUTH_WALLET_MODAL` is fired (e.g. hover over header profile/wallet). The shell includes SolanaWalletProvider; WagmiProvider is provided by the root layout. |
+| **Auth wallet modal** | `auth-wallet-modal-provider.tsx` | `AuthWalletModalShell` is dynamic; loads when the modal is opened or when `PRELOAD_AUTH_WALLET_MODAL` is fired (e.g. hover over header profile/wallet). The shell includes SolanaWalletProvider. Wagmi is lazy-loaded by `LazyWagmiProvider` (root) on the same events; the shell shows a loading state until Wagmi is ready. |
 
 ### 5.2 Header and navigation
 
@@ -251,7 +251,7 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 ## 10. Maintenance checklist (when changing the app)
 
 - [ ] **New heavy route or feature** – Prefer a loader + `next/dynamic` with a loading state; avoid putting large deps in the main or layout bundle.
-- [ ] **New heavy provider** – Scope it to the route that needs it. Never add wagmi, wallet adapters, or similar SDKs to the root layout.
+- [ ] **New heavy provider** – Scope it to the route that needs it. Wagmi is already lazy in root via `LazyWagmiProvider`; do not add other heavy wallet/SDK providers to the root layout.
 - [ ] **New payment method or pay client** – Add prefetch in `prefetch-checkout.ts` and call it from the handler that navigates to the payment page; support `initialOrder` in the pay client so the layout's order fetch is reused (see checkout README). Add conditional provider loading in the invoice layout.
 - [ ] **Moved or renamed dynamically imported file** – Update all dynamic `import("...")` and any prefetch helpers that use the same path.
 - [ ] **New above-the-fold image** – Set `priority` only for the few images that affect LCP.
@@ -277,7 +277,7 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 
 ### Don't
 
-- **Don't remove WagmiProvider from the root layout** without re-testing wallet connect and checkout. It was scoped out previously and caused wallet/context errors and flashing; it stays in root for a stable tree.
+- **Don't remove LazyWagmiProvider from the root layout** without re-testing wallet connect and checkout. The lazy gate keeps Wagmi out of the initial bundle while still providing it when the auth modal is opened or preloaded.
 - **Don't conditionally render wallet providers** in the checkout invoice layout based on paymentType. React tree restructuring causes children to unmount/remount and breaks wallet context access.
 - **Don't call `loadStripe()` at module level or in a `useState` initializer** unless the Stripe form is guaranteed to be visible. Use `useEffect` with a dynamic `import()`.
 - **Don't reintroduce Suspense streaming on the homepage** without re-testing for image flashing and "order total" type issues; we use fetch-all-then-render there by design.
@@ -290,7 +290,7 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 ## 12. Further options (considered, not applied)
 
 - **Homepage above-the-fold:** Featured products section is now in a separate chunk (dynamic import with skeleton). Hero, lookbook, and first category images already use `priority`. LCP is largely limited by main-bundle parse (Wagmi + layout).
-- **Wagmi lazy load:** Loading Wagmi in a separate chunk after first paint would reduce initial JS but causes a full-app remount when the chunk loads; we do not do this.
+- **Wagmi lazy load:** Implemented via `LazyWagmiProvider`. Wagmi is loaded only when the user opens or preloads the auth wallet modal (same events as the modal shell). No full-app remount: the provider is inserted into the tree when the chunk loads; the auth modal shows a loading state until then.
 - **Homepage Suspense streaming:** Would improve TTFB but caused image flashing and ordering issues; we use fetch-all-then-render.
 - **Checkout:** Already prefetched via `CriticalRoutePrefetcher`; CheckoutClient and PaymentMethodSection are dynamic; Stripe loads only when card is selected.
 - **Payment page:** Pay clients (CryptoPayClient, etc.) are dynamic and prefetched on payment-method selection. Conditional wallet providers were reverted (tree stability).
