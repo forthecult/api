@@ -85,7 +85,7 @@ The homepage is an **async server component** that fetches all data up front, th
 
 - **Behavior:** The default export is `async function HomePage()`. It awaits `cookies()`, then runs `Promise.all([fetchCategories(), getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }), fetchFeaturedProducts(cookieHeader), fetchReviewsForTestimonials()])`. After all data is ready, it renders hero, brand statement, lookbook, categories grid, featured products grid, "Why choose us", testimonials, and CTA in one pass.
 - **Why no streaming:** Suspense streaming on the homepage caused picture flashing and layout/ordering issues. Fetching everything first then rendering avoids those problems.
-- **Components:** `FeaturedProductsSection` and `TestimonialsSection` are used with the fetched data; `TestimonialsSection` is a direct import (not dynamic).
+- **Components:** `FeaturedProductsSection` and `TestimonialsSection` are used with the fetched data; both are loaded via `next/dynamic` with skeletons (separate chunks).
 
 **Maintenance:**
 - When adding a new data-dependent section to the homepage, add its fetch to the same `Promise.all` and render the section with the resulting data. Do not reintroduce Suspense boundaries on this page without re-testing for flashing and "order total" type bugs.
@@ -116,7 +116,7 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` is loaded via `next/dynamic` with a skeleton (separate chunk, faster initial parse). `TestimonialsSection` is a direct import. |
+| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` with skeletons (separate chunks, faster initial parse). |
 
 ### 5.4 Products and catalog
 
@@ -309,13 +309,13 @@ When running desktop PageSpeed, the following have been addressed or documented:
 | **Improve image delivery / responsive images** | Product card images use `sizes` capped at `320px` for grid (displayed ~284px). Use `sizes` on all `next/image` so the optimizer serves appropriate widths. |
 | **Use efficient cache lifetimes** | Our static assets (`/_next/static/*`, images, fonts) use `Cache-Control: public, max-age=31536000, immutable`. Third-party image CDN (e.g. ufs.sh) sets its own headers; we cannot change those. |
 | **Legacy JavaScript (polyfills)** | `package.json` includes a modern `browserslist` so tooling can avoid transpiling baseline features. Remaining polyfills may come from dependencies. |
-| **Reduce unused JavaScript / long main-thread tasks** | Code-splitting and lazy loading are in place (sections 2–5). Large chunks (e.g. framework, Wagmi, payment clients) are loaded on demand. Run `bun run analyze` to find further split opportunities. |
+| **Reduce unused JavaScript / long main-thread tasks** | Code-splitting and lazy loading are in place (sections 2–5). Homepage: `FeaturedProductsSection` and `TestimonialsSection` are loaded via `next/dynamic` so their JS is in separate chunks. Run `bun run analyze` to see which modules land in which chunks and find further split opportunities. |
 | **Forced reflow** | Avoid reading layout (e.g. `getBoundingClientRect`, `offsetWidth`) immediately after DOM writes; batch reads or use `requestAnimationFrame`. Some reflows come from third-party chunks. |
 
 ### Mobile-specific (PageSpeed mobile)
 
 - **LCP breakdown:** Element render delay (~2.7s) is the main cost; TTFB is 0 ms. The LCP element is the hero `<h1>`. Reducing main-thread work (JS execution) is the primary lever — see “Reduce JavaScript execution time” and long tasks.
-- **Reduce JavaScript execution time:** Chunk `93794` is often the largest (parse + eval). Run `bun run analyze` to see what it contains; consider further code-splitting or deferring non-critical scripts. Our static cache and image `sizes` already help; ufs.sh cache TTL is controlled by the CDN.
+- **Reduce JavaScript execution time:** Chunk `93794` (or similar IDs after rebuild) is often the largest (parse + eval). Run `ANALYZE=true bun run build` (or `bun run analyze` if configured) and open the generated report to see which modules are in the largest chunks; then add `next/dynamic` for heavy below-the-fold sections (e.g. `TestimonialsSection` is now lazy on the homepage). ufs.sh cache TTL is controlled by the CDN.
 - **Improve image delivery (mobile):** Product detail main image uses `sizes` capped at `900px` for large viewports to avoid overserving. Product cards use `320px` cap for grid. Ensure all `next/image` instances have appropriate `sizes` for their layout.
 - **Legacy JavaScript / cache:** Same as desktop: `browserslist` targets modern browsers; ufs.sh cache is third-party.
 

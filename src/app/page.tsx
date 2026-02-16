@@ -20,7 +20,6 @@ import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories"
 import {
   PageContainer,
 } from "~/ui/components/layout/page-container";
-import { TestimonialsSection } from "~/ui/components/testimonials/testimonials-with-marquee";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -46,6 +45,28 @@ const FeaturedProductsSection = nextDynamic(
         {Array.from({ length: 8 }, (_, i) => (
           <Skeleton className="h-80 w-full rounded-lg" key={`fp-skeleton-${i}`} />
         ))}
+      </div>
+    ),
+    ssr: true,
+  },
+);
+
+/** Below-the-fold: load testimonials section in a separate chunk to reduce initial JS. */
+const LazyTestimonialsSection = nextDynamic(
+  () =>
+    import("~/ui/components/testimonials/testimonials-with-marquee").then(
+      (m) => ({ default: m.TestimonialsSection }),
+    ),
+  {
+    loading: () => (
+      <div className="flex flex-col items-center gap-4 py-12 sm:py-24">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-6 w-96" />
+        <div className="mt-8 flex gap-4 overflow-hidden">
+          {Array.from({ length: 3 }, (_, i) => (
+            <Skeleton className="h-48 w-[280px] shrink-0 rounded-lg" key={i} />
+          ))}
+        </div>
       </div>
     ),
     ssr: true,
@@ -844,7 +865,7 @@ export default async function HomePage() {
             lg:px-8
           `}
           >
-            <TestimonialsSection
+            <LazyTestimonialsSection
               className="py-0"
               description="Reviews from people who've ordered"
               testimonials={testimonials}
