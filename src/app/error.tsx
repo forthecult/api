@@ -4,7 +4,10 @@ import { AlertTriangle, Home, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 
-import { clearChunkReloadFlag } from "~/ui/components/chunk-load-error-handler";
+import {
+  CHUNK_ERROR_RELOAD_KEY,
+  clearChunkReloadFlag,
+} from "~/ui/components/chunk-load-error-handler";
 import { Button } from "~/ui/primitives/button";
 
 interface ErrorPageProps {
@@ -21,11 +24,21 @@ const isChunkLoadError = (err: Error) =>
  * Catches errors in the entire app and displays a user-friendly error page.
  */
 export default function RootError({ error, reset }: ErrorPageProps) {
+  const isChunk = isChunkLoadError(error);
+
+  // One-time auto-reload for chunk errors (e.g. stale cache after deploy, network blip).
+  // Uses same session key as ChunkLoadErrorHandler to avoid reload loops.
   useEffect(() => {
     console.error("Application error:", error);
-  }, [error]);
-
-  const isChunk = isChunkLoadError(error);
+    if (
+      isChunk &&
+      typeof sessionStorage !== "undefined" &&
+      !sessionStorage.getItem(CHUNK_ERROR_RELOAD_KEY)
+    ) {
+      sessionStorage.setItem(CHUNK_ERROR_RELOAD_KEY, "1");
+      window.location.reload();
+    }
+  }, [error, isChunk]);
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-8">

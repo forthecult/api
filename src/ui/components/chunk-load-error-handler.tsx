@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 
-const SESSION_KEY = "chunk-error-reload";
+export const CHUNK_ERROR_RELOAD_KEY = "chunk-error-reload";
+const SESSION_KEY = CHUNK_ERROR_RELOAD_KEY;
 
 function isChunkLoadError(error: unknown): boolean {
   if (error instanceof Error) {

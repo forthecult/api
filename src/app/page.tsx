@@ -32,29 +32,7 @@ import {
 } from "~/ui/primitives/card";
 import { Skeleton } from "~/ui/primitives/skeleton";
 
-const FeaturedProductsSection = nextDynamic(
-  () =>
-    import("~/app/FeaturedProductsSection").then(
-      (m) => m.FeaturedProductsSection,
-    ),
-  {
-    loading: () => (
-      <div
-        className={`
-        grid grid-cols-1 gap-6
-        sm:grid-cols-2
-        lg:grid-cols-3
-        xl:grid-cols-4
-      `}
-      >
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Skeleton className="h-80 w-full rounded-lg" key={i} />
-        ))}
-      </div>
-    ),
-    ssr: true,
-  },
-);
+import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
 
 const TestimonialsSection = nextDynamic(
   () =>

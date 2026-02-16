@@ -45,28 +45,33 @@ export function FeaturedProductsSection({ products }: { products: Product[] }) {
     setQuickViewOpen(true);
   }, []);
 
-  const handleAddToCart = (productId: string) => {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
+  const handleAddToCart = useCallback(
+    (productId: string) => {
+      const product = products.find((p) => p.id === productId);
+      if (!product) return;
 
-    if (product.hasVariants) {
-      handleQuickView(product.slug ?? product.id);
-      return;
-    }
+      if (product.hasVariants) {
+        handleQuickView(product.slug ?? product.id);
+        return;
+      }
 
-    addItem(
-      {
-        category: product.category,
-        id: product.id,
-        image: product.image,
-        name: product.name,
-        price: product.price,
-        ...(product.slug && { slug: product.slug }),
-      },
-      1,
-    );
-    toast.success(`${product.name} added to cart`);
-  };
+      addItem(
+        {
+          category: product.category,
+          id: product.id,
+          image: product.image,
+          name: product.name,
+          price: product.price,
+          ...(product.slug && { slug: product.slug }),
+        },
+        1,
+      );
+      toast.success(`${product.name} added to cart`);
+    },
+    [products, addItem, handleQuickView],
+  );
+
+  const handlePreloadQuickView = useCallback(() => setPreloadQuickView(true), []);
 
   const handleAddToWishlist = useCallback(
     async (productId: string) => {
@@ -107,7 +112,7 @@ export function FeaturedProductsSection({ products }: { products: Product[] }) {
           key={product.id}
           onAddToCart={handleAddToCart}
           onAddToWishlist={handleAddToWishlist}
-          onPreloadQuickView={() => setPreloadQuickView(true)}
+          onPreloadQuickView={handlePreloadQuickView}
           onQuickView={handleQuickView}
           onRemoveFromWishlist={handleRemoveFromWishlist}
           product={product}
