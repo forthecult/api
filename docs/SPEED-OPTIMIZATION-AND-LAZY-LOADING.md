@@ -100,7 +100,7 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Footer** | `conditional-footer.tsx` | Footer is not in the initial bundle. A sentinel is rendered; when the user scrolls to ~75% (IntersectionObserver), the Footer is loaded via `next/dynamic` (`LazyFooter`). |
+| **Footer** | `conditional-footer.tsx` | Footer is not in the initial bundle. A sentinel is rendered; when the user scrolls to ~60% (IntersectionObserver), the Footer is loaded via `next/dynamic` (`LazyFooter`). Sideshift widget loads on first click and retries if the script sets `window.sideshift` asynchronously. |
 | **Footer content** | `footer.tsx` | `FooterDogePeek` is dynamic with `ssr: false`. |
 | **Support chat** | `support-chat-widget-wrapper.tsx` | Widget is dynamic; loading is deferred 10s after mount, then visibility is fetched and the widget chunk is loaded only if visible. Hidden on `/telegram`. |
 | **Auth wallet modal** | `auth-wallet-modal-provider.tsx` | `AuthWalletModalShell` is dynamic; loads when the modal is opened or when `PRELOAD_AUTH_WALLET_MODAL` is fired (e.g. hover over header profile/wallet). The shell includes SolanaWalletProvider; WagmiProvider is provided by the root layout. |

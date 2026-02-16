@@ -60,20 +60,49 @@ function loadSideshiftAndShow(): void {
   if (typeof window === "undefined") return;
   (window as unknown as Record<string, unknown>).__SIDESHIFT__ = SIDESHIFT_CONFIG;
   const w = window as unknown as { sideshift?: { show: () => void } };
-  if (w.sideshift) {
-    w.sideshift.show();
-    return;
-  }
+
+  const tryShow = () => {
+    if (w.sideshift?.show) {
+      w.sideshift.show();
+      return true;
+    }
+    return false;
+  };
+
+  if (tryShow()) return;
+
   const existing = document.querySelector(`script[src="${SIDESHIFT_SCRIPT_URL}"]`);
   if (existing) {
-    existing.addEventListener("load", () => w.sideshift?.show());
+    existing.addEventListener("load", () => {
+      tryShow() || scheduleRetry();
+    });
+    tryShow() || scheduleRetry();
     return;
   }
+
   const script = document.createElement("script");
   script.src = SIDESHIFT_SCRIPT_URL;
   script.async = true;
-  script.onload = () => w.sideshift?.show();
+  script.onload = () => {
+    tryShow() || scheduleRetry();
+  };
   document.body.appendChild(script);
+}
+
+/** Sideshift may set window.sideshift after script load; retry a few times. */
+function scheduleRetry(): void {
+  const w = window as unknown as { sideshift?: { show: () => void } };
+  let attempts = 0;
+  const maxAttempts = 20;
+  const id = setInterval(() => {
+    attempts++;
+    if (w.sideshift?.show) {
+      clearInterval(id);
+      w.sideshift.show();
+    } else if (attempts >= maxAttempts) {
+      clearInterval(id);
+    }
+  }, 100);
 }
 
 const CRYPTO_COLORS: Record<CryptoCode, string> = {
