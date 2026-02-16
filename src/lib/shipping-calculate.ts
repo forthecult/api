@@ -7,6 +7,15 @@
  * - Printify shipping rates for Printify products (via catalog shipping profiles)
  * - Combined shipping when order has multiple vendor types
  * - Country-based shipping restrictions
+ *
+ * When we call provider APIs:
+ * - Printful: Only called when we have enough address data. For US, CA, and AU,
+ *   Printful requires state_code; we do not call the Printful API until state
+ *   is present (otherwise the API returns 400 "State code is missing"). For
+ *   other countries we call with country only. This avoids unnecessary errors
+ *   and log noise when the user has selected country but not yet state.
+ * - Printify: Uses address_to (country, region, city, zip) when available;
+ *   optional fields may be omitted.
  */
 
 import { and, asc, eq, inArray, isNotNull } from "drizzle-orm";
@@ -1100,13 +1109,10 @@ async function calculatePrintfulShipping(
       input.countryCode,
       input.stateCode,
     );
-    // US, CA, AU require state_code for Printful to return rates
+    // US, CA, AU require state_code for Printful; do not call the API until we have it (avoids 400 Bad Request).
     const needsState = /^(US|CA|AU)$/i.test(input.countryCode);
     if (needsState && !stateCode?.trim()) {
-      console.warn(
-        "[Printful shipping] state_code required for US/CA/AU but missing or invalid; request may return no rates.",
-        { countryCode: input.countryCode, stateCode: input.stateCode },
-      );
+      return { rate: null, shippingCents: 0 };
     }
 
     const address1 = (input.address1 ?? "").trim() || undefined;

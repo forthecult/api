@@ -174,9 +174,10 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       });
   }, []);
 
-  // Fetch on mount so crypto prices (e.g. checkout total) match server expectations.
+  // Defer fetch by 2s after mount so initial load isn't blocked; fallback rates show until then.
   React.useEffect(() => {
-    fetchRates();
+    const timeoutId = window.setTimeout(fetchRates, 2000);
+    return () => clearTimeout(timeoutId);
   }, [fetchRates]);
 
   const convertUsdToCrypto = React.useCallback(

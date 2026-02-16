@@ -9,8 +9,7 @@ This document describes how the webapp stays fast: build and server config, rout
 - **Efficient assets** – Compression, cache headers, optimized package imports, and image best practices reduce payload and improve repeat visits.
 - **Single source of data where possible** – e.g. one order fetch on the payment page, shared by layout and pay clients.
 - **Provider scoping** – Heavy SDK providers (wagmi, wallet adapters, UploadThing) are only loaded in the routes that need them, not globally.
-- **Streaming** – Server components use React Suspense to stream above-the-fold content immediately while data-dependent sections load in the background.
-- **Deferred API calls** – Non-critical API calls (categories, notifications, crypto prices) are deferred until interaction or idle, not on mount.
+- **Deferred API calls where safe** – Some non-critical API calls (e.g. notifications, support chat visibility) are deferred until interaction or idle. Categories and crypto prices fetch on mount for stability and to avoid UI flashing.
 
 ---
 
@@ -34,7 +33,7 @@ This document describes how the webapp stays fast: build and server config, rout
 
 **File:** `src/app/layout.tsx`
 
-The root layout wraps every page. Only lightweight providers live here; heavy SDK providers are scoped to the routes that need them.
+The root layout wraps every page. Theme, cart, crypto/currency, prefetcher, auth wallet modal provider, and WagmiProvider live here; other heavy SDKs (Solana, Sui, MetaMask, UploadThing) are scoped to the routes that need them.
 
 ### What IS in the root layout
 
@@ -42,27 +41,27 @@ The root layout wraps every page. Only lightweight providers live here; heavy SD
 |----------|--------|------------|
 | `ThemeProvider` | ~2KB | Theme must wrap every page |
 | `CartProvider` | ~3KB | Cart is used site-wide |
-| `CryptoCurrencyProvider` | ~5KB | Crypto price display in footer/products; API fetch deferred 3s after mount |
+| `CryptoCurrencyProvider` | ~5KB | Crypto price display in footer/products; API fetch on mount |
 | `CountryCurrencyProvider` | ~15KB | Currency display site-wide; reads cookie, defers exchange-rate fetch |
 | `CriticalRoutePrefetcher` | ~1KB | Prefetches `/checkout`, `/products` |
 | `AuthWalletModalProvider` | ~2KB | Event listener only; modal shell is dynamic |
 | `WalletErrorBoundary` | ~1KB | Lightweight error boundary |
+| `WagmiProvider` | ~200KB | Wagmi + viem + chains; in root (`StoreLayoutWrapper`) so wallet modal and auth have one stable context. Scoping it out caused wallet/context errors and flashing. |
 
 ### What is NOT in the root layout (scoped to routes)
 
 | Provider | Where it lives | Why |
 |----------|----------------|-----|
-| **WagmiProvider** (~200KB: wagmi + viem + chains) | `auth-wallet-modal-shell.tsx` (lazy, loads with modal) and `checkout/[invoiceId]/layout.tsx` | Only needed for wallet connect auth and crypto checkout |
 | **NextSSRPlugin** (UploadThing) | `dashboard/layout.tsx` | File uploads only happen in dashboard |
-| **SolanaWalletProvider** | `auth-wallet-modal-shell.tsx` and `checkout/[invoiceId]/layout.tsx` | Only needed for wallet auth and Solana payments |
+| **SolanaWalletProvider** | `auth-wallet-modal-shell.tsx` and `checkout/[invoiceId]/layout.tsx` | Only needed for wallet auth and Solana payments; modal shell is lazy-loaded |
 | **SuiWalletProvider** | `checkout/[invoiceId]/layout.tsx` | Only needed for Sui payments |
 | **MetaMaskProvider** | `checkout/[invoiceId]/layout.tsx` | Only needed for EVM payments |
 
-**CRITICAL: Do not move WagmiProvider back into the root layout.** It adds ~200KB of client JS to every page. The wallet modal shell lazy-loads it when the user opens "Connect Wallet". The checkout invoice layout provides its own copy for crypto payments.
+**Note:** WagmiProvider is in the root layout on purpose. Scoping it only to the auth modal and checkout led to context/wallet errors and flashing; the root provides a single stable tree. The tradeoff is ~200KB of client JS on every page.
 
 **Maintenance:**
-- When adding a new heavy provider (wallet SDK, chart library, etc.), scope it to the route that needs it. Never add it to the root layout unless it is truly needed on every page.
-- If a new auth method needs wagmi, add it inside the relevant dynamic shell, not globally.
+- When adding a new heavy provider (chart library, etc.), scope it to the route that needs it. Do not remove WagmiProvider from the root without re-testing wallet connect and checkout flows.
+- NextSSRPlugin stays in dashboard layout only.
 
 ---
 
@@ -78,23 +77,18 @@ The root layout wraps every page. Only lightweight providers live here; heavy SD
 
 ---
 
-## 4. Streaming and Suspense (homepage)
+## 4. Homepage data loading (no streaming)
 
 **File:** `src/app/page.tsx`
 
-The homepage uses React Suspense to stream above-the-fold content immediately:
+The homepage is an **async server component** that fetches all data up front, then renders the full page. It does **not** use React Suspense streaming.
 
-- **Immediate (no data):** Hero section, brand statement, lookbook, "Why choose us", CTA — all render as HTML the moment the server starts responding.
-- **Streamed (async server components):**
-  - `StreamedCategoriesSection` — fetches categories API, streams into the page with a skeleton placeholder.
-  - `StreamedFeaturedProducts` — fetches featured products API, streams with a product grid skeleton.
-  - `StreamedTestimonials` — fetches reviews API, streams with a minimal placeholder.
-
-Each streamed section is its own async function wrapped in `<Suspense fallback={<Skeleton />}>`. This means the hero is visible in the browser before any API call completes.
+- **Behavior:** The default export is `async function HomePage()`. It awaits `cookies()`, then runs `Promise.all([fetchCategories(), getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }), fetchFeaturedProducts(cookieHeader), fetchReviewsForTestimonials()])`. After all data is ready, it renders hero, brand statement, lookbook, categories grid, featured products grid, "Why choose us", testimonials, and CTA in one pass.
+- **Why no streaming:** Suspense streaming on the homepage caused picture flashing and layout/ordering issues. Fetching everything first then rendering avoids those problems.
+- **Components:** `FeaturedProductsSection` and `TestimonialsSection` are used with the fetched data; `TestimonialsSection` is a direct import (not dynamic).
 
 **Maintenance:**
-- When adding a new data-dependent section to the homepage, create an async server component and wrap it in `<Suspense>` with a skeleton fallback. Do not add it to a shared `Promise.all` that blocks the entire page.
-- Keep above-the-fold sections (hero, brand statement) free of async data so they stream immediately.
+- When adding a new data-dependent section to the homepage, add its fetch to the same `Promise.all` and render the section with the resulting data. Do not reintroduce Suspense boundaries on this page without re-testing for flashing and "order total" type bugs.
 
 ---
 
@@ -109,20 +103,20 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 | **Footer** | `conditional-footer.tsx` | Footer is not in the initial bundle. A sentinel is rendered; when the user scrolls to ~75% (IntersectionObserver), the Footer is loaded via `next/dynamic` (`LazyFooter`). |
 | **Footer content** | `footer.tsx` | `FooterDogePeek` is dynamic with `ssr: false`. |
 | **Support chat** | `support-chat-widget-wrapper.tsx` | Widget is dynamic; loading is deferred 10s after mount, then visibility is fetched and the widget chunk is loaded only if visible. Hidden on `/telegram`. |
-| **Auth wallet modal** | `auth-wallet-modal-provider.tsx` | `AuthWalletModalShell` is dynamic; loads when the modal is opened or when `PRELOAD_AUTH_WALLET_MODAL` is fired (e.g. hover over header profile/wallet). The shell includes WagmiProvider + SolanaWalletProvider so wallet SDKs are only loaded when the modal opens. |
+| **Auth wallet modal** | `auth-wallet-modal-provider.tsx` | `AuthWalletModalShell` is dynamic; loads when the modal is opened or when `PRELOAD_AUTH_WALLET_MODAL` is fired (e.g. hover over header profile/wallet). The shell includes SolanaWalletProvider; WagmiProvider is provided by the root layout. |
 
 ### 5.2 Header and navigation
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Header** | `header.tsx` | `Cart` and `NotificationsWidget` are dynamic with `ssr: false` so cart and notifications code are not in the main bundle. Categories fetch is deferred to hover/focus on the Shop nav item (not on mount). Notification preferences are cached in sessionStorage. |
+| **Header** | `header.tsx` | `Cart` and `NotificationsWidget` are dynamic with `ssr: false` so cart and notifications code are not in the main bundle. Categories fetch only on hover/focus on the Shop nav item or when opening the mobile menu (not on mount). Notification preferences are cached in sessionStorage. |
 | **Mobile nav** | `mobile-nav-sheet.tsx` | `Cart` and `FooterPreferencesModal` are dynamic; modal loads only when the user opens preferences. |
 
 ### 5.3 Home and marketing
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Home page** | `app/page.tsx` | `FeaturedProductsSection` and `TestimonialsSection` are loaded with `nextDynamic` with `ssr: true`. Both are below the fold and in separate chunks. Data sections use Suspense streaming (see section 4). |
+| **Home page** | `app/page.tsx` | Default export is async; fetches categories, featured products, and testimonials in `Promise.all` then renders (no Suspense). `TestimonialsSection` is a direct import; `FeaturedProductsSection` receives the pre-fetched products. |
 
 ### 5.4 Products and catalog
 
@@ -171,9 +165,9 @@ Not all API calls need to fire on mount. Deferring non-critical fetches reduces 
 
 | API call | Trigger | File |
 |----------|---------|------|
-| `/api/categories` (header mega menu) | User hovers/focuses the Shop nav item or opens mobile menu | `header.tsx` |
+| `/api/categories` (header mega menu) | Only on hover/focus of Shop nav item or when opening mobile menu (not on mount) | `header.tsx` |
 | `/api/user/notifications` (header bell) | On mount for logged-in users, then cached in `sessionStorage`. Bypasses cache on `NOTIFICATION_PREFS_UPDATED` event. | `header.tsx` |
-| `/api/crypto/prices` | 3-second idle delay after mount; fallback rates render immediately | `use-crypto-currency.tsx` |
+| `/api/crypto/prices` | 2-second delay after mount; fallback rates show until then | `use-crypto-currency.tsx` |
 | `/api/geo` + exchange rates | On mount only if no cookie/localStorage cache; exchange rates cached 1 hour | `use-country-currency.tsx` |
 | `/api/support-chat/widget-visible` | 10-second delay after mount | `support-chat-widget-wrapper.tsx` |
 
@@ -261,8 +255,8 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 - [ ] **New payment method or pay client** – Add prefetch in `prefetch-checkout.ts` and call it from the handler that navigates to the payment page; support `initialOrder` in the pay client so the layout's order fetch is reused (see checkout README). Add conditional provider loading in the invoice layout.
 - [ ] **Moved or renamed dynamically imported file** – Update all dynamic `import("...")` and any prefetch helpers that use the same path.
 - [ ] **New above-the-fold image** – Set `priority` only for the few images that affect LCP.
-- [ ] **New data section on homepage** – Wrap in `<Suspense>` with a skeleton fallback so the hero streams immediately.
-- [ ] **New API call in header or global component** – Defer to interaction (hover, focus, menu open) or idle timeout. Do not fetch on mount.
+- [ ] **New data section on homepage** – Add the fetch to the async `HomePage`’s `Promise.all` and render the section with the fetched data (no Suspense on homepage; we avoid streaming there to prevent flashing).
+- [ ] **New API call in header or global component** – Prefer deferring to interaction or idle where safe (e.g. categories on hover/focus, crypto prices after 2s).
 - [ ] **New font or font weight** – Check if an existing font covers the use case. Keep Manrope weights minimal.
 - [ ] **New high-value navigation target** – Consider adding it to `CriticalRoutePrefetcher` if it should feel instant on first click.
 - [ ] **Bundle size** – After significant changes, run `bun run analyze` and confirm chunk boundaries and sizes are still acceptable.
@@ -274,20 +268,19 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 ### Do
 
 - **Scope providers to routes.** If a provider is only needed on 2-3 routes, put it in those route layouts, not the root layout.
-- **Stream with Suspense.** For pages with multiple data fetches, use Suspense boundaries so above-the-fold content renders immediately.
-- **Defer API calls.** Fetch on interaction (hover, focus, click) or after an idle timeout, not on mount.
+- **Defer API calls where safe.** For non-critical UI (e.g. support chat, some notifications), fetch on interaction or idle. Categories and crypto prices fetch on mount to avoid flashing and context issues.
 - **Lazy-load third-party SDKs.** Use dynamic `import()` for Stripe, wallet SDKs, chat widgets, and similar. Only load when the user needs them.
 - **Cache API results.** Use `sessionStorage` for results that don't change within a session (notification prefs, geo, exchange rates).
 - **Set image `priority`.** Only for above-the-fold images that affect LCP. Use `sizes` to avoid downloading unnecessarily large images.
-- **Use skeletons as Suspense fallbacks.** Match the layout of the final content so there is no layout shift when data arrives.
+- **On the homepage, fetch then render.** We do not use Suspense streaming there; the async page awaits all data then renders to avoid picture flashing and ordering bugs.
 - **Run `bun run analyze` after big changes.** Check that new dependencies landed in the right chunks and didn't bloat the main bundle.
 
 ### Don't
 
-- **Don't add WagmiProvider, SolanaWalletProvider, or similar to the root layout.** These add 100-250KB each to every page.
+- **Don't remove WagmiProvider from the root layout** without re-testing wallet connect and checkout. It was scoped out previously and caused wallet/context errors and flashing; it stays in root for a stable tree.
 - **Don't conditionally render wallet providers** in the checkout invoice layout based on paymentType. React tree restructuring causes children to unmount/remount and breaks wallet context access.
 - **Don't call `loadStripe()` at module level or in a `useState` initializer** unless the Stripe form is guaranteed to be visible. Use `useEffect` with a dynamic `import()`.
-- **Don't `await` all data before rendering a page.** Use Suspense streaming so the server sends HTML as data becomes available.
+- **Don't reintroduce Suspense streaming on the homepage** without re-testing for image flashing and "order total" type issues; we use fetch-all-then-render there by design.
 - **Don't fetch data on every navigation** if it doesn't change often. Cache in `sessionStorage` or a React context.
 - **Don't add font weights that aren't used.** Each weight adds to the font download size.
 - **Don't put `NextSSRPlugin` (UploadThing) in the root layout.** It only belongs in the dashboard where uploads happen.
@@ -301,4 +294,4 @@ The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProv
 - **Heavy components:** If any client (checkout, payment, dashboard, etc.) grows, consider splitting modals, tabs, or secondary UI with `next/dynamic` and keep the critical path minimal.
 - **Support chat:** The 10s defer and visibility check could be tuned (e.g. by route or user segment) if you want the widget to load sooner on some pages.
 - **Server-side crypto prices:** Move the crypto price fetch to a server component or API route with ISR so the client doesn't need to fetch at all on first render.
-- **Partial prerendering:** When Next.js stabilizes PPR, consider enabling it for the homepage so the static shell (hero, brand statement) is served from the CDN edge while dynamic sections stream.
+- **Partial prerendering:** When Next.js stabilizes PPR, consider enabling it for the homepage so the static shell is served from the edge while dynamic sections load, if it can be done without reintroducing the flashing/ordering issues we avoided by removing Suspense there.

@@ -288,7 +288,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       window.removeEventListener(NOTIFICATION_PREFS_UPDATED, handler);
   }, [fetchNotificationPrefs]);
 
-  // Fetch categories on mount so the shop mega menu has data when opened.
+  // Fetch categories only on hover/focus of Shop nav or when opening mobile menu (not on mount).
   const categoriesFetchedRef = useRef(false);
   const fetchCategories = useCallback(() => {
     if (categoriesFetchedRef.current) return;
@@ -308,10 +308,6 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       .catch(() => {})
       .finally(() => clearTimeout(timeoutId));
   }, []);
-
-  useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
 
   const isDashboard = useAuthState && user && pathname.startsWith("/dashboard");
   const isCheckout =
