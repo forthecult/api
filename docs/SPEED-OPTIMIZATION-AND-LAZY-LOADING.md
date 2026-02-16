@@ -233,19 +233,13 @@ Checkout and payment routes use **prefetch-on-intent**, **code-splitting**, **la
 - **Stripe SDK** (`@stripe/stripe-js`): Loaded lazily via dynamic `import()` in `StripeCardPayment.tsx` and `ExpressCheckout.tsx`. The SDK only downloads when the card form becomes visible (credit card selected) or when Express Checkout renders with `stripeEnabled` and a valid total. **Do not switch back to a top-level `import { loadStripe }` — this would download the Stripe SDK on every checkout page load.**
 - **Wallet SDKs**: See Provider Scoping (section 2).
 
-### Conditional wallet providers (invoice layout)
+### Wallet providers (invoice layout)
 
 **File:** `src/app/checkout/[invoiceId]/layout.tsx`
 
-The invoice layout loads wallet providers **conditionally** based on the payment type from the prefetched order:
+The invoice layout renders **all** wallet providers (WagmiProvider, MetaMaskProvider, SuiWalletProvider, SolanaWalletProvider) for every payment page. This keeps the React tree stable — conditionally adding/removing providers causes children to unmount/remount, which breaks wallet context access and causes crashes.
 
-- `paymentType === "eth"` → WagmiProvider + MetaMaskProvider
-- `paymentType === "solana"` or empty → SolanaWalletProvider (includes WalletConnect adapter and MWA)
-- `paymentType === "sui"` → SuiWalletProvider
-- `paymentType === "btcpay"` or `"ton"` → No wallet providers needed
-- Unknown (empty paymentType, before order loads) → All providers (fallback)
-
-This keeps ~100-200KB of unused wallet SDK code out of the client for payment types that don't need them.
+**Do NOT conditionally render providers based on paymentType.** The providers themselves are lightweight wrappers; the heavy SDK code is already in separate chunks loaded by the dynamic pay clients (CryptoPayClient, EthPayClient, etc.).
 
 ### Code-splitting
 
@@ -291,6 +285,7 @@ This keeps ~100-200KB of unused wallet SDK code out of the client for payment ty
 ### Don't
 
 - **Don't add WagmiProvider, SolanaWalletProvider, or similar to the root layout.** These add 100-250KB each to every page.
+- **Don't conditionally render wallet providers** in the checkout invoice layout based on paymentType. React tree restructuring causes children to unmount/remount and breaks wallet context access.
 - **Don't call `loadStripe()` at module level or in a `useState` initializer** unless the Stripe form is guaranteed to be visible. Use `useEffect` with a dynamic `import()`.
 - **Don't `await` all data before rendering a page.** Use Suspense streaming so the server sends HTML as data becomes available.
 - **Don't fetch data on every navigation** if it doesn't change often. Cache in `sessionStorage` or a React context.

@@ -17,7 +17,7 @@ Checkout and payment use **prefetch on intent** (cart open / hover checkout, pay
 
 Key patterns:
 - **Stripe SDK** is loaded lazily in `StripeCardPayment.tsx` and `ExpressCheckout.tsx` via `import("@stripe/stripe-js")` in a `useEffect`, not at module level. Do not change this to a top-level import.
-- **Wallet providers** in `[invoiceId]/layout.tsx` are conditional: only the providers needed for the detected `paymentType` are rendered (EVM, Solana, Sui, or none for BTC/TON).
+- **Wallet providers** in `[invoiceId]/layout.tsx` always render all providers to keep the React tree stable. Do not conditionally render providers based on paymentType — this causes tree restructuring and breaks wallet context.
 - **WagmiProvider** is NOT in the root layout. It loads inside `AuthWalletModalShell` (for wallet auth) and inside the invoice layout (for crypto payments).
 
 For full detail on checkout/payment behavior and maintenance (prefetch-checkout.ts, loaders, initialOrder, new payment methods), see **[docs/SPEED-OPTIMIZATION-AND-LAZY-LOADING.md](../../../docs/SPEED-OPTIMIZATION-AND-LAZY-LOADING.md)**. That doc also covers site-wide speed optimizations (route prefetching, lazy loading, images, build config, provider scoping).
