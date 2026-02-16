@@ -325,17 +325,29 @@ export function ethereumAuthPlugin() {
               })) as null | UserRecord;
             }
 
-            if (!user) {
-              const email = `ethereum_${addressTrim.slice(2, 10)}@wallet.local`;
-              const now = new Date();
-              const userId = (
+            const generateId =
+              typeof (
                 ctx.context as {
-                  generateId: (opts?: {
+                  generateId?: (opts?: {
                     model?: string;
                     size?: number;
                   }) => string;
                 }
-              ).generateId({ model: "user" });
+              ).generateId === "function"
+                ? (
+                    ctx.context as {
+                      generateId: (opts?: {
+                        model?: string;
+                        size?: number;
+                      }) => string;
+                    }
+                  ).generateId
+                : () => randomBytes(16).toString("hex");
+
+            if (!user) {
+              const email = `ethereum_${addressTrim.slice(2, 10)}@wallet.local`;
+              const now = new Date();
+              const userId = generateId({ model: "user" });
               console.log(
                 "[ethereum-auth] No existing account for",
                 addressTrim,
@@ -370,6 +382,7 @@ export function ethereumAuthPlugin() {
                     transactionalSms: false,
                     transactionalTelegram: false,
                     transactionalWebsite: true,
+                    twoFactorEnabled: false,
                     updatedAt: now,
                   },
                   model: "user",
@@ -401,14 +414,7 @@ export function ethereumAuthPlugin() {
                       ],
                     })) as AccountRecord | null;
                     if (!existingAccountForWallet) {
-                      const accountRowId = (
-                        ctx.context as {
-                          generateId: (opts?: {
-                            model?: string;
-                            size?: number;
-                          }) => string;
-                        }
-                      ).generateId({ model: "account" });
+                      const accountRowId = generateId({ model: "account" });
                       try {
                         await (
                           ctx.context.internalAdapter as {
@@ -446,14 +452,7 @@ export function ethereumAuthPlugin() {
                   "[ethereum-auth] Linking new Ethereum account for user",
                   userId,
                 );
-                const accountRowId = (
-                  ctx.context as {
-                    generateId: (opts?: {
-                      model?: string;
-                      size?: number;
-                    }) => string;
-                  }
-                ).generateId({ model: "account" });
+                const accountRowId = generateId({ model: "account" });
                 try {
                   await (
                     ctx.context.internalAdapter as {

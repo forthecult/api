@@ -134,14 +134,25 @@ const DigitalOnlyStubRef = function DigitalOnlyStubRef({
   return null;
 };
 
+/** Get property descriptor from obj or its prototype chain (getOwnPropertyDescriptor is own-only). */
+function getDescriptor(obj: object, key: string): PropertyDescriptor | undefined {
+  let current: object | null = obj;
+  while (current) {
+    const d = Object.getOwnPropertyDescriptor(current, key);
+    if (d) return d;
+    current = Object.getPrototypeOf(current);
+  }
+  return undefined;
+}
+
 /**
  * Safe wallet address reader that avoids the console.error noise from the
  * Solana wallet adapter's default context.
  *
  * When no SolanaWalletProvider is in the tree (e.g. on /checkout), the adapter's
  * default context defines `publicKey` as a getter that calls console.error before
- * returning null. We detect this by checking if `publicKey` is defined as a
- * getter (Object.getOwnPropertyDescriptor) and skip the read entirely.
+ * returning null. We detect this by checking if `publicKey` is a getter (own or
+ * on prototype) and skip the read entirely.
  *
  * When a real provider IS present (e.g. /checkout/[invoiceId]), publicKey is a
  * regular property set by the provider, and we read it normally.
@@ -149,10 +160,9 @@ const DigitalOnlyStubRef = function DigitalOnlyStubRef({
 function useOptionalWalletAddress(): string | undefined {
   const ctx = useContext(WalletContext);
   if (!ctx) return undefined;
-  // Default context (no provider) uses Object.defineProperty with a getter that
-  // console.errors. A real provider sets publicKey as a data property. Skip the
-  // read if it's a getter to avoid console noise.
-  const desc = Object.getOwnPropertyDescriptor(ctx, "publicKey");
+  // Default context (no provider) uses a getter that console.errors. Check
+  // own and prototype chain so we never trigger it.
+  const desc = getDescriptor(ctx, "publicKey");
   if (desc?.get) return undefined;
   try {
     return ctx.publicKey?.toBase58() ?? undefined;
