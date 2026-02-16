@@ -83,53 +83,37 @@ function CheckoutInvoiceLayoutInner({
     if (sp.get("openConnect") === "1") setOpen(true);
   }, []);
 
-  // Derive payment type from prefetched order or URL hash so we only load the
-  // wallet providers actually needed. This keeps ~100-200KB of unused SDK code
-  // out of the client for payment types that don't need them.
-  const paymentType = prefetch?.order?.paymentType?.toLowerCase() ?? "";
-  const needsEvm = isEvm || paymentType === "eth";
-  const needsSolana =
-    !paymentType || paymentType === "solana" || paymentType === "crypto";
-  const needsSui = !paymentType || paymentType === "sui";
-
-  // Wrap children with only the wallet providers required for this payment type.
-  // WagmiProvider is needed for EVM payments AND for Solana WalletConnect (on
-  // mobile, MWA also needs the Solana adapter which is independent of wagmi).
-  let content = (
-    <>
-      {needsEvm ? (
-        children
-      ) : (
-        <OpenConnectWalletModalProvider openModal={openModal}>
-          <CheckoutCryptoHeader />
-          {children}
-          <ConnectWalletModal onOpenChange={setOpen} open={open} />
-        </OpenConnectWalletModalProvider>
-      )}
-    </>
+  // All crypto payments get all wallet providers so the React tree stays stable
+  // and wallet contexts are always available. Conditional rendering of providers
+  // would cause tree restructuring when paymentType changes, briefly unmounting
+  // children and breaking wallet context access.
+  // For EVM payments, EthPayClient has its own header; for Solana/Sui, use shared header
+  return (
+    <WagmiProvider>
+      <MetaMaskProvider>
+        <WalletErrorBoundary>
+          <SuiWalletProvider>
+            <SolanaWalletProvider>
+              {isEvm ? (
+                // ETH payments: EthPayClient has its own header
+                children
+              ) : (
+                // Solana/Sui payments: use shared header and connect modal.
+                // Header and modal render immediately to avoid a layout shift
+                // (the old walletUiReady defer caused a visible flash when the
+                // 64px header appeared after setTimeout(0)).
+                <OpenConnectWalletModalProvider openModal={openModal}>
+                  <CheckoutCryptoHeader />
+                  {children}
+                  <ConnectWalletModal onOpenChange={setOpen} open={open} />
+                </OpenConnectWalletModalProvider>
+              )}
+            </SolanaWalletProvider>
+          </SuiWalletProvider>
+        </WalletErrorBoundary>
+      </MetaMaskProvider>
+    </WagmiProvider>
   );
-
-  // Solana provider: needed for Solana/default payments (WalletConnect + MWA)
-  if (needsSolana) {
-    content = <SolanaWalletProvider>{content}</SolanaWalletProvider>;
-  }
-
-  // Sui provider: only for Sui payments
-  if (needsSui) {
-    content = <SuiWalletProvider>{content}</SuiWalletProvider>;
-  }
-
-  // EVM providers: WagmiProvider + MetaMask for ETH, but also always present
-  // as fallback until payment type is known (paymentType === "")
-  if (needsEvm || !paymentType) {
-    content = (
-      <WagmiProvider>
-        <MetaMaskProvider>{content}</MetaMaskProvider>
-      </WagmiProvider>
-    );
-  }
-
-  return <WalletErrorBoundary>{content}</WalletErrorBoundary>;
 }
 
 function isEvmFromHash(): boolean {

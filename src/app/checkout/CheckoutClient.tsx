@@ -1,12 +1,13 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { WalletContext } from "@solana/wallet-adapter-react";
 import { ArrowLeft, Loader2, Lock } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   forwardRef,
   useCallback,
+  useContext,
   useEffect,
   useImperativeHandle,
   useReducer,
@@ -133,17 +134,35 @@ const DigitalOnlyStubRef = function DigitalOnlyStubRef({
   return null;
 };
 
+/**
+ * Safe wallet address reader. Uses useContext(WalletContext) directly instead of
+ * useWallet() because the main /checkout page has NO SolanaWalletProvider.
+ * useWallet() triggers console.error getters on the default context; reading the
+ * raw context value and checking publicKey with a try-catch avoids the noise.
+ * Returns the base58 address when a wallet is connected (e.g. on
+ * /checkout/[invoiceId] which has SolanaWalletProvider), or undefined otherwise.
+ */
+function useOptionalWalletAddress(): string | undefined {
+  const ctx = useContext(WalletContext);
+  try {
+    const pk = ctx?.publicKey;
+    return pk?.toBase58() ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function CheckoutClient() {
   const { isHydrated, itemCount, items, removeItem, subtotal, updateQuantity } =
     useCart();
   const { isPending: authPending, user } = useCurrentUser();
   const { selectedCountry } = useCountryCurrency();
   // Wallet address for tier-based discounts (staking balance → coupon).
-  // Safe without a SolanaWalletProvider: the adapter context defaults to {}
-  // so publicKey is undefined, and the coupon API simply skips wallet-based
-  // discounts. On /checkout/[invoiceId] a provider IS present.
-  const { publicKey } = useWallet();
-  const wallet = publicKey?.toBase58() ?? undefined;
+  // On /checkout there is no SolanaWalletProvider, so we read the wallet
+  // context directly with useContext (safe — returns default context with
+  // publicKey: null via getter) instead of useWallet() which console.errors.
+  // On /checkout/[invoiceId] a full provider IS present.
+  const wallet = useOptionalWalletAddress();
   const isMobile = useIsMobile();
   const isLoggedIn = Boolean(user?.email);
   const isDigitalOnly =
