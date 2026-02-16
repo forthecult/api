@@ -20,6 +20,7 @@ import {
   SOLANA_ONLY_WALLETS,
   tokenToChain,
 } from "./chain-wallets";
+import { openIntentRef } from "./open-wallet-modal";
 
 interface ConnectWalletModalProps {
   onOpenChange: (open: boolean) => void;
@@ -159,9 +160,14 @@ export function ConnectWalletModal({
   // Close modal when Solana wallet is connected (whether user just connected or was already/reconnected).
   // Avoids leaving the modal open when: user clicked "Connect wallet" while already connected,
   // or wallet reconnected (e.g. Phantom) and user is left staring at the modal.
+  // Skip auto-close when opened via "Add a new wallet" so the user can connect another address.
   const closeAfterStableMs = 400;
   useEffect(() => {
     if (!open || !connected || !publicKey) return;
+    if (openIntentRef.current === "add-wallet") {
+      openIntentRef.current = "connect";
+      return;
+    }
     const t = setTimeout(() => {
       onOpenChange(false);
     }, closeAfterStableMs);

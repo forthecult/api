@@ -186,7 +186,8 @@ const config = {
     // Optimize image loading with device sizes
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048],
     formats: ["image/avif", "image/webp"],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Include 192 and 320 so 138px/284px displays (e.g. category tiles, product grid) get appropriate srcset
+    imageSizes: [16, 32, 48, 64, 96, 128, 192, 256, 320, 384],
     remotePatterns: [
       { hostname: "avatars.githubusercontent.com", protocol: "https" },
       { hostname: "raw.githubusercontent.com", protocol: "https" },

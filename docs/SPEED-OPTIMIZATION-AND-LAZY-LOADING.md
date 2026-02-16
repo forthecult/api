@@ -25,6 +25,8 @@ This document describes how the webapp stays fast: build and server config, rout
 
 **Bundle analysis:** From the webapp root, run `bun run analyze` to build with the bundle analyzer. The report opens in the browser (and is written under `.next`). Use it to confirm chunk boundaries, spot large dependencies, and verify new routes/components are in the right chunks.
 
+**How to use the analyzer for “Reduce unused JavaScript”:** After `bun run analyze`, the report shows client bundles (e.g. “client” or “first load”) with chunk sizes. PageSpeed reports chunk filenames like `...chunks/8886-....js` — the number (8886) is the webpack chunk ID and can change between builds. In the analyzer: (1) Find the largest client chunks by size. (2) Click a chunk to see which modules it contains. (3) If a chunk used on the homepage contains code for other routes (checkout, dashboard, etc.), split that code with `next/dynamic` or move it to a route-specific layout. (4) If the header or a layout component is in a large chunk, consider loading it after idle (e.g. `DeferredHeader`).
+
 **Maintenance:** When adding a large dependency used in only some routes, consider adding it to `optimizePackageImports` if the package supports it, and keep heavy UI in dynamically imported components.
 
 ---
@@ -110,7 +112,7 @@ Heavy or non–first-paint UI is loaded with `next/dynamic` (or equivalent) so i
 
 | Area | Component / behavior | Notes |
 |------|----------------------|--------|
-| **Header** | `header.tsx` | `Cart` loads when requested (preload event or on hover). `ShopMegaMenu` is dynamic and mounts only after first hover/focus on Shop (chunk loads then). `NotificationsWidget` is dynamic and only mounts when user is authorized and has website notifications enabled (chunk not loaded for guests or when off). Categories fetch only on hover/focus on Shop or when opening the mobile menu (not on mount). Notification preferences are cached in sessionStorage. |
+| **Header** | `deferred-header.tsx` | **DeferredHeader** shows a minimal placeholder (logo bar) until `requestIdleCallback` (100 ms), then loads **ConditionalHeader** (TopBanner + Header) via `next/dynamic`. The full header chunk (auth, Cart, ShopMegaMenu, etc.) does not block LCP. Inside the header: `Cart` loads when requested (preload or hover). `ShopMegaMenu` is dynamic on first hover/focus on Shop. `NotificationsWidget` is dynamic when user is authorized and has website notifications enabled. Categories fetch only on hover/focus or when opening mobile menu. |
 | **Mobile nav** | `mobile-nav-sheet.tsx` | `Cart` and `FooterPreferencesModal` are dynamic; modal loads only when the user opens preferences. |
 
 ### 5.3 Home and marketing
@@ -182,15 +184,16 @@ Not all API calls need to fire on mount. Deferring non-critical fetches reduces 
 ## 7. Images
 
 - **`next/image`** is used for product and marketing images; the runtime optimizes format and sizing.
+- **Remote images (https):** Only `data:` and `http:` URLs use `unoptimized={true}`. All **https** remotes (Printful, ufs.sh, UploadThing, etc.) go through Next Image Optimization so the server can resize and serve WebP/AVIF, reducing download size (PageSpeed “Reduce the download time of images”).
 - **Priority:** Images critical for LCP (e.g. hero, first few product tiles, auth pages) use `priority` so they are not lazy-loaded. Examples:
   - `products-client.tsx`: `priority={index < 4}` for the first four products.
   - `page.tsx` (homepage): Lookbook image uses `priority`. First 2 category images use `priority={index < 2}`.
   - Auth sign-in/sign-up and about page: hero/logo images use `priority`.
-  - Product detail gallery: `priority={!selectedVariant?.id}` for the main image.
+  - Product detail gallery: `priority` when showing the default (first) product image.
 - **Product card** (`product-card.tsx`) accepts a `priority` prop and passes it to `next/image`; callers set it for above-the-fold items.
-- **Sizes:** Use appropriate `sizes` where it improves layout and reduces unnecessary large loads. Product cards use a cap of `320px` for the grid slot so images are not requested larger than displayed (~284px).
+- **Sizes:** Use `sizes` so the browser requests appropriately sized sources. Product cards cap at `284px` for the grid; category tiles on homepage use `(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px`. `next.config.ts` `imageSizes` includes 192 and 320 for 138px/284px displays.
 
-**Maintenance:** For new high-impact images (e.g. new hero or first-screen product grid), set `priority` only for the few that affect LCP; leave the rest to default lazy loading.
+**Maintenance:** For new high-impact images, set `priority` only for the few that affect LCP. Keep `unoptimized` only for `data:` and `http:`; add new image hosts to `remotePatterns` in `next.config.ts` if needed.
 
 ---
 
@@ -315,20 +318,19 @@ When running desktop PageSpeed, the following have been addressed or documented:
 
 ### Desktop (PageSpeed desktop)
 
-Same findings as mobile, with the same mitigations:
-
-- **Reduce unused JavaScript (~623 KiB est.):** Chunks 8886 (~267 KiB), ed9f2dc4 (225.6 KiB entirely), 55459, 49821, 30156, 3a91511d. Global prefetcher prefetches only `/products`; checkout/crypto (e.g. ed9f2dc4) loads only on checkout or intent. Lazy Solana (2.5s), deferred SpeedInsights and prefetcher.
-- **Forced reflow:** Chunks 55459 and 66609 contribute reflow time. Defer layout reads to `requestAnimationFrame` where we read after DOM changes; some reflow is from framework/deps.
-- **Wasted bytes (12.7 KiB):** Same as mobile; `browserslist` is modern-only to reduce polyfill transpilation.
-- **Use efficient cache lifetimes (159 KiB est.):** Our static assets use long cache; ufs.sh/CDN cache is third-party.
+- **Reduce the download time of images (est. ~497–998 KiB):** Addressed by (1) enabling Next Image Optimization for all **https** remote images (only `data:` and `http:` use `unoptimized`), so Printful/ufs.sh/etc. are resized and served as WebP/AVIF; (2) adding `imageSizes` 192 and 320 in `next.config.ts` for 138px/284px displays; (3) tightening `sizes` on product cards to `284px` and category grid to `192px` so the browser requests smaller sources. Legacy JavaScript (12 KiB polyfills) and unused JS (~361 KiB) remain; `browserslist` is already modern-only; further savings require dependency or chunk analysis.
+- **LCP breakdown:** Element render delay (~2.69 s) — LCP element is the hero `<h1>` (“Where culture and technology converge”). Reducing main-thread work (unused JS, long tasks) is the primary lever; fonts use `display: "swap"`.
+- **Forced reflow:** Layout reads in `data-table-filter.tsx` are wrapped in `requestAnimationFrame`; remaining reflow is from framework/deps chunks.
+- **Reduce unused JavaScript (~361 KiB est.):** Chunks 8886 (~267 KiB), 49821, 30156, 3a91511d. Prefetcher prefetches only `/products`; checkout/crypto loads on intent. Run `bun run analyze` for further split opportunities.
+- **Legacy JavaScript (12 KiB):** Polyfills for `Array.prototype.at`, `Object.fromEntries`, etc. `browserslist` is modern-only; remaining polyfills may come from dependencies.
+- **Use efficient cache lifetimes:** Static assets use long cache; third-party CDN (ufs.sh, etc.) set their own headers.
 
 ### Mobile-specific (PageSpeed mobile)
 
-- **LCP breakdown:** Element render delay (~2.7–3s) is the main cost; TTFB is 0 ms. The LCP element is often the hero `<h1>` or brand `<h2>`. Reducing main-thread work (JS execution) is the primary lever — see “Reduce JavaScript execution time” and long tasks.
-- **Reduce JavaScript execution time:** Large chunks (e.g. 55459, 8886, ed9f2dc4) dominate parse + eval. Applied mitigations: (1) **TestimonialsSection** is lazy; (2) **SpeedInsights** loads after idle via `DeferredSpeedInsights`; (3) **CriticalRoutePrefetcher** prefetches **only `/products`** (not `/checkout`) so checkout/crypto chunks are not loaded on every page; (4) **Solana** wallet adapters load after idle (2.5s) via `LazySolanaWalletProvider`. Checkout is prefetched only on intent (cart open, checkout link hover). Run `ANALYZE=true bun run build` for further split opportunities.
-- **Reduce unused JavaScript (~601 KiB est.):** Global prefetcher no longer prefetches `/checkout`; checkout/crypto bundle loads only on checkout or prefetch intent.
-- **Minimize main-thread work / Wasted bytes:** `browserslist` is modern-only (`chrome >= 87`, etc.) to reduce polyfill transpilation. Forced reflow: batch layout reads.
-- **Improve image delivery (mobile):** Product detail main image uses `sizes` capped at `900px`; product cards use `320px` cap for grid.
+- **LCP breakdown:** Element render delay (~2.85 s) is the main cost; TTFB is 0 ms. The LCP element is the brand `<h2>` (“We curate tech, apparel, wellness, and travel gear that fits how you live…”). The delay is main-thread blocking: reduce JS parse/execution before first paint. **Mitigations:** (1) **DeferredHeader** — the full header (TopBanner + Header with Cart, Shop menu, auth, etc.) is loaded after `requestIdleCallback` (100 ms). A minimal placeholder (logo bar, same height) shows until then so the header chunk does not block LCP. (2) **LazySolanaWalletProvider** uses a longer idle timeout on mobile (4 s). (3) **DeferredCriticalRoutePrefetcher** uses 3.5 s idle on mobile (2 s on desktop). (4) **DeferredSpeedInsights** and **TestimonialsSection** remain lazy; prefetcher does not prefetch `/checkout`.
+- **Reduce unused JavaScript (~339 KiB est. mobile, ~361 KiB desktop):** Largest chunk: **8886** (~316 KiB transfer, ~246–267 KiB est. savings). Others: 49821, 30156, 3a91511d. **DeferredHeader** moves the header (and its deps) into a separate chunk that loads after idle, reducing the initial client bundle. Run `bun run analyze` (see §1) to see which modules remain in the largest chunks and split further. Checkout/crypto loads only on intent.
+- **Forced reflow:** Chunks 93794 and 66609 contribute reflow time. **Mitigation:** Product image gallery zoom (`product-image-gallery.tsx`) now wraps `getBoundingClientRect` in `requestAnimationFrame` so the layout read is deferred; `data-table-filter.tsx` already uses rAF for scroll/layout reads. Remaining reflow is from framework/deps.
+- **Improve image delivery (mobile):** Same as desktop (responsive `sizes`, Next Image Optimization for https remotes, `imageSizes` 192/320).
 - **Legacy JavaScript / cache:** Same as desktop; ufs.sh cache is third-party.
 
 ---
@@ -341,4 +343,4 @@ Same findings as mobile, with the same mitigations:
 - **Support chat:** The 10s defer and visibility check could be tuned (e.g. by route or user segment) if you want the widget to load sooner on some pages.
 - **Server-side crypto prices:** Move the crypto price fetch to a server component or API route with ISR so the client doesn't need to fetch at all on first render.
 - **Partial prerendering:** When Next.js stabilizes PPR, consider enabling it for the homepage so the static shell is served from the edge while dynamic sections load, if it can be done without reintroducing the flashing/ordering issues we avoided by removing Suspense there.
-- **Header shell split:** The header could be split so a minimal shell (logo, nav links) renders first and Cart/Notifications/mega menu load in a separate chunk; would require refactor and may not help much while Wagmi remains in the main bundle.
+- **Header:** Implemented as **DeferredHeader** — minimal placeholder (logo bar) renders immediately; full header chunk loads after idle. Cart, ShopMegaMenu, and auth dropdowns remain in the header chunk (they load when the header loads). Further split (e.g. Cart in its own chunk) is possible but Cart is already dynamic and loads on interaction.

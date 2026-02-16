@@ -130,6 +130,7 @@ function ProductCardInner({
   const [localWishlist, setLocalWishlist] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
   const [hoverImageError, setHoverImageError] = React.useState(false);
+  const [hoverImageLoaded, setHoverImageLoaded] = React.useState(false);
   const [primaryImageLoaded, setPrimaryImageLoaded] = React.useState(false);
   const [tokenGateOpen, setTokenGateOpen] = React.useState(false);
 
@@ -158,12 +159,14 @@ function ProductCardInner({
   React.useEffect(() => {
     setImageError(false);
     setHoverImageError(false);
+    setHoverImageLoaded(false);
     setPrimaryImageLoaded(false);
-  }, [product.id, product.image]);
+  }, [product.id, product.image, hoverImage]);
 
-  /** External URLs: load in browser directly (like admin) to avoid Next Image proxy/CDN issues. */
+  /** Only data: and http: skip Next Image optimization; https remotes use remotePatterns and get resized/WebP. */
   const isExternalImage =
-    typeof product.image === "string" && /^https?:\/\//i.test(product.image);
+    typeof product.image === "string" &&
+    (product.image.startsWith("data:") || product.image.startsWith("http://"));
   const imageSrc =
     imageError || !product.image ? "/placeholder.svg" : product.image;
 
@@ -263,7 +266,10 @@ function ProductCardInner({
                   "object-contain transition-all duration-300 ease-in-out",
                   "transition-opacity duration-300",
                   (imageSrc !== "/placeholder.svg" && !primaryImageLoaded) ||
-                    (isHovered && hoverImage && !hoverImageError)
+                    (isHovered &&
+                      hoverImage &&
+                      !hoverImageError &&
+                      hoverImageLoaded)
                     ? "opacity-0"
                     : "opacity-100",
                   isHovered && !isGated && "scale-105",
@@ -275,13 +281,13 @@ function ProductCardInner({
                   imageSrc !== "/placeholder.svg" ? "blur" : "empty"
                 }
                 priority={priority}
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 320px"
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 284px"
                 src={imageSrc}
                 unoptimized={isExternalImage}
               />
             )}
 
-            {/* Second image revealed on hover */}
+            {/* Second image: load in DOM (opacity-0) so it's ready on hover; reveal only when loaded to avoid flash */}
             {hoverImage && !hoverImageError && (
               <Image
                 alt={`${product.name} - alternate view`}
@@ -290,13 +296,18 @@ function ProductCardInner({
                     absolute inset-0 object-contain transition-all duration-300
                     ease-in-out
                   `,
-                  isHovered ? "scale-105 opacity-100" : "opacity-0",
+                  isHovered && hoverImageLoaded
+                    ? "scale-105 opacity-100"
+                    : "opacity-0",
                 )}
                 fill
                 onError={() => setHoverImageError(true)}
-                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 320px"
+                onLoad={() => setHoverImageLoaded(true)}
+                sizes="(max-width: 640px) 50vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 284px"
                 src={hoverImage}
-                unoptimized={/^https?:\/\//i.test(hoverImage)}
+                unoptimized={
+                  hoverImage.startsWith("data:") || hoverImage.startsWith("http://")
+                }
               />
             )}
 

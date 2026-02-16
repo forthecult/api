@@ -14,17 +14,22 @@ function whenIdle(cb: () => void, timeout: number): () => void {
 
 /**
  * Loads CriticalRoutePrefetcher after the main thread is idle so prefetch logic
- * doesn't compete with LCP. Prefetch still runs soon after load.
+ * doesn't compete with LCP. On mobile we use a longer timeout so the hero/LCP
+ * content can paint before the prefetcher chunk loads.
  */
 export function DeferredCriticalRoutePrefetcher() {
   const [Component, setComponent] = useState<null | ComponentType>(null);
 
   useEffect(() => {
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches;
+    const timeoutMs = isMobile ? 3500 : 2000;
     return whenIdle(() => {
       import("~/ui/components/critical-route-prefetcher").then((mod) => {
         setComponent(() => mod.CriticalRoutePrefetcher);
       });
-    }, 2000);
+    }, timeoutMs);
   }, []);
 
   if (!Component) return null;

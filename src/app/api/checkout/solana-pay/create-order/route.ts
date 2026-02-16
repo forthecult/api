@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
     const { affiliateResult, couponResult, expectedTotal } =
       await resolveDiscounts({
         affiliateCode,
+        clientTotalCents: totalCents,
         couponCode,
         items: validatedItems.map((i) => ({
           priceCents: i.priceCents,
@@ -128,13 +129,15 @@ export async function POST(request: NextRequest) {
         wallet: wallet ?? undefined,
       });
 
-    // ── Validate client total ──────────────────────────────────────────
+    // ── Validate client total (server is source of truth) ───────────────
     const totalCheck = validateTotal({
       clientTotalCents: totalCents,
       expectedTotal,
       extraCents: taxCents,
     });
-    if (!totalCheck.valid) {
+    // Reject only when client sent less than server total (undercharge/tampering).
+    // When client sent same or more (e.g. race: UI not yet updated), accept and use server total.
+    if (!totalCheck.valid && totalCents < totalCheck.expectedTotal) {
       return NextResponse.json(
         {
           error:

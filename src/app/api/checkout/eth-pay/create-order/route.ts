@@ -203,13 +203,13 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id,
       });
 
-    // ── Validate client total ($5 tolerance for crypto price drift) ───
+    // ── Validate client total (server is source of truth) ───────────────
     const totalCheck = validateTotal({
       clientTotalCents: totalCents,
       expectedTotal,
       toleranceCents: 100,
     });
-    if (!totalCheck.valid) {
+    if (!totalCheck.valid && totalCents < totalCheck.expectedTotal) {
       if (process.env.NODE_ENV === "development") {
         console.error(
           "[eth-pay create-order] totalCents mismatch:",

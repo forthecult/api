@@ -63,13 +63,12 @@ export function CheckoutCryptoHeader() {
   );
 
   const handleAddWallet = useCallback(() => {
-    // Close dropdown first, then open wallet modal
+    // Close dropdown first, then open wallet modal with intent so modal does not auto-close (user is already connected).
     setDropdownOpen(false);
-    // Use setTimeout to allow dropdown animation to complete before opening modal
     setTimeout(() => {
       openModalRef.current?.();
       openModalFromContext?.();
-      openConnectWalletModal();
+      openConnectWalletModal({ intent: "add-wallet" });
     }, 100);
   }, [openModalFromContext]);
 

@@ -81,12 +81,17 @@ export function ProductImageGallery({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current || list.length === 0) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
-    setZoomPos({
-      x: Math.max(0, Math.min(100, x)),
-      y: Math.max(0, Math.min(100, y)),
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    requestAnimationFrame(() => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = ((clientX - rect.left) / rect.width) * 100;
+      const y = ((clientY - rect.top) / rect.height) * 100;
+      setZoomPos({
+        x: Math.max(0, Math.min(100, x)),
+        y: Math.max(0, Math.min(100, y)),
+      });
     });
   };
 
@@ -108,9 +113,9 @@ export function ProductImageGallery({
             zoomOpen && "scale-150 cursor-zoom-out",
           )}
           fill
-          key={selectedVariant?.id ?? mainSrc ?? "main"}
+          key={mainSrc ?? "main"}
           onError={handleMainImageError}
-          priority={!selectedVariant?.id}
+          priority={selectedIndex === 0 && list[0] === baseList[0]}
           sizes="(max-width: 768px) 100vw, (max-width: 1800px) 50vw, 900px"
           src={mainSrc}
           style={
@@ -177,8 +182,10 @@ export function ProductImageGallery({
   );
 }
 
+/** Only data: and http: skip Next Image optimization; https remotes use remotePatterns. */
 function isExternalImageUrl(src: string): boolean {
-  return /^https?:\/\//i.test(src?.trim() ?? "");
+  const s = src?.trim() ?? "";
+  return s.startsWith("data:") || s.startsWith("http://");
 }
 
 /** Prefer https for external URLs to avoid mixed-content blocking on HTTPS pages. */

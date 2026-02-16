@@ -201,7 +201,10 @@ export function CartClient({ className }: CartClientProps) {
                         }
                         sizes="80px"
                         src={item.image!.trim()}
-                        unoptimized={/^https?:\/\//i.test(item.image!)}
+                        unoptimized={
+                          item.image!.startsWith("data:") ||
+                          item.image!.startsWith("http://")
+                        }
                       />
                     )}
                   </div>

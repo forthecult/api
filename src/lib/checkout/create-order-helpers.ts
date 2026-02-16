@@ -20,7 +20,11 @@ import {
 } from "~/db/schema";
 import { userTable } from "~/db/schema/users/tables";
 import { resolveAffiliateForOrder } from "~/lib/affiliate";
-import { type CartLineItem, resolveCouponForCheckout } from "~/lib/coupon";
+import {
+  type CartLineItem,
+  resolveAutomaticCouponForCheckout,
+  resolveCouponForCheckout,
+} from "~/lib/coupon";
 import { getEsimPackageDetail } from "~/lib/esim-api";
 import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { resolveTierDiscountsForCheckout } from "~/lib/tier-discount";
@@ -498,6 +502,8 @@ export async function postOrderBookkeeping(
  */
 export async function resolveDiscounts(params: {
   affiliateCode?: null | string;
+  /** When set and coupon-by-code fails, try automatic coupon; if client total matches, use it (handles payment-method switch / timing). */
+  clientTotalCents?: null | number;
   couponCode?: null | string;
   /** Cart items with prices for per-product discount computation. Must include eSIM items (productId esim_*) for ruleAppliesToEsim. */
   items?: CartLineItem[];
@@ -506,18 +512,22 @@ export async function resolveDiscounts(params: {
   productIds: string[];
   shippingFeeCents: number;
   subtotalCents: number;
+  /** Tolerance in cents when matching client total to automatic-coupon total (default 100). */
+  toleranceCents?: number;
   userId?: null | string;
   /** Staking wallet for member tier; when set, tier-based discounts are applied and stacked with coupon/affiliate. */
   wallet?: null | string;
 }): Promise<DiscountResult> {
   const {
     affiliateCode,
+    clientTotalCents,
     couponCode,
     items,
     paymentMethodKey,
     productIds,
     shippingFeeCents,
     subtotalCents,
+    toleranceCents = 100,
     userId,
     wallet,
   } = params;
@@ -528,7 +538,7 @@ export async function resolveDiscounts(params: {
     shippingFeeCents,
   );
 
-  const couponResult = couponCode
+  let couponResult = couponCode
     ? await resolveCouponForCheckout(
         couponCode,
         subtotalCents,
@@ -543,6 +553,54 @@ export async function resolveDiscounts(params: {
     : null;
 
   const baseTotal = subtotalCents + shippingFeeCents;
+
+  // Fallback: client sent a coupon code (e.g. automatic) but code lookup failed (e.g. payment method
+  // changed card → Solana so UI showed discount before refetch). Re-derive automatic coupon for this
+  // cart and payment method; if the client total matches, accept it.
+  if (
+    couponResult === null &&
+    couponCode != null &&
+    couponCode.trim() !== "" &&
+    typeof clientTotalCents === "number" &&
+    clientTotalCents < baseTotal
+  ) {
+    const productCount = (items ?? []).reduce(
+      (sum, i) => sum + (i?.quantity ?? 1),
+      0,
+    );
+    const automaticResult = await resolveAutomaticCouponForCheckout({
+      items: items ?? undefined,
+      paymentMethodKey: paymentMethodKey ?? undefined,
+      productCount,
+      productIds,
+      shippingFeeCents,
+      subtotalCents,
+      userId: userId ?? undefined,
+    });
+    if (automaticResult) {
+      let expectedFromAutomatic = automaticResult.totalAfterDiscountCents;
+      if (wallet?.trim()) {
+        const memberTier = await getMemberTierForWallet(wallet.trim());
+        if (memberTier != null) {
+          const tierResult = await resolveTierDiscountsForCheckout(memberTier, {
+            items: items ?? [],
+            shippingFeeCents,
+            subtotalCents,
+          });
+          expectedFromAutomatic = Math.max(
+            0,
+            expectedFromAutomatic - tierResult.totalCents,
+          );
+        }
+      }
+      const expectedRounded = Math.round(expectedFromAutomatic);
+      if (
+        Math.abs(clientTotalCents - expectedRounded) <= toleranceCents
+      ) {
+        couponResult = automaticResult;
+      }
+    }
+  }
 
   // Pick the best discount: coupon vs affiliate. If coupon gives a better
   // (lower) total, null out the affiliate so commission is not credited.
@@ -708,6 +766,12 @@ export async function validateAndFetchProducts(
 /**
  * Compare the client-submitted total against the server-computed expected
  * total. Returns `{ valid, expectedTotal }`.
+ *
+ * Create-order routes use server total as the order amount. They reject only
+ * when clientTotalCents < expectedTotal (undercharge/tampering). When
+ * client sends same or more (e.g. race: UI not yet updated after payment
+ * method switch), routes accept and use expectedTotal so the flow works
+ * without asking the user to wait or retry.
  *
  * @param toleranceCents  Maximum acceptable difference (default 100 = $1).
  * @param extraCents      Extra cents to add to expectedTotal before comparing

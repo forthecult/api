@@ -728,7 +728,8 @@ function MiniGallery({
   const mainSrc = failedUrls.has(list[selectedIndex] ?? "")
     ? "/placeholder.svg"
     : (list[selectedIndex] ?? "/placeholder.svg");
-  const isExternal = /^https?:\/\//i.test(mainSrc);
+  const isExternal =
+    mainSrc.startsWith("data:") || mainSrc.startsWith("http://");
 
   return (
     <div className="flex flex-col gap-3">
@@ -782,7 +783,9 @@ function MiniGallery({
                   }
                   sizes="56px"
                   src={thumbSrc}
-                  unoptimized={/^https?:\/\//i.test(thumbSrc)}
+                  unoptimized={
+                    thumbSrc.startsWith("data:") || thumbSrc.startsWith("http://")
+                  }
                 />
               </button>
             );

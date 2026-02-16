@@ -652,7 +652,10 @@ export function ProductsClient({
                       fill
                       sizes="24px"
                       src={cat.image}
-                      unoptimized={/^https?:\/\//i.test(cat.image)}
+                      unoptimized={
+                        cat.image.startsWith("data:") ||
+                        cat.image.startsWith("http://")
+                      }
                     />
                   </span>
                 ) : null}

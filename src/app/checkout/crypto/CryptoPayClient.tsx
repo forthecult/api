@@ -1815,7 +1815,7 @@ export function CryptoPayClient({
                     {!connected ? (
                       <Button
                         className="min-w-[12rem]"
-                        onClick={openConnectWalletModal}
+                        onClick={() => openConnectWalletModal()}
                         size="lg"
                       >
                         Connect wallet

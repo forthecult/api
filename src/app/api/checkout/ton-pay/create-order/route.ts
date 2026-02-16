@@ -102,13 +102,13 @@ export async function POST(request: NextRequest) {
         wallet: wallet ?? undefined,
       });
 
-    // ── Validate client total ──────────────────────────────────────────
+    // ── Validate client total (server is source of truth) ───────────────
     const totalCheck = validateTotal({
       clientTotalCents: totalCents,
       expectedTotal,
       toleranceCents: 100,
     });
-    if (!totalCheck.valid) {
+    if (!totalCheck.valid && totalCents < totalCheck.expectedTotal) {
       return NextResponse.json(
         {
           error:

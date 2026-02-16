@@ -131,6 +131,7 @@ export function OrderSummary({
                 />
               )}
               <Image
+                key={item.id}
                 alt={item.name}
                 blurDataURL={
                   item.image?.trim() && !failedImageIds.has(item.id)
@@ -166,7 +167,8 @@ export function OrderSummary({
                 unoptimized={
                   !item.image?.trim()
                     ? false
-                    : /^https?:\/\//i.test(item.image)
+                    : item.image.startsWith("data:") ||
+                      item.image.startsWith("http://")
                 }
               />
             </div>

@@ -626,12 +626,11 @@ export default async function HomePage() {
                           `}
                           fill
                           priority={index < 2}
-                          sizes="(max-width: 768px) 50vw, 16vw"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 192px"
                           src={category.image}
                           unoptimized={
                             category.image.startsWith("data:") ||
-                            category.image.startsWith("http://") ||
-                            category.image.startsWith("https://")
+                            category.image.startsWith("http://")
                           }
                         />
                       </div>
