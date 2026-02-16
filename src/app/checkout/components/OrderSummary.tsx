@@ -28,6 +28,13 @@ import type { TierDiscountLine } from "../hooks/useCoupons";
 
 import { type AppliedCoupon, checkoutFieldHeight } from "../checkout-shared";
 
+const placeholderSrc = "/placeholder.svg";
+
+function variantDisplayOnly(name: string, variantLabel: string): string {
+  if (!variantLabel?.trim()) return name;
+  return variantLabel.trim();
+}
+
 export interface OrderSummaryProps {
   appliedCoupon: AppliedCoupon | null;
   couponError: string;
@@ -86,7 +93,6 @@ export function OrderSummary({
   const [failedImageIds, setFailedImageIds] = React.useState<Set<string>>(
     () => new Set(),
   );
-  const placeholderSrc = "/placeholder.svg";
 
   return (
     <Card className="shadow-none">
@@ -423,18 +429,4 @@ export function OrderSummary({
       </CardContent>
     </Card>
   );
-}
-
-/** Show only the size/variant (e.g. "2XL", "M") in checkout — strip title/category before " / ". */
-function variantDisplayOnly(
-  _productName: string,
-  variantLabel: string,
-): string {
-  if (!variantLabel?.trim()) return variantLabel ?? "";
-  const lastSlash = variantLabel.lastIndexOf(" / ");
-  if (lastSlash >= 0) {
-    const after = variantLabel.slice(lastSlash + 3).trim();
-    if (after) return after;
-  }
-  return variantLabel;
 }

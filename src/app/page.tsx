@@ -9,11 +9,9 @@ import {
   Truck,
   Zap,
 } from "lucide-react";
-import nextDynamic from "next/dynamic";
 import { cookies } from "next/headers";
 import Image from "next/image";
 import Link from "next/link";
-import { Suspense } from "react";
 
 import { SEO_CONFIG } from "~/app";
 import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
@@ -22,6 +20,7 @@ import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories"
 import {
   PageContainer,
 } from "~/ui/components/layout/page-container";
+import { TestimonialsSection } from "~/ui/components/testimonials/testimonials-with-marquee";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -30,18 +29,8 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
-import { Skeleton } from "~/ui/primitives/skeleton";
 
 import { FeaturedProductsSection } from "~/app/FeaturedProductsSection";
-
-const TestimonialsSection = nextDynamic(
-  () =>
-    import("~/ui/components/testimonials/testimonials-with-marquee").then(
-      (m) => m.TestimonialsSection,
-    ),
-  { loading: () => <div className="min-h-[200px]" />, ssr: true },
-);
-
 import { testimonials as mockTestimonials } from "./mocks";
 
 // Avoid build-time SSG timeout when API/DB unreachable (e.g. Railway build)
@@ -223,12 +212,6 @@ const featuresWhyChooseUs = [
   },
 ];
 
-/* ---------------------------------------------------------------------------
- * Streamed async sections — each fetches its own data and renders inside a
- * Suspense boundary so the hero + brand statement ship to the browser
- * immediately while these sections load in the background.
- * ------------------------------------------------------------------------- */
-
 const EXCLUDED_SLUGS = [
   "currency",
   "network",
@@ -236,11 +219,24 @@ const EXCLUDED_SLUGS = [
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 ];
 
-async function StreamedCategoriesSection() {
-  const [shopCategories, categoriesWithImage] = await Promise.all([
-    fetchCategories(),
-    getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
-  ]);
+/* ---------------------------------------------------------------------------
+ * Main page — fetch all data up front, then render (no Suspense streaming)
+ * ------------------------------------------------------------------------- */
+
+export default async function HomePage() {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join("; ");
+
+  const [shopCategories, categoriesWithImage, featuredProducts, reviewTestimonials] =
+    await Promise.all([
+      fetchCategories(),
+      getCategoriesWithProductsAndDisplayImage({ topLevelOnly: true }),
+      fetchFeaturedProducts(cookieHeader),
+      fetchReviewsForTestimonials(),
+    ]);
 
   const topLevelShopFiltered = shopCategories.filter(
     (c) => c.slug && c.productCount > 0 && !EXCLUDED_SLUGS.includes(c.slug),
@@ -255,177 +251,9 @@ async function StreamedCategoriesSection() {
     image: imageBySlug.get(c.slug ?? "") ?? null,
   }));
 
-  return (
-    <div
-      className={`
-      grid grid-cols-2 gap-4
-      md:grid-cols-3 md:gap-5
-      lg:grid-cols-6
-    `}
-    >
-      {topLevelShop.length > 0 ? (
-        topLevelShop.map((category, index) => (
-          <Link
-            aria-label={`Browse ${category.name} products`}
-            className={`
-              cult-glow group flex flex-col overflow-hidden rounded-lg
-              border border-border bg-card transition-all duration-300
-            `}
-            href={`/${category.slug ?? category.id}`}
-            key={category.id}
-          >
-            {category.image ? (
-              <div
-                className={`
-                relative aspect-[4/3] w-full shrink-0 bg-white
-              `}
-              >
-                <Image
-                  alt=""
-                  className={`
-                    object-contain transition-transform duration-300
-                    group-hover:scale-105
-                  `}
-                  fill
-                  priority={index < 2}
-                  sizes="(max-width: 768px) 50vw, 16vw"
-                  src={category.image}
-                  unoptimized={
-                    category.image.startsWith("data:") ||
-                    category.image.startsWith("http://") ||
-                    category.image.startsWith("https://")
-                  }
-                />
-              </div>
-            ) : null}
-            <div className="flex flex-col p-5">
-              <div
-                className={`
-                text-base font-medium text-foreground transition-colors
-                group-hover:text-primary
-              `}
-              >
-                {category.name}
-              </div>
-              <p
-                className={`
-                font-mono-crypto mt-1 text-xs text-muted-foreground
-              `}
-              >
-                {category.productCount} products
-              </p>
-            </div>
-          </Link>
-        ))
-      ) : (
-        <Link
-          className={`
-            cult-glow rounded-lg border border-border bg-card p-5
-          `}
-          href="/products"
-        >
-          <div className="text-base font-medium text-foreground">
-            All Products
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Browse the store
-          </p>
-        </Link>
-      )}
-    </div>
-  );
-}
-
-async function StreamedFeaturedProducts() {
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map((c) => `${c.name}=${c.value}`)
-    .join("; ");
-
-  const featuredProducts = await fetchFeaturedProducts(cookieHeader);
-
-  return (
-    <div
-      className={`
-      grid grid-cols-1 gap-6
-      sm:grid-cols-2
-      lg:grid-cols-3
-      xl:grid-cols-4
-    `}
-    >
-      <FeaturedProductsSection products={featuredProducts} />
-    </div>
-  );
-}
-
-async function StreamedTestimonials() {
-  const reviewTestimonials = await fetchReviewsForTestimonials();
   const testimonials: TestimonialItem[] =
     reviewTestimonials.length > 0 ? reviewTestimonials : mockTestimonials;
 
-  return (
-    <TestimonialsSection
-      className="py-0"
-      description="Reviews from people who've ordered"
-      testimonials={testimonials}
-      title="From the community"
-    />
-  );
-}
-
-/* ---------------------------------------------------------------------------
- * Skeleton placeholders for Suspense boundaries
- * ------------------------------------------------------------------------- */
-
-function CategoriesSkeleton() {
-  return (
-    <div
-      className={`
-      grid grid-cols-2 gap-4
-      md:grid-cols-3 md:gap-5
-      lg:grid-cols-6
-    `}
-    >
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div className="overflow-hidden rounded-lg border border-border bg-card" key={i}>
-          <Skeleton className="aspect-[4/3] w-full" />
-          <div className="p-5 space-y-2">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-3 w-14" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function FeaturedProductsSkeleton() {
-  return (
-    <div
-      className={`
-      grid grid-cols-1 gap-6
-      sm:grid-cols-2
-      lg:grid-cols-3
-      xl:grid-cols-4
-    `}
-    >
-      {Array.from({ length: 8 }).map((_, i) => (
-        <Skeleton className="h-80 w-full rounded-lg" key={i} />
-      ))}
-    </div>
-  );
-}
-
-function TestimonialsSkeleton() {
-  return <div className="min-h-[200px]" />;
-}
-
-/* ---------------------------------------------------------------------------
- * Main page — hero + brand statement stream immediately; data sections follow
- * ------------------------------------------------------------------------- */
-
-export default function HomePage() {
   return (
     <>
       <div className="flex min-h-screen flex-col bg-background">
@@ -726,9 +554,83 @@ export default function HomePage() {
                 category chosen for quality
               </p>
             </div>
-            <Suspense fallback={<CategoriesSkeleton />}>
-              <StreamedCategoriesSection />
-            </Suspense>
+            <div
+              className={`
+              grid grid-cols-2 gap-4
+              md:grid-cols-3 md:gap-5
+              lg:grid-cols-6
+            `}
+            >
+              {topLevelShop.length > 0 ? (
+                topLevelShop.map((category, index) => (
+                  <Link
+                    aria-label={`Browse ${category.name} products`}
+                    className={`
+                      cult-glow group flex flex-col overflow-hidden rounded-lg
+                      border border-border bg-card transition-all duration-300
+                    `}
+                    href={`/${category.slug ?? category.id}`}
+                    key={category.id}
+                  >
+                    {category.image ? (
+                      <div
+                        className={`
+                        relative aspect-[4/3] w-full shrink-0 bg-white
+                      `}
+                      >
+                        <Image
+                          alt=""
+                          className={`
+                            object-contain transition-transform duration-300
+                            group-hover:scale-105
+                          `}
+                          fill
+                          priority={index < 2}
+                          sizes="(max-width: 768px) 50vw, 16vw"
+                          src={category.image}
+                          unoptimized={
+                            category.image.startsWith("data:") ||
+                            category.image.startsWith("http://") ||
+                            category.image.startsWith("https://")
+                          }
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex flex-col p-5">
+                      <div
+                        className={`
+                        text-base font-medium text-foreground transition-colors
+                        group-hover:text-primary
+                      `}
+                      >
+                        {category.name}
+                      </div>
+                      <p
+                        className={`
+                        font-mono-crypto mt-1 text-xs text-muted-foreground
+                      `}
+                      >
+                        {category.productCount} products
+                      </p>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <Link
+                  className={`
+                    cult-glow rounded-lg border border-border bg-card p-5
+                  `}
+                  href="/products"
+                >
+                  <div className="text-base font-medium text-foreground">
+                    All Products
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Browse the store
+                  </p>
+                </Link>
+              )}
+            </div>
           </PageContainer>
         </section>
 
@@ -780,9 +682,16 @@ export default function HomePage() {
                 Tech, apparel, wellness, and travel gear for how you live
               </p>
             </div>
-            <Suspense fallback={<FeaturedProductsSkeleton />}>
-              <StreamedFeaturedProducts />
-            </Suspense>
+            <div
+              className={`
+              grid grid-cols-1 gap-6
+              sm:grid-cols-2
+              lg:grid-cols-3
+              xl:grid-cols-4
+            `}
+            >
+              <FeaturedProductsSection products={featuredProducts} />
+            </div>
             <div className="mt-12 flex justify-center">
               <Link href="/products">
                 <Button
@@ -916,9 +825,12 @@ export default function HomePage() {
             lg:px-8
           `}
           >
-            <Suspense fallback={<TestimonialsSkeleton />}>
-              <StreamedTestimonials />
-            </Suspense>
+            <TestimonialsSection
+              className="py-0"
+              description="Reviews from people who've ordered"
+              testimonials={testimonials}
+              title="From the community"
+            />
           </div>
         </section>
 

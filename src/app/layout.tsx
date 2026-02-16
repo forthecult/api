@@ -26,6 +26,7 @@ import { ThemePersistSync } from "~/ui/components/theme-persist-sync";
 import { ThemeProvider } from "~/ui/components/theme-provider";
 import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler";
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
+import { WagmiProvider } from "~/lib/wagmi-provider";
 import { Toaster } from "~/ui/primitives/sonner";
 
 const geistSans = Geist({
@@ -235,18 +236,17 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-/** Single wrapper for store layout: wallet boundary + auth modal + shell.
- * WagmiProvider is NOT here — it loads lazily inside AuthWalletModalShell (when
- * the user opens the wallet modal) and inside the checkout invoice layout. This
- * keeps wagmi + viem (~200KB) out of the initial bundle for every page. */
+/** Single wrapper for store layout: wallet boundary + Wagmi + auth modal + shell. */
 function StoreLayoutWrapper({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <WalletErrorBoundary>
-      <AuthWalletModalProvider>
-        <LayoutShell>{children}</LayoutShell>
-      </AuthWalletModalProvider>
+      <WagmiProvider>
+        <AuthWalletModalProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </AuthWalletModalProvider>
+      </WagmiProvider>
     </WalletErrorBoundary>
   );
 }

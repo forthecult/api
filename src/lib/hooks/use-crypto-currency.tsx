@@ -174,11 +174,9 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
       });
   }, []);
 
-  // Fetch after a short idle delay so pages that display crypto prices still
-  // get real rates quickly, but the initial page load isn't blocked.
+  // Fetch on mount so crypto prices (e.g. checkout total) match server expectations.
   React.useEffect(() => {
-    const id = setTimeout(fetchRates, 3000);
-    return () => clearTimeout(id);
+    fetchRates();
   }, [fetchRates]);
 
   const convertUsdToCrypto = React.useCallback(

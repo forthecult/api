@@ -288,8 +288,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       window.removeEventListener(NOTIFICATION_PREFS_UPDATED, handler);
   }, [fetchNotificationPrefs]);
 
-  // Lazy-load categories: only fetch when user hovers/focuses the shop nav area.
-  // Avoids an API call on every page load since the mega menu is hidden until interaction.
+  // Fetch categories on mount so the shop mega menu has data when opened.
   const categoriesFetchedRef = useRef(false);
   const fetchCategories = useCallback(() => {
     if (categoriesFetchedRef.current) return;
@@ -309,6 +308,10 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
       .catch(() => {})
       .finally(() => clearTimeout(timeoutId));
   }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
 
   const isDashboard = useAuthState && user && pathname.startsWith("/dashboard");
   const isCheckout =
