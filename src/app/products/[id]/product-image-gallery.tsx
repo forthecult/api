@@ -55,15 +55,16 @@ export function ProductImageGallery({
     return [normalized, ...rest];
   }, [baseList, selectedVariant?.imageUrl]);
 
-  // Reset to first image when selected variant (and thus list) changes so the variant image is shown
-  const prevVariantIdRef = React.useRef<null | string>(null);
+  // Reset to first image only when the variant image (list[0]) actually changes — e.g. new color.
+  // Do not reset when only size (or other option) changes and the mockup is the same.
+  const prevListFirstRef = React.useRef<null | string>(null);
   React.useEffect(() => {
-    const id = selectedVariant?.id ?? null;
-    if (id !== prevVariantIdRef.current) {
-      prevVariantIdRef.current = id;
+    const firstSrc = list[0] ?? null;
+    if (firstSrc !== prevListFirstRef.current) {
+      prevListFirstRef.current = firstSrc;
       setSelectedIndex(0);
     }
-  }, [selectedVariant?.id]);
+  }, [list]);
   const hasMultiple = list.length > 1;
   const actualMainSrc = list[selectedIndex] ?? list[0];
   const mainSrc =
