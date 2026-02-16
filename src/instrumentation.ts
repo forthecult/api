@@ -5,6 +5,32 @@
  * or wallet libs) that use indexedDB don't throw ReferenceError on the server.
  */
 export function register(): void {
+  // Downgrade client-disconnect errors (ECONNRESET / aborted) to a single debug log.
+  // These occur when the client navigates away, closes the tab, or cancels the request
+  // before the server finishes; they are expected and noisy in production logs.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    const isClientDisconnect = (err: unknown): boolean => {
+      if (err instanceof Error) {
+        const code = (err as NodeJS.ErrnoException).code;
+        const msg = err.message ?? "";
+        return code === "ECONNRESET" || /aborted/i.test(msg);
+      }
+      return false;
+    };
+
+    process.on("unhandledRejection", (reason: unknown) => {
+      if (isClientDisconnect(reason)) {
+        if (process.env.NODE_ENV === "development") {
+          console.warn(
+            "[Next] Client disconnected (ECONNRESET/aborted); request was cancelled or tab closed.",
+          );
+        }
+        return;
+      }
+      // Let other rejections propagate so Node logs them
+    });
+  }
+
   const originalWarn = console.warn;
   console.warn = (...args: unknown[]) => {
     const msg = typeof args[0] === "string" ? args[0] : String(args[0]);

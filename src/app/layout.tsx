@@ -28,6 +28,7 @@ import { ChunkLoadErrorHandler } from "~/ui/components/chunk-load-error-handler"
 import { WalletErrorBoundary } from "~/ui/components/wallet-error-boundary";
 import { WagmiProvider } from "~/lib/wagmi-provider";
 import { Toaster } from "~/ui/primitives/sonner";
+import { SolanaWalletProvider } from "~/app/checkout/crypto/SolanaWalletProvider";
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -236,16 +237,18 @@ function LayoutShell({ children }: Readonly<{ children: React.ReactNode }>) {
   );
 }
 
-/** Single wrapper for store layout: wallet boundary + Wagmi + auth modal + shell. */
+/** Single wrapper for store layout: wallet boundary + Wagmi + Solana (token-gating) + auth modal + shell. */
 function StoreLayoutWrapper({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <WalletErrorBoundary>
       <WagmiProvider>
-        <AuthWalletModalProvider>
-          <LayoutShell>{children}</LayoutShell>
-        </AuthWalletModalProvider>
+        <SolanaWalletProvider>
+          <AuthWalletModalProvider>
+            <LayoutShell>{children}</LayoutShell>
+          </AuthWalletModalProvider>
+        </SolanaWalletProvider>
       </WagmiProvider>
     </WalletErrorBoundary>
   );

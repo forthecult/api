@@ -356,10 +356,22 @@ export function AdminChatPopup() {
                           <span className="block truncate">
                             {customerLabel(row)}
                           </span>
-                          {unreadIds.has(row.id) && (
+                          {unreadIds.has(row.id) ? (
                             <span className="mt-0.5 block text-xs text-primary">
                               New message
                             </span>
+                          ) : (
+                            (row.lastMessageAt || row.updatedAt) && (
+                              <span
+                                className={`
+                                  mt-0.5 block text-[11px] text-muted-foreground
+                                `}
+                              >
+                                {formatRelativeTime(
+                                  row.lastMessageAt ?? row.updatedAt,
+                                )}
+                              </span>
+                            )
                           )}
                         </button>
                       </li>
@@ -415,6 +427,18 @@ export function AdminChatPopup() {
                               {m.role}:{" "}
                             </span>
                             {m.content}
+                            <div
+                              className={cn(
+                                "mt-1 text-[11px]",
+                                m.role === "customer"
+                                  ? "text-muted-foreground/70"
+                                  : m.role === "staff"
+                                    ? "text-blue-700/60 dark:text-blue-300/60"
+                                    : "text-muted-foreground/60",
+                              )}
+                            >
+                              {formatMessageTime(m.createdAt)}
+                            </div>
                           </div>
                         ))
                       )}
@@ -487,6 +511,58 @@ function customerLabel(row: ChatRow): string {
     return row.customer.name || row.customer.email || "Customer";
   }
   return row.guestId ? `Guest ${row.guestId.slice(0, 8)}…` : "Guest";
+}
+
+function formatMessageTime(s: string): string {
+  try {
+    const date = new Date(s);
+    const now = new Date();
+    const isToday =
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth() &&
+      date.getDate() === now.getDate();
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const isYesterday =
+      date.getFullYear() === yesterday.getFullYear() &&
+      date.getMonth() === yesterday.getMonth() &&
+      date.getDate() === yesterday.getDate();
+    const time = date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      hour12: true,
+      minute: "2-digit",
+    });
+    if (isToday) return time;
+    if (isYesterday) return `Yesterday, ${time}`;
+    return new Intl.DateTimeFormat("en-US", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(date);
+  } catch {
+    return "";
+  }
+}
+
+function formatRelativeTime(s: null | string): string {
+  if (!s) return "";
+  try {
+    const date = new Date(s);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMin = Math.floor(diffMs / 60_000);
+    if (diffMin < 1) return "Just now";
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDay = Math.floor(diffHr / 24);
+    if (diffDay === 1) return "Yesterday";
+    if (diffDay < 7) return `${diffDay}d ago`;
+    return new Intl.DateTimeFormat("en-US", { dateStyle: "short" }).format(
+      date,
+    );
+  } catch {
+    return "";
+  }
 }
 
 function playDing() {
