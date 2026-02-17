@@ -69,6 +69,7 @@ export function MembershipAfterStakeTestClient() {
   );
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [unstakeAmount, setUnstakeAmount] = useState("");
+  const [stakeMoreAmount, setStakeMoreAmount] = useState("");
 
   const tierData = MEMBERSHIP_TIERS.find((t) => t.id === previewTier);
   const mock = MOCK_STAKE[previewTier];
@@ -247,16 +248,39 @@ export function MembershipAfterStakeTestClient() {
                   </p>
                 </div>
                 {(previewTier === 2 || previewTier === 3) && (
-                  <p className="text-xs text-muted-foreground">
-                    Stake more below to upgrade your tier.
-                  </p>
+                  <div className="space-y-2 pt-1">
+                    <p className="text-xs font-medium text-foreground">
+                      Stake more to upgrade your membership
+                    </p>
+                    <div className="flex gap-2">
+                      <Input
+                        className="font-mono max-w-[140px]"
+                        min={0}
+                        onChange={(e) => setStakeMoreAmount(e.target.value)}
+                        placeholder="Amount"
+                        step="any"
+                        type="number"
+                        value={stakeMoreAmount}
+                      />
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          toast.info(
+                            "Test: Use the real membership page with a connected wallet to stake more.",
+                          )
+                        }
+                      >
+                        Stake more
+                      </Button>
+                    </div>
+                  </div>
                 )}
                 {previewTier === 3 && (
                   <div className="space-y-2 pt-1">
                     <p className="text-xs font-medium text-foreground">
                       Unstake (Tier 3)
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Input
                         className="font-mono max-w-[140px]"
                         min={0}
@@ -267,9 +291,21 @@ export function MembershipAfterStakeTestClient() {
                         value={unstakeAmount}
                       />
                       <Button
+                        onClick={() => setUnstakeAmount(MOCK_STAKE[3].amount)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        Max
+                      </Button>
+                      <Button
                         size="sm"
                         variant="secondary"
-                        onClick={() => toast.info("Test: Unstake is only available on the real membership page with a connected wallet.")}
+                        onClick={() =>
+                          toast.info(
+                            "Test: Unstake is only available on the real membership page with a connected wallet.",
+                          )
+                        }
                       >
                         Unstake
                       </Button>

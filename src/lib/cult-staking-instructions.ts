@@ -284,3 +284,64 @@ export function buildUnstakeTransaction(params: {
   tx.add(ix);
   return tx;
 }
+
+/**
+ * Build a single transaction that unstakes then re-stakes the same amount with a new lock.
+ * Use when the lock has expired: user signs once to "restake" (lock for another 30 days or 12 months).
+ */
+export function buildRestakeTransaction(params: {
+  amount: bigint;
+  blockhash: string;
+  lastValidBlockHeight: number;
+  lockDuration: LockDuration;
+  mint: PublicKeyClass;
+  owner: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
+}): Transaction {
+  const programId = params.programId;
+  const mint = params.mint;
+  const owner = params.owner;
+  const [poolPda] = getPoolPda(programId);
+  const vault = getVaultAta(mint, poolPda, params.tokenProgram);
+  const userTokenAccount = getAssociatedTokenAddressSync(
+    mint,
+    owner,
+    false,
+    params.tokenProgram ?? TOKEN_PROGRAM_ID,
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  );
+  const [userStakePda] = getUserStakePda(programId, poolPda, owner);
+  const tokenProgram = params.tokenProgram ?? TOKEN_PROGRAM_ID;
+
+  const unstakeIx = buildUnstakeInstruction({
+    amount: params.amount,
+    mint,
+    owner,
+    poolPda,
+    programId,
+    tokenProgram,
+    userStakePda,
+    userTokenAccount,
+    vault,
+  });
+  const stakeIx = buildStakeInstruction({
+    amount: params.amount,
+    lockDuration: params.lockDuration,
+    mint,
+    owner,
+    poolPda,
+    programId,
+    tokenProgram,
+    userStakePda,
+    userTokenAccount,
+    vault,
+  });
+
+  const tx = new Transaction();
+  tx.recentBlockhash = params.blockhash;
+  tx.lastValidBlockHeight = params.lastValidBlockHeight;
+  tx.feePayer = owner;
+  tx.add(unstakeIx, stakeIx);
+  return tx;
+}

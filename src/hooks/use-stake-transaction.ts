@@ -16,6 +16,7 @@ const SEND_OPTS = {
 export interface UseStakeTransactionOptions {
   onStakeSuccess?: () => void;
   onUnstakeSuccess?: () => void;
+  onRestakeSuccess?: () => void;
 }
 
 /**
@@ -29,6 +30,7 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
 
   const [stakePending, setStakePending] = useState(false);
   const [unstakePending, setUnstakePending] = useState(false);
+  const [restakePending, setRestakePending] = useState(false);
 
   const openConnectModal = useCallback(() => {
     window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
@@ -136,15 +138,79 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
     ],
   );
 
+  const restake = useCallback(
+    async (amount: string, lockDuration: number): Promise<boolean> => {
+      if (!wallet || !sendTransaction) {
+        openConnectModal();
+        return false;
+      }
+      const trimmed = amount.trim();
+      if (!trimmed || Number.parseFloat(trimmed) <= 0) {
+        toast.error("Enter a positive amount");
+        return false;
+      }
+      setRestakePending(true);
+      try {
+        const res = await fetch("/api/governance/restake/prepare", {
+          body: JSON.stringify({
+            amount: trimmed,
+            lockDuration,
+            wallet,
+          }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (res.status === 503) {
+            toast.error("Staking is not available yet.");
+          } else {
+            toast.error(data.error ?? "Failed to prepare restake");
+          }
+          return false;
+        }
+        const txBuf = base64ToUint8Array(data.transaction);
+        const tx = Transaction.from(txBuf);
+        const sig = await sendTransaction(tx, connection, SEND_OPTS);
+        toast.success("Restake submitted: " + sig.slice(0, 8) + "…");
+        options.onRestakeSuccess?.();
+        return true;
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Restake failed");
+        return false;
+      } finally {
+        setRestakePending(false);
+      }
+    },
+    [
+      wallet,
+      sendTransaction,
+      connection,
+      openConnectModal,
+      options.onRestakeSuccess,
+    ],
+  );
+
   return useMemo(
     () => ({
       openConnectModal,
+      restake,
+      restakePending,
       stake,
       stakePending,
       unstake,
       unstakePending,
       wallet,
     }),
-    [wallet, openConnectModal, stake, unstake, stakePending, unstakePending],
+    [
+      wallet,
+      openConnectModal,
+      stake,
+      unstake,
+      restake,
+      stakePending,
+      unstakePending,
+      restakePending,
+    ],
   );
 }

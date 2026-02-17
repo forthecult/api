@@ -125,6 +125,8 @@ export function MembershipClient() {
   } | null>(null);
   const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
   const [unstakeAmount, setUnstakeAmount] = useState("");
+  const [restakeAmount, setRestakeAmount] = useState("");
+  const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
 
   // Live pricing state
   const [pricingData, setPricingData] = useState<
@@ -132,7 +134,7 @@ export function MembershipClient() {
   >(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { openConnectModal, stake, stakePending, unstake, unstakePending, wallet } =
+  const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet } =
     useStakeTransaction();
 
   const refreshStakedBalance = useCallback(() => {
@@ -288,6 +290,16 @@ export function MembershipClient() {
       refreshStakedBalance();
     }
   }, [unstake, unstakeAmount, refreshStakedBalance]);
+
+  const restakeLockDuration =
+    restakeDuration === "12m" ? LOCK_12_MONTHS : LOCK_30_DAYS;
+  const handleRestake = useCallback(async () => {
+    const ok = await restake(restakeAmount, restakeLockDuration);
+    if (ok) {
+      setRestakeAmount("");
+      refreshStakedBalance();
+    }
+  }, [restake, restakeAmount, restakeLockDuration, refreshStakedBalance]);
 
   const formatTimeUntilUnlock = useCallback(
     (sec: number): string => {
@@ -593,17 +605,34 @@ export function MembershipClient() {
                             </p>
                           )}
                         </div>
-                        {currentTierFromStake === 2 || currentTierFromStake === 3 ? (
+                        {(currentTierFromStake === 2 || currentTierFromStake === 3) && (
                           <p className="text-xs text-muted-foreground">
-                            Stake more below to upgrade your tier.
+                            Stake more below to upgrade your membership.
                           </p>
-                        ) : null}
+                        )}
+                        {stakedLock && (
+                          <p className="text-xs text-muted-foreground">
+                            Change membership to 12 months by staking more below
+                            and selecting 12 months.{" "}
+                            <Button
+                              className="h-auto p-0 text-xs font-medium underline underline-offset-2"
+                              onClick={() => {
+                                setStakeDuration("12m");
+                                scrollToCTA();
+                              }}
+                              type="button"
+                              variant="link"
+                            >
+                              Change membership to 12 months
+                            </Button>
+                          </p>
+                        )}
                         {currentTierFromStake === 3 && (
                           <div className="space-y-2 pt-1">
                             <p className="text-xs font-medium text-foreground">
                               Unstake (Tier 3)
                             </p>
-                            <div className="flex gap-2">
+                            <div className="flex flex-wrap gap-2">
                               <Input
                                 className="font-mono max-w-[140px]"
                                 min={0}
@@ -613,6 +642,16 @@ export function MembershipClient() {
                                 type="number"
                                 value={unstakeAmount}
                               />
+                              <Button
+                                onClick={() =>
+                                  setUnstakeAmount(stakedBalanceDisplay)
+                                }
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                Max
+                              </Button>
                               <Button
                                 disabled={
                                   unstakePending ||
@@ -628,6 +667,82 @@ export function MembershipClient() {
                               </Button>
                             </div>
                             {Number(unstakeAmount) > Number(stakedBalanceDisplay) && (
+                              <p className="text-xs text-destructive">
+                                Amount exceeds staked balance
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        {stakedLock && !stakedLock.isLocked && (
+                          <div className="space-y-2 border-t pt-3">
+                            <p className="text-xs font-medium text-foreground">
+                              Restake (lock for another period)
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Your lock has ended. Restake to lock again for 30 days or 12 months.
+                            </p>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Input
+                                className="font-mono max-w-[140px]"
+                                min={0}
+                                onChange={(e) => setRestakeAmount(e.target.value)}
+                                placeholder="Amount"
+                                step="any"
+                                type="number"
+                                value={restakeAmount}
+                              />
+                              <Button
+                                onClick={() =>
+                                  setRestakeAmount(stakedBalanceDisplay)
+                                }
+                                size="sm"
+                                type="button"
+                                variant="outline"
+                              >
+                                Max
+                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  onClick={() => setRestakeDuration("30d")}
+                                  size="sm"
+                                  type="button"
+                                  variant={
+                                    restakeDuration === "30d"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                >
+                                  30 days
+                                </Button>
+                                <Button
+                                  onClick={() => setRestakeDuration("12m")}
+                                  size="sm"
+                                  type="button"
+                                  variant={
+                                    restakeDuration === "12m"
+                                      ? "default"
+                                      : "outline"
+                                  }
+                                >
+                                  12 months
+                                </Button>
+                              </div>
+                              <Button
+                                disabled={
+                                  restakePending ||
+                                  !restakeAmount.trim() ||
+                                  Number(restakeAmount) <= 0 ||
+                                  Number(restakeAmount) > Number(stakedBalanceDisplay)
+                                }
+                                onClick={handleRestake}
+                                size="sm"
+                              >
+                                {restakePending
+                                  ? "Sending…"
+                                  : `Restake (lock ${restakeDuration === "12m" ? "12 months" : "30 days"})`}
+                              </Button>
+                            </div>
+                            {Number(restakeAmount) > Number(stakedBalanceDisplay) && (
                               <p className="text-xs text-destructive">
                                 Amount exceeds staked balance
                               </p>
