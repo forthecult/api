@@ -387,12 +387,20 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
     lastScrollYRef.current = window.scrollY;
     scrollAccumRef.current = 0;
 
-    // Throttle scroll handler to reduce main-thread work and scroll lag (32ms ≈ 30fps)
-    const throttledScroll = throttle(processScroll, 32);
+    // Run at most once per frame so header hide/show stays in sync with scroll (smooth, no fixed delay)
+    let rafScheduled = false;
+    const onScroll = () => {
+      if (rafScheduled) return;
+      rafScheduled = true;
+      requestAnimationFrame(() => {
+        rafScheduled = false;
+        processScroll();
+      });
+    };
 
-    window.addEventListener("scroll", throttledScroll, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
-      window.removeEventListener("scroll", throttledScroll);
+      window.removeEventListener("scroll", onScroll);
     };
   }, [isCheckout, processScroll]);
 
@@ -432,7 +440,6 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
           supports-[backdrop-filter]:bg-background/80
         `,
         !isCheckout && "sticky top-0 z-40",
-        "[contain:layout]",
       )}
     >
       <div

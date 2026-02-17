@@ -34,6 +34,10 @@ export function ProductImageGallery({
   const [failedUrls, setFailedUrls] = React.useState<Set<string>>(
     () => new Set(),
   );
+  /** After optimizer fails (400/504), retry with unoptimized so browser fetches directly. */
+  const [useUnoptimizedUrls, setUseUnoptimizedUrls] = React.useState<
+    Set<string>
+  >(() => new Set());
 
   const baseList = React.useMemo(
     () =>
@@ -77,8 +81,12 @@ export function ProductImageGallery({
       : productName;
 
   const handleMainImageError = React.useCallback(() => {
-    setFailedUrls((prev) => new Set(prev).add(actualMainSrc));
-  }, [actualMainSrc]);
+    if (useUnoptimizedUrls.has(actualMainSrc)) {
+      setFailedUrls((prev) => new Set(prev).add(actualMainSrc));
+    } else {
+      setUseUnoptimizedUrls((prev) => new Set(prev).add(actualMainSrc));
+    }
+  }, [actualMainSrc, useUnoptimizedUrls]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current || list.length === 0) return;
@@ -114,7 +122,7 @@ export function ProductImageGallery({
             zoomOpen && "scale-150 cursor-zoom-out",
           )}
           fill
-          key={mainSrc ?? "main"}
+          key={`${mainSrc ?? "main"}-${useUnoptimizedUrls.has(actualMainSrc) ? "direct" : "opt"}`}
           onError={handleMainImageError}
           priority={selectedIndex === 0 && list[0] === baseList[0]}
           sizes="(max-width: 768px) 100vw, (max-width: 1800px) 50vw, 900px"
@@ -124,7 +132,10 @@ export function ProductImageGallery({
               ? { transformOrigin: `${zoomPos.x}% ${zoomPos.y}%` }
               : undefined
           }
-          unoptimized={isExternalImageUrl(mainSrc)}
+          unoptimized={
+            isExternalImageUrl(mainSrc) ||
+            useUnoptimizedUrls.has(actualMainSrc)
+          }
         />
         {discountPercentage > 0 && (
           <div
@@ -144,6 +155,8 @@ export function ProductImageGallery({
           {list.map((src, i) => {
             const thumbSrc =
               failedUrls.has(src) || !src?.trim() ? PLACEHOLDER_SRC : src;
+            const thumbUnoptimized =
+              isExternalImageUrl(thumbSrc) || useUnoptimizedUrls.has(src);
             return (
               <button
                 aria-label={`View image ${i + 1} of ${list.length}`}
@@ -167,12 +180,17 @@ export function ProductImageGallery({
                   alt=""
                   className="object-cover"
                   fill
-                  onError={() =>
-                    setFailedUrls((prev) => new Set(prev).add(src))
-                  }
+                  key={`${src}-${thumbUnoptimized ? "direct" : "opt"}`}
+                  onError={() => {
+                    if (useUnoptimizedUrls.has(src)) {
+                      setFailedUrls((prev) => new Set(prev).add(src));
+                    } else {
+                      setUseUnoptimizedUrls((prev) => new Set(prev).add(src));
+                    }
+                  }}
                   sizes="64px"
                   src={thumbSrc}
-                  unoptimized={isExternalImageUrl(thumbSrc)}
+                  unoptimized={thumbUnoptimized}
                 />
               </button>
             );
