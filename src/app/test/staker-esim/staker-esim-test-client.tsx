@@ -195,12 +195,7 @@ export function StakerEsimTestClient() {
                       activate your eSIM in your dashboard.
                     </p>
                   </>
-                ) : (
-                  <p className="text-center text-sm text-muted-foreground">
-                    No 30-day plans under $25 for this selection. Try another
-                    country or plan type, or visit the eSIM store.
-                  </p>
-                )}
+                ) : null}
               </>
             )}
           </CardContent>
