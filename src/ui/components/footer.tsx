@@ -285,9 +285,9 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/track-order"
+                  href="/contact"
                 >
-                  Track order
+                  Contact Us
                 </Link>
               </li>
               <li>
@@ -296,9 +296,9 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/contact"
+                  href="/track-order"
                 >
-                  Contact Us
+                  Track order
                 </Link>
               </li>
               <li>

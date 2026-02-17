@@ -36,6 +36,40 @@ interface VerificationRecord {
   id: string;
 }
 
+const SESSION_FK_RETRY_MS = 200;
+
+function isSessionFkConstraintError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const code = (err as { code?: string }).code;
+  const message =
+    (err as Error).message ??
+    (err as { cause?: Error }).cause?.message ??
+    "";
+  const messageStr = String(message);
+  return (
+    code === "23503" ||
+    messageStr.includes("foreign key") ||
+    messageStr.includes("session_user_id_user_id_fk")
+  );
+}
+
+async function createSessionWithRetry<T>(
+  createSession: () => Promise<null | T>,
+): Promise<null | T> {
+  try {
+    return await createSession();
+  } catch (firstErr) {
+    if (!isSessionFkConstraintError(firstErr)) throw firstErr;
+    console.warn(
+      "[solana-auth] createSession FK violation (user row not visible yet), retrying in",
+      SESSION_FK_RETRY_MS,
+      "ms",
+    );
+    await new Promise((resolve) => setTimeout(resolve, SESSION_FK_RETRY_MS));
+    return await createSession();
+  }
+}
+
 export function solanaAuthPlugin() {
   return {
     endpoints: {
@@ -483,7 +517,8 @@ export function solanaAuthPlugin() {
             );
 
             // createSession(userId, request, dontRememberMe) - false = remember me (longer expiry)
-            const session = await (
+            // Retry once on FK violation: user row may not be visible to another connection in the pool yet
+            const createSessionFn = (
               ctx.context.internalAdapter as {
                 createSession: (
                   userId: string,
@@ -491,7 +526,15 @@ export function solanaAuthPlugin() {
                   dontRememberMe?: boolean,
                 ) => Promise<null | { id: string; userId: string }>;
               }
-            ).createSession(user.id, ctx.request as Request | undefined, false);
+            ).createSession.bind(ctx.context.internalAdapter);
+            const session = await createSessionWithRetry(
+              () =>
+                createSessionFn(
+                  user.id,
+                  ctx.request as Request | undefined,
+                  false,
+                ),
+            );
             if (!session) {
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to create session",
