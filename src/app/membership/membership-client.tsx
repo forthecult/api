@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { cn } from "~/lib/cn";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
+import { formatEsimPackageName } from "~/lib/esim-format";
 import { formatMarketCap, formatTokens, formatUsd } from "~/lib/format";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import {
@@ -88,6 +89,20 @@ export function MembershipClient() {
   const [claimTier, setClaimTier] = useState<null | number>(null);
   const [claimPending, setClaimPending] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(false);
+  const [stakerClaimPackages, setStakerClaimPackages] = useState<
+    {
+      data_quantity: number;
+      data_unit: string;
+      has5g?: boolean;
+      id: string;
+      name: string;
+      package_type?: string;
+      package_validity: number;
+      package_validity_unit: string;
+    }[]
+  >([]);
+  const [stakerClaimPackagesLoading, setStakerClaimPackagesLoading] =
+    useState(false);
 
   // Live pricing state
   const [pricingData, setPricingData] = useState<
@@ -190,45 +205,75 @@ export function MembershipClient() {
     await stake(stakeAmount.toString(), lockDuration);
   }, [stake, stakeAmount, lockDuration]);
 
-  // ------ eSIM Claim handler ------
-  const handleClaimEsim = useCallback(async () => {
-    if (!wallet) {
-      toast.error("Connect your wallet first");
+  // Fetch 30-day eSIM packages (under $25) when eligible to claim
+  useEffect(() => {
+    if (!wallet || !claimEligible || claimAlreadyClaimed) {
+      setStakerClaimPackages([]);
       return;
     }
-    setClaimPending(true);
-    try {
-      const res = await fetch("/api/esim/membership-claim", {
-        body: JSON.stringify({
-          // Use a well-known global 1GB/30-day data-only package as the default free SIM
-          // This can be swapped for a configurable package later
-          packageId: "esim-free-tier2-default",
-          wallet,
-        }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
-      });
-      const data = (await res.json()) as {
-        data?: { message?: string };
-        message?: string;
-        status: boolean;
-      };
-      if (!res.ok || !data.status) {
-        toast.error(data.message ?? "Failed to claim eSIM");
+    setStakerClaimPackagesLoading(true);
+    fetch("/api/esim/packages/staker-claim")
+      .then((r) => r.json())
+      .then(
+        (data: {
+          data?: {
+            data_quantity: number;
+            data_unit: string;
+            has5g?: boolean;
+            id: string;
+            name: string;
+            package_type?: string;
+            package_validity: number;
+            package_validity_unit: string;
+          }[];
+          status: boolean;
+        }) => {
+          if (data.status && Array.isArray(data.data)) {
+            setStakerClaimPackages(data.data);
+          }
+        },
+      )
+      .catch(() => setStakerClaimPackages([]))
+      .finally(() => setStakerClaimPackagesLoading(false));
+  }, [wallet, claimEligible, claimAlreadyClaimed]);
+
+  // ------ eSIM Claim handler (one package per staking period) ------
+  const handleClaimEsim = useCallback(
+    async (packageId: string) => {
+      if (!wallet) {
+        toast.error("Connect your wallet first");
         return;
       }
-      setClaimSuccess(true);
-      setClaimAlreadyClaimed(true);
-      toast.success(
-        data.data?.message ??
-          "Free eSIM claimed! Check your email for activation.",
-      );
-    } catch {
-      toast.error("Network error — please try again");
-    } finally {
-      setClaimPending(false);
-    }
-  }, [wallet]);
+      setClaimPending(true);
+      try {
+        const res = await fetch("/api/esim/membership-claim", {
+          body: JSON.stringify({ packageId, wallet }),
+          headers: { "Content-Type": "application/json" },
+          method: "POST",
+        });
+        const data = (await res.json()) as {
+          data?: { message?: string };
+          message?: string;
+          status: boolean;
+        };
+        if (!res.ok || !data.status) {
+          toast.error(data.message ?? "Failed to claim eSIM");
+          return;
+        }
+        setClaimSuccess(true);
+        setClaimAlreadyClaimed(true);
+        toast.success(
+          data.data?.message ??
+            "Free eSIM claimed! You can activate it in your dashboard.",
+        );
+      } catch {
+        toast.error("Network error — please try again");
+      } finally {
+        setClaimPending(false);
+      }
+    },
+    [wallet],
+  );
 
   return (
     <div
@@ -1577,7 +1622,7 @@ export function MembershipClient() {
             md:py-20
           `}
           >
-            <div className="mx-auto max-w-2xl">
+            <div className="mx-auto max-w-4xl">
               <Card
                 className={`
                 overflow-hidden border-2 border-primary/30 bg-gradient-to-br
@@ -1601,12 +1646,12 @@ export function MembershipClient() {
                   <CardDescription className="text-base">
                     {claimAlreadyClaimed
                       ? claimSuccess
-                        ? "Your free eSIM has been provisioned! Check your email for the activation link or visit your eSIM dashboard."
-                        : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage it."
-                      : `As a Tier ${claimTier} member, you're eligible for a free eSIM card. Claim it now — no payment required.`}
+                        ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
+                        : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage and activate it."
+                      : `As a Tier ${claimTier} member, you can claim one 30-day eSIM card at no cost. Choose a plan below and click Claim to activate.`}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="flex flex-col items-center gap-4 pb-8">
+                <CardContent className="flex flex-col items-center gap-6 pb-8">
                   {claimAlreadyClaimed ? (
                     <Button
                       asChild
@@ -1616,26 +1661,55 @@ export function MembershipClient() {
                     >
                       <Link href="/dashboard/esim">
                         <Globe className="h-5 w-5" />
-                        View My eSIMs
+                        Activate My eSIM
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
-                  ) : (
+                  ) : stakerClaimPackagesLoading ? (
+                    <p className="text-muted-foreground">
+                      Loading eSIM plans…
+                    </p>
+                  ) : stakerClaimPackages.length > 0 ? (
                     <>
-                      <Button
-                        className="gap-2 text-base"
-                        disabled={claimPending}
-                        onClick={handleClaimEsim}
-                        size="lg"
-                      >
-                        <Smartphone className="h-5 w-5" />
-                        {claimPending ? "Claiming eSIM…" : "Claim Free eSIM"}
-                      </Button>
+                      <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {stakerClaimPackages.map((pkg) => (
+                          <Card
+                            key={pkg.id}
+                            className="flex flex-col border border-border bg-card"
+                          >
+                            <CardHeader className="pb-2">
+                              <CardTitle className="font-display text-lg">
+                                {formatEsimPackageName(pkg.name)}
+                              </CardTitle>
+                              <CardDescription>
+                                {pkg.data_quantity} {pkg.data_unit} · 30 days
+                                {pkg.has5g ? " · 5G" : ""}
+                              </CardDescription>
+                            </CardHeader>
+                            <CardContent className="mt-auto pt-0">
+                              <Button
+                                className="w-full gap-2"
+                                disabled={claimPending}
+                                onClick={() => handleClaimEsim(pkg.id)}
+                                size="sm"
+                              >
+                                <Smartphone className="h-4 w-4" />
+                                Claim
+                              </Button>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
                       <p className="text-center text-sm text-muted-foreground">
-                        Your free eSIM will be provisioned instantly and sent to
-                        your email. One claim per staking period.
+                        One claim per staking period. After claiming, you can
+                        activate your eSIM in your dashboard.
                       </p>
                     </>
+                  ) : (
+                    <p className="text-center text-sm text-muted-foreground">
+                      No 30-day plans available right now. Try again later or
+                      visit the eSIM store.
+                    </p>
                   )}
                 </CardContent>
               </Card>
