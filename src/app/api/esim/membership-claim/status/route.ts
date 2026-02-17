@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       0,
     );
     const tier = detectTierFromPricing(stakedHuman, pricing.tiers);
-    const eligible = tier !== null && tier <= 2;
+    const eligible = tier === 1;
 
     // Check if already claimed for this staking period
     const stakePeriodKey = `${wallet}:${stakeData.stakedAt}`;

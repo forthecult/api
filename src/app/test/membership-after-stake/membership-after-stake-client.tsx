@@ -151,7 +151,7 @@ export function MembershipAfterStakeTestClient() {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-lg text-muted-foreground">
             You&apos;ve staked and unlocked membership. You&apos;re on{" "}
-            <strong className="text-foreground">Tier 2</strong> — free eSIM,
+            <strong className="text-foreground">Tier 1</strong> — free eSIM,
             free shipping, and member discounts. Claim your free 30-day eSIM
             below.
           </p>
@@ -161,7 +161,7 @@ export function MembershipAfterStakeTestClient() {
               variant="outline"
             >
               <Crown className="h-3.5 w-3.5" />
-              Tier 2
+              Tier 1
             </Badge>
             <Badge className="gap-1.5 px-3 py-1" variant="outline">
               <Check className="h-3.5 w-3.5 text-green-600" />
@@ -199,7 +199,7 @@ export function MembershipAfterStakeTestClient() {
               <CardDescription className="text-base">
                 {claimed
                   ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
-                  : "As a Tier 2 member, you can claim one 30-day eSIM card at no cost. Choose a plan below and click Claim to activate."}
+                  : "As a Tier 1 member, you can claim one 30-day eSIM card at no cost. Choose a plan below and click Claim to activate."}
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col items-center gap-6 pb-8">

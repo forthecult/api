@@ -44,6 +44,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/ui/primitives/card";
+import { Input } from "~/ui/primitives/input";
 import {
   Table,
   TableBody,
@@ -112,14 +113,57 @@ export function MembershipClient() {
   const [esimCountries, setEsimCountries] = useState<{ id: number; name: string }[]>([]);
   const [esimCountriesLoading, setEsimCountriesLoading] = useState(false);
 
+  // Current stake (for "Your stake" + unstake)
+  const [stakedBalanceDisplay, setStakedBalanceDisplay] = useState<string>("0");
+  const [stakedBalanceRaw, setStakedBalanceRaw] = useState<string>("0");
+  const [stakedLock, setStakedLock] = useState<{
+    durationLabel: string;
+    isLocked: boolean;
+    secondsRemaining?: number;
+    unlocksAt: string | null;
+    stakedAt: string;
+  } | null>(null);
+  const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
+  const [unstakeAmount, setUnstakeAmount] = useState("");
+
   // Live pricing state
   const [pricingData, setPricingData] = useState<
     null | TokenPriceResponse["data"]
   >(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { openConnectModal, stake, stakePending, wallet } =
+  const { openConnectModal, stake, stakePending, unstake, unstakePending, wallet } =
     useStakeTransaction();
+
+  const refreshStakedBalance = useCallback(() => {
+    if (!wallet) return;
+    setStakedBalanceLoading(true);
+    fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`)
+      .then((r) => r.json())
+      .then(
+        (data: {
+          lock: null | {
+            durationLabel: string;
+            isLocked: boolean;
+            secondsRemaining?: number;
+            unlocksAt: string | null;
+            stakedAt: string;
+          };
+          stakedBalance?: string;
+          stakedBalanceRaw?: string;
+        }) => {
+          setStakedBalanceDisplay(data.stakedBalance ?? "0");
+          setStakedBalanceRaw(data.stakedBalanceRaw ?? "0");
+          setStakedLock(data.lock ?? null);
+        },
+      )
+      .catch(() => {
+        setStakedBalanceDisplay("0");
+        setStakedBalanceRaw("0");
+        setStakedLock(null);
+      })
+      .finally(() => setStakedBalanceLoading(false));
+  }, [wallet]);
 
   // Fetch live pricing from the API (polls every 30s)
   useEffect(() => {
@@ -144,6 +188,17 @@ export function MembershipClient() {
       clearInterval(interval);
     };
   }, []);
+
+  // Fetch staked balance when wallet connects (and after stake/unstake via callbacks)
+  useEffect(() => {
+    if (!wallet) {
+      setStakedBalanceDisplay("0");
+      setStakedBalanceRaw("0");
+      setStakedLock(null);
+      return;
+    }
+    refreshStakedBalance();
+  }, [wallet, refreshStakedBalance]);
 
   // Fetch claim status when wallet is connected
   useEffect(() => {
@@ -192,6 +247,18 @@ export function MembershipClient() {
   const selectedTierPrice = tierPriceMap[selectedTier];
   const stakeAmount = selectedTierPrice?.tokensNeeded ?? 0;
 
+  /** Current tier from staked balance (1 = best, 3 = entry). Null if no stake or below tier 3. */
+  const currentTierFromStake = useMemo(() => {
+    const staked = Number(stakedBalanceDisplay);
+    if (!Number.isFinite(staked) || staked <= 0) return null;
+    const tiers = pricingData?.pricing?.tiers ?? [];
+    const sorted = [...tiers].sort((a, b) => b.tokensNeeded - a.tokensNeeded);
+    for (const t of sorted) {
+      if (staked >= t.tokensNeeded) return t.tierId;
+    }
+    return null;
+  }, [stakedBalanceDisplay, pricingData?.pricing?.tiers]);
+
   const selectedTierData = useMemo(
     () => MEMBERSHIP_TIERS.find((t) => t.id === selectedTier)!,
     [selectedTier],
@@ -210,8 +277,30 @@ export function MembershipClient() {
   }, []);
 
   const handleStake = useCallback(async () => {
-    await stake(stakeAmount.toString(), lockDuration);
-  }, [stake, stakeAmount, lockDuration]);
+    const ok = await stake(stakeAmount.toString(), lockDuration);
+    if (ok) refreshStakedBalance();
+  }, [stake, stakeAmount, lockDuration, refreshStakedBalance]);
+
+  const handleUnstake = useCallback(async () => {
+    const ok = await unstake(unstakeAmount);
+    if (ok) {
+      setUnstakeAmount("");
+      refreshStakedBalance();
+    }
+  }, [unstake, unstakeAmount, refreshStakedBalance]);
+
+  const formatTimeUntilUnlock = useCallback(
+    (sec: number): string => {
+      if (sec <= 0) return "Unlocked";
+      const days = Math.floor(sec / 86400);
+      const hours = Math.floor((sec % 86400) / 3600);
+      if (days > 0) return `${days} day${days === 1 ? "" : "s"} until unlock`;
+      if (hours > 0) return `${hours} hour${hours === 1 ? "" : "s"} until unlock`;
+      const mins = Math.max(1, Math.floor(sec / 60));
+      return `${mins} minute${mins === 1 ? "" : "s"} until unlock`;
+    },
+    [],
+  );
 
   // Fetch countries when eligible to claim (for country picker)
   useEffect(() => {
@@ -465,6 +554,91 @@ export function MembershipClient() {
               </div>
 
               <div className="space-y-5 p-6">
+                {/* Your stake — show when wallet connected */}
+                {wallet && (
+                  <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
+                    <p className="text-sm font-medium text-foreground">
+                      Your stake
+                    </p>
+                    {stakedBalanceLoading ? (
+                      <p className="text-sm text-muted-foreground">
+                        Loading…
+                      </p>
+                    ) : Number(stakedBalanceRaw) === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        You have no staked balance. Stake below to join.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex flex-wrap items-baseline gap-2">
+                            <span className="font-semibold tabular-nums text-foreground">
+                              {formatTokens(Number(stakedBalanceDisplay))}{" "}
+                              {tokenSymbol}
+                            </span>
+                            {currentTierFromStake != null && (
+                              <span className="text-muted-foreground">
+                                · {MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}
+                              </span>
+                            )}
+                          </div>
+                          {stakedLock && (
+                            <p className="text-muted-foreground">
+                              {stakedLock.durationLabel}
+                              {stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? (
+                                <> · {formatTimeUntilUnlock(stakedLock.secondsRemaining)}</>
+                              ) : stakedLock.unlocksAt ? (
+                                <> · Unlocks {new Date(stakedLock.unlocksAt).toLocaleDateString(undefined, { dateStyle: "short" })}</>
+                              ) : null}
+                            </p>
+                          )}
+                        </div>
+                        {currentTierFromStake === 2 || currentTierFromStake === 3 ? (
+                          <p className="text-xs text-muted-foreground">
+                            Stake more below to upgrade your tier.
+                          </p>
+                        ) : null}
+                        {currentTierFromStake === 3 && (
+                          <div className="space-y-2 pt-1">
+                            <p className="text-xs font-medium text-foreground">
+                              Unstake (Tier 3)
+                            </p>
+                            <div className="flex gap-2">
+                              <Input
+                                className="font-mono max-w-[140px]"
+                                min={0}
+                                onChange={(e) => setUnstakeAmount(e.target.value)}
+                                placeholder="Amount"
+                                step="any"
+                                type="number"
+                                value={unstakeAmount}
+                              />
+                              <Button
+                                disabled={
+                                  unstakePending ||
+                                  !unstakeAmount.trim() ||
+                                  Number(unstakeAmount) <= 0 ||
+                                  Number(unstakeAmount) > Number(stakedBalanceDisplay)
+                                }
+                                onClick={handleUnstake}
+                                size="sm"
+                                variant="secondary"
+                              >
+                                {unstakePending ? "Sending…" : "Unstake"}
+                              </Button>
+                            </div>
+                            {Number(unstakeAmount) > Number(stakedBalanceDisplay) && (
+                              <p className="text-xs text-destructive">
+                                Amount exceeds staked balance
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+
                 {/* Inline tier selector — change tier without scrolling */}
                 <div>
                   <p className="mb-2 text-sm font-medium text-foreground">
@@ -1647,7 +1821,7 @@ export function MembershipClient() {
         </section>
 
         {/* --------------------------------------------------------------- */}
-        {/* Claim Free eSIM (Tier 2+) */}
+        {/* Claim Free eSIM (Tier 1) */}
         {/* --------------------------------------------------------------- */}
         {wallet && (claimEligible || claimAlreadyClaimed) && (
           <section
