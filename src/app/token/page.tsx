@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -363,6 +364,54 @@ export default function TokenPage() {
               </li>
             </ul>
           </div>
+        </section>
+
+        {/* Membership */}
+        <section
+          className={`
+          space-y-8 py-12
+          md:py-10
+        `}
+        >
+          <div className="space-y-4">
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
+              Membership
+            </h2>
+            <p className="max-w-3xl text-muted-foreground">
+              Stake CULT to unlock tiered membership: free eSIM and free
+              shipping at Tier 1, 50% off at Tier 2, and 25% off at Tier 3.
+            </p>
+          </div>
+
+          <Card className="overflow-hidden border-border bg-muted/30">
+            <CardHeader className="space-y-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle className="text-lg">
+                {MEMBERSHIP_HOW_IT_WORKS.heading}
+              </CardTitle>
+              <CardDescription className="text-base text-muted-foreground">
+                {MEMBERSHIP_HOW_IT_WORKS.subheading}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                {MEMBERSHIP_HOW_IT_WORKS.body}
+              </p>
+              <Link href="/membership">
+                <Button className="gap-2" variant="default">
+                  View membership tiers
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
         </section>
 
         {/* Proposed Token Allocation */}

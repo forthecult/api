@@ -220,7 +220,7 @@ export function Footer({ className }: { className?: string }) {
                   `}
                   href="/token"
                 >
-                  CULT
+                  CULT token
                 </Link>
               </li>
               <li>

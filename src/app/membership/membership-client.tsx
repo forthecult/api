@@ -26,6 +26,7 @@ import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { cn } from "~/lib/cn";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatMarketCap, formatTokens, formatUsd } from "~/lib/format";
+import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import {
   MEMBERSHIP_BENEFIT_ROWS,
   MEMBERSHIP_FAQ,
@@ -736,6 +737,42 @@ export function MembershipClient() {
                 <p className="mt-2 text-sm text-muted-foreground">{desc}</p>
               </div>
             ))}
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
+        {/* Why members get more (economies of scale) */}
+        {/* --------------------------------------------------------------- */}
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
+          <div
+            className={`
+            mx-auto max-w-3xl overflow-hidden rounded-2xl border
+            border-border bg-card p-8 shadow-sm
+            md:p-10
+          `}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <h2
+              className={`
+              mt-4 font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
+              {MEMBERSHIP_HOW_IT_WORKS.heading}
+            </h2>
+            <p className="mt-2 text-muted-foreground">
+              {MEMBERSHIP_HOW_IT_WORKS.subheading}
+            </p>
+            <p className="mt-4 text-muted-foreground">
+              {MEMBERSHIP_HOW_IT_WORKS.body}
+            </p>
           </div>
         </section>
 
