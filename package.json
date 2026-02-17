@@ -51,6 +51,7 @@
     "db:list-products": "bun run scripts/list-products.ts",
     "buyback-burn": "bun run scripts/buyback-burn.ts",
     "vanity:grind": "bun run scripts/solana-vanity-grind.ts",
+    "vanity:export-key": "bun run scripts/export-keypair-base58.ts",
     "db:crawl-brand-shipping": "bun run scripts/crawl-brand-shipping.ts",
     "db:seed-shipping-by-brand": "bun run scripts/seed-shipping-by-brand.ts",
     "db:seed-bon-charge": "bun run scripts/seed-bon-charge-via-api.ts",

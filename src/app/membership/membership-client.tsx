@@ -82,6 +82,10 @@ interface TokenPriceResponse {
   status: boolean;
 }
 
+/** When true, staking/signup is disabled and the message "Membership signup will be available shortly" is shown. Set via NEXT_PUBLIC_STAKING_SIGNUP_DISABLED. */
+const STAKING_SIGNUP_DISABLED =
+  process.env.NEXT_PUBLIC_STAKING_SIGNUP_DISABLED === "true";
+
 export function MembershipClient() {
   const [selectedTier, setSelectedTier] = useState<number>(2);
   const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
@@ -125,6 +129,7 @@ export function MembershipClient() {
   } | null>(null);
   const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
   const [unstakeAmount, setUnstakeAmount] = useState("");
+  const [stakeMoreAmount, setStakeMoreAmount] = useState("");
   const [restakeAmount, setRestakeAmount] = useState("");
   const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
 
@@ -290,6 +295,27 @@ export function MembershipClient() {
       refreshStakedBalance();
     }
   }, [unstake, unstakeAmount, refreshStakedBalance]);
+
+  /** Amount needed to reach next tier (for "Stake X to reach Tier Y" button). Tier 2 → 1, Tier 3 → 2. */
+  const upgradeTarget = useMemo(() => {
+    if (currentTierFromStake !== 2 && currentTierFromStake !== 3) return null;
+    const staked = Number(stakedBalanceDisplay);
+    if (!Number.isFinite(staked) || staked <= 0) return null;
+    const nextTier = currentTierFromStake === 2 ? 1 : 2;
+    const nextTokens = tierPriceMap[nextTier]?.tokensNeeded;
+    if (nextTokens == null) return null;
+    const needed = Math.max(0, Math.ceil(nextTokens - staked));
+    const tierName = MEMBERSHIP_TIERS.find((t) => t.id === nextTier)?.name ?? `Tier ${nextTier}`;
+    return { nextTier, amount: needed, tierName };
+  }, [currentTierFromStake, stakedBalanceDisplay, tierPriceMap]);
+
+  const handleStakeMore = useCallback(async () => {
+    const ok = await stake(stakeMoreAmount.trim(), lockDuration);
+    if (ok) {
+      setStakeMoreAmount("");
+      refreshStakedBalance();
+    }
+  }, [stake, stakeMoreAmount, lockDuration, refreshStakedBalance]);
 
   const restakeLockDuration =
     restakeDuration === "12m" ? LOCK_12_MONTHS : LOCK_30_DAYS;
@@ -557,15 +583,23 @@ export function MembershipClient() {
                   md:text-2xl
                 `}
                 >
-                  Stake {tokenSymbol} &amp; Join
+                  {wallet && Number(stakedBalanceRaw) > 0
+                    ? "Upgrade Membership"
+                    : `Stake ${tokenSymbol} & Join`}
                 </h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Select your tier and duration, then connect your wallet to
-                  stake.
+                  {wallet && Number(stakedBalanceRaw) > 0
+                    ? "Stake more CULT to upgrade your tier."
+                    : "Select your tier and duration, then connect your wallet to stake."}
                 </p>
               </div>
 
               <div className="space-y-5 p-6">
+                {STAKING_SIGNUP_DISABLED && (
+                  <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-center text-sm font-medium text-foreground">
+                    Membership signup will be available shortly.
+                  </div>
+                )}
                 {/* Your stake — show when wallet connected */}
                 {wallet && (
                   <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
@@ -606,9 +640,47 @@ export function MembershipClient() {
                           )}
                         </div>
                         {(currentTierFromStake === 2 || currentTierFromStake === 3) && (
-                          <p className="text-xs text-muted-foreground">
-                            Stake more below to upgrade your membership.
-                          </p>
+                          <div className="space-y-2 pt-1">
+                            <p className="text-xs font-medium text-foreground">
+                              Stake CULT to upgrade. Enter an amount or use the button to fill the amount needed for the next tier.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              <Input
+                                className="font-mono max-w-[140px]"
+                                disabled={STAKING_SIGNUP_DISABLED}
+                                min={0}
+                                onChange={(e) => setStakeMoreAmount(e.target.value)}
+                                placeholder="Amount"
+                                step="any"
+                                type="number"
+                                value={stakeMoreAmount}
+                              />
+                              {upgradeTarget && upgradeTarget.amount > 0 && !STAKING_SIGNUP_DISABLED && (
+                                <Button
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() =>
+                                    setStakeMoreAmount(upgradeTarget.amount.toString())
+                                  }
+                                >
+                                  Stake {formatTokens(upgradeTarget.amount)} to reach {upgradeTarget.tierName}
+                                </Button>
+                              )}
+                              <Button
+                                disabled={
+                                  STAKING_SIGNUP_DISABLED ||
+                                  stakePending ||
+                                  !stakeMoreAmount.trim() ||
+                                  Number(stakeMoreAmount) <= 0
+                                }
+                                size="sm"
+                                onClick={handleStakeMore}
+                              >
+                                {stakePending ? "Sending…" : "Stake more"}
+                              </Button>
+                            </div>
+                          </div>
                         )}
                         {stakedLock && (
                           <p className="text-xs text-muted-foreground">
@@ -684,6 +756,7 @@ export function MembershipClient() {
                             <div className="flex flex-wrap items-center gap-2">
                               <Input
                                 className="font-mono max-w-[140px]"
+                                disabled={STAKING_SIGNUP_DISABLED}
                                 min={0}
                                 onChange={(e) => setRestakeAmount(e.target.value)}
                                 placeholder="Amount"
@@ -692,6 +765,7 @@ export function MembershipClient() {
                                 value={restakeAmount}
                               />
                               <Button
+                                disabled={STAKING_SIGNUP_DISABLED}
                                 onClick={() =>
                                   setRestakeAmount(stakedBalanceDisplay)
                                 }
@@ -703,6 +777,7 @@ export function MembershipClient() {
                               </Button>
                               <div className="flex gap-1">
                                 <Button
+                                  disabled={STAKING_SIGNUP_DISABLED}
                                   onClick={() => setRestakeDuration("30d")}
                                   size="sm"
                                   type="button"
@@ -715,6 +790,7 @@ export function MembershipClient() {
                                   30 days
                                 </Button>
                                 <Button
+                                  disabled={STAKING_SIGNUP_DISABLED}
                                   onClick={() => setRestakeDuration("12m")}
                                   size="sm"
                                   type="button"
@@ -729,6 +805,7 @@ export function MembershipClient() {
                               </div>
                               <Button
                                 disabled={
+                                  STAKING_SIGNUP_DISABLED ||
                                   restakePending ||
                                   !restakeAmount.trim() ||
                                   Number(restakeAmount) <= 0 ||
@@ -917,16 +994,18 @@ export function MembershipClient() {
 
                 <Button
                   className="w-full gap-2 text-base"
-                  disabled={stakePending}
+                  disabled={STAKING_SIGNUP_DISABLED || stakePending}
                   onClick={handleStake}
                   size="lg"
                 >
                   <Wallet className="h-5 w-5" />
-                  {stakePending
-                    ? "Preparing transaction…"
-                    : wallet
-                      ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
-                      : "Connect Wallet & Stake"}
+                  {STAKING_SIGNUP_DISABLED
+                    ? "Membership signup will be available shortly"
+                    : stakePending
+                      ? "Preparing transaction…"
+                      : wallet
+                        ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
+                        : "Connect Wallet & Stake"}
                 </Button>
                 <p className="text-center text-sm text-muted-foreground">
                   Your tokens remain yours. They are locked in a smart contract
@@ -1971,7 +2050,7 @@ export function MembershipClient() {
                       ? claimSuccess
                         ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
                         : "You've already claimed your free eSIM for this staking period. Visit your eSIM dashboard to manage and activate it."
-                      : `As a Tier ${claimTier} member, you can claim one 30-day eSIM card at no cost. Choose a plan below and click Claim to activate.`}
+                      : `As a Tier ${claimTier} member, you can claim one 30-day eSIM at no cost. Pick data-only or data with minutes + SMS, then click Claim to activate.`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-6 pb-8">
@@ -2019,7 +2098,7 @@ export function MembershipClient() {
                             }
                           >
                             <Signal className="mr-1 h-4 w-4" />
-                            Data + minutes
+                            Data + minutes + SMS
                           </Button>
                         </div>
                         <div className="flex items-center gap-2">

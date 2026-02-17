@@ -70,6 +70,8 @@ export function MembershipAfterStakeTestClient() {
   const [countriesLoading, setCountriesLoading] = useState(true);
   const [unstakeAmount, setUnstakeAmount] = useState("");
   const [stakeMoreAmount, setStakeMoreAmount] = useState("");
+  const [restakeAmount, setRestakeAmount] = useState("");
+  const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
 
   const tierData = MEMBERSHIP_TIERS.find((t) => t.id === previewTier);
   const mock = MOCK_STAKE[previewTier];
@@ -204,15 +206,17 @@ export function MembershipAfterStakeTestClient() {
               </Badge>
             )}
           </div>
-          <div className="mt-8">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/esim">
-                <Globe className="mr-2 h-4 w-4" />
-                Browse all eSIM plans
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
+          {previewTier !== 1 && (
+            <div className="mt-8">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/esim">
+                  <Globe className="mr-2 h-4 w-4" />
+                  Browse all eSIM plans
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
       </section>
 
@@ -222,10 +226,10 @@ export function MembershipAfterStakeTestClient() {
           <Card className="overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
             <div className="border-b bg-muted/30 px-6 py-5">
               <h2 className="font-display text-xl font-semibold text-foreground md:text-2xl">
-                Stake CULT &amp; Join
+                Upgrade Membership
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Your stake and options below (preview).
+                Stake CULT to upgrade. Enter an amount or use the button to fill the amount needed for the next tier.
               </p>
             </div>
             <div className="space-y-5 p-6">
@@ -250,9 +254,9 @@ export function MembershipAfterStakeTestClient() {
                 {(previewTier === 2 || previewTier === 3) && (
                   <div className="space-y-2 pt-1">
                     <p className="text-xs font-medium text-foreground">
-                      Stake more to upgrade your membership
+                      Stake CULT to upgrade. Enter an amount or use the button to fill the amount needed for the next tier.
                     </p>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Input
                         className="font-mono max-w-[140px]"
                         min={0}
@@ -262,6 +266,34 @@ export function MembershipAfterStakeTestClient() {
                         type="number"
                         value={stakeMoreAmount}
                       />
+                      {previewTier === 2 && (
+                        <Button
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            setStakeMoreAmount(
+                              String(Number(MOCK_STAKE[1].amount) - Number(MOCK_STAKE[2].amount)),
+                            )
+                          }
+                        >
+                          Stake {formatTokens(52000 - 18000)} to reach Tier 1
+                        </Button>
+                      )}
+                      {previewTier === 3 && (
+                        <Button
+                          size="sm"
+                          type="button"
+                          variant="outline"
+                          onClick={() =>
+                            setStakeMoreAmount(
+                              String(Number(MOCK_STAKE[2].amount) - Number(MOCK_STAKE[3].amount)),
+                            )
+                          }
+                        >
+                          Stake {formatTokens(18000 - 4000)} to reach Tier 2
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         onClick={() =>
@@ -271,6 +303,66 @@ export function MembershipAfterStakeTestClient() {
                         }
                       >
                         Stake more
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {/* Restake — shown when lock expired (Tier 3 mock is "Unlocked") */}
+                {previewTier === 3 && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-xs font-medium text-foreground">
+                      Restake (lock for another period)
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Your lock has ended. Restake to lock again for 30 days or 12 months.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Input
+                        className="font-mono max-w-[140px]"
+                        min={0}
+                        onChange={(e) => setRestakeAmount(e.target.value)}
+                        placeholder="Amount"
+                        step="any"
+                        type="number"
+                        value={restakeAmount}
+                      />
+                      <Button
+                        onClick={() => setRestakeAmount(MOCK_STAKE[3].amount)}
+                        size="sm"
+                        type="button"
+                        variant="outline"
+                      >
+                        Max
+                      </Button>
+                      <div className="flex rounded-md border border-input">
+                        <Button
+                          className="rounded-r-none border-0"
+                          size="sm"
+                          type="button"
+                          variant={restakeDuration === "30d" ? "secondary" : "ghost"}
+                          onClick={() => setRestakeDuration("30d")}
+                        >
+                          30 days
+                        </Button>
+                        <Button
+                          className="rounded-l-none border-0"
+                          size="sm"
+                          type="button"
+                          variant={restakeDuration === "12m" ? "secondary" : "ghost"}
+                          onClick={() => setRestakeDuration("12m")}
+                        >
+                          12 months
+                        </Button>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          toast.info(
+                            "Test: Restake is only available on the real membership page with a connected wallet.",
+                          )
+                        }
+                      >
+                        Restake (lock {restakeDuration === "12m" ? "12 months" : "30 days"})
                       </Button>
                     </div>
                   </div>
@@ -333,7 +425,7 @@ export function MembershipAfterStakeTestClient() {
                 <CardDescription className="text-base">
                   {claimed
                     ? "Your free eSIM has been provisioned. Activate it in your dashboard or check your email for the link."
-                    : "As a Tier 1 member, you can claim one 30-day eSIM card at no cost. Choose a plan below and click Claim to activate."}
+                    : "As a Tier 1 member, you can claim one 30-day eSIM at no cost. Pick data-only or data with minutes + SMS, then click Claim to activate."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col items-center gap-6 pb-8">
@@ -374,7 +466,7 @@ export function MembershipAfterStakeTestClient() {
                           }
                         >
                           <Signal className="mr-1 h-4 w-4" />
-                          Data + minutes
+                          Data + minutes + SMS
                         </Button>
                       </div>
                       <div className="flex items-center gap-2">
