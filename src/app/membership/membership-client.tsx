@@ -155,7 +155,6 @@ export function MembershipClient() {
   const tokenSymbol = pricingData?.token.symbol ?? "CULT";
   const tokenPrice = pricingData?.token.priceUsd ?? 0;
   const marketCap = pricingData?.market.marketCapUsd ?? 0;
-  const pricingBracket = pricingData?.pricing.bracket ?? "";
 
   const tierPriceMap = useMemo(() => {
     const map: Record<number, { costUsd: number; tokensNeeded: number }> = {};
@@ -318,15 +317,6 @@ export function MembershipClient() {
                 |
               </span>
               <span>MC {formatMarketCap(marketCap)}</span>
-              <span
-                className={`
-                hidden text-border
-                sm:inline
-              `}
-              >
-                |
-              </span>
-              <span className="text-sm">{pricingBracket}</span>
             </div>
           )}
 
@@ -786,24 +776,25 @@ export function MembershipClient() {
         `}
           id="tiers"
         >
-          <div className="mx-auto max-w-3xl text-center">
-            <h2
+          <div className="mx-auto max-w-5xl">
+            <div className="text-center">
+              <h2
+                className={`
+                font-display text-2xl font-semibold text-foreground
+                md:text-3xl
+              `}
+              >
+                Choose Your Tier
+              </h2>
+            </div>
+
+            <div
               className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
+              mt-12 grid gap-6
+              sm:grid-cols-2
+              lg:grid-cols-3
             `}
             >
-              Choose Your Tier
-            </h2>
-          </div>
-
-          <div
-            className={`
-            mt-12 grid gap-6
-            sm:grid-cols-2
-            lg:grid-cols-4
-          `}
-          >
             {MEMBERSHIP_TIERS.map((tier) => {
               const Icon = tier.icon;
               const isSelected = selectedTier === tier.id;
@@ -959,6 +950,7 @@ export function MembershipClient() {
                 </Card>
               );
             })}
+            </div>
           </div>
         </section>
 

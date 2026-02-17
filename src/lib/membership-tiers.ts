@@ -1,7 +1,6 @@
 import type { ElementType } from "react";
 
 import {
-  Coins,
   Crown,
   Shield,
   Smartphone,
@@ -61,8 +60,8 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
       extras: [
         "Community access",
         "Governance voting",
-        "Early product access",
         "Member-only drops",
+        "Exclusive product access",
       ],
       shipping: "50% off",
       shippingDetail: "50% off all shipping costs",
@@ -83,11 +82,9 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
       extras: [
         "Community access",
         "Governance voting",
-        "Early product access",
         "Member-only drops",
         "Priority support",
         "Exclusive product access",
-        "Daily SOL creator fee distribution",
       ],
       shipping: "Free",
       shippingDetail: "Free shipping on every order, worldwide",
@@ -137,7 +134,7 @@ export const MEMBERSHIP_BENEFIT_ROWS: MembershipBenefitRow[] = [
   {
     icon: Zap,
     label: "Early Product Access",
-    values: { 1: true, 2: true, 3: false },
+    values: { 1: false, 2: false, 3: true },
   },
   {
     icon: Sparkles,
@@ -147,12 +144,7 @@ export const MEMBERSHIP_BENEFIT_ROWS: MembershipBenefitRow[] = [
   {
     icon: Crown,
     label: "Exclusive Products",
-    values: { 1: true, 2: false, 3: false },
-  },
-  {
-    icon: Coins,
-    label: "Creator Fee Distribution",
-    values: { 1: true, 2: false, 3: false },
+    values: { 1: true, 2: true, 3: false },
   },
 ];
 
