@@ -54,7 +54,7 @@ function detectTierFromPricing(
   stakedTokens: number,
   tiers: { tierId: number; tokensNeeded: number }[],
 ): null | number {
-  // tiers are ordered 4→1 (entry→best); check from best first
+  // tiers are ordered 3→1 (entry→best); check from best first
   const sorted = [...tiers].sort((a, b) => a.tierId - b.tierId);
   for (const t of sorted) {
     if (stakedTokens >= t.tokensNeeded) return t.tierId;

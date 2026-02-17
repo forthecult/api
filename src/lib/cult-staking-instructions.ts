@@ -33,12 +33,45 @@ function anchorSighash(ixName: string): Buffer {
   return Buffer.from(h.slice(0, 8));
 }
 
+const INITIALIZE_IX_DISCRIMINATOR = anchorSighash("initialize");
 const STAKE_IX_DISCRIMINATOR = anchorSighash("stake");
 const UNSTAKE_IX_DISCRIMINATOR = anchorSighash("unstake");
 
 // ---------------------------------------------------------------------------
 // Instruction builders
 // ---------------------------------------------------------------------------
+
+export function buildInitializeInstruction(params: {
+  authority: PublicKeyClass;
+  mint: PublicKeyClass;
+  poolPda: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
+  vault: PublicKeyClass;
+}): TransactionInstruction {
+  const {
+    authority,
+    mint,
+    poolPda,
+    programId,
+    tokenProgram = TOKEN_PROGRAM_ID,
+    vault,
+  } = params;
+
+  return new TransactionInstruction({
+    data: Buffer.from(INITIALIZE_IX_DISCRIMINATOR),
+    keys: [
+      { isSigner: true, isWritable: true, pubkey: authority },
+      { isSigner: false, isWritable: true, pubkey: poolPda },
+      { isSigner: false, isWritable: false, pubkey: mint },
+      { isSigner: false, isWritable: true, pubkey: vault },
+      { isSigner: false, isWritable: false, pubkey: tokenProgram },
+      { isSigner: false, isWritable: false, pubkey: ASSOCIATED_TOKEN_PROGRAM_ID },
+      { isSigner: false, isWritable: false, pubkey: SystemProgram.programId },
+    ],
+    programId,
+  });
+}
 
 export function buildStakeInstruction(params: {
   amount: bigint;
@@ -129,6 +162,36 @@ export function buildStakeTransaction(params: {
   tx.recentBlockhash = params.blockhash;
   tx.lastValidBlockHeight = params.lastValidBlockHeight;
   tx.feePayer = owner;
+  tx.add(ix);
+  return tx;
+}
+
+export function buildInitializeTransaction(params: {
+  authority: PublicKeyClass;
+  blockhash: string;
+  lastValidBlockHeight: number;
+  mint: PublicKeyClass;
+  programId: PublicKeyClass;
+  tokenProgram?: PublicKeyClass;
+}): Transaction {
+  const [poolPda] = getPoolPda(params.programId);
+  const vault = getVaultAta(
+    params.mint,
+    poolPda,
+    params.tokenProgram ?? TOKEN_PROGRAM_ID,
+  );
+  const ix = buildInitializeInstruction({
+    authority: params.authority,
+    mint: params.mint,
+    poolPda,
+    programId: params.programId,
+    tokenProgram: params.tokenProgram,
+    vault,
+  });
+  const tx = new Transaction();
+  tx.recentBlockhash = params.blockhash;
+  tx.lastValidBlockHeight = params.lastValidBlockHeight;
+  tx.feePayer = params.authority;
   tx.add(ix);
   return tx;
 }

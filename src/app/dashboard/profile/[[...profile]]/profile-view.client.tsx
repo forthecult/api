@@ -6,7 +6,6 @@ import {
   ChevronRight,
   Crown,
   Shield,
-  Signal,
   Star,
   UserIcon,
 } from "lucide-react";
@@ -63,7 +62,6 @@ const TIER_VISUALS: Record<
   1: { accent: "text-chart-1", icon: Crown, name: "Tier 1" },
   2: { accent: "text-chart-4", icon: Star, name: "Tier 2" },
   3: { accent: "text-chart-2", icon: Shield, name: "Tier 3" },
-  4: { accent: "text-muted-foreground", icon: Signal, name: "Tier 4" },
 };
 
 interface MembershipInfo {
@@ -478,11 +476,11 @@ function detectTierFromPricing(
   tierCosts: { costUsd: number; tierId: number; tokensNeeded: number }[],
 ): MembershipInfo | null {
   if (!stakedTokens || stakedTokens <= 0 || !tokenPriceUsd) return null;
-  // Check from best tier (1) to worst (4)
+  // Check from best tier (1) to worst (3)
   const sorted = [...tierCosts].sort((a, b) => a.tierId - b.tierId);
   for (const t of sorted) {
     if (stakedTokens >= t.tokensNeeded) {
-      const visual = TIER_VISUALS[t.tierId];
+      const visual = TIER_VISUALS[t.tierId] ?? TIER_VISUALS[3];
       if (!visual) continue;
       return {
         accent: visual.accent,

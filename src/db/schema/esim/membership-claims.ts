@@ -29,7 +29,7 @@ export const membershipEsimClaimsTable = pgTable(
     /** Status of the claim. */
     status: text("status").notNull().default("claimed"), // "claimed" | "fulfilled" | "failed"
 
-    /** Membership tier at time of claim (1 = best, 4 = entry). */
+    /** Membership tier at time of claim (1 = best, 3 = entry). */
     tier: integer("tier").notNull(),
 
     userId: text("user_id")

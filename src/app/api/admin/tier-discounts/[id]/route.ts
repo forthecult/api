@@ -122,7 +122,7 @@ export async function PATCH(
     if (
       typeof body.memberTier === "number" &&
       body.memberTier >= 1 &&
-      body.memberTier <= 4
+      body.memberTier <= 3
     ) {
       updates.memberTier = body.memberTier;
     }

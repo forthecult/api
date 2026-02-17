@@ -1,5 +1,5 @@
 /**
- * Server-only: resolve CULT member tier (1–4) from a staking wallet.
+ * Server-only: resolve CULT member tier (1–3) from a staking wallet.
  * Returns null if staking is not configured, wallet has no stake, or market data is unavailable.
  */
 

@@ -23,7 +23,7 @@ export const memberTierDiscountTable = pgTable("member_tier_discount", {
   id: text("id").primaryKey(),
   /** Admin-facing label (e.g. "Tier 3: 20% off shipping"). */
   label: text("label"),
-  /** CULT member tier (1 = best, 4 = entry). */
+  /** CULT member tier (1 = best, 3 = entry). */
   memberTier: integer("member_tier").notNull(),
   /** For scope = "product". Null = not used. When scope = "product" and this is null, applies to eSIM items (productId starting with "esim_"). */
   productId: text("product_id").references(() => productsTable.id, {

@@ -1,7 +1,7 @@
 /**
  * CULT on-chain staking program helpers.
  *
- * Program: programs/cult_staking (Anchor 0.30).
+ * Program: programs/cult_staking (Anchor 0.32), at repo root next to webapp.
  * Pool PDA holds vault; user stake PDAs hold amount + lock metadata.
  *
  * Lock durations:

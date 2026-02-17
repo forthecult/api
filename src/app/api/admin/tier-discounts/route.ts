@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
     const memberTier =
       typeof body.memberTier === "number" &&
       body.memberTier >= 1 &&
-      body.memberTier <= 4
+      body.memberTier <= 3
         ? body.memberTier
         : 1;
     const scope: (typeof SCOPES)[number] = SCOPES.includes(

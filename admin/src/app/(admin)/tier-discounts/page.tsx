@@ -190,7 +190,7 @@ export default function AdminTierDiscountsPage() {
         <CardHeader>
           <CardTitle className="sr-only">Tier discounts</CardTitle>
           <p className="text-sm text-muted-foreground">
-            Discounts that apply by CULT member tier (1–4). Multiple discounts
+            Discounts that apply by CULT member tier (1–3). Multiple discounts
             per tier stack (e.g. 20% off shipping + 15% off eSIMs for Tier 3).
           </p>
         </CardHeader>

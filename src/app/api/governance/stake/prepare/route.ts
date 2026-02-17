@@ -20,6 +20,7 @@ import {
 import { buildStakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getActiveToken } from "~/lib/token-config";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 const bodySchema = z.object({
   amount: z.string().min(1),
@@ -70,6 +71,9 @@ export async function POST(request: Request) {
       await connection.getLatestBlockhash("confirmed");
     const mint = new PublicKey(token.mint);
     const owner = new PublicKey(wallet);
+    const tokenProgram = token.tokenProgram
+      ? new PublicKey(token.tokenProgram)
+      : TOKEN_PROGRAM_ID;
 
     const tx = buildStakeTransaction({
       amount: amountRaw,
@@ -79,6 +83,7 @@ export async function POST(request: Request) {
       mint,
       owner,
       programId,
+      tokenProgram,
     });
 
     const serialized = tx.serialize({

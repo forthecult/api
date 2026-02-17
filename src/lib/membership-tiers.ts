@@ -4,7 +4,6 @@ import {
   Coins,
   Crown,
   Shield,
-  Signal,
   Smartphone,
   Sparkles,
   Star,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Tier definitions (display order: Tier 4 → Tier 1)
+// Tier definitions (display order: Tier 3 → Tier 1)
 // ---------------------------------------------------------------------------
 
 export interface MembershipTier {
@@ -37,31 +36,15 @@ export interface MembershipTier {
 
 export const MEMBERSHIP_TIERS: MembershipTier[] = [
   {
-    accent: "text-muted-foreground",
-    accentBg: "bg-muted/60",
-    accentBorder: "border-border",
-    benefits: {
-      esim: "10% off",
-      esimDetail: "10% discount on all eSIM data plans",
-      extras: ["Community access", "Governance voting"],
-      shipping: "Standard rates",
-      shippingDetail: "Standard shipping rates apply",
-    },
-    icon: Signal,
-    id: 4,
-    name: "Tier 4",
-    tagline: "Start your journey",
-  },
-  {
     accent: "text-chart-2",
     accentBg: "bg-chart-2/10",
     accentBorder: "border-chart-2/30",
     benefits: {
-      esim: "15% off",
-      esimDetail: "15% discount on all eSIM data plans",
+      esim: "25% off",
+      esimDetail: "25% discount on all eSIM data plans",
       extras: ["Community access", "Governance voting", "Early product access"],
-      shipping: "20% off",
-      shippingDetail: "20% off all shipping costs",
+      shipping: "25% off",
+      shippingDetail: "25% off all shipping costs",
     },
     icon: Shield,
     id: 3,
@@ -73,8 +56,8 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     accentBg: "bg-chart-4/10",
     accentBorder: "border-chart-4/30",
     benefits: {
-      esim: "Free eSIM",
-      esimDetail: "One free eSIM card included with your membership",
+      esim: "50% off",
+      esimDetail: "50% discount on all eSIM data plans",
       extras: [
         "Community access",
         "Governance voting",
@@ -95,8 +78,8 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
     accentBg: "bg-chart-1/10",
     accentBorder: "border-chart-1/30",
     benefits: {
-      esim: "Premium eSIM",
-      esimDetail: "Premium free eSIM card with higher data allowance included",
+      esim: "Free eSIM",
+      esimDetail: "Free eSIM card included with your membership",
       extras: [
         "Community access",
         "Governance voting",
@@ -130,7 +113,7 @@ export const MEMBERSHIP_BENEFIT_ROWS: MembershipBenefitRow[] = [
   {
     icon: Smartphone,
     label: "eSIM Discount",
-    values: { 1: "Premium eSIM", 2: "Free eSIM", 3: "15% off", 4: "10% off" },
+    values: { 1: "Free eSIM", 2: "50% off", 3: "25% off" },
   },
   {
     icon: Truck,
@@ -138,39 +121,38 @@ export const MEMBERSHIP_BENEFIT_ROWS: MembershipBenefitRow[] = [
     values: {
       1: "Free",
       2: "50% off",
-      3: "20% off",
-      4: "Standard",
+      3: "25% off",
     },
   },
   {
     icon: Users,
     label: "Community Access",
-    values: { 1: true, 2: true, 3: true, 4: true },
+    values: { 1: true, 2: true, 3: true },
   },
   {
     icon: Shield,
     label: "Voting",
-    values: { 1: true, 2: true, 3: true, 4: true },
+    values: { 1: true, 2: true, 3: true },
   },
   {
     icon: Zap,
     label: "Early Product Access",
-    values: { 1: true, 2: true, 3: true, 4: false },
+    values: { 1: true, 2: true, 3: false },
   },
   {
     icon: Sparkles,
     label: "Member-Only Drops",
-    values: { 1: true, 2: true, 3: false, 4: false },
+    values: { 1: true, 2: true, 3: false },
   },
   {
     icon: Crown,
     label: "Exclusive Products",
-    values: { 1: true, 2: false, 3: false, 4: false },
+    values: { 1: true, 2: false, 3: false },
   },
   {
     icon: Coins,
     label: "Creator Fee Distribution",
-    values: { 1: true, 2: false, 3: false, 4: false },
+    values: { 1: true, 2: false, 3: false },
   },
 ];
 
@@ -196,7 +178,7 @@ export const MEMBERSHIP_FAQ = [
     q: "Can I upgrade my tier?",
   },
   {
-    a: "Tier 2 members receive a standard eSIM card. Tier 1 members receive a premium eSIM card with higher data allowances. Both are activated instantly and work in 200+ countries.",
+    a: "Tier 1 members get a free eSIM card and free shipping. Tier 2 gets 50% off eSIM and shipping; Tier 3 gets 25% off. eSIMs are activated instantly and work in 200+ countries.",
     q: "What eSIM card do I get?",
   },
   {

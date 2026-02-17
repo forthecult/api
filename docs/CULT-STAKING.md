@@ -1,60 +1,130 @@
 <!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
-<!-- If this repository is public, move this file outside the repo or add it to .gitigunore. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
 # CULT On-Chain Staking Program
 
 Program-based staking for the CULT token on Solana. Users stake CULT into a pool; staked balance counts toward **voting power** on the Stake & Vote page.
 
 ## Overview
 
-- **Program**: `programs/cult_staking` (Anchor 0.30)
+- **Program**: `programs/cult_staking` (Anchor 0.32). Layout follows [Anchor’s recommended structure](https://www.anchor-lang.com/docs/program-structure): `src/lib.rs` (entry point + account contexts), `src/constants.rs`, `src/error.rs`, `src/state/` (account state), `src/instructions/` (handlers).
+- **Token**: CULT is a **Token-2022** mint. The program uses the SPL Token interface (`token_interface`), so it works with both legacy Token and Token-2022. When initializing the pool and when building stake/unstake transactions, pass the **Token-2022** program ID (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`) and the corresponding mint/vault/ATA accounts. The app’s token config (`token-config.ts`) sets `tokenProgram` for CULT to Token-2022 so prepare routes and any scripts use the correct program.
 - **Instructions**: `initialize` (one-time pool setup), `stake`, `unstake`
-- **No lock period**: Users can unstake anytime.
+- **Lock periods**: 30 days or 12 months (tokens locked until expiry; top-up extends lock).
 - **Voting power**: App uses wallet CULT balance + staked balance from the program.
+
+**Rollout:** We’re testing staking with **SOLUNA** (live token) now. When the **CULT** token launches, switch the active token to CULT in `token-config.ts`, set `CULT_TOKEN_MINT_SOLANA`, then deploy (or use a new program) and run the initialize script for the CULT mint. Same code path supports both; CULT will use Token-2022.
 
 ## Build & Deploy
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) (1.75+)
-- [Anchor](https://www.anchor-lang.com/docs/installation) (`avm install 0.30.1 && avm use 0.30.1`)
-- Solana CLI (`solana config set --url mainnet-beta` or devnet)
+- [Rust](https://rustup.rs/) — **Solana 2.3’s `cargo-build-sbf` uses its own Rust 1.84**, which does not support edition 2024. The workspace therefore **patches** two crates that require it: **`constant_time_eq`** and **`blake3`** are vendored under `programs/vendor/` and wired via `[patch.crates-io]` in `programs/Cargo.toml`. With that, **`anchor build`** and **`cargo build-sbf`** work from **`programs`** without needing Rust 1.85 for the SBF step. Optional: `rust-toolchain.toml` in `programs/` and `cult_staking/` pins 1.85.0 for host builds (e.g. `cargo build`); keep the `vendor/` directory in the repo so the patch applies for everyone.
+- [Anchor](https://www.anchor-lang.com/docs/installation) 0.32.1 (matches `anchor-cli 0.32.1`):
+  ```bash
+  avm install 0.32.1 && avm use 0.32.1
+  ```
+  If installation fails with **"binary anchor already exists in destination"**, overwrite and retry:
+  ```bash
+  cargo install --git https://github.com/coral-xyz/anchor --tag v0.32.1 anchor-cli --force
+  ```
+  Then run `avm use 0.32.1` or use `anchor` directly.
+- **Solana CLI 2.3.x** (required for `anchor build`). Anchor 0.32 is not compatible with Solana 3.x — the SBF toolchain and paths differ, so `anchor build` will fail or produce no `target/deploy` on 3.0.15. Use 2.3.0:
+  ```bash
+  sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.0/install)"
+  ```
+  Then ensure the 2.3 install is active: `~/.local/share/solana/install/active_release` should point to the 2.3 install. Check with `solana --version` (should show 2.3.x). If you have 3.x and need to keep it for other work, use a separate terminal/env or switch with `solana-install init 2.3.0` (or the installer’s version-switch option) when building Anchor programs.
 
 ### Build
 
-From the `ftc/programs` directory (Anchor workspace lives here so the app root stays Node-only for deployment):
-
-```bash
-cd programs && anchor build
-```
-
-The program binary is in `programs/target/deploy/`. The program ID is in `programs/cult_staking/src/lib.rs` (`declare_id!(...)`). After first build, run `anchor keys list` to see the keypair; deploy with that keypair or replace the ID in the code and rebuild.
-
-### Deploy (e.g. devnet)
+**Where to build:** Run **`anchor build`** from **`programs`** (the directory that contains `Anchor.toml` and the workspace `Cargo.toml`). Do **not** run it from `programs/cult_staking` — Anchor must be run from the workspace root. From the repo root:
 
 ```bash
 cd programs
-solana config set --url devnet
-anchor deploy --provider.cluster devnet
+anchor build
 ```
 
-Note the **Program ID** from the deploy output (or from `declare_id!` if you used a custom keypair).
+A successful build creates **`programs/target/deploy/`** with:
+
+- `cult_staking.so` — the program binary
+- `cult_staking-keypair.json` — the program keypair (used for deploy and for `declare_id!`)
+
+After the first successful build, run `anchor keys list` (from `programs`) to see the program ID. You can deploy with that keypair or put its public key in `cult_staking/src/lib.rs` (`declare_id!(...)`) and rebuild.
+
+#### No `target/deploy` or `anchor keys list` does nothing
+
+If `anchor build` finishes with no output and **`target/deploy` is missing**, the Solana SBF build did not run or failed. Anchor does not create `target/deploy` until the program compiles successfully.
+
+1. **See the real error** — from `programs` run:
+   ```bash
+   cargo build-sbf --manifest-path cult_staking/Cargo.toml
+   ```
+   Any failure (e.g. missing platform-tools) will appear here. With the vendored `constant_time_eq` and `blake3` patches, the edition2024 error should be resolved.
+
+2. **Platform-tools "not a directory" or "Failed to install platform-tools"** — the Solana SBF toolchain cache is incomplete or corrupted. From `programs`:
+   ```bash
+   rm -rf ~/.cache/solana
+   cargo build-sbf --manifest-path cult_staking/Cargo.toml --install-only
+   ```
+   Then run `anchor build` again. If install still fails, reinstall the [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) (e.g. `sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.0/install)"`).
+
+3. **`anchor keys list`** only shows keys for programs that have been built at least once (keypairs live in `target/deploy/`). If `target/deploy` is empty, there are no keys to list.
+
+4. **"feature \`edition2024\` is required"** or **"that feature is not stabilized in this version of Cargo (1.84.0)"** — The workspace **patches** this by vendoring `constant_time_eq` and `blake3` under `programs/vendor/` (see `programs/Cargo.toml` `[patch.crates-io]`). Ensure the `vendor/` directory is present (do not delete it). Then from **`programs`** run `cargo build-sbf --manifest-path cult_staking/Cargo.toml` or `anchor build`. If you still see the error, run `cargo update -p blake3 -p constant_time_eq` from `programs` and try again.
+
+5. **Solana CLI 3.x (e.g. 3.0.15): `anchor build` doesn’t work** — Anchor 0.32 expects the Solana 2.3.x toolchain. On 3.x, `anchor build` may exit with no output, fail with platform-tools errors, or never create `target/deploy`. Fix: install and use **Solana 2.3.0** for building:
+   ```bash
+   sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.0/install)"
+   ```
+   Restart the terminal (or `source` your shell profile) so `solana` and `cargo build-sbf` point to the 2.3 install. Then from `programs` run `anchor build` again. To confirm: `solana --version` should show 2.3.x before building.
+
+### Deploy (e.g. devnet)
+
+From the repo root:
+
+```bash
+cd programs
+solana config set --url https://api.mainnet-beta.solana.com
+anchor deploy --provider.cluster mainnet
+```
+
+If the deploy output doesn’t show the **Program ID**, get it from the keypair (from `programs/`):
+
+```bash
+cd programs
+solana-keygen pubkey target/deploy/cult_staking-keypair.json
+```
+
+Or run `anchor keys list` (from `programs/`) to see all built program IDs. Put that ID in your app’s `CULT_STAKING_PROGRAM_ID` and in `declare_id!(...)` in `cult_staking/src/lib.rs` if you haven’t already. As of Anchor 0.32, the IDL is uploaded automatically on deploy; use `anchor deploy --no-idl` to skip IDL upload.
 
 ### Initialize the pool
 
-After deploy, someone must call `initialize` once with the CULT mint and payer. You can use Anchor CLI or a script:
+After deploy, call `initialize` **once**. The signer becomes the pool authority (can pause staking) and pays for the pool account and vault ATA. Use the script from the webapp:
 
-- **Payer**: Pays for the pool account and vault ATA creation.
-- **Mint**: CULT token mint (same as `CULT_TOKEN_MINT_SOLANA`).
-- **Token program**: Use `Token` (default) or `Token-2022` depending on your CULT mint.
+**1. Set env** (in `.env` or the shell):
 
-Example (pseudo):
+- **`CULT_STAKING_PROGRAM_ID`** — your deployed program ID (e.g. from `anchor keys list` or `declare_id!`).
+- **`CULT_TOKEN_MINT_SOLANA`** — CULT mint address (Token-2022).
+- **`SOLANA_RPC_URL`** (optional) — RPC URL; default is devnet. Use mainnet when you deploy to mainnet.
+
+**2. Authority (payer)** — either:
+
+- **Default:** No extra env. The script uses **`~/.config/solana/id.json`** (same as Anchor’s `wallet`). Ensure that keypair has enough SOL for rent + tx fees.
+- **Or** set **`STAKING_INIT_AUTHORITY_KEYPAIR`** to the base58 secret key or JSON array of the wallet that should be the authority.
+
+**3. Run from the webapp directory:**
 
 ```bash
-# Using anchor run or a custom script that invokes:
-# initialize({ mint: CULT_MINT, ... })
+cd webapp
+bun run scripts/initialize-staking-pool.ts
 ```
 
-The app does not call `initialize`; it is a one-time admin step.
+To dry-run (build and log the tx without sending):
+
+```bash
+DRY_RUN=true bun run scripts/initialize-staking-pool.ts
+```
+
+The script uses Token-2022 for the vault ATA. After it succeeds, the pool is ready for stake/unstake. The app does not call `initialize`; this is a one-time admin step.
 
 ## App configuration
 
@@ -97,8 +167,8 @@ Create the table first: `bun run db:push` (or run your migrations).
 
 ## Program accounts
 
-- **StakePool** (PDA `["pool"]`): `mint`, `vault` (ATA of pool PDA for mint), `bump`.
-- **UserStake** (PDA `["stake", pool, user]`): `owner`, `amount` (raw u64).
+- **StakePool** (PDA `["pool"]`): `authority`, `mint`, `vault` (ATA of pool PDA for mint), `bump`, `total_stakers`, `total_staked`.
+- **UserStake** (PDA `["stake", pool, user]`): `owner`, `amount` (raw u64), `staked_at`, `lock_duration`, `locked_until`.
 - **Vault**: ATA(mint, pool_pda) — holds all staked CULT; pool PDA is authority so the program can sign for unstake.
 
 ## Auto-distribution of SOL to stakers
@@ -134,7 +204,7 @@ SOL (or other rewards) can be sent to stakers proportionally using a **cron job*
    Example: weekly on Sunday at midnight:
 
    ```bash
-   0 0 * * 0 cd /path/to/ftc && REWARD_SOL_TOTAL=0.5 STAKING_REWARDS_WALLET_SECRET_KEY=... CULT_STAKING_PROGRAM_ID=... bun run scripts/staking-rewards-distribute.ts
+   0 0 * * 0 cd /path/to/webapp && REWARD_SOL_TOTAL=0.5 STAKING_REWARDS_WALLET_SECRET_KEY=... CULT_STAKING_PROGRAM_ID=... bun run scripts/staking-rewards-distribute.ts
    ```
 
    Use your preferred way to inject env (e.g. a `.env` file only on the server, or your cron env).

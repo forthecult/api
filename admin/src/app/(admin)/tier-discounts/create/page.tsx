@@ -210,9 +210,9 @@ export default function AdminTierDiscountCreatePage() {
                   onChange={(e) => setMemberTier(Number(e.target.value))}
                   value={memberTier}
                 >
-                  {[1, 2, 3, 4].map((t) => (
+                  {[1, 2, 3].map((t) => (
                     <option key={t} value={t}>
-                      Tier {t} {t === 1 ? "(best)" : t === 4 ? "(entry)" : ""}
+                      Tier {t} {t === 1 ? "(best)" : t === 3 ? "(entry)" : ""}
                     </option>
                   ))}
                 </select>

@@ -8,12 +8,12 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { getStakingProgramId } from "~/lib/cult-staking";
 import { buildUnstakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
+import { getActiveToken } from "~/lib/token-config";
 import { getCultMintSolana } from "~/lib/token-gate";
-
-const CULT_DECIMALS = 6;
 
 const bodySchema = z.object({
   amount: z.string().min(1),
@@ -49,7 +49,10 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const amountRaw = BigInt(Math.floor(amountNum * 10 ** CULT_DECIMALS));
+  const token = getActiveToken();
+  const amountRaw = BigInt(
+    Math.floor(amountNum * 10 ** token.decimals),
+  );
   if (amountRaw <= 0n) {
     return NextResponse.json({ error: "Amount too small" }, { status: 400 });
   }
@@ -60,6 +63,9 @@ export async function POST(request: Request) {
       await connection.getLatestBlockhash("confirmed");
     const mint = new PublicKey(getCultMintSolana());
     const owner = new PublicKey(wallet);
+    const tokenProgram = token.tokenProgram
+      ? new PublicKey(token.tokenProgram)
+      : TOKEN_PROGRAM_ID;
 
     const tx = buildUnstakeTransaction({
       amount: amountRaw,
@@ -68,6 +74,7 @@ export async function POST(request: Request) {
       mint,
       owner,
       programId,
+      tokenProgram,
     });
 
     const serialized = tx.serialize({

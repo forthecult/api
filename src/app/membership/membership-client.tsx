@@ -150,8 +150,8 @@ export function MembershipClient() {
       });
   }, [wallet]);
 
-  // Derive pricing for the selected tier
-  const tokenSymbol = pricingData?.token.symbol ?? "TOKEN";
+  // Derive pricing for the selected tier (membership uses CULT)
+  const tokenSymbol = pricingData?.token.symbol ?? "CULT";
   const tokenPrice = pricingData?.token.priceUsd ?? 0;
   const marketCap = pricingData?.market.marketCapUsd ?? 0;
   const pricingBracket = pricingData?.pricing.bracket ?? "";
@@ -1095,8 +1095,8 @@ export function MembershipClient() {
                   Stay connected everywhere
                 </h2>
                 <p className="mt-4 text-muted-foreground">
-                  Every membership tier includes eSIM benefits. From 10% off at
-                  Tier 4 to a premium free eSIM card at Tier 1—stay connected in
+                  Every membership tier includes eSIM benefits. From 25% off at
+                  Tier 3 to free eSIM and free shipping at Tier 1—stay connected in
                   200+ countries without hunting for local SIM cards.
                 </p>
                 <ul className="mt-6 space-y-3">

@@ -1401,7 +1401,7 @@ export function CryptoPayClient({
                         p-8 text-center text-sm text-muted-foreground
                       `}
                       >
-                        Loading SOLUNA price from pump.fun…
+                        Loading SOLUNA price from soluna…
                       </div>
                     ) : token === "seeker" && seekerSolPerToken === null ? (
                       <div

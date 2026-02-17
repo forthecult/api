@@ -33,7 +33,7 @@ export async function GET() {
         status: false,
         token: {
           mint: token.mint,
-          symbol: token.symbol,
+          symbol: "CULT",
         },
       },
       { status: 503 },
@@ -89,7 +89,7 @@ export async function GET() {
         decimals: token.decimals,
         mint: token.mint,
         priceUsd: market.priceUsd,
-        symbol: token.symbol,
+        symbol: pricing.tokenSymbol,
       },
     },
     status: true,

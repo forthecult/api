@@ -6,13 +6,17 @@
  *   1. Change ACTIVE_TOKEN below to "CULT"
  *   2. Populate the CULT pricing tiers in membership-pricing.ts
  *   3. Set CULT_TOKEN_MINT_SOLANA env var (or update the fallback in token-gate.ts)
- *   4. Redeploy the staking program initialized with the CULT mint
+ *   4. Redeploy the staking program and initialize the pool with the CULT mint and Token-2022 program (CULT is already set as Token-2022 here).
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
 // ---------------------------------------------------------------------------
 // Token definitions
 // ---------------------------------------------------------------------------
+
+/** Token-2022 program ID (base58). Use when the mint is a Token-2022 mint. */
+export const TOKEN_2022_PROGRAM_ID_BASE58 =
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb";
 
 export interface TokenDef {
   /** Number of on-chain decimals. */
@@ -25,6 +29,11 @@ export interface TokenDef {
   name: string;
   /** Ticker symbol (displayed in UI). */
   symbol: string;
+  /**
+   * Token program (base58). Omit for legacy SPL Token; set to TOKEN_2022_PROGRAM_ID_BASE58
+   * for Token-2022 mints. Used by staking and any ATAs/transfers for this token.
+   */
+  tokenProgram?: string;
 }
 
 const SOLUNA: TokenDef = {
@@ -38,9 +47,10 @@ const SOLUNA: TokenDef = {
 const CULT: TokenDef = {
   decimals: 6,
   key: "CULT",
-  mint: "", // Set when launched on pump.fun
+  mint: "", // Set when launched
   name: "CULT",
   symbol: "CULT",
+  tokenProgram: TOKEN_2022_PROGRAM_ID_BASE58, // CULT is Token-2022
 };
 
 // ---------------------------------------------------------------------------
@@ -82,4 +92,9 @@ export function getActiveTokenMint(): string {
 /** Shorthand: active token symbol. */
 export function getActiveTokenSymbol(): string {
   return getActiveToken().symbol;
+}
+
+/** Shorthand: active token program (base58). Undefined = legacy SPL Token. */
+export function getActiveTokenProgramBase58(): string | undefined {
+  return getActiveToken().tokenProgram;
 }

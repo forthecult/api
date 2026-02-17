@@ -26,7 +26,7 @@ export const membershipTierHistoryTable = pgTable(
     /** User ID when this wallet was linked (from user_wallet). Enables query by customer. */
     userId: text("user_id").references(() => userTable.id, { onDelete: "set null" }),
 
-    /** Tier 1–4 or null if no stake / below tier 4. */
+    /** Tier 1–3 or null if no stake / below tier 3. */
     tier: integer("tier"),
     /** Staked token amount (raw, with decimals). */
     stakedAmountRaw: bigint("staked_amount_raw", { mode: "number" }).notNull().default(0),
