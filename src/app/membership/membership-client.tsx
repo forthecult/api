@@ -8,6 +8,7 @@ import {
   Globe,
   Minus,
   Shield,
+  Signal,
   Smartphone,
   Sparkles,
   Star,
@@ -16,6 +17,7 @@ import {
   Truck,
   Users,
   Wallet,
+  Wifi,
   Zap,
 } from "lucide-react";
 import Link from "next/link";
@@ -103,6 +105,12 @@ export function MembershipClient() {
   >([]);
   const [stakerClaimPackagesLoading, setStakerClaimPackagesLoading] =
     useState(false);
+  const [stakerClaimPackageType, setStakerClaimPackageType] = useState<
+    "DATA-ONLY" | "DATA-VOICE-SMS"
+  >("DATA-ONLY");
+  const [stakerClaimCountryId, setStakerClaimCountryId] = useState<string>("");
+  const [esimCountries, setEsimCountries] = useState<{ id: number; name: string }[]>([]);
+  const [esimCountriesLoading, setEsimCountriesLoading] = useState(false);
 
   // Live pricing state
   const [pricingData, setPricingData] = useState<
@@ -205,6 +213,23 @@ export function MembershipClient() {
     await stake(stakeAmount.toString(), lockDuration);
   }, [stake, stakeAmount, lockDuration]);
 
+  // Fetch countries when eligible to claim (for country picker)
+  useEffect(() => {
+    if (!claimEligible && !claimAlreadyClaimed) return;
+    setEsimCountriesLoading(true);
+    fetch("/api/esim/countries")
+      .then((r) => r.json())
+      .then((data: { data?: { id: number; name: string }[]; status: boolean }) => {
+        if (data.status && Array.isArray(data.data)) {
+          setEsimCountries(
+            data.data.slice().sort((a, b) => a.name.localeCompare(b.name)),
+          );
+        }
+      })
+      .catch(() => setEsimCountries([]))
+      .finally(() => setEsimCountriesLoading(false));
+  }, [claimEligible, claimAlreadyClaimed]);
+
   // Fetch 30-day eSIM packages (under $25) when eligible to claim
   useEffect(() => {
     if (!wallet || !claimEligible || claimAlreadyClaimed) {
@@ -212,7 +237,10 @@ export function MembershipClient() {
       return;
     }
     setStakerClaimPackagesLoading(true);
-    fetch("/api/esim/packages/staker-claim")
+    const params = new URLSearchParams();
+    params.set("package_type", stakerClaimPackageType);
+    if (stakerClaimCountryId) params.set("country", stakerClaimCountryId);
+    fetch(`/api/esim/packages/staker-claim?${params.toString()}`)
       .then((r) => r.json())
       .then(
         (data: {
@@ -235,7 +263,13 @@ export function MembershipClient() {
       )
       .catch(() => setStakerClaimPackages([]))
       .finally(() => setStakerClaimPackagesLoading(false));
-  }, [wallet, claimEligible, claimAlreadyClaimed]);
+  }, [
+    wallet,
+    claimEligible,
+    claimAlreadyClaimed,
+    stakerClaimPackageType,
+    stakerClaimCountryId,
+  ]);
 
   // ------ eSIM Claim handler (one package per staking period) ------
   const handleClaimEsim = useCallback(
@@ -1665,51 +1699,112 @@ export function MembershipClient() {
                         <ArrowRight className="h-4 w-4" />
                       </Link>
                     </Button>
-                  ) : stakerClaimPackagesLoading ? (
-                    <p className="text-muted-foreground">
-                      Loading eSIM plans…
-                    </p>
-                  ) : stakerClaimPackages.length > 0 ? (
-                    <>
-                      <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {stakerClaimPackages.map((pkg) => (
-                          <Card
-                            key={pkg.id}
-                            className="flex flex-col border border-border bg-card"
-                          >
-                            <CardHeader className="pb-2">
-                              <CardTitle className="font-display text-lg">
-                                {formatEsimPackageName(pkg.name)}
-                              </CardTitle>
-                              <CardDescription>
-                                {pkg.data_quantity} {pkg.data_unit} · 30 days
-                                {pkg.has5g ? " · 5G" : ""}
-                              </CardDescription>
-                            </CardHeader>
-                            <CardContent className="mt-auto pt-0">
-                              <Button
-                                className="w-full gap-2"
-                                disabled={claimPending}
-                                onClick={() => handleClaimEsim(pkg.id)}
-                                size="sm"
-                              >
-                                <Smartphone className="h-4 w-4" />
-                                Claim
-                              </Button>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                      <p className="text-center text-sm text-muted-foreground">
-                        One claim per staking period. After claiming, you can
-                        activate your eSIM in your dashboard.
-                      </p>
-                    </>
                   ) : (
-                    <p className="text-center text-sm text-muted-foreground">
-                      No 30-day plans available right now. Try again later or
-                      visit the eSIM store.
-                    </p>
+                    <>
+                      <div className="flex w-full flex-wrap items-center justify-center gap-4">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            Plan:
+                          </span>
+                          <Button
+                            onClick={() => setStakerClaimPackageType("DATA-ONLY")}
+                            size="sm"
+                            variant={
+                              stakerClaimPackageType === "DATA-ONLY"
+                                ? "default"
+                                : "outline"
+                            }
+                          >
+                            <Wifi className="mr-1 h-4 w-4" />
+                            Data only
+                          </Button>
+                          <Button
+                            onClick={() =>
+                              setStakerClaimPackageType("DATA-VOICE-SMS")
+                            }
+                            size="sm"
+                            variant={
+                              stakerClaimPackageType === "DATA-VOICE-SMS"
+                                ? "default"
+                                : "outline"
+                            }
+                          >
+                            <Signal className="mr-1 h-4 w-4" />
+                            Data + minutes
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            Country:
+                          </span>
+                          <select
+                            aria-label="Choose country for eSIM"
+                            className={cn(
+                              "min-w-[180px] rounded-md border border-input bg-background px-3 py-2 text-sm",
+                            )}
+                            disabled={esimCountriesLoading}
+                            value={stakerClaimCountryId}
+                            onChange={(e) =>
+                              setStakerClaimCountryId(e.target.value)
+                            }
+                          >
+                            <option value="">Global</option>
+                            {esimCountries.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      {stakerClaimPackagesLoading ? (
+                        <p className="text-muted-foreground">
+                          Loading eSIM plans…
+                        </p>
+                      ) : stakerClaimPackages.length > 0 ? (
+                        <>
+                          <div className="grid w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            {stakerClaimPackages.map((pkg) => (
+                              <Card
+                                key={pkg.id}
+                                className="flex flex-col border border-border bg-card"
+                              >
+                                <CardHeader className="pb-2">
+                                  <CardTitle className="font-display text-lg">
+                                    {formatEsimPackageName(pkg.name)}
+                                  </CardTitle>
+                                  <CardDescription>
+                                    {pkg.data_quantity} {pkg.data_unit} · 30
+                                    days
+                                    {pkg.has5g ? " · 5G" : ""}
+                                  </CardDescription>
+                                </CardHeader>
+                                <CardContent className="mt-auto pt-0">
+                                  <Button
+                                    className="w-full gap-2"
+                                    disabled={claimPending}
+                                    onClick={() => handleClaimEsim(pkg.id)}
+                                    size="sm"
+                                  >
+                                    <Smartphone className="h-4 w-4" />
+                                    Claim
+                                  </Button>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                          <p className="text-center text-sm text-muted-foreground">
+                            One claim per staking period. After claiming, you can
+                            activate your eSIM in your dashboard.
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-center text-sm text-muted-foreground">
+                          No 30-day plans under $25 for this selection. Try
+                          another country or plan type, or visit the eSIM store.
+                        </p>
+                      )}
+                    </>
                   )}
                 </CardContent>
               </Card>

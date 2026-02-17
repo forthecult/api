@@ -2,22 +2,35 @@
  * GET /api/esim/packages/staker-claim
  *
  * Returns 30-day eSIM packages under $25 (after markup) for staker claim.
- * Intended for members who have staked: they may claim one of these without payment.
+ * Query: country (optional, id) = filter by country; package_type = DATA-ONLY | DATA-VOICE-SMS.
  * Response omits price (do not display to user).
  */
 
+import type { NextRequest } from "next/server";
+
 import {
   checkPackageAvailability,
+  getEsimCountryPackages,
   getEsimGlobalPackages,
 } from "~/lib/esim-api";
 
 const MAX_PRICE_USD = 25;
 const VALIDITY_DAYS = 30;
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const countryIdParam = searchParams.get("country")?.trim();
+    const packageType = (searchParams.get("package_type") as
+      | "DATA-ONLY"
+      | "DATA-VOICE-SMS"
+      | null) ?? "DATA-ONLY";
+
     const markup = Number(process.env.ESIM_MARKUP_PERCENT) || 30;
-    const result = await getEsimGlobalPackages("DATA-ONLY");
+
+    const result = countryIdParam
+      ? await getEsimCountryPackages(Number(countryIdParam), packageType, 1)
+      : await getEsimGlobalPackages(packageType);
 
     const enriched = await Promise.all(
       result.data.map(async (pkg) => {
