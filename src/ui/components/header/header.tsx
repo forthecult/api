@@ -489,7 +489,7 @@ export function Header({ isAdmin: isAdminProp, showAuth = true }: HeaderProps) {
                 <span
                   className={cn(
                     `
-                      font-heading text-lg font-bold tracking-[0.2em]
+                      font-heading text-base font-medium tracking-[0.2em]
                       text-[#1A1611] uppercase
                       dark:text-[#F5F1EB]
                     `,
