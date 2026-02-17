@@ -1,5 +1,5 @@
 <!-- INTERNAL — DO NOT PUBLISH. Contains sensitive configuration details. -->
-<!-- If this repository is public, move this file outside the repo or add it to .gitignore. -->
+<!-- If this repository is public, move this file outside the repo or add it to .gitigunore. -->
 # CULT On-Chain Staking Program
 
 Program-based staking for the CULT token on Solana. Users stake CULT into a pool; staked balance counts toward **voting power** on the Stake & Vote page.
@@ -65,6 +65,29 @@ Set in `.env`:
 - **`CULT_TOKEN_MINT_SOLANA`**: CULT mint (must match the mint used when initializing the pool).
 
 If `CULT_STAKING_PROGRAM_ID` is not set, the app still works: voting power = wallet balance only, and the stake/unstake prepare APIs return 503.
+
+## Tier history (daily snapshots)
+
+Tier and staked amount are recorded daily per linked Solana wallet in `membership_tier_history`. This powers the **Tier history** section in admin (customer detail → Membership & staking), e.g. “Tier 3 for 3 months, then Tier 2”.
+
+### Snapshot script
+
+Run once per day (e.g. cron at 00:05 UTC):
+
+```bash
+cd webapp && bun run scripts/membership-tier-history-snapshot.ts
+```
+
+- **Required env**: `DATABASE_URL`. Optional: `CULT_STAKING_PROGRAM_ID` (if unset, rows get tier=null, staked=0).
+- **Optional**: `SNAPSHOT_DATE=YYYY-MM-DD` (default: today UTC), `DRY_RUN=true` (log only).
+
+Cron example:
+
+```bash
+5 0 * * * cd /path/to/webapp && bun run scripts/membership-tier-history-snapshot.ts
+```
+
+Create the table first: `bun run db:push` (or run your migrations).
 
 ## Flow
 

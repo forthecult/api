@@ -1,6 +1,15 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Eye, Plus, Search } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Eye,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -124,15 +133,18 @@ function StatusPill({ status }: { status: string }) {
   );
 }
 
+const SORTABLE_KEYS = ["date", "items", "total"] as const;
+
 const COLUMNS = [
+  { key: "select", label: "" },
   { key: "orderId", label: "Order ID" },
-  { key: "date", label: "Date" },
+  { key: "date", label: "Date", sortable: true },
   { key: "customer", label: "Customer" },
   { key: "channel", label: "Channel" },
-  { key: "total", label: "Total" },
+  { key: "total", label: "Total", sortable: true },
   { key: "paymentStatus", label: "Payment status" },
   { key: "fulfillmentStatus", label: "Fulfillment status" },
-  { key: "items", label: "Items" },
+  { key: "items", label: "Items", sortable: true },
   { key: "tags", label: "Tags" },
   { key: "action", label: "Action" },
 ] as const;
@@ -172,6 +184,8 @@ export default function AdminOrdersPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [paymentFilter, setPaymentFilter] = useState("");
   const [fulfillmentFilter, setFulfillmentFilter] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -207,6 +221,57 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     void fetchOrders();
   }, [fetchOrders]);
+
+  const handleSortColumn = useCallback((key: string) => {
+    if (!SORTABLE_KEYS.includes(key as (typeof SORTABLE_KEYS)[number])) return;
+    setSortBy(key);
+    setSortOrder((prev) => (prev === "desc" ? "asc" : "desc"));
+    setPage(1);
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    if (!data?.items.length) return;
+    const allSelected = data.items.every((o) => selectedIds.has(o.id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(data.items.map((o) => o.id)));
+    }
+  }, [data?.items, selectedIds]);
+
+  const handleBulkDelete = useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/orders`, {
+        credentials: "include",
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `HTTP ${res.status}`);
+      }
+      setSelectedIds(new Set());
+      await fetchOrders();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete selected orders",
+      );
+    } finally {
+      setDeleting(false);
+    }
+  }, [selectedIds, fetchOrders]);
 
   if (error) {
     return (
@@ -307,7 +372,24 @@ export default function AdminOrdersPage() {
               </Button>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+            {selectedIds.size > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  {selectedIds.size} selected
+                </span>
+                <Button
+                  disabled={deleting}
+                  onClick={() => void handleBulkDelete()}
+                  size="sm"
+                  type="button"
+                  variant="destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete selected
+                </Button>
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground">
                 Sort:
@@ -426,11 +508,43 @@ export default function AdminOrdersPage() {
                             "p-4 font-medium whitespace-nowrap",
                             col.key === "total" && "text-right",
                             col.key === "action" && "text-right",
+                            col.key === "select" && "w-10",
                           )}
                           key={col.key}
                           scope="col"
                         >
-                          {col.label}
+                          {col.key === "select" ? (
+                            <input
+                              aria-label="Select all on page"
+                              checked={
+                                data.items.length > 0 &&
+                                data.items.every((o) => selectedIds.has(o.id))
+                              }
+                              className="h-4 w-4 rounded border-input"
+                              onChange={toggleSelectAll}
+                              type="checkbox"
+                            />
+                          ) : "sortable" in col && col.sortable ? (
+                            <button
+                              className={cn(
+                                "inline-flex items-center gap-1 transition-colors hover:text-foreground",
+                                col.key === "total" && "ml-auto",
+                              )}
+                              onClick={() => handleSortColumn(col.key)}
+                              type="button"
+                            >
+                              {col.label}
+                              {sortBy === col.key ? (
+                                sortOrder === "desc" ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronUp className="h-4 w-4" />
+                                )
+                              ) : null}
+                            </button>
+                          ) : (
+                            col.label
+                          )}
                         </th>
                       ))}
                     </tr>
@@ -444,6 +558,15 @@ export default function AdminOrdersPage() {
                       `}
                         key={order.id}
                       >
+                        <td className="w-10 p-4">
+                          <input
+                            aria-label={`Select order ${order.id}`}
+                            checked={selectedIds.has(order.id)}
+                            className="h-4 w-4 rounded border-input"
+                            onChange={() => toggleSelect(order.id)}
+                            type="checkbox"
+                          />
+                        </td>
                         <td className="p-4 font-mono text-xs">
                           <Link
                             className={`

@@ -322,6 +322,45 @@ export async function GET(request: NextRequest) {
   }
 }
 
+const BULK_DELETE_MAX_IDS = 100;
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authResult = await getAdminAuth(request);
+    if (!authResult?.ok) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = (await request.json()) as { ids?: unknown };
+    const rawIds = Array.isArray(body.ids) ? body.ids : [];
+    const ids = rawIds
+      .filter((id): id is string => typeof id === "string" && id.length > 0)
+      .slice(0, BULK_DELETE_MAX_IDS);
+
+    if (ids.length === 0) {
+      return NextResponse.json(
+        { error: "Provide a non-empty array of order ids" },
+        { status: 400 },
+      );
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(orderItemsTable)
+        .where(inArray(orderItemsTable.orderId, ids));
+      await tx.delete(ordersTable).where(inArray(ordersTable.id, ids));
+    });
+
+    return NextResponse.json({ deleted: ids.length });
+  } catch (err) {
+    console.error("Admin orders bulk delete error:", err);
+    return NextResponse.json(
+      { error: "Failed to delete orders" },
+      { status: 500 },
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const authResult = await getAdminAuth(request);

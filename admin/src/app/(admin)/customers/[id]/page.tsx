@@ -4,6 +4,7 @@ import {
   Bell,
   ChevronLeft,
   Copy,
+  Crown,
   KeyRound,
   Link2,
   MapPin,
@@ -160,6 +161,30 @@ export default function AdminCustomerDetailPage() {
   // Orders
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
+
+  // Membership (tier + staking from on-chain + tier history from snapshots)
+  const [membership, setMembership] = useState<{
+    bestTier: null | number;
+    history: {
+      periods: { startDate: string; endDate: string; tier: number }[];
+      rows: { date: string; tier: null | number; stakedAmountRaw: string; wallet: string }[];
+    };
+    memberSince: null | string;
+    tokenSymbol: string;
+    wallets: {
+      address: string;
+      stakedBalance: string;
+      tier: null | number;
+      lock: null | {
+        durationLabel: string;
+        isLocked: boolean;
+        unlocksAt: string;
+        secondsRemaining: number;
+        stakedAt: string;
+      };
+    }[];
+  } | null>(null);
+  const [membershipLoading, setMembershipLoading] = useState(false);
 
   // Comments
   const [comments, setComments] = useState<CustomerComment[]>([]);
@@ -374,12 +399,51 @@ export default function AdminCustomerDetailPage() {
     }
   }, [id]);
 
+  const fetchMembership = useCallback(async () => {
+    if (!id) return;
+    setMembershipLoading(true);
+    try {
+      const res = await fetch(
+        `${API_BASE}/api/admin/customers/${id}/membership`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error("Failed to load membership");
+      const data = (await res.json()) as {
+        bestTier: null | number;
+        history: {
+          periods: { startDate: string; endDate: string; tier: number }[];
+          rows: { date: string; tier: null | number; stakedAmountRaw: string; wallet: string }[];
+        };
+        memberSince: null | string;
+        tokenSymbol: string;
+        wallets: {
+          address: string;
+          stakedBalance: string;
+          tier: null | number;
+          lock: null | {
+            durationLabel: string;
+            isLocked: boolean;
+            unlocksAt: string;
+            secondsRemaining: number;
+            stakedAt: string;
+          };
+        }[];
+      };
+      setMembership(data);
+    } catch {
+      setMembership(null);
+    } finally {
+      setMembershipLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     if (customer) {
       void fetchOrders();
       void fetchComments();
+      void fetchMembership();
     }
-  }, [customer, fetchOrders, fetchComments]);
+  }, [customer, fetchOrders, fetchComments, fetchMembership]);
 
   const handleSaveProfile = useCallback(async () => {
     if (!id) return;
@@ -1233,6 +1297,227 @@ export default function AdminCustomerDetailPage() {
               {resetLoading ? "Sending…" : "Reset password"}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Membership & staking (on-chain tier and lock) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Crown aria-hidden className="h-5 w-5" />
+            Membership & staking
+          </CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Tier and lock from on-chain stake. Tier history is recorded daily
+            and shown below.
+          </p>
+        </CardHeader>
+        <CardContent>
+          {membershipLoading ? (
+            <p className="text-sm text-muted-foreground">Loading…</p>
+          ) : membership ? (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span
+                    className={`
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
+                  >
+                    Current tier
+                  </span>
+                  <p className="mt-1 text-sm font-medium">
+                    {membership.bestTier != null
+                      ? `Tier ${membership.bestTier}`
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <span
+                    className={`
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
+                  >
+                    Member since
+                  </span>
+                  <p className="mt-1 text-sm">
+                    {membership.memberSince
+                      ? new Date(
+                          membership.memberSince,
+                        ).toLocaleDateString(undefined, {
+                          dateStyle: "medium",
+                        })
+                      : "—"}
+                  </p>
+                </div>
+              </div>
+              {membership.wallets.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No Solana wallet linked. Customer can link a wallet in their
+                  account to stake and get a tier.
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <span
+                    className={`
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
+                  >
+                    Linked Solana wallet(s)
+                  </span>
+                  <ul className="space-y-3 rounded-lg border p-3">
+                    {membership.wallets.map((w) => (
+                      <li
+                        key={w.address}
+                        className="flex flex-col gap-1.5 text-sm"
+                      >
+                        <span className="font-mono text-xs text-muted-foreground">
+                          {w.address.slice(0, 4)}…{w.address.slice(-4)}
+                        </span>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <span>
+                            Staked:{" "}
+                            <strong>
+                              {w.stakedBalance} {membership.tokenSymbol}
+                            </strong>
+                            {w.tier != null && (
+                              <span className="text-muted-foreground">
+                                {" "}
+                                → Tier {w.tier}
+                              </span>
+                            )}
+                          </span>
+                          {w.lock ? (
+                            <span>
+                              Lock: {w.lock.durationLabel}
+                              {w.lock.isLocked && (
+                                <>
+                                  {" "}
+                                  · Unlocks{" "}
+                                  {new Date(
+                                    w.lock.unlocksAt,
+                                  ).toLocaleDateString(undefined, {
+                                    dateStyle: "short",
+                                  })}
+                                </>
+                              )}
+                              {" · "}
+                              Staked at{" "}
+                              {new Date(
+                                w.lock.stakedAt,
+                              ).toLocaleDateString(undefined, {
+                                dateStyle: "short",
+                              })}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              No active stake
+                            </span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {/* Tier history (from daily snapshots) */}
+              {membership.history && (
+                <div className="space-y-3 border-t pt-4">
+                  <span
+                    className={`
+                    text-xs font-medium tracking-wider text-muted-foreground
+                    uppercase
+                  `}
+                  >
+                    Tier history
+                  </span>
+                  {membership.history.periods.length > 0 ? (
+                    <ul className="space-y-1.5 text-sm">
+                      {membership.history.periods.map((p, i) => (
+                        <li key={i}>
+                          <strong>Tier {p.tier}</strong>
+                          {" — "}
+                          {new Date(
+                            p.startDate,
+                          ).toLocaleDateString(undefined, {
+                            dateStyle: "medium",
+                          })}
+                          {p.startDate !== p.endDate && (
+                            <>
+                              {" → "}
+                              {new Date(
+                                p.endDate,
+                              ).toLocaleDateString(undefined, {
+                                dateStyle: "medium",
+                              })}
+                            </>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No tier history yet. Run the daily snapshot job to
+                      record history.
+                    </p>
+                  )}
+                    {membership.history.rows.length > 0 && (
+                      <details className="text-sm">
+                        <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                          {membership.history.rows.length} daily snapshot(s)
+                        </summary>
+                        <div className="mt-2 max-h-48 overflow-auto rounded border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Wallet</TableHead>
+                                <TableHead>Tier</TableHead>
+                                <TableHead className="text-right">
+                                  Staked (raw)
+                                </TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {membership.history.rows
+                                .slice(0, 50)
+                                .map((r, i) => (
+                                  <TableRow key={i}>
+                                    <TableCell>{r.date}</TableCell>
+                                    <TableCell className="font-mono text-xs">
+                                      {r.wallet.slice(0, 4)}…{r.wallet.slice(-4)}
+                                    </TableCell>
+                                    <TableCell>
+                                      {r.tier != null ? `Tier ${r.tier}` : "—"}
+                                    </TableCell>
+                                    <TableCell className="text-right font-mono text-xs">
+                                      {r.stakedAmountRaw}
+                                    </TableCell>
+                                  </TableRow>
+                                ))}
+                            </TableBody>
+                          </Table>
+                          {membership.history.rows.length > 50 && (
+                            <p className="border-t px-2 py-1 text-xs text-muted-foreground">
+                              Showing first 50 of{" "}
+                              {membership.history.rows.length}
+                            </p>
+                          )}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Could not load membership. Staking may be disabled or RPC
+              unavailable.
+            </p>
+          )}
         </CardContent>
       </Card>
 

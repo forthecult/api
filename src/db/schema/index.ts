@@ -36,6 +36,7 @@ export * from "./member-tier-discount/relations";
 
 export * from "./member-tier-discount/tables";
 export * from "./member-tier-discount/types";
+export * from "./membership-tier-history/tables";
 export * from "./notifications/relations";
 
 export * from "./notifications/tables";
