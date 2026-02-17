@@ -67,42 +67,16 @@ interface CultBracketRule {
   }[];
 }
 
+/** Pricing by staker count only (matches "Staking cost by community size" table on membership page). */
 const CULT_BRACKETS: CultBracketRule[] = [
   {
-    label: "MC ≤ $250k",
-    mcMax: 250_000,
-    stakerRanges: [
-      { costs: { 1: 300, 2: 200, 3: 100 }, maxStakers: 100 },
-      { costs: { 1: 600, 2: 400, 3: 200 }, maxStakers: 200 },
-      { costs: { 1: 1200, 2: 800, 3: 400 }, maxStakers: 400 },
-      { costs: { 1: 2400, 2: 1600, 3: 800 }, maxStakers: Infinity },
-    ],
-  },
-  {
-    label: "$250k < MC ≤ $500k",
-    mcMax: 500_000,
-    stakerRanges: [
-      { costs: { 1: 600, 2: 400, 3: 200 }, maxStakers: 100 },
-      { costs: { 1: 1200, 2: 800, 3: 400 }, maxStakers: 200 },
-      { costs: { 1: 2400, 2: 1600, 3: 800 }, maxStakers: 400 },
-      { costs: { 1: 4800, 2: 3200, 3: 1600 }, maxStakers: Infinity },
-    ],
-  },
-  {
-    label: "$500k < MC ≤ $1M",
-    mcMax: 1_000_000,
-    stakerRanges: [
-      { costs: { 1: 1200, 2: 800, 3: 400 }, maxStakers: 100 },
-      { costs: { 1: 2400, 2: 1600, 3: 800 }, maxStakers: 200 },
-      { costs: { 1: 4800, 2: 3200, 3: 1600 }, maxStakers: Infinity },
-    ],
-  },
-  {
-    label: "MC > $1M",
+    label: "By community size",
     mcMax: Infinity,
     stakerRanges: [
-      { costs: { 1: 2400, 2: 1600, 3: 800 }, maxStakers: 100 },
-      { costs: { 1: 4800, 2: 3200, 3: 1600 }, maxStakers: Infinity },
+      { costs: { 1: 100, 2: 50, 3: 25 }, maxStakers: 100 },
+      { costs: { 1: 200, 2: 100, 3: 50 }, maxStakers: 250 },
+      { costs: { 1: 400, 2: 200, 3: 100 }, maxStakers: 750 },
+      { costs: { 1: 800, 2: 400, 3: 200 }, maxStakers: Infinity },
     ],
   },
 ];

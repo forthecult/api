@@ -767,6 +767,107 @@ export function MembershipClient() {
         </section>
 
         {/* --------------------------------------------------------------- */}
+        {/* Staking cost by community size */}
+        {/* --------------------------------------------------------------- */}
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
+          <div className="mx-auto max-w-4xl">
+            <h2
+              className={`
+              font-display text-center text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
+              Staking cost by community size
+            </h2>
+            <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
+              Membership stakes are tied to how many members have already joined.
+              The table below shows the USD value to stake for each tier at
+              different community sizes.
+            </p>
+
+            <div className="mt-10 overflow-x-auto rounded-xl border border-border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[160px] bg-muted/30">
+                      Stakers (per tier)
+                    </TableHead>
+                    <TableHead className="text-center">Tier 3</TableHead>
+                    <TableHead className="text-center">Tier 2</TableHead>
+                    <TableHead className="text-center">Tier 1</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  <TableRow>
+                    <TableCell className="font-medium">
+                      First 100 stakers
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $25
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $50
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $100
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">101–250 stakers</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $50
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $100
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $200
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">251–750 stakers</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $100
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $200
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $400
+                    </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell className="font-medium">750+ stakers</TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $200
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $400
+                    </TableCell>
+                    <TableCell className="text-center tabular-nums">
+                      $800
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+
+            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
+              We structure it this way to reward early members who share our
+              vision and choose to support us from the start. They commit more
+              tokens and lock them for their chosen period, so they get access
+              at a lower dollar cost. As the community grows, staking
+              requirements increase—so joining earlier pays off.
+            </p>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
         {/* Tier Cards */}
         {/* --------------------------------------------------------------- */}
         <section
@@ -955,6 +1056,81 @@ export function MembershipClient() {
         </section>
 
         {/* --------------------------------------------------------------- */}
+        {/* Lifetime Membership NFT */}
+        {/* --------------------------------------------------------------- */}
+        <section
+          className={`
+          py-16
+          md:py-20
+        `}
+        >
+          <div
+            className={`
+            mx-auto max-w-3xl overflow-hidden rounded-2xl border-2
+            border-primary/20 bg-gradient-to-br from-primary/5 via-card
+            to-primary/5 p-8
+            md:p-10
+          `}
+          >
+            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+              <Sparkles className="h-6 w-6 text-primary" />
+            </div>
+            <h2
+              className={`
+              font-display text-2xl font-semibold text-foreground
+              md:text-3xl
+            `}
+            >
+              Lifetime Membership NFT
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              Early stakers can mint a Lifetime Membership NFT—a permanent pass
+              to full membership benefits, including a free data plan for life
+              while you hold it.
+            </p>
+
+            <div className="mt-8 space-y-6">
+              <div className="rounded-xl border border-border bg-card/50 p-5">
+                <h3 className="font-semibold text-foreground">
+                  Path 1: First 11 stakers (30-day lock)
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  The first 11 members who stake for 30 days are eligible to
+                  mint a Lifetime Membership NFT. While you hold the NFT, you
+                  keep full membership—including a free eSIM data plan for life.
+                </p>
+              </div>
+              <div className="rounded-xl border border-border bg-card/50 p-5">
+                <h3 className="font-semibold text-foreground">
+                  Path 2: First 100 stakers (12-month lock)
+                </h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  The first 100 members who stake for 12 months are eligible to
+                  mint a Lifetime Membership NFT. This NFT is transferrable and
+                  resellable—you can sell or gift it, and the new holder gets
+                  the same lifetime benefits.
+                </p>
+              </div>
+            </div>
+
+            <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  Minting opens within 14 days of eligibility. Mint cost: 1 SOL.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <span>
+                  Hold the NFT to keep full membership and free data for life.
+                </span>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        {/* --------------------------------------------------------------- */}
         {/* Benefits Comparison Table */}
         {/* --------------------------------------------------------------- */}
         <section
@@ -1080,107 +1256,6 @@ export function MembershipClient() {
                 })}
               </TableBody>
             </Table>
-          </div>
-        </section>
-
-        {/* --------------------------------------------------------------- */}
-        {/* Staking cost by community size */}
-        {/* --------------------------------------------------------------- */}
-        <section
-          className={`
-          py-16
-          md:py-20
-        `}
-        >
-          <div className="mx-auto max-w-4xl">
-            <h2
-              className={`
-              font-display text-center text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
-            >
-              Staking cost by community size
-            </h2>
-            <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
-              Membership stakes are tied to how many members have already joined.
-              The table below shows the USD value to stake for each tier at
-              different community sizes.
-            </p>
-
-            <div className="mt-10 overflow-x-auto rounded-xl border border-border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[160px] bg-muted/30">
-                      Stakers (per tier)
-                    </TableHead>
-                    <TableHead className="text-center">Tier 3</TableHead>
-                    <TableHead className="text-center">Tier 2</TableHead>
-                    <TableHead className="text-center">Tier 1</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell className="font-medium">
-                      First 100 stakers
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $25
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $50
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $100
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">101–250 stakers</TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $50
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $100
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $200
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">251–750 stakers</TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $100
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $200
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $400
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell className="font-medium">750+ stakers</TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $200
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $400
-                    </TableCell>
-                    <TableCell className="text-center tabular-nums">
-                      $800
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </div>
-
-            <p className="mx-auto mt-6 max-w-2xl text-center text-sm text-muted-foreground">
-              We structure it this way to reward early members who share our
-              vision and choose to support us from the start. They commit more
-              tokens and lock them for their chosen period, so they get access
-              at a lower dollar cost. As the community grows, staking
-              requirements increase—so joining earlier pays off.
-            </p>
           </div>
         </section>
 
@@ -1489,81 +1564,6 @@ export function MembershipClient() {
                 </CardDescription>
               </CardContent>
             </Card>
-          </div>
-        </section>
-
-        {/* --------------------------------------------------------------- */}
-        {/* Lifetime Membership NFT */}
-        {/* --------------------------------------------------------------- */}
-        <section
-          className={`
-          py-16
-          md:py-20
-        `}
-        >
-          <div
-            className={`
-            mx-auto max-w-3xl overflow-hidden rounded-2xl border-2
-            border-primary/20 bg-gradient-to-br from-primary/5 via-card
-            to-primary/5 p-8
-            md:p-10
-          `}
-          >
-            <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <Sparkles className="h-6 w-6 text-primary" />
-            </div>
-            <h2
-              className={`
-              font-display text-2xl font-semibold text-foreground
-              md:text-3xl
-            `}
-            >
-              Lifetime Membership NFT
-            </h2>
-            <p className="mt-3 text-muted-foreground">
-              Early stakers can mint a Lifetime Membership NFT—a permanent pass
-              to full membership benefits, including a free data plan for life
-              while you hold it.
-            </p>
-
-            <div className="mt-8 space-y-6">
-              <div className="rounded-xl border border-border bg-card/50 p-5">
-                <h3 className="font-semibold text-foreground">
-                  Path 1: First 11 stakers (30-day lock)
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  The first 11 members who stake for 30 days are eligible to
-                  mint a Lifetime Membership NFT. While you hold the NFT, you
-                  keep full membership—including a free eSIM data plan for life.
-                </p>
-              </div>
-              <div className="rounded-xl border border-border bg-card/50 p-5">
-                <h3 className="font-semibold text-foreground">
-                  Path 2: First 100 stakers (12-month lock)
-                </h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  The first 100 members who stake for 12 months are eligible to
-                  mint a Lifetime Membership NFT. This NFT is transferrable and
-                  resellable—you can sell or gift it, and the new holder gets
-                  the same lifetime benefits.
-                </p>
-              </div>
-            </div>
-
-            <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span>
-                  Minting opens within 14 days of eligibility. Mint cost: 1 SOL.
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                <span>
-                  Hold the NFT to keep full membership and free data for life.
-                </span>
-              </li>
-            </ul>
           </div>
         </section>
 
