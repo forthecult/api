@@ -86,6 +86,9 @@ interface TokenPriceResponse {
 const STAKING_SIGNUP_DISABLED =
   process.env.NEXT_PUBLIC_STAKING_SIGNUP_DISABLED === "true";
 
+/** Temporary: when true, Connect Wallet & Stake is disabled and shows "Staking will be available in the next hour". Set to false when staking is live. */
+const STAKING_AVAILABLE_NEXT_HOUR = true;
+
 export function MembershipClient() {
   const [selectedTier, setSelectedTier] = useState<number>(2);
   const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
@@ -994,12 +997,14 @@ export function MembershipClient() {
 
                 <Button
                   className="w-full gap-2 text-base"
-                  disabled={STAKING_SIGNUP_DISABLED || stakePending}
+                  disabled={STAKING_AVAILABLE_NEXT_HOUR || STAKING_SIGNUP_DISABLED || stakePending}
                   onClick={handleStake}
                   size="lg"
                 >
                   <Wallet className="h-5 w-5" />
-                  {STAKING_SIGNUP_DISABLED
+                  {STAKING_AVAILABLE_NEXT_HOUR
+                    ? "Staking will be available in the next hour"
+                    : STAKING_SIGNUP_DISABLED
                     ? "Membership signup will be available shortly"
                     : stakePending
                       ? "Preparing transaction…"
