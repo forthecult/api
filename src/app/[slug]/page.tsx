@@ -40,7 +40,10 @@ import {
   stripHtmlForMeta,
 } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
-import { getTokenGateConfig } from "~/lib/token-gate";
+import {
+  getTokenGateConfig,
+  productPassedViaCategoryGate,
+} from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
 import {
@@ -298,7 +301,16 @@ export default async function SlugPage({ params, searchParams }: PageProps) {
     const tokenGateConfig = await getTokenGateConfig("product", canonicalSlug);
     const cookieStore = await cookies();
     const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
-    const passed = hasValidTokenGateCookie(tgCookie, "product", canonicalSlug);
+    const productCookiePassed = hasValidTokenGateCookie(
+      tgCookie,
+      "product",
+      canonicalSlug,
+    );
+    const passedViaCategory = await productPassedViaCategoryGate(
+      product.id,
+      tgCookie,
+    );
+    const passed = productCookiePassed || passedViaCategory;
 
     if (tokenGateConfig.tokenGated && !passed) {
       return (

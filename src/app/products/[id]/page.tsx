@@ -18,7 +18,10 @@ import {
   stripHtmlForMeta,
 } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
-import { getTokenGateConfig } from "~/lib/token-gate";
+import {
+  getTokenGateConfig,
+  productPassedViaCategoryGate,
+} from "~/lib/token-gate";
 import { COOKIE_NAME, hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 import { Breadcrumbs } from "~/ui/components/breadcrumbs";
 import {
@@ -164,7 +167,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const tokenGateConfig = await getTokenGateConfig("product", product.id);
   const tgCookie = cookieStore.get(COOKIE_NAME)?.value;
-  const passed = hasValidTokenGateCookie(tgCookie, "product", product.id);
+  const productCookiePassed = hasValidTokenGateCookie(
+    tgCookie,
+    "product",
+    product.id,
+  );
+  const passedViaCategory = await productPassedViaCategoryGate(
+    product.id,
+    tgCookie,
+  );
+  const passed = productCookiePassed || passedViaCategory;
 
   if (tokenGateConfig.tokenGated && !passed) {
     return <TokenGateGuard resourceId={product.id} resourceType="product" />;

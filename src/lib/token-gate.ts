@@ -16,11 +16,13 @@ import {
   categoriesTable,
   categoryTokenGateTable,
   pageTokenGateTable,
+  productCategoriesTable,
   productsTable,
   productTokenGateTable,
 } from "~/db/schema";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { CRUST_MINT_MAINNET } from "~/lib/solana-pay";
+import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 
 export interface TokenGateConfig {
   gates: TokenGateRule[];
@@ -237,6 +239,52 @@ export async function getTokenGateConfig(
     default:
       return { gates: [], tokenGated: false };
   }
+}
+
+/**
+ * Returns category IDs that a product belongs to (for token-gate passthrough from category).
+ */
+export async function getCategoryIdsForProduct(
+  productId: string,
+): Promise<string[]> {
+  const rows = await db
+    .select({ categoryId: productCategoriesTable.categoryId })
+    .from(productCategoriesTable)
+    .where(eq(productCategoriesTable.productId, productId));
+  return rows.map((r) => r.categoryId).filter(Boolean);
+}
+
+/**
+ * True if the product is token-gated and the user has passed a category gate that
+ * satisfies the product's requirement (e.g. category ≥100 PUMP, product ≥50 PUMP).
+ * Used on the product page so the user doesn't have to pass the product gate again
+ * when they already passed the category gate.
+ */
+export async function productPassedViaCategoryGate(
+  productId: string,
+  tgCookieValue: string | undefined,
+): Promise<boolean> {
+  if (!tgCookieValue?.trim()) return false;
+  const productConfig = await getProductTokenGates(productId);
+  if (!productConfig.tokenGated || productConfig.gates.length === 0)
+    return false;
+  const categoryIds = await getCategoryIdsForProduct(productId);
+  for (const categoryId of categoryIds) {
+    if (!hasValidTokenGateCookie(tgCookieValue, "category", categoryId))
+      continue;
+    const categoryConfig = await getCategoryTokenGates(categoryId);
+    if (
+      categoryConfig.tokenGated &&
+      categoryConfig.gates.length > 0 &&
+      productGatesSatisfiedByCategory(
+        productConfig.gates,
+        categoryConfig.gates,
+      )
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
