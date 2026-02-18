@@ -1000,7 +1000,7 @@ export function MembershipClient() {
                 >
                   <Wallet className="h-5 w-5" />
                   {STAKING_AVAILABLE_NEXT_HOUR
-                    ? "Staking will be available in the next hour"
+                    ? "Staking will be available soon"
                     : STAKING_SIGNUP_DISABLED
                     ? "Membership signup will be available shortly"
                     : stakePending
