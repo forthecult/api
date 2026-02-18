@@ -89,8 +89,11 @@ const STAKING_SIGNUP_DISABLED =
 /** Temporary: when true, Connect Wallet & Stake is disabled and shows "Staking will be available in the next hour". Set to false when staking is live. */
 const STAKING_AVAILABLE_NEXT_HOUR = true;
 
+/** When true, hide the CULT price and market cap bar (token not launched yet). Set to false after launch. */
+const HIDE_TOKEN_PRICE_AND_MC = true;
+
 export function MembershipClient() {
-  const [selectedTier, setSelectedTier] = useState<number>(2);
+  const [selectedTier, setSelectedTier] = useState<number>(1);
   const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
 
   // eSIM claim state
@@ -503,8 +506,8 @@ export function MembershipClient() {
             longer you stake, the more you save.
           </p>
 
-          {/* Live market data bar */}
-          {pricingData && (
+          {/* Live market data bar — hidden until token launch (price/MC unknown) */}
+          {!HIDE_TOKEN_PRICE_AND_MC && pricingData && (
             <div
               className={`
               mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-6
@@ -538,12 +541,6 @@ export function MembershipClient() {
               View Tiers
               <ArrowRight className="h-4 w-4" />
             </Button>
-            <Link href="/esim">
-              <Button className="gap-2" size="lg" variant="outline">
-                <Globe className="h-4 w-4" />
-                Browse eSIM Plans
-              </Button>
-            </Link>
           </div>
         </div>
       </section>
@@ -924,7 +921,7 @@ export function MembershipClient() {
                       </Badge>
                       <span className="font-semibold">12 Months</span>
                       <span className="block text-sm text-muted-foreground">
-                        14 months eSIM
+                        14 months of eSIM
                       </span>
                     </button>
                   </div>
