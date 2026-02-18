@@ -1,7 +1,10 @@
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 
-import { getAgentBaseUrl } from "~/lib/app-url";
+import {
+  getAgentBaseUrl,
+  sanitizeBaseUrlForPublicApi,
+} from "~/lib/app-url";
 import {
   checkRateLimit,
   getClientIp,
@@ -26,9 +29,14 @@ export async function GET() {
     return rateLimitResponse(rl, RATE_LIMITS.api.limit);
   }
 
-  const agentBase = getAgentBaseUrl();
-  const mainBase =
-    process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store";
+  const agentBase = sanitizeBaseUrlForPublicApi(
+    getAgentBaseUrl() || "https://ai.forthecult.store",
+    "https://ai.forthecult.store",
+  );
+  const mainBase = sanitizeBaseUrlForPublicApi(
+    process.env.NEXT_PUBLIC_APP_URL || "https://forthecult.store",
+    "https://forthecult.store",
+  );
 
   return NextResponse.json(
     {

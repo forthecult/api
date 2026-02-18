@@ -559,11 +559,13 @@ export async function GET(request: NextRequest) {
     return withPublicApiCors(
       NextResponse.json(
         {
-          categories: categoriesWithImage.map((c) => ({
-            name: c.name,
-            slug: c.slug,
-            ...(c.image ? { image: c.image } : {}),
-          })),
+          categories: categoriesWithImage
+            .filter((c) => c.slug !== SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG)
+            .map((c) => ({
+              name: c.name,
+              slug: c.slug,
+              ...(c.image ? { image: c.image } : {}),
+            })),
           items,
           limit,
           page,

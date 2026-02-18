@@ -3,7 +3,10 @@
  * Used by GET /api/agent/summary and the for-agents page script.
  */
 
-import { getAgentBaseUrl } from "~/lib/app-url";
+import {
+  getAgentBaseUrl,
+  sanitizeBaseUrlForPublicApi,
+} from "~/lib/app-url";
 
 export interface AgentApiEndpoint {
   description: string;
@@ -26,7 +29,12 @@ export interface AgentApiSummary {
  * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
 export function getAgentApiLinks(baseUrl?: string): AgentApiEndpoint[] {
-  const base = baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const raw =
+    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const base = sanitizeBaseUrlForPublicApi(
+    raw,
+    "https://ai.forthecult.store",
+  );
   return buildApiLinks(base);
 }
 
@@ -36,7 +44,12 @@ export function getAgentApiLinks(baseUrl?: string): AgentApiEndpoint[] {
  * @param baseUrl Optional base (e.g. current request origin). When omitted, uses getAgentBaseUrl() or ai.forthecult.store.
  */
 export function getAgentApiSummary(baseUrl?: string): AgentApiSummary {
-  const base = baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const raw =
+    baseUrl ?? (getAgentBaseUrl() || "https://ai.forthecult.store");
+  const base = sanitizeBaseUrlForPublicApi(
+    raw,
+    "https://ai.forthecult.store",
+  );
   const links = buildApiLinks(base);
   return {
     description:

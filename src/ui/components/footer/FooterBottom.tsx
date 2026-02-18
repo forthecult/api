@@ -333,7 +333,7 @@ export function FooterBottom({
           <Link className="hover:text-foreground" href="/cookies">
             Cookies
           </Link>
-          <Link className="hover:text-foreground" href="/sitemap">
+          <Link className="hover:text-foreground" href="/site-map">
             Sitemap
           </Link>
         </div>

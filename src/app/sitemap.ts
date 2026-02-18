@@ -89,6 +89,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${siteUrl}/products`,
     },
     {
+      changeFrequency: "daily",
+      lastModified: now,
+      priority: 0.85,
+      url: `${siteUrl}/featured`,
+    },
+    {
       changeFrequency: "monthly",
       lastModified: now,
       priority: 0.7,
@@ -141,6 +147,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: now,
       priority: 0.5,
       url: `${siteUrl}/for-agents`,
+    },
+    {
+      changeFrequency: "monthly",
+      lastModified: now,
+      priority: 0.5,
+      url: `${siteUrl}/telegram`,
     },
     {
       changeFrequency: "monthly",
@@ -206,7 +218,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       lastModified: now,
       priority: 0.3,
-      url: `${siteUrl}/sitemap`,
+      url: `${siteUrl}/site-map`,
     },
   ];
 
@@ -226,5 +238,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${siteUrl}/${product.slug ?? product.id}`,
   }));
 
-  return [...staticPages, ...categoryPages, ...productPages];
+  const all = [...staticPages, ...categoryPages, ...productPages];
+  // Exclude test pages (e.g. /test, /test/membership-after-stake)
+  const filtered = all.filter((entry) => {
+    try {
+      const path = new URL(entry.url).pathname;
+      return !path.startsWith("/test");
+    } catch {
+      return true;
+    }
+  });
+  return filtered;
 }

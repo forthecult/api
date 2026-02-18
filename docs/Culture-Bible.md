@@ -29,10 +29,10 @@ Why no synthetics? Polyester and synthetic fabrics are linked to endocrine disru
 Autonomy
 Personal responsibility should be empowering. Technology should expand capability, not constrain it.
 
+Smart home devices, open source, that don't require cloud accounts
 VPN subscriptions (privacy-respecting providers only)
 eSIM cards for location independence
 GrapheneOS phones (open-source, secure)
-Smart home devices that don't require cloud accounts
 VR/AR headsets
 DeFi
 

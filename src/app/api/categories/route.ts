@@ -7,6 +7,7 @@ import {
   productCategoriesTable,
   productsTable,
 } from "~/db/schema";
+import { SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG } from "~/lib/storefront-categories";
 
 /** Cache for 5 minutes (public data) */
 export const revalidate = 300;
@@ -57,6 +58,10 @@ export async function GET() {
 
     // Filter out categories marked as not visible
     allCategories = allCategories.filter((c) => c.visible !== false);
+    // Exclude show-in-all-products (internal: surfaces crypto products on /products, not a nav category)
+    allCategories = allCategories.filter(
+      (c) => c.slug?.toLowerCase() !== SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
+    );
 
     const counts = await db
       .select({

@@ -71,6 +71,17 @@ export function getServerBaseUrl(): string {
   return process.env.NEXT_PUBLIC_APP_URL || DEFAULT_SERVER;
 }
 
+/**
+ * For public API responses (e.g. /api/agent/capabilities, /api/agent/summary).
+ * Never expose localhost or 127.0.0.1; return fallback instead.
+ */
+export function sanitizeBaseUrlForPublicApi(base: string, fallback: string): string {
+  const u = (base ?? "").trim().toLowerCase();
+  if (!u) return fallback;
+  if (u.includes("localhost") || u.includes("127.0.0.1")) return fallback;
+  return base!.trim();
+}
+
 /** True when the request host is the configured AI/agent subdomain. */
 export function isAgentSubdomain(host: null | string | undefined): boolean {
   const agentHost = getAgentHostname();

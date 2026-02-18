@@ -96,11 +96,20 @@ export default async function ProductsPage({ searchParams }: PageProps) {
     searchQuery || undefined,
   );
 
-  const products = (data.items ?? []).map((p) => ({
+  let products = (data.items ?? []).map((p) => ({
     ...p,
     inStock: p.inStock ?? true,
     rating: p.rating ?? 0,
   }));
+
+  // SHOWCASE: randomize product order on /products — remove this block when done
+  if (products.length > 1) {
+    products = [...products];
+    for (let i = products.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [products[i], products[j]] = [products[j], products[i]];
+    }
+  }
 
   const categories: CategoryOption[] = [
     { name: "All", slug: "all" },

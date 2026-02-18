@@ -581,7 +581,7 @@ export const openApiSpec = {
     "/orders/{orderId}": {
       get: {
         description:
-          "Full order details: items, shipping address, payment summary, and timeline. Requires authentication (session owner or admin). For unauthenticated status checks, use GET /orders/{orderId}/status instead.",
+          "Full order details: items, shipping address, payment summary, and timeline. Access: (1) authenticated session owner or admin, or (2) valid confirmation token in query ct= for recent orders (<1h). Otherwise PII (email, shipping) is redacted. For status-only polling use GET /orders/{orderId}/status.",
         operationId: "getOrderById",
         parameters: [
           {
@@ -589,6 +589,14 @@ export const openApiSpec = {
             name: "orderId",
             required: true,
             schema: { type: "string" },
+          },
+          {
+            in: "query",
+            name: "ct",
+            required: false,
+            schema: { type: "string" },
+            description:
+              "Confirmation token (from order confirmation email) to view full details without auth; only for orders created <1 hour ago.",
           },
         ],
         responses: {
@@ -692,6 +700,58 @@ export const openApiSpec = {
           "404": { description: "Order not found" },
         },
         summary: "Get order status (lightweight)",
+        tags: ["Orders"],
+      },
+    },
+    "/orders/{orderId}/cancel": {
+      post: {
+        description:
+          "Cancel a pending order (before payment or before fulfillment). Requires: authenticated session (owner), admin, or request body with lookupValue (billing email, payment address, or shipping postal code) to prove ownership.",
+        operationId: "cancelOrder",
+        parameters: [
+          {
+            in: "path",
+            name: "orderId",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        requestBody: {
+          content: {
+            "application/json": {
+              schema: {
+                properties: {
+                  lookupValue: {
+                    type: "string",
+                    description:
+                      "Optional: billing email, payer wallet address, or shipping postal code to prove ownership when not authenticated.",
+                  },
+                },
+                type: "object",
+              },
+            },
+          },
+        },
+        responses: {
+          "200": {
+            description: "Order cancelled",
+            content: {
+              "application/json": {
+                schema: {
+                  properties: {
+                    orderId: { type: "string" },
+                    status: { example: "cancelled", type: "string" },
+                  },
+                  type: "object",
+                },
+              },
+            },
+          },
+          "400": { description: "Order already paid/shipped or invalid" },
+          "401": { description: "Not authorized" },
+          "404": { description: "Order not found" },
+        },
+        summary: "Cancel pending order",
         tags: ["Orders"],
       },
     },
