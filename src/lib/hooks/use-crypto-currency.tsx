@@ -5,6 +5,7 @@ import * as React from "react";
 export type CryptoCode =
   | "BTC"
   | "CRUST"
+  | "CULT"
   | "DOGE"
   | "ETH"
   | "PUMP"
@@ -17,7 +18,10 @@ export type CryptoCode =
   | "XMR";
 
 const COINGECKO_IDS: Record<
-  Exclude<CryptoCode, "CRUST" | "PUMP" | "SKR" | "TROLL" | "XAG" | "XAU">,
+  Exclude<
+    CryptoCode,
+    "CRUST" | "CULT" | "PUMP" | "SKR" | "TROLL" | "XAG" | "XAU"
+  >,
   string
 > = {
   BTC: "bitcoin",
@@ -48,6 +52,7 @@ const CryptoCurrencyContext = React.createContext<
 const DECIMAL_MAP: Record<CryptoCode, number> = {
   BTC: 6,
   CRUST: 6,
+  CULT: 6,
   DOGE: 6,
   ETH: 6,
   PUMP: 6,
@@ -64,6 +69,7 @@ const DECIMAL_MAP: Record<CryptoCode, number> = {
 const FALLBACK_RATES: Record<CryptoCode, number> = {
   BTC: 70_000,
   CRUST: 0,
+  CULT: 0.0001,
   DOGE: 0.08,
   ETH: 2_300,
   PUMP: 0.01,
@@ -100,7 +106,8 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
           code === "XMR" ||
           code === "XAU" ||
           code === "XAG" ||
-          code === "SKR"
+          code === "SKR" ||
+          code === "CULT"
         ) {
           setSelectedCryptoState(code as CryptoCode);
           if (code !== raw) localStorage.setItem(STORAGE_KEY, code);
@@ -152,6 +159,7 @@ export function CryptoCurrencyProvider({ children }: React.PropsWithChildren) {
             "SOL",
             "DOGE",
             "CRUST",
+            "CULT",
             "PUMP",
             "TROLL",
             "TON",
@@ -282,6 +290,11 @@ export const CRYPTO_OPTIONS: {
     code: "SKR",
     iconSrc: "/crypto/seeker/S_Token_Circle_White.svg",
     label: "Seeker (SKR)",
+  },
+  {
+    code: "CULT",
+    iconSrc: "/crypto/cult/cult-logo.svg",
+    label: "CULT (CULT)",
   },
   {
     code: "XMR",

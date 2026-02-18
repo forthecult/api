@@ -89,8 +89,8 @@ const STAKING_SIGNUP_DISABLED =
 /** Temporary: when true, Connect Wallet & Stake is disabled and shows "Staking will be available in the next hour". Set to false when staking is live. */
 const STAKING_AVAILABLE_NEXT_HOUR = true;
 
-/** When true, hide the CULT price and market cap bar (token not launched yet). Set to false after launch. */
-const HIDE_TOKEN_PRICE_AND_MC = true;
+/** When true, hide the CULT price and market cap bar. Set to false to show live price/MC (from token-config mint). */
+const HIDE_TOKEN_PRICE_AND_MC = false;
 
 export function MembershipClient() {
   const [selectedTier, setSelectedTier] = useState<number>(1);

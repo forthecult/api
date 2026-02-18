@@ -359,8 +359,8 @@ export default function TokenPage() {
             `}
             >
               <li>
-                <strong className="text-foreground">Free Shipping</strong> if
-                you hold 250,000 or more tokens in your wallet
+                <strong className="text-foreground">Free Shipping</strong> for
+                CULT Members
               </li>
               <li>
                 <strong className="text-foreground">Up to 20% discount</strong>{" "}

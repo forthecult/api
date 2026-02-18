@@ -108,7 +108,7 @@ export const CRYPTO_LOGO_SRC: Partial<
 > = {
   bitcoin: "/crypto/bitcoin/bitcoin-logo.svg",
   crust: "/crypto/solana/solanaLogoMark.svg",
-  cult: "/crypto/cult/cult-logo.png",
+  cult: "/crypto/cult/cult-logo.svg",
   dogecoin: "/payments/doge.svg",
   eth: "/crypto/ethereum/ethereum-logo.svg",
   monero: "/crypto/monero/monero-xmr-logo.svg",

@@ -220,7 +220,7 @@ export function getFooterPaymentItems(
     });
     items.push({
       name: "CULT (CULT)",
-      src: "/crypto/cult/cult-logo.png",
+      src: "/crypto/cult/cult-logo.svg",
     });
   } else {
     if (visibility.cryptoBitcoin)
@@ -254,7 +254,7 @@ export function getFooterPaymentItems(
     if (visibility.cryptoCult)
       items.push({
         name: "CULT (CULT)",
-        src: "/crypto/cult/cult-logo.png",
+        src: "/crypto/cult/cult-logo.svg",
       });
   }
 
@@ -362,7 +362,7 @@ export function getPaymentIconPaths(
     if (visibility.cryptoCult)
       icons.push({
         alt: "CULT (CULT)",
-        src: "/crypto/cult/cult-logo.png",
+        src: "/crypto/cult/cult-logo.svg",
         type: "crypto",
       });
     if (visibility.stablecoinUsdc)

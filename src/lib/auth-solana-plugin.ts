@@ -13,6 +13,7 @@ import { randomBytes } from "node:crypto";
 import nacl from "tweetnacl";
 import { z } from "zod";
 
+import { withFkRetry } from "~/lib/auth-db-retry";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
 const SOLANA_PROVIDER_ID = "solana";
@@ -34,40 +35,6 @@ interface UserRecord {
 interface VerificationRecord {
   expiresAt: Date;
   id: string;
-}
-
-const SESSION_FK_RETRY_MS = 200;
-
-function isSessionFkConstraintError(err: unknown): boolean {
-  if (!err || typeof err !== "object") return false;
-  const code = (err as { code?: string }).code;
-  const message =
-    (err as Error).message ??
-    (err as { cause?: Error }).cause?.message ??
-    "";
-  const messageStr = String(message);
-  return (
-    code === "23503" ||
-    messageStr.includes("foreign key") ||
-    messageStr.includes("session_user_id_user_id_fk")
-  );
-}
-
-async function createSessionWithRetry<T>(
-  createSession: () => Promise<null | T>,
-): Promise<null | T> {
-  try {
-    return await createSession();
-  } catch (firstErr) {
-    if (!isSessionFkConstraintError(firstErr)) throw firstErr;
-    console.warn(
-      "[solana-auth] createSession FK violation (user row not visible yet), retrying in",
-      SESSION_FK_RETRY_MS,
-      "ms",
-    );
-    await new Promise((resolve) => setTimeout(resolve, SESSION_FK_RETRY_MS));
-    return await createSession();
-  }
 }
 
 export function solanaAuthPlugin() {
@@ -268,25 +235,29 @@ export function solanaAuthPlugin() {
                   const accountId = generateId({ model: "account" });
                   const now = new Date();
                   try {
-                    await (
-                      ctx.context.internalAdapter as {
-                        createAccount: (data: {
-                          accountId: string;
-                          createdAt: Date;
-                          id: string;
-                          providerId: string;
-                          updatedAt: Date;
-                          userId: string;
-                        }) => Promise<unknown>;
-                      }
-                    ).createAccount({
-                      accountId: addressTrim,
-                      createdAt: now,
-                      id: accountId,
-                      providerId: SOLANA_PROVIDER_ID,
-                      updatedAt: now,
-                      userId: existingUserByEmail.id,
-                    });
+                    await withFkRetry(
+                      () =>
+                        (
+                          ctx.context.internalAdapter as {
+                            createAccount: (data: {
+                              accountId: string;
+                              createdAt: Date;
+                              id: string;
+                              providerId: string;
+                              updatedAt: Date;
+                              userId: string;
+                            }) => Promise<unknown>;
+                          }
+                        ).createAccount({
+                          accountId: addressTrim,
+                          createdAt: now,
+                          id: accountId,
+                          providerId: SOLANA_PROVIDER_ID,
+                          updatedAt: now,
+                          userId: existingUserByEmail.id,
+                        }),
+                      "solana-auth createAccount (recover existing user)",
+                    );
                   } catch (createAccountErr) {
                     if (isDuplicateAccountError(createAccountErr)) {
                       console.log(
@@ -368,26 +339,31 @@ export function solanaAuthPlugin() {
                 }
                 const accountId = generateId({ model: "account" });
                 const accountNow = new Date();
+                const newUserId = user.id;
                 try {
-                  await (
-                    ctx.context.internalAdapter as {
-                      createAccount: (data: {
-                        accountId: string;
-                        createdAt: Date;
-                        id: string;
-                        providerId: string;
-                        updatedAt: Date;
-                        userId: string;
-                      }) => Promise<unknown>;
-                    }
-                  ).createAccount({
-                    accountId: addressTrim,
-                    createdAt: accountNow,
-                    id: accountId,
-                    providerId: SOLANA_PROVIDER_ID,
-                    updatedAt: accountNow,
-                    userId: user.id,
-                  });
+                  await withFkRetry(
+                    () =>
+                      (
+                        ctx.context.internalAdapter as {
+                          createAccount: (data: {
+                            accountId: string;
+                            createdAt: Date;
+                            id: string;
+                            providerId: string;
+                            updatedAt: Date;
+                            userId: string;
+                          }) => Promise<unknown>;
+                        }
+                      ).createAccount({
+                        accountId: addressTrim,
+                        createdAt: accountNow,
+                        id: accountId,
+                        providerId: SOLANA_PROVIDER_ID,
+                        updatedAt: accountNow,
+                        userId: newUserId,
+                      }),
+                    "solana-auth createAccount",
+                  );
                 } catch (createAccountErr) {
                   console.error(
                     "[solana-auth] createAccount failed after user create:",
@@ -421,28 +397,31 @@ export function solanaAuthPlugin() {
                     if (!existingAccountForWallet) {
                       const accountId = generateId({ model: "account" });
                       try {
-                        await (
-                          ctx.context.internalAdapter as {
-                            createAccount: (data: {
-                              accountId: string;
-                              createdAt: Date;
-                              id: string;
-                              providerId: string;
-                              updatedAt: Date;
-                              userId: string;
-                            }) => Promise<unknown>;
-                          }
-                        ).createAccount({
-                          accountId: addressTrim,
-                          createdAt: now,
-                          id: accountId,
-                          providerId: SOLANA_PROVIDER_ID,
-                          updatedAt: now,
-                          userId: existingUser.id,
-                        });
+                        await withFkRetry(
+                          () =>
+                            (
+                              ctx.context.internalAdapter as {
+                                createAccount: (data: {
+                                  accountId: string;
+                                  createdAt: Date;
+                                  id: string;
+                                  providerId: string;
+                                  updatedAt: Date;
+                                  userId: string;
+                                }) => Promise<unknown>;
+                              }
+                            ).createAccount({
+                              accountId: addressTrim,
+                              createdAt: now,
+                              id: accountId,
+                              providerId: SOLANA_PROVIDER_ID,
+                              updatedAt: now,
+                              userId: existingUser.id,
+                            }),
+                          "solana-auth createAccount (link existing user)",
+                        );
                       } catch (linkAccountErr) {
                         if (isDuplicateAccountError(linkAccountErr)) {
-                          // Account already exists (e.g. findOne missed it); proceed to session
                           console.log(
                             "[solana-auth] Account already linked for",
                             addressTrim,
@@ -468,25 +447,29 @@ export function solanaAuthPlugin() {
                 );
                 const accountId = generateId({ model: "account" });
                 try {
-                  await (
-                    ctx.context.internalAdapter as {
-                      createAccount: (data: {
-                        accountId: string;
-                        createdAt: Date;
-                        id: string;
-                        providerId: string;
-                        updatedAt: Date;
-                        userId: string;
-                      }) => Promise<unknown>;
-                    }
-                  ).createAccount({
-                    accountId: addressTrim,
-                    createdAt: now,
-                    id: accountId,
-                    providerId: SOLANA_PROVIDER_ID,
-                    updatedAt: now,
-                    userId,
-                  });
+                  await withFkRetry(
+                    () =>
+                      (
+                        ctx.context.internalAdapter as {
+                          createAccount: (data: {
+                            accountId: string;
+                            createdAt: Date;
+                            id: string;
+                            providerId: string;
+                            updatedAt: Date;
+                            userId: string;
+                          }) => Promise<unknown>;
+                        }
+                      ).createAccount({
+                        accountId: addressTrim,
+                        createdAt: now,
+                        id: accountId,
+                        providerId: SOLANA_PROVIDER_ID,
+                        updatedAt: now,
+                        userId,
+                      }),
+                    "solana-auth createAccount",
+                  );
                 } catch (createAccountErr) {
                   console.error(
                     "[solana-auth] createAccount failed:",
@@ -517,7 +500,7 @@ export function solanaAuthPlugin() {
             );
 
             // createSession(userId, request, dontRememberMe) - false = remember me (longer expiry)
-            // Retry once on FK violation: user row may not be visible to another connection in the pool yet
+            // Retry on FK violation: user row may not be visible to another connection in the pool yet
             const createSessionFn = (
               ctx.context.internalAdapter as {
                 createSession: (
@@ -527,13 +510,14 @@ export function solanaAuthPlugin() {
                 ) => Promise<null | { id: string; userId: string }>;
               }
             ).createSession.bind(ctx.context.internalAdapter);
-            const session = await createSessionWithRetry(
+            const session = await withFkRetry(
               () =>
                 createSessionFn(
                   user.id,
                   ctx.request as Request | undefined,
                   false,
                 ),
+              "solana-auth createSession",
             );
             if (!session) {
               throw new APIError("INTERNAL_SERVER_ERROR", {

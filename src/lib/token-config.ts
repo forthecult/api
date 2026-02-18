@@ -62,10 +62,9 @@ const CULT: TokenDef = {
 // ---------------------------------------------------------------------------
 
 /**
- * Change this to "CULT" when the CULT token launches on pump.fun.
- * Everything downstream reads from `getActiveToken()`.
+ * Active membership token. CULT mint: 6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump
  */
-const ACTIVE_TOKEN: "CULT" | "SOLUNA" = "SOLUNA";
+const ACTIVE_TOKEN: "CULT" | "SOLUNA" = "CULT";
 
 const TOKEN_MAP = { CULT, SOLUNA } as const;
 

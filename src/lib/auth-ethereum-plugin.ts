@@ -17,6 +17,7 @@ import {
 } from "viem/siwe";
 import { z } from "zod";
 
+import { withFkRetry } from "~/lib/auth-db-retry";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
 const ETHEREUM_PROVIDER_ID = "ethereum";
@@ -416,25 +417,29 @@ export function ethereumAuthPlugin() {
                     if (!existingAccountForWallet) {
                       const accountRowId = generateId({ model: "account" });
                       try {
-                        await (
-                          ctx.context.internalAdapter as {
-                            createAccount: (data: {
-                              accountId: string;
-                              createdAt: Date;
-                              id: string;
-                              providerId: string;
-                              updatedAt: Date;
-                              userId: string;
-                            }) => Promise<unknown>;
-                          }
-                        ).createAccount({
-                          accountId: addressTrim.toLowerCase(),
-                          createdAt: now,
-                          id: accountRowId,
-                          providerId: ETHEREUM_PROVIDER_ID,
-                          updatedAt: now,
-                          userId: existingUser.id,
-                        });
+                        await withFkRetry(
+                          () =>
+                            (
+                              ctx.context.internalAdapter as {
+                                createAccount: (data: {
+                                  accountId: string;
+                                  createdAt: Date;
+                                  id: string;
+                                  providerId: string;
+                                  updatedAt: Date;
+                                  userId: string;
+                                }) => Promise<unknown>;
+                              }
+                            ).createAccount({
+                              accountId: addressTrim.toLowerCase(),
+                              createdAt: now,
+                              id: accountRowId,
+                              providerId: ETHEREUM_PROVIDER_ID,
+                              updatedAt: now,
+                              userId: existingUser.id,
+                            }),
+                          "ethereum-auth createAccount (link existing user)",
+                        );
                       } catch (linkErr) {
                         console.error(
                           "[ethereum-auth] createAccount (link existing user) failed:",
@@ -454,25 +459,29 @@ export function ethereumAuthPlugin() {
                 );
                 const accountRowId = generateId({ model: "account" });
                 try {
-                  await (
-                    ctx.context.internalAdapter as {
-                      createAccount: (data: {
-                        accountId: string;
-                        createdAt: Date;
-                        id: string;
-                        providerId: string;
-                        updatedAt: Date;
-                        userId: string;
-                      }) => Promise<unknown>;
-                    }
-                  ).createAccount({
-                    accountId: addressTrim.toLowerCase(),
-                    createdAt: now,
-                    id: accountRowId,
-                    providerId: ETHEREUM_PROVIDER_ID,
-                    updatedAt: now,
-                    userId,
-                  });
+                  await withFkRetry(
+                    () =>
+                      (
+                        ctx.context.internalAdapter as {
+                          createAccount: (data: {
+                            accountId: string;
+                            createdAt: Date;
+                            id: string;
+                            providerId: string;
+                            updatedAt: Date;
+                            userId: string;
+                          }) => Promise<unknown>;
+                        }
+                      ).createAccount({
+                        accountId: addressTrim.toLowerCase(),
+                        createdAt: now,
+                        id: accountRowId,
+                        providerId: ETHEREUM_PROVIDER_ID,
+                        updatedAt: now,
+                        userId,
+                      }),
+                    "ethereum-auth createAccount",
+                  );
                 } catch (createAccountErr) {
                   console.error(
                     "[ethereum-auth] createAccount failed:",
@@ -502,7 +511,7 @@ export function ethereumAuthPlugin() {
               "— creating session",
             );
 
-            const session = await (
+            const createSessionFn = (
               ctx.context.internalAdapter as {
                 createSession: (
                   userId: string,
@@ -510,7 +519,16 @@ export function ethereumAuthPlugin() {
                   cookie?: boolean,
                 ) => Promise<null | { id: string; userId: string }>;
               }
-            ).createSession(user.id, ctx.request as Request | undefined, false);
+            ).createSession.bind(ctx.context.internalAdapter);
+            const session = await withFkRetry(
+              () =>
+                createSessionFn(
+                  user.id,
+                  ctx.request as Request | undefined,
+                  false,
+                ),
+              "ethereum-auth createSession",
+            );
             if (!session) {
               throw new APIError("INTERNAL_SERVER_ERROR", {
                 message: "Failed to create session",

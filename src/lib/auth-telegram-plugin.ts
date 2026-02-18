@@ -12,6 +12,8 @@ import { APIError } from "better-call";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
+import { withFkRetry } from "~/lib/auth-db-retry";
+
 const TELEGRAM_PROVIDER_ID = "telegram";
 const AUTH_DATE_MAX_AGE_SEC = 300; // 5 minutes
 
@@ -181,25 +183,29 @@ export function telegramAuthPlugin() {
                   }) => string;
                 }
               ).generateId({ model: "account" });
-              await (
-                ctx.context.internalAdapter as {
-                  createAccount: (data: {
-                    accountId: string;
-                    createdAt: Date;
-                    id: string;
-                    providerId: string;
-                    updatedAt: Date;
-                    userId: string;
-                  }) => Promise<unknown>;
-                }
-              ).createAccount({
-                accountId,
-                createdAt: date,
-                id: newAccountId,
-                providerId: TELEGRAM_PROVIDER_ID,
-                updatedAt: date,
-                userId,
-              });
+              await withFkRetry(
+                () =>
+                  (
+                    ctx.context.internalAdapter as {
+                      createAccount: (data: {
+                        accountId: string;
+                        createdAt: Date;
+                        id: string;
+                        providerId: string;
+                        updatedAt: Date;
+                        userId: string;
+                      }) => Promise<unknown>;
+                    }
+                  ).createAccount({
+                    accountId,
+                    createdAt: date,
+                    id: newAccountId,
+                    providerId: TELEGRAM_PROVIDER_ID,
+                    updatedAt: date,
+                    userId,
+                  }),
+                "telegram-auth createAccount",
+              );
               user = (await adapter.findOne({
                 model: "user",
                 where: [{ field: "id", value: userId }],
@@ -213,7 +219,7 @@ export function telegramAuthPlugin() {
             });
           }
 
-          const session = await (
+          const createSessionFn = (
             ctx.context.internalAdapter as {
               createSession: (
                 userId: string,
@@ -221,7 +227,16 @@ export function telegramAuthPlugin() {
                 cookie?: boolean,
               ) => Promise<null | { id: string; userId: string }>;
             }
-          ).createSession(user.id, ctx.request as Request | undefined, false);
+          ).createSession.bind(ctx.context.internalAdapter);
+          const session = await withFkRetry(
+            () =>
+              createSessionFn(
+                user.id,
+                ctx.request as Request | undefined,
+                false,
+              ),
+            "telegram-auth createSession",
+          );
           if (!session) {
             throw new APIError("INTERNAL_SERVER_ERROR", {
               message: "Failed to create session",

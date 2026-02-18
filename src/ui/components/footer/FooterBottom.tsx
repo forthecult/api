@@ -108,6 +108,7 @@ function scheduleRetry(): void {
 const CRYPTO_COLORS: Record<CryptoCode, string> = {
   BTC: "#F7931A",
   CRUST: "#9945FF",
+  CULT: "#c4873a",
   DOGE: "#C2A633",
   ETH: "#627EEA",
   PUMP: "#00D26A",
@@ -157,7 +158,8 @@ export function FooterBottom({
             selectedCrypto === "DOGE" ||
             selectedCrypto === "PUMP" ||
             selectedCrypto === "TROLL" ||
-            selectedCrypto === "XMR"
+            selectedCrypto === "XMR" ||
+            selectedCrypto === "CULT"
           ) {
             return new Intl.NumberFormat(undefined, {
               currency,
@@ -199,7 +201,9 @@ export function FooterBottom({
               font-mono-crypto flex cursor-pointer items-center gap-1.5 font-medium
               rounded-sm transition-opacity hover:opacity-80
               ${
-                selectedCrypto === "SOL" || selectedCrypto === "PUMP"
+                selectedCrypto === "SOL" ||
+                selectedCrypto === "PUMP" ||
+                selectedCrypto === "CULT"
                   ? `
                 font-semibold
               `
