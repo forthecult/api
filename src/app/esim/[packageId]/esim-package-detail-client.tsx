@@ -53,6 +53,7 @@ interface CoverageCountry {
 type CryptoSub =
   | "bitcoin"
   | "crust"
+  | "cult"
   | "dogecoin"
   | "eth"
   | "monero"
@@ -277,6 +278,8 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
       return { hash: "#solana", method: "solana_pay" as const, token: "soluna" };
     if (cryptoSub === "seeker")
       return { hash: "#solana", method: "solana_pay" as const, token: "seeker" };
+    if (cryptoSub === "cult")
+      return { hash: "#solana", method: "solana_pay" as const, token: "cult" };
     if (cryptoSub === "other" && cryptoOtherSub === "ton")
       return { hash: "#ton", method: "ton_pay" as const };
     if (cryptoSub === "other" && cryptoOtherSub === "sui")
@@ -294,6 +297,7 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
   const paymentMethodKey = useMemo(() => {
     const map: Record<string, string> = {
       crust: "crypto_crust",
+      cult: "crypto_cult",
       pump: "crypto_pump",
       seeker: "crypto_seeker",
       solana: "crypto_solana",
@@ -373,9 +377,10 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
 
     setPurchasing(true);
     try {
-      // Derive payment method key for discount resolution (e.g. crypto_seeker for 5% eSIM discount)
+      // Derive payment method key for discount resolution (e.g. crypto_cult for 20% eSIM discount)
       const PAYMENT_METHOD_KEY_MAP: Record<string, string> = {
         crust: "crypto_crust",
+        cult: "crypto_cult",
         pump: "crypto_pump",
         seeker: "crypto_seeker",
         solana: "crypto_solana",
