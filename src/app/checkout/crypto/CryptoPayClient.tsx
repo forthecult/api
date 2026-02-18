@@ -43,6 +43,7 @@ import { listUserAccounts, useCurrentUser } from "~/lib/auth-client";
 import { useIsMobile } from "~/lib/hooks/use-mobile";
 import {
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   getSolanaPayLabel,
   PUMP_MINT_MAINNET,
   SKR_MINT_MAINNET,
@@ -69,6 +70,7 @@ const SOL_USD_FALLBACK = 200;
 
 const PAYMENT_LOGO: Record<string, { alt: string; src: string }> = {
   crust: { alt: "CRUST", src: "/crypto/solana/solanaLogoMark.svg" },
+  cult: { alt: "CULT", src: "/crypto/solana/solanaLogoMark.svg" },
   pump: { alt: "Pump", src: "/crypto/pump/pump-logomark.svg" },
   seeker: {
     alt: "Seeker (SKR)",
@@ -84,6 +86,7 @@ const PAYMENT_LOGO: Record<string, { alt: string; src: string }> = {
 
 const PAYMENT_TITLE: Record<string, string> = {
   crust: "Pay with CRUST (Solana)",
+  cult: "Pay with CULT (Solana)",
   pump: "Pay with Pump (Solana)",
   seeker: "Pay with Seeker (SKR) (Solana)",
   solana: "Pay with SOL (Solana)",
@@ -97,6 +100,7 @@ const PAYMENT_TITLE: Record<string, string> = {
 /** Short label for the payment token (for error messages). */
 const TOKEN_LABEL: Record<string, string> = {
   crust: "CRUST",
+  cult: "CULT",
   pump: "PUMP",
   seeker: "SKR",
   solana: "SOL",
@@ -143,6 +147,7 @@ export function CryptoPayClient({
   const [suiParsed] = useState(() => parseSuiHash());
   const [token, setToken] = useState<
     | "crust"
+    | "cult"
     | "pump"
     | "seeker"
     | "solana"
@@ -237,6 +242,7 @@ export function CryptoPayClient({
   });
   const {
     crustPriceUsd,
+    cultPriceUsd,
     pumpPriceUsd,
     seekerPriceUsd,
     solunaPriceUsd,
@@ -251,6 +257,7 @@ export function CryptoPayClient({
     "usdc",
     "whitewhale",
     "crust",
+    "cult",
     "pump",
     "troll",
     "soluna",
@@ -300,6 +307,10 @@ export function CryptoPayClient({
     rate > 0
       ? seekerPriceUsd / rate
       : null;
+  const cultSolPerToken =
+    token === "cult" && cultPriceUsd != null && cultPriceUsd > 0 && rate > 0
+      ? cultPriceUsd / rate
+      : null;
   const amountSol = amountUsd > 0 && rate > 0 ? amountUsd / rate : 0;
   const amountSolStr = amountSol.toFixed(6);
   const crustTokenPriceUsd =
@@ -317,6 +328,10 @@ export function CryptoPayClient({
   const seekerTokenPriceUsd =
     seekerSolPerToken != null && seekerSolPerToken > 0 && rate > 0
       ? seekerSolPerToken * rate
+      : 0;
+  const cultTokenPriceUsd =
+    cultSolPerToken != null && cultSolPerToken > 0 && rate > 0
+      ? cultSolPerToken * rate
       : 0;
   const amountCrust =
     amountUsd > 0 && crustTokenPriceUsd > 0
@@ -336,6 +351,11 @@ export function CryptoPayClient({
       ? amountUsd / seekerTokenPriceUsd
       : 0;
   const amountSeekerStr = amountSeeker.toFixed(6);
+  const amountCult =
+    amountUsd > 0 && cultTokenPriceUsd > 0
+      ? amountUsd / cultTokenPriceUsd
+      : 0;
+  const amountCultStr = amountCult.toFixed(6);
   const amountUsdStr = amountUsd.toFixed(2);
   const amountSui =
     token === "sui" && amountUsd > 0 && (suiUsdRate ?? 0) > 0
@@ -351,7 +371,9 @@ export function CryptoPayClient({
           ? `1 SOLUNA ≈ ${solunaTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
           : token === "seeker" && seekerTokenPriceUsd > 0
             ? `1 SKR ≈ ${seekerTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
-            : token === "usdc"
+            : token === "cult" && cultTokenPriceUsd > 0
+              ? `1 CULT ≈ ${cultTokenPriceUsd.toLocaleString("en-US", { maximumFractionDigits: 6, minimumFractionDigits: 4 })} USD`
+              : token === "usdc"
               ? "1 USDC = 1 USD"
               : token === "whitewhale"
                 ? "1 WhiteWhale ≈ 1 USD"
@@ -371,11 +393,13 @@ export function CryptoPayClient({
             ? "Pump (PUMP)"
             : token === "troll"
               ? "Troll (TROLL)"
-              : token === "soluna"
+                : token === "soluna"
                 ? "SOLUNA (SOLUNA)"
                 : token === "seeker"
                   ? "Seeker (SKR)"
-                  : token === "sui"
+                  : token === "cult"
+                    ? "CULT (CULT)"
+                    : token === "sui"
                     ? "Sui (SUI)"
                     : "Solana";
 
@@ -487,6 +511,26 @@ export function CryptoPayClient({
       setPaymentAddress(recipient);
       return;
     }
+    if (token === "cult") {
+      const solPerToken = cultSolPerToken ?? 0;
+      const r = solUsdRate ?? SOL_USD_FALLBACK;
+      if (solPerToken <= 0 || r <= 0) return;
+      const amount = new BigNumber(amountUsd).div(
+        new BigNumber(solPerToken).times(r),
+      );
+      const keypair = Keypair.generate();
+      const url = encodeURL({
+        amount,
+        label: getSolanaPayLabel(),
+        message: `Order total: $${amountUsd.toFixed(2)}`,
+        recipient: new PublicKey(recipient),
+        reference: keypair.publicKey,
+        splToken: new PublicKey(CULT_MINT_MAINNET),
+      });
+      setPaymentUrl(url);
+      setPaymentAddress(recipient);
+      return;
+    }
     // Native SOL payment (no SPL token)
     if (token === "solana") {
       const r = solUsdRate ?? SOL_USD_FALLBACK;
@@ -587,11 +631,13 @@ export function CryptoPayClient({
             ? SOLUNA_MINT_MAINNET
             : token === "seeker"
               ? SKR_MINT_MAINNET
-              : token === "whitewhale"
-                ? WHITEWHALE_MINT_MAINNET
-                : token === "troll"
-                  ? TROLL_MINT_MAINNET
-                  : USDC_MINT_MAINNET;
+              : token === "cult"
+                ? CULT_MINT_MAINNET
+                : token === "whitewhale"
+                  ? WHITEWHALE_MINT_MAINNET
+                  : token === "troll"
+                    ? TROLL_MINT_MAINNET
+                    : USDC_MINT_MAINNET;
     // For native SOL, amount is in lamports (server uses raw lamport comparison).
     // For SPL tokens, amount must be in human-readable token units (e.g. "1" for 1 USDC),
     // because @solana/pay's validateTransfer multiplies by 10^decimals internally.
@@ -630,7 +676,19 @@ export function CryptoPayClient({
                 )
                   .div(1e6)
                   .toString()
-              : String(amountUsd);
+              : token === "cult" &&
+                  cultSolPerToken != null &&
+                  cultSolPerToken > 0 &&
+                  rate > 0
+                ? tokenAmountFromUsdWithPrice(
+                    amountUsd,
+                    cultSolPerToken,
+                    rate,
+                    6,
+                  )
+                    .div(1e6)
+                    .toString()
+                : String(amountUsd);
     const params = new URLSearchParams({
       amount: amountStr,
       depositAddress: order.depositAddress,
@@ -716,7 +774,9 @@ export function CryptoPayClient({
           ? amountSolunaStr
           : token === "seeker"
             ? amountSeekerStr
-            : token === "usdc" || token === "whitewhale" || token === "troll"
+            : token === "cult"
+              ? amountCultStr
+              : token === "usdc" || token === "whitewhale" || token === "troll"
               ? amountUsdStr
               : amountSolStr;
   const amountUnit =
@@ -728,7 +788,9 @@ export function CryptoPayClient({
           ? "SOLUNA"
           : token === "seeker"
             ? "SKR"
-            : token === "usdc"
+            : token === "cult"
+              ? "CULT"
+              : token === "usdc"
               ? "USDC"
               : token === "whitewhale"
                 ? "WhiteWhale"
@@ -831,6 +893,23 @@ export function CryptoPayClient({
             6,
           );
           splTokenMint = new PublicKey(SKR_MINT_MAINNET);
+        } else if (token === "cult") {
+          if (
+            cultSolPerToken == null ||
+            cultSolPerToken <= 0 ||
+            rate <= 0
+          ) {
+            setPayError("CULT price unavailable. Please try again.");
+            setPayStatus("error");
+            return;
+          }
+          amountBigNumber = tokenAmountFromUsdWithPrice(
+            amountUsd,
+            cultSolPerToken,
+            rate,
+            6,
+          );
+          splTokenMint = new PublicKey(CULT_MINT_MAINNET);
         } else if (token === "usdc") {
           amountBigNumber = usdcAmountFromUsd(amountUsd);
           splTokenMint = new PublicKey(USDC_MINT_MAINNET);
@@ -987,6 +1066,7 @@ export function CryptoPayClient({
     pumpSolPerToken,
     solunaSolPerToken,
     seekerSolPerToken,
+    cultSolPerToken,
     rate,
     requiredLamports,
   ]);
@@ -1052,6 +1132,16 @@ export function CryptoPayClient({
           6,
         );
         splTokenMint = new PublicKey(SKR_MINT_MAINNET);
+      } else if (token === "cult") {
+        if (cultSolPerToken == null || cultSolPerToken <= 0 || rate <= 0)
+          return { reason: "token", sufficient: false };
+        amountBaseUnits = tokenAmountFromUsdWithPrice(
+          amountUsd,
+          cultSolPerToken,
+          rate,
+          6,
+        );
+        splTokenMint = new PublicKey(CULT_MINT_MAINNET);
       } else if (token === "usdc") {
         amountBaseUnits = usdcAmountFromUsd(amountUsd);
         splTokenMint = new PublicKey(USDC_MINT_MAINNET);
@@ -1119,6 +1209,7 @@ export function CryptoPayClient({
     pumpSolPerToken,
     solunaSolPerToken,
     seekerSolPerToken,
+    cultSolPerToken,
     rate,
     requiredLamports,
   ]);
@@ -2026,7 +2117,9 @@ export function CryptoPayClient({
                             ? `${amountSolunaStr} SOLUNA`
                             : token === "seeker"
                               ? `${amountSeekerStr} SKR`
-                              : token === "usdc"
+                              : token === "cult"
+                                ? `${amountCultStr} CULT`
+                                : token === "usdc"
                                 ? `${amountUsdStr} USDC`
                                 : token === "whitewhale"
                                   ? `${amountUsdStr} WhiteWhale`
@@ -2055,7 +2148,9 @@ export function CryptoPayClient({
                         ? `We've converted this price from USD to SOLUNA at our rate of approximately ${rateLabel}.`
                         : token === "seeker"
                           ? `We've converted this price from USD to SKR at our rate of approximately ${rateLabel}.`
-                          : token === "usdc"
+                          : token === "cult"
+                            ? `We've converted this price from USD to CULT at our rate of approximately ${rateLabel}.`
+                            : token === "usdc"
                             ? `Pay in USDC (Solana). ${rateLabel}.`
                             : token === "whitewhale"
                               ? `Pay in WhiteWhale. ${rateLabel}.`

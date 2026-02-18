@@ -105,7 +105,8 @@ type CryptoSub =
   | "seeker"
   | "solana"
   | "soluna"
-  | "troll";
+  | "troll"
+  | "cult";
 type PaymentMethodTop = "credit-card" | "crypto" | "paypal" | "stablecoins";
 type UsdcSub = "arbitrum" | "base" | "ethereum" | "polygon" | "solana";
 type UsdtSub = "arbitrum" | "bnb" | "ethereum" | "polygon";
@@ -213,6 +214,7 @@ export const PaymentMethodSelector = forwardRef<
       if (sub === "troll") return "crypto_troll";
       if (sub === "soluna") return "crypto_soluna";
       if (sub === "seeker") return "crypto_seeker";
+      if (sub === "cult") return "crypto_cult";
       if (sub === "other") {
         if (cryptoOtherSubOption === "sui") return "crypto_sui";
         if (cryptoOtherSubOption === "ton") return "crypto_ton";
@@ -251,6 +253,7 @@ export const PaymentMethodSelector = forwardRef<
 
   const [cryptoPrices, setCryptoPrices] = useState<{
     CRUST?: number;
+    CULT?: number;
     PUMP?: number;
     SKR?: number;
     SOL?: number;
@@ -297,6 +300,7 @@ export const PaymentMethodSelector = forwardRef<
       .then(
         (data: {
           CRUST?: number;
+          CULT?: number;
           PUMP?: number;
           SKR?: number;
           SOL?: number;
@@ -372,6 +376,11 @@ export const PaymentMethodSelector = forwardRef<
         alt: "Seeker (SKR)",
         src: "/crypto/seeker/S_Token_Circle_White.svg",
       });
+    if (visibility.cryptoCult)
+      icons.push({
+        alt: "CULT (CULT)",
+        src: "/crypto/solana/solanaLogoMark.svg",
+      });
     return icons;
   }, [visibility]);
   const visibleUsdcSubOptions = useMemo(() => {
@@ -406,6 +415,7 @@ export const PaymentMethodSelector = forwardRef<
       (paymentMethod === "crypto" && paymentSubOption === "troll") ||
       (paymentMethod === "crypto" && paymentSubOption === "soluna") ||
       (paymentMethod === "crypto" && paymentSubOption === "seeker") ||
+      (paymentMethod === "crypto" && paymentSubOption === "cult") ||
       (paymentMethod === "crypto" && paymentSubOption === "solana"));
 
   const isEvmPaySupported =
@@ -490,6 +500,12 @@ export const PaymentMethodSelector = forwardRef<
       const amount = total / rate;
       return `≈ ${formatCrypto(amount, 6)} SOLUNA`;
     }
+    if (paymentSubOption === "cult") {
+      const rate = cryptoPrices.CULT;
+      if (typeof rate !== "number" || rate <= 0) return null;
+      const amount = total / rate;
+      return `≈ ${formatCrypto(amount, 6)} CULT`;
+    }
     return null;
   }, [
     paymentMethod,
@@ -503,6 +519,7 @@ export const PaymentMethodSelector = forwardRef<
     cryptoPrices.TROLL,
     cryptoPrices.SKR,
     cryptoPrices.SOLUNA,
+    cryptoPrices.CULT,
   ]);
 
   useEffect(() => {
@@ -652,11 +669,13 @@ export const PaymentMethodSelector = forwardRef<
               ? "soluna"
               : paymentMethod === "crypto" && paymentSubOption === "seeker"
                 ? "seeker"
-                : paymentMethod === "stablecoins" &&
-                    stablecoinToken === "usdc" &&
-                    paymentSubOption === "solana"
-                  ? "usdc"
-                  : "solana";
+                : paymentMethod === "crypto" && paymentSubOption === "cult"
+                  ? "cult"
+                  : paymentMethod === "stablecoins" &&
+                      stablecoinToken === "usdc" &&
+                      paymentSubOption === "solana"
+                    ? "usdc"
+                    : "solana";
     try {
       const createRes = await fetch("/api/checkout/solana-pay/create-order", {
         body: JSON.stringify({
@@ -1650,7 +1669,10 @@ export const PaymentMethodSelector = forwardRef<
                       : paymentMethod === "crypto" &&
                           paymentSubOption === "seeker"
                         ? "Pay with Seeker (SKR)"
-                        : paymentMethod === "stablecoins" &&
+                        : paymentMethod === "crypto" &&
+                            paymentSubOption === "cult"
+                          ? "Pay with CULT"
+                          : paymentMethod === "stablecoins" &&
                             stablecoinToken === "usdc" &&
                             paymentSubOption === "solana"
                           ? "Pay with USDC (Solana)"

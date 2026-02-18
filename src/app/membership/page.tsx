@@ -6,7 +6,7 @@ import { MembershipClient } from "./membership-client";
 
 export const metadata: Metadata = {
   description:
-    "Stake CULT to unlock exclusive membership benefits. Free eSIM cards, free shipping, and member-only discounts. Stake for 12 months and get 14 months of eSIM coverage.",
+    "Stake CULT to unlock exclusive membership benefits. Free eSIM cards, free shipping, and member-only discounts. Stake for 12 months and get eSIM benefits for 14 months.",
   title: `Join the Cult | Membership | ${SEO_CONFIG.name}`,
 };
 

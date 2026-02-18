@@ -76,6 +76,7 @@ export async function GET(
         ["eth"].includes(order.cryptoCurrency?.toLowerCase() ?? ""));
     const SOLANA_CURRENCY_TO_TOKEN: Record<string, string> = {
       CRUST: "crust",
+      CULT: "cult",
       PUMP: "pump",
       SKR: "seeker",
       SOL: "solana",

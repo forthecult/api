@@ -22,6 +22,7 @@ export interface PaymentVisibility {
   cryptoDogecoin: boolean;
   cryptoEthereum: boolean;
   cryptoMonero: boolean;
+  cryptoCult: boolean;
   cryptoPump: boolean;
   cryptoSeeker: boolean;
   cryptoSolana: boolean;
@@ -41,6 +42,7 @@ export interface PaymentVisibility {
 const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
   crypto_bitcoin: "cryptoBitcoin",
   crypto_crust: "cryptoCrust",
+  crypto_cult: "cryptoCult",
   crypto_dogecoin: "cryptoDogecoin",
   crypto_ethereum: "cryptoEthereum",
   crypto_monero: "cryptoMonero",
@@ -61,6 +63,7 @@ const DEFAULT_VISIBILITY: PaymentVisibility = {
   creditCard: true,
   cryptoBitcoin: true,
   cryptoCrust: true,
+  cryptoCult: true,
   cryptoDogecoin: true,
   cryptoEthereum: true,
   cryptoMonero: true,
@@ -129,6 +132,7 @@ const CRYPTO_SUB_OPTIONS: {
   { label: "Troll (TROLL)", value: "troll" },
   { label: "SOLUNA (SOLUNA)", value: "soluna" },
   { label: "Seeker (SKR)", value: "seeker" },
+  { label: "CULT (CULT)", value: "cult" },
   { label: "Other", value: "other" },
 ];
 
@@ -214,6 +218,10 @@ export function getFooterPaymentItems(
       name: "Seeker (SKR)",
       src: "/crypto/seeker/S_Token_Circle_White.svg",
     });
+    items.push({
+      name: "CULT (CULT)",
+      src: "/crypto/solana/solanaLogoMark.svg",
+    });
   } else {
     if (visibility.cryptoBitcoin)
       items.push({ name: "Bitcoin", src: "/payments/bitcoin.svg" });
@@ -242,6 +250,11 @@ export function getFooterPaymentItems(
       items.push({
         name: "Seeker (SKR)",
         src: "/crypto/seeker/S_Token_Circle_White.svg",
+      });
+    if (visibility.cryptoCult)
+      items.push({
+        name: "CULT (CULT)",
+        src: "/crypto/solana/solanaLogoMark.svg",
       });
   }
 
@@ -346,6 +359,12 @@ export function getPaymentIconPaths(
         src: "/crypto/seeker/S_Token_Circle_White.svg",
         type: "crypto",
       });
+    if (visibility.cryptoCult)
+      icons.push({
+        alt: "CULT (CULT)",
+        src: "/crypto/solana/solanaLogoMark.svg",
+        type: "crypto",
+      });
     if (visibility.stablecoinUsdc)
       icons.push({
         alt: "USDC",
@@ -423,6 +442,7 @@ export function hasAnyCryptoEnabled(v: PaymentVisibility): boolean {
     v.cryptoTroll ||
     v.cryptoSoluna ||
     v.cryptoSeeker ||
+    v.cryptoCult ||
     v.cryptoSui ||
     v.cryptoTon
   );
@@ -445,6 +465,7 @@ export function visibleCryptoSubFromVisibility(v: PaymentVisibility) {
     if (opt.value === "troll") return v.cryptoTroll;
     if (opt.value === "soluna") return v.cryptoSoluna;
     if (opt.value === "seeker") return v.cryptoSeeker;
+    if (opt.value === "cult") return v.cryptoCult;
     if (opt.value === "other") return v.cryptoSui || v.cryptoTon;
     return true;
   });

@@ -17,6 +17,7 @@ import {
 } from "~/lib/rate-limit";
 import {
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   getSolanaRpcUrlServer,
   PUMP_MINT_MAINNET,
   SKR_MINT_MAINNET,
@@ -55,13 +56,15 @@ export async function GET(request: Request) {
         ? WHITEWHALE_MINT_MAINNET
         : splTokenParam === CRUST_MINT_MAINNET
           ? CRUST_MINT_MAINNET
-          : splTokenParam === PUMP_MINT_MAINNET
-            ? PUMP_MINT_MAINNET
-            : splTokenParam === TROLL_MINT_MAINNET
-              ? TROLL_MINT_MAINNET
-              : splTokenParam === SKR_MINT_MAINNET
-                ? SKR_MINT_MAINNET
-                : USDC_MINT_MAINNET;
+          : splTokenParam === CULT_MINT_MAINNET
+            ? CULT_MINT_MAINNET
+            : splTokenParam === PUMP_MINT_MAINNET
+              ? PUMP_MINT_MAINNET
+              : splTokenParam === TROLL_MINT_MAINNET
+                ? TROLL_MINT_MAINNET
+                : splTokenParam === SKR_MINT_MAINNET
+                  ? SKR_MINT_MAINNET
+                  : USDC_MINT_MAINNET;
 
   if (!amount) {
     return NextResponse.json(

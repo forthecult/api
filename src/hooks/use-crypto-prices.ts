@@ -15,6 +15,7 @@ export function useCryptoPrices({
   enabled?: boolean;
 } = {}): {
   crustPriceUsd: null | number;
+  cultPriceUsd: null | number;
   pumpPriceUsd: null | number;
   seekerPriceUsd: null | number;
   solunaPriceUsd: null | number;
@@ -23,6 +24,7 @@ export function useCryptoPrices({
 } {
   const [solUsdRate, setSolUsdRate] = useState<null | number>(null);
   const [crustPriceUsd, setCrustPriceUsd] = useState<null | number>(null);
+  const [cultPriceUsd, setCultPriceUsd] = useState<null | number>(null);
   const [pumpPriceUsd, setPumpPriceUsd] = useState<null | number>(null);
   const [solunaPriceUsd, setSolunaPriceUsd] = useState<null | number>(null);
   const [seekerPriceUsd, setSeekerPriceUsd] = useState<null | number>(null);
@@ -35,6 +37,7 @@ export function useCryptoPrices({
       .then(
         (data: {
           CRUST?: number;
+          CULT?: number;
           PUMP?: number;
           SKR?: number;
           SOL?: number;
@@ -44,6 +47,8 @@ export function useCryptoPrices({
             setSolUsdRate(data.SOL);
           if (typeof data?.CRUST === "number" && data.CRUST > 0)
             setCrustPriceUsd(data.CRUST);
+          if (typeof data?.CULT === "number" && data.CULT > 0)
+            setCultPriceUsd(data.CULT);
           if (typeof data?.PUMP === "number" && data.PUMP > 0)
             setPumpPriceUsd(data.PUMP);
           if (typeof data?.SOLUNA === "number" && data.SOLUNA > 0)
@@ -56,6 +61,7 @@ export function useCryptoPrices({
         if (err instanceof DOMException && err.name === "AbortError") return;
         setSolUsdRate(SOL_USD_FALLBACK);
         setCrustPriceUsd(null);
+        setCultPriceUsd(null);
         setPumpPriceUsd(null);
         setSolunaPriceUsd(null);
         setSeekerPriceUsd(null);
@@ -66,6 +72,7 @@ export function useCryptoPrices({
   // suiUsdRate: not currently provided by the prices API
   return {
     crustPriceUsd,
+    cultPriceUsd,
     pumpPriceUsd,
     seekerPriceUsd,
     solunaPriceUsd,

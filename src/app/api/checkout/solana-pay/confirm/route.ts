@@ -30,6 +30,7 @@ import {
 } from "~/lib/rate-limit";
 import {
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   getSolanaRpcUrlServer,
   PUMP_MINT_MAINNET,
   SKR_MINT_MAINNET,
@@ -169,13 +170,15 @@ export async function POST(request: NextRequest) {
           ? WHITEWHALE_MINT_MAINNET
           : splToken === CRUST_MINT_MAINNET
             ? CRUST_MINT_MAINNET
-            : splToken === PUMP_MINT_MAINNET
-              ? PUMP_MINT_MAINNET
-              : splToken === TROLL_MINT_MAINNET
-                ? TROLL_MINT_MAINNET
-                : splToken === SKR_MINT_MAINNET
-                  ? SKR_MINT_MAINNET
-                  : USDC_MINT_MAINNET;
+            : splToken === CULT_MINT_MAINNET
+              ? CULT_MINT_MAINNET
+              : splToken === PUMP_MINT_MAINNET
+                ? PUMP_MINT_MAINNET
+                : splToken === TROLL_MINT_MAINNET
+                  ? TROLL_MINT_MAINNET
+                  : splToken === SKR_MINT_MAINNET
+                    ? SKR_MINT_MAINNET
+                    : USDC_MINT_MAINNET;
 
     let verifiedNativeSolLamports: number | undefined;
     try {
@@ -282,13 +285,17 @@ export async function POST(request: NextRequest) {
       ? "SOL"
       : splTokenMint === CRUST_MINT_MAINNET
         ? "CRUST"
-        : splTokenMint === PUMP_MINT_MAINNET
-          ? "PUMP"
-          : splTokenMint === TROLL_MINT_MAINNET
-            ? "TROLL"
-            : splTokenMint === WHITEWHALE_MINT_MAINNET
-              ? "WHITEWHALE"
-              : "USDC";
+        : splTokenMint === CULT_MINT_MAINNET
+          ? "CULT"
+          : splTokenMint === PUMP_MINT_MAINNET
+            ? "PUMP"
+            : splTokenMint === TROLL_MINT_MAINNET
+              ? "TROLL"
+              : splTokenMint === WHITEWHALE_MINT_MAINNET
+                ? "WHITEWHALE"
+                : splTokenMint === SKR_MINT_MAINNET
+                  ? "SKR"
+                  : "USDC";
 
     // For native SOL, store the actual SOL amount from the verified tx (not USD)
     const amountToStore =

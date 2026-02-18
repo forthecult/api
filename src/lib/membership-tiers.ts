@@ -174,7 +174,7 @@ export const MEMBERSHIP_FAQ = [
     q: "What eSIM card do I get?",
   },
   {
-    a: "Staking for 12 months gives you 14 months of eSIM coverage—that's 2 extra months free. It also demonstrates long-term commitment to the community, which strengthens the ecosystem for everyone.",
+    a: "Staking for 12 months gives you eSIM benefits for 14 months—that's 2 extra months free. It also demonstrates long-term commitment to the community, which strengthens the ecosystem for everyone.",
     q: "Why stake for 12 months?",
   },
 ];

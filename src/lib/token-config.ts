@@ -44,10 +44,14 @@ const SOLUNA: TokenDef = {
   symbol: "SOLUNA",
 };
 
+/** CULT Token-2022 mint (Solana). CA: 6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump */
+export const CULT_MINT_MAINNET =
+  "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
+
 const CULT: TokenDef = {
   decimals: 6,
   key: "CULT",
-  mint: "", // Set when launched
+  mint: CULT_MINT_MAINNET,
   name: "CULT",
   symbol: "CULT",
   tokenProgram: TOKEN_2022_PROGRAM_ID_BASE58, // CULT is Token-2022

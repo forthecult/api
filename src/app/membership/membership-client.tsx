@@ -921,7 +921,7 @@ export function MembershipClient() {
                       </Badge>
                       <span className="font-semibold">12 Months</span>
                       <span className="block text-sm text-muted-foreground">
-                        14 months of eSIM
+                        eSIM benefits for 14 months
                       </span>
                     </button>
                   </div>
@@ -1758,7 +1758,7 @@ export function MembershipClient() {
                     "Instant activation—no physical SIM needed",
                     "Coverage in 200+ countries and regions",
                     "Flexible data plans from 1GB to unlimited",
-                    "Stake 12 months, get 14 months of eSIM coverage",
+                    "Stake 12 months, get eSIM benefits for 14 months",
                   ].map((item) => (
                     <li className="flex items-start gap-3" key={item}>
                       <Check className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
@@ -1856,7 +1856,7 @@ export function MembershipClient() {
                 md:text-3xl
               `}
               >
-                Stake 12 Months, Get 14 Months of eSIM
+                Stake 12 Months, Get eSIM Benefits for 14 Months
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
                 Commit to a 12-month stake and we&apos;ll extend your eSIM
@@ -1934,7 +1934,7 @@ export function MembershipClient() {
                     months
                   </p>
                   <p className="mt-3 text-sm text-muted-foreground">
-                    Get 14 months of eSIM coverage. Best value for committed
+                    eSIM benefits for 14 months. Best value for committed
                     members.
                   </p>
                 </div>

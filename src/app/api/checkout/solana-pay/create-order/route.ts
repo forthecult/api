@@ -72,6 +72,7 @@ export async function POST(request: NextRequest) {
     // Map frontend token to stored crypto currency (for balance check / UI on payment page)
     const SOLANA_TOKEN_TO_CURRENCY: Record<string, string> = {
       crust: "CRUST",
+      cult: "CULT",
       pump: "PUMP",
       seeker: "SKR",
       solana: "SOL",
@@ -98,6 +99,7 @@ export async function POST(request: NextRequest) {
     // ── Resolve discounts ──────────────────────────────────────────────
     const TOKEN_TO_PAYMENT_METHOD_KEY: Record<string, null | string> = {
       crust: "crypto_crust",
+      cult: "crypto_cult",
       pump: "crypto_pump",
       seeker: "crypto_seeker",
       solana: "crypto_solana",

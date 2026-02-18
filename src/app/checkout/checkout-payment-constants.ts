@@ -26,7 +26,8 @@ export const CRYPTO_SUB_OPTIONS: {
     | "seeker"
     | "solana"
     | "soluna"
-    | "troll";
+    | "troll"
+    | "cult";
 }[] = [
   { label: "Bitcoin (BTC)", value: "bitcoin" },
   { label: "Dogecoin (DOGE)", value: "dogecoin" },
@@ -38,6 +39,7 @@ export const CRYPTO_SUB_OPTIONS: {
   { label: "Troll (TROLL)", value: "troll" },
   { label: "SOLUNA (SOLUNA)", value: "soluna" },
   { label: "Seeker (SKR)", value: "seeker" },
+  { label: "CULT (CULT)", value: "cult" },
   { label: "Other", value: "other" },
 ];
 
@@ -56,6 +58,7 @@ export const INITIAL_CRYPTO_SUB = (VISIBLE_CRYPTO_SUB_OPTIONS[0]?.value ??
   "eth") as
   | "bitcoin"
   | "crust"
+  | "cult"
   | "dogecoin"
   | "eth"
   | "monero"
@@ -93,17 +96,19 @@ export const CRYPTO_LOGO_SRC: Partial<
     | "monero"
     | "other"
     | "pump"
-    | "seeker"
-    | "solana"
-    | "soluna"
-    | "sui"
-    | "ton"
-    | "troll",
-    string
+  | "seeker"
+  | "solana"
+  | "soluna"
+  | "sui"
+  | "ton"
+  | "troll"
+  | "cult",
+  string
   >
 > = {
   bitcoin: "/crypto/bitcoin/bitcoin-logo.svg",
   crust: "/crypto/solana/solanaLogoMark.svg",
+  cult: "/crypto/solana/solanaLogoMark.svg",
   dogecoin: "/payments/doge.svg",
   eth: "/crypto/ethereum/ethereum-logo.svg",
   monero: "/crypto/monero/monero-xmr-logo.svg",

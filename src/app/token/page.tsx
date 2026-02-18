@@ -12,6 +12,7 @@ import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
+import { CULT_MINT_MAINNET } from "~/lib/token-config";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -265,6 +266,21 @@ export default function TokenPage() {
               Holding CULT gives free shipping. Spending CULT gives up to 20%
               discount on eligible purchases. We kept 13.37% supply for the team, locked for 1 year. You
               get the rest.
+            </p>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Contract address (Solana):{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">
+                {CULT_MINT_MAINNET}
+              </code>{" "}
+              <Link
+                className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+                href={`${SOLSCAN_BASE}/${CULT_MINT_MAINNET}`}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                View on Solscan
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
             </p>
           </div>
         </section>

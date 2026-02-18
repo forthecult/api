@@ -13,6 +13,7 @@ import {
 import { getPumpTokenPriceInSol } from "~/lib/pump-price";
 import {
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   getSolanaRpcUrlServer,
   PUMP_MINT_MAINNET,
   SKR_MINT_MAINNET,
@@ -36,6 +37,7 @@ export const revalidate = 60;
 export interface CryptoPricesResponse {
   BTC?: number;
   CRUST?: number;
+  CULT?: number;
   DOGE?: number;
   ETH?: number;
   PUMP?: number;
@@ -55,6 +57,7 @@ export interface CryptoPricesResponse {
 const FALLBACK_PRICES: CryptoPricesResponse = {
   BTC: 100000,
   CRUST: 0.0001,
+  CULT: 0.0001,
   DOGE: 0.35,
   ETH: 3500,
   PUMP: 0.01,
@@ -114,6 +117,7 @@ export async function GET() {
         const connection = new Connection(getSolanaRpcUrlServer());
         const [
           crustSolPerToken,
+          cultSolPerToken,
           pumpSolPerToken,
           trollSolPerToken,
           solunaSolPerToken,
@@ -122,6 +126,15 @@ export async function GET() {
             getPumpTokenPriceInSol(
               connection,
               new PublicKey(CRUST_MINT_MAINNET),
+            ),
+            new Promise<number>((resolve) =>
+              setTimeout(() => resolve(0), FETCH_TIMEOUT),
+            ),
+          ]),
+          Promise.race([
+            getPumpTokenPriceInSol(
+              connection,
+              new PublicKey(CULT_MINT_MAINNET),
             ),
             new Promise<number>((resolve) =>
               setTimeout(() => resolve(0), FETCH_TIMEOUT),
@@ -159,6 +172,7 @@ export async function GET() {
           ]),
         ]);
         if (crustSolPerToken > 0) prices.CRUST = crustSolPerToken * solUsd;
+        if (cultSolPerToken > 0) prices.CULT = cultSolPerToken * solUsd;
         if (pumpSolPerToken > 0 && (prices.PUMP == null || prices.PUMP <= 0)) {
           prices.PUMP = pumpSolPerToken * solUsd;
         }
@@ -181,6 +195,11 @@ export async function GET() {
     // SOLUNA fallback when pump.fun doesn't return a price
     if (prices.SOLUNA == null || prices.SOLUNA <= 0) {
       prices.SOLUNA = FALLBACK_PRICES.SOLUNA ?? 0.01;
+    }
+
+    // CULT fallback when pump.fun doesn't return a price
+    if (prices.CULT == null || prices.CULT <= 0) {
+      prices.CULT = FALLBACK_PRICES.CULT ?? 0.0001;
     }
 
     // SKR (Seeker) fallback when CoinGecko doesn't return a price
