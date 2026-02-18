@@ -14,6 +14,8 @@ import {
   getAssociatedTokenAddressSync,
   getMint,
   TOKEN_PROGRAM_ID,
+  unpackAccount,
+  ACCOUNT_SIZE,
 } from "@solana/spl-token";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import {
@@ -32,6 +34,7 @@ import { ordersTable } from "~/db/schema";
 import { deriveDepositKeypair } from "~/lib/solana-deposit";
 import {
   CRUST_MINT_MAINNET,
+  CULT_MINT_MAINNET,
   PUMP_MINT_MAINNET,
   TROLL_MINT_MAINNET,
   USDC_MINT_MAINNET,
@@ -45,6 +48,7 @@ const RENT_EXEMPT_MIN_LAMPORTS = 890_880;
 /** Known mint addresses -> display symbol for sweep UI */
 const KNOWN_MINT_LABELS: Record<string, string> = {
   [CRUST_MINT_MAINNET]: "CRUST",
+  [CULT_MINT_MAINNET]: "CULT",
   [PUMP_MINT_MAINNET]: "PUMP",
   [TROLL_MINT_MAINNET]: "TROLL",
   [USDC_MINT_MAINNET]: "USDC",
@@ -358,21 +362,28 @@ function getRpcUrl(): string {
   return url.trim() || "https://rpc.ankr.com/solana";
 }
 
+/**
+ * Fetch all token accounts with balance > 0 for an owner and program.
+ * Uses parsed RPC response first; falls back to raw getTokenAccountsByOwner + decode
+ * so Token-2022 tokens (e.g. CULT) are found when the RPC doesn't return parsed data.
+ */
 async function getTokenAccountsWithBalance(
   connection: Connection,
   owner: PublicKey,
   programId: PublicKey,
 ): Promise<TokenAccountInfo[]> {
-  const out: TokenAccountInfo[] = [];
-  const resp = await connection.getParsedTokenAccountsByOwner(owner, {
+  const byAta = new Map<string, TokenAccountInfo>();
+
+  // 1) Parsed response (works for standard SPL on most RPCs)
+  const parsedResp = await connection.getParsedTokenAccountsByOwner(owner, {
     programId,
   });
-  for (const { account, pubkey } of resp.value) {
-    const parsed = account.data.parsed?.info;
+  for (const { account, pubkey } of parsedResp.value) {
+    const parsed = account.data?.parsed?.info;
     if (!parsed?.mint || !parsed?.tokenAmount) continue;
     const amount = parsed.tokenAmount.amount;
     if (amount === "0" || !amount) continue;
-    out.push({
+    byAta.set(pubkey.toBase58(), {
       amount,
       ata: pubkey,
       decimals: parsed.tokenAmount.decimals ?? 0,
@@ -380,5 +391,42 @@ async function getTokenAccountsWithBalance(
       programId,
     });
   }
-  return out;
+
+  // 2) Fallback: raw accounts (catches Token-2022 when RPC doesn't parse)
+  const rawResp = await connection.getTokenAccountsByOwner(owner, {
+    programId,
+  });
+  for (const { account, pubkey } of rawResp.value) {
+    if (byAta.has(pubkey.toBase58())) continue;
+    let data: Buffer =
+      typeof account.data === "string"
+        ? Buffer.from(account.data, "base64")
+        : Buffer.from(account.data);
+    if (data.length < ACCOUNT_SIZE) continue;
+    try {
+      const unpacked = unpackAccount(
+        pubkey,
+        { ...account, data } as Parameters<typeof unpackAccount>[1],
+        programId,
+      );
+      if (unpacked.amount <= 0n) continue;
+      const mintInfo = await getMint(
+        connection,
+        unpacked.mint,
+        "confirmed",
+        programId,
+      );
+      byAta.set(pubkey.toBase58(), {
+        amount: String(unpacked.amount),
+        ata: pubkey,
+        decimals: mintInfo.decimals,
+        mint: unpacked.mint.toBase58(),
+        programId,
+      });
+    } catch {
+      // Skip invalid or unsupported account layout
+    }
+  }
+
+  return Array.from(byAta.values());
 }

@@ -15,9 +15,13 @@ export async function GET(request: NextRequest) {
 
     const result = await getEsimGlobalPackages(packageType);
 
-    // Apply markup only. No per-package detail calls — they caused slow loading
-    // and timeouts. 5G badge is shown on the detail page when opened.
-    const data = result.data.map((pkg) => ({
+    // Provider may return mixed types; filter to the requested type so "Data + Voice + SMS" only shows those.
+    const requestedType = packageType;
+    const filtered = result.data.filter(
+      (pkg) => (pkg.package_type ?? "DATA-ONLY") === requestedType,
+    );
+
+    const data = filtered.map((pkg) => ({
       ...pkg,
       price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
       reseller_price: pkg.price,

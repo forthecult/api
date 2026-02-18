@@ -37,6 +37,8 @@ import {
   getAssociatedTokenAddressSync,
   getMint,
   TOKEN_PROGRAM_ID,
+  unpackAccount,
+  ACCOUNT_SIZE,
 } from "@solana/spl-token";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import bs58 from "bs58";
@@ -84,21 +86,26 @@ function getFeePayerKeypair(): Keypair | null {
   }
 }
 
+/**
+ * Fetch all token accounts with balance > 0. Uses parsed RPC first; falls back to
+ * raw getTokenAccountsByOwner + decode so Token-2022 (e.g. CULT) is found when RPC doesn't parse.
+ */
 async function getTokenAccountsWithBalance(
   connection: Connection,
   owner: PublicKey,
   programId: PublicKey,
 ): Promise<TokenAccountInfo[]> {
-  const out: TokenAccountInfo[] = [];
-  const resp = await connection.getParsedTokenAccountsByOwner(owner, {
+  const byAta = new Map<string, TokenAccountInfo>();
+
+  const parsedResp = await connection.getParsedTokenAccountsByOwner(owner, {
     programId,
   });
-  for (const { pubkey, account } of resp.value) {
-    const parsed = account.data.parsed?.info;
+  for (const { pubkey, account } of parsedResp.value) {
+    const parsed = account.data?.parsed?.info;
     if (!parsed?.mint || !parsed?.tokenAmount) continue;
     const amount = parsed.tokenAmount.amount;
     if (amount === "0" || !amount) continue;
-    out.push({
+    byAta.set(pubkey.toBase58(), {
       mint: parsed.mint,
       amount,
       decimals: parsed.tokenAmount.decimals ?? 0,
@@ -106,7 +113,43 @@ async function getTokenAccountsWithBalance(
       programId,
     });
   }
-  return out;
+
+  const rawResp = await connection.getTokenAccountsByOwner(owner, {
+    programId,
+  });
+  for (const { pubkey, account } of rawResp.value) {
+    if (byAta.has(pubkey.toBase58())) continue;
+    const data: Buffer =
+      typeof account.data === "string"
+        ? Buffer.from(account.data, "base64")
+        : Buffer.from(account.data);
+    if (data.length < ACCOUNT_SIZE) continue;
+    try {
+      const unpacked = unpackAccount(
+        pubkey,
+        { ...account, data } as Parameters<typeof unpackAccount>[1],
+        programId,
+      );
+      if (unpacked.amount <= 0n) continue;
+      const mintInfo = await getMint(
+        connection,
+        unpacked.mint,
+        "confirmed",
+        programId,
+      );
+      byAta.set(pubkey.toBase58(), {
+        mint: unpacked.mint.toBase58(),
+        amount: String(unpacked.amount),
+        decimals: mintInfo.decimals,
+        ata: pubkey,
+        programId,
+      });
+    } catch {
+      // Skip invalid or unsupported account layout
+    }
+  }
+
+  return Array.from(byAta.values());
 }
 
 async function main() {
