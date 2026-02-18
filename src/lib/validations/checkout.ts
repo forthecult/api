@@ -51,7 +51,7 @@ export const createOrderSchema = z.object({
   // Telegram Mini App — when order is placed from Telegram
   telegramUserId: z.string().optional(),
   telegramUsername: z.string().optional(),
-  // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna | seeker)
+  // Solana Pay: which token was selected (solana | usdc | whitewhale | crust | pump | troll | soluna | seeker | cult)
   token: z
     .enum([
       "solana",
@@ -62,6 +62,7 @@ export const createOrderSchema = z.object({
       "troll",
       "soluna",
       "seeker",
+      "cult",
     ])
     .optional(),
   totalCents: z.number().int().nonnegative("Total must be non-negative"),

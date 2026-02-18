@@ -1,0 +1,46 @@
+<svg width="1000" height="1000" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="sealGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="rgba(196,135,58,0.15)" />
+      <stop offset="100%" stop-color="transparent" />
+    </radialGradient>
+    <filter id="sealFilter" x="-15%" y="-15%" width="130%" height="130%">
+      <feGaussianBlur stdDeviation="1.5" result="b" />
+      <feComposite in="SourceGraphic" in2="b" operator="over" />
+    </filter>
+  </defs>
+  
+  <rect width="200" height="200" fill="#0c0a07"/>
+  
+  <circle cx="100" cy="100" r="90" fill="url(#sealGlow)" />
+  
+  <path d="M 100.00 9.00 L 107.50 14.33 L 115.80 10.38 L 122.26 16.93 L 131.12 14.49 L 136.35 22.06 L 145.50 21.19 L 149.33 29.55 L 158.49 30.29 L 160.81 39.19 L 169.71 41.51 L 170.45 50.67 L 178.81 54.50 L 177.94 63.65 L 185.51 68.88 L 183.07 77.74 L 189.62 84.20 L 185.67 92.50 L 191.00 100.00 L 185.67 107.50 L 189.62 115.80 L 183.07 122.26 L 185.51 131.12 L 177.94 136.35 L 178.81 145.50 L 170.45 149.33 L 169.71 158.49 L 160.81 160.81 L 158.49 169.71 L 149.33 170.45 L 145.50 178.81 L 136.35 177.94 L 131.12 185.51 L 122.26 183.07 L 115.80 189.62 L 107.50 185.67 L 100.00 191.00 L 92.50 185.67 L 84.20 189.62 L 77.74 183.07 L 68.88 185.51 L 63.65 177.94 L 54.50 178.81 L 50.67 170.45 L 41.51 169.71 L 39.19 160.81 L 30.29 158.49 L 29.55 149.33 L 21.19 145.50 L 22.06 136.35 L 14.49 131.12 L 16.93 122.26 L 10.38 115.80 L 14.33 107.50 L 9.00 100.00 L 14.33 92.50 L 10.38 84.20 L 16.93 77.74 L 14.49 68.88 L 22.06 63.65 L 21.19 54.50 L 29.55 50.67 L 30.29 41.51 L 39.19 39.19 L 41.51 30.29 L 50.67 29.55 L 54.50 21.19 L 63.65 22.06 L 68.88 14.49 L 77.74 16.93 L 84.20 10.38 L 92.50 14.33 Z" stroke="#c4873a" stroke-width="1" fill="none" opacity=".5" />
+  
+  <circle cx="100" cy="100" r="82" stroke="#c4873a" stroke-width=".6" fill="none" opacity=".25" />
+  
+  <circle cx="100" cy="100" r="72" stroke="#c4873a" stroke-width="1.2" fill="none" opacity=".4" />
+  
+  <circle cx="100" cy="100" r="48" stroke="#c4873a" stroke-width=".8" fill="none" opacity=".3" />
+  
+  <polygon points="100,95.0 105.0,38 100,105.0 95.0,38" fill="#c4873a" opacity=".35"/>
+  <polygon points="162,100.0 157.0,95 152,100.0 157.0,105" fill="#c4873a" opacity=".35"/>
+  <polygon points="100,105.0 95.0,162 100,95.0 105.0,162" fill="#c4873a" opacity=".35"/>
+  <polygon points="38,100.0 43.0,105 48,100.0 43.0,95" fill="#c4873a" opacity=".35"/>
+  
+  <line x1="100.0" y1="49.0" x2="100.0" y2="71.0" stroke="#c4873a" stroke-width=".7" opacity=".2"/>
+  <line x1="151.0" y1="100.0" x2="129.0" y2="100.0" stroke="#c4873a" stroke-width=".7" opacity=".2"/>
+  <line x1="100.0" y1="151.0" x2="100.0" y2="129.0" stroke="#c4873a" stroke-width=".7" opacity=".2"/>
+  <line x1="49.0" y1="100.0" x2="71.0" y2="100.0" stroke="#c4873a" stroke-width=".7" opacity=".2"/>
+  
+  <text x="100" y="114" text-anchor="middle" font-family="'Cormorant Garamond', 'Georgia', serif" font-size="58" font-weight="600" fill="#c4873a" opacity=".9" filter="url(#sealFilter)" letter-spacing="-2">C</text>
+  
+  <path id="textRing" d="M 28 100 A 72 72 0 0 1 172 100" fill="none" />
+  <text font-family="'JetBrains Mono', monospace" font-size="7" letter-spacing="3.5" fill="#c4873a" opacity=".35">
+    <textPath href="#textRing" startOffset="12%">FOR · THE · CULT</textPath>
+  </text>
+  
+  <path id="textRingBot" d="M 172 100 A 72 72 0 0 1 28 100" fill="none" />
+  <text font-family="'JetBrains Mono', monospace" font-size="6" letter-spacing="3" fill="#c4873a" opacity=".2">
+    <textPath href="#textRingBot" startOffset="14%">CULTURE · SOLANA</textPath>
+  </text>
+</svg>

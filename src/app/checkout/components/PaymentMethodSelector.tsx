@@ -379,7 +379,7 @@ export const PaymentMethodSelector = forwardRef<
     if (visibility.cryptoCult)
       icons.push({
         alt: "CULT (CULT)",
-        src: "/crypto/solana/solanaLogoMark.svg",
+        src: "/crypto/cult/cult-logo.png",
       });
     return icons;
   }, [visibility]);
