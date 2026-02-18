@@ -27,7 +27,7 @@ export const PAYMENT_METHOD_DEFAULTS: {
   { displayOrder: 17, label: "Troll (TROLL)", methodKey: "crypto_troll" },
   { displayOrder: 18, label: "SOLUNA (SOLUNA)", methodKey: "crypto_soluna" },
   { displayOrder: 19, label: "Seeker (SKR)", methodKey: "crypto_seeker" },
-  { displayOrder: 19.5, label: "CULT (CULT)", methodKey: "crypto_cult" },
+  { displayOrder: 19.5, label: "Culture (CULT)", methodKey: "crypto_cult" },
   { displayOrder: 20, label: "Sui (SUI)", methodKey: "crypto_sui" },
   { displayOrder: 21, label: "TON", methodKey: "crypto_ton" },
   {

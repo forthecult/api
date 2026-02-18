@@ -30,16 +30,16 @@ export const CRYPTO_SUB_OPTIONS: {
     | "cult";
 }[] = [
   { label: "Bitcoin (BTC)", value: "bitcoin" },
+  { label: "Culture (CULT)", value: "cult" },
   { label: "Dogecoin (DOGE)", value: "dogecoin" },
   { label: "Ethereum (ETH)", value: "eth" },
-  { label: "Solana (SOL)", value: "solana" },
   { label: "Monero (XMR)", value: "monero" },
+  { label: "Solana (SOL)", value: "solana" },
   { label: "Crustafarian (CRUST)", value: "crust" },
   { label: "Pump (PUMP)", value: "pump" },
-  { label: "Troll (TROLL)", value: "troll" },
-  { label: "SOLUNA (SOLUNA)", value: "soluna" },
   { label: "Seeker (SKR)", value: "seeker" },
-  { label: "CULT (CULT)", value: "cult" },
+  { label: "SOLUNA (SOLUNA)", value: "soluna" },
+  { label: "Troll (TROLL)", value: "troll" },
   { label: "Other", value: "other" },
 ];
 

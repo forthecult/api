@@ -398,7 +398,7 @@ export function CryptoPayClient({
                 : token === "seeker"
                   ? "Seeker (SKR)"
                   : token === "cult"
-                    ? "CULT (CULT)"
+                    ? "Culture (CULT)"
                     : token === "sui"
                     ? "Sui (SUI)"
                     : "Solana";

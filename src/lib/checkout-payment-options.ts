@@ -123,16 +123,16 @@ const CRYPTO_SUB_OPTIONS: {
   value: string;
 }[] = [
   { label: "Bitcoin (BTC)", value: "bitcoin" },
+  { label: "Culture (CULT)", value: "cult" },
   { label: "Dogecoin (DOGE)", value: "dogecoin" },
   { label: "Ethereum (ETH)", value: "eth" },
-  { label: "Solana (SOL)", value: "solana" },
   { label: "Monero (XMR)", value: "monero" },
+  { label: "Solana (SOL)", value: "solana" },
   { label: "Crustafarian (CRUST)", value: "crust" },
   { label: "Pump (PUMP)", value: "pump" },
-  { label: "Troll (TROLL)", value: "troll" },
-  { label: "SOLUNA (SOLUNA)", value: "soluna" },
   { label: "Seeker (SKR)", value: "seeker" },
-  { label: "CULT (CULT)", value: "cult" },
+  { label: "SOLUNA (SOLUNA)", value: "soluna" },
+  { label: "Troll (TROLL)", value: "troll" },
   { label: "Other", value: "other" },
 ];
 
@@ -219,7 +219,7 @@ export function getFooterPaymentItems(
       src: "/crypto/seeker/S_Token_Circle_White.svg",
     });
     items.push({
-      name: "CULT (CULT)",
+      name: "Culture (CULT)",
       src: "/crypto/cult/cult-logo.svg",
     });
   } else {
@@ -253,7 +253,7 @@ export function getFooterPaymentItems(
       });
     if (visibility.cryptoCult)
       items.push({
-        name: "CULT (CULT)",
+        name: "Culture (CULT)",
         src: "/crypto/cult/cult-logo.svg",
       });
   }
@@ -361,7 +361,7 @@ export function getPaymentIconPaths(
       });
     if (visibility.cryptoCult)
       icons.push({
-        alt: "CULT (CULT)",
+        alt: "Culture (CULT)",
         src: "/crypto/cult/cult-logo.svg",
         type: "crypto",
       });

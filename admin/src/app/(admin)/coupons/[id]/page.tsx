@@ -44,7 +44,7 @@ const PAYMENT_METHOD_OPTIONS: { key: string; label: string }[] = [
   { key: "crypto_troll", label: "Troll (TROLL)" },
   { key: "crypto_soluna", label: "SOLUNA (SOLUNA)" },
   { key: "crypto_seeker", label: "Seeker (SKR)" },
-  { key: "crypto_cult", label: "CULT (CULT)" },
+  { key: "crypto_cult", label: "Culture (CULT)" },
   { key: "crypto_sui", label: "Sui (SUI)" },
   { key: "crypto_ton", label: "TON" },
   { key: "stablecoin_usdc", label: "USDC (Stablecoin)" },

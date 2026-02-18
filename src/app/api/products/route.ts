@@ -98,7 +98,9 @@ export async function GET(request: NextRequest) {
       : "newest";
     const offset = (page - 1) * limit;
 
-    const categorySlugToFilter = subcategory || category;
+    let categorySlugToFilter = subcategory || category;
+    // URL-friendly alias: "featured" → "__featured__" (products in featured categories)
+    if (categorySlugToFilter === "featured") categorySlugToFilter = "__featured__";
 
     // For manual sort we need the sortOrder from the junction table, keyed by productId.
     // Fetched separately and wrapped in try-catch so the feature degrades gracefully

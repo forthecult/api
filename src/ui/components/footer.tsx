@@ -151,18 +151,7 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
-                  href="/travel-lifestyle"
-                >
-                  Travel &amp; Lifestyle
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className={`
-                    text-muted-foreground transition-colors
-                    hover:text-foreground
-                  `}
-                  href="/best-sellers"
+                  href="/featured"
                 >
                   Best Sellers
                 </Link>

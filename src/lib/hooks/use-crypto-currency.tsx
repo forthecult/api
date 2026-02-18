@@ -294,7 +294,7 @@ export const CRYPTO_OPTIONS: {
   {
     code: "CULT",
     iconSrc: "/crypto/cult/cult-logo.svg",
-    label: "CULT (CULT)",
+    label: "Culture (CULT)",
   },
   {
     code: "XMR",
