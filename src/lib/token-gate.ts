@@ -240,6 +240,36 @@ export async function getTokenGateConfig(
 }
 
 /**
+ * Whether a product's token gates are satisfied by a category's gates.
+ * Used when the user has already passed the category gate: if the product
+ * requires the same (or a weaker) token requirement, we treat the product as passed.
+ * Product passes if at least one product gate is satisfied by some category gate
+ * (same token: network + mint/contract or symbol, and category quantity >= product quantity).
+ */
+export function productGatesSatisfiedByCategory(
+  productGates: TokenGateRule[],
+  categoryGates: TokenGateRule[],
+): boolean {
+  if (productGates.length === 0) return true;
+  const norm = (s: null | string) => (s ?? "solana").toLowerCase().trim();
+  for (const pg of productGates) {
+    const pNet = norm(pg.network);
+    const pMint = (pg.mintOrContract ?? "").trim().toLowerCase();
+    const pSym = (pg.tokenSymbol ?? "").trim().toUpperCase();
+    for (const cg of categoryGates) {
+      const cNet = norm(cg.network);
+      const cMint = (cg.mintOrContract ?? "").trim().toLowerCase();
+      const cSym = (cg.tokenSymbol ?? "").trim().toUpperCase();
+      const sameToken =
+        pNet === cNet &&
+        (pMint && cMint ? pMint === cMint : pSym === cSym);
+      if (sameToken && cg.quantity >= pg.quantity) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Resolve token symbol + network to mint/contract for balance check.
  * For Solana SPL: any token is supported by setting contractAddress to the token's mint address.
  * When contractAddress is not set, only known symbols (CULT, CRUST) resolve to a default mint.

@@ -29,7 +29,12 @@ import {
   computeCryptoCategoryIdsIncludingDescendants,
   SHOW_IN_ALL_PRODUCTS_CATEGORY_SLUG,
 } from "~/lib/storefront-categories";
-import { formatTokenGateSummaryToDisplay } from "~/lib/token-gate";
+import {
+  formatTokenGateSummaryToDisplay,
+  getCategoryTokenGates,
+  getProductTokenGates,
+  productGatesSatisfiedByCategory,
+} from "~/lib/token-gate";
 import { hasValidTokenGateCookie } from "~/lib/token-gate-cookie";
 
 const DEFAULT_LIMIT = 12;
@@ -231,6 +236,20 @@ export async function GET(request: NextRequest) {
           productIdsFilter = null;
         }
       }
+    }
+
+    // Category id for the requested slug (used to treat product gate as passed when category gate is passed and product requirement is weaker).
+    let categoryIdForRequest: string | null = null;
+    if (
+      categorySlugToFilter &&
+      categorySlugToFilter !== "__featured__"
+    ) {
+      const [catRow] = await db
+        .select({ id: categoriesTable.id })
+        .from(categoriesTable)
+        .where(eq(categoriesTable.slug, categorySlugToFilter))
+        .limit(1);
+      categoryIdForRequest = catRow?.id ?? null;
     }
 
     // If manual sort was requested and we have a category filter, try to load sort_order.
@@ -500,11 +519,41 @@ export async function GET(request: NextRequest) {
         )
       : undefined;
 
+    // If user passed the category gate, treat token-gated products as passed when the product's requirement is satisfied by the category (e.g. category ≥100 PUMP, product ≥50 PUMP).
+    const productSatisfiedByCategoryIds = new Set<string>();
+    if (
+      categoryIdForRequest &&
+      tgCookieValue &&
+      hasValidTokenGateCookie(tgCookieValue, "category", categoryIdForRequest)
+    ) {
+      const categoryConfig = await getCategoryTokenGates(categoryIdForRequest);
+      if (categoryConfig.tokenGated && categoryConfig.gates.length > 0) {
+        for (const item of rawItems) {
+          if (!item.tokenGated) continue;
+          const productConfig = await getProductTokenGates(item.id);
+          if (
+            productConfig.tokenGated &&
+            productGatesSatisfiedByCategory(
+              productConfig.gates,
+              categoryConfig.gates,
+            )
+          ) {
+            productSatisfiedByCategoryIds.add(item.id);
+          }
+        }
+      }
+    }
+
     const items = rawItems.map((item) => {
-      const tokenGatePassed =
+      const productCookiePassed =
         item.tokenGated &&
         hasValidTokenGateCookie(tgCookieValue, "product", item.slug ?? item.id);
-      return { ...item, tokenGatePassed: tokenGatePassed ?? false };
+      const categorySatisfiesProduct =
+        item.tokenGated &&
+        productSatisfiedByCategoryIds.has(item.id);
+      const tokenGatePassed =
+        (productCookiePassed ?? false) || (categorySatisfiesProduct ?? false);
+      return { ...item, tokenGatePassed };
     });
 
     return withPublicApiCors(

@@ -78,8 +78,8 @@ export function SignupPageClient() {
           setError(errObj.message ?? "Registration failed. Please try again.");
           return;
         }
-        // Auto sign-in is enabled, redirect to dashboard
-        router.push(SYSTEM_CONFIG.redirectAfterSignUp);
+        // Redirect to success page so they can shop (not empty dashboard)
+        router.push("/signup/success");
       })
       .catch((err: unknown) => {
         const message =

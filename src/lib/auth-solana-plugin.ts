@@ -209,6 +209,7 @@ export function solanaAuthPlugin() {
                   ).generateId
                 : () => randomBytes(16).toString("hex");
 
+            let created = false;
             let user: null | UserRecord = null;
             if (existingAccount) {
               user = (await adapter.findOne({
@@ -299,6 +300,7 @@ export function solanaAuthPlugin() {
                 // connection pooling where a different pooled connection may not
                 // yet see the committed user row.
                 const [createdUser] = await db.transaction(async (tx) => {
+                  created = true;
                   const rows = await tx
                     .insert(userTable)
                     .values({
@@ -460,6 +462,7 @@ export function solanaAuthPlugin() {
               false as boolean | undefined,
             );
             return ctx.json({
+              created,
               user: {
                 createdAt: user.createdAt,
                 email: user.email,

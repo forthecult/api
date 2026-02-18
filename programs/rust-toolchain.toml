@@ -1,0 +1,4 @@
+# Pin Rust for Solana/Anchor build. Anchor 0.32 and deps need 1.85+ (edition2024).
+# Newer Rust (e.g. 1.93) can break anchor build or SBF; 1.85.x is known to work.
+[toolchain]
+channel = "1.85.0"

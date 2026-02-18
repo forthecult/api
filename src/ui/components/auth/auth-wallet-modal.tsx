@@ -527,10 +527,17 @@ export function AuthWalletModal({
         if (isDev) console.error("[auth] Solana verify failed:", msg);
         throw new Error(msg);
       }
+      const verifyData = (await verifyRes.json()) as {
+        created?: boolean;
+        user?: unknown;
+      };
       (document.activeElement as HTMLElement)?.blur?.();
       onOpenChange(false);
       if (link) {
         window.dispatchEvent(new CustomEvent(WALLET_LINKED_EVENT));
+        router.refresh();
+      } else if (verifyData.created) {
+        // New account created via wallet: keep user on current page to shop
         router.refresh();
       } else {
         const url = SYSTEM_CONFIG.redirectAfterSignIn;
@@ -678,10 +685,16 @@ export function AuthWalletModal({
           );
         }
         if (cancelled) return;
+        const verifyData = (await verifyRes.json()) as {
+          created?: boolean;
+          user?: unknown;
+        };
         (document.activeElement as HTMLElement)?.blur?.();
         onOpenChange(false);
         if (link) {
           window.dispatchEvent(new CustomEvent(WALLET_LINKED_EVENT));
+          router.refresh();
+        } else if (verifyData.created) {
           router.refresh();
         } else {
           const url = SYSTEM_CONFIG.redirectAfterSignIn;
@@ -806,11 +819,17 @@ export function AuthWalletModal({
           );
         }
         if (cancelled) return;
+        const verifyData = (await verifyRes.json()) as {
+          created?: boolean;
+          user?: unknown;
+        };
         (document.activeElement as HTMLElement)?.blur?.();
         onOpenChange(false);
         if (link) {
           // Dispatch event so security page can refresh accounts list
           window.dispatchEvent(new CustomEvent(WALLET_LINKED_EVENT));
+          router.refresh();
+        } else if (verifyData.created) {
           router.refresh();
         } else {
           const url = SYSTEM_CONFIG.redirectAfterSignIn;

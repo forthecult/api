@@ -114,8 +114,8 @@ export function Footer({ className }: { className?: string }) {
                 variant="ghost"
               >
                 <Link
-                  aria-label="GitHub forthecult"
-                  href="https://github.com/forthecult"
+                  aria-label="GitHub API repo"
+                  href="https://github.com/forthecult/api"
                   rel="noopener noreferrer"
                   target="_blank"
                 >

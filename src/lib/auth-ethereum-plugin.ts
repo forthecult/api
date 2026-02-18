@@ -321,6 +321,7 @@ export function ethereumAuthPlugin() {
               return ctx.json({ linked: true, user: session.user });
             }
 
+            let created = false;
             let user: null | UserRecord = null;
             if (existingAccount) {
               user = (await adapter.findOne({
@@ -401,6 +402,7 @@ export function ethereumAuthPlugin() {
                   });
                   return rows;
                 });
+                created = true;
                 user = {
                   createdAt: createdUser.createdAt,
                   email: createdUser.email,
@@ -524,6 +526,7 @@ export function ethereumAuthPlugin() {
               false as boolean | undefined,
             );
             return ctx.json({
+              created,
               user: {
                 createdAt: user.createdAt,
                 email: user.email,
