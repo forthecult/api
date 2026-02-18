@@ -59,14 +59,17 @@ const METHOD_KEY_MAP: Record<string, keyof PaymentVisibility> = {
   stripe: "creditCard",
 };
 
+/** BTCPay (Bitcoin, Dogecoin, Monero) is not implemented yet — always disabled. */
+const BTCPAY_DISABLED = true;
+
 const DEFAULT_VISIBILITY: PaymentVisibility = {
   creditCard: true,
-  cryptoBitcoin: true,
+  cryptoBitcoin: false, // BTCPay not implemented
   cryptoCrust: true,
   cryptoCult: true,
-  cryptoDogecoin: true,
+  cryptoDogecoin: false, // BTCPay not implemented
   cryptoEthereum: true,
-  cryptoMonero: true,
+  cryptoMonero: false, // BTCPay not implemented
   cryptoPump: true,
   cryptoSeeker: true,
   cryptoSolana: true,
@@ -114,6 +117,12 @@ export function getPaymentVisibility(
           ? s.enabledNetworks
           : null;
     }
+  }
+  // BTCPay not implemented — never show Bitcoin, Dogecoin, Monero regardless of admin
+  if (BTCPAY_DISABLED) {
+    v.cryptoBitcoin = false;
+    v.cryptoDogecoin = false;
+    v.cryptoMonero = false;
   }
   return v;
 }

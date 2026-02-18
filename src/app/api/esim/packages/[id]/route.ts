@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getEsimPackageDetail } from "~/lib/esim-api";
+import { getEsimPackageDetailWithRetry } from "~/lib/esim-api";
 
 export async function GET(
   _request: Request,
@@ -16,7 +16,7 @@ export async function GET(
     }
 
     const markup = Number(process.env.ESIM_MARKUP_PERCENT) || 30;
-    const result = await getEsimPackageDetail(id.trim());
+    const result = await getEsimPackageDetailWithRetry(id.trim());
 
     if (!result?.status || !result?.data) {
       return NextResponse.json({

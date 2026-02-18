@@ -7,7 +7,7 @@
  * includes a signup link so they can create an account.
  */
 
-import { eq } from "drizzle-orm";
+import { eq, isNotNull } from "drizzle-orm";
 
 import { db } from "~/db";
 import { esimOrdersTable, ordersTable } from "~/db/schema";
@@ -188,4 +188,78 @@ export async function hasEsimItems(orderId: string): Promise<boolean> {
     .where(eq(esimOrdersTable.orderId, orderId))
     .limit(1);
   return rows.length > 0;
+}
+
+/** How far back to look for an unlinked eSIM when syncing a processing order (ms). */
+const SYNC_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Try to sync a single "processing" esim_order (esimId=null) with the provider.
+ * Fetches getMyEsims and links the most recently created unassigned eSIM
+ * from the lookback window (7 days) to this order.
+ */
+export async function trySyncProcessingEsimOrder(
+  esimOrderId: string,
+): Promise<{ linked: boolean; success: boolean }> {
+  const [esimOrder] = await db
+    .select()
+    .from(esimOrdersTable)
+    .where(eq(esimOrdersTable.id, esimOrderId))
+    .limit(1);
+
+  if (
+    !esimOrder ||
+    esimOrder.status !== "processing" ||
+    esimOrder.esimId != null
+  ) {
+    return { linked: false, success: true };
+  }
+
+  const linkedIds = await db
+    .select({ esimId: esimOrdersTable.esimId })
+    .from(esimOrdersTable)
+    .where(isNotNull(esimOrdersTable.esimId));
+
+  const linkedSet = new Set(
+    linkedIds.map((r) => r.esimId).filter((id): id is string => id != null),
+  );
+
+  const myEsimsResult = await getMyEsims(1);
+  if (!myEsimsResult.status || !myEsimsResult.data?.length) {
+    return { linked: false, success: true };
+  }
+
+  const cutoff = Date.now() - SYNC_LOOKBACK_MS;
+  const unlinked = myEsimsResult.data
+    .filter((e) => {
+      if (linkedSet.has(e.id)) return false;
+      const created = new Date(e.created_at).getTime();
+      return created >= cutoff;
+    })
+    .sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+
+  if (unlinked.length === 0) {
+    return { linked: false, success: true };
+  }
+
+  const sim = unlinked[0]!;
+  await db
+    .update(esimOrdersTable)
+    .set({
+      activatedAt: new Date(),
+      activationLink: sim.universal_link ?? null,
+      esimId: sim.id,
+      iccid: sim.iccid ?? null,
+      status: "active",
+      updatedAt: new Date(),
+    })
+    .where(eq(esimOrdersTable.id, esimOrderId));
+
+  console.log(
+    `eSIM synced for esim_order ${esimOrderId}: esimId=${sim.id}, status=active`,
+  );
+  return { linked: true, success: true };
 }

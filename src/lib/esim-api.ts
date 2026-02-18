@@ -7,6 +7,14 @@
 
 const ESIM_API_BASE = "https://portal.esimcard.com/api/developer/reseller";
 
+/** Request timeout in ms to avoid hanging on slow provider responses. */
+const ESIM_REQUEST_TIMEOUT_MS =
+  Number(process.env.ESIM_REQUEST_TIMEOUT_MS) || 20_000;
+
+/** Max retries on 429 (rate limit). */
+const ESIM_429_MAX_RETRIES = 3;
+const ESIM_429_BACKOFF_MS = [2_000, 5_000, 10_000];
+
 // ---------- Types ----------
 
 export interface DataVoiceSmsPurchaseResult {
@@ -271,6 +279,28 @@ export async function getEsimPackageDetail(
   return esimFetch(`/package/detail/${packageId}`);
 }
 
+/** Get package detail with retries for transient provider/network failures. */
+export async function getEsimPackageDetailWithRetry(
+  packageId: string,
+  maxRetries = 3,
+): Promise<{ data: EsimPackageDetail; status: boolean }> {
+  const delays = [0, 500, 1500]; // first attempt immediate, then backoff
+  let lastError: unknown;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    if (attempt > 0 && delays[attempt] != null) {
+      await new Promise((r) => setTimeout(r, delays[attempt]));
+    }
+    try {
+      const result = await getEsimPackageDetail(packageId);
+      if (result?.status && result?.data) return result;
+      lastError = new Error("Provider returned no data");
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
 /** Get paginated list of all packages */
 export async function getEsimPackages(
   packageType: "DATA-ONLY" | "DATA-VOICE-SMS" = "DATA-ONLY",
@@ -392,40 +422,73 @@ async function esimFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const token = await getAccessToken();
-  const res = await fetch(`${ESIM_API_BASE}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  let lastRes: Response | null = null;
+  for (let attempt = 0; attempt <= ESIM_429_MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const useTimeout = !options.signal;
+    const timeoutId = useTimeout
+      ? setTimeout(() => controller.abort(), ESIM_REQUEST_TIMEOUT_MS)
+      : undefined;
+    const signal = options.signal ?? controller.signal;
 
-  if (res.status === 401) {
-    // Token expired — clear cache and retry once
-    cachedToken = null;
-    tokenExpiresAt = 0;
-    const newToken = await getAccessToken();
-    const retryRes = await fetch(`${ESIM_API_BASE}${path}`, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${newToken}`,
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
-    });
-    if (!retryRes.ok) {
-      throw new Error(`eSIM API request failed: ${retryRes.status}`);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${ESIM_API_BASE}${path}`, {
+        ...options,
+        signal,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
+      });
+      if (timeoutId != null) clearTimeout(timeoutId);
+      lastRes = res;
+
+      if (res.status === 429 && attempt < ESIM_429_MAX_RETRIES) {
+        const retryAfter = res.headers.get("Retry-After");
+        const waitMs =
+          retryAfter != null && /^\d+$/.test(retryAfter.trim())
+            ? Number(retryAfter) * 1000
+            : ESIM_429_BACKOFF_MS[attempt] ?? 10_000;
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+
+      if (res.status === 401) {
+        cachedToken = null;
+        tokenExpiresAt = 0;
+        const newToken = await getAccessToken();
+        const retryRes = await fetch(`${ESIM_API_BASE}${path}`, {
+          ...options,
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+            "Content-Type": "application/json",
+            ...options.headers,
+          },
+        });
+        if (!retryRes.ok) {
+          throw new Error(`eSIM API request failed: ${retryRes.status}`);
+        }
+        return retryRes.json() as Promise<T>;
+      }
+
+      if (!res.ok) {
+        throw new Error(`eSIM API request failed: ${res.status}`);
+      }
+
+      return res.json() as Promise<T>;
+    } catch (err) {
+      if (timeoutId != null) clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        throw new Error("eSIM API request timed out");
+      }
+      throw err;
     }
-    return retryRes.json() as Promise<T>;
   }
-
-  if (!res.ok) {
-    throw new Error(`eSIM API request failed: ${res.status}`);
-  }
-
-  return res.json() as Promise<T>;
+  throw new Error(
+    `eSIM API request failed: ${lastRes?.status ?? 429} (rate limited after ${ESIM_429_MAX_RETRIES + 1} attempts)`,
+  );
 }
 
 async function getAccessToken(): Promise<string> {

@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
@@ -33,6 +33,7 @@ interface EsimOrder {
   expiresAt: null | string;
   iccid: null | string;
   id: string;
+  orderId: null | string;
   packageName: string;
   packageType: string;
   priceCents: number;
@@ -92,7 +93,19 @@ export function MyEsimsClient() {
 
   const [orders, setOrders] = useState<EsimOrder[]>([]);
   const [loading, setLoading] = useState(true);
+  const [retryingOrderId, setRetryingOrderId] = useState<null | string>(null);
   const [showBanner, setShowBanner] = useState(!!justPurchased);
+
+  const refetch = useCallback(() => {
+    return fetch("/api/esim/my-esims", { credentials: "include" })
+      .then((res) => res.json())
+      .then((data: { data?: EsimOrder[]; status: boolean }) => {
+        if (data.status && data.data) {
+          setOrders(data.data);
+        }
+      })
+      .catch(console.error);
+  }, []);
 
   useEffect(() => {
     fetch("/api/esim/my-esims", { credentials: "include" })
@@ -190,7 +203,13 @@ export function MyEsimsClient() {
       ) : (
         <div className="space-y-4">
           {orders.map((order) => (
-            <EsimOrderCard key={order.id} order={order} />
+            <EsimOrderCard
+              key={order.id}
+              order={order}
+              refetch={refetch}
+              retryingOrderId={retryingOrderId}
+              setRetryingOrderId={setRetryingOrderId}
+            />
           ))}
         </div>
       )}
@@ -221,12 +240,38 @@ export function MyEsimsClient() {
   );
 }
 
-function EsimOrderCard({ order }: { order: EsimOrder }) {
+function EsimOrderCard({
+  order,
+  refetch,
+  retryingOrderId,
+  setRetryingOrderId,
+}: {
+  order: EsimOrder;
+  refetch: () => Promise<unknown>;
+  retryingOrderId: null | string;
+  setRetryingOrderId: (id: null | string) => void;
+}) {
   const [usage, setUsage] = useState<null | UsageData>(null);
   const [loadingUsage, setLoadingUsage] = useState(false);
   const [qrDataUrl, setQrDataUrl] = useState<null | string>(null);
   const [qrError, setQrError] = useState<null | string>(null);
   const [copied, setCopied] = useState(false);
+
+  const isRetrying = retryingOrderId === order.orderId;
+  const canCheckStatus =
+    order.status === "processing" && !order.esimId && order.orderId;
+
+  const checkStatus = () => {
+    if (!order.orderId) return;
+    setRetryingOrderId(order.orderId);
+    fetch(`/api/esim/orders/${order.orderId}/retry-provisioning`, {
+      credentials: "include",
+      method: "POST",
+    })
+      .then(() => refetch())
+      .catch(console.error)
+      .finally(() => setRetryingOrderId(null));
+  };
 
   const statusConfig = STATUS_CONFIG[order.status] ?? STATUS_CONFIG.pending;
   const StatusIcon = statusConfig.icon;
@@ -370,6 +415,26 @@ function EsimOrderCard({ order }: { order: EsimOrder }) {
             </span>
 
             <div className="flex flex-wrap justify-end gap-2">
+              <Button asChild size="sm" variant="ghost">
+                <Link href={`/dashboard/esim/${order.id}`}>View details</Link>
+              </Button>
+              {canCheckStatus && (
+                <Button
+                  disabled={isRetrying}
+                  onClick={checkStatus}
+                  size="sm"
+                  variant="outline"
+                >
+                  {isRetrying ? (
+                    <>
+                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      Checking…
+                    </>
+                  ) : (
+                    "Check status"
+                  )}
+                </Button>
+              )}
               {order.esimId && order.status === "active" && !usage && (
                 <Button
                   disabled={loadingUsage}

@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { db } from "~/db";
 import { esimOrdersTable } from "~/db/schema";
 import { getCurrentUser } from "~/lib/auth";
+import { trySyncProcessingEsimOrder } from "~/lib/esim-fulfillment";
 import { getEsimDetail, getMyEsims } from "~/lib/esim-api";
 
 /**
@@ -26,7 +27,7 @@ export async function GET(
     const { esimId } = await params;
 
     // Get our local order record
-    const [order] = await db
+    let [order] = await db
       .select()
       .from(esimOrdersTable)
       .where(
@@ -42,6 +43,23 @@ export async function GET(
         { message: "eSIM order not found", status: false },
         { status: 404 },
       );
+    }
+
+    // If stuck in processing with no esimId, try to sync with provider (link newest unlinked eSIM)
+    if (order.status === "processing" && !order.esimId) {
+      try {
+        const { linked } = await trySyncProcessingEsimOrder(order.id);
+        if (linked) {
+          const [updated] = await db
+            .select()
+            .from(esimOrdersTable)
+            .where(eq(esimOrdersTable.id, order.id))
+            .limit(1);
+          if (updated) order = updated;
+        }
+      } catch {
+        // Non-fatal — continue with current order data
+      }
     }
 
     // Try to get live details from eSIM Card API

@@ -206,17 +206,72 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
     visibleCryptoSubs,
   ]);
 
-  useEffect(() => {
+  const fetchPackageDetail = useCallback(async () => {
     setLoading(true);
-    fetch(`/api/esim/packages/${packageId}`)
-      .then((res) => res.json())
-      .then((data: { data?: PackageDetail; status: boolean }) => {
-        if (data.status && data.data) {
-          setPkg(data.data);
+    setPkg(null);
+    const maxAttempts = 3;
+    const delayMs = (attempt: number) =>
+      attempt === 0 ? 0 : 500 * Math.pow(1.5, attempt - 1);
+
+    try {
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        if (attempt > 0) {
+          await new Promise((r) => setTimeout(r, delayMs(attempt)));
         }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
+        try {
+          const res = await fetch(`/api/esim/packages/${packageId}`);
+          const data = (await res.json()) as {
+            data?: PackageDetail;
+            status: boolean;
+          };
+          if (data.status && data.data) {
+            setPkg(data.data);
+            return;
+          }
+        } catch (e) {
+          console.error("eSIM package detail fetch error:", e);
+        }
+      }
+      setPkg(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [packageId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    const run = async () => {
+      const maxAttempts = 3;
+      const delayMs = (attempt: number) =>
+        attempt === 0 ? 0 : 500 * Math.pow(1.5, attempt - 1);
+
+      for (let attempt = 0; attempt < maxAttempts && !cancelled; attempt++) {
+        if (attempt > 0) {
+          await new Promise((r) => setTimeout(r, delayMs(attempt)));
+        }
+        try {
+          const res = await fetch(`/api/esim/packages/${packageId}`);
+          const data = (await res.json()) as {
+            data?: PackageDetail;
+            status: boolean;
+          };
+          if (data.status && data.data) {
+            if (!cancelled) setPkg(data.data);
+            return;
+          }
+        } catch (e) {
+          if (!cancelled) console.error("eSIM package detail fetch error:", e);
+        }
+      }
+      if (!cancelled) setPkg(null);
+    };
+    run().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [packageId]);
 
   /**
@@ -532,12 +587,28 @@ export function EsimPackageDetailClient({ packageId }: { packageId: string }) {
         <div className="py-24 text-center">
           <h2 className="text-xl font-semibold">Currently unavailable</h2>
           <p className="mt-2 text-muted-foreground">
-            This eSIM plan is sold out or no longer available. Check out other
-            plans below.
+            This eSIM plan may be temporarily unavailable. Try again or browse
+            other plans.
           </p>
-          <Button asChild className="mt-6" variant="outline">
-            <Link href={backToStoreHref}>Browse other plans</Link>
-          </Button>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button
+              disabled={loading}
+              onClick={() => void fetchPackageDetail()}
+              variant="default"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading…
+                </>
+              ) : (
+                "Try again"
+              )}
+            </Button>
+            <Button asChild disabled={loading} variant="outline">
+              <Link href={backToStoreHref}>Browse other plans</Link>
+            </Button>
+          </div>
         </div>
       </div>
     );

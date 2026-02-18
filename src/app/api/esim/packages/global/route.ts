@@ -2,10 +2,7 @@ import type { NextRequest } from "next/server";
 
 import { NextResponse } from "next/server";
 
-import {
-  checkPackageAvailability,
-  getEsimGlobalPackages,
-} from "~/lib/esim-api";
+import { getEsimGlobalPackages } from "~/lib/esim-api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,22 +15,13 @@ export async function GET(request: NextRequest) {
 
     const result = await getEsimGlobalPackages(packageType);
 
-    // Check availability + 5G in parallel and drop unavailable packages
-    const enriched = await Promise.all(
-      result.data.map(async (pkg) => {
-        const { available, has5g } = await checkPackageAvailability(pkg.id);
-        return { available, has5g, pkg };
-      }),
-    );
-
-    const data = enriched
-      .filter((e) => e.available)
-      .map(({ has5g, pkg }) => ({
-        ...pkg,
-        has5g,
-        price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
-        reseller_price: pkg.price,
-      }));
+    // Apply markup only. No per-package detail calls — they caused slow loading
+    // and timeouts. 5G badge is shown on the detail page when opened.
+    const data = result.data.map((pkg) => ({
+      ...pkg,
+      price: (Number(pkg.price) * (1 + markup / 100)).toFixed(2),
+      reseller_price: pkg.price,
+    }));
 
     return NextResponse.json({ ...result, data });
   } catch (error) {
