@@ -9,9 +9,12 @@
 import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { APIError } from "better-call";
+import { and, eq } from "drizzle-orm";
 import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
 
+import { db } from "~/db";
+import { accountTable, userTable } from "~/db/schema";
 import { withFkRetry } from "~/lib/auth-db-retry";
 
 const TELEGRAM_PROVIDER_ID = "telegram";
@@ -128,6 +131,14 @@ export function telegramAuthPlugin() {
                 }) => string;
               }
             ).generateId({ model: "user" });
+            const newAccountId = (
+              ctx.context as {
+                generateId: (opts?: {
+                  model?: string;
+                  size?: number;
+                }) => string;
+              }
+            ).generateId({ model: "account" });
             const email = `telegram_${accountId}@telegram.local`;
             const name =
               [body.first_name, body.last_name]
@@ -136,80 +147,78 @@ export function telegramAuthPlugin() {
                 .trim() || "Telegram User";
             const date = new Date();
             try {
-              await adapter.create({
-                data: {
+              const [createdUser] = await db.transaction(async (tx) => {
+                const rows = await tx
+                  .insert(userTable)
+                  .values({
+                    id: userId,
+                    name,
+                    email,
+                    emailVerified: true,
+                    firstName: body.first_name,
+                    lastName: body.last_name ?? null,
+                    image: body.photo_url ?? null,
+                    createdAt: date,
+                    updatedAt: date,
+                  })
+                  .returning();
+                await tx.insert(accountTable).values({
+                  id: newAccountId,
+                  accountId,
+                  providerId: TELEGRAM_PROVIDER_ID,
+                  userId: rows[0].id,
                   createdAt: date,
-                  email,
-                  emailVerified: true,
-                  firstName: body.first_name,
-                  id: userId,
-                  image: body.photo_url ?? null,
-                  lastName: body.last_name ?? null,
-                  name,
                   updatedAt: date,
-                },
-                model: "user",
+                });
+                return rows;
               });
+              user = {
+                createdAt: createdUser.createdAt,
+                email: createdUser.email,
+                emailVerified: createdUser.emailVerified,
+                id: createdUser.id,
+                image: createdUser.image,
+                name: createdUser.name,
+                updatedAt: createdUser.updatedAt,
+              };
             } catch (createErr) {
-              // Handle duplicate email race condition
+              console.error(
+                "[telegram-auth] User/account creation failed:",
+                createErr,
+              );
               const errMsg =
                 createErr instanceof Error ? createErr.message : "";
               if (/duplicate|unique|already exists/i.test(errMsg)) {
-                // Another request created this user concurrently, find them
-                const existing = (await adapter.findOne({
-                  model: "account",
-                  where: [
-                    { field: "providerId", value: TELEGRAM_PROVIDER_ID },
-                    { field: "accountId", value: accountId },
-                  ],
-                })) as AccountRecord | null;
-                if (existing) {
-                  user = (await adapter.findOne({
-                    model: "user",
-                    where: [{ field: "id", value: existing.userId }],
-                  })) as null | UserRecord;
+                const existingAcc = await db
+                  .select()
+                  .from(accountTable)
+                  .where(
+                    and(
+                      eq(accountTable.providerId, TELEGRAM_PROVIDER_ID),
+                      eq(accountTable.accountId, accountId),
+                    ),
+                  )
+                  .limit(1);
+                if (existingAcc[0]) {
+                  const existingUser = await db
+                    .select()
+                    .from(userTable)
+                    .where(eq(userTable.id, existingAcc[0].userId))
+                    .limit(1);
+                  if (existingUser[0]) {
+                    user = {
+                      createdAt: existingUser[0].createdAt,
+                      email: existingUser[0].email,
+                      emailVerified: existingUser[0].emailVerified,
+                      id: existingUser[0].id,
+                      image: existingUser[0].image,
+                      name: existingUser[0].name,
+                      updatedAt: existingUser[0].updatedAt,
+                    };
+                  }
                 }
-                if (!user) throw createErr; // re-throw if we still can't find the user
-              } else {
-                throw createErr;
               }
-            }
-            if (!user) {
-              const newAccountId = (
-                ctx.context as {
-                  generateId: (opts?: {
-                    model?: string;
-                    size?: number;
-                  }) => string;
-                }
-              ).generateId({ model: "account" });
-              await withFkRetry(
-                () =>
-                  (
-                    ctx.context.internalAdapter as {
-                      createAccount: (data: {
-                        accountId: string;
-                        createdAt: Date;
-                        id: string;
-                        providerId: string;
-                        updatedAt: Date;
-                        userId: string;
-                      }) => Promise<unknown>;
-                    }
-                  ).createAccount({
-                    accountId,
-                    createdAt: date,
-                    id: newAccountId,
-                    providerId: TELEGRAM_PROVIDER_ID,
-                    updatedAt: date,
-                    userId,
-                  }),
-                "telegram-auth createAccount",
-              );
-              user = (await adapter.findOne({
-                model: "user",
-                where: [{ field: "id", value: userId }],
-              })) as null | UserRecord;
+              if (!user) throw createErr;
             }
           }
 
@@ -219,6 +228,7 @@ export function telegramAuthPlugin() {
             });
           }
 
+          const verifiedUserId = user.id;
           const createSessionFn = (
             ctx.context.internalAdapter as {
               createSession: (
@@ -231,7 +241,7 @@ export function telegramAuthPlugin() {
           const session = await withFkRetry(
             () =>
               createSessionFn(
-                user.id,
+                verifiedUserId,
                 ctx.request as Request | undefined,
                 false,
               ),

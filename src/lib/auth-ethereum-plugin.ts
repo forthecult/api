@@ -7,6 +7,7 @@
 import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { APIError } from "better-call";
+import { and, eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import { createPublicClient, http } from "viem";
 import { mainnet } from "viem/chains";
@@ -17,6 +18,8 @@ import {
 } from "viem/siwe";
 import { z } from "zod";
 
+import { db } from "~/db";
+import { accountTable, userTable } from "~/db/schema";
 import { withFkRetry } from "~/lib/auth-db-retry";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
@@ -349,6 +352,7 @@ export function ethereumAuthPlugin() {
               const email = `ethereum_${addressTrim.slice(2, 10)}@wallet.local`;
               const now = new Date();
               const userId = generateId({ model: "user" });
+              const accountRowId = generateId({ model: "account" });
               console.log(
                 "[ethereum-auth] No existing account for",
                 addressTrim,
@@ -358,141 +362,109 @@ export function ethereumAuthPlugin() {
                 email,
               );
               try {
-                await adapter.create({
-                  data: {
+                const [createdUser] = await db.transaction(async (tx) => {
+                  const rows = await tx
+                    .insert(userTable)
+                    .values({
+                      id: userId,
+                      name: "Ethereum User",
+                      email,
+                      emailVerified: true,
+                      createdAt: now,
+                      updatedAt: now,
+                      twoFactorEnabled: false,
+                      role: "user",
+                      marketingAiCompanion: false,
+                      marketingDiscord: false,
+                      marketingEmail: true,
+                      marketingSms: false,
+                      marketingTelegram: false,
+                      marketingWebsite: false,
+                      receiveMarketing: false,
+                      receiveOrderNotificationsViaTelegram: false,
+                      receiveSmsMarketing: false,
+                      transactionalAiCompanion: false,
+                      transactionalDiscord: false,
+                      transactionalEmail: true,
+                      transactionalSms: false,
+                      transactionalTelegram: false,
+                      transactionalWebsite: true,
+                    })
+                    .returning();
+                  await tx.insert(accountTable).values({
+                    id: accountRowId,
+                    accountId: addressTrim.toLowerCase(),
+                    providerId: ETHEREUM_PROVIDER_ID,
+                    userId: rows[0].id,
                     createdAt: now,
-                    email,
-                    emailVerified: true,
-                    id: userId,
-                    marketingAiCompanion: false,
-                    marketingDiscord: false,
-                    marketingEmail: true,
-                    marketingSms: false,
-                    marketingTelegram: false,
-                    marketingWebsite: false,
-                    name: "Ethereum User",
-                    receiveMarketing: false,
-                    receiveOrderNotificationsViaTelegram: false,
-                    receiveSmsMarketing: false,
-                    // Notification preference defaults (explicit to avoid NOT NULL violations
-                    // when databaseHooks.user.create.before does not run for raw adapter calls)
-                    role: "user",
-                    transactionalAiCompanion: false,
-                    transactionalDiscord: false,
-                    transactionalEmail: true,
-                    transactionalSms: false,
-                    transactionalTelegram: false,
-                    transactionalWebsite: true,
-                    twoFactorEnabled: false,
                     updatedAt: now,
-                  },
-                  model: "user",
+                  });
+                  return rows;
                 });
-              } catch (createUserErr) {
+                user = {
+                  createdAt: createdUser.createdAt,
+                  email: createdUser.email,
+                  emailVerified: createdUser.emailVerified,
+                  id: createdUser.id,
+                  image: createdUser.image,
+                  name: createdUser.name,
+                  updatedAt: createdUser.updatedAt,
+                };
+              } catch (createErr) {
                 console.error(
-                  "[ethereum-auth] User creation failed:",
-                  createUserErr,
+                  "[ethereum-auth] User/account creation failed:",
+                  createErr,
                 );
-                if (isDuplicateUserEmailError(createUserErr)) {
+                if (isDuplicateUserEmailError(createErr)) {
                   console.log(
-                    "[ethereum-auth] Duplicate email detected, looking up existing user for",
+                    "[ethereum-auth] Duplicate email detected, recovering for",
                     email,
                   );
-                  const existingUser = (await adapter.findOne({
-                    model: "user",
-                    where: [{ field: "email", value: email }],
-                  })) as null | UserRecord;
-                  if (existingUser) {
-                    user = existingUser;
-                    const existingAccountForWallet = (await adapter.findOne({
-                      model: "account",
-                      where: [
-                        { field: "providerId", value: ETHEREUM_PROVIDER_ID },
-                        {
-                          field: "accountId",
-                          value: addressTrim.toLowerCase(),
-                        },
-                      ],
-                    })) as AccountRecord | null;
-                    if (!existingAccountForWallet) {
-                      const accountRowId = generateId({ model: "account" });
+                  const existing = await db
+                    .select()
+                    .from(userTable)
+                    .where(eq(userTable.email, email))
+                    .limit(1);
+                  if (existing[0]) {
+                    user = {
+                      createdAt: existing[0].createdAt,
+                      email: existing[0].email,
+                      emailVerified: existing[0].emailVerified,
+                      id: existing[0].id,
+                      image: existing[0].image,
+                      name: existing[0].name,
+                      updatedAt: existing[0].updatedAt,
+                    };
+                    const existingAcc = await db
+                      .select()
+                      .from(accountTable)
+                      .where(
+                        and(
+                          eq(accountTable.providerId, ETHEREUM_PROVIDER_ID),
+                          eq(
+                            accountTable.accountId,
+                            addressTrim.toLowerCase(),
+                          ),
+                        ),
+                      )
+                      .limit(1);
+                    if (!existingAcc[0]) {
                       try {
-                        await withFkRetry(
-                          () =>
-                            (
-                              ctx.context.internalAdapter as {
-                                createAccount: (data: {
-                                  accountId: string;
-                                  createdAt: Date;
-                                  id: string;
-                                  providerId: string;
-                                  updatedAt: Date;
-                                  userId: string;
-                                }) => Promise<unknown>;
-                              }
-                            ).createAccount({
-                              accountId: addressTrim.toLowerCase(),
-                              createdAt: now,
-                              id: accountRowId,
-                              providerId: ETHEREUM_PROVIDER_ID,
-                              updatedAt: now,
-                              userId: existingUser.id,
-                            }),
-                          "ethereum-auth createAccount (link existing user)",
-                        );
+                        await db.insert(accountTable).values({
+                          id: generateId({ model: "account" }),
+                          accountId: addressTrim.toLowerCase(),
+                          providerId: ETHEREUM_PROVIDER_ID,
+                          userId: user.id,
+                          createdAt: now,
+                          updatedAt: now,
+                        });
                       } catch (linkErr) {
-                        console.error(
-                          "[ethereum-auth] createAccount (link existing user) failed:",
-                          linkErr,
-                        );
-                        throw linkErr;
+                        if (!isDuplicateAccountError(linkErr)) throw linkErr;
                       }
                     }
                   }
                 }
-                if (!user) throw createUserErr;
-              }
-              if (!user) {
-                console.log(
-                  "[ethereum-auth] Linking new Ethereum account for user",
-                  userId,
-                );
-                const accountRowId = generateId({ model: "account" });
-                try {
-                  await withFkRetry(
-                    () =>
-                      (
-                        ctx.context.internalAdapter as {
-                          createAccount: (data: {
-                            accountId: string;
-                            createdAt: Date;
-                            id: string;
-                            providerId: string;
-                            updatedAt: Date;
-                            userId: string;
-                          }) => Promise<unknown>;
-                        }
-                      ).createAccount({
-                        accountId: addressTrim.toLowerCase(),
-                        createdAt: now,
-                        id: accountRowId,
-                        providerId: ETHEREUM_PROVIDER_ID,
-                        updatedAt: now,
-                        userId,
-                      }),
-                    "ethereum-auth createAccount",
-                  );
-                } catch (createAccountErr) {
-                  console.error(
-                    "[ethereum-auth] createAccount failed:",
-                    createAccountErr,
-                  );
-                  throw createAccountErr;
-                }
-                user = (await adapter.findOne({
-                  model: "user",
-                  where: [{ field: "id", value: userId }],
-                })) as null | UserRecord;
+                if (!user) throw createErr;
               }
             }
 
@@ -511,6 +483,7 @@ export function ethereumAuthPlugin() {
               "— creating session",
             );
 
+            const verifiedUserId = user.id;
             const createSessionFn = (
               ctx.context.internalAdapter as {
                 createSession: (
@@ -523,7 +496,7 @@ export function ethereumAuthPlugin() {
             const session = await withFkRetry(
               () =>
                 createSessionFn(
-                  user.id,
+                  verifiedUserId,
                   ctx.request as Request | undefined,
                   false,
                 ),
@@ -578,6 +551,32 @@ export function ethereumAuthPlugin() {
     },
     id: "ethereum-auth",
   };
+}
+
+/** True if this error is a DB unique constraint on account (providerId + accountId). */
+function isDuplicateAccountError(err: unknown): boolean {
+  const msg = getFullErrorMessage(err);
+  if (
+    /account.*unique|unique.*account|duplicate key|unique constraint/i.test(msg)
+  )
+    return true;
+  const code =
+    err && typeof err === "object" && "code" in err
+      ? String((err as { code: string }).code)
+      : "";
+  if (code === "23505") return true;
+  const cause =
+    err && typeof err === "object" && "cause" in err
+      ? (err as { cause: unknown }).cause
+      : null;
+  if (
+    cause &&
+    typeof cause === "object" &&
+    "code" in cause &&
+    String((cause as { code: string }).code) === "23505"
+  )
+    return true;
+  return false;
 }
 
 function getPublicClient() {

@@ -9,10 +9,13 @@ import { createAuthEndpoint, getSessionFromCtx } from "better-auth/api";
 import { setSessionCookie } from "better-auth/cookies";
 import { APIError } from "better-call";
 import bs58 from "bs58";
+import { and, eq } from "drizzle-orm";
 import { randomBytes } from "node:crypto";
 import nacl from "tweetnacl";
 import { z } from "zod";
 
+import { db } from "~/db";
+import { accountTable, userTable } from "~/db/schema";
 import { withFkRetry } from "~/lib/auth-db-retry";
 import { linkOrdersToUserByWallet } from "~/lib/link-orders-to-user";
 
@@ -281,6 +284,7 @@ export function solanaAuthPlugin() {
               const email = `solana_${addressTrim.slice(0, 8)}@wallet.local`;
               const now = new Date();
               const userId = generateId({ model: "user" });
+              const accountId = generateId({ model: "account" });
               console.log(
                 "[solana-auth] No existing account for",
                 addressTrim,
@@ -290,197 +294,110 @@ export function solanaAuthPlugin() {
                 email,
               );
               try {
-                await adapter.create({
-                  data: {
+                // Use a DB transaction so user + account are created atomically
+                // on the SAME connection. This eliminates FK violations caused by
+                // connection pooling where a different pooled connection may not
+                // yet see the committed user row.
+                const [createdUser] = await db.transaction(async (tx) => {
+                  const rows = await tx
+                    .insert(userTable)
+                    .values({
+                      id: userId,
+                      name: "Solana User",
+                      email,
+                      emailVerified: true,
+                      createdAt: now,
+                      updatedAt: now,
+                      twoFactorEnabled: false,
+                      role: "user",
+                      marketingAiCompanion: false,
+                      marketingDiscord: false,
+                      marketingEmail: true,
+                      marketingSms: false,
+                      marketingTelegram: false,
+                      marketingWebsite: false,
+                      receiveMarketing: false,
+                      receiveOrderNotificationsViaTelegram: false,
+                      receiveSmsMarketing: false,
+                      transactionalAiCompanion: false,
+                      transactionalDiscord: false,
+                      transactionalEmail: true,
+                      transactionalSms: false,
+                      transactionalTelegram: false,
+                      transactionalWebsite: true,
+                    })
+                    .returning();
+                  await tx.insert(accountTable).values({
+                    id: accountId,
+                    accountId: addressTrim,
+                    providerId: SOLANA_PROVIDER_ID,
+                    userId: rows[0].id,
                     createdAt: now,
-                    email,
-                    emailVerified: true,
-                    id: userId,
-                    marketingAiCompanion: false,
-                    marketingDiscord: false,
-                    marketingEmail: true,
-                    marketingSms: false,
-                    marketingTelegram: false,
-                    marketingWebsite: false,
-                    name: "Solana User",
-                    receiveMarketing: false,
-                    receiveOrderNotificationsViaTelegram: false,
-                    receiveSmsMarketing: false,
-                    // Notification preference defaults (explicit to avoid NOT NULL violations
-                    // when databaseHooks.user.create.before does not run for raw adapter calls)
-                    role: "user",
-                    transactionalAiCompanion: false,
-                    transactionalDiscord: false,
-                    transactionalEmail: true,
-                    transactionalSms: false,
-                    transactionalTelegram: false,
-                    transactionalWebsite: true,
-                    twoFactorEnabled: false,
                     updatedAt: now,
-                  },
-                  model: "user",
+                  });
+                  return rows;
                 });
-                // Use the user we just created. findOne can be null due to replication lag or
-                // connection pooling (another connection may not see the commit yet).
-                user = (await adapter.findOne({
-                  model: "user",
-                  where: [{ field: "id", value: userId }],
-                })) as null | UserRecord;
-                if (!user) {
-                  user = {
-                    createdAt: now,
-                    email,
-                    emailVerified: true,
-                    id: userId,
-                    image: undefined,
-                    name: "Solana User",
-                    updatedAt: now,
-                  };
-                }
-                const accountId = generateId({ model: "account" });
-                const accountNow = new Date();
-                const newUserId = user.id;
-                try {
-                  await withFkRetry(
-                    () =>
-                      (
-                        ctx.context.internalAdapter as {
-                          createAccount: (data: {
-                            accountId: string;
-                            createdAt: Date;
-                            id: string;
-                            providerId: string;
-                            updatedAt: Date;
-                            userId: string;
-                          }) => Promise<unknown>;
-                        }
-                      ).createAccount({
-                        accountId: addressTrim,
-                        createdAt: accountNow,
-                        id: accountId,
-                        providerId: SOLANA_PROVIDER_ID,
-                        updatedAt: accountNow,
-                        userId: newUserId,
-                      }),
-                    "solana-auth createAccount",
-                  );
-                } catch (createAccountErr) {
-                  console.error(
-                    "[solana-auth] createAccount failed after user create:",
-                    createAccountErr,
-                  );
-                  throw createAccountErr;
-                }
-              } catch (createUserErr) {
+                user = {
+                  createdAt: createdUser.createdAt,
+                  email: createdUser.email,
+                  emailVerified: createdUser.emailVerified,
+                  id: createdUser.id,
+                  image: createdUser.image,
+                  name: createdUser.name,
+                  updatedAt: createdUser.updatedAt,
+                };
+              } catch (createErr) {
                 console.error(
-                  "[solana-auth] User creation failed:",
-                  createUserErr,
+                  "[solana-auth] User/account creation failed:",
+                  createErr,
                 );
-                if (isDuplicateUserEmailError(createUserErr)) {
+                if (isDuplicateUserEmailError(createErr)) {
                   console.log(
-                    "[solana-auth] Duplicate email detected, looking up existing user for",
+                    "[solana-auth] Duplicate email detected, recovering for",
                     email,
                   );
-                  const existingUser = (await adapter.findOne({
-                    model: "user",
-                    where: [{ field: "email", value: email }],
-                  })) as null | UserRecord;
-                  if (existingUser) {
-                    user = existingUser;
-                    const existingAccountForWallet = (await adapter.findOne({
-                      model: "account",
-                      where: [
-                        { field: "providerId", value: SOLANA_PROVIDER_ID },
-                        { field: "accountId", value: addressTrim },
-                      ],
-                    })) as AccountRecord | null;
-                    if (!existingAccountForWallet) {
-                      const accountId = generateId({ model: "account" });
+                  const existing = await db
+                    .select()
+                    .from(userTable)
+                    .where(eq(userTable.email, email))
+                    .limit(1);
+                  if (existing[0]) {
+                    user = {
+                      createdAt: existing[0].createdAt,
+                      email: existing[0].email,
+                      emailVerified: existing[0].emailVerified,
+                      id: existing[0].id,
+                      image: existing[0].image,
+                      name: existing[0].name,
+                      updatedAt: existing[0].updatedAt,
+                    };
+                    const existingAcc = await db
+                      .select()
+                      .from(accountTable)
+                      .where(
+                        and(
+                          eq(accountTable.providerId, SOLANA_PROVIDER_ID),
+                          eq(accountTable.accountId, addressTrim),
+                        ),
+                      )
+                      .limit(1);
+                    if (!existingAcc[0]) {
                       try {
-                        await withFkRetry(
-                          () =>
-                            (
-                              ctx.context.internalAdapter as {
-                                createAccount: (data: {
-                                  accountId: string;
-                                  createdAt: Date;
-                                  id: string;
-                                  providerId: string;
-                                  updatedAt: Date;
-                                  userId: string;
-                                }) => Promise<unknown>;
-                              }
-                            ).createAccount({
-                              accountId: addressTrim,
-                              createdAt: now,
-                              id: accountId,
-                              providerId: SOLANA_PROVIDER_ID,
-                              updatedAt: now,
-                              userId: existingUser.id,
-                            }),
-                          "solana-auth createAccount (link existing user)",
-                        );
-                      } catch (linkAccountErr) {
-                        if (isDuplicateAccountError(linkAccountErr)) {
-                          console.log(
-                            "[solana-auth] Account already linked for",
-                            addressTrim,
-                            "— proceeding to session",
-                          );
-                        } else {
-                          console.error(
-                            "[solana-auth] createAccount (link existing user) failed:",
-                            linkAccountErr,
-                          );
-                          throw linkAccountErr;
-                        }
+                        await db.insert(accountTable).values({
+                          id: generateId({ model: "account" }),
+                          accountId: addressTrim,
+                          providerId: SOLANA_PROVIDER_ID,
+                          userId: user.id,
+                          createdAt: now,
+                          updatedAt: now,
+                        });
+                      } catch (linkErr) {
+                        if (!isDuplicateAccountError(linkErr)) throw linkErr;
                       }
                     }
                   }
                 }
-                if (!user) throw createUserErr;
-              }
-              if (!user) {
-                console.log(
-                  "[solana-auth] Linking new Solana account for user",
-                  userId,
-                );
-                const accountId = generateId({ model: "account" });
-                try {
-                  await withFkRetry(
-                    () =>
-                      (
-                        ctx.context.internalAdapter as {
-                          createAccount: (data: {
-                            accountId: string;
-                            createdAt: Date;
-                            id: string;
-                            providerId: string;
-                            updatedAt: Date;
-                            userId: string;
-                          }) => Promise<unknown>;
-                        }
-                      ).createAccount({
-                        accountId: addressTrim,
-                        createdAt: now,
-                        id: accountId,
-                        providerId: SOLANA_PROVIDER_ID,
-                        updatedAt: now,
-                        userId,
-                      }),
-                    "solana-auth createAccount",
-                  );
-                } catch (createAccountErr) {
-                  console.error(
-                    "[solana-auth] createAccount failed:",
-                    createAccountErr,
-                  );
-                  throw createAccountErr;
-                }
-                user = (await adapter.findOne({
-                  model: "user",
-                  where: [{ field: "id", value: userId }],
-                })) as null | UserRecord;
+                if (!user) throw createErr;
               }
             }
 
@@ -500,7 +417,9 @@ export function solanaAuthPlugin() {
             );
 
             // createSession(userId, request, dontRememberMe) - false = remember me (longer expiry)
-            // Retry on FK violation: user row may not be visible to another connection in the pool yet
+            // Retry on FK violation: user row may not yet be visible on the
+            // pooled connection that internalAdapter picks up.
+            const verifiedUserId = user.id;
             const createSessionFn = (
               ctx.context.internalAdapter as {
                 createSession: (
@@ -513,7 +432,7 @@ export function solanaAuthPlugin() {
             const session = await withFkRetry(
               () =>
                 createSessionFn(
-                  user.id,
+                  verifiedUserId,
                   ctx.request as Request | undefined,
                   false,
                 ),
