@@ -1,0 +1,307 @@
+{
+  "info": {
+    "name": "For the Cult API",
+    "description": "AI-friendly eCommerce API with multi-chain crypto payments",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "forthecult"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://forthecult.store/api",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health & Discovery",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check API health and get version info"
+          }
+        },
+        {
+          "name": "Get Capabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/agent/capabilities",
+              "host": ["{{baseUrl}}"],
+              "path": ["agent", "capabilities"]
+            },
+            "description": "Get what the API can do (for AI agents)"
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["categories"]
+            },
+            "description": "List all product categories"
+          }
+        },
+        {
+          "name": "Get Featured Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/featured",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "featured"]
+            },
+            "description": "Get featured/trending products"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/search?q=dark roasted coffee&inStock=true&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "dark roasted coffee",
+                  "description": "Search query"
+                },
+                {
+                  "key": "category",
+                  "value": "mens-tees",
+                  "description": "Filter by category",
+                  "disabled": true
+                },
+                {
+                  "key": "priceMin",
+                  "value": "20",
+                  "description": "Min price USD",
+                  "disabled": true
+                },
+                {
+                  "key": "priceMax",
+                  "value": "50",
+                  "description": "Max price USD",
+                  "disabled": true
+                },
+                {
+                  "key": "inStock",
+                  "value": "true",
+                  "description": "Only in-stock items"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Results per page"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Pagination offset",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Search products with filters"
+          }
+        },
+        {
+          "name": "Get Product by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["products", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "dark-chocolate",
+                  "description": "Product slug"
+                }
+              ]
+            },
+            "description": "Get full product details including variants"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payment Chains",
+      "item": [
+        {
+          "name": "Get Supported Chains",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/chains",
+              "host": ["{{baseUrl}}"],
+              "path": ["chains"]
+            },
+            "description": "Get all supported blockchain networks and tokens"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Checkout",
+      "item": [
+        {
+          "name": "Create Order (Solana USDC)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"prod_esim\",\n      \"variantId\": \"var_black_m\",\n      \"quantity\": 1\n    }\n  ],\n  \"chain\": \"solana\",\n  \"token\": \"USDC\",\n  \"email\": \"user@example.com\",\n  \"shippingAddress\": {\n    \"name\": \"John Doe\",\n    \"line1\": \"123 Main St\",\n    \"city\": \"San Francisco\",\n    \"state\": \"CA\",\n    \"postalCode\": \"94102\",\n    \"country\": \"US\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout"]
+            },
+            "description": "Create order with Solana USDC payment"
+          }
+        },
+        {
+          "name": "Create Order (Bitcoin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"prod_privacy_book\",\n      \"quantity\": 1\n    }\n  ],\n  \"chain\": \"bitcoin\",\n  \"token\": \"BTC\",\n  \"email\": \"user@example.com\",\n  \"shippingAddress\": {\n    \"name\": \"Hal Finney\",\n    \"line1\": \"456 Oak Ave\",\n    \"city\": \"Austin\",\n    \"state\": \"TX\",\n    \"postalCode\": \"78701\",\n    \"country\": \"US\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout"]
+            },
+            "description": "Create order with Bitcoin payment"
+          }
+        },
+        {
+          "name": "Create Order (with Token Discount)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"productId\": \"prod_ethereum_hoodie\",\n      \"variantId\": \"var_navy_l\",\n      \"quantity\": 1\n    }\n  ],\n  \"chain\": \"ethereum\",\n  \"token\": \"USDC\",\n  \"email\": \"holder@example.com\",\n  \"walletAddress\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"shippingAddress\": {\n    \"name\": \"Token Holder\",\n    \"line1\": \"789 Crypto St\",\n    \"city\": \"Miami\",\n    \"state\": \"FL\",\n    \"postalCode\": \"33101\",\n    \"country\": \"US\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["checkout"]
+            },
+            "description": "Create order with wallet address to verify CULT token holdings and apply discount"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Get Order Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":orderId", "status"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order_abc123xyz",
+                  "description": "Order ID from checkout"
+                }
+              ]
+            },
+            "description": "Check payment and shipping status"
+          }
+        },
+        {
+          "name": "Get Order Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/:orderId",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", ":orderId"],
+              "variable": [
+                {
+                  "key": "orderId",
+                  "value": "order_abc123xyz",
+                  "description": "Order ID"
+                }
+              ]
+            },
+            "description": "Get full order details including items, payment, and tracking"
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ]
+}

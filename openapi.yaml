@@ -1,0 +1,909 @@
+openapi: 3.0.3
+
+info:
+  title: For the Cult API
+  version: "1.0"
+  description: |
+    The most AI-agent-friendly eCommerce API for quality lifestyle products.
+    
+    Designed for seamless integration with Agentic AI.
+    
+    **Key Features:**
+    - AI-first design with semantic search
+    - Multi-chain crypto payments (Solana, Ethereum, Base, Bitcoin, Dogecoin, Monero)
+    - Structured errors with helpful suggestions
+    - Privacy-first, optional account creation, auto-delete customer PII after 90 days
+    - Token holder discounts (hold CULT for free shipping, discounts, and perks)
+    
+    **Quick Start:**
+    1. Call `GET /api/agent/capabilities` to understand what you can do
+    2. Browse `GET /api/categories` to see product structure
+    3. Search `GET /api/products/search?q=dark+roasted+coffee+beans` to find products
+    4. Create order `POST /api/checkout` with crypto payment
+    
+  contact:
+    name: For the Cult
+    email: dev@forthecult.store
+    url: https://forthecult.store
+  
+  x-ai-friendly: true
+  x-privacy-first: true
+  x-crypto-native: true
+
+servers:
+  - url: https://forthecult.store/api
+    description: Production API
+
+tags:
+  - name: Health
+    description: API health checks and capabilities
+  - name: Discovery
+    description: Browse categories, featured products
+  - name: Products
+    description: Search and retrieve product information
+  - name: Chains
+    description: Supported blockchain networks and tokens
+  - name: Checkout
+    description: Create orders and generate payment requests
+  - name: Orders
+    description: Track order status and details
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: |
+        Verify API is operational. Returns version and timestamp.
+        
+        **Use this to:** Test connectivity before making requests.
+      operationId: getHealth
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2026-02-10T14:30:00Z"
+
+  /agent/capabilities:
+    get:
+      tags: [Health]
+      summary: Describe API capabilities for AI agents
+      description: |
+        Returns natural language description of what this API can do.
+        
+        **AI agents should call this first** to understand capabilities, limitations,
+        supported payment methods, and available actions.
+      operationId: getCapabilities
+      responses:
+        '200':
+          description: API capabilities and limitations
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    example: For the Cult
+                  tagline:
+                    type: string
+                    example: Quality lifestyle products for the modern human
+                  capabilities:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - Search and browse lifestyle products
+                      - Filter by category, price, brand
+                      - Create orders with multi-chain crypto payment
+                      - Track order status and shipping
+                      - Get member discounts and perks
+                  limitations:
+                    type: array
+                    items:
+                      type: string
+                    example:
+                      - Ships to select countries only
+                      - No returns after 30 days
+                      - Customer data auto-deleted after 90 days
+                  supportedNetworks:
+                    type: array
+                    items:
+                      type: string
+                    example: [solana, ethereum, base, arbitrum, polygon, bitcoin, dogecoin, monero]
+                  supportedCrypto:
+                    type: array
+                    items:
+                      type: string
+                    example: [SOL, ETH, USDC, USDT, BTC, DOGE, XMR, CULT]
+
+  /chains:
+    get:
+      tags: [Chains]
+      summary: List supported payment chains
+      description: |
+        Get all blockchain networks and tokens accepted for payment.
+        
+        **Returns:** Chain details including supported tokens, decimals, and contract addresses.
+        
+        Call this before checkout to verify a payment method is supported.
+      operationId: getChains
+      responses:
+        '200':
+          description: List of payment chains and tokens
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [chains]
+                properties:
+                  chains:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Chain'
+              example:
+                chains:
+                  - id: solana
+                    name: Solana
+                    tokens:
+                      - symbol: SOL
+                        name: Solana
+                        type: native
+                        decimals: 9
+                      - symbol: USDC
+                        name: USD Coin
+                        type: spl
+                        decimals: 6
+                        mint: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+
+  /categories:
+    get:
+      tags: [Discovery]
+      summary: List all categories
+      description: |
+        Get store structure with categories, subcategories, and product counts.
+        
+        **Use this to:** Understand available product categories before searching.
+      operationId: getCategories
+      responses:
+        '200':
+          description: Categories with hierarchy
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [categories]
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+              example:
+                categories:
+                  - id: cat_mens
+                    name: Mens
+                    slug: mens
+                    description: Quality menswear for the sovereign individual
+                    productCount: 45
+                    subcategories:
+                      - id: cat_mens_tees
+                        name: T-Shirts
+                        slug: mens-tees
+                        productCount: 12
+
+  /products/featured:
+    get:
+      tags: [Discovery]
+      summary: Get featured products
+      description: |
+        Returns curated selection of featured products (trending, new, best sellers).
+        
+        **Use this to:** Show trending or recommended products to users.
+      operationId: getFeatured
+      responses:
+        '200':
+          description: Featured products
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products]
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FeaturedProduct'
+
+  /products/search:
+    get:
+      tags: [Products]
+      summary: Search products
+      description: |
+        Semantic search with filters. Supports natural language queries.
+        
+        **Examples:**
+        - `?q=gift card` -- Natural language
+        - `?q=privacy&category=books` -- With category filter
+        - `?q=tee&priceMax=50` -- Price range filter
+        - `?q=comfortable+winter+clothes` -- Intent-based search
+      operationId: searchProducts
+      parameters:
+        - name: q
+          in: query
+          description: Search query (supports natural language / semantic search)
+          required: true
+          schema:
+            type: string
+          example: dark chocolate
+        - name: category
+          in: query
+          description: Filter by category slug
+          schema:
+            type: string
+          example: mens-tees
+        - name: priceMin
+          in: query
+          description: Minimum price in USD
+          schema:
+            type: number
+          example: 20
+        - name: priceMax
+          in: query
+          description: Maximum price in USD
+          schema:
+            type: number
+          example: 100
+        - name: inStock
+          in: query
+          description: Only show in-stock items
+          schema:
+            type: boolean
+          example: true
+        - name: limit
+          in: query
+          description: Results per page
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          example: 20
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          example: 0
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [products, total]
+                properties:
+                  products:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Product'
+                  total:
+                    type: integer
+                    description: Total matching products
+                  pagination:
+                    type: object
+                    properties:
+                      limit:
+                        type: integer
+                      offset:
+                        type: integer
+                      hasMore:
+                        type: boolean
+
+  /products/{slug}:
+    get:
+      tags: [Products]
+      summary: Get product details
+      description: |
+        Retrieve full product information including variants, pricing, and availability.
+        
+        Use the `slug` field from search results.
+      operationId: getProductBySlug
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          description: Product slug (from search results)
+          schema:
+            type: string
+          example: mens-troll-t-shirt
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /checkout:
+    post:
+      tags: [Checkout]
+      summary: Create order and payment request
+      description: |
+        Create order with crypto payment. Returns payment address and amount.
+        
+        **Flow:**
+        1. Create order (this endpoint)
+        2. Customer sends crypto to the returned payment address
+        3. Poll `GET /api/orders/{orderId}/status` to check payment
+        4. Order auto-fulfills when payment is confirmed on-chain
+        
+        **Payment window:** Orders expire after 1 hour if unpaid.
+      operationId: createOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items, email, payment, shipping]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [productId, quantity]
+                    properties:
+                      productId:
+                        type: string
+                        description: Use id from GET /api/products/search or GET /api/products/{slug}. Do not use placeholder IDs.
+                      variantId:
+                        type: string
+                        description: Optional variant selection
+                      quantity:
+                        type: integer
+                        minimum: 1
+                email:
+                  type: string
+                  format: email
+                  description: Email for order confirmation
+                payment:
+                  type: object
+                  required: [chain, token]
+                  properties:
+                    chain:
+                      type: string
+                      enum: [solana, ethereum, base, bitcoin, dogecoin, monero]
+                    token:
+                      type: string
+                      description: Token symbol (e.g. USDC, SOL)
+                shipping:
+                  type: object
+                  required: [name, address1, city, stateCode, zip, countryCode]
+                  properties:
+                    name:
+                      type: string
+                    address1:
+                      type: string
+                    address2:
+                      type: string
+                    city:
+                      type: string
+                    stateCode:
+                      type: string
+                    zip:
+                      type: string
+                    countryCode:
+                      type: string
+                      description: 2-letter ISO (e.g. US)
+                walletAddress:
+                  type: string
+                  description: Optional wallet for CULT token holder discount
+            example:
+              items:
+                - productId: "<id from /products/search or /products/{slug}>"
+                  quantity: 1
+              email: user@example.com
+              payment:
+                chain: solana
+                token: USDC
+              shipping:
+                name: Hal Finney
+                address1: 123 Main St
+                city: San Francisco
+                stateCode: CA
+                zip: "94102"
+                countryCode: US
+      responses:
+        '200':
+          description: Order created, payment request generated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [orderId, payment, expiresAt]
+                properties:
+                  orderId:
+                    type: string
+                    example: order_abc123
+                  payment:
+                    type: object
+                    description: Payment request details
+                    properties:
+                      chain:
+                        type: string
+                        example: solana
+                      token:
+                        type: string
+                        example: USDC
+                      address:
+                        type: string
+                        description: Blockchain address to send payment to
+                        example: 7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU
+                      amount:
+                        type: string
+                        description: Amount in token units
+                        example: "29.99"
+                      reference:
+                        type: string
+                        description: Payment reference
+                      qrCode:
+                        type: string
+                        description: Base64-encoded QR code for wallet scanning
+                  discount:
+                    type: object
+                    nullable: true
+                    description: Applied token holder discount (if walletAddress provided)
+                    properties:
+                      tier:
+                        type: string
+                        example: Diamond
+                      percentage:
+                        type: number
+                        example: 20
+                      savedAmount:
+                        type: number
+                        example: 5.99
+                  expiresAt:
+                    type: string
+                    format: date-time
+                    description: Payment window expiration (1 hour after order creation)
+                  statusUrl:
+                    type: string
+                    description: URL to poll for order status
+                    example: /api/orders/order_abc123/status
+        '400':
+          $ref: '#/components/responses/Error400'
+
+  /orders/{orderId}/status:
+    get:
+      tags: [Orders]
+      summary: Check order status
+      description: |
+        Poll this endpoint to check payment and fulfillment status.
+        
+        **Statuses:**
+        - `awaiting_payment` -- Waiting for crypto payment
+        - `paid` -- Payment received, processing order
+        - `processing` -- Order is being prepared
+        - `shipped` -- Order shipped with tracking
+        - `delivered` -- Order delivered
+        - `expired` -- Payment window expired (1 hour)
+        - `cancelled` -- Order was cancelled
+        
+        **Recommended polling intervals:**
+        - `awaiting_payment`: every 5 seconds
+        - `paid` / `processing`: every 60 seconds
+        - `shipped`: every hour
+      operationId: getOrderStatus
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: order_abc123
+      responses:
+        '200':
+          description: Order status with AI agent action hints
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [orderId, status]
+                properties:
+                  orderId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [awaiting_payment, paid, processing, shipped, delivered, cancelled, expired]
+                  paidAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  shippedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  tracking:
+                    type: object
+                    nullable: true
+                    properties:
+                      number:
+                        type: string
+                      carrier:
+                        type: string
+                      url:
+                        type: string
+                        format: uri
+                  _actions:
+                    type: object
+                    description: Next actions (AI agent hints)
+                    properties:
+                      next:
+                        type: string
+                        example: Payment confirmed. Order is being prepared.
+                      cancel:
+                        type: string
+                        nullable: true
+                      details:
+                        type: string
+        '404':
+          $ref: '#/components/responses/Error404'
+
+  /orders/{orderId}:
+    get:
+      tags: [Orders]
+      summary: Get full order details
+      description: |
+        Retrieve complete order information including items, payment, shipping, and totals.
+      operationId: getOrderById
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Full order details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/Error404'
+
+components:
+  schemas:
+    Chain:
+      type: object
+      required: [id, name, tokens]
+      properties:
+        id:
+          type: string
+          example: solana
+        name:
+          type: string
+          example: Solana
+        tokens:
+          type: array
+          items:
+            type: object
+            properties:
+              symbol:
+                type: string
+                example: SOL
+              name:
+                type: string
+                example: Solana
+              type:
+                type: string
+                enum: [native, spl, erc20]
+                example: native
+              decimals:
+                type: integer
+                example: 9
+              mint:
+                type: string
+                description: Token contract/mint address (for non-native tokens)
+                example: EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
+
+    Category:
+      type: object
+      required: [id, name, slug]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        productCount:
+          type: integer
+        subcategories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+
+    Product:
+      type: object
+      required: [id, name, slug, price, inStock]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        price:
+          type: object
+          properties:
+            usd:
+              type: number
+              description: Price in USD
+            crypto:
+              type: object
+              description: Prices in various cryptocurrencies
+              additionalProperties:
+                type: string
+          example:
+            usd: 29.99
+            crypto:
+              SOL: "0.245"
+              USDC: "29.99"
+              BTC: "0.00026"
+        imageUrl:
+          type: string
+          format: uri
+        category:
+          type: string
+        inStock:
+          type: boolean
+        tags:
+          type: array
+          items:
+            type: string
+          example: [bitcoin, crypto, tee]
+
+    ProductDetail:
+      allOf:
+        - $ref: '#/components/schemas/Product'
+        - type: object
+          properties:
+            variants:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                    example: Black / M
+                  sku:
+                    type: string
+                  price:
+                    type: number
+                  inStock:
+                    type: boolean
+                  stockQuantity:
+                    type: integer
+            images:
+              type: array
+              items:
+                type: string
+                format: uri
+            relatedProducts:
+              type: array
+              items:
+                $ref: '#/components/schemas/Product'
+
+    FeaturedProduct:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        price:
+          type: object
+          properties:
+            usd:
+              type: number
+            crypto:
+              type: object
+        badge:
+          type: string
+          enum: [trending, new, bestseller]
+          example: trending
+        inStock:
+          type: boolean
+
+    Order:
+      type: object
+      required: [orderId, status, createdAt]
+      properties:
+        orderId:
+          type: string
+        status:
+          type: string
+          enum: [awaiting_payment, paid, processing, shipped, delivered, cancelled, expired]
+        createdAt:
+          type: string
+          format: date-time
+        paidAt:
+          type: string
+          format: date-time
+          nullable: true
+        shippedAt:
+          type: string
+          format: date-time
+          nullable: true
+        email:
+          type: string
+          nullable: true
+          description: Null after 90 days (privacy policy)
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+              name:
+                type: string
+              variant:
+                type: string
+              quantity:
+                type: integer
+              price:
+                type: number
+              imageUrl:
+                type: string
+                format: uri
+        shipping:
+          type: object
+          nullable: true
+          description: Null after 90 days (privacy policy)
+        tracking:
+          type: object
+          nullable: true
+          properties:
+            number:
+              type: string
+            carrier:
+              type: string
+            url:
+              type: string
+              format: uri
+            estimatedDelivery:
+              type: string
+              format: date-time
+        payment:
+          type: object
+          properties:
+            chain:
+              type: string
+            token:
+              type: string
+            amount:
+              type: string
+            txHash:
+              type: string
+              nullable: true
+            confirmedAt:
+              type: string
+              format: date-time
+              nullable: true
+        totals:
+          type: object
+          properties:
+            subtotal:
+              type: number
+            discount:
+              type: number
+            shipping:
+              type: number
+            total:
+              type: number
+        _actions:
+          type: object
+          description: AI agent action hints
+          properties:
+            next:
+              type: string
+            help:
+              type: string
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: PRODUCT_NOT_FOUND
+            message:
+              type: string
+              example: Product with slug 'invalid-slug' not found
+            details:
+              type: object
+              description: Additional error context
+            suggestions:
+              type: array
+              items:
+                type: string
+              description: Helpful suggestions for AI agents to auto-recover
+              example:
+                - Try searching with /api/products/search?q=alpaca socks
+                - Check available categories at /api/categories
+            requestId:
+              type: string
+              description: Request ID for support
+
+  responses:
+    Error400:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: INVALID_REQUEST
+              message: Missing required field 'email'
+              details:
+                field: email
+                required: true
+              suggestions:
+                - Provide a valid email address
+                - "Example: user@example.com"
+
+    Error404:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: NOT_FOUND
+              message: Resource not found
+              suggestions:
+                - Check the URL and try again
+                - Browse available resources at /api/categories
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: Optional API key for rate limit increases (not required for public access)
+
+security: []
