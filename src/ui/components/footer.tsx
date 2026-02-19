@@ -84,8 +84,8 @@ export function Footer({ className }: { className?: string }) {
                 variant="ghost"
               >
                 <Link
-                  aria-label="Telegram @bytheculture"
-                  href="https://t.me/bytheculture"
+                  aria-label="Telegram @bythecult"
+                  href="https://t.me/bythecult"
                   rel="noopener noreferrer"
                   target="_blank"
                 >

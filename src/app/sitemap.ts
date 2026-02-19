@@ -239,11 +239,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const all = [...staticPages, ...categoryPages, ...productPages];
-  // Exclude test pages (e.g. /test, /test/membership-after-stake)
+  // Exclude test pages and malformed URLs (e.g. /test, or base URL with trailing &)
   const filtered = all.filter((entry) => {
     try {
-      const path = new URL(entry.url).pathname;
-      return !path.startsWith("/test");
+      const u = new URL(entry.url);
+      const path = u.pathname;
+      if (path.startsWith("/test")) return false;
+      if (entry.url.includes("/&") || entry.url.endsWith("&")) return false;
+      return true;
     } catch {
       return true;
     }

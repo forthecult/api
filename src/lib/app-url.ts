@@ -11,13 +11,24 @@ const DEFAULT_PUBLIC_SITE = "https://forthecult.store";
  * Use for capabilities, for-agents page, and auth instruction links.
  * Set NEXT_PUBLIC_AGENT_APP_URL (e.g. https://ai.forthecult.store) to use a subdomain.
  * Returns empty string when not configured — callers must handle this.
+ * Strips any trailing &, ? or fragment so sitemap/canonical URLs are never malformed.
  */
 export function getAgentBaseUrl(): string {
   const raw = process.env.NEXT_PUBLIC_AGENT_APP_URL?.trim();
   if (!raw) return "";
+  // Drop trailing query/fragment (e.g. copy-paste "https://ai.forthecult.store&" or "?foo=1")
+  const withoutQuery = raw.split(/[?#]/)[0]?.trim() ?? "";
+  const trimmed = withoutQuery.replace(/[&/]+$/, "");
+  if (!trimmed) return "";
   // Accept both "https://ai.example.com" and bare "ai.example.com"
-  if (/^https?:\/\//i.test(raw)) return raw.replace(/\/$/, "");
-  return `https://${raw.replace(/^\/+/, "")}`.replace(/\/$/, "");
+  let url = trimmed;
+  if (!/^https?:\/\//i.test(trimmed)) url = `https://${trimmed.replace(/^\/+/, "")}`;
+  else url = trimmed.replace(/\/+$/, "");
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
 }
 
 /** Hostname of the agent app URL (e.g. ai.forthecult.store). Empty if not set. */
@@ -43,11 +54,18 @@ export function getClientBaseUrl(): string {
 /**
  * Public site URL for canonical links, metadata, sitemaps, emails.
  * Must be https when used in production.
+ * Strips query/fragment and returns origin only to avoid malformed sitemap URLs.
  */
 export function getPublicSiteUrl(): string {
   const raw = process.env.NEXT_PUBLIC_APP_URL?.trim() || DEFAULT_PUBLIC_SITE;
-  if (/^https?:\/\//i.test(raw)) return raw;
-  return `https://${raw.replace(/^\/+/, "")}`;
+  const withoutQuery = raw.split(/[?#]/)[0]?.trim() ?? "";
+  const trimmed = withoutQuery.replace(/[&/]+$/, "");
+  const url = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed.replace(/^\/+/, "")}`;
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url.replace(/\/+$/, "");
+  }
 }
 
 /**

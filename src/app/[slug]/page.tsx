@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { Star } from "lucide-react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
@@ -22,7 +22,11 @@ import { ProductVariantImageProvider } from "~/app/products/[id]/product-variant
 import { ProductVariantSection } from "~/app/products/[id]/product-variant-section";
 import { RelatedProductsSection } from "~/app/products/[id]/related-products-section";
 import { ProductsClient } from "~/app/products/products-client";
-import { getPublicSiteUrl, getServerBaseUrl } from "~/lib/app-url";
+import {
+  getPublicSiteUrl,
+  getServerBaseUrl,
+  isAgentSubdomain,
+} from "~/lib/app-url";
 import {
   getCategoryBySlug,
   getCategoryParent,
@@ -180,6 +184,9 @@ export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params;
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "";
+  const isAgent = isAgentSubdomain(host);
   const siteUrl = getPublicSiteUrl();
   const product = await getProductForPageBySlug(slug);
   if (product) {
@@ -202,6 +209,9 @@ export async function generateMetadata({
       alternates: {
         canonical: canonicalUrl,
       },
+      ...(isAgent && {
+        robots: { follow: true, index: false },
+      }),
       description: metaDesc,
       openGraph: {
         description: metaDesc,
@@ -256,6 +266,9 @@ export async function generateMetadata({
     alternates: {
       canonical: `${siteUrl}/${slug}`,
     },
+    ...(isAgent && {
+      robots: { follow: true, index: false },
+    }),
     description,
     openGraph: {
       description,
