@@ -68,13 +68,17 @@ export const twoFactor = authClient.twoFactor;
 // Hook to get current user data and loading state
 // !! Returns only raw (static) data, use getCurrentUserOrRedirect for data from db
 export const useCurrentUser = () => {
-  const { data, isPending } = useSession();
+  const { data, isPending, refetch } = useSession();
   return {
     isPending,
+    refetch,
     session: data?.session,
     user: data?.user,
   };
 };
+
+/** Refetch the current session (call after auth state changes externally, e.g., wallet signup) */
+export const refetchSession = authClient.getSession;
 
 // Hook similar to getCurrentUserOrRedirect for client-side use
 // !! Returns only raw (static) data, use getCurrentUserOrRedirect for data from db

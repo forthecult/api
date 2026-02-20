@@ -13,7 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-import { useCurrentUserOrRedirect } from "~/lib/auth-client";
+import { listUserAccounts, useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { Badge } from "~/ui/primitives/badge";
 import { Card, CardContent } from "~/ui/primitives/card";
 
@@ -44,16 +44,6 @@ const defaultOrderStats: OrderStats = {
   awaitingShipment: 0,
 };
 
-function formatBalance(cents: null | number | undefined): string {
-  if (cents == null) return "—";
-  return new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 2,
-    style: "currency",
-  }).format(cents / 100);
-}
-
 // Tier visual config (icons / accent colors)
 const TIER_VISUALS: Record<
   number,
@@ -76,7 +66,14 @@ interface MembershipInfo {
 export function ProfileViewClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
   const { publicKey } = useWallet();
-  const wallet = publicKey?.toBase58() ?? null;
+  const connectedWallet = publicKey?.toBase58() ?? null;
+  
+  // linked Solana wallet from user's account (for when wallet adapter isn't connected)
+  const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);
+  
+  // effective wallet: prefer connected wallet, fall back to linked wallet
+  const wallet = connectedWallet ?? linkedSolanaWallet;
+  
   const [profile, setProfile] = useState<null | {
     email: string;
     firstName: string;
@@ -86,15 +83,37 @@ export function ProfileViewClient() {
     phone: string;
   }>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
-  const [cultBalanceCents, setCultBalanceCents] = useState<null | number>(null);
+  const [stakedCultBalance, setStakedCultBalance] = useState<string | null>(null);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // fetch linked Solana wallet when user is logged in
+  useEffect(() => {
+    if (!user?.id) {
+      setLinkedSolanaWallet(null);
+      return;
+    }
+    let cancelled = false;
+    listUserAccounts()
+      .then((res) => {
+        if (cancelled || res.error) return;
+        const solana = (res.data ?? []).find(
+          (a: { providerId?: string }) => a.providerId === "solana",
+        ) as { accountId: string } | undefined;
+        if (!cancelled) setLinkedSolanaWallet(solana?.accountId ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedSolanaWallet(null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // Fetch membership tier from staking balance + live pricing
   useEffect(() => {
     if (!wallet) {
       setMembership(null);
+      setStakedCultBalance(null);
       return;
     }
     setMembershipLoading(true);
@@ -125,6 +144,7 @@ export function ProfileViewClient() {
           },
         ]) => {
           const staked = Number.parseFloat(balanceData.stakedBalance ?? "0");
+          setStakedCultBalance(staked > 0 ? balanceData.stakedBalance ?? null : null);
           const priceTiers = priceData.data?.pricing.tiers ?? [];
           const tokenPrice = priceData.data?.token.priceUsd ?? 0;
           const tier = detectTierFromPricing(staked, tokenPrice, priceTiers);
@@ -135,7 +155,10 @@ export function ProfileViewClient() {
           setMembership(tier);
         },
       )
-      .catch(() => setMembership(null))
+      .catch(() => {
+        setMembership(null);
+        setStakedCultBalance(null);
+      })
       .finally(() => setMembershipLoading(false));
   }, [wallet]);
 
@@ -268,7 +291,7 @@ export function ProfileViewClient() {
                 {displayName}
               </p>
               <p className="text-sm text-muted-foreground">
-                CULT Balance: {formatBalance(cultBalanceCents)}
+                CULT Staked: {stakedCultBalance ? `${Number(stakedCultBalance).toLocaleString()} CULT` : "—"}
               </p>
             </div>
             <div className="shrink-0 text-right">

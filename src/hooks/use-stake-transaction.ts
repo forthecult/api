@@ -77,15 +77,23 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         const sig = await sendTransaction(tx, connection, SEND_OPTS);
         toast.success("Stake submitted: " + sig.slice(0, 8) + "…");
 
-        // link the wallet to the user's account (if logged in via email/etc)
-        // this is fire-and-forget - don't block the UI or show errors
+        // link wallet to account or create account if not logged in
+        // if account is created/signed in, refresh to update auth state
         fetch("/api/auth/link-solana-wallet", {
           body: JSON.stringify({ wallet }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
-        }).catch(() => {
-          // silently ignore - linking is optional
-        });
+        })
+          .then((res) => res.json())
+          .then((data: { signedIn?: boolean }) => {
+            if (data.signedIn) {
+              // new account created or signed into existing - soft refresh to update auth
+              window.dispatchEvent(new CustomEvent("auth-state-changed"));
+            }
+          })
+          .catch(() => {
+            // silently ignore - linking is optional
+          });
 
         options.onStakeSuccess?.();
         return true;

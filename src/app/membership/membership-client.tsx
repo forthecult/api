@@ -26,6 +26,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
+import { listUserAccounts, refetchSession, useCurrentUser } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import {
   PRELOAD_AUTH_WALLET_MODAL,
@@ -155,13 +156,50 @@ export function MembershipClient() {
   >(null);
   const [pricingLoading, setPricingLoading] = useState(true);
 
-  const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet } =
+  const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet: connectedWallet } =
     useStakeTransaction();
+  const { user } = useCurrentUser();
+  
+  // linked Solana wallet from user's account (for when wallet adapter isn't connected)
+  const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);
+  
+  // effective wallet: prefer connected wallet, fall back to linked wallet
+  const wallet = connectedWallet ?? linkedSolanaWallet;
+  
+  // fetch linked Solana wallet when user is logged in
+  useEffect(() => {
+    if (!user?.id) {
+      setLinkedSolanaWallet(null);
+      return;
+    }
+    let cancelled = false;
+    listUserAccounts()
+      .then((res) => {
+        if (cancelled || res.error) return;
+        const solana = (res.data ?? []).find(
+          (a: { providerId?: string }) => a.providerId === "solana",
+        ) as { accountId: string } | undefined;
+        if (!cancelled) setLinkedSolanaWallet(solana?.accountId ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedSolanaWallet(null);
+      });
+    return () => { cancelled = true; };
+  }, [user?.id]);
 
   // preload wallet providers on mount so they're ready when user clicks stake
   useEffect(() => {
     window.dispatchEvent(new CustomEvent(PRELOAD_AUTH_WALLET_MODAL));
     window.dispatchEvent(new CustomEvent(PRELOAD_SOLANA_WALLET));
+  }, []);
+
+  // listen for auth state changes (e.g., after wallet-based signup during staking)
+  useEffect(() => {
+    const handleAuthChange = () => {
+      refetchSession().catch(() => {});
+    };
+    window.addEventListener("auth-state-changed", handleAuthChange);
+    return () => window.removeEventListener("auth-state-changed", handleAuthChange);
   }, []);
 
   // persist selected tier to URL so it survives component remounts
