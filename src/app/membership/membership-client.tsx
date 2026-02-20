@@ -769,10 +769,15 @@ export function MembershipClient() {
                           </div>
                           <div className="flex-1">
                             <p className="font-semibold text-foreground">
-                              Current: {tierData?.name ?? `Tier ${currentTierFromStake}`} Member
+                              Your tier: {tierData?.name ?? `Tier ${currentTierFromStake}`}
                             </p>
                             <p className="text-sm text-muted-foreground">
-                              {stakedLock?.durationLabel ?? "30 days"} · {formatTokens(Number(stakedBalanceDisplay))} {tokenSymbol} staked
+                              {stakedLock?.durationLabel ?? "30 days"} · {formatTokensPrecise(Number(stakedBalanceDisplay))} {tokenSymbol} staked
+                              {stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0
+                                ? ` · ${formatTimeUntilUnlock(stakedLock.secondsRemaining)}`
+                                : stakedLock && !stakedLock.isLocked
+                                  ? " · Unlocked"
+                                  : null}
                             </p>
                           </div>
                         </>
@@ -829,7 +834,7 @@ export function MembershipClient() {
                                   </div>
                                   <div>
                                     <p className="font-semibold text-foreground">
-                                      {tierData?.name ?? `Tier ${currentTierFromStake}`} Member
+                                      Your tier: {tierData?.name ?? `Tier ${currentTierFromStake}`}
                                     </p>
                                     <p className="text-sm text-muted-foreground">
                                       {stakedLock?.durationLabel ?? "30 days"} membership
@@ -846,9 +851,14 @@ export function MembershipClient() {
                           </div>
                         )}
                         
-                        {/* Staked amount details */}
+                        {/* Staked amount + time until unstake */}
                         <div className="text-sm text-muted-foreground">
-                          Staked: <span className="font-medium tabular-nums text-foreground">{formatTokens(Number(stakedBalanceDisplay))} {tokenSymbol}</span>
+                          Staked: <span className="font-medium tabular-nums text-foreground">{formatTokensPrecise(Number(stakedBalanceDisplay))} {tokenSymbol}</span>
+                          {stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? (
+                            <> · {formatTimeUntilUnlock(stakedLock.secondsRemaining)}</>
+                          ) : stakedLock && !stakedLock.isLocked ? (
+                            <> · <span className="text-chart-1 font-medium">Unlocked</span> — you can unstake anytime</>
+                          ) : null}
                         </div>
 
                         {/* Upgrade options - only show if not at max tier */}
@@ -880,7 +890,7 @@ export function MembershipClient() {
                                     setStakeMoreAmount(upgradeTarget.amount.toString())
                                   }
                                 >
-                                  +{formatTokens(upgradeTarget.amount)} for {upgradeTarget.tierName}
+                                  +{formatTokensPrecise(upgradeTarget.amount)} for {upgradeTarget.tierName}
                                 </Button>
                               )}
                               <Button
@@ -965,7 +975,7 @@ export function MembershipClient() {
                               size="sm"
                               variant="secondary"
                             >
-                              {unstakePending ? "Sending…" : `Unstake ${formatTokens(Number(stakedBalanceDisplay))} ${tokenSymbol}`}
+                              {unstakePending ? "Sending…" : `Unstake ${formatTokensPrecise(Number(stakedBalanceDisplay))} ${tokenSymbol}`}
                             </Button>
                           </div>
                         )}
@@ -1026,8 +1036,22 @@ export function MembershipClient() {
                   );
                 })()}
 
-                {/* Duration - always show both options when upgrading */}
+                {/* When already at selected tier (e.g. Tier 3 with Tier 3 selected), hide stake form — no option to "stake again" */}
                 {(() => {
+                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
+                  const alreadyAtSelectedTier = isUpgrading && selectedTier >= currentTierFromStake;
+                  if (alreadyAtSelectedTier) {
+                    return (
+                      <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3 text-center text-sm text-muted-foreground">
+                        You're at {MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}. Choose a higher tier above to upgrade.
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Duration - always show both options when upgrading (hidden when already at selected tier) */}
+                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && (() => {
                   const hasLockedStake = stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
                   const currentLockTier = stakedLock?.lockTier; // 0 = 30 days, 1 = 12 months
                   const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
@@ -1117,8 +1141,8 @@ export function MembershipClient() {
                   );
                 })()}
 
-                {/* Summary - show different info based on whether upgrading or joining */}
-                {(() => {
+                {/* Summary - show different info based on whether upgrading or joining (hidden when already at selected tier) */}
+                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && (() => {
                   const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
                   const currentStakedAmount = Number(stakedBalanceDisplay);
                   const additionalNeeded = isUpgrading 
@@ -1176,8 +1200,8 @@ export function MembershipClient() {
                   );
                 })()}
 
-                {/* Upsell to next tier - only show if not already upgrading to max tier */}
-                {selectedTier > 1 && !(currentTierFromStake != null && selectedTier <= currentTierFromStake) &&
+                {/* Upsell to next tier - only show if not already upgrading to max tier (hidden when already at selected tier) */}
+                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && selectedTier > 1 && !(currentTierFromStake != null && selectedTier <= currentTierFromStake) &&
                   (() => {
                     const nextTierPrice = tierPriceMap[selectedTier - 1];
                     const extraUsd = nextTierPrice
@@ -1224,19 +1248,18 @@ export function MembershipClient() {
                     );
                   })()}
 
-                {/* Main action button */}
-                {(() => {
+                {/* Main action button - hidden when already at selected tier (no "stake again" option) */}
+                {!(currentTierFromStake != null && Number(stakedBalanceRaw) > 0 && selectedTier >= currentTierFromStake) && (() => {
                   const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
                   const currentStakedAmount = Number(stakedBalanceDisplay);
                   const additionalNeeded = isUpgrading 
                     ? Math.max(0, stakeAmount - currentStakedAmount) 
                     : stakeAmount;
-                  const alreadyAtSelectedTier = isUpgrading && selectedTier >= currentTierFromStake;
                   
                   return (
                     <Button
                       className="w-full gap-2 text-base"
-                      disabled={STAKING_AVAILABLE_NEXT_HOUR || STAKING_SIGNUP_DISABLED || stakePending || alreadyAtSelectedTier || additionalNeeded <= 0}
+                      disabled={STAKING_AVAILABLE_NEXT_HOUR || STAKING_SIGNUP_DISABLED || stakePending || additionalNeeded <= 0}
                       onClick={handleStake}
                       size="lg"
                     >
@@ -1247,8 +1270,6 @@ export function MembershipClient() {
                         ? "Membership signup will be available shortly"
                         : stakePending
                           ? "Preparing transaction…"
-                          : alreadyAtSelectedTier
-                          ? "Already at this tier or higher"
                           : additionalNeeded <= 0
                           ? "No additional stake needed"
                           : wallet
@@ -1264,68 +1285,74 @@ export function MembershipClient() {
                   and returned to your wallet when you unstake.
                 </p>
 
-                {/* Get CULT: swap SOL → CULT */}
-                {publicKey && (
-                  <div className="mt-4 space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-                    <div className="flex items-center gap-2">
-                      <RefreshCw className="h-4 w-4 text-primary" />
-                      <span className="font-medium text-foreground">Get CULT</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Swap SOL for CULT on PumpSwap. You need a small amount of SOL for transaction fees.
-                    </p>
-                    <div className="space-y-2">
-                      <div className="flex gap-2">
-                        <Input
-                          className="font-mono flex-1"
-                          min={0}
-                          onChange={(e) => setSolAmount(e.target.value)}
-                          placeholder="SOL amount"
-                          step="any"
-                          type="number"
-                          value={solAmount}
-                        />
-                        <Button
-                          disabled={swapPending || solBalanceSol <= 0.01}
-                          onClick={() =>
-                            setSolAmount(
-                              Math.max(0, solBalanceSol - 0.01).toFixed(6),
-                            )
-                          }
-                          size="sm"
-                          type="button"
-                          variant="secondary"
-                        >
-                          Max
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        Balance: {solBalanceSol.toFixed(4)} SOL
-                      </p>
-                    </div>
-                    {estimateLoading && solAmount.trim() && (
-                      <p className="text-xs text-muted-foreground">Estimating…</p>
-                    )}
-                    {!estimateLoading && estimatedCult != null && (
-                      <p className="text-sm font-medium text-foreground">
-                        You will receive ≈ {estimatedCult} CULT
-                      </p>
-                    )}
-                    <Button
-                      className="w-full"
-                      disabled={
-                        swapPending ||
-                        !solAmount.trim() ||
-                        Number.parseFloat(solAmount) <= 0 ||
-                        (estimatedCult == null && !!solAmount.trim())
-                      }
-                      onClick={() => void handleSwapSolToCult()}
-                      size="sm"
-                    >
-                      {swapPending ? "Swapping…" : "Swap SOL → CULT"}
-                    </Button>
+                {/* Get CULT: swap SOL → CULT — always visible so the option is discoverable */}
+                <div className="mt-4 space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 text-primary" />
+                    <span className="font-medium text-foreground">Get CULT</span>
                   </div>
-                )}
+                  <p className="text-xs text-muted-foreground">
+                    Swap SOL for CULT on PumpSwap. You need a small amount of SOL for transaction fees.
+                  </p>
+                  {publicKey ? (
+                    <>
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Input
+                            className="font-mono flex-1"
+                            min={0}
+                            onChange={(e) => setSolAmount(e.target.value)}
+                            placeholder="SOL amount"
+                            step="any"
+                            type="number"
+                            value={solAmount}
+                          />
+                          <Button
+                            disabled={swapPending || solBalanceSol <= 0.01}
+                            onClick={() =>
+                              setSolAmount(
+                                Math.max(0, solBalanceSol - 0.01).toFixed(6),
+                              )
+                            }
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            Max
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          Balance: {solBalanceSol.toFixed(4)} SOL
+                        </p>
+                      </div>
+                      {estimateLoading && solAmount.trim() && (
+                        <p className="text-xs text-muted-foreground">Estimating…</p>
+                      )}
+                      {!estimateLoading && estimatedCult != null && (
+                        <p className="text-sm font-medium text-foreground">
+                          You will receive ≈ {estimatedCult} CULT
+                        </p>
+                      )}
+                      <Button
+                        className="w-full"
+                        disabled={
+                          swapPending ||
+                          !solAmount.trim() ||
+                          Number.parseFloat(solAmount) <= 0 ||
+                          (estimatedCult == null && !!solAmount.trim())
+                        }
+                        onClick={() => void handleSwapSolToCult()}
+                        size="sm"
+                      >
+                        {swapPending ? "Swapping…" : "Swap SOL → CULT"}
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Connect your wallet above to swap SOL for CULT.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 

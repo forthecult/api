@@ -165,13 +165,8 @@ export function ProfileViewClient() {
             balance?: string;
           },
         ]) => {
-          // set wallet balance
-          const walletBal = Number.parseFloat(walletData.balance ?? "0");
-          setWalletCultBalance(walletBal > 0 ? walletData.balance ?? null : null);
-
-          // set staked balance
-          const stakedBal = Number.parseFloat(stakingData.stakedBalance ?? "0");
-          setStakedCultBalance(stakedBal > 0 ? stakingData.stakedBalance ?? null : null);
+          setWalletCultBalance(walletData.balance ?? "0");
+          setStakedCultBalance(stakingData.stakedBalance ?? "0");
 
           // set membership from API-provided tier
           const tierId = stakingData.memberTier;
@@ -332,12 +327,17 @@ export function ProfileViewClient() {
                 {displayName}
               </p>
               <p className="text-sm text-muted-foreground">
-                {walletCultBalance ? (
-                  <>CULT Balance: {Number(walletCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
-                ) : stakedCultBalance ? (
-                  <>CULT Staked: {Number(stakedCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
-                ) : wallet ? (
-                  <>CULT Balance: —</>
+                {wallet ? (
+                  <>
+                    {walletCultBalance != null && (
+                      <>CULT Balance: {Number(walletCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
+                    )}
+                    {walletCultBalance != null && stakedCultBalance != null && " · "}
+                    {stakedCultBalance != null && (
+                      <>CULT Staked: {Number(stakedCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
+                    )}
+                    {walletCultBalance == null && stakedCultBalance == null && "—"}
+                  </>
                 ) : (
                   <>No wallet linked</>
                 )}
