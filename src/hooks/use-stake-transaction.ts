@@ -2,7 +2,7 @@
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { Transaction } from "@solana/web3.js";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { base64ToUint8Array } from "~/lib/solana-tx";
@@ -37,14 +37,16 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
   const [unstakePending, setUnstakePending] = useState(false);
   const [restakePending, setRestakePending] = useState(false);
 
+  // track pending stake params so we can auto-stake after wallet connects
+  const pendingStakeRef = useRef<{ amount: string; lockDuration: number } | null>(null);
+
   const openConnectModal = useCallback(() => {
     window.dispatchEvent(new CustomEvent(OPEN_SOLANA_WALLET_MODAL));
   }, []);
 
-  const stake = useCallback(
+  const executeStake = useCallback(
     async (amount: string, lockDuration: number): Promise<boolean> => {
       if (!wallet || !sendTransaction) {
-        openConnectModal();
         return false;
       }
       const trimmed = amount.trim();
@@ -83,13 +85,28 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
         setStakePending(false);
       }
     },
-    [
-      wallet,
-      sendTransaction,
-      connection,
-      openConnectModal,
-      options.onStakeSuccess,
-    ],
+    [wallet, sendTransaction, connection, options.onStakeSuccess],
+  );
+
+  // auto-execute pending stake when wallet connects
+  useEffect(() => {
+    if (!wallet || !sendTransaction || !pendingStakeRef.current) return;
+    const { amount, lockDuration } = pendingStakeRef.current;
+    pendingStakeRef.current = null;
+    executeStake(amount, lockDuration);
+  }, [wallet, sendTransaction, executeStake]);
+
+  const stake = useCallback(
+    async (amount: string, lockDuration: number): Promise<boolean> => {
+      if (!wallet || !sendTransaction) {
+        // store pending stake params and open connect modal
+        pendingStakeRef.current = { amount, lockDuration };
+        openConnectModal();
+        return false;
+      }
+      return executeStake(amount, lockDuration);
+    },
+    [wallet, sendTransaction, openConnectModal, executeStake],
   );
 
   /**

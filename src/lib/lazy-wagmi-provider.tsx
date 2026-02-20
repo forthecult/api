@@ -21,22 +21,32 @@ function useWagmiReady() {
 
 export { useWagmiReady };
 
+/** passthrough component that just renders children — used before Wagmi loads */
+function NoopProvider({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}
+
 /**
  * Wraps children with WagmiProvider only after the auth/wallet modal is
  * opened or preloaded (e.g. hover on "Connect wallet"). Keeps Wagmi + viem
  * out of the initial bundle for faster first load.
+ *
+ * always renders a provider wrapper (noop or real) so the component tree
+ * structure is stable and children don't re-mount when Wagmi loads.
  */
 export function LazyWagmiProvider({ children }: { children: ReactNode }) {
-  const [Provider, setProvider] = useState<ProviderComponent | null>(null);
+  const [Provider, setProvider] = useState<ProviderComponent>(() => NoopProvider);
+  const [isReady, setIsReady] = useState(false);
   const loadingRef = React.useRef(false);
 
   const loadWagmi = useCallback(() => {
-    if (Provider != null || loadingRef.current) return;
+    if (isReady || loadingRef.current) return;
     loadingRef.current = true;
     import("~/lib/wagmi-provider").then((m) => {
       setProvider(() => m.WagmiProvider);
+      setIsReady(true);
     });
-  }, [Provider]);
+  }, [isReady]);
 
   useEffect(() => {
     const onTrigger = () => loadWagmi();
@@ -52,16 +62,8 @@ export function LazyWagmiProvider({ children }: { children: ReactNode }) {
     };
   }, [loadWagmi]);
 
-  if (Provider == null) {
-    return (
-      <WagmiReadyContext.Provider value={false}>
-        {children}
-      </WagmiReadyContext.Provider>
-    );
-  }
-
   return (
-    <WagmiReadyContext.Provider value={true}>
+    <WagmiReadyContext.Provider value={isReady}>
       <Provider>{children}</Provider>
     </WagmiReadyContext.Provider>
   );

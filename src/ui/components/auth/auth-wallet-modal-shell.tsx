@@ -43,6 +43,7 @@ export function AuthWalletModalShell({
   return (
     <SolanaWalletProvider>
       <AuthWalletModal
+        connectOnly={solanaOnly}
         onOpenChange={onOpenChange}
         open={open}
         solanaOnly={solanaOnly}

@@ -154,6 +154,8 @@ interface AuthWalletModalProps {
   open: boolean;
   /** When true, only show Solana wallets (no EVM options). Used for staking flows. */
   solanaOnly?: boolean;
+  /** When true, skip SIWE auth and just connect the wallet (for staking flows). */
+  connectOnly?: boolean;
 }
 
 export function AuthWalletModal({
@@ -161,6 +163,7 @@ export function AuthWalletModal({
   onOpenChange,
   open,
   solanaOnly = false,
+  connectOnly = false,
 }: AuthWalletModalProps) {
   const router = useRouter();
   const {
@@ -286,7 +289,8 @@ export function AuthWalletModal({
   useEffect(() => {
     if (!open) return;
     if (!currentWallet) return;
-    // Wallet just became connected (e.g. user approved in Phantom) — move to signing step.
+    // Wallet just became connected (e.g. user approved in Phantom) — move to signing step
+    // or close if connectOnly mode.
     // Check step/selectedChain so we only do this when we're on the network step waiting for connection.
     if (
       (step === "network" || step === "wallet") &&
@@ -296,6 +300,10 @@ export function AuthWalletModal({
     ) {
       setPendingSolanaConnect(false);
       solanaConnectStartedRef.current = false;
+      if (connectOnly) {
+        onOpenChange(false);
+        return;
+      }
       setStep("signing");
       return;
     }
@@ -328,7 +336,11 @@ export function AuthWalletModal({
         solanaConnectStartedRef.current = false;
         await new Promise((r) => setTimeout(r, 100));
         if (cancelled) return;
-        setStep("signing");
+        if (connectOnly) {
+          onOpenChange(false);
+        } else {
+          setStep("signing");
+        }
       })
       .catch((err) => {
         if (cancelled) return;
@@ -362,6 +374,8 @@ export function AuthWalletModal({
     connect,
     step,
     selectedChain,
+    connectOnly,
+    onOpenChange,
   ]);
 
   // If Solana wallet disconnects while we're on "Sign the message", show error so user isn't stuck
@@ -891,11 +905,13 @@ export function AuthWalletModal({
       >
         <div className="border-b border-border px-5 py-4">
           <DialogTitle className="text-lg font-semibold">
-            {solanaOnly
-              ? "Connect Solana wallet"
-              : link
-                ? "Connect wallet to account"
-                : "Sign in with wallet"}
+            {connectOnly
+              ? "Connect wallet to stake"
+              : solanaOnly
+                ? "Connect Solana wallet"
+                : link
+                  ? "Connect wallet to account"
+                  : "Sign in with wallet"}
           </DialogTitle>
         </div>
         <div className="flex flex-col gap-4 px-5 py-4">

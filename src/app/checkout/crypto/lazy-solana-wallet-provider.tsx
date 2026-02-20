@@ -23,9 +23,14 @@ function whenIdle(cb: () => void, timeout: number): () => void {
  * page has its own real SolanaWalletProvider in the invoice layout.
  * On mobile we use a longer idle timeout so LCP (hero/brand content) can paint
  * before Solana adapters load (~339 KiB unused JS on mobile).
+ *
+ * always renders a provider wrapper (stub or real) so the component tree
+ * structure is stable and children don't re-mount when the real provider loads.
  */
 export function LazySolanaWalletProvider({ children }: { children: ReactNode }) {
-  const [RealProvider, setRealProvider] = useState<SolanaProviderComponent | null>(null);
+  const [Provider, setProvider] = useState<SolanaProviderComponent>(
+    () => SolanaWalletStub,
+  );
 
   useEffect(() => {
     const isMobile =
@@ -34,15 +39,10 @@ export function LazySolanaWalletProvider({ children }: { children: ReactNode }) 
     const timeoutMs = isMobile ? 4000 : 2500;
     return whenIdle(() => {
       import("./SolanaWalletProvider").then((mod) => {
-        setRealProvider(() => mod.SolanaWalletProvider);
+        setProvider(() => mod.SolanaWalletProvider);
       });
     }, timeoutMs);
   }, []);
 
-  if (RealProvider) {
-    const P = RealProvider;
-    return <P>{children}</P>;
-  }
-
-  return <SolanaWalletStub>{children}</SolanaWalletStub>;
+  return <Provider>{children}</Provider>;
 }
