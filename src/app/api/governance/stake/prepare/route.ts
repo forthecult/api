@@ -99,6 +99,8 @@ export async function POST(request: Request) {
       mint,
       owner,
       programId,
+      tokenDecimals: token.decimals,
+      tokenSymbol: token.symbol,
     });
 
     const serialized = tx.serialize({

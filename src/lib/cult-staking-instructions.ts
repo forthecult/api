@@ -18,12 +18,25 @@ import {
   TransactionInstruction,
 } from "@solana/web3.js";
 
+// memo program for adding human-readable transaction descriptions
+const MEMO_PROGRAM_ID = new PublicKeyClass("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr");
+
+/** Create a memo instruction with a human-readable message */
+function createMemoInstruction(message: string, signer: PublicKeyClass): TransactionInstruction {
+  return new TransactionInstruction({
+    data: Buffer.from(message, "utf-8"),
+    keys: [{ isSigner: true, isWritable: false, pubkey: signer }],
+    programId: MEMO_PROGRAM_ID,
+  });
+}
+
 import {
   durationToTier,
   getStakeEntryPda,
   getVaultAta,
   getVaultAuthorityPda,
   isValidLockDuration,
+  LOCK_30_DAYS,
   type LockDuration,
   type LockTier,
   TIER_30_DAYS,
@@ -38,10 +51,13 @@ import { CULT_MINT_MAINNET, TOKEN_2022_PROGRAM_ID_BASE58 } from "./token-config"
 const TOKEN_2022_PROGRAM_ID = new PublicKeyClass(TOKEN_2022_PROGRAM_ID_BASE58);
 const CULT_MINT = new PublicKeyClass(CULT_MINT_MAINNET);
 
-/** Instruction tag for Stake */
-const IX_TAG_STAKE = 0;
-/** Instruction tag for Unstake */
-const IX_TAG_UNSTAKE = 1;
+/**
+ * Anchor-compatible instruction discriminators.
+ * These are the first 8 bytes of sha256("global:<instruction_name>").
+ * Using these allows Phantom/Blowfish to simulate our transactions using our IDL.
+ */
+const STAKE_DISCRIMINATOR = Buffer.from([0xce, 0xb0, 0xca, 0x12, 0xc8, 0xd1, 0xb3, 0x6c]);
+const UNSTAKE_DISCRIMINATOR = Buffer.from([0x5a, 0x5f, 0x6b, 0x2a, 0xcd, 0x7c, 0x32, 0xe1]);
 
 // ---------------------------------------------------------------------------
 // Instruction builders
@@ -85,11 +101,11 @@ export function buildStakeInstruction(params: {
 
   if (amount <= 0n) throw new Error("Stake amount must be positive");
 
-  // instruction data: [tag(1), lock_tier(1), amount_le(8)] = 10 bytes
-  const data = Buffer.alloc(10);
-  data.writeUInt8(IX_TAG_STAKE, 0);
-  data.writeUInt8(lockTier, 1);
-  data.writeBigUInt64LE(amount, 2);
+  // anchor-compatible instruction data: [discriminator(8), amount(8 LE), lock_tier(1)] = 17 bytes
+  const data = Buffer.alloc(17);
+  STAKE_DISCRIMINATOR.copy(data, 0);
+  data.writeBigUInt64LE(amount, 8);
+  data.writeUInt8(lockTier, 16);
 
   return new TransactionInstruction({
     data,
@@ -140,10 +156,10 @@ export function buildUnstakeInstruction(params: {
     vaultTokenAccount,
   } = params;
 
-  // instruction data: [tag(1), lock_tier(1)] = 2 bytes
-  const data = Buffer.alloc(2);
-  data.writeUInt8(IX_TAG_UNSTAKE, 0);
-  data.writeUInt8(lockTier, 1);
+  // anchor-compatible instruction data: [discriminator(8), lock_tier(1)] = 9 bytes
+  const data = Buffer.alloc(9);
+  UNSTAKE_DISCRIMINATOR.copy(data, 0);
+  data.writeUInt8(lockTier, 8);
 
   return new TransactionInstruction({
     data,
@@ -167,6 +183,7 @@ export function buildUnstakeInstruction(params: {
 /**
  * Build a stake transaction.
  * Optionally includes vault ATA creation if it doesn't exist.
+ * Includes a memo instruction for better wallet display.
  */
 export function buildStakeTransaction(params: {
   amount: bigint;
@@ -177,6 +194,8 @@ export function buildStakeTransaction(params: {
   mint?: PublicKeyClass;
   owner: PublicKeyClass;
   programId: PublicKeyClass;
+  tokenDecimals?: number;
+  tokenSymbol?: string;
 }): Transaction {
   const {
     amount,
@@ -186,6 +205,8 @@ export function buildStakeTransaction(params: {
     lockDuration,
     owner,
     programId,
+    tokenDecimals = 6,
+    tokenSymbol = "CULT",
   } = params;
 
   if (!isValidLockDuration(lockDuration)) {
@@ -194,6 +215,7 @@ export function buildStakeTransaction(params: {
 
   const mint = params.mint ?? CULT_MINT;
   const lockTier = durationToTier(lockDuration);
+  const durationLabel = lockDuration === LOCK_30_DAYS ? "30 days" : "12 months";
 
   const [vaultAuthority] = getVaultAuthorityPda(programId, mint);
   const vaultTokenAccount = getVaultAta(mint, vaultAuthority);
@@ -210,6 +232,14 @@ export function buildStakeTransaction(params: {
   tx.recentBlockhash = blockhash;
   tx.lastValidBlockHeight = lastValidBlockHeight;
   tx.feePayer = owner;
+
+  // add memo for wallet display - shows human-readable description
+  const humanAmount = Number(amount) / 10 ** tokenDecimals;
+  const formattedAmount = humanAmount.toLocaleString("en-US", {
+    maximumFractionDigits: 2,
+  });
+  const memo = `Stake ${formattedAmount} ${tokenSymbol} for ${durationLabel} - forthecult.store membership`;
+  tx.add(createMemoInstruction(memo, owner));
 
   // optionally create vault ATA if this is the first stake ever
   if (createVaultAta) {
@@ -244,6 +274,7 @@ export function buildStakeTransaction(params: {
 
 /**
  * Build an unstake transaction.
+ * Includes a memo instruction for better wallet display.
  */
 export function buildUnstakeTransaction(params: {
   blockhash: string;
@@ -252,11 +283,13 @@ export function buildUnstakeTransaction(params: {
   mint?: PublicKeyClass;
   owner: PublicKeyClass;
   programId: PublicKeyClass;
+  tokenSymbol?: string;
 }): Transaction {
-  const { blockhash, lastValidBlockHeight, lockTier, owner, programId } =
+  const { blockhash, lastValidBlockHeight, lockTier, owner, programId, tokenSymbol = "CULT" } =
     params;
 
   const mint = params.mint ?? CULT_MINT;
+  const tierLabel = lockTier === TIER_30_DAYS ? "30-day" : "12-month";
 
   const [vaultAuthority] = getVaultAuthorityPda(programId, mint);
   const vaultTokenAccount = getVaultAta(mint, vaultAuthority);
@@ -273,6 +306,10 @@ export function buildUnstakeTransaction(params: {
   tx.recentBlockhash = blockhash;
   tx.lastValidBlockHeight = lastValidBlockHeight;
   tx.feePayer = owner;
+
+  // add memo for wallet display
+  const memo = `Unstake ${tokenSymbol} from ${tierLabel} membership - forthecult.store`;
+  tx.add(createMemoInstruction(memo, owner));
 
   tx.add(
     buildUnstakeInstruction({
@@ -295,6 +332,7 @@ export function buildUnstakeTransaction(params: {
  * Only works when the lock has expired.
  * Note: Native program creates new stake entry, so this won't work as a single tx.
  * For restake, user must unstake first, then stake again.
+ * Includes a memo instruction for better wallet display.
  */
 export function buildRestakeTransaction(params: {
   amount: bigint;
@@ -305,6 +343,7 @@ export function buildRestakeTransaction(params: {
   oldLockTier: LockTier;
   owner: PublicKeyClass;
   programId: PublicKeyClass;
+  tokenSymbol?: string;
 }): Transaction {
   const {
     amount,
@@ -314,6 +353,7 @@ export function buildRestakeTransaction(params: {
     oldLockTier,
     owner,
     programId,
+    tokenSymbol = "CULT",
   } = params;
 
   if (!isValidLockDuration(lockDuration)) {
@@ -322,6 +362,7 @@ export function buildRestakeTransaction(params: {
 
   const mint = params.mint ?? CULT_MINT;
   const newLockTier = durationToTier(lockDuration);
+  const newDurationLabel = lockDuration === LOCK_30_DAYS ? "30 days" : "12 months";
 
   const [vaultAuthority] = getVaultAuthorityPda(programId, mint);
   const vaultTokenAccount = getVaultAta(mint, vaultAuthority);
@@ -349,6 +390,10 @@ export function buildRestakeTransaction(params: {
   tx.recentBlockhash = blockhash;
   tx.lastValidBlockHeight = lastValidBlockHeight;
   tx.feePayer = owner;
+
+  // add memo for wallet display
+  const memo = `Restake ${tokenSymbol} to ${newDurationLabel} membership - forthecult.store`;
+  tx.add(createMemoInstruction(memo, owner));
 
   // unstake from old tier
   tx.add(
