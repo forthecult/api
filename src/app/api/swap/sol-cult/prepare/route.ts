@@ -1,5 +1,5 @@
 /**
- * POST /api/governance/swap-sol-to-cult/prepare
+ * POST /api/swap/sol-cult/prepare
  * Body: { wallet: string, solAmount: number }
  *   - solAmount: SOL amount (e.g. 0.1)
  * Returns { transaction: string, estimatedCultRaw: string } (base64 tx for client to sign and send).
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       transaction: base64,
     });
   } catch (e) {
-    console.error("[governance] swap-sol-to-cult prepare error:", e);
+    console.error("[swap] sol-cult prepare error:", e);
     return NextResponse.json(
       { error: "Failed to build swap transaction" },
       { status: 500 },

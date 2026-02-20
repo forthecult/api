@@ -1,5 +1,5 @@
 /**
- * GET /api/governance/swap-sol-to-cult/estimate?solAmount=0.1
+ * GET /api/swap/sol-cult/estimate?solAmount=0.1
  * Returns { cultAmount: string } (human-readable CULT amount) for the given SOL input.
  * Used by mobile to show estimate before user confirms swap.
  */
@@ -41,7 +41,7 @@ export async function GET(request: Request) {
     }
     return NextResponse.json({ cultAmount: result.cultAmount });
   } catch (e) {
-    console.error("[governance] swap-sol-to-cult estimate error:", e);
+    console.error("[swap] sol-cult estimate error:", e);
     return NextResponse.json(
       { error: "Failed to estimate" },
       { status: 500 },
