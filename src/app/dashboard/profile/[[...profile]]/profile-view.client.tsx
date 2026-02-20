@@ -83,7 +83,7 @@ export function ProfileViewClient() {
     phone: string;
   }>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
-  const [stakedCultBalance, setStakedCultBalance] = useState<string | null>(null);
+  const [walletCultBalance, setWalletCultBalance] = useState<string | null>(null);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -109,11 +109,11 @@ export function ProfileViewClient() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // Fetch membership tier from staking balance + live pricing
+  // Fetch membership tier from staking balance API (which includes tier) + wallet balance
   useEffect(() => {
     if (!wallet) {
       setMembership(null);
-      setStakedCultBalance(null);
+      setWalletCultBalance(null);
       return;
     }
     setMembershipLoading(true);
@@ -121,43 +121,49 @@ export function ProfileViewClient() {
       fetch(
         `/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`,
       ).then((r) => r.json()),
-      fetch("/api/governance/token-price").then((r) => r.json()),
+      fetch(
+        `/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`,
+      ).then((r) => r.json()),
     ])
       .then(
-        ([balanceData, priceData]: [
+        ([stakingData, walletData]: [
           {
             lock?: null | { isLocked?: boolean; unlocksAt?: string };
+            memberTier?: null | number;
             stakedBalance?: string;
           },
           {
-            data?: {
-              pricing: {
-                tiers: {
-                  costUsd: number;
-                  tierId: number;
-                  tokensNeeded: number;
-                }[];
-              };
-              token: { priceUsd: number };
-            };
-            status?: boolean;
+            balance?: string;
           },
         ]) => {
-          const staked = Number.parseFloat(balanceData.stakedBalance ?? "0");
-          setStakedCultBalance(staked > 0 ? balanceData.stakedBalance ?? null : null);
-          const priceTiers = priceData.data?.pricing.tiers ?? [];
-          const tokenPrice = priceData.data?.token.priceUsd ?? 0;
-          const tier = detectTierFromPricing(staked, tokenPrice, priceTiers);
-          if (tier && balanceData.lock) {
-            tier.isLocked = balanceData.lock.isLocked ?? false;
-            tier.unlocksAt = balanceData.lock.unlocksAt ?? null;
+          // set wallet balance
+          const walletBal = Number.parseFloat(walletData.balance ?? "0");
+          setWalletCultBalance(walletBal > 0 ? walletData.balance ?? null : null);
+
+          // set membership from API-provided tier
+          const tierId = stakingData.memberTier;
+          if (tierId != null) {
+            const visual = TIER_VISUALS[tierId] ?? TIER_VISUALS[3];
+            if (visual) {
+              setMembership({
+                accent: visual.accent,
+                icon: visual.icon,
+                isLocked: stakingData.lock?.isLocked ?? false,
+                tierId,
+                tierName: visual.name,
+                unlocksAt: stakingData.lock?.unlocksAt ?? null,
+              });
+            } else {
+              setMembership(null);
+            }
+          } else {
+            setMembership(null);
           }
-          setMembership(tier);
         },
       )
       .catch(() => {
         setMembership(null);
-        setStakedCultBalance(null);
+        setWalletCultBalance(null);
       })
       .finally(() => setMembershipLoading(false));
   }, [wallet]);
@@ -291,7 +297,7 @@ export function ProfileViewClient() {
                 {displayName}
               </p>
               <p className="text-sm text-muted-foreground">
-                CULT Staked: {stakedCultBalance ? `${Number(stakedCultBalance).toLocaleString()} CULT` : "—"}
+                CULT Balance: {walletCultBalance ? `${Number(walletCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT` : "—"}
               </p>
             </div>
             <div className="shrink-0 text-right">
@@ -489,31 +495,3 @@ export function ProfileViewClient() {
   );
 }
 
-/**
- * Determine user's tier by comparing the USD value of their staked tokens
- * against the tier costs returned by the pricing API.
- */
-function detectTierFromPricing(
-  stakedTokens: number,
-  tokenPriceUsd: number,
-  tierCosts: { costUsd: number; tierId: number; tokensNeeded: number }[],
-): MembershipInfo | null {
-  if (!stakedTokens || stakedTokens <= 0 || !tokenPriceUsd) return null;
-  // Check from best tier (1) to worst (3)
-  const sorted = [...tierCosts].sort((a, b) => a.tierId - b.tierId);
-  for (const t of sorted) {
-    if (stakedTokens >= t.tokensNeeded) {
-      const visual = TIER_VISUALS[t.tierId] ?? TIER_VISUALS[3];
-      if (!visual) continue;
-      return {
-        accent: visual.accent,
-        icon: visual.icon,
-        isLocked: false,
-        tierId: t.tierId,
-        tierName: visual.name,
-        unlocksAt: null,
-      };
-    }
-  }
-  return null;
-}

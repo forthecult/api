@@ -218,6 +218,17 @@ export function Footer({ className }: { className?: string }) {
                     text-muted-foreground transition-colors
                     hover:text-foreground
                   `}
+                  href="/membership"
+                >
+                  Membership
+                </Link>
+              </li>
+              <li>
+                <Link
+                  className={`
+                    text-muted-foreground transition-colors
+                    hover:text-foreground
+                  `}
                   href="/lookbook"
                 >
                   Lookbook

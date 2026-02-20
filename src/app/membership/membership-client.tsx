@@ -213,6 +213,40 @@ export function MembershipClient() {
     window.history.replaceState({}, "", url.toString());
   }, [selectedTier]);
 
+  /** Current tier from staked balance (1 = best, 3 = entry). Null if no stake or below tier 3. */
+  const currentTierFromStake = useMemo(() => {
+    const staked = Number(stakedBalanceDisplay);
+    if (!Number.isFinite(staked) || staked <= 0) return null;
+    const tiers = pricingData?.pricing?.tiers ?? [];
+    const sorted = [...tiers].sort((a, b) => b.tokensNeeded - a.tokensNeeded);
+    for (const t of sorted) {
+      if (staked >= t.tokensNeeded) return t.tierId;
+    }
+    return null;
+  }, [stakedBalanceDisplay, pricingData?.pricing?.tiers]);
+
+  // auto-select appropriate tier based on current stake (can only upgrade)
+  useEffect(() => {
+    if (currentTierFromStake != null && Number(stakedBalanceRaw) > 0) {
+      // if selected tier is at or below current tier, select the next upgrade tier
+      if (selectedTier >= currentTierFromStake) {
+        const upgradeTier = currentTierFromStake - 1;
+        if (upgradeTier >= 1) {
+          setSelectedTier(upgradeTier);
+        }
+      }
+    }
+  }, [currentTierFromStake, stakedBalanceRaw, selectedTier]);
+
+  // auto-select 12 months when user has a locked 30-day stake (30 days no longer valid)
+  useEffect(() => {
+    const hasLockedStake = stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
+    const currentLockTier = stakedLock?.lockTier;
+    if (hasLockedStake && currentLockTier === 0 && stakeDuration === "30d") {
+      setStakeDuration("12m");
+    }
+  }, [stakedLock?.isLocked, stakedLock?.lockTier, stakedBalanceRaw, stakeDuration]);
+
   const refreshStakedBalance = useCallback(() => {
     if (!wallet) return;
     setStakedBalanceLoading(true);
@@ -326,18 +360,6 @@ export function MembershipClient() {
   const selectedTierPrice = tierPriceMap[selectedTier];
   const stakeAmount = selectedTierPrice?.tokensNeeded ?? 0;
 
-  /** Current tier from staked balance (1 = best, 3 = entry). Null if no stake or below tier 3. */
-  const currentTierFromStake = useMemo(() => {
-    const staked = Number(stakedBalanceDisplay);
-    if (!Number.isFinite(staked) || staked <= 0) return null;
-    const tiers = pricingData?.pricing?.tiers ?? [];
-    const sorted = [...tiers].sort((a, b) => b.tokensNeeded - a.tokensNeeded);
-    for (const t of sorted) {
-      if (staked >= t.tokensNeeded) return t.tierId;
-    }
-    return null;
-  }, [stakedBalanceDisplay, pricingData?.pricing?.tiers]);
-
   const selectedTierData = useMemo(
     () => MEMBERSHIP_TIERS.find((t) => t.id === selectedTier)!,
     [selectedTier],
@@ -356,9 +378,20 @@ export function MembershipClient() {
   }, []);
 
   const handleStake = useCallback(async () => {
-    const ok = await stake(stakeAmount.toString(), lockDuration);
+    // when upgrading, stake only the additional amount needed
+    const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
+    const currentStakedAmount = Number(stakedBalanceDisplay);
+    const amountToStake = isUpgrading 
+      ? Math.max(0, stakeAmount - currentStakedAmount) 
+      : stakeAmount;
+    
+    if (amountToStake <= 0) {
+      return;
+    }
+    
+    const ok = await stake(amountToStake.toString(), lockDuration);
     if (ok) refreshStakedBalance();
-  }, [stake, stakeAmount, lockDuration, refreshStakedBalance]);
+  }, [stake, stakeAmount, lockDuration, refreshStakedBalance, currentTierFromStake, stakedBalanceRaw, stakedBalanceDisplay]);
 
   const handleUnstake = useCallback(async () => {
     // native program requires lock tier (0=30day, 1=12month), not amount
@@ -664,12 +697,9 @@ export function MembershipClient() {
                     Membership signup will be available shortly.
                   </div>
                 )}
-                {/* Your stake — show when wallet connected */}
+                {/* Your membership — show when wallet connected and has stake */}
                 {wallet && (
                   <div className="space-y-3 rounded-xl border border-border bg-muted/20 p-4">
-                    <p className="text-sm font-medium text-foreground">
-                      Your stake
-                    </p>
                     {stakedBalanceLoading ? (
                       <p className="text-sm text-muted-foreground">
                         Loading…
@@ -680,33 +710,49 @@ export function MembershipClient() {
                       </p>
                     ) : (
                       <>
-                        <div className="space-y-1 text-sm">
-                          <div className="flex flex-wrap items-baseline gap-2">
-                            <span className="font-semibold tabular-nums text-foreground">
-                              {formatTokens(Number(stakedBalanceDisplay))}{" "}
-                              {tokenSymbol}
-                            </span>
-                            {currentTierFromStake != null && (
-                              <span className="text-muted-foreground">
-                                · {MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake)?.name ?? `Tier ${currentTierFromStake}`}
-                              </span>
-                            )}
+                        {/* Prominent membership badge */}
+                        {currentTierFromStake != null && (
+                          <div className="flex items-center gap-3">
+                            {(() => {
+                              const tierData = MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake);
+                              const TierIcon = tierData?.icon ?? Shield;
+                              return (
+                                <>
+                                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", tierData?.accentBg)}>
+                                    <TierIcon className={cn("h-5 w-5", tierData?.accent)} />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-foreground">
+                                      {tierData?.name ?? `Tier ${currentTierFromStake}`} Member
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {stakedLock?.durationLabel ?? "30 days"} membership
+                                      {stakedLock?.isLocked && stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? (
+                                        <> · {formatTimeUntilUnlock(stakedLock.secondsRemaining)}</>
+                                      ) : stakedLock && !stakedLock.isLocked ? (
+                                        <> · <span className="text-chart-1 font-medium">Unlocked</span></>
+                                      ) : null}
+                                    </p>
+                                  </div>
+                                </>
+                              );
+                            })()}
                           </div>
-                          {stakedLock && (
-                            <p className="text-muted-foreground">
-                              {stakedLock.durationLabel}
-                              {stakedLock.secondsRemaining != null && stakedLock.secondsRemaining > 0 ? (
-                                <> · {formatTimeUntilUnlock(stakedLock.secondsRemaining)}</>
-                              ) : stakedLock.unlocksAt ? (
-                                <> · Unlocks {new Date(stakedLock.unlocksAt).toLocaleDateString(undefined, { dateStyle: "short" })}</>
-                              ) : null}
-                            </p>
-                          )}
+                        )}
+                        
+                        {/* Staked amount details */}
+                        <div className="text-sm text-muted-foreground">
+                          Staked: <span className="font-medium tabular-nums text-foreground">{formatTokens(Number(stakedBalanceDisplay))} {tokenSymbol}</span>
                         </div>
-                        {(currentTierFromStake === 2 || currentTierFromStake === 3) && (
-                          <div className="space-y-2 pt-1">
+
+                        {/* Upgrade options - only show if not at max tier */}
+                        {currentTierFromStake != null && currentTierFromStake > 1 && (
+                          <div className="space-y-2 border-t pt-3">
                             <p className="text-xs font-medium text-foreground">
-                              Stake CULT to upgrade. Enter an amount or use the button to fill the amount needed for the next tier.
+                              Upgrade to {currentTierFromStake === 3 ? "Tier 2 or Tier 1" : "Tier 1"}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Stake more CULT to unlock better benefits.
                             </p>
                             <div className="flex flex-wrap gap-2">
                               <Input
@@ -728,7 +774,7 @@ export function MembershipClient() {
                                     setStakeMoreAmount(upgradeTarget.amount.toString())
                                   }
                                 >
-                                  Stake {formatTokens(upgradeTarget.amount)} to reach {upgradeTarget.tierName}
+                                  +{formatTokens(upgradeTarget.amount)} for {upgradeTarget.tierName}
                                 </Button>
                               )}
                               <Button
@@ -746,48 +792,15 @@ export function MembershipClient() {
                             </div>
                           </div>
                         )}
-                        {stakedLock && (
-                          <p className="text-xs text-muted-foreground">
-                            Change membership to 12 months by staking more below
-                            and selecting 12 months.{" "}
-                            <Button
-                              className="h-auto p-0 text-xs font-medium underline underline-offset-2"
-                              onClick={() => {
-                                setStakeDuration("12m");
-                                scrollToCTA();
-                              }}
-                              type="button"
-                              variant="link"
-                            >
-                              Change membership to 12 months
-                            </Button>
-                          </p>
-                        )}
-                        {currentTierFromStake === 3 && stakedLock && !stakedLock.isLocked && (
-                          <div className="space-y-2 pt-1">
-                            <p className="text-xs font-medium text-foreground">
-                              Unstake (Tier 3)
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Withdraw your full staked balance.
-                            </p>
-                            <Button
-                              disabled={unstakePending}
-                              onClick={handleUnstake}
-                              size="sm"
-                              variant="secondary"
-                            >
-                              {unstakePending ? "Sending…" : `Unstake ${stakedBalanceDisplay} ${tokenSymbol}`}
-                            </Button>
-                          </div>
-                        )}
+
+                        {/* Restake options - only show when UNLOCKED */}
                         {stakedLock && !stakedLock.isLocked && (
                           <div className="space-y-2 border-t pt-3">
                             <p className="text-xs font-medium text-foreground">
-                              Restake (lock for another period)
+                              Renew membership
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Your lock has ended. Restake your full balance to lock again.
+                              Your lock has ended. Restake to keep your membership active.
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
                               <div className="flex gap-1">
@@ -825,9 +838,29 @@ export function MembershipClient() {
                               >
                                 {restakePending
                                   ? "Sending…"
-                                  : `Restake ${stakedBalanceDisplay} (${restakeDuration === "12m" ? "12 months" : "30 days"})`}
+                                  : `Restake (${restakeDuration === "12m" ? "12 months" : "30 days"})`}
                               </Button>
                             </div>
+                          </div>
+                        )}
+
+                        {/* Unstake option - only when unlocked */}
+                        {stakedLock && !stakedLock.isLocked && (
+                          <div className="space-y-2 border-t pt-3">
+                            <p className="text-xs font-medium text-foreground">
+                              Unstake
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Withdraw your tokens and cancel membership.
+                            </p>
+                            <Button
+                              disabled={unstakePending}
+                              onClick={handleUnstake}
+                              size="sm"
+                              variant="secondary"
+                            >
+                              {unstakePending ? "Sending…" : `Unstake ${formatTokens(Number(stakedBalanceDisplay))} ${tokenSymbol}`}
+                            </Button>
                           </div>
                         )}
                       </>
@@ -835,125 +868,209 @@ export function MembershipClient() {
                   </div>
                 )}
 
-                {/* Inline tier selector — change tier without scrolling */}
-                <div>
-                  <p className="mb-2 text-sm font-medium text-foreground">
-                    Tier
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {MEMBERSHIP_TIERS.map((tier) => {
-                      const Icon = tier.icon;
-                      const isSelected = selectedTier === tier.id;
-                      return (
-                        <button
-                          className={cn(
-                            `
-                              flex items-center gap-1.5 rounded-lg border-2 px-3
-                              py-2 text-sm font-medium transition-all
-                            `,
-                            isSelected
-                              ? "border-primary bg-primary/10 text-primary"
-                              : `
-                                border-border bg-background
-                                text-muted-foreground
-                                hover:border-muted-foreground/40
-                                hover:text-foreground
+                {/* Inline tier selector — hide tiers at or below current when user has active stake */}
+                {(() => {
+                  // filter out tiers user can't upgrade to
+                  const availableTiers = MEMBERSHIP_TIERS.filter((tier) => {
+                    // if no current stake, show all tiers
+                    if (currentTierFromStake == null || Number(stakedBalanceRaw) === 0) return true;
+                    // hide tiers at or below current (higher id = lower tier)
+                    return tier.id < currentTierFromStake;
+                  });
+                  
+                  // if no upgrades available (at Tier 1), don't show tier selector
+                  if (availableTiers.length === 0) return null;
+                  
+                  return (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-foreground">
+                        {currentTierFromStake != null && Number(stakedBalanceRaw) > 0 ? "Upgrade to" : "Tier"}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {availableTiers.map((tier) => {
+                          const Icon = tier.icon;
+                          const isSelected = selectedTier === tier.id;
+                          return (
+                            <button
+                              className={cn(
+                                `
+                                  flex items-center gap-1.5 rounded-lg border-2 px-3
+                                  py-2 text-sm font-medium transition-all
+                                `,
+                                isSelected
+                                  ? "border-primary bg-primary/10 text-primary"
+                                  : `
+                                    border-border bg-background
+                                    text-muted-foreground
+                                    hover:border-muted-foreground/40
+                                    hover:text-foreground
+                                  `,
+                              )}
+                              key={tier.id}
+                              onClick={() => setSelectedTier(tier.id)}
+                              type="button"
+                            >
+                              <Icon className="h-4 w-4" />
+                              {tier.name}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Duration - hide options that don't make sense based on current stake */}
+                {(() => {
+                  const hasLockedStake = stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
+                  const currentLockTier = stakedLock?.lockTier; // 0 = 30 days, 1 = 12 months
+                  
+                  // if user has a locked 12-month stake, they're at max duration - hide selector
+                  if (hasLockedStake && currentLockTier === 1) {
+                    return (
+                      <div className="rounded-xl border border-border/50 bg-muted/20 px-4 py-3">
+                        <p className="text-sm text-muted-foreground">
+                          You have an active 12-month membership. Additional stakes will also be locked for 12 months.
+                        </p>
+                      </div>
+                    );
+                  }
+                  
+                  // if user has a locked 30-day stake, only show 12 months option
+                  const show30Days = !hasLockedStake || currentLockTier !== 0;
+                  const show12Months = true;
+                  
+                  return (
+                    <div>
+                      <p className="mb-2 text-sm font-medium text-foreground">
+                        Staking Duration
+                      </p>
+                      {hasLockedStake && currentLockTier === 0 && (
+                        <p className="mb-2 text-xs text-muted-foreground">
+                          You already have a 30-day stake. New tokens will be locked for 12 months in a separate position.
+                        </p>
+                      )}
+                      <div className={cn("grid gap-2", show30Days && show12Months ? "grid-cols-2" : "grid-cols-1")}>
+                        {show30Days && (
+                          <button
+                            className={cn(
+                              `
+                                rounded-lg border-2 px-3 py-2.5 text-left text-sm
+                                transition-all
                               `,
-                          )}
-                          key={tier.id}
-                          onClick={() => setSelectedTier(tier.id)}
-                          type="button"
-                        >
-                          <Icon className="h-4 w-4" />
-                          {tier.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                              stakeDuration === "30d"
+                                ? "border-primary bg-primary/5"
+                                : `
+                                  border-border
+                                  hover:border-muted-foreground/30
+                                `,
+                            )}
+                            onClick={() => setStakeDuration("30d")}
+                            type="button"
+                          >
+                            <span className="font-semibold">30 Days</span>
+                            <span className="block text-sm text-muted-foreground">
+                              Minimum period
+                            </span>
+                          </button>
+                        )}
+                        {show12Months && (
+                          <button
+                            className={cn(
+                              `
+                                relative rounded-lg border-2 px-3 py-2.5 text-left
+                                text-sm transition-all
+                              `,
+                              stakeDuration === "12m"
+                                ? "border-primary bg-primary/5"
+                                : `
+                                  border-border
+                                  hover:border-muted-foreground/30
+                                `,
+                            )}
+                            onClick={() => setStakeDuration("12m")}
+                            type="button"
+                          >
+                            <Badge
+                              className={`
+                              absolute -top-1.5 right-1.5 bg-chart-1 text-[10px]
+                              text-white
+                            `}
+                            >
+                              Best Value
+                            </Badge>
+                            <span className="font-semibold">12 Months</span>
+                            <span className="block text-sm text-muted-foreground">
+                              eSIM benefits for 14 months
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
 
-                {/* Duration */}
-                <div>
-                  <p className="mb-2 text-sm font-medium text-foreground">
-                    Staking Duration
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      className={cn(
-                        `
-                          rounded-lg border-2 px-3 py-2.5 text-left text-sm
-                          transition-all
-                        `,
-                        stakeDuration === "30d"
-                          ? "border-primary bg-primary/5"
-                          : `
-                            border-border
-                            hover:border-muted-foreground/30
-                          `,
+                {/* Summary - show different info based on whether upgrading or joining */}
+                {(() => {
+                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
+                  const currentStakedAmount = Number(stakedBalanceDisplay);
+                  const additionalNeeded = isUpgrading 
+                    ? Math.max(0, stakeAmount - currentStakedAmount) 
+                    : stakeAmount;
+                  
+                  return (
+                    <div className="space-y-2 rounded-xl bg-muted/30 p-4">
+                      {isUpgrading ? (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier)?.name} requires
+                            </span>
+                            <span className="font-medium tabular-nums">
+                              {formatTokens(stakeAmount)} {tokenSymbol}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              You already have
+                            </span>
+                            <span className="font-medium tabular-nums">
+                              {formatTokens(currentStakedAmount)} {tokenSymbol}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm border-t pt-2">
+                            <span className="text-foreground font-medium">
+                              Additional tokens needed
+                            </span>
+                            <span className="font-semibold tabular-nums text-foreground">
+                              {formatTokens(additionalNeeded)} {tokenSymbol}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">
+                              Tokens to Stake
+                            </span>
+                            <span className="font-semibold tabular-nums">
+                              {formatTokens(stakeAmount)} {tokenSymbol}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Lock Duration</span>
+                            <span className="font-medium">
+                              {stakeDuration === "30d" ? "30 days" : "12 months"}
+                            </span>
+                          </div>
+                        </>
                       )}
-                      onClick={() => setStakeDuration("30d")}
-                      type="button"
-                    >
-                      <span className="font-semibold">30 Days</span>
-                      <span className="block text-sm text-muted-foreground">
-                        Minimum period
-                      </span>
-                    </button>
-                    <button
-                      className={cn(
-                        `
-                          relative rounded-lg border-2 px-3 py-2.5 text-left
-                          text-sm transition-all
-                        `,
-                        stakeDuration === "12m"
-                          ? "border-primary bg-primary/5"
-                          : `
-                            border-border
-                            hover:border-muted-foreground/30
-                          `,
-                      )}
-                      onClick={() => setStakeDuration("12m")}
-                      type="button"
-                    >
-                      <Badge
-                        className={`
-                        absolute -top-1.5 right-1.5 bg-chart-1 text-[10px]
-                        text-white
-                      `}
-                      >
-                        Best Value
-                      </Badge>
-                      <span className="font-semibold">12 Months</span>
-                      <span className="block text-sm text-muted-foreground">
-                        eSIM benefits for 14 months
-                      </span>
-                    </button>
-                  </div>
-                </div>
+                    </div>
+                  );
+                })()}
 
-                {/* Summary */}
-                <div className="space-y-2 rounded-xl bg-muted/30 p-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      Tokens to Stake
-                    </span>
-                    <span className="font-semibold tabular-nums">
-                      {stakeAmount.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}{" "}
-                      {tokenSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Lock Duration</span>
-                    <span className="font-medium">
-                      {stakeDuration === "30d" ? "30 days" : "12 months"}
-                    </span>
-                  </div>
-                </div>
-
-                {selectedTier > 1 &&
+                {/* Upsell to next tier - only show if not already upgrading to max tier */}
+                {selectedTier > 1 && !(currentTierFromStake != null && selectedTier <= currentTierFromStake) &&
                   (() => {
                     const nextTierPrice = tierPriceMap[selectedTier - 1];
                     const extraUsd = nextTierPrice
@@ -1000,23 +1117,41 @@ export function MembershipClient() {
                     );
                   })()}
 
-                <Button
-                  className="w-full gap-2 text-base"
-                  disabled={STAKING_AVAILABLE_NEXT_HOUR || STAKING_SIGNUP_DISABLED || stakePending}
-                  onClick={handleStake}
-                  size="lg"
-                >
-                  <Wallet className="h-5 w-5" />
-                  {STAKING_AVAILABLE_NEXT_HOUR
-                    ? "Staking will be available soon"
-                    : STAKING_SIGNUP_DISABLED
-                    ? "Membership signup will be available shortly"
-                    : stakePending
-                      ? "Preparing transaction…"
-                      : wallet
-                        ? `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
-                        : "Connect Wallet & Stake"}
-                </Button>
+                {/* Main action button */}
+                {(() => {
+                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
+                  const currentStakedAmount = Number(stakedBalanceDisplay);
+                  const additionalNeeded = isUpgrading 
+                    ? Math.max(0, stakeAmount - currentStakedAmount) 
+                    : stakeAmount;
+                  const alreadyAtSelectedTier = isUpgrading && selectedTier >= currentTierFromStake;
+                  
+                  return (
+                    <Button
+                      className="w-full gap-2 text-base"
+                      disabled={STAKING_AVAILABLE_NEXT_HOUR || STAKING_SIGNUP_DISABLED || stakePending || alreadyAtSelectedTier || additionalNeeded <= 0}
+                      onClick={handleStake}
+                      size="lg"
+                    >
+                      <Wallet className="h-5 w-5" />
+                      {STAKING_AVAILABLE_NEXT_HOUR
+                        ? "Staking will be available soon"
+                        : STAKING_SIGNUP_DISABLED
+                        ? "Membership signup will be available shortly"
+                        : stakePending
+                          ? "Preparing transaction…"
+                          : alreadyAtSelectedTier
+                          ? "Already at this tier or higher"
+                          : additionalNeeded <= 0
+                          ? "No additional stake needed"
+                          : wallet
+                            ? isUpgrading 
+                              ? `Stake ${formatTokens(additionalNeeded)} ${tokenSymbol} to upgrade`
+                              : `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
+                            : "Connect Wallet & Stake"}
+                    </Button>
+                  );
+                })()}
                 <p className="text-center text-sm text-muted-foreground">
                   Your tokens remain yours. They are locked in a smart contract
                   and returned to your wallet when you unstake.
@@ -1224,7 +1359,7 @@ export function MembershipClient() {
         </section>
 
         {/* --------------------------------------------------------------- */}
-        {/* Staking cost by community size */}
+        {/* Staking Value by community size */}
         {/* --------------------------------------------------------------- */}
         <section
           className={`
@@ -1239,12 +1374,11 @@ export function MembershipClient() {
               md:text-3xl
             `}
             >
-              Staking cost by community size
+              Staking Requirement
             </h2>
             <p className="mx-auto mt-3 max-w-2xl text-center text-muted-foreground">
               Membership stakes are tied to how many members have already joined.
-              The table below shows the USD value to stake for each tier at
-              different community sizes.
+              The table below shows the USD value to stake for each tier.
             </p>
 
             <div className="mt-10 overflow-x-auto rounded-xl border border-border">

@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   Circle,
   CreditCard,
+  Crown,
   FolderTree,
   Globe,
   Headphones,
@@ -93,6 +94,11 @@ const ADMIN_SECTIONS: NavSection[] = [
     href: "/customers",
     icon: Users,
     label: "Customers",
+  },
+  {
+    href: "/membership",
+    icon: Crown,
+    label: "Membership",
   },
   {
     href: "/refunds",

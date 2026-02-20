@@ -1,6 +1,6 @@
 /**
  * GET /api/governance/staked-balance?wallet=<base58>
- * Returns staked token amount + lock status (on-chain staking program).
+ * Returns staked token amount + lock status (on-chain staking program) + membership tier.
  * Returns 0 / unlocked if program not deployed or no stake.
  */
 
@@ -11,8 +11,8 @@ import {
   fetchUserStake,
   getLockStatus,
   getStakingProgramId,
-  lockDurationLabel,
 } from "~/lib/cult-staking";
+import { getMemberTierForWallet } from "~/lib/get-member-tier";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
 import { getActiveToken } from "~/lib/token-config";
 
@@ -31,6 +31,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       decimals: token.decimals,
       lock: null,
+      memberTier: null,
       stakedBalance: "0",
       stakedBalanceRaw: "0",
       tokenSymbol: token.symbol,
@@ -38,12 +39,16 @@ export async function GET(request: Request) {
   }
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
-    const stake = await fetchUserStake(connection, programId, wallet);
+    const [stake, memberTier] = await Promise.all([
+      fetchUserStake(connection, programId, wallet),
+      getMemberTierForWallet(wallet),
+    ]);
 
     if (!stake || stake.amount === 0n) {
       return NextResponse.json({
         decimals: token.decimals,
         lock: null,
+        memberTier: null,
         stakedBalance: "0",
         stakedBalanceRaw: "0",
         tokenSymbol: token.symbol,
@@ -64,6 +69,7 @@ export async function GET(request: Request) {
         stakedAt: new Date(stake.lockStart * 1000).toISOString(),
         unlocksAt: lockStatus.unlocksAt,
       },
+      memberTier,
       stakedBalance: human.toFixed(token.decimals),
       stakedBalanceRaw: stake.amount.toString(),
       tokenSymbol: token.symbol,
@@ -73,6 +79,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       decimals: token.decimals,
       lock: null,
+      memberTier: null,
       stakedBalance: "0",
       stakedBalanceRaw: "0",
       tokenSymbol: token.symbol,

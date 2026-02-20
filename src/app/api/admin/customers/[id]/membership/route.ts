@@ -9,6 +9,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
+import { accountTable } from "~/db/schema";
 import { membershipTierHistoryTable } from "~/db/schema/membership-tier-history/tables";
 import { userWalletsTable } from "~/db/schema/wallets/tables";
 import { adminAuthFailureResponse, getAdminAuth } from "~/lib/admin-api-auth";
@@ -89,7 +90,8 @@ export async function GET(
     const token = getActiveToken();
     const programId = getStakingProgramId();
 
-    const wallets = await db
+    // check both userWalletsTable and accountTable for Solana wallets
+    const walletsFromWalletsTable = await db
       .select({
         address: userWalletsTable.address,
       })
@@ -100,6 +102,29 @@ export async function GET(
           eq(userWalletsTable.chain, "solana"),
         ),
       );
+
+    // also check accountTable for wallets linked via Solana auth
+    const walletsFromAccountTable = await db
+      .select({
+        address: accountTable.accountId,
+      })
+      .from(accountTable)
+      .where(
+        and(
+          eq(accountTable.userId, userId),
+          eq(accountTable.providerId, "solana"),
+        ),
+      );
+
+    // combine and deduplicate wallet addresses
+    const allWalletAddresses = new Set<string>();
+    for (const w of walletsFromWalletsTable) {
+      if (w.address) allWalletAddresses.add(w.address);
+    }
+    for (const w of walletsFromAccountTable) {
+      if (w.address) allWalletAddresses.add(w.address);
+    }
+    const wallets = Array.from(allWalletAddresses).map((address) => ({ address }));
 
     if (wallets.length === 0) {
       return NextResponse.json({
