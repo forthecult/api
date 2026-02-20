@@ -18,6 +18,7 @@ interface ChatRow {
   id: string;
   lastMessageAt: null | string;
   lastMessageRole: null | string;
+  source?: string;
   status: string;
   takenOverBy: null | string;
   updatedAt: string;
@@ -198,6 +199,12 @@ export default function AdminSupportChatPage() {
                         className="p-4 font-medium whitespace-nowrap"
                         scope="col"
                       >
+                        Source
+                      </th>
+                      <th
+                        className="p-4 font-medium whitespace-nowrap"
+                        scope="col"
+                      >
                         Status
                       </th>
                       <th
@@ -225,7 +232,7 @@ export default function AdminSupportChatPage() {
                       <tr>
                         <td
                           className="p-8 text-center text-muted-foreground"
-                          colSpan={5}
+                          colSpan={6}
                         >
                           No support chat conversations yet.
                         </td>
@@ -270,6 +277,17 @@ export default function AdminSupportChatPage() {
                                 </span>
                               )}
                             </div>
+                          </td>
+                          <td className="p-4">
+                            <span
+                              className={cn(
+                                "text-xs font-medium",
+                                row.source === "mobile" &&
+                                  "text-blue-600 dark:text-blue-400",
+                              )}
+                            >
+                              {row.source === "mobile" ? "Mobile app" : "Web"}
+                            </span>
                           </td>
                           <td className="p-4">
                             <span

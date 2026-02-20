@@ -7,12 +7,17 @@ import { userTable } from "../users/tables";
  * - userId set when customer is authenticated; guestId when anonymous (rate-limited).
  * - takenOverBy: when set, AI does not reply; staff replies instead.
  */
+/** Where the customer is chatting from: "web" (storefront) or "mobile" (native app). */
+export const SUPPORT_CHAT_SOURCE_VALUES = ["web", "mobile"] as const;
+export type SupportChatSource = (typeof SUPPORT_CHAT_SOURCE_VALUES)[number];
+
 export const supportChatConversationTable = pgTable(
   "support_chat_conversation",
   {
     createdAt: timestamp("created_at").notNull(),
     guestId: text("guest_id"), // anonymous visitor id (client-generated, rate-limited)
     id: text("id").primaryKey(),
+    source: text("source").notNull().default("web"), // "web" | "mobile" — so admin knows which app
     status: text("status").notNull().default("open"), // "open" | "closed"
     takenOverBy: text("taken_over_by").references(() => userTable.id, {
       onDelete: "set null",

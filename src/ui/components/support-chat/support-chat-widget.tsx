@@ -683,7 +683,10 @@ function getGuestId(): null | string {
 }
 
 function getHeaders(guestId: null | string): HeadersInit {
-  const h: Record<string, string> = { "Content-Type": "application/json" };
+  const h: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Support-Source": "web",
+  };
   if (guestId) h["X-Support-Guest-Id"] = guestId;
   return h;
 }

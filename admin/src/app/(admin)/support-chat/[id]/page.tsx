@@ -19,6 +19,7 @@ interface ConversationDetail {
   id: string;
   messages: Message[];
   orders: OrderSummary[];
+  source?: string;
   status: string;
   takenOverBy?: string;
   updatedAt: string;
@@ -257,6 +258,16 @@ export default function AdminSupportChatDetailPage() {
           <h2 className="text-2xl font-semibold tracking-tight">
             Chat {conv.id.slice(0, 8)}…
           </h2>
+          <span
+            className={cn(
+              "text-sm font-medium",
+              conv.source === "mobile" &&
+                "text-blue-600 dark:text-blue-400",
+            )}
+            title="Where the customer is chatting from"
+          >
+            {conv.source === "mobile" ? "Mobile app" : "Web"}
+          </span>
           <span className="flex items-center gap-2">
             <span
               className={cn(

@@ -1,3 +1,0 @@
-# Same as ../rust-toolchain.toml — use 1.85 so edition2024 works when building from this dir.
-[toolchain]
-channel = "1.85.0"

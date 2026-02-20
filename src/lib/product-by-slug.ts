@@ -16,7 +16,13 @@ import {
   productVariantsTable,
   sizeChartsTable,
 } from "~/db/schema";
+import {
+  getAmazonProduct,
+  isAmazonProductApiConfigured,
+} from "~/lib/amazon-product-api";
 import { sortClothingSizes } from "~/lib/sort-clothing-sizes";
+
+const AMAZON_PRICE_CACHE_MS = 15 * 60 * 1000; // 15 minutes
 
 export interface ProductBySlugResult {
   availableCountryCodes: string[];
@@ -125,6 +131,8 @@ export async function getProductBySlugOrId(
 
   const [product] = await db
     .select({
+      amazonAsin: productsTable.amazonAsin,
+      amazonPriceRefreshedAt: productsTable.amazonPriceRefreshedAt,
       brand: productsTable.brand,
       compareAtPriceCents: productsTable.compareAtPriceCents,
       continueSellingWhenOutOfStock:
@@ -163,6 +171,42 @@ export async function getProductBySlugOrId(
     .limit(1);
 
   if (!product || !product.published) return null;
+
+  // for amazon products, refresh price if stale (> 15 min)
+  let priceCents = product.priceCents;
+  if (
+    product.source === "amazon" &&
+    product.amazonAsin &&
+    isAmazonProductApiConfigured()
+  ) {
+    const lastRefresh = product.amazonPriceRefreshedAt?.getTime() ?? 0;
+    const now = Date.now();
+    if (now - lastRefresh > AMAZON_PRICE_CACHE_MS) {
+      try {
+        const fresh = await getAmazonProduct(product.amazonAsin);
+        if (fresh && fresh.price.usd > 0) {
+          const freshPriceCents = Math.round(fresh.price.usd * 100);
+          priceCents = freshPriceCents;
+          // update in background (don't block response)
+          db.update(productsTable)
+            .set({
+              amazonPriceRefreshedAt: new Date(),
+              imageUrl: fresh.imageUrl ?? product.imageUrl,
+              priceCents: freshPriceCents,
+              updatedAt: new Date(),
+            })
+            .where(eq(productsTable.id, product.id))
+            .execute()
+            .catch((err) =>
+              console.error("Failed to update Amazon price:", err),
+            );
+        }
+      } catch (err) {
+        console.error("Failed to refresh Amazon price:", err);
+        // use cached price
+      }
+    }
+  }
 
   const id = product.id;
   const productSlug = product.slug ?? product.id;
@@ -293,7 +337,7 @@ export async function getProductBySlugOrId(
       }))
     : undefined;
 
-  const basePriceUsd = product.priceCents / 100;
+  const basePriceUsd = priceCents / 100;
 
   // Stock calculation logic:
   // 1. If continueSellingWhenOutOfStock is true, always in stock (POD/made-to-order products)

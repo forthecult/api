@@ -388,6 +388,12 @@ export async function POST(request: NextRequest) {
       esimError = eError instanceof Error ? eError.message : "Unknown error";
     }
 
+    if (order.hasAmazonItems) {
+      console.log(
+        `Order ${orderId} contains marketplace items; fulfillment pending (manual or future automation).`,
+      );
+    }
+
     const decimals = TOKEN_DECIMALS[token];
     const amountFormatted =
       token === "ETH"

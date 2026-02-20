@@ -62,6 +62,7 @@ export async function POST(request: NextRequest) {
     const [order] = await db
       .select({
         cryptoAmount: ordersTable.cryptoAmount,
+        hasAmazonItems: ordersTable.hasAmazonItems,
         id: ordersTable.id,
         paymentMethod: ordersTable.paymentMethod,
         solanaPayDepositAddress: ordersTable.solanaPayDepositAddress,
@@ -159,6 +160,12 @@ export async function POST(request: NextRequest) {
       }
     } catch (eError) {
       esimError = eError instanceof Error ? eError.message : "Unknown error";
+    }
+
+    if (order.hasAmazonItems) {
+      console.log(
+        `Order ${order.id} contains marketplace items; fulfillment pending (manual or future automation).`,
+      );
     }
 
     const fulfillmentError = [printfulError, printifyError, esimError]

@@ -1,22 +1,32 @@
 /**
  * POST /api/governance/unstake/prepare
- * Body: { wallet: string, amount: string }
+ * Body: { wallet: string, lockTier: number }
+ *   - lockTier: 0 (30 days) or 1 (12 months)
  * Returns { transaction: string } (base64 serialized transaction for client to sign and send).
+ *
+ * Note: The native program withdraws the full staked amount for the given tier.
+ * There's no partial unstake — each tier's stake is withdrawn entirely.
  */
 
 import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { getStakingProgramId } from "~/lib/cult-staking";
+import {
+  fetchStakeEntry,
+  getLockStatus,
+  getStakingProgramId,
+  type LockTier,
+  TIER_30_DAYS,
+  TIER_12_MONTHS,
+} from "~/lib/cult-staking";
 import { buildUnstakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-import { getActiveToken } from "~/lib/token-config";
-import { getCultMintSolana } from "~/lib/token-gate";
 
 const bodySchema = z.object({
-  amount: z.string().min(1),
+  lockTier: z.number().refine((t) => t === TIER_30_DAYS || t === TIER_12_MONTHS, {
+    message: `Lock tier must be ${TIER_30_DAYS} (30 days) or ${TIER_12_MONTHS} (12 months)`,
+  }),
   wallet: z.string().min(32).max(44),
 });
 
@@ -41,40 +51,46 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { amount, wallet } = parsed.data;
-  const amountNum = Number.parseFloat(amount);
-  if (!Number.isFinite(amountNum) || amountNum <= 0) {
-    return NextResponse.json(
-      { error: "Amount must be a positive number" },
-      { status: 400 },
-    );
-  }
-  const token = getActiveToken();
-  const amountRaw = BigInt(
-    Math.floor(amountNum * 10 ** token.decimals),
-  );
-  if (amountRaw <= 0n) {
-    return NextResponse.json({ error: "Amount too small" }, { status: 400 });
-  }
+  const { lockTier, wallet } = parsed.data;
 
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
+
+    // verify user has a stake for this tier and it's unlocked
+    const stake = await fetchStakeEntry(
+      connection,
+      programId,
+      wallet,
+      lockTier as LockTier,
+    );
+    if (!stake || stake.amount === 0n) {
+      return NextResponse.json(
+        { error: "No staked balance for this tier" },
+        { status: 400 },
+      );
+    }
+
+    const lockStatus = getLockStatus(stake);
+    if (lockStatus.isLocked) {
+      return NextResponse.json(
+        {
+          error: `Tokens are still locked. Unlock in ${Math.ceil(lockStatus.secondsRemaining / 86400)} days.`,
+          secondsRemaining: lockStatus.secondsRemaining,
+        },
+        { status: 400 },
+      );
+    }
+
     const { blockhash, lastValidBlockHeight } =
       await connection.getLatestBlockhash("confirmed");
-    const mint = new PublicKey(getCultMintSolana());
     const owner = new PublicKey(wallet);
-    const tokenProgram = token.tokenProgram
-      ? new PublicKey(token.tokenProgram)
-      : TOKEN_PROGRAM_ID;
 
     const tx = buildUnstakeTransaction({
-      amount: amountRaw,
       blockhash,
       lastValidBlockHeight,
-      mint,
+      lockTier: lockTier as LockTier,
       owner,
       programId,
-      tokenProgram,
     });
 
     const serialized = tx.serialize({

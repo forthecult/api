@@ -457,12 +457,24 @@ export const openApiSpec = {
                   email: { format: "email", type: "string" },
                   items: {
                     items: {
-                      properties: {
-                        productId: { type: "string" },
-                        quantity: { type: "integer" },
-                      },
-                      required: ["productId", "quantity"],
-                      type: "object",
+                      oneOf: [
+                        {
+                          properties: {
+                            productId: { type: "string" },
+                            quantity: { type: "integer" },
+                          },
+                          required: ["productId", "quantity"],
+                          type: "object",
+                        },
+                        {
+                          properties: {
+                            asin: { type: "string" },
+                            quantity: { type: "integer" },
+                          },
+                          required: ["asin", "quantity"],
+                          type: "object",
+                        },
+                      ],
                     },
                     type: "array",
                   },
@@ -832,6 +844,12 @@ export const openApiSpec = {
                     ],
                     type: "string",
                   },
+                  source: {
+                    description:
+                      "all = store + marketplace; store = store catalog only; marketplace = marketplace only",
+                    enum: ["all", "store", "marketplace"],
+                    type: "string",
+                  },
                   subcategory: { type: "string" },
                 },
                 type: "object",
@@ -863,7 +881,16 @@ export const openApiSpec = {
                             },
                             type: "object",
                           },
+                          productUrl: {
+                            description: "Present for marketplace-sourced items",
+                            type: "string",
+                          },
                           slug: { type: "string" },
+                          source: {
+                            description: "store or marketplace",
+                            enum: ["store", "marketplace"],
+                            type: "string",
+                          },
                         },
                         type: "object",
                       },

@@ -48,6 +48,20 @@ const SOLUNA: TokenDef = {
 export const CULT_MINT_MAINNET =
   "6jCCBeaJD63L62c496VrV4HVPLJF5N3WyTWRwPappump";
 
+/**
+ * Mint address used for the PumpSwap "Get CULT" (SOL → CULT) flow.
+ * There will be two pools over time: one before token migration (current) and one after.
+ * Once the token migrates, the LP will change; set CULT_SWAP_MINT to the new mint when
+ * the post-migration pool is live so Get CULT uses the correct pool without code changes.
+ */
+export function getCultSwapMint(): string {
+  const env =
+    typeof process.env.CULT_SWAP_MINT === "string"
+      ? process.env.CULT_SWAP_MINT.trim()
+      : "";
+  return env || CULT_MINT_MAINNET;
+}
+
 const CULT: TokenDef = {
   decimals: 6,
   key: "CULT",

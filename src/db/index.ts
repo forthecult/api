@@ -33,11 +33,16 @@ const poolSize = process.env.DATABASE_POOL_SIZE
     ? 12
     : 20;
 const idleTimeout = isProduction ? 20 : 30;
+// allow env override so production can tolerate slow Supabase pooler (e.g. cold start, network latency)
+const connectTimeout =
+  process.env.DATABASE_CONNECT_TIMEOUT != null
+    ? Math.max(5, parseInt(process.env.DATABASE_CONNECT_TIMEOUT, 10) || 15)
+    : 15;
 
 export const conn: DbConnection =
   globalForDb.conn ??
   (globalForDb.conn = postgres(process.env.DATABASE_URL!, {
-    connect_timeout: 10,
+    connect_timeout: connectTimeout,
     idle_timeout: idleTimeout,
     max: poolSize,
     max_lifetime: 60 * 30,

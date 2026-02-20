@@ -30,6 +30,7 @@
     "db:migrate-reviews": "psql $DATABASE_URL -f scripts/migrate-reviews-standalone.sql",
     "db:migrate-user-role": "psql $DATABASE_URL -f scripts/migrate-add-user-role.sql",
     "db:migrate-esim-order-guest": "psql $DATABASE_URL -f scripts/migrate-esim-order-user-id-nullable.sql",
+    "db:migrate-support-chat-source": "psql $DATABASE_URL -f scripts/migrate-support-chat-source.sql",
     "db:verify-role": "bun run scripts/verify-role-migration.ts",
     "db:seed-admin": "bun run scripts/seed-admin-user.ts",
     "db:seed:all": "bun run scripts/seed-categories.ts && bun run scripts/seed-products.ts",
@@ -142,12 +143,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^15.0.0",
     "@biomejs/biome": "^2.3.15",
     "@eslint-react/eslint-plugin": "^2.13.0",
     "@eslint/js": "^9.39.2",
+    "@next/bundle-analyzer": "^15.0.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@total-typescript/ts-reset": "^0.6.1",
+    "@types/bn.js": "^5.2.0",
     "@types/bun": "^1.3.9",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^25.2.3",

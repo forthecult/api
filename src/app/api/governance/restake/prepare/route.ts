@@ -1,6 +1,8 @@
 /**
  * POST /api/governance/restake/prepare
- * Body: { wallet: string, amount: string, lockDuration: number }
+ * Body: { wallet: string, lockTier: number, newLockDuration: number }
+ *   - lockTier: current tier to restake from (0 = 30 days, 1 = 12 months)
+ *   - newLockDuration: 2592000 (30 days) or 31536000 (12 months)
  * Builds one transaction: unstake then stake same amount with new lock (only valid when lock has expired).
  * Returns { transaction: string } (base64).
  */
@@ -9,22 +11,26 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import {
-  fetchUserStake,
+  fetchStakeEntry,
+  getLockStatus,
   getStakingProgramId,
   isValidLockDuration,
   LOCK_12_MONTHS,
   LOCK_30_DAYS,
   type LockDuration,
+  type LockTier,
+  TIER_30_DAYS,
+  TIER_12_MONTHS,
 } from "~/lib/cult-staking";
 import { buildRestakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-import { getActiveToken } from "~/lib/token-config";
 
 const bodySchema = z.object({
-  amount: z.string().min(1),
-  lockDuration: z.number().refine(isValidLockDuration, {
+  lockTier: z.number().refine((t) => t === TIER_30_DAYS || t === TIER_12_MONTHS, {
+    message: `Lock tier must be ${TIER_30_DAYS} (30 days) or ${TIER_12_MONTHS} (12 months)`,
+  }),
+  newLockDuration: z.number().refine(isValidLockDuration, {
     message: `Lock duration must be ${LOCK_30_DAYS} (30 days) or ${LOCK_12_MONTHS} (12 months)`,
   }),
   wallet: z.string().min(32).max(44),
@@ -51,41 +57,32 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
-  const { amount, lockDuration, wallet } = parsed.data;
-  const token = getActiveToken();
-  const amountNum = Number.parseFloat(amount);
-  if (!Number.isFinite(amountNum) || amountNum <= 0) {
-    return NextResponse.json(
-      { error: "Amount must be a positive number" },
-      { status: 400 },
-    );
-  }
-  const amountRaw = BigInt(Math.floor(amountNum * 10 ** token.decimals));
-  if (amountRaw <= 0n) {
-    return NextResponse.json({ error: "Amount too small" }, { status: 400 });
-  }
+  const { lockTier, newLockDuration, wallet } = parsed.data;
 
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
-    const stake = await fetchUserStake(connection, programId, wallet);
+
+    // verify user has a stake for this tier
+    const stake = await fetchStakeEntry(
+      connection,
+      programId,
+      wallet,
+      lockTier as LockTier,
+    );
     if (!stake || stake.amount === 0n) {
       return NextResponse.json(
-        { error: "No staked balance to restake" },
+        { error: "No staked balance for this tier to restake" },
         { status: 400 },
       );
     }
-    if (amountRaw > stake.amount) {
-      return NextResponse.json(
-        { error: "Restake amount exceeds your staked balance" },
-        { status: 400 },
-      );
-    }
-    const now = Math.floor(Date.now() / 1000);
-    if (stake.lockedUntil > now) {
+
+    const lockStatus = getLockStatus(stake);
+    if (lockStatus.isLocked) {
       return NextResponse.json(
         {
           error:
             "Lock has not expired yet. Restake is available after the lock period ends.",
+          secondsRemaining: lockStatus.secondsRemaining,
         },
         { status: 400 },
       );
@@ -93,21 +90,16 @@ export async function POST(request: Request) {
 
     const { blockhash, lastValidBlockHeight } =
       await connection.getLatestBlockhash("confirmed");
-    const mint = new PublicKey(token.mint);
     const owner = new PublicKey(wallet);
-    const tokenProgram = token.tokenProgram
-      ? new PublicKey(token.tokenProgram)
-      : TOKEN_PROGRAM_ID;
 
     const tx = buildRestakeTransaction({
-      amount: amountRaw,
+      amount: stake.amount,
       blockhash,
       lastValidBlockHeight,
-      lockDuration: lockDuration as LockDuration,
-      mint,
+      lockDuration: newLockDuration as LockDuration,
+      oldLockTier: lockTier as LockTier,
       owner,
       programId,
-      tokenProgram,
     });
 
     const serialized = tx.serialize({

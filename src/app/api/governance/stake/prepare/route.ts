@@ -7,11 +7,14 @@
  */
 
 import { Connection, PublicKey } from "@solana/web3.js";
+import { getAccount } from "@solana/spl-token";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import {
   getStakingProgramId,
+  getVaultAuthorityPda,
+  getVaultAta,
   isValidLockDuration,
   LOCK_12_MONTHS,
   LOCK_30_DAYS,
@@ -19,8 +22,7 @@ import {
 } from "~/lib/cult-staking";
 import { buildStakeTransaction } from "~/lib/cult-staking-instructions";
 import { getSolanaRpcUrlServer } from "~/lib/solana-pay";
-import { getActiveToken } from "~/lib/token-config";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getActiveToken, TOKEN_2022_PROGRAM_ID_BASE58 } from "~/lib/token-config";
 
 const bodySchema = z.object({
   amount: z.string().min(1),
@@ -71,19 +73,32 @@ export async function POST(request: Request) {
       await connection.getLatestBlockhash("confirmed");
     const mint = new PublicKey(token.mint);
     const owner = new PublicKey(wallet);
-    const tokenProgram = token.tokenProgram
-      ? new PublicKey(token.tokenProgram)
-      : TOKEN_PROGRAM_ID;
+
+    // check if vault ATA exists (need to create on first stake ever)
+    let createVaultAta = false;
+    const [vaultAuthority] = getVaultAuthorityPda(programId, mint);
+    const vaultAta = getVaultAta(mint, vaultAuthority);
+    try {
+      await getAccount(
+        connection,
+        vaultAta,
+        "confirmed",
+        new PublicKey(TOKEN_2022_PROGRAM_ID_BASE58),
+      );
+    } catch {
+      // vault ATA doesn't exist, need to create it
+      createVaultAta = true;
+    }
 
     const tx = buildStakeTransaction({
       amount: amountRaw,
       blockhash,
+      createVaultAta,
       lastValidBlockHeight,
       lockDuration: lockDuration as LockDuration,
       mint,
       owner,
       programId,
-      tokenProgram,
     });
 
     const serialized = tx.serialize({

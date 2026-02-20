@@ -152,8 +152,8 @@ export async function POST(request: Request) {
     );
   }
 
-  // 4. Build a unique key for this staking period (wallet + staked_at timestamp)
-  const stakePeriodKey = `${wallet}:${stakeData.stakedAt}`;
+  // 4. Build a unique key for this staking period (wallet + lock_start timestamp)
+  const stakePeriodKey = `${wallet}:${stakeData.lockStart}`;
 
   // Check for existing claim in this staking period
   const existingClaims = await db

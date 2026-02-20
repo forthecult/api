@@ -2,7 +2,10 @@ import { desc, eq, sql } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
-import { supportChatConversationTable } from "~/db/schema";
+import {
+  supportChatConversationTable,
+  type SupportChatSource,
+} from "~/db/schema";
 import { auth } from "~/lib/auth";
 import {
   checkRateLimit,
@@ -14,8 +17,15 @@ const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 50;
 
 const GUEST_ID_HEADER = "x-support-guest-id";
+const SOURCE_HEADER = "x-support-source";
 const GUEST_ID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function parseSource(headers: Headers): SupportChatSource {
+  const raw = headers.get(SOURCE_HEADER)?.toLowerCase().trim();
+  if (raw === "web" || raw === "mobile") return raw;
+  return "web";
+}
 
 /**
  * GET /api/support-chat/conversations
@@ -43,6 +53,7 @@ export async function GET(request: NextRequest) {
           .select({
             createdAt: supportChatConversationTable.createdAt,
             id: supportChatConversationTable.id,
+            source: supportChatConversationTable.source,
             status: supportChatConversationTable.status,
             takenOverBy: supportChatConversationTable.takenOverBy,
             updatedAt: supportChatConversationTable.updatedAt,
@@ -72,6 +83,7 @@ export async function GET(request: NextRequest) {
           .select({
             createdAt: supportChatConversationTable.createdAt,
             id: supportChatConversationTable.id,
+            source: supportChatConversationTable.source,
             status: supportChatConversationTable.status,
             takenOverBy: supportChatConversationTable.takenOverBy,
             updatedAt: supportChatConversationTable.updatedAt,
@@ -114,10 +126,12 @@ export async function POST(request: NextRequest) {
   if (session?.user?.id) {
     const id = crypto.randomUUID();
     const now = new Date();
+    const source = parseSource(request.headers);
     try {
       await db.insert(supportChatConversationTable).values({
         createdAt: now,
         id,
+        source,
         status: "open",
         updatedAt: now,
         userId: session.user.id,
@@ -125,6 +139,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         createdAt: now.toISOString(),
         id,
+        source,
         status: "open",
         takenOverBy: null,
         updatedAt: now.toISOString(),
@@ -152,17 +167,20 @@ export async function POST(request: NextRequest) {
 
   const id = crypto.randomUUID();
   const now = new Date();
+  const source = parseSource(request.headers);
   try {
     await db.insert(supportChatConversationTable).values({
       createdAt: now,
       guestId,
       id,
+      source,
       status: "open",
       updatedAt: now,
     });
     return NextResponse.json({
       createdAt: now.toISOString(),
       id,
+      source,
       status: "open",
       takenOverBy: null,
       updatedAt: now.toISOString(),

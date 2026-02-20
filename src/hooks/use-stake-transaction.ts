@@ -22,6 +22,11 @@ export interface UseStakeTransactionOptions {
 /**
  * Shared hook for preparing and sending stake/unstake transactions.
  * Used by membership page and token stake page to avoid duplicated fetch/decode/send logic.
+ *
+ * Native program notes:
+ * - Stake creates a new entry per tier (user can have both 30-day and 12-month stakes)
+ * - Unstake withdraws the full amount for a given tier
+ * - Restake = unstake old tier + stake to new tier in one tx
  */
 export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
   const { connection } = useConnection();
@@ -84,25 +89,24 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
       connection,
       openConnectModal,
       options.onStakeSuccess,
-      options.onUnstakeSuccess,
     ],
   );
 
+  /**
+   * Unstake tokens for a given tier.
+   * Native program withdraws full amount for the tier — no partial unstake.
+   * @param lockTier 0 = 30 days, 1 = 12 months
+   */
   const unstake = useCallback(
-    async (amount: string): Promise<boolean> => {
+    async (lockTier: number): Promise<boolean> => {
       if (!wallet || !sendTransaction) {
         openConnectModal();
-        return false;
-      }
-      const trimmed = amount.trim();
-      if (!trimmed || Number.parseFloat(trimmed) <= 0) {
-        toast.error("Enter a positive amount");
         return false;
       }
       setUnstakePending(true);
       try {
         const res = await fetch("/api/governance/unstake/prepare", {
-          body: JSON.stringify({ amount: trimmed, wallet }),
+          body: JSON.stringify({ lockTier, wallet }),
           headers: { "Content-Type": "application/json" },
           method: "POST",
         });
@@ -133,28 +137,28 @@ export function useStakeTransaction(options: UseStakeTransactionOptions = {}) {
       sendTransaction,
       connection,
       openConnectModal,
-      options.onStakeSuccess,
       options.onUnstakeSuccess,
     ],
   );
 
+  /**
+   * Restake: unstake from old tier and stake to new tier in one transaction.
+   * Only works when the lock has expired.
+   * @param lockTier Current tier to unstake from (0 = 30 days, 1 = 12 months)
+   * @param newLockDuration New lock duration in seconds
+   */
   const restake = useCallback(
-    async (amount: string, lockDuration: number): Promise<boolean> => {
+    async (lockTier: number, newLockDuration: number): Promise<boolean> => {
       if (!wallet || !sendTransaction) {
         openConnectModal();
-        return false;
-      }
-      const trimmed = amount.trim();
-      if (!trimmed || Number.parseFloat(trimmed) <= 0) {
-        toast.error("Enter a positive amount");
         return false;
       }
       setRestakePending(true);
       try {
         const res = await fetch("/api/governance/restake/prepare", {
           body: JSON.stringify({
-            amount: trimmed,
-            lockDuration,
+            lockTier,
+            newLockDuration,
             wallet,
           }),
           headers: { "Content-Type": "application/json" },

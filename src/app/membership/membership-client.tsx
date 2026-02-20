@@ -87,7 +87,7 @@ const STAKING_SIGNUP_DISABLED =
   process.env.NEXT_PUBLIC_STAKING_SIGNUP_DISABLED === "true";
 
 /** Temporary: when true, Connect Wallet & Stake is disabled and shows "Staking will be available in the next hour". Set to false when staking is live. */
-const STAKING_AVAILABLE_NEXT_HOUR = true;
+const STAKING_AVAILABLE_NEXT_HOUR = false;
 
 /** When true, hide the CULT price and market cap bar. Set to false to show live price/MC (from token-config mint). */
 const HIDE_TOKEN_PRICE_AND_MC = false;
@@ -129,14 +129,13 @@ export function MembershipClient() {
   const [stakedLock, setStakedLock] = useState<{
     durationLabel: string;
     isLocked: boolean;
+    lockTier?: number;
     secondsRemaining?: number;
     unlocksAt: string | null;
     stakedAt: string;
   } | null>(null);
   const [stakedBalanceLoading, setStakedBalanceLoading] = useState(false);
-  const [unstakeAmount, setUnstakeAmount] = useState("");
   const [stakeMoreAmount, setStakeMoreAmount] = useState("");
-  const [restakeAmount, setRestakeAmount] = useState("");
   const [restakeDuration, setRestakeDuration] = useState<"30d" | "12m">("30d");
 
   // Live pricing state
@@ -158,6 +157,7 @@ export function MembershipClient() {
           lock: null | {
             durationLabel: string;
             isLocked: boolean;
+            lockTier?: number;
             secondsRemaining?: number;
             unlocksAt: string | null;
             stakedAt: string;
@@ -295,12 +295,11 @@ export function MembershipClient() {
   }, [stake, stakeAmount, lockDuration, refreshStakedBalance]);
 
   const handleUnstake = useCallback(async () => {
-    const ok = await unstake(unstakeAmount);
-    if (ok) {
-      setUnstakeAmount("");
-      refreshStakedBalance();
-    }
-  }, [unstake, unstakeAmount, refreshStakedBalance]);
+    // native program requires lock tier (0=30day, 1=12month), not amount
+    const lockTier = stakedLock?.lockTier ?? 0;
+    const ok = await unstake(lockTier);
+    if (ok) refreshStakedBalance();
+  }, [unstake, stakedLock, refreshStakedBalance]);
 
   /** Amount needed to reach next tier (for "Stake X to reach Tier Y" button). Tier 2 → 1, Tier 3 → 2. */
   const upgradeTarget = useMemo(() => {
@@ -326,12 +325,11 @@ export function MembershipClient() {
   const restakeLockDuration =
     restakeDuration === "12m" ? LOCK_12_MONTHS : LOCK_30_DAYS;
   const handleRestake = useCallback(async () => {
-    const ok = await restake(restakeAmount, restakeLockDuration);
-    if (ok) {
-      setRestakeAmount("");
-      refreshStakedBalance();
-    }
-  }, [restake, restakeAmount, restakeLockDuration, refreshStakedBalance]);
+    // native program: unstake from current tier, stake to new tier
+    const oldLockTier = stakedLock?.lockTier ?? 0;
+    const ok = await restake(oldLockTier, restakeLockDuration);
+    if (ok) refreshStakedBalance();
+  }, [restake, stakedLock, restakeLockDuration, refreshStakedBalance]);
 
   const formatTimeUntilUnlock = useCallback(
     (sec: number): string => {
@@ -699,50 +697,22 @@ export function MembershipClient() {
                             </Button>
                           </p>
                         )}
-                        {currentTierFromStake === 3 && (
+                        {currentTierFromStake === 3 && stakedLock && !stakedLock.isLocked && (
                           <div className="space-y-2 pt-1">
                             <p className="text-xs font-medium text-foreground">
                               Unstake (Tier 3)
                             </p>
-                            <div className="flex flex-wrap gap-2">
-                              <Input
-                                className="font-mono max-w-[140px]"
-                                min={0}
-                                onChange={(e) => setUnstakeAmount(e.target.value)}
-                                placeholder="Amount"
-                                step="any"
-                                type="number"
-                                value={unstakeAmount}
-                              />
-                              <Button
-                                onClick={() =>
-                                  setUnstakeAmount(stakedBalanceDisplay)
-                                }
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                Max
-                              </Button>
-                              <Button
-                                disabled={
-                                  unstakePending ||
-                                  !unstakeAmount.trim() ||
-                                  Number(unstakeAmount) <= 0 ||
-                                  Number(unstakeAmount) > Number(stakedBalanceDisplay)
-                                }
-                                onClick={handleUnstake}
-                                size="sm"
-                                variant="secondary"
-                              >
-                                {unstakePending ? "Sending…" : "Unstake"}
-                              </Button>
-                            </div>
-                            {Number(unstakeAmount) > Number(stakedBalanceDisplay) && (
-                              <p className="text-xs text-destructive">
-                                Amount exceeds staked balance
-                              </p>
-                            )}
+                            <p className="text-xs text-muted-foreground">
+                              Withdraw your full staked balance.
+                            </p>
+                            <Button
+                              disabled={unstakePending}
+                              onClick={handleUnstake}
+                              size="sm"
+                              variant="secondary"
+                            >
+                              {unstakePending ? "Sending…" : `Unstake ${stakedBalanceDisplay} ${tokenSymbol}`}
+                            </Button>
                           </div>
                         )}
                         {stakedLock && !stakedLock.isLocked && (
@@ -751,30 +721,9 @@ export function MembershipClient() {
                               Restake (lock for another period)
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Your lock has ended. Restake to lock again for 30 days or 12 months.
+                              Your lock has ended. Restake your full balance to lock again.
                             </p>
                             <div className="flex flex-wrap items-center gap-2">
-                              <Input
-                                className="font-mono max-w-[140px]"
-                                disabled={STAKING_SIGNUP_DISABLED}
-                                min={0}
-                                onChange={(e) => setRestakeAmount(e.target.value)}
-                                placeholder="Amount"
-                                step="any"
-                                type="number"
-                                value={restakeAmount}
-                              />
-                              <Button
-                                disabled={STAKING_SIGNUP_DISABLED}
-                                onClick={() =>
-                                  setRestakeAmount(stakedBalanceDisplay)
-                                }
-                                size="sm"
-                                type="button"
-                                variant="outline"
-                              >
-                                Max
-                              </Button>
                               <div className="flex gap-1">
                                 <Button
                                   disabled={STAKING_SIGNUP_DISABLED}
@@ -804,26 +753,15 @@ export function MembershipClient() {
                                 </Button>
                               </div>
                               <Button
-                                disabled={
-                                  STAKING_SIGNUP_DISABLED ||
-                                  restakePending ||
-                                  !restakeAmount.trim() ||
-                                  Number(restakeAmount) <= 0 ||
-                                  Number(restakeAmount) > Number(stakedBalanceDisplay)
-                                }
+                                disabled={STAKING_SIGNUP_DISABLED || restakePending}
                                 onClick={handleRestake}
                                 size="sm"
                               >
                                 {restakePending
                                   ? "Sending…"
-                                  : `Restake (lock ${restakeDuration === "12m" ? "12 months" : "30 days"})`}
+                                  : `Restake ${stakedBalanceDisplay} (${restakeDuration === "12m" ? "12 months" : "30 days"})`}
                               </Button>
                             </div>
-                            {Number(restakeAmount) > Number(stakedBalanceDisplay) && (
-                              <p className="text-xs text-destructive">
-                                Amount exceeds staked balance
-                              </p>
-                            )}
                           </div>
                         )}
                       </>
@@ -934,7 +872,11 @@ export function MembershipClient() {
                       Tokens to Stake
                     </span>
                     <span className="font-semibold tabular-nums">
-                      {formatTokens(stakeAmount)} {tokenSymbol}
+                      {stakeAmount.toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}{" "}
+                      {tokenSymbol}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">

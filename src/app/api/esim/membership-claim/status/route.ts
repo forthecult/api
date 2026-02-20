@@ -62,7 +62,7 @@ export async function GET(request: Request) {
     const eligible = tier === 1;
 
     // Check if already claimed for this staking period
-    const stakePeriodKey = `${wallet}:${stakeData.stakedAt}`;
+    const stakePeriodKey = `${wallet}:${stakeData.lockStart}`;
     const claims = await db
       .select({
         id: membershipEsimClaimsTable.id,

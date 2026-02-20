@@ -4,6 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import { db } from "~/db";
 import { orderItemsTable, ordersTable, productsTable } from "~/db/schema";
+import { getAmazonProducts, isAmazonProductApiConfigured } from "~/lib/amazon-product-api";
 import {
   publicApiCorsPreflight,
   withPublicApiCors,
@@ -25,9 +26,13 @@ import {
 
 const PAYMENT_WINDOW_MS = 60 * 60 * 1000;
 
+type CheckoutItem =
+  | { productId: string; quantity: number }
+  | { asin: string; quantity: number };
+
 interface CheckoutBody {
   email: string;
-  items: { productId: string; quantity: number }[];
+  items: CheckoutItem[];
   payment: { chain: string; token: string; tokenMint?: null | string };
   shipping?: {
     address1?: string;
@@ -40,6 +45,17 @@ interface CheckoutBody {
     zip?: string;
   };
 }
+
+type OrderItemRow = {
+  name: string;
+  priceCents: number;
+  quantity: number;
+  productId: string | null;
+  source: "store" | "amazon";
+  amazonAsin?: string;
+  amazonProductUrl?: string;
+  imageUrl?: string;
+};
 
 /**
  * Agent-friendly checkout: create order and return Solana Pay payment details.
@@ -118,9 +134,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const productIds = [
-      ...new Set(rawItems.map((i) => i?.productId).filter(Boolean)),
-    ] as string[];
+    const storeItems = rawItems.filter(
+      (i): i is { productId: string; quantity: number } =>
+        "productId" in i &&
+        typeof (i as { productId?: string }).productId === "string" &&
+        typeof (i as { quantity: number }).quantity === "number",
+    );
+    const amazonItems = rawItems.filter(
+      (i): i is { asin: string; quantity: number } =>
+        "asin" in i &&
+        typeof (i as { asin?: string }).asin === "string" &&
+        typeof (i as { quantity: number }).quantity === "number",
+    );
+
+    for (const item of [...storeItems, ...amazonItems]) {
+      const q = item.quantity;
+      if (q < 1 || q > 9999) {
+        return withPublicApiCors(
+          NextResponse.json(
+            {
+              error: {
+                code: "INVALID_REQUEST",
+                message: `Invalid quantity for item`,
+              },
+            },
+            { status: 400 },
+          ),
+        );
+      }
+    }
+
+    const productIds = [...new Set(storeItems.map((i) => i.productId))];
     const products =
       productIds.length > 0
         ? await db
@@ -135,56 +179,58 @@ export async function POST(request: NextRequest) {
         : [];
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    const orderItems: {
-      name: string;
-      priceCents: number;
-      productId: string;
-      quantity: number;
-    }[] = [];
-    for (const item of rawItems) {
-      if (
-        typeof item?.productId !== "string" ||
-        typeof item?.quantity !== "number" ||
-        item.quantity < 1 ||
-        item.quantity > 9999
-      ) {
-        if (
-          typeof item?.productId === "string" &&
-          typeof item?.quantity === "number" &&
-          (item.quantity < 1 || item.quantity > 9999)
-        ) {
-          return withPublicApiCors(
-            NextResponse.json(
-              {
-                error: {
-                  code: "INVALID_REQUEST",
-                  message: `Invalid quantity for product ${item.productId}`,
-                },
-              },
-              { status: 400 },
-            ),
-          );
-        }
-        continue;
-      }
+    const orderItems: OrderItemRow[] = [];
+
+    for (const item of storeItems) {
       const product = productMap.get(item.productId);
       if (!product || !product.published) continue;
       orderItems.push({
         name: product.name,
         priceCents: product.priceCents,
-        productId: product.id,
         quantity: item.quantity,
+        productId: product.id,
+        source: "store",
       });
     }
+
+    let amazonProductMap = new Map<string, { name: string; price: { usd: number }; productUrl: string; imageUrl?: string }>();
+    if (amazonItems.length > 0 && isAmazonProductApiConfigured()) {
+      const asins = [...new Set(amazonItems.map((i) => i.asin.trim()))].slice(0, 10);
+      const amazonProducts = await getAmazonProducts(asins);
+      amazonProductMap = new Map(
+        amazonProducts.map((p) => [
+          p.asin,
+          { name: p.name, price: p.price, productUrl: p.productUrl, imageUrl: p.imageUrl },
+        ]),
+      );
+      for (const item of amazonItems) {
+        const p = amazonProductMap.get(item.asin.trim());
+        if (!p) continue;
+        const priceCents = Math.round(p.price.usd * 100);
+        orderItems.push({
+          name: p.name,
+          priceCents,
+          quantity: item.quantity,
+          productId: null,
+          source: "amazon",
+          amazonAsin: item.asin.trim(),
+          amazonProductUrl: p.productUrl,
+          imageUrl: p.imageUrl,
+        });
+      }
+    }
+
     if (orderItems.length === 0) {
-      return NextResponse.json(
-        {
-          error: {
-            code: "INVALID_REQUEST",
-            message: "No valid published products in items",
+      return withPublicApiCors(
+        NextResponse.json(
+          {
+            error: {
+              code: "INVALID_REQUEST",
+              message: "No valid products in items (check productId/asin and quantity)",
+            },
           },
-        },
-        { status: 400 },
+          { status: 400 },
+        ),
       );
     }
 
@@ -224,10 +270,13 @@ export async function POST(request: NextRequest) {
         );
       }
     }
+    const hasAmazonItems = orderItems.some((i) => i.source === "amazon");
+
     await db.insert(ordersTable).values({
       createdAt: now,
       email: email.trim(),
       fulfillmentStatus: "unfulfilled",
+      hasAmazonItems,
       id: orderId,
       paymentMethod: "solana_pay",
       paymentStatus: "pending",
@@ -257,6 +306,12 @@ export async function POST(request: NextRequest) {
         priceCents: item.priceCents,
         productId: item.productId,
         quantity: item.quantity,
+        source: item.source,
+        ...(item.source === "amazon" && {
+          amazonAsin: item.amazonAsin,
+          amazonProductUrl: item.amazonProductUrl,
+          imageUrl: item.imageUrl,
+        }),
       })),
     );
 

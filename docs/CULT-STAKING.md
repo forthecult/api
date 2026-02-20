@@ -14,6 +14,15 @@ Program-based staking for the CULT token on Solana. Users stake CULT into a pool
 
 **Rollout:** We’re testing staking with **SOLUNA** (live token) now. When the **CULT** token launches, switch the active token to CULT in `token-config.ts`, set `CULT_TOKEN_MINT_SOLANA`, then deploy (or use a new program) and run the initialize script for the CULT mint. Same code path supports both; CULT will use Token-2022.
 
+### Get CULT (PumpSwap) and token migration
+
+The **Get CULT** flow (SOL → CULT on the Stake & Vote page and in the mobile app) uses the PumpSwap pool for the current CULT mint. There will be **two pools** over time:
+
+- **Before migration:** Current CULT mint and its canonical PumpSwap pool (used today).
+- **After migration:** When the token migrates, the LP will change; the new pool details are not yet known.
+
+When the post-migration pool is live, set **`CULT_SWAP_MINT`** (env) to the new mint address. The swap logic in `pump-swap-cult.ts` uses `getCultSwapMint()` from `token-config.ts`, so Get CULT will use the correct pool without code changes. Leave `CULT_SWAP_MINT` unset to keep using the current (pre-migration) mint.
+
 ## Build & Deploy
 
 ### Prerequisites
@@ -76,6 +85,16 @@ If `anchor build` finishes with no output and **`target/deploy` is missing**, th
    sh -c "$(curl -sSfL https://release.anza.xyz/v2.3.0/install)"
    ```
    Restart the terminal (or `source` your shell profile) so `solana` and `cargo build-sbf` point to the 2.3 install. Then from `programs` run `anchor build` again. To confirm: `solana --version` should show 2.3.x before building.
+
+### Deploy cost estimate
+
+Before deploying, you can estimate how much SOL the staking program deployment will cost (rent for the program data account). From **`programs`**:
+
+```bash
+./estimate-deploy-cost.sh
+```
+
+This uses the built `target/deploy/cult_staking.so` and runs `solana rent` for the upgradeable program data size (2× binary size + 45 bytes). Have that amount plus ~0.01 SOL for transaction (and optional IDL upload) fees. You can pass another `.so` path to estimate a different program.
 
 ### Deploy (e.g. devnet)
 

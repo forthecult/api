@@ -1,11 +1,13 @@
 "use client";
 
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import {
   ArrowRight,
   CheckCircle2,
   Clock,
   ExternalLink,
   Lock,
+  RefreshCw,
   Vote,
   Wallet,
 } from "lucide-react";
@@ -16,6 +18,10 @@ import { toast } from "sonner";
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatDateTime, formatPower } from "~/lib/format";
+import {
+  buildSwapSolToCult,
+  estimateCultFromSol,
+} from "~/lib/pump-swap-cult";
 import { Button } from "~/ui/primitives/button";
 import {
   Card,
@@ -30,6 +36,13 @@ import { Skeleton } from "~/ui/primitives/skeleton";
 // ─── Constants ──────────────────────────────────────────────────────
 
 const CULT_DECIMALS = 6;
+const LAMPORTS_PER_SOL = 1e9;
+/** Show "Get CULT" when wallet CULT balance is below this (raw units). 0.01 CULT = 10_000. */
+const GET_CULT_THRESHOLD_RAW = 10_000;
+const SEND_OPTS = {
+  preflightCommitment: "confirmed" as const,
+  skipPreflight: false,
+};
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -62,11 +75,12 @@ type ProposalDetail = Proposal & {
 };
 
 interface StakeFormProps {
+  currentLockTier: null | number;
   openConnectModal: () => void;
   refreshBalances: () => void;
   stake: (amount: string, lockDuration: number) => Promise<boolean>;
   stakePending: boolean;
-  unstake: (amount: string) => Promise<boolean>;
+  unstake: (lockTier: number) => Promise<boolean>;
   unstakePending: boolean;
   wallet: null | string;
 }
@@ -74,6 +88,8 @@ interface StakeFormProps {
 // ─── ProposalCard ───────────────────────────────────────────────────
 
 export function StakeVoteClient() {
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
   const {
     openConnectModal,
     stake,
@@ -86,33 +102,45 @@ export function StakeVoteClient() {
   const [votingPower, setVotingPower] = useState<null | number>(null);
   const [walletBalanceRaw, setWalletBalanceRaw] = useState<null | number>(null);
   const [stakedBalanceRaw, setStakedBalanceRaw] = useState<null | number>(null);
+  const [currentLockTier, setCurrentLockTier] = useState<null | number>(null);
   const [votingPowerLoading, setVotingPowerLoading] = useState(false);
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [proposalsLoading, setProposalsLoading] = useState(true);
   const [details, setDetails] = useState<Record<string, ProposalDetail>>({});
   const [votingId, setVotingId] = useState<null | string>(null);
 
+  // Get CULT (swap SOL → CULT) state
+  const [solBalanceLamports, setSolBalanceLamports] = useState<number>(0);
+  const [solAmount, setSolAmount] = useState("");
+  const [estimatedCult, setEstimatedCult] = useState<null | string>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [swapPending, setSwapPending] = useState(false);
+
   const refreshBalances = useCallback(() => {
     if (!wallet) return;
     setVotingPowerLoading(true);
-    fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        const total = data.votingPowerRaw ? BigInt(data.votingPowerRaw) : 0n;
-        const walletRaw = data.walletBalanceRaw
-          ? BigInt(data.walletBalanceRaw)
+    Promise.all([
+      fetch(`/api/governance/voting-power?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
+      fetch(`/api/governance/staked-balance?wallet=${encodeURIComponent(wallet)}`).then((r) => r.json()),
+    ])
+      .then(([powerData, stakedData]) => {
+        const total = powerData.votingPowerRaw ? BigInt(powerData.votingPowerRaw) : 0n;
+        const walletRaw = powerData.walletBalanceRaw
+          ? BigInt(powerData.walletBalanceRaw)
           : 0n;
-        const stakedRaw = data.stakedBalanceRaw
-          ? BigInt(data.stakedBalanceRaw)
+        const stakedRaw = powerData.stakedBalanceRaw
+          ? BigInt(powerData.stakedBalanceRaw)
           : 0n;
         setVotingPower(Number(total));
         setWalletBalanceRaw(Number(walletRaw));
         setStakedBalanceRaw(Number(stakedRaw));
+        setCurrentLockTier(stakedData.lock?.lockTier ?? null);
       })
       .catch(() => {
         setVotingPower(0);
         setWalletBalanceRaw(0);
         setStakedBalanceRaw(0);
+        setCurrentLockTier(null);
       })
       .finally(() => setVotingPowerLoading(false));
   }, [wallet]);
@@ -123,10 +151,51 @@ export function StakeVoteClient() {
       setVotingPower(null);
       setWalletBalanceRaw(null);
       setStakedBalanceRaw(null);
+      setSolBalanceLamports(0);
       return;
     }
     refreshBalances();
   }, [wallet, refreshBalances]);
+
+  // Fetch SOL balance when wallet changes (for Get CULT)
+  useEffect(() => {
+    if (!publicKey) return;
+    connection
+      .getBalance(publicKey)
+      .then(setSolBalanceLamports)
+      .catch(() => setSolBalanceLamports(0));
+  }, [connection, publicKey]);
+
+  // Estimate CULT when SOL amount changes (debounced)
+  useEffect(() => {
+    const raw = solAmount.trim();
+    const solNum = Number.parseFloat(raw);
+    if (!raw || !Number.isFinite(solNum) || solNum <= 0) {
+      setEstimatedCult(null);
+      return;
+    }
+    const lamports = Math.floor(solNum * LAMPORTS_PER_SOL);
+    if (lamports <= 0) {
+      setEstimatedCult(null);
+      return;
+    }
+    let cancelled = false;
+    setEstimateLoading(true);
+    estimateCultFromSol(connection, lamports)
+      .then((res) => {
+        if (!cancelled && res) setEstimatedCult(res.cultAmount);
+        else if (!cancelled) setEstimatedCult(null);
+      })
+      .catch(() => {
+        if (!cancelled) setEstimatedCult(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEstimateLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [connection, solAmount]);
 
   // Fetch proposals on mount
   useEffect(() => {
@@ -216,6 +285,60 @@ export function StakeVoteClient() {
     walletBalanceRaw !== null ? walletBalanceRaw / 10 ** CULT_DECIMALS : 0;
   const stakedPower =
     stakedBalanceRaw !== null ? stakedBalanceRaw / 10 ** CULT_DECIMALS : 0;
+
+  const showGetCult =
+    !!wallet &&
+    (walletBalanceRaw === null ||
+      walletBalanceRaw < GET_CULT_THRESHOLD_RAW);
+  const solBalanceSol = solBalanceLamports / LAMPORTS_PER_SOL;
+
+  const handleSwapSolToCult = useCallback(async () => {
+    if (!publicKey || !sendTransaction) {
+      openConnectModal();
+      return;
+    }
+    const raw = solAmount.trim();
+    const solNum = Number.parseFloat(raw);
+    if (!Number.isFinite(solNum) || solNum <= 0) {
+      toast.error("Enter a positive SOL amount");
+      return;
+    }
+    const lamports = Math.floor(solNum * LAMPORTS_PER_SOL);
+    if (lamports <= 0) {
+      toast.error("Amount too small");
+      return;
+    }
+    if (lamports > solBalanceLamports) {
+      toast.error("Insufficient SOL balance");
+      return;
+    }
+    setSwapPending(true);
+    try {
+      const { transaction } = await buildSwapSolToCult(
+        connection,
+        publicKey,
+        lamports,
+      );
+      const sig = await sendTransaction(transaction, connection, SEND_OPTS);
+      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      setSolAmount("");
+      setEstimatedCult(null);
+      await refreshBalances();
+      connection.getBalance(publicKey).then(setSolBalanceLamports);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Swap failed");
+    } finally {
+      setSwapPending(false);
+    }
+  }, [
+    connection,
+    publicKey,
+    sendTransaction,
+    solAmount,
+    solBalanceLamports,
+    openConnectModal,
+    refreshBalances,
+  ]);
 
   return (
     <div
@@ -311,8 +434,80 @@ export function StakeVoteClient() {
         </CardHeader>
       </Card>
 
+      {/* Get CULT: swap SOL → CULT when user has no / very low CULT */}
+      {showGetCult && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-xl">
+              <RefreshCw className="h-5 w-5 text-primary" />
+              Get CULT
+            </CardTitle>
+            <CardDescription>
+              Swap SOL for CULT on PumpSwap to stake and vote. You need a small
+              amount of SOL for transaction fees.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">SOL amount</label>
+              <div className="flex gap-2">
+                <Input
+                  className="font-mono"
+                  min={0}
+                  onChange={(e) => setSolAmount(e.target.value)}
+                  placeholder="0"
+                  step="any"
+                  type="number"
+                  value={solAmount}
+                />
+                <Button
+                  disabled={swapPending}
+                  onClick={() =>
+                    setSolAmount(
+                      Math.max(
+                        0,
+                        solBalanceSol - 0.01,
+                      ).toFixed(6),
+                    )
+                  }
+                  type="button"
+                  variant="secondary"
+                >
+                  Max
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Balance: {solBalanceSol.toFixed(4)} SOL
+              </p>
+            </div>
+            {estimateLoading && solAmount.trim() && (
+              <p className="text-sm text-muted-foreground">
+                Estimating…
+              </p>
+            )}
+            {!estimateLoading && estimatedCult != null && (
+              <p className="text-sm font-medium text-foreground">
+                You will receive ≈ {estimatedCult} CULT (before slippage)
+              </p>
+            )}
+            <Button
+              disabled={
+                swapPending ||
+                !solAmount.trim() ||
+                Number.parseFloat(solAmount) <= 0 ||
+                (estimatedCult == null && !!solAmount.trim())
+              }
+              onClick={() => void handleSwapSolToCult()}
+            >
+              {swapPending ? "Swapping…" : "Swap SOL → CULT"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* On-chain staking — always visible; connect wallet to use */}
       <StakeForm
+        currentLockTier={currentLockTier}
         openConnectModal={openConnectModal}
         refreshBalances={refreshBalances}
         stake={stake}
@@ -531,6 +726,7 @@ function ProposalCard({
 // ─── Main Component ─────────────────────────────────────────────────
 
 function StakeForm({
+  currentLockTier,
   openConnectModal,
   refreshBalances,
   stake,
@@ -540,7 +736,6 @@ function StakeForm({
   wallet,
 }: StakeFormProps) {
   const [stakeAmount, setStakeAmount] = useState("");
-  const [unstakeAmount, setUnstakeAmount] = useState("");
   const [lockDuration, setLockDuration] = useState<number>(LOCK_30_DAYS);
 
   const handleStake = useCallback(async () => {
@@ -552,12 +747,11 @@ function StakeForm({
   }, [stake, stakeAmount, lockDuration, refreshBalances]);
 
   const handleUnstake = useCallback(async () => {
-    const ok = await unstake(unstakeAmount);
-    if (ok) {
-      setUnstakeAmount("");
-      refreshBalances();
-    }
-  }, [unstake, unstakeAmount, refreshBalances]);
+    // native program uses tier (0=30day, 1=12month), not amount
+    const tier = currentLockTier ?? 0;
+    const ok = await unstake(tier);
+    if (ok) refreshBalances();
+  }, [unstake, currentLockTier, refreshBalances]);
 
   return (
     <Card className="border-border bg-card">
@@ -633,25 +827,17 @@ function StakeForm({
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Unstake (CULT)</label>
-            <div className="flex gap-2">
-              <Input
-                className="font-mono"
-                min={0}
-                onChange={(e) => setUnstakeAmount(e.target.value)}
-                placeholder="0"
-                step="any"
-                type="number"
-                value={unstakeAmount}
-              />
-              <Button
-                disabled={unstakePending || !unstakeAmount.trim()}
-                onClick={handleUnstake}
-                variant="secondary"
-              >
-                {unstakePending ? "Sending…" : "Unstake"}
-              </Button>
-            </div>
+            <label className="text-sm font-medium">Unstake</label>
+            <p className="text-xs text-muted-foreground">
+              Unstake your full staked balance once the lock period expires.
+            </p>
+            <Button
+              disabled={unstakePending || currentLockTier === null}
+              onClick={handleUnstake}
+              variant="secondary"
+            >
+              {unstakePending ? "Sending…" : "Unstake All"}
+            </Button>
           </div>
         </div>
       </CardContent>

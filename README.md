@@ -48,6 +48,16 @@
 6. edit something in the code manually or ask ai to help you.
 7. done. seriously. you're building now.
 
+### local database (Postgres)
+
+The app requires Postgres. If you see **ECONNREFUSED** or **GET / 500** when running `bun dev`, the database is not running or not reachable.
+
+- **Start Postgres** (pick one):
+  - **Docker:** `docker run -d --name ftc-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=ftc -p 5432:5432 postgres:16`
+  - **System:** start the Postgres service (e.g. `sudo systemctl start postgresql`), then create the DB: `createdb ftc` (or `psql -c "CREATE DATABASE ftc;"`).
+- Set `DATABASE_URL` in `.env` (e.g. `postgresql://postgres:postgres@localhost:5432/ftc`).
+- From the repo root: `bun db:push` (creates tables), then `bun dev`.
+
 <!-- 
 2. run:
    ```bash

@@ -133,8 +133,8 @@ export async function GET(
         : 0;
       const lockStatus = stake ? getLockStatus(stake) : null;
 
-      if (stake?.stakedAt && (earliestStakedAt === null || stake.stakedAt < earliestStakedAt)) {
-        earliestStakedAt = stake.stakedAt;
+      if (stake?.lockStart && (earliestStakedAt === null || stake.lockStart < earliestStakedAt)) {
+        earliestStakedAt = stake.lockStart;
       }
 
       walletInfos.push({
@@ -149,7 +149,7 @@ export async function GET(
                 isLocked: lockStatus.isLocked,
                 unlocksAt: lockStatus.unlocksAt,
                 secondsRemaining: lockStatus.secondsRemaining,
-                stakedAt: new Date(stake.stakedAt * 1000).toISOString(),
+                stakedAt: new Date(stake.lockStart * 1000).toISOString(),
               }
             : null,
       });

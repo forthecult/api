@@ -20,6 +20,10 @@ export const productsTable = pgTable(
   {
     // POD AI/creator: product created via POD bulk or AI flow
     aiGenerated: boolean("ai_generated").default(false),
+    /** ASIN for Amazon-sourced products (source: "amazon"). */
+    amazonAsin: text("amazon_asin"),
+    /** Last time Amazon price was refreshed (for cache invalidation). */
+    amazonPriceRefreshedAt: timestamp("amazon_price_refreshed_at"),
     barcode: text("barcode"),
     brand: text("brand"),
     compareAtPriceCents: integer("compare_at_price_cents"),
@@ -241,6 +245,10 @@ export const ordersTable = pgTable(
     /** Printify total price in cents (USD). Admin-only; not shown to customers. */
     printifyCostTotalCents: integer("printify_cost_total_cents"),
     printifyOrderId: text("printify_order_id").unique(),
+    /** When true, order contains marketplace items that need external fulfillment. */
+    hasAmazonItems: boolean("has_amazon_items").notNull().default(false),
+    /** External fulfillment order id (for future tracking). */
+    amazonOrderId: text("amazon_order_id").unique(),
     shippedAt: timestamp("shipped_at"),
     shippingAddress1: text("shipping_address1"),
     shippingAddress2: text("shipping_address2"),
@@ -316,6 +324,14 @@ export const orderItemsTable = pgTable("order_item", {
     { onDelete: "set null" },
   ),
   quantity: integer("quantity").notNull(),
+  /** "store" | "amazon" — source of the line item. */
+  source: text("source").notNull().default("store"),
+  /** ASIN for marketplace-sourced items. */
+  amazonAsin: text("amazon_asin"),
+  /** Product URL with affiliate tag for marketplace items. */
+  amazonProductUrl: text("amazon_product_url"),
+  /** Product image URL (used for marketplace items that have no local product). */
+  imageUrl: text("image_url"),
 });
 
 /** Product media: multiple images per product with SEO (alt, title). */
