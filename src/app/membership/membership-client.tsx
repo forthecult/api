@@ -1,5 +1,6 @@
 "use client";
 
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import {
   ArrowRight,
   Check,
@@ -7,6 +8,7 @@ import {
   Crown,
   Globe,
   Minus,
+  RefreshCw,
   Shield,
   Signal,
   Smartphone,
@@ -26,6 +28,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
+import {
+  buildSwapSolToCult,
+  estimateCultFromSol,
+} from "~/lib/pump-swap-cult";
 import { listUserAccounts, refetchSession, useCurrentUser } from "~/lib/auth-client";
 import { cn } from "~/lib/cn";
 import {
@@ -34,7 +40,7 @@ import {
 } from "~/ui/components/auth/auth-wallet-modal-events";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatEsimPackageName } from "~/lib/esim-format";
-import { formatMarketCap, formatTokens, formatUsd } from "~/lib/format";
+import { formatMarketCap, formatTokens, formatTokensPrecise, formatUsd } from "~/lib/format";
 import { MEMBERSHIP_HOW_IT_WORKS } from "~/lib/membership-copy";
 import {
   MEMBERSHIP_BENEFIT_ROWS,
@@ -159,12 +165,22 @@ export function MembershipClient() {
   const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet: connectedWallet } =
     useStakeTransaction();
   const { user } = useCurrentUser();
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
   
   // linked Solana wallet from user's account (for when wallet adapter isn't connected)
   const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);
   
   // effective wallet: prefer connected wallet, fall back to linked wallet
   const wallet = connectedWallet ?? linkedSolanaWallet;
+
+  // SOL → CULT swap state
+  const [solBalanceLamports, setSolBalanceLamports] = useState<number>(0);
+  const [solAmount, setSolAmount] = useState("");
+  const [estimatedCult, setEstimatedCult] = useState<null | string>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
+  const [swapPending, setSwapPending] = useState(false);
+  const solBalanceSol = solBalanceLamports / 1e9;
   
   // fetch linked Solana wallet when user is logged in
   useEffect(() => {
@@ -213,6 +229,78 @@ export function MembershipClient() {
     window.history.replaceState({}, "", url.toString());
   }, [selectedTier]);
 
+  // fetch SOL balance when wallet changes
+  useEffect(() => {
+    if (!publicKey || !connection) {
+      setSolBalanceLamports(0);
+      return;
+    }
+    let cancelled = false;
+    connection.getBalance(publicKey).then((bal) => {
+      if (!cancelled) setSolBalanceLamports(bal);
+    }).catch(() => {
+      if (!cancelled) setSolBalanceLamports(0);
+    });
+    return () => { cancelled = true; };
+  }, [publicKey, connection]);
+
+  // estimate CULT output when SOL amount changes
+  useEffect(() => {
+    if (!connection) {
+      setEstimatedCult(null);
+      return;
+    }
+    const solAmountNum = Number.parseFloat(solAmount);
+    if (!Number.isFinite(solAmountNum) || solAmountNum <= 0) {
+      setEstimatedCult(null);
+      return;
+    }
+    const solLamports = Math.floor(solAmountNum * 1e9);
+    let cancelled = false;
+    setEstimateLoading(true);
+    estimateCultFromSol(connection, solLamports)
+      .then((est) => {
+        if (!cancelled) setEstimatedCult(est?.cultAmount ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) setEstimatedCult(null);
+      })
+      .finally(() => {
+        if (!cancelled) setEstimateLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [solAmount, connection]);
+
+  // handle SOL → CULT swap
+  const handleSwapSolToCult = useCallback(async () => {
+    if (!publicKey || !connection || !sendTransaction) {
+      toast.error("Connect your wallet first");
+      return;
+    }
+    const solAmountNum = Number.parseFloat(solAmount);
+    if (!Number.isFinite(solAmountNum) || solAmountNum <= 0) return;
+    const solLamports = Math.floor(solAmountNum * 1e9);
+
+    setSwapPending(true);
+    try {
+      const { transaction } = await buildSwapSolToCult(connection, publicKey, solLamports);
+      const sig = await sendTransaction(transaction, connection, {
+        preflightCommitment: "confirmed",
+        skipPreflight: false,
+      });
+      toast.success("Swap submitted: " + sig.slice(0, 8) + "…");
+      setSolAmount("");
+      setEstimatedCult(null);
+      // refresh SOL balance after swap
+      setTimeout(() => {
+        connection.getBalance(publicKey).then(setSolBalanceLamports).catch(() => {});
+      }, 2000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Swap failed");
+    }
+    setSwapPending(false);
+  }, [publicKey, connection, sendTransaction, solAmount]);
+
   /** Current tier from staked balance (1 = best, 3 = entry). Null if no stake or below tier 3. */
   const currentTierFromStake = useMemo(() => {
     const staked = Number(stakedBalanceDisplay);
@@ -238,14 +326,8 @@ export function MembershipClient() {
     }
   }, [currentTierFromStake, stakedBalanceRaw, selectedTier]);
 
-  // auto-select 12 months when user has a locked 30-day stake (30 days no longer valid)
-  useEffect(() => {
-    const hasLockedStake = stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
-    const currentLockTier = stakedLock?.lockTier;
-    if (hasLockedStake && currentLockTier === 0 && stakeDuration === "30d") {
-      setStakeDuration("12m");
-    }
-  }, [stakedLock?.isLocked, stakedLock?.lockTier, stakedBalanceRaw, stakeDuration]);
+  // keep duration selection as-is; user can choose either 30d or 12m when upgrading
+  // (previously forced 12m when user had a 30-day stake, but now we allow both)
 
   const refreshStakedBalance = useCallback(() => {
     if (!wallet) return;
@@ -674,6 +756,30 @@ export function MembershipClient() {
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-5">
+                {/* Current membership badge - show prominently when user has a stake */}
+                {wallet && Number(stakedBalanceRaw) > 0 && currentTierFromStake != null && (
+                  <div className="mb-4 flex items-center gap-3 rounded-xl border border-primary/20 bg-primary/5 p-3">
+                    {(() => {
+                      const tierData = MEMBERSHIP_TIERS.find((t) => t.id === currentTierFromStake);
+                      const TierIcon = tierData?.icon ?? Shield;
+                      return (
+                        <>
+                          <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", tierData?.accentBg ?? "bg-muted")}>
+                            <TierIcon className={cn("h-5 w-5", tierData?.accent ?? "text-foreground")} />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground">
+                              Current: {tierData?.name ?? `Tier ${currentTierFromStake}`} Member
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {stakedLock?.durationLabel ?? "30 days"} · {formatTokens(Number(stakedBalanceDisplay))} {tokenSymbol} staked
+                            </p>
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
                 <h2
                   className={`
                   font-display text-xl font-semibold text-foreground
@@ -920,10 +1026,11 @@ export function MembershipClient() {
                   );
                 })()}
 
-                {/* Duration - hide options that don't make sense based on current stake */}
+                {/* Duration - always show both options when upgrading */}
                 {(() => {
                   const hasLockedStake = stakedLock?.isLocked && Number(stakedBalanceRaw) > 0;
                   const currentLockTier = stakedLock?.lockTier; // 0 = 30 days, 1 = 12 months
+                  const isUpgrading = currentTierFromStake != null && Number(stakedBalanceRaw) > 0;
                   
                   // if user has a locked 12-month stake, they're at max duration - hide selector
                   if (hasLockedStake && currentLockTier === 1) {
@@ -936,8 +1043,8 @@ export function MembershipClient() {
                     );
                   }
                   
-                  // if user has a locked 30-day stake, only show 12 months option
-                  const show30Days = !hasLockedStake || currentLockTier !== 0;
+                  // always show both durations - user can create a new position with either duration
+                  const show30Days = true;
                   const show12Months = true;
                   
                   return (
@@ -945,9 +1052,9 @@ export function MembershipClient() {
                       <p className="mb-2 text-sm font-medium text-foreground">
                         Staking Duration
                       </p>
-                      {hasLockedStake && currentLockTier === 0 && (
+                      {hasLockedStake && currentLockTier === 0 && isUpgrading && (
                         <p className="mb-2 text-xs text-muted-foreground">
-                          You already have a 30-day stake. New tokens will be locked for 12 months in a separate position.
+                          New tokens will be added to a separate stake position.
                         </p>
                       )}
                       <div className={cn("grid gap-2", show30Days && show12Months ? "grid-cols-2" : "grid-cols-1")}>
@@ -1027,7 +1134,7 @@ export function MembershipClient() {
                               {MEMBERSHIP_TIERS.find((t) => t.id === selectedTier)?.name} requires
                             </span>
                             <span className="font-medium tabular-nums">
-                              {formatTokens(stakeAmount)} {tokenSymbol}
+                              {formatTokensPrecise(stakeAmount)} {tokenSymbol}
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
@@ -1035,7 +1142,7 @@ export function MembershipClient() {
                               You already have
                             </span>
                             <span className="font-medium tabular-nums">
-                              {formatTokens(currentStakedAmount)} {tokenSymbol}
+                              {formatTokensPrecise(currentStakedAmount)} {tokenSymbol}
                             </span>
                           </div>
                           <div className="flex justify-between text-sm border-t pt-2">
@@ -1043,7 +1150,7 @@ export function MembershipClient() {
                               Additional tokens needed
                             </span>
                             <span className="font-semibold tabular-nums text-foreground">
-                              {formatTokens(additionalNeeded)} {tokenSymbol}
+                              {formatTokensPrecise(additionalNeeded)} {tokenSymbol}
                             </span>
                           </div>
                         </>
@@ -1054,7 +1161,7 @@ export function MembershipClient() {
                               Tokens to Stake
                             </span>
                             <span className="font-semibold tabular-nums">
-                              {formatTokens(stakeAmount)} {tokenSymbol}
+                              {formatTokensPrecise(stakeAmount)} {tokenSymbol}
                             </span>
                           </div>
                           <div className="flex justify-between text-sm">
@@ -1094,7 +1201,7 @@ export function MembershipClient() {
                         />
                         <p className="text-sm font-medium text-foreground">
                           {extraUsd > 0
-                            ? `Stake ${formatUsd(extraUsd)} (≈${formatTokens(extraTokens)} ${tokenSymbol}) more for `
+                            ? `Stake ${formatUsd(extraUsd)} (≈${formatTokensPrecise(extraTokens)} ${tokenSymbol}) more for `
                             : "Upgrade to "}
                           {
                             MEMBERSHIP_TIERS.find(
@@ -1146,8 +1253,8 @@ export function MembershipClient() {
                           ? "No additional stake needed"
                           : wallet
                             ? isUpgrading 
-                              ? `Stake ${formatTokens(additionalNeeded)} ${tokenSymbol} to upgrade`
-                              : `Stake ${formatTokens(stakeAmount)} ${tokenSymbol}`
+                              ? `Stake ${formatTokensPrecise(additionalNeeded)} ${tokenSymbol} to upgrade`
+                              : `Stake ${formatTokensPrecise(stakeAmount)} ${tokenSymbol}`
                             : "Connect Wallet & Stake"}
                     </Button>
                   );
@@ -1156,6 +1263,69 @@ export function MembershipClient() {
                   Your tokens remain yours. They are locked in a smart contract
                   and returned to your wallet when you unstake.
                 </p>
+
+                {/* Get CULT: swap SOL → CULT */}
+                {publicKey && (
+                  <div className="mt-4 space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex items-center gap-2">
+                      <RefreshCw className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-foreground">Get CULT</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Swap SOL for CULT on PumpSwap. You need a small amount of SOL for transaction fees.
+                    </p>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <Input
+                          className="font-mono flex-1"
+                          min={0}
+                          onChange={(e) => setSolAmount(e.target.value)}
+                          placeholder="SOL amount"
+                          step="any"
+                          type="number"
+                          value={solAmount}
+                        />
+                        <Button
+                          disabled={swapPending || solBalanceSol <= 0.01}
+                          onClick={() =>
+                            setSolAmount(
+                              Math.max(0, solBalanceSol - 0.01).toFixed(6),
+                            )
+                          }
+                          size="sm"
+                          type="button"
+                          variant="secondary"
+                        >
+                          Max
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Balance: {solBalanceSol.toFixed(4)} SOL
+                      </p>
+                    </div>
+                    {estimateLoading && solAmount.trim() && (
+                      <p className="text-xs text-muted-foreground">Estimating…</p>
+                    )}
+                    {!estimateLoading && estimatedCult != null && (
+                      <p className="text-sm font-medium text-foreground">
+                        You will receive ≈ {estimatedCult} CULT
+                      </p>
+                    )}
+                    <Button
+                      className="w-full"
+                      disabled={
+                        swapPending ||
+                        !solAmount.trim() ||
+                        Number.parseFloat(solAmount) <= 0 ||
+                        (estimatedCult == null && !!solAmount.trim())
+                      }
+                      onClick={() => void handleSwapSolToCult()}
+                      size="sm"
+                    >
+                      {swapPending ? "Swapping…" : "Swap SOL → CULT"}
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
 

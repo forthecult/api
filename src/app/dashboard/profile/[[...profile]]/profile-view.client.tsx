@@ -84,6 +84,7 @@ export function ProfileViewClient() {
   }>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
   const [walletCultBalance, setWalletCultBalance] = useState<string | null>(null);
+  const [stakedCultBalance, setStakedCultBalance] = useState<string | null>(null);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -95,17 +96,44 @@ export function ProfileViewClient() {
       return;
     }
     let cancelled = false;
-    listUserAccounts()
-      .then((res) => {
-        if (cancelled || res.error) return;
-        const solana = (res.data ?? []).find(
-          (a: { providerId?: string }) => a.providerId === "solana",
-        ) as { accountId: string } | undefined;
-        if (!cancelled) setLinkedSolanaWallet(solana?.accountId ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setLinkedSolanaWallet(null);
-      });
+    
+    // try multiple methods to find the wallet
+    const findWallet = async () => {
+      // method 1: use listUserAccounts
+      try {
+        const res = await listUserAccounts();
+        if (!cancelled && !res.error) {
+          const solana = (res.data ?? []).find(
+            (a: { providerId?: string }) => a.providerId === "solana",
+          ) as { accountId: string } | undefined;
+          if (solana?.accountId) {
+            setLinkedSolanaWallet(solana.accountId);
+            return;
+          }
+        }
+      } catch {
+        // continue to fallback
+      }
+      
+      // method 2: try the user wallet API
+      try {
+        const res = await fetch("/api/user/wallets", { credentials: "include" });
+        if (!cancelled && res.ok) {
+          const data = await res.json() as { wallets?: { address: string; blockchain: string }[] };
+          const solana = data.wallets?.find(w => w.blockchain === "solana");
+          if (solana?.address) {
+            setLinkedSolanaWallet(solana.address);
+            return;
+          }
+        }
+      } catch {
+        // continue
+      }
+      
+      if (!cancelled) setLinkedSolanaWallet(null);
+    };
+    
+    void findWallet();
     return () => { cancelled = true; };
   }, [user?.id]);
 
@@ -114,6 +142,7 @@ export function ProfileViewClient() {
     if (!wallet) {
       setMembership(null);
       setWalletCultBalance(null);
+      setStakedCultBalance(null);
       return;
     }
     setMembershipLoading(true);
@@ -140,6 +169,10 @@ export function ProfileViewClient() {
           const walletBal = Number.parseFloat(walletData.balance ?? "0");
           setWalletCultBalance(walletBal > 0 ? walletData.balance ?? null : null);
 
+          // set staked balance
+          const stakedBal = Number.parseFloat(stakingData.stakedBalance ?? "0");
+          setStakedCultBalance(stakedBal > 0 ? stakingData.stakedBalance ?? null : null);
+
           // set membership from API-provided tier
           const tierId = stakingData.memberTier;
           if (tierId != null) {
@@ -161,9 +194,11 @@ export function ProfileViewClient() {
           }
         },
       )
-      .catch(() => {
+      .catch((e) => {
+        console.error("[profile] Error fetching balances:", e);
         setMembership(null);
         setWalletCultBalance(null);
+        setStakedCultBalance(null);
       })
       .finally(() => setMembershipLoading(false));
   }, [wallet]);
@@ -297,7 +332,15 @@ export function ProfileViewClient() {
                 {displayName}
               </p>
               <p className="text-sm text-muted-foreground">
-                CULT Balance: {walletCultBalance ? `${Number(walletCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT` : "—"}
+                {walletCultBalance ? (
+                  <>CULT Balance: {Number(walletCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
+                ) : stakedCultBalance ? (
+                  <>CULT Staked: {Number(stakedCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
+                ) : wallet ? (
+                  <>CULT Balance: —</>
+                ) : (
+                  <>No wallet linked</>
+                )}
               </p>
             </div>
             <div className="shrink-0 text-right">

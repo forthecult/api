@@ -19,6 +19,7 @@ import {
 } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
 import {
+  getProductTokenGates,
   getTokenGateConfig,
   productPassedViaCategoryGate,
 } from "~/lib/token-gate";
@@ -108,32 +109,38 @@ export async function generateMetadata({
     };
   }
 
+  const productGate = await getProductTokenGates(product.id);
   const metaDesc = stripHtmlForMeta(product.description).slice(0, 160);
   const siteUrl = getPublicSiteUrl();
-  const imageUrl =
-    product.image && product.image.startsWith("http")
+  const defaultOgPath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
+  const imageUrl = productGate.tokenGated
+    ? `${siteUrl}${defaultOgPath}`
+    : product.image && product.image.startsWith("http")
       ? product.image
       : product.image
         ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
-        : undefined;
+        : `${siteUrl}${defaultOgPath}`;
   return {
     description: metaDesc,
     openGraph: {
       description: metaDesc,
       title: `${product.name} | ${SEO_CONFIG.name}`,
       type: "website",
-      ...(imageUrl && {
-        images: [
-          { alt: product.name, height: 630, url: imageUrl, width: 1200 },
-        ],
-      }),
+      images: [
+        {
+          alt: productGate.tokenGated ? SEO_CONFIG.name : product.name,
+          height: 630,
+          url: imageUrl,
+          width: 1200,
+        },
+      ],
     },
     title: product.name,
     twitter: {
       card: "summary_large_image",
       description: metaDesc,
       title: product.name,
-      ...(imageUrl && { images: [imageUrl] }),
+      images: [imageUrl],
     },
   };
 }

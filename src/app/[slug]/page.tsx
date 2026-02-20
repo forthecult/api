@@ -45,6 +45,8 @@ import {
 } from "~/lib/sanitize-product-description";
 import { slugify } from "~/lib/slugify";
 import {
+  getCategoryTokenGates,
+  getProductTokenGates,
   getTokenGateConfig,
   productPassedViaCategoryGate,
 } from "~/lib/token-gate";
@@ -190,6 +192,7 @@ export async function generateMetadata({
   const siteUrl = getPublicSiteUrl();
   const product = await getProductForPageBySlug(slug);
   if (product) {
+    const productGate = await getProductTokenGates(product.id);
     const canonicalSlug = product.slug ?? product.id;
     const metaDesc =
       product.metaDescription?.trim()?.slice(0, 160) ??
@@ -199,12 +202,14 @@ export async function generateMetadata({
       ? pageTitle
       : `${pageTitle} | ${SEO_CONFIG.name}`;
     const canonicalUrl = `${siteUrl}/${canonicalSlug}`;
-    const imageUrl =
-      product.image && product.image.startsWith("http")
+    const defaultOgPath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
+    const imageUrl = productGate.tokenGated
+      ? `${siteUrl}${defaultOgPath}`
+      : product.image && product.image.startsWith("http")
         ? product.image
         : product.image
           ? `${siteUrl}${product.image.startsWith("/") ? "" : "/"}${product.image}`
-          : undefined;
+          : `${siteUrl}${defaultOgPath}`;
     return {
       alternates: {
         canonical: canonicalUrl,
@@ -218,23 +223,21 @@ export async function generateMetadata({
         title: ogTitle,
         type: "website",
         url: canonicalUrl,
-        ...(imageUrl && {
-          images: [
-            {
-              alt: product.mainImageAlt ?? product.name,
-              height: 630,
-              url: imageUrl,
-              width: 1200,
-            },
-          ],
-        }),
+        images: [
+          {
+            alt: productGate.tokenGated ? SEO_CONFIG.name : (product.mainImageAlt ?? product.name),
+            height: 630,
+            url: imageUrl,
+            width: 1200,
+          },
+        ],
       },
       title: pageTitle,
       twitter: {
         card: "summary_large_image",
         description: metaDesc,
         title: ogTitle,
-        ...(imageUrl && { images: [imageUrl] }),
+        images: [imageUrl],
       },
     };
   }
@@ -245,21 +248,17 @@ export async function generateMetadata({
     category?.metaDescription?.slice(0, 160) ??
     `Browse ${categoryName} at ${SEO_CONFIG.name}.`;
 
-  // Resolve OG image: category image → best-selling product → newest product → site default
   const defaultOgImagePath = "/lookbook/culture-brand-lifestyle-premium-apparel.jpg";
-  let categoryImageUrl: string | undefined;
-  if (category?.imageUrl) {
-    categoryImageUrl = category.imageUrl;
-  } else if (category) {
-    const fallback = await getCategoryProductImage(category.id);
-    if (fallback) categoryImageUrl = fallback;
-  }
-  if (!categoryImageUrl) {
-    categoryImageUrl = defaultOgImagePath;
-  }
-  // Ensure absolute URL for OG tags
-  if (categoryImageUrl && !categoryImageUrl.startsWith("http")) {
-    categoryImageUrl = `${siteUrl}${categoryImageUrl.startsWith("/") ? "" : "/"}${categoryImageUrl}`;
+  const categoryGate = category ? await getCategoryTokenGates(category.id) : { tokenGated: false };
+  let categoryImageUrl: string;
+  if (categoryGate.tokenGated) {
+    categoryImageUrl = `${siteUrl}${defaultOgImagePath}`;
+  } else {
+    let url: string | undefined;
+    if (category?.imageUrl) url = category.imageUrl;
+    else if (category) url = (await getCategoryProductImage(category.id)) ?? undefined;
+    if (!url) url = defaultOgImagePath;
+    categoryImageUrl = url.startsWith("http") ? url : `${siteUrl}${url.startsWith("/") ? "" : "/"}${url}`;
   }
 
   return {
@@ -275,23 +274,21 @@ export async function generateMetadata({
       title,
       type: "website",
       url: `${siteUrl}/${slug}`,
-      ...(categoryImageUrl && {
-        images: [
-          {
-            alt: categoryName,
-            height: 630,
-            url: categoryImageUrl,
-            width: 1200,
-          },
-        ],
-      }),
+      images: [
+        {
+          alt: categoryGate.tokenGated ? SEO_CONFIG.name : categoryName,
+          height: 630,
+          url: categoryImageUrl,
+          width: 1200,
+        },
+      ],
     },
     title,
     twitter: {
       card: "summary_large_image",
       description,
       title,
-      ...(categoryImageUrl && { images: [categoryImageUrl] }),
+      images: [categoryImageUrl],
     },
   };
 }

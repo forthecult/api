@@ -141,14 +141,16 @@ export async function GET(
     let bestTier: null | number = null;
     let earliestStakedAt: null | number = null;
 
-    for (const { address } of wallets) {
-      const tier = programId
-        ? await getMemberTierForWallet(address)
-        : null;
-      if (tier !== null && (bestTier === null || tier < bestTier)) {
-        bestTier = tier;
-      }
+    // fallback tier thresholds (same as in get-member-tier.ts)
+    // Tier 1 (best): highest requirement, Tier 3 (entry): lowest requirement
+    const FALLBACK_THRESHOLDS: Record<number, number> = {
+      1: 4_000_000,  // tier 1
+      2: 2_000_000,  // tier 2
+      3: 1_000_000,  // tier 3
+    };
 
+    for (const { address } of wallets) {
+      // fetch stake data first
       const stake = programId
         ? await fetchUserStake(connection, programId, address)
         : null;
@@ -158,6 +160,22 @@ export async function GET(
         : 0;
       const lockStatus = stake ? getLockStatus(stake) : null;
 
+      // get tier from getMemberTierForWallet (includes market-based pricing)
+      let tier = programId
+        ? await getMemberTierForWallet(address)
+        : null;
+
+      // fallback: if we have stake but no tier, calculate from hardcoded thresholds
+      if (tier === null && human > 0) {
+        if (human >= FALLBACK_THRESHOLDS[1]) tier = 1;
+        else if (human >= FALLBACK_THRESHOLDS[2]) tier = 2;
+        else if (human >= FALLBACK_THRESHOLDS[3]) tier = 3;
+      }
+
+      if (tier !== null && (bestTier === null || tier < bestTier)) {
+        bestTier = tier;
+      }
+
       if (stake?.lockStart && (earliestStakedAt === null || stake.lockStart < earliestStakedAt)) {
         earliestStakedAt = stake.lockStart;
       }
@@ -166,7 +184,7 @@ export async function GET(
         address,
         stakedBalance: human.toFixed(token.decimals),
         stakedBalanceRaw: stake?.amount?.toString() ?? "0",
-        tier: tier ?? null,
+        tier,
         lock:
           stake && lockStatus
             ? {

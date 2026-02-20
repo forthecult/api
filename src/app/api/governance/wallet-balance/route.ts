@@ -26,19 +26,33 @@ export async function GET(request: Request) {
     const walletPubkey = new PublicKey(wallet);
     const mintPubkey = new PublicKey(token.mint);
 
+    const tokenProgramId = token.tokenProgram === "token-2022"
+      ? new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")
+      : new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+
     // get associated token account for the wallet
     const { getAssociatedTokenAddressSync } = await import("@solana/spl-token");
     const ata = getAssociatedTokenAddressSync(
       mintPubkey,
       walletPubkey,
       false,
-      token.tokenProgram === "token-2022"
-        ? new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")
-        : new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      tokenProgramId,
     );
 
-    const accountInfo = await connection.getAccountInfo(ata);
-    if (!accountInfo) {
+    // use getTokenAccountBalance for reliable parsing (works with both Token and Token-2022)
+    try {
+      const balanceInfo = await connection.getTokenAccountBalance(ata);
+      const balance = balanceInfo.value.uiAmountString ?? "0";
+      const balanceRaw = balanceInfo.value.amount;
+
+      return NextResponse.json({
+        balance,
+        balanceRaw,
+        decimals: token.decimals,
+        tokenSymbol: token.symbol,
+      });
+    } catch {
+      // account doesn't exist or has no balance
       return NextResponse.json({
         balance: "0",
         balanceRaw: "0",
@@ -46,19 +60,6 @@ export async function GET(request: Request) {
         tokenSymbol: token.symbol,
       });
     }
-
-    // parse token account data (first 8 bytes = mint, next 32 = owner, next 8 = amount)
-    const data = accountInfo.data;
-    const amountOffset = 64; // 32 (mint) + 32 (owner)
-    const amountRaw = data.readBigUInt64LE(amountOffset);
-    const balance = Number(amountRaw) / 10 ** token.decimals;
-
-    return NextResponse.json({
-      balance: balance.toFixed(token.decimals),
-      balanceRaw: amountRaw.toString(),
-      decimals: token.decimals,
-      tokenSymbol: token.symbol,
-    });
   } catch (e) {
     console.error("[governance] wallet-balance error:", e);
     return NextResponse.json({

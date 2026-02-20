@@ -67,6 +67,12 @@ export function formatTokens(n: number): string {
   return "0";
 }
 
+/** Full token amount with thousand separators: 1,234,567 */
+export function formatTokensPrecise(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return "0";
+  return Math.round(n).toLocaleString("en-US");
+}
+
 /** USD with sensible precision: $1.23, $0.01, $0.000001 */
 export function formatUsd(n: number): string {
   if (n >= 1) return `$${n.toFixed(2)}`;

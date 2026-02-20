@@ -935,12 +935,12 @@ export default async function HomePage() {
                   sm:flex-row
                 `}
                 >
-                  <Link href="/signup">
+                  <Link href="/membership">
                     <Button
                       className="h-12 px-8 text-sm tracking-wider uppercase"
                       size="lg"
                     >
-                      Sign up now
+                      Become a Member
                     </Button>
                   </Link>
                   <Link href="/products">
