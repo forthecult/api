@@ -43,10 +43,12 @@ export async function GET() {
       // What can you do?
       capabilities: [
         "Search products using natural language (semantic search)",
+        "AI-powered shopping assistant via POST /api/agent/shop",
         "Browse categories with smart filtering",
         "View product details including variants (size, color)",
         "Estimate cart totals before checkout",
         "Create orders with card or crypto payment",
+        "x402 autonomous checkout (USDC on Solana) — fully agent-driven, no wallet popups",
         "Track order status in real-time",
         "Get shipping estimates by country",
         "Agent identity: include X-Moltbook-Identity header to link orders to your agent. See /api/agent/me for details.",
@@ -183,6 +185,14 @@ export async function GET() {
         categories: "/api/categories",
         chains: "/api/chains",
         checkout: "POST /api/checkout",
+        checkoutX402: {
+          endpoint: "POST /api/checkout/x402",
+          description: "x402 autonomous checkout — returns 402 with payment requirements, retry with X-PAYMENT header",
+        },
+        shop: {
+          endpoint: "POST /api/agent/shop",
+          description: "Natural language shopping assistant — message in, AI reply + products out",
+        },
         forAgentsPage: `${agentBase}/for-agents`,
         health: "/api/health",
         me: "/api/agent/me",
@@ -225,12 +235,15 @@ export async function GET() {
         steps: [
           {
             action: "Find products",
-            endpoint: "POST /api/products/semantic-search",
-            example: { query: "lightweight running shoes under $80" },
+            endpoint: "POST /api/agent/shop",
+            example: {
+              message: "lightweight running shoes under $80",
+              context: { priceRange: { max: 80 } },
+            },
             step: 1,
           },
           {
-            action: "Create order",
+            action: "Create order (standard)",
             endpoint: "POST /api/checkout",
             example: {
               email: "hal@finney.com",
@@ -254,6 +267,34 @@ export async function GET() {
             step: 3,
           },
         ],
+        x402Flow: {
+          description: "Autonomous checkout via x402 protocol (USDC on Solana)",
+          steps: [
+            {
+              action: "Create order (returns 402)",
+              endpoint: "POST /api/checkout/x402",
+              example: {
+                email: "agent@example.com",
+                items: [{ productId: "prod_xxx", quantity: 1 }],
+                shipping: { name: "John Doe", address1: "123 Main St", city: "NYC", stateCode: "NY", zip: "10001", countryCode: "US" },
+              },
+              response: "402 with PAYMENT-REQUIRED header containing payment details",
+              step: 1,
+            },
+            {
+              action: "Sign USDC transfer",
+              note: "Build VersionedTransaction with USDC transfer + memo 'FTC Order: {orderId}'",
+              step: 2,
+            },
+            {
+              action: "Retry with payment",
+              endpoint: "POST /api/checkout/x402",
+              header: "X-PAYMENT: base64({ transaction: '<signed-tx-base64>' })",
+              response: "201 with order confirmation",
+              step: 3,
+            },
+          ],
+        },
       },
 
       // Support

@@ -4,6 +4,8 @@ import { headers } from "next/headers";
 import Link from "next/link";
 
 import { SEO_CONFIG } from "~/app";
+import { ShopApiShowcase } from "~/components/agent/shop-api-showcase";
+import { UseCaseGallery } from "~/components/agent/use-case-gallery";
 import { getAgentApiLinks, getAgentApiSummary } from "~/lib/agent-api-summary";
 import {
   getAgentBaseUrl,
@@ -314,136 +316,144 @@ function ForAgentsPageHumanView({ apiBaseUrl }: { apiBaseUrl: string }) {
   const apiLinks = getAgentApiLinks(apiBaseUrl);
   const agentBase = getAgentBaseUrl();
   return (
-    <div
-      className={`
-      container mx-auto max-w-3xl px-4 py-12
-      sm:py-16
-    `}
-    >
-      <header className="mb-10 border-b border-border pb-8">
-        <h1
-          className={`
-          font-heading text-3xl font-bold tracking-tight
-          sm:text-4xl
-        `}
-        >
-          For AI agents
-        </h1>
-        <p className="mt-3 text-muted-foreground">
-          This store is API-first. Bots can browse products, sign in with{" "}
-          <a
+    <div className="min-h-screen">
+      <div
+        className={`
+        container mx-auto max-w-3xl px-4 py-12
+        sm:py-16
+      `}
+      >
+        <header className="mb-10 border-b border-border pb-8">
+          <h1
             className={`
-              underline
-              hover:no-underline
-            `}
-            href="https://moltbook.com/developers.md"
-            rel="noopener noreferrer"
-            target="_blank"
+            font-heading text-3xl font-bold tracking-tight
+            sm:text-4xl
+          `}
           >
-            Moltbook
-          </a>
-          , and complete checkout with crypto. No human account required for
-          shopping; use Moltbook to attach your agent identity when needed.
-        </p>
-        {agentBase && apiBaseUrl !== agentBase && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            You can use either this site&apos;s API (
-            <strong className="text-foreground">{apiBaseUrl}/api</strong>) or
-            the agent subdomain (
-            <strong className="text-foreground">{agentBase}/api</strong>); same
-            endpoints.
+            For AI Agents
+          </h1>
+          <p className="mt-3 text-lg text-muted-foreground">
+            The definitive agentic commerce API. Multi-chain payments, autonomous
+            checkout via x402, and a curated catalog — all without an API key.
           </p>
-        )}
-      </header>
+          {agentBase && apiBaseUrl !== agentBase && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              You can use either this site&apos;s API (
+              <strong className="text-foreground">{apiBaseUrl}/api</strong>) or
+              the agent subdomain (
+              <strong className="text-foreground">{agentBase}/api</strong>); same
+              endpoints.
+            </p>
+          )}
+        </header>
 
-      <section className="space-y-4">
-        <h2 className="font-heading text-xl font-semibold">Quick start</h2>
-        <ol className="list-inside list-decimal space-y-2 text-muted-foreground">
-          <li>
-            Call{" "}
-            <strong className="text-foreground">
-              GET /api/agent/capabilities
-            </strong>{" "}
-            to see endpoints, payment options, and limits.
-          </li>
-          <li>
-            Optionally sign in: get an identity token from Moltbook and send it
-            as header{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-sm">
-              X-Moltbook-Identity
-            </code>{" "}
-            on requests to{" "}
-            <strong className="text-foreground">/api/agent/me</strong>,{" "}
-            <strong className="text-foreground">/api/agent/me/orders</strong>,
-            and{" "}
-            <strong className="text-foreground">
-              /api/agent/me/preferences
-            </strong>
-            . Include the same header when creating orders to link them to your
-            agent.
-          </li>
-          <li>
-            Search products with{" "}
-            <strong className="text-foreground">GET /api/agent/products</strong>{" "}
-            or{" "}
-            <strong className="text-foreground">
-              POST /api/products/semantic-search
-            </strong>
-            , then create orders with{" "}
-            <strong className="text-foreground">POST /api/checkout</strong>.
-          </li>
-        </ol>
-      </section>
+        <section className="space-y-4">
+          <h2 className="font-heading text-xl font-semibold">Quick Start</h2>
+          <ol className="list-inside list-decimal space-y-2 text-muted-foreground">
+            <li>
+              Call{" "}
+              <strong className="text-foreground">
+                GET /api/agent/capabilities
+              </strong>{" "}
+              to see endpoints, payment options, and limits.
+            </li>
+            <li>
+              Use{" "}
+              <strong className="text-foreground">
+                POST /api/agent/shop
+              </strong>{" "}
+              with natural language — get AI-curated product recommendations.
+            </li>
+            <li>
+              Create orders with{" "}
+              <strong className="text-foreground">POST /api/checkout</strong>.
+              For autonomous payments, use x402 protocol with USDC on Solana or
+              Base.
+            </li>
+            <li>
+              Optionally: include{" "}
+              <code className="rounded bg-muted px-1.5 py-0.5 text-sm">
+                X-Moltbook-Identity
+              </code>{" "}
+              header to link orders to your agent profile via{" "}
+              <a
+                className="text-foreground underline hover:no-underline"
+                href="https://moltbook.com/developers.md"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                Moltbook
+              </a>
+              .
+            </li>
+          </ol>
+        </section>
 
-      <section className="mt-12">
-        <h2 className="font-heading mb-4 text-xl font-semibold">
-          Key endpoints
-        </h2>
-        <div className="space-y-3">
-          {apiLinks.map((link) => (
-            <Card key={link.href}>
-              <CardHeader className="pb-2">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  {link.title}
-                  {link.method && (
-                    <span
-                      className={`
-                      rounded bg-muted px-1.5 py-0.5 font-mono text-xs
-                      font-normal
+        <section className="mt-12">
+          <h2 className="font-heading mb-4 text-xl font-semibold">
+            Key Endpoints
+          </h2>
+          <div className="space-y-3">
+            {apiLinks.map((link) => (
+              <Card key={link.href}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    {link.title}
+                    {link.method && (
+                      <span
+                        className={`
+                        rounded bg-muted px-1.5 py-0.5 font-mono text-xs
+                        font-normal
+                      `}
+                      >
+                        {link.method}
+                      </span>
+                    )}
+                  </CardTitle>
+                  <CardDescription>{link.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <a
+                    className={`
+                      font-mono text-sm break-all text-primary underline
+                      hover:no-underline
                     `}
-                    >
-                      {link.method}
-                    </span>
-                  )}
-                </CardTitle>
-                <CardDescription>{link.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <a
-                  className={`
-                    font-mono text-sm break-all text-primary underline
-                    hover:no-underline
-                  `}
-                  href={link.href}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  {link.href}
-                </a>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+                    href={link.href}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    {link.href}
+                  </a>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      </div>
 
-      <footer className="mt-12 flex flex-wrap gap-4 border-t border-border pt-8">
-        <Button asChild variant="outline">
-          <Link href="/api/docs">API docs (Swagger)</Link>
-        </Button>
-        <Button asChild variant="ghost">
-          <Link href="/">Back to store</Link>
-        </Button>
-      </footer>
+      <ShopApiShowcase apiBaseUrl={apiBaseUrl} />
+
+      <UseCaseGallery />
+
+      <div className="container mx-auto max-w-3xl px-4 pb-16">
+        <footer className="flex flex-wrap gap-4 border-t border-border pt-8">
+          <Button asChild variant="outline">
+            <Link href="/api/docs">API Docs (Swagger)</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <a
+              href="https://github.com/forthecult/agentic-commerce-skill"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              Agent Skill (GitHub)
+            </a>
+          </Button>
+          <Button asChild variant="ghost">
+            <Link href="/">Back to Store</Link>
+          </Button>
+        </footer>
+      </div>
     </div>
   );
 }

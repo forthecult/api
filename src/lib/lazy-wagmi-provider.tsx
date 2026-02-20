@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type { ComponentType, ReactNode } from "react";
 
 import {
@@ -21,30 +21,47 @@ function useWagmiReady() {
 
 export { useWagmiReady };
 
-/** passthrough component that just renders children — used before Wagmi loads */
-function NoopProvider({ children }: { children: ReactNode }) {
+/**
+ * Stable shell component that wraps children. Uses a ref to track the loaded
+ * provider and renders children through it. The shell component itself never
+ * changes, preventing React from remounting children when the provider loads.
+ */
+const ProviderShell = React.memo(function ProviderShell({
+  children,
+  providerRef,
+  version,
+}: {
+  children: ReactNode;
+  providerRef: React.RefObject<ProviderComponent | null>;
+  version: number;
+}) {
+  const Provider = providerRef.current;
+  if (Provider) {
+    return <Provider>{children}</Provider>;
+  }
   return <>{children}</>;
-}
+});
 
 /**
  * Wraps children with WagmiProvider only after the auth/wallet modal is
  * opened or preloaded (e.g. hover on "Connect wallet"). Keeps Wagmi + viem
  * out of the initial bundle for faster first load.
  *
- * always renders a provider wrapper (noop or real) so the component tree
- * structure is stable and children don't re-mount when Wagmi loads.
+ * Uses a stable shell component so children don't re-mount when Wagmi loads.
  */
 export function LazyWagmiProvider({ children }: { children: ReactNode }) {
-  const [Provider, setProvider] = useState<ProviderComponent>(() => NoopProvider);
+  const providerRef = useRef<ProviderComponent | null>(null);
   const [isReady, setIsReady] = useState(false);
-  const loadingRef = React.useRef(false);
+  const [version, setVersion] = useState(0);
+  const loadingRef = useRef(false);
 
   const loadWagmi = useCallback(() => {
     if (isReady || loadingRef.current) return;
     loadingRef.current = true;
     import("~/lib/wagmi-provider").then((m) => {
-      setProvider(() => m.WagmiProvider);
+      providerRef.current = m.WagmiProvider;
       setIsReady(true);
+      setVersion((v) => v + 1);
     });
   }, [isReady]);
 
@@ -64,7 +81,9 @@ export function LazyWagmiProvider({ children }: { children: ReactNode }) {
 
   return (
     <WagmiReadyContext.Provider value={isReady}>
-      <Provider>{children}</Provider>
+      <ProviderShell providerRef={providerRef} version={version}>
+        {children}
+      </ProviderShell>
     </WagmiReadyContext.Provider>
   );
 }

@@ -12,3 +12,5 @@ export const OPEN_LINK_WALLET_MODAL = "open-link-wallet-modal";
 export const WALLET_LINKED_EVENT = "wallet-linked";
 /** Start preloading the wallet modal chunk (e.g. on hover over trigger). */
 export const PRELOAD_AUTH_WALLET_MODAL = "preload-auth-wallet-modal";
+/** Start preloading the Solana wallet provider (triggers LazySolanaWalletProvider to load). */
+export const PRELOAD_SOLANA_WALLET = "preload-solana-wallet";

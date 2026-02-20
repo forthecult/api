@@ -77,10 +77,24 @@ function buildApiLinks(base: string): AgentApiEndpoint[] {
     },
     {
       description:
+        "Natural language shopping. Send a message, get AI reply + structured products.",
+      href: `${base}/api/agent/shop`,
+      method: "POST",
+      title: "Shop (AI assistant)",
+    },
+    {
+      description:
         "Minimal product list for bots. Optional ?q=... and ?limit=...",
       href: `${base}/api/agent/products`,
       method: "GET",
       title: "Products (agent-optimized)",
+    },
+    {
+      description:
+        "Create an order with card or crypto. Supports x402 autonomous payment.",
+      href: `${base}/api/checkout`,
+      method: "POST",
+      title: "Checkout",
     },
     {
       description:
@@ -105,7 +119,7 @@ function buildApiLinks(base: string): AgentApiEndpoint[] {
     },
     {
       description:
-        "Moltbook-hosted instructions for bots: how to get and send an identity token.",
+      "Moltbook-hosted instructions for bots: how to get and send an identity token.",
       href: `https://moltbook.com/auth.md?app=ForTheCult&endpoint=${encodeURIComponent(`${base}/api/agent/me`)}`,
       method: null,
       title: "Auth instructions",

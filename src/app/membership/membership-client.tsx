@@ -21,11 +21,16 @@ import {
   Zap,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { useStakeTransaction } from "~/hooks/use-stake-transaction";
 import { cn } from "~/lib/cn";
+import {
+  PRELOAD_AUTH_WALLET_MODAL,
+  PRELOAD_SOLANA_WALLET,
+} from "~/ui/components/auth/auth-wallet-modal-events";
 import { LOCK_12_MONTHS, LOCK_30_DAYS } from "~/lib/cult-staking";
 import { formatEsimPackageName } from "~/lib/esim-format";
 import { formatMarketCap, formatTokens, formatUsd } from "~/lib/format";
@@ -93,7 +98,13 @@ const STAKING_AVAILABLE_NEXT_HOUR = false;
 const HIDE_TOKEN_PRICE_AND_MC = false;
 
 export function MembershipClient() {
-  const [selectedTier, setSelectedTier] = useState<number>(1);
+  const searchParams = useSearchParams();
+  const initialTier = (() => {
+    const tierParam = searchParams.get("tier");
+    if (tierParam === "2" || tierParam === "3") return parseInt(tierParam, 10);
+    return 1;
+  })();
+  const [selectedTier, setSelectedTier] = useState<number>(initialTier);
   const [stakeDuration, setStakeDuration] = useState<"12m" | "30d">("30d");
 
   // eSIM claim state
@@ -146,6 +157,23 @@ export function MembershipClient() {
 
   const { openConnectModal, restake, restakePending, stake, stakePending, unstake, unstakePending, wallet } =
     useStakeTransaction();
+
+  // preload wallet providers on mount so they're ready when user clicks stake
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent(PRELOAD_AUTH_WALLET_MODAL));
+    window.dispatchEvent(new CustomEvent(PRELOAD_SOLANA_WALLET));
+  }, []);
+
+  // persist selected tier to URL so it survives component remounts
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (selectedTier === 1) {
+      url.searchParams.delete("tier");
+    } else {
+      url.searchParams.set("tier", String(selectedTier));
+    }
+    window.history.replaceState({}, "", url.toString());
+  }, [selectedTier]);
 
   const refreshStakedBalance = useCallback(() => {
     if (!wallet) return;
