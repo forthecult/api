@@ -1,6 +1,8 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import {
   ArrowRight,
   ChevronRight,
@@ -14,6 +16,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  CULT_MINT_MAINNET,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "~/lib/token-config";
 import { listUserAccounts, useCurrentUserOrRedirect } from "~/lib/auth-client";
 import { Badge } from "~/ui/primitives/badge";
 import { Card, CardContent } from "~/ui/primitives/card";
@@ -76,11 +82,12 @@ interface MembershipInfo {
 export function ProfileViewClient() {
   const { isPending, user } = useCurrentUserOrRedirect();
   const { publicKey } = useWallet();
+  const { connection } = useConnection();
   const connectedWallet = publicKey?.toBase58() ?? null;
-  
+
   // linked Solana wallet from user's account (for when wallet adapter isn't connected)
   const [linkedSolanaWallet, setLinkedSolanaWallet] = useState<string | null>(null);
-  
+
   // effective wallet: prefer connected wallet, fall back to linked wallet
   const wallet = connectedWallet ?? linkedSolanaWallet;
   
@@ -157,6 +164,51 @@ export function ProfileViewClient() {
     }
     setWalletBalanceLoading(true);
     setWalletBalanceError(false);
+
+    // always use same RPC as the app (matches Phantom when connected); works for both connected and linked wallet
+    if (connection) {
+      let cancelled = false;
+      const mint = new PublicKey(CULT_MINT_MAINNET);
+      const owner = new PublicKey(wallet);
+      const programs = [
+        new PublicKey(TOKEN_2022_PROGRAM_ID_BASE58),
+        new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      ];
+      const tryNext = (i: number) => {
+        if (cancelled || i >= programs.length) {
+          if (!cancelled) {
+            setWalletBalanceError(true);
+            setWalletBalanceLoading(false);
+          }
+          return;
+        }
+        const ata = getAssociatedTokenAddressSync(
+          mint,
+          owner,
+          false,
+          programs[i]!,
+        );
+        connection
+          .getTokenAccountBalance(ata)
+          .then((info) => {
+            if (cancelled) return;
+            const v = info.value;
+            const balance =
+              v.uiAmountString != null && v.uiAmountString !== ""
+                ? v.uiAmountString
+                : v.amount === "0"
+                  ? "0"
+                  : (Number(v.amount) / 10 ** v.decimals).toFixed(v.decimals);
+            setWalletCultBalance(balance);
+            setWalletBalanceError(false);
+            setWalletBalanceLoading(false);
+          })
+          .catch(() => tryNext(i + 1));
+      };
+      tryNext(0);
+      return;
+    }
+
     fetch(
       `/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`,
     )
@@ -177,7 +229,7 @@ export function ProfileViewClient() {
       })
       .catch(() => setWalletBalanceError(true))
       .finally(() => setWalletBalanceLoading(false));
-  }, [wallet]);
+  }, [wallet, connection]);
 
   useEffect(() => {
     fetchWalletBalance();
@@ -388,11 +440,6 @@ export function ProfileViewClient() {
                         </button>
                       )}
                     </p>
-                    {!connectedWallet && (
-                      <p className="text-xs text-muted-foreground/90">
-                        Balance shown is for your linked account. Connect a wallet (e.g. from Membership) to see that wallet's CULT here.
-                      </p>
-                    )}
                     {stakedCultBalance != null && (
                       <p>
                         Staked: {formatCultBalance(stakedCultBalance)} CULT
