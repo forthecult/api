@@ -1,27 +1,21 @@
 /**
  * Fix Crustafarian Printify products. Only uses these 5 designs:
- *   - crustafarian (transparent logo) → black product background + logo
- *   - crustafarian_shrimp-of-revelation, crustafarian_shell-is-immutable,
- *     crustafarian_creation-of-the-claw, crustafarian_creation → black bg + full-bleed
- * 1. Resolve design by product type; upload or use pre-uploaded Printify image IDs.
- * 2. Update design with black background (scaled to fill), then sync Printify -> store; PATCH.
+ *   - crustafarian (transparent logo) → use transparent image only; set product "Background color" to Black in Printify.
+ *   - crustafarian_shrimp-of-revelation, etc. → full-bleed (coverCanvas).
+ * 1. Use CRUSTAFARIAN_TRANSPARENT_IMAGE_ID (transparent design already in Printify) or upload from local.
+ * 2. Update design with that image only (no extra background layer). Sync Printify -> store; PATCH.
+ * Set each product's "Background color" to Black in Printify editor so the product surface is black.
  *
- * Env (optional): CRUSTAFARIAN_TRANSPARENT_IMAGE_ID = Printify image ID of your uploaded
- * transparent crustafarian image. CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID = Printify image ID
- * of a solid black image. When set we use these instead of uploading (ensures your transparent
- * image and black background are applied).
+ * Env: CRUSTAFARIAN_TRANSPARENT_IMAGE_ID = Printify image ID of your uploaded transparent crustafarian image.
  *
  * Run: cd webapp && NEXT_PUBLIC_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> \
- *   CRUSTAFARIAN_TRANSPARENT_IMAGE_ID=<id> CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID=<id> \
- *   bun run scripts/fix-crustafarian-printify-products.ts
+ *   CRUSTAFARIAN_TRANSPARENT_IMAGE_ID=<id> bun run scripts/fix-crustafarian-printify-products.ts
  */
 
 import "dotenv/config";
 import { config as dotenvConfig } from "dotenv";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-
-import sharp from "sharp";
 
 const envLocal = resolve(process.cwd(), ".env.local");
 if (existsSync(envLocal)) {
@@ -40,11 +34,9 @@ if (!API_KEY) {
   process.exit(1);
 }
 
-/** Use your already-uploaded Printify image IDs so we don't re-upload. Set these and run the script to apply transparent + black bg. */
+/** Use your already-uploaded Printify transparent image so we don't re-upload. Set and run the script to apply that design. */
 const CRUSTAFARIAN_TRANSPARENT_IMAGE_ID =
   process.env.CRUSTAFARIAN_TRANSPARENT_IMAGE_ID?.trim() || null;
-const CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID =
-  process.env.CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID?.trim() || null;
 
 const headers: Record<string, string> = {
   "Content-Type": "application/json",
@@ -252,57 +244,22 @@ async function uploadImage(
   return data.imageId;
 }
 
-/** Upload a solid black image to use as product background layer (no makeTransparent). */
-async function uploadBlackBackground(): Promise<string> {
-  const buffer = await sharp({
-    create: {
-      width: 1200,
-      height: 1200,
-      channels: 3,
-      background: "#000000",
-    },
-  })
-    .png()
-    .toBuffer();
-  const formData = new FormData();
-  formData.append(
-    "file",
-    new File([buffer], "black.png", { type: "image/png" }),
-  );
-  const res = await fetch(
-    `${API_BASE}/api/admin/pod/upload?provider=printify`,
-    {
-      method: "POST",
-      headers: { Authorization: `Bearer ${API_KEY}` },
-      body: formData,
-    },
-  );
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Black background upload failed: ${res.status} ${text}`);
-  }
-  const data = (await res.json()) as { imageId?: string };
-  if (!data.imageId) throw new Error("Upload response missing imageId");
-  return data.imageId;
-}
-
 async function updatePrintifyDesign(
   printifyProductId: string,
   imageId: string,
-  backgroundImageId: string | null,
   coverCanvas: boolean,
+  enableBlackBackgroundOnly: boolean,
 ): Promise<void> {
-  const body: { imageId: string; backgroundImageId?: string; coverCanvas?: boolean } = {
-    imageId,
-    coverCanvas,
-  };
-  if (backgroundImageId) body.backgroundImageId = backgroundImageId;
   const res = await fetch(
     `${API_BASE}/api/admin/printify/products/${printifyProductId}/update-design`,
     {
       method: "POST",
       headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify({
+        imageId,
+        coverCanvas,
+        enableBlackBackgroundOnly,
+      }),
     },
   );
   if (!res.ok) {
@@ -355,8 +312,6 @@ async function main() {
   console.log("API base:", API_BASE);
   if (CRUSTAFARIAN_TRANSPARENT_IMAGE_ID)
     console.log("Using pre-uploaded transparent image ID:", CRUSTAFARIAN_TRANSPARENT_IMAGE_ID);
-  if (CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID)
-    console.log("Using pre-uploaded black background image ID:", CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID);
 
   if (!CRUSTAFARIAN_TRANSPARENT_IMAGE_ID && !existsSync(CRUSTAFARIAN_MAIN_IMAGE)) {
     console.error(
@@ -372,16 +327,6 @@ async function main() {
       "No Crustafarian Printify products found (name contains 'Crustafarian', source=printify).",
     );
     process.exit(1);
-  }
-
-  let blackImageId: string;
-  if (CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID) {
-    blackImageId = CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID;
-    console.log("Using env black background imageId:", blackImageId);
-  } else {
-    console.log("Uploading solid black background image...");
-    blackImageId = await uploadBlackBackground();
-    console.log("Black background imageId:", blackImageId);
   }
 
   let updated = 0;
@@ -411,7 +356,12 @@ async function main() {
         useTransparent && CRUSTAFARIAN_TRANSPARENT_IMAGE_ID
           ? CRUSTAFARIAN_TRANSPARENT_IMAGE_ID
           : await uploadImage(designPath, useTransparent);
-      await updatePrintifyDesign(p.printifyProductId, imageId, blackImageId, coverCanvas);
+      await updatePrintifyDesign(
+        p.printifyProductId,
+        imageId,
+        coverCanvas,
+        true,
+      );
       await syncPrintifyToStore(p.printifyProductId);
 
       const description = buildProductDescription(productLabel);
