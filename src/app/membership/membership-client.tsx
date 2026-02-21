@@ -323,7 +323,7 @@ export function MembershipClient() {
     return () => { cancelled = true; };
   }, [wallet, connection, publicKey]);
 
-  // estimate CULT output when SOL amount changes (SOL → CULT); try API and client in parallel so we show a result either way
+  // estimate CULT output when SOL amount changes (SOL → CULT); try pool API + client, then price-based fallback
   useEffect(() => {
     if (swapDirection !== "solToCult") {
       setEstimatedCult(null);
@@ -363,11 +363,25 @@ export function MembershipClient() {
             .catch(() => null)
         : Promise.resolve(null);
 
+    const priceFallbackPromise = fetch("/api/crypto/prices")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { CULT?: number; SOL?: number } | null) => {
+        if (!data?.SOL || !data?.CULT || data.CULT <= 0) return null;
+        const cultAmount = (solAmountNum * data.SOL) / data.CULT;
+        return cultAmount.toFixed(6);
+      })
+      .catch(() => null);
+
     void Promise.all([apiPromise, clientPromise]).then(([apiVal, clientVal]) => {
       if (cancelled) return;
       const val = apiVal ?? clientVal ?? null;
-      setEstimatedCult(val);
-      setEstimateLoading(false);
+      if (val != null) {
+        setResult(val);
+        return;
+      }
+      void priceFallbackPromise.then((priceVal) => {
+        if (!cancelled) setResult(priceVal ?? null);
+      });
     });
 
     return () => {
