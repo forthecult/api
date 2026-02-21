@@ -320,13 +320,17 @@ export async function exportProductToPrintify(
         .filter((v) => v.printifyVariantId)
         .map((v) => [String(v.printifyVariantId), v]),
     );
+    // Ensure we never send a price below cost (avoids negative margin in Printify).
+    // Use cost + 1 cent as floor so margin stays positive after any rounding.
     const variantUpdates = printifyProduct.variants.map((pv) => {
+      const costCents = Number(pv.cost) || 0;
+      const minPriceCents = costCents > 0 ? costCents + 1 : 0;
+
       const local = localByPrintifyId.get(String(pv.id));
       if (local) {
-        const costCents = pv.cost ?? 0;
         const priceToSend =
-          costCents > 0 && local.priceCents < costCents
-            ? Math.max(pv.price, costCents)
+          minPriceCents > 0 && local.priceCents < minPriceCents
+            ? minPriceCents
             : local.priceCents;
         return {
           id: pv.id,
@@ -334,9 +338,11 @@ export async function exportProductToPrintify(
           price: priceToSend,
         };
       }
-      const costCents = pv.cost ?? 0;
+      const currentPrice = Number(pv.price) || 0;
       const priceForDisabled =
-        costCents > 0 && pv.price < costCents ? costCents : pv.price;
+        minPriceCents > 0 && currentPrice < minPriceCents
+          ? minPriceCents
+          : currentPrice;
       return {
         id: pv.id,
         is_enabled: false,

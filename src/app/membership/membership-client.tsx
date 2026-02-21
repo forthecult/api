@@ -323,7 +323,7 @@ export function MembershipClient() {
     return () => { cancelled = true; };
   }, [wallet, connection, publicKey]);
 
-  // estimate CULT output when SOL amount changes (SOL → CULT); use API fallback when connection missing or client fails
+  // estimate CULT output when SOL amount changes (SOL → CULT); try API and client in parallel so we show a result either way
   useEffect(() => {
     if (swapDirection !== "solToCult") {
       setEstimatedCult(null);
@@ -349,27 +349,30 @@ export function MembershipClient() {
       }
     };
 
-    const tryClient = connection
-      ? estimateCultFromSol(connection, solLamports)
-          .then((est) => est?.cultAmount ?? null)
-          .catch(() => null)
-      : Promise.resolve(null);
+    const apiPromise = fetch(
+      `/api/swap/sol-cult/estimate?solAmount=${encodeURIComponent(solAmountNum)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { cultAmount?: string } | null) => data?.cultAmount ?? null)
+      .catch(() => null);
 
-    tryClient.then((clientEst) => {
+    const clientPromise =
+      connection != null
+        ? estimateCultFromSol(connection, solLamports)
+            .then((est) => est?.cultAmount ?? null)
+            .catch(() => null)
+        : Promise.resolve(null);
+
+    void Promise.all([apiPromise, clientPromise]).then(([apiVal, clientVal]) => {
       if (cancelled) return;
-      if (clientEst != null) {
-        setResult(clientEst);
-        return;
-      }
-      fetch(
-        `/api/swap/sol-cult/estimate?solAmount=${encodeURIComponent(solAmountNum)}`,
-      )
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: { cultAmount?: string } | null) => setResult(data?.cultAmount ?? null))
-        .catch(() => setResult(null));
+      const val = apiVal ?? clientVal ?? null;
+      setEstimatedCult(val);
+      setEstimateLoading(false);
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [solAmount, connection, swapDirection]);
 
   const CULT_DECIMALS = 6;
