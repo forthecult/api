@@ -1,11 +1,19 @@
 /**
- * Fix Crustafarian Printify products:
- * 1. Use public/crypto/crustafarianism/crust-logo.png and public/crypto/crustafarianism/design (or design art) per product type.
- * 2. Upload the correct image to Printify and update each product's design.
- * 3. Sync Printify -> store so mockups/state are current.
- * 4. PATCH each product with real product features and full descriptions.
+ * Fix Crustafarian Printify products. Only uses these 5 designs:
+ *   - crustafarian (transparent logo) → black product background + logo
+ *   - crustafarian_shrimp-of-revelation, crustafarian_shell-is-immutable,
+ *     crustafarian_creation-of-the-claw, crustafarian_creation → black bg + full-bleed
+ * 1. Resolve design by product type; upload or use pre-uploaded Printify image IDs.
+ * 2. Update design with black background (scaled to fill), then sync Printify -> store; PATCH.
  *
- * Run: cd webapp && NEXT_PUBLIC_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> bun run scripts/fix-crustafarian-printify-products.ts
+ * Env (optional): CRUSTAFARIAN_TRANSPARENT_IMAGE_ID = Printify image ID of your uploaded
+ * transparent crustafarian image. CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID = Printify image ID
+ * of a solid black image. When set we use these instead of uploading (ensures your transparent
+ * image and black background are applied).
+ *
+ * Run: cd webapp && NEXT_PUBLIC_APP_URL=https://forthecult.store ADMIN_AI_API_KEY=<key> \
+ *   CRUSTAFARIAN_TRANSPARENT_IMAGE_ID=<id> CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID=<id> \
+ *   bun run scripts/fix-crustafarian-printify-products.ts
  */
 
 import "dotenv/config";
@@ -32,6 +40,12 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+/** Use your already-uploaded Printify image IDs so we don't re-upload. Set these and run the script to apply transparent + black bg. */
+const CRUSTAFARIAN_TRANSPARENT_IMAGE_ID =
+  process.env.CRUSTAFARIAN_TRANSPARENT_IMAGE_ID?.trim() || null;
+const CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID =
+  process.env.CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID?.trim() || null;
+
 const headers: Record<string, string> = {
   "Content-Type": "application/json",
   Authorization: `Bearer ${API_KEY}`,
@@ -48,60 +62,91 @@ const CRUSTAFARIAN_MAIN_IMAGE = resolve(
 const DESIGN_DIR = resolve(CRUSTAFARIANISM_BASE, "design");
 const DESIGN_ART_DIR = resolve(CRUSTAFARIANISM_BASE, "design art");
 
-function designFileForProduct(productLabel: string): string {
+/** Only these 5 Crustafarian designs are used. First = transparent logo (black bg on product). Rest = full artworks (cover canvas). */
+const CRUSTAFARIAN_DESIGN_KEYS = [
+  "crustafarian",
+  "crustafarian_shrimp-of-revelation",
+  "crustafarian_shell-is-immutable",
+  "crustafarian_creation-of-the-claw",
+  "crustafarian_creation",
+] as const;
+const TRANSPARENT_DESIGN_KEY = "crustafarian";
+
+/** Product types that get the transparent logo (black bg + small logo). Everything else gets full-bleed artwork. */
+const PRODUCTS_USE_TRANSPARENT_LOGO = new Set(
+  [
+    "mouse-pad",
+    "coaster",
+    "sticker",
+    "keychain",
+    "mug",
+    "tumbler",
+    "phone-case",
+    "laptop-sleeve",
+    "pillow",
+    "notebook",
+    "spiral-notebook",
+    "pen",
+    "tote-bag",
+    "apron",
+    "water-bottle",
+    "wireless-charger",
+    "playing-cards",
+    "shot-glass",
+    "greeting-card",
+    "floor-mat",
+    "ping-pong-paddle",
+  ].map((s) => s.toLowerCase()),
+);
+
+function resolveDesignPath(key: string): string | null {
+  for (const dir of [DESIGN_ART_DIR, DESIGN_DIR, CRUSTAFARIANISM_BASE]) {
+    if (!existsSync(dir)) continue;
+    for (const ext of [".png", ".jpg", ".jpeg", ".webp"]) {
+      const p = resolve(dir, `${key}${ext}`);
+      if (existsSync(p)) return p;
+    }
+  }
+  if (key === TRANSPARENT_DESIGN_KEY && existsSync(CRUSTAFARIAN_MAIN_IMAGE))
+    return CRUSTAFARIAN_MAIN_IMAGE;
+  return null;
+}
+
+/** Pick one of the 5 designs for this product type. Transparent logo for small/merch; full artwork for display/large. */
+function designKeyForProduct(productLabel: string): (typeof CRUSTAFARIAN_DESIGN_KEYS)[number] {
   const base = productLabel
     .toLowerCase()
     .replace(/\s+/g, "-")
     .replace(/[^a-z0-9-]/g, "");
-  for (const dir of [DESIGN_DIR, DESIGN_ART_DIR]) {
-    if (!existsSync(dir)) continue;
-    const candidates = [
-      resolve(dir, `${base}.png`),
-      resolve(dir, `${base}.jpg`),
-      resolve(dir, `${base}.webp`),
-    ];
-    for (const p of candidates) {
-      if (existsSync(p)) return p;
-    }
-  }
-  return CRUSTAFARIAN_MAIN_IMAGE;
+  if (PRODUCTS_USE_TRANSPARENT_LOGO.has(base)) return TRANSPARENT_DESIGN_KEY;
+  const fullArtKeys = CRUSTAFARIAN_DESIGN_KEYS.filter((k) => k !== TRANSPARENT_DESIGN_KEY);
+  const idx = base.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return fullArtKeys[idx % fullArtKeys.length];
 }
 
-/** molt.church uses a dark "depths" aesthetic; use black/dark background for print files. */
-const CRUSTAFARIAN_BACKGROUND = "#0a0a0a";
-
-/**
- * Prepare image for Printify: composite onto Crustafarian background (black) so transparency
- * and edges look correct on merch. Outputs PNG.
- */
-async function prepareImageWithBackground(
-  buffer: Buffer,
-  backgroundColor: string = CRUSTAFARIAN_BACKGROUND,
-): Promise<Buffer> {
-  const img = sharp(buffer);
-  const meta = await img.metadata();
-  const w = meta.width ?? 0;
-  const h = meta.height ?? 0;
-  if (w === 0 || h === 0) return buffer;
-
-  const withAlpha = await img.ensureAlpha().toBuffer();
-  const background = sharp({
-    create: {
-      width: w,
-      height: h,
-      channels: 4,
-      background: backgroundColor,
-    },
-  })
-    .png()
-    .toBuffer();
-
-  const composed = await sharp(await background)
-    .composite([{ input: withAlpha, top: 0, left: 0 }])
-    .png()
-    .toBuffer();
-
-  return composed;
+function designFileForProduct(productLabel: string): {
+  path: string;
+  key: (typeof CRUSTAFARIAN_DESIGN_KEYS)[number];
+  coverCanvas: boolean;
+} {
+  const key = designKeyForProduct(productLabel);
+  const path = resolveDesignPath(key);
+  if (!path) {
+    if (key === TRANSPARENT_DESIGN_KEY && CRUSTAFARIAN_TRANSPARENT_IMAGE_ID)
+      return { path: CRUSTAFARIAN_MAIN_IMAGE, key, coverCanvas: false };
+    const fallback = existsSync(CRUSTAFARIAN_MAIN_IMAGE)
+      ? CRUSTAFARIAN_MAIN_IMAGE
+      : resolve(CRUSTAFARIANISM_BASE, "crustafarian.png");
+    if (!existsSync(fallback))
+      throw new Error(`No design file for key "${key}" and no fallback. Only use the 5 Crustafarian designs.`);
+    return {
+      path: fallback,
+      key: TRANSPARENT_DESIGN_KEY,
+      coverCanvas: false,
+    };
+  }
+  const coverCanvas = key !== TRANSPARENT_DESIGN_KEY;
+  return { path, key, coverCanvas };
 }
 
 import {
@@ -164,20 +209,34 @@ async function getCrustafarianProducts(): Promise<
   return out;
 }
 
-async function uploadImage(imagePath: string): Promise<string> {
+async function uploadImage(
+  imagePath: string,
+  useTransparentBackground: boolean,
+): Promise<string> {
   if (!existsSync(imagePath)) {
     throw new Error(`Design file not found: ${imagePath}`);
   }
-  let buffer = readFileSync(imagePath);
-  buffer = await prepareImageWithBackground(buffer);
+  const buffer = readFileSync(imagePath);
   const formData = new FormData();
-  const file = new File([buffer], "crustafarian.png", {
-    type: "image/png",
+  const ext = imagePath.endsWith(".png")
+    ? "png"
+    : imagePath.endsWith(".webp")
+      ? "webp"
+      : "jpg";
+  const file = new File([buffer], `crustafarian.${ext}`, {
+    type:
+      ext === "png"
+        ? "image/png"
+        : ext === "webp"
+          ? "image/webp"
+          : "image/jpeg",
   });
   formData.append("file", file);
 
+  const q = new URLSearchParams({ provider: "printify" });
+  if (useTransparentBackground) q.set("makeTransparent", "true");
   const res = await fetch(
-    `${API_BASE}/api/admin/pod/upload?provider=printify`,
+    `${API_BASE}/api/admin/pod/upload?${q.toString()}`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${API_KEY}` },
@@ -193,16 +252,57 @@ async function uploadImage(imagePath: string): Promise<string> {
   return data.imageId;
 }
 
+/** Upload a solid black image to use as product background layer (no makeTransparent). */
+async function uploadBlackBackground(): Promise<string> {
+  const buffer = await sharp({
+    create: {
+      width: 1200,
+      height: 1200,
+      channels: 3,
+      background: "#000000",
+    },
+  })
+    .png()
+    .toBuffer();
+  const formData = new FormData();
+  formData.append(
+    "file",
+    new File([buffer], "black.png", { type: "image/png" }),
+  );
+  const res = await fetch(
+    `${API_BASE}/api/admin/pod/upload?provider=printify`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${API_KEY}` },
+      body: formData,
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Black background upload failed: ${res.status} ${text}`);
+  }
+  const data = (await res.json()) as { imageId?: string };
+  if (!data.imageId) throw new Error("Upload response missing imageId");
+  return data.imageId;
+}
+
 async function updatePrintifyDesign(
   printifyProductId: string,
   imageId: string,
+  backgroundImageId: string | null,
+  coverCanvas: boolean,
 ): Promise<void> {
+  const body: { imageId: string; backgroundImageId?: string; coverCanvas?: boolean } = {
+    imageId,
+    coverCanvas,
+  };
+  if (backgroundImageId) body.backgroundImageId = backgroundImageId;
   const res = await fetch(
     `${API_BASE}/api/admin/printify/products/${printifyProductId}/update-design`,
     {
       method: "POST",
       headers,
-      body: JSON.stringify({ imageId }),
+      body: JSON.stringify(body),
     },
   );
   if (!res.ok) {
@@ -253,10 +353,14 @@ async function patchProduct(
 
 async function main() {
   console.log("API base:", API_BASE);
+  if (CRUSTAFARIAN_TRANSPARENT_IMAGE_ID)
+    console.log("Using pre-uploaded transparent image ID:", CRUSTAFARIAN_TRANSPARENT_IMAGE_ID);
+  if (CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID)
+    console.log("Using pre-uploaded black background image ID:", CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID);
 
-  if (!existsSync(CRUSTAFARIAN_MAIN_IMAGE)) {
+  if (!CRUSTAFARIAN_TRANSPARENT_IMAGE_ID && !existsSync(CRUSTAFARIAN_MAIN_IMAGE)) {
     console.error(
-      "Main image not found: public/crypto/crustafarianism/crust-logo.png",
+      "Main image not found: public/crypto/crustafarianism/crust-logo.png. Or set CRUSTAFARIAN_TRANSPARENT_IMAGE_ID to your Printify image ID (transparent crustafarian image).",
     );
     process.exit(1);
   }
@@ -270,22 +374,44 @@ async function main() {
     process.exit(1);
   }
 
+  let blackImageId: string;
+  if (CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID) {
+    blackImageId = CRUSTAFARIAN_BLACK_BACKGROUND_IMAGE_ID;
+    console.log("Using env black background imageId:", blackImageId);
+  } else {
+    console.log("Uploading solid black background image...");
+    blackImageId = await uploadBlackBackground();
+    console.log("Black background imageId:", blackImageId);
+  }
+
   let updated = 0;
   let errors = 0;
 
   for (const p of products) {
     const productLabel = productLabelFromName(p.name);
-    const designPath = designFileForProduct(productLabel);
+    const { path: designPath, key: designKey, coverCanvas } = designFileForProduct(productLabel);
     const designSource =
       designPath === CRUSTAFARIAN_MAIN_IMAGE
         ? "crust-logo.png"
         : designPath.replace(process.cwd(), "");
+    const useTransparent = designKey === TRANSPARENT_DESIGN_KEY;
 
-    console.log("\n", p.name, "| label:", productLabel, "| design:", designSource);
+    console.log(
+      "\n",
+      p.name,
+      "| label:",
+      productLabel,
+      "| design:",
+      designKey,
+      useTransparent ? "(transparent + black bg)" : "(full-bleed + black bg)",
+    );
 
     try {
-      const imageId = await uploadImage(designPath);
-      await updatePrintifyDesign(p.printifyProductId, imageId);
+      const imageId =
+        useTransparent && CRUSTAFARIAN_TRANSPARENT_IMAGE_ID
+          ? CRUSTAFARIAN_TRANSPARENT_IMAGE_ID
+          : await uploadImage(designPath, useTransparent);
+      await updatePrintifyDesign(p.printifyProductId, imageId, blackImageId, coverCanvas);
       await syncPrintifyToStore(p.printifyProductId);
 
       const description = buildProductDescription(productLabel);

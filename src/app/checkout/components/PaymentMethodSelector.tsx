@@ -364,7 +364,7 @@ export const PaymentMethodSelector = forwardRef<
     if (visibility.cryptoCrust)
       icons.push({
         alt: "Crustafarian (CRUST)",
-        src: "/crustafarian.png",
+        src: "/crypto/crustafarianism/crust-logo.png",
       });
     if (visibility.cryptoPump)
       icons.push({ alt: "Pump", src: "/crypto/pump/pump-logomark.svg" });

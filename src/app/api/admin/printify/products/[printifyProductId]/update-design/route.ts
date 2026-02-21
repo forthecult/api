@@ -1,11 +1,13 @@
 /**
  * POST /api/admin/printify/products/[printifyProductId]/update-design
  *
- * Replace the product's print design with a new image (e.g. transparent background).
- * Fetches the product, updates print_areas to use the new image id, PUTs to Printify,
- * then triggers publish so mockups regenerate.
+ * Replace the product's print design with a single image (e.g. transparent PNG).
+ * Use the transparent design file only; do not add a separate background image layer.
+ * The product's own "Background color" in Printify (per variant) is separate — set that
+ * in the Printify editor (e.g. to Black) so the product surface shows the right color.
  *
- * Body: { imageId: string }
+ * Body: { imageId: string, coverCanvas?: boolean }
+ * When coverCanvas is true, design layer uses a larger scale so the image covers the full print area.
  */
 
 import { type NextRequest, NextResponse } from "next/server";
@@ -43,7 +45,7 @@ export async function POST(
     );
   }
 
-  let body: { imageId?: string };
+  let body: { imageId?: string; coverCanvas?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -57,21 +59,37 @@ export async function POST(
       { status: 400 },
     );
   }
+  const coverCanvas = body.coverCanvas === true;
+  const designScale = coverCanvas ? 2.5 : 1;
 
   try {
     const product = await fetchPrintifyProduct(pf.shopId, printifyProductId);
 
+    const defaultDesignImage = {
+      angle: 0,
+      id: imageId,
+      scale: designScale,
+      x: 0.5,
+      y: 0.5,
+    };
+
     const print_areas = product.print_areas.map((pa) => ({
-      placeholders: pa.placeholders.map((ph) => ({
-        images: ph.images.map((img) => ({
-          angle: img.angle,
-          id: imageId,
-          scale: img.scale,
-          x: img.x,
-          y: img.y,
-        })),
-        position: ph.position,
-      })),
+      placeholders: pa.placeholders.map((ph) => {
+        const designImages =
+          ph.images && ph.images.length > 0
+            ? ph.images.map((img) => ({
+                angle: img.angle,
+                id: imageId,
+                scale: coverCanvas ? designScale : img.scale,
+                x: img.x,
+                y: img.y,
+              }))
+            : [defaultDesignImage];
+        return {
+          images: designImages,
+          position: ph.position,
+        };
+      }),
       variant_ids: pa.variant_ids,
     }));
 

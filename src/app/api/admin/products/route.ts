@@ -316,9 +316,10 @@ export async function GET(request: NextRequest) {
       const [prods, count] = await Promise.all([selectWithWhere, countQuery]);
       products = prods.map((p) => ({
         ...p,
+        printifyProductId: p.printifyProductId ?? null,
         productCategories: undefined,
         productVariants: undefined,
-      }));
+      })) as ProductWithRelations[];
       countResult = count;
     };
 
