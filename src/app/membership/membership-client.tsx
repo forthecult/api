@@ -390,7 +390,7 @@ export function MembershipClient() {
   }, [solAmount, connection, swapDirection]);
 
   const CULT_DECIMALS = 6;
-  // estimate SOL output when CULT amount changes (CULT → SOL); use API fallback when connection missing or client fails
+  // estimate SOL output when CULT amount changes (CULT → SOL); try pool API + client, then price-based fallback
   useEffect(() => {
     if (swapDirection !== "cultToSol") {
       setEstimatedSol(null);
@@ -416,27 +416,44 @@ export function MembershipClient() {
       }
     };
 
-    const tryClient = connection
-      ? estimateSolFromCult(connection, cultRaw)
-          .then((est) => est?.solAmount ?? null)
-          .catch(() => null)
-      : Promise.resolve(null);
+    const apiPromise = fetch(
+      `/api/swap/cult-sol/estimate?cultAmount=${encodeURIComponent(n)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { solAmount?: string } | null) => data?.solAmount ?? null)
+      .catch(() => null);
 
-    tryClient.then((clientEst) => {
+    const clientPromise =
+      connection != null
+        ? estimateSolFromCult(connection, cultRaw)
+            .then((est) => est?.solAmount ?? null)
+            .catch(() => null)
+        : Promise.resolve(null);
+
+    const priceFallbackPromise = fetch("/api/crypto/prices")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data: { CULT?: number; SOL?: number } | null) => {
+        if (!data?.SOL || !data?.CULT || data.SOL <= 0) return null;
+        const solAmount = (n * data.CULT) / data.SOL;
+        return solAmount.toFixed(6);
+      })
+      .catch(() => null);
+
+    void Promise.all([apiPromise, clientPromise]).then(([apiVal, clientVal]) => {
       if (cancelled) return;
-      if (clientEst != null) {
-        setResult(clientEst);
+      const val = apiVal ?? clientVal ?? null;
+      if (val != null) {
+        setResult(val);
         return;
       }
-      fetch(
-        `/api/swap/cult-sol/estimate?cultAmount=${encodeURIComponent(n)}`,
-      )
-        .then((r) => (r.ok ? r.json() : null))
-        .then((data: { solAmount?: string } | null) => setResult(data?.solAmount ?? null))
-        .catch(() => setResult(null));
+      void priceFallbackPromise.then((priceVal) => {
+        if (!cancelled) setResult(priceVal ?? null);
+      });
     });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [cultAmount, connection, swapDirection]);
 
   // handle SOL → CULT swap
