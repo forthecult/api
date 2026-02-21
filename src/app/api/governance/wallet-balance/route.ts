@@ -42,12 +42,20 @@ export async function GET(request: Request) {
     // use getTokenAccountBalance for reliable parsing (works with both Token and Token-2022)
     try {
       const balanceInfo = await connection.getTokenAccountBalance(ata);
-      const balance = balanceInfo.value.uiAmountString ?? "0";
-      const balanceRaw = balanceInfo.value.amount;
+      const amountRaw = balanceInfo.value.amount;
+      const decimals = balanceInfo.value.decimals;
+      const uiAmountString = balanceInfo.value.uiAmountString;
+      // use raw amount when uiAmountString is null/0 but we have tokens (e.g. dust or rounding)
+      const balance =
+        uiAmountString != null && uiAmountString !== ""
+          ? uiAmountString
+          : amountRaw === "0"
+            ? "0"
+            : (Number(amountRaw) / 10 ** decimals).toFixed(decimals);
 
       return NextResponse.json({
         balance,
-        balanceRaw,
+        balanceRaw: amountRaw,
         decimals: token.decimals,
         tokenSymbol: token.symbol,
       });

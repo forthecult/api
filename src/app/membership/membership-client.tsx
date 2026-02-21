@@ -747,12 +747,17 @@ export function MembershipClient() {
             md:flex-row md:gap-10
           `}
           >
-            {/* Left: Stake card */}
+            {/* Left: Stake card + Swap section */}
             <div
               className={`
-              w-full overflow-hidden rounded-2xl border border-border bg-card
-              shadow-xl
+              flex w-full flex-col gap-6
               md:w-1/2 md:shrink-0
+            `}
+            >
+            <div
+              className={`
+              overflow-hidden rounded-2xl border border-border bg-card
+              shadow-xl
             `}
             >
               <div className="border-b bg-muted/30 px-6 py-5">
@@ -1284,76 +1289,94 @@ export function MembershipClient() {
                   Your tokens remain yours. They are locked in a smart contract
                   and returned to your wallet when you unstake.
                 </p>
+              </div>
+            </div>
 
-                {/* Get CULT: swap SOL → CULT — always visible so the option is discoverable */}
-                <div className="mt-4 space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-                  <div className="flex items-center gap-2">
-                    <RefreshCw className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-foreground">Get CULT</span>
+            {/* Swap SOL → CULT — its own section: enter SOL, see CULT estimate, then swap */}
+            <div
+              className={`
+              overflow-hidden rounded-2xl border border-border bg-card
+              shadow-xl
+            `}
+            >
+              <div className="border-b bg-muted/30 px-6 py-4">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-primary" />
+                  <h3 className="font-display text-lg font-semibold text-foreground">
+                    Swap SOL → CULT
+                  </h3>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Enter how much SOL you want to spend. We'll show how much CULT you get, then you can swap.
+                </p>
+              </div>
+              <div className="space-y-4 p-6">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    SOL amount
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      className="font-mono flex-1"
+                      min={0}
+                      onChange={(e) => setSolAmount(e.target.value)}
+                      placeholder="0.00"
+                      step="any"
+                      type="number"
+                      value={solAmount}
+                    />
+                    <Button
+                      disabled={!publicKey || swapPending || solBalanceSol <= 0.01}
+                      onClick={() =>
+                        setSolAmount(
+                          Math.max(0, solBalanceSol - 0.01).toFixed(6),
+                        )
+                      }
+                      size="sm"
+                      type="button"
+                      variant="secondary"
+                    >
+                      Max
+                    </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Swap SOL for CULT on PumpSwap. You need a small amount of SOL for transaction fees.
+                    {publicKey
+                      ? `Balance: ${solBalanceSol.toFixed(4)} SOL`
+                      : "Connect your wallet to see balance"}
                   </p>
-                  {publicKey ? (
-                    <>
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <Input
-                            className="font-mono flex-1"
-                            min={0}
-                            onChange={(e) => setSolAmount(e.target.value)}
-                            placeholder="SOL amount"
-                            step="any"
-                            type="number"
-                            value={solAmount}
-                          />
-                          <Button
-                            disabled={swapPending || solBalanceSol <= 0.01}
-                            onClick={() =>
-                              setSolAmount(
-                                Math.max(0, solBalanceSol - 0.01).toFixed(6),
-                              )
-                            }
-                            size="sm"
-                            type="button"
-                            variant="secondary"
-                          >
-                            Max
-                          </Button>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          Balance: {solBalanceSol.toFixed(4)} SOL
-                        </p>
-                      </div>
-                      {estimateLoading && solAmount.trim() && (
-                        <p className="text-xs text-muted-foreground">Estimating…</p>
-                      )}
-                      {!estimateLoading && estimatedCult != null && (
-                        <p className="text-sm font-medium text-foreground">
-                          You will receive ≈ {estimatedCult} CULT
-                        </p>
-                      )}
-                      <Button
-                        className="w-full"
-                        disabled={
-                          swapPending ||
-                          !solAmount.trim() ||
-                          Number.parseFloat(solAmount) <= 0 ||
-                          (estimatedCult == null && !!solAmount.trim())
-                        }
-                        onClick={() => void handleSwapSolToCult()}
-                        size="sm"
-                      >
-                        {swapPending ? "Swapping…" : "Swap SOL → CULT"}
-                      </Button>
-                    </>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      Connect your wallet above to swap SOL for CULT.
-                    </p>
-                  )}
                 </div>
+                {estimateLoading && solAmount.trim() && (
+                  <p className="text-sm text-muted-foreground">Estimating…</p>
+                )}
+                {!estimateLoading && solAmount.trim() && Number.parseFloat(solAmount) > 0 && (
+                  <p className="text-sm font-medium text-foreground">
+                    You will receive ≈ {estimatedCult ?? "…"} CULT
+                  </p>
+                )}
+                <Button
+                  className="w-full"
+                  disabled={
+                    swapPending ||
+                    !solAmount.trim() ||
+                    Number.parseFloat(solAmount) <= 0
+                  }
+                  onClick={() => {
+                    if (!publicKey || !sendTransaction) {
+                      openConnectModal?.();
+                      return;
+                    }
+                    void handleSwapSolToCult();
+                  }}
+                  size="lg"
+                >
+                  {!publicKey
+                    ? "Connect wallet to swap"
+                    : swapPending
+                      ? "Swapping…"
+                      : "Swap SOL → CULT"}
+                </Button>
               </div>
+            </div>
             </div>
 
             {/* Right: Benefits for selected tier */}

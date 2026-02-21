@@ -37,6 +37,15 @@ function showRealEmail(email: null | string | undefined): string {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t) ? email : "—";
 }
 
+/** format CULT balance: full digits when large, decimals when small so we don't show 0 for dust */
+function formatCultBalance(value: string): string {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0";
+  if (n >= 1) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  if (n > 0) return n.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 6 });
+  return "0";
+}
+
 const defaultOrderStats: OrderStats = {
   all: 0,
   awaitingDelivery: 0,
@@ -330,11 +339,11 @@ export function ProfileViewClient() {
                 {wallet ? (
                   <>
                     {walletCultBalance != null && (
-                      <>CULT Balance: {Number(walletCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
+                      <>Wallet: {formatCultBalance(walletCultBalance)} CULT</>
                     )}
                     {walletCultBalance != null && stakedCultBalance != null && " · "}
                     {stakedCultBalance != null && (
-                      <>CULT Staked: {Number(stakedCultBalance).toLocaleString(undefined, { maximumFractionDigits: 0 })} CULT</>
+                      <>Staked: {formatCultBalance(stakedCultBalance)} CULT</>
                     )}
                     {walletCultBalance == null && stakedCultBalance == null && "—"}
                   </>
