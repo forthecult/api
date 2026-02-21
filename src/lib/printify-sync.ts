@@ -293,8 +293,8 @@ export async function exportProductToPrintify(
     return { error: "Product is not a Printify product", success: false };
   }
 
-  // Get variants
-  const variants = await db
+  // Get local variants (only the ones we offer in our store)
+  const localVariants = await db
     .select()
     .from(productVariantsTable)
     .where(eq(productVariantsTable.productId, productId));
@@ -307,14 +307,34 @@ export async function exportProductToPrintify(
   const tagList = tags.map((t) => t.tag);
 
   try {
-    // Build variant updates with prices
-    const variantUpdates = variants
-      .filter((v) => v.printifyVariantId)
-      .map((v) => ({
-        id: Number.parseInt(v.printifyVariantId!, 10),
-        is_enabled: true,
-        price: v.priceCents,
-      }));
+    // Printify API requires ALL variants in the request when updating variants.
+    // If we send only our enabled variants, the rest can be zeroed → negative margins.
+    // Fetch current product from Printify and send full variant list: our prices for
+    // variants we offer, existing Printify price + is_enabled: false for the rest.
+    const printifyProduct = await fetchPrintifyProduct(
+      pf.shopId,
+      product.printifyProductId,
+    );
+    const localByPrintifyId = new Map(
+      localVariants
+        .filter((v) => v.printifyVariantId)
+        .map((v) => [String(v.printifyVariantId), v]),
+    );
+    const variantUpdates = printifyProduct.variants.map((pv) => {
+      const local = localByPrintifyId.get(String(pv.id));
+      if (local) {
+        return {
+          id: pv.id,
+          is_enabled: true,
+          price: local.priceCents,
+        };
+      }
+      return {
+        id: pv.id,
+        is_enabled: false,
+        price: pv.price,
+      };
+    });
 
     // Images only flow inbound (Printify → store), never outbound.
     // Only sync content fields: title, description, tags, and variant prices.
