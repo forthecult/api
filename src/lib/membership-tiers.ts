@@ -2,6 +2,7 @@ import type { ElementType } from "react";
 
 import {
   Crown,
+  Lock,
   Shield,
   Smartphone,
   Sparkles,
@@ -85,6 +86,7 @@ export const MEMBERSHIP_TIERS: MembershipTier[] = [
         "Member-only drops",
         "Priority support",
         "Exclusive product access",
+        "Monthly VPN subscription",
       ],
       shipping: "Free",
       shippingDetail: "Free shipping on every order, worldwide",
@@ -145,6 +147,11 @@ export const MEMBERSHIP_BENEFIT_ROWS: MembershipBenefitRow[] = [
     icon: Crown,
     label: "Exclusive Products",
     values: { 1: true, 2: true, 3: false },
+  },
+  {
+    icon: Lock,
+    label: "Monthly VPN Subscription",
+    values: { 1: true, 2: false, 3: false },
   },
 ];
 

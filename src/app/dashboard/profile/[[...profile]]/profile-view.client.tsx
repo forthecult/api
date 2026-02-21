@@ -5,6 +5,7 @@ import {
   ArrowRight,
   ChevronRight,
   Crown,
+  RefreshCw,
   Shield,
   Star,
   UserIcon,
@@ -93,6 +94,8 @@ export function ProfileViewClient() {
   }>(null);
   const [orderStats, setOrderStats] = useState<OrderStats>(defaultOrderStats);
   const [walletCultBalance, setWalletCultBalance] = useState<string | null>(null);
+  const [walletBalanceLoading, setWalletBalanceLoading] = useState(false);
+  const [walletBalanceError, setWalletBalanceError] = useState(false);
   const [stakedCultBalance, setStakedCultBalance] = useState<string | null>(null);
   const [membership, setMembership] = useState<MembershipInfo | null>(null);
   const [membershipLoading, setMembershipLoading] = useState(false);
@@ -146,27 +149,39 @@ export function ProfileViewClient() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  // fetch wallet CULT balance (independent so failure doesn't hide the line)
-  useEffect(() => {
+  const fetchWalletBalance = useCallback(() => {
     if (!wallet) {
       setWalletCultBalance(null);
+      setWalletBalanceError(false);
       return;
     }
-    let cancelled = false;
+    setWalletBalanceLoading(true);
+    setWalletBalanceError(false);
     fetch(
       `/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`,
     )
-      .then((r) => r.json())
-      .then((data: { balance?: string }) => {
-        if (!cancelled) setWalletCultBalance(data?.balance ?? "0");
+      .then((r) => {
+        if (!r.ok) {
+          setWalletBalanceError(true);
+          return null;
+        }
+        return r.json() as Promise<{ balance?: string }>;
       })
-      .catch(() => {
-        if (!cancelled) setWalletCultBalance("0");
-      });
-    return () => {
-      cancelled = true;
-    };
+      .then((data) => {
+        if (data && typeof data.balance === "string") {
+          setWalletCultBalance(data.balance);
+          setWalletBalanceError(false);
+        } else {
+          setWalletBalanceError(true);
+        }
+      })
+      .catch(() => setWalletBalanceError(true))
+      .finally(() => setWalletBalanceLoading(false));
   }, [wallet]);
+
+  useEffect(() => {
+    fetchWalletBalance();
+  }, [fetchWalletBalance]);
 
   // fetch staked balance + membership tier
   useEffect(() => {
@@ -343,26 +358,51 @@ export function ProfileViewClient() {
               <p className="truncate font-medium text-foreground">
                 {displayName}
               </p>
-              <p className="text-sm text-muted-foreground">
+              <div className="text-sm text-muted-foreground">
                 {wallet ? (
                   <>
-                    <span>
-                      Wallet:{" "}
-                      {walletCultBalance != null
-                        ? `${formatCultBalance(walletCultBalance)} CULT`
-                        : "…"}
-                    </span>
+                    <p className="flex items-center gap-2">
+                      <span>
+                        Wallet:{" "}
+                        {walletBalanceLoading
+                          ? "…"
+                          : walletBalanceError
+                            ? "Couldn't load"
+                            : walletCultBalance != null
+                              ? `${formatCultBalance(walletCultBalance)} CULT`
+                              : "—"}
+                        {!connectedWallet && (
+                          <span className="ml-1 text-muted-foreground/80">
+                            (linked)
+                          </span>
+                        )}
+                      </span>
+                      {(walletBalanceError || !walletBalanceLoading) && (
+                        <button
+                          className="inline-flex text-primary hover:underline"
+                          onClick={() => fetchWalletBalance()}
+                          type="button"
+                        >
+                          <RefreshCw className="h-3.5 w-3.5" />
+                          <span className="sr-only">Refresh balance</span>
+                        </button>
+                      )}
+                    </p>
+                    {!connectedWallet && (
+                      <p className="text-xs text-muted-foreground/90">
+                        Balance shown is for your linked account. Connect a wallet (e.g. from Membership) to see that wallet's CULT here.
+                      </p>
+                    )}
                     {stakedCultBalance != null && (
-                      <>
-                        {" · "}
+                      <p>
                         Staked: {formatCultBalance(stakedCultBalance)} CULT
-                      </>
+                      </p>
                     )}
                   </>
                 ) : (
-                  <>No wallet linked. Connect or link a wallet to see CULT balance.</>
+                  <p>No wallet linked. Connect or link a wallet to see CULT balance.</p>
                 )}
-              </p>
+              </div>
             </div>
             <div className="shrink-0 text-right">
               {membershipLoading ? (

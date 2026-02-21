@@ -21,53 +21,53 @@ export async function GET(request: Request) {
 
   const token = getActiveToken();
 
+  const tokenPrograms = token.tokenProgram === "token-2022"
+    ? [
+        new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
+        new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      ] as const
+    : [new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA")];
+
   try {
     const connection = new Connection(getSolanaRpcUrlServer());
     const walletPubkey = new PublicKey(wallet);
     const mintPubkey = new PublicKey(token.mint);
-
-    const tokenProgramId = token.tokenProgram === "token-2022"
-      ? new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb")
-      : new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
-
-    // get associated token account for the wallet
     const { getAssociatedTokenAddressSync } = await import("@solana/spl-token");
-    const ata = getAssociatedTokenAddressSync(
-      mintPubkey,
-      walletPubkey,
-      false,
-      tokenProgramId,
-    );
 
-    // use getTokenAccountBalance for reliable parsing (works with both Token and Token-2022)
-    try {
-      const balanceInfo = await connection.getTokenAccountBalance(ata);
-      const amountRaw = balanceInfo.value.amount;
-      const decimals = balanceInfo.value.decimals;
-      const uiAmountString = balanceInfo.value.uiAmountString;
-      // use raw amount when uiAmountString is null/0 but we have tokens (e.g. dust or rounding)
-      const balance =
-        uiAmountString != null && uiAmountString !== ""
-          ? uiAmountString
-          : amountRaw === "0"
-            ? "0"
-            : (Number(amountRaw) / 10 ** decimals).toFixed(decimals);
-
-      return NextResponse.json({
-        balance,
-        balanceRaw: amountRaw,
-        decimals: token.decimals,
-        tokenSymbol: token.symbol,
-      });
-    } catch {
-      // account doesn't exist or has no balance
-      return NextResponse.json({
-        balance: "0",
-        balanceRaw: "0",
-        decimals: token.decimals,
-        tokenSymbol: token.symbol,
-      });
+    for (const tokenProgramId of tokenPrograms) {
+      const ata = getAssociatedTokenAddressSync(
+        mintPubkey,
+        walletPubkey,
+        false,
+        tokenProgramId,
+      );
+      try {
+        const balanceInfo = await connection.getTokenAccountBalance(ata);
+        const amountRaw = balanceInfo.value.amount;
+        const decimals = balanceInfo.value.decimals;
+        const uiAmountString = balanceInfo.value.uiAmountString;
+        const balance =
+          uiAmountString != null && uiAmountString !== ""
+            ? uiAmountString
+            : amountRaw === "0"
+              ? "0"
+              : (Number(amountRaw) / 10 ** decimals).toFixed(decimals);
+        return NextResponse.json({
+          balance,
+          balanceRaw: amountRaw,
+          decimals: token.decimals,
+          tokenSymbol: token.symbol,
+        });
+      } catch {
+        continue;
+      }
     }
+    return NextResponse.json({
+      balance: "0",
+      balanceRaw: "0",
+      decimals: token.decimals,
+      tokenSymbol: token.symbol,
+    });
   } catch (e) {
     console.error("[governance] wallet-balance error:", e);
     return NextResponse.json({

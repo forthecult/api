@@ -1,6 +1,8 @@
 "use client";
 
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import {
   ArrowDown,
   ArrowRight,
@@ -24,6 +26,7 @@ import {
   Wifi,
   Zap,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -51,6 +54,10 @@ import {
   MEMBERSHIP_FAQ,
   MEMBERSHIP_TIERS,
 } from "~/lib/membership-tiers";
+import {
+  CULT_MINT_MAINNET,
+  TOKEN_2022_PROGRAM_ID_BASE58,
+} from "~/lib/token-config";
 import { Badge } from "~/ui/primitives/badge";
 import { Button } from "~/ui/primitives/button";
 import {
@@ -254,25 +261,71 @@ export function MembershipClient() {
     return () => { cancelled = true; };
   }, [publicKey, connection]);
 
-  // fetch CULT wallet balance when wallet is set (so swap section shows balance)
+  // fetch CULT balance: when wallet adapter is connected use same connection as SOL (so we see the same balance as Phantom); otherwise fall back to API
   useEffect(() => {
     if (!wallet) {
       setCultBalance(null);
       return;
     }
     setCultBalanceLoading(true);
+    if (connection && publicKey) {
+      let cancelled = false;
+      const mint = new PublicKey(CULT_MINT_MAINNET);
+      const programs = [
+        new PublicKey(TOKEN_2022_PROGRAM_ID_BASE58),
+        new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+      ];
+      const tryNext = (i: number) => {
+        if (cancelled || i >= programs.length) {
+          if (!cancelled) {
+            setCultBalance(null);
+            setCultBalanceLoading(false);
+          }
+          return;
+        }
+        const ata = getAssociatedTokenAddressSync(
+          mint,
+          publicKey,
+          false,
+          programs[i]!,
+        );
+        connection
+          .getTokenAccountBalance(ata)
+          .then((info) => {
+            if (cancelled) return;
+            const v = info.value;
+            const balance =
+              v.uiAmountString != null && v.uiAmountString !== ""
+                ? v.uiAmountString
+                : v.amount === "0"
+                  ? "0"
+                  : (Number(v.amount) / 10 ** v.decimals).toFixed(v.decimals);
+            setCultBalance(balance);
+            setCultBalanceLoading(false);
+          })
+          .catch(() => tryNext(i + 1));
+      };
+      tryNext(0);
+      return () => { cancelled = true; };
+    }
+    let cancelled = false;
     fetch(`/api/governance/wallet-balance?wallet=${encodeURIComponent(wallet)}`)
       .then((r) => r.json())
       .then((data: { balance?: string }) => {
-        setCultBalance(data.balance ?? "0");
+        if (!cancelled) setCultBalance(data.balance ?? "0");
       })
-      .catch(() => setCultBalance(null))
-      .finally(() => setCultBalanceLoading(false));
-  }, [wallet]);
+      .catch(() => {
+        if (!cancelled) setCultBalance(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCultBalanceLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [wallet, connection, publicKey]);
 
-  // estimate CULT output when SOL amount changes (SOL → CULT)
+  // estimate CULT output when SOL amount changes (SOL → CULT); use API fallback when connection missing or client fails
   useEffect(() => {
-    if (swapDirection !== "solToCult" || !connection) {
+    if (swapDirection !== "solToCult") {
       setEstimatedCult(null);
       return;
     }
@@ -282,18 +335,40 @@ export function MembershipClient() {
       return;
     }
     const solLamports = Math.floor(solAmountNum * 1e9);
+    if (solLamports <= 0) {
+      setEstimatedCult(null);
+      return;
+    }
     let cancelled = false;
     setEstimateLoading(true);
-    estimateCultFromSol(connection, solLamports)
-      .then((est) => {
-        if (!cancelled) setEstimatedCult(est?.cultAmount ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) setEstimatedCult(null);
-      })
-      .finally(() => {
-        if (!cancelled) setEstimateLoading(false);
-      });
+
+    const setResult = (est: string | null) => {
+      if (!cancelled) {
+        setEstimatedCult(est);
+        setEstimateLoading(false);
+      }
+    };
+
+    const tryClient = connection
+      ? estimateCultFromSol(connection, solLamports)
+          .then((est) => est?.cultAmount ?? null)
+          .catch(() => null)
+      : Promise.resolve(null);
+
+    tryClient.then((clientEst) => {
+      if (cancelled) return;
+      if (clientEst != null) {
+        setResult(clientEst);
+        return;
+      }
+      fetch(
+        `/api/swap/sol-cult/estimate?solAmount=${encodeURIComponent(solAmountNum)}`,
+      )
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: { cultAmount?: string } | null) => setResult(data?.cultAmount ?? null))
+        .catch(() => setResult(null));
+    });
+
     return () => { cancelled = true; };
   }, [solAmount, connection, swapDirection]);
 
@@ -413,18 +488,28 @@ export function MembershipClient() {
   /** Tier to show in UI: from pricing thresholds first, else from staked-balance API (so tier shows before pricing loads). */
   const displayTier = currentTierFromStake ?? memberTierFromApi;
 
-  // auto-select appropriate tier based on current stake (can only upgrade)
+  // auto-select appropriate tier when upgrading: only tiers above current (use displayTier so API tier applies before pricing loads)
   useEffect(() => {
-    if (currentTierFromStake != null && Number(stakedBalanceRaw) > 0) {
-      // if selected tier is at or below current tier, select the next upgrade tier
-      if (selectedTier >= currentTierFromStake) {
-        const upgradeTier = currentTierFromStake - 1;
-        if (upgradeTier >= 1) {
-          setSelectedTier(upgradeTier);
-        }
+    if (displayTier != null && Number(stakedBalanceRaw) > 0) {
+      if (selectedTier >= displayTier) {
+        const upgradeTier = displayTier - 1;
+        if (upgradeTier >= 1) setSelectedTier(upgradeTier);
       }
     }
-  }, [currentTierFromStake, stakedBalanceRaw, selectedTier]);
+  }, [displayTier, stakedBalanceRaw, selectedTier]);
+
+  // when upgrading with existing 30-day stake, only 12-month is offered — default duration to 12m
+  useEffect(() => {
+    if (
+      displayTier != null &&
+      Number(stakedBalanceRaw) > 0 &&
+      stakedLock?.isLocked &&
+      stakedLock?.lockTier === 0 &&
+      stakeDuration === "30d"
+    ) {
+      setStakeDuration("12m");
+    }
+  }, [displayTier, stakedBalanceRaw, stakedLock?.isLocked, stakedLock?.lockTier, stakeDuration]);
 
   // keep duration selection as-is; user can choose either 30d or 12m when upgrading
   // (previously forced 12m when user had a 30-day stake, but now we allow both)
@@ -1116,23 +1201,19 @@ export function MembershipClient() {
                   </div>
                 )}
 
-                {/* Inline tier selector — hide tiers at or below current when user has active stake */}
+                {/* Inline tier selector — only show tiers above current (use displayTier so API tier applies before pricing loads) */}
                 {(() => {
-                  // filter out tiers user can't upgrade to
                   const availableTiers = MEMBERSHIP_TIERS.filter((tier) => {
-                    // if no current stake, show all tiers
-                    if (currentTierFromStake == null || Number(stakedBalanceRaw) === 0) return true;
-                    // hide tiers at or below current (higher id = lower tier)
-                    return tier.id < currentTierFromStake;
+                    if (displayTier == null || Number(stakedBalanceRaw) === 0) return true;
+                    return tier.id < displayTier;
                   });
-                  
-                  // if no upgrades available (at Tier 1), don't show tier selector
+
                   if (availableTiers.length === 0) return null;
-                  
+
                   return (
                     <div>
                       <p className="mb-2 text-sm font-medium text-foreground">
-                        {currentTierFromStake != null && Number(stakedBalanceRaw) > 0 ? "Upgrade to" : "Tier"}
+                        {displayTier != null && Number(stakedBalanceRaw) > 0 ? "Upgrade to" : "Tier"}
                       </p>
                       <div className="flex flex-wrap gap-2">
                         {availableTiers.map((tier) => {
@@ -1198,9 +1279,9 @@ export function MembershipClient() {
                       </div>
                     );
                   }
-                  
-                  // always show both durations - user can create a new position with either duration
-                  const show30Days = true;
+
+                  // when upgrading and user already has 30-day stake, only offer 12 months (no option to stake 30 days again)
+                  const show30Days = !(isUpgrading && hasLockedStake && currentLockTier === 0);
                   const show12Months = true;
                   
                   return (
@@ -1527,11 +1608,8 @@ export function MembershipClient() {
               md:text-3xl
             `}
             >
-              Swap
+              CULT Swap
             </h2>
-            <p className="mt-2 text-muted-foreground">
-              Sell one token, buy the other. Use the arrow to flip direction.
-            </p>
             <div
               className={`
               mt-6 overflow-hidden rounded-2xl border border-border bg-card
@@ -1558,8 +1636,18 @@ export function MembershipClient() {
                       type="number"
                       value={swapDirection === "solToCult" ? solAmount : cultAmount}
                     />
-                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
-                      {swapDirection === "solToCult" ? "SOL" : tokenSymbol}
+                    <div className="flex min-w-[100px] items-center justify-end gap-2 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                      {swapDirection === "solToCult" ? (
+                        <>
+                          <Image alt="SOL" height={24} src="/crypto/solana/solanaLogoMark.svg" width={24} />
+                          SOL
+                        </>
+                      ) : (
+                        <>
+                          <Image alt={tokenSymbol} height={24} src="/crypto/cult/cult-logo.svg" width={24} />
+                          {tokenSymbol}
+                        </>
+                      )}
                     </div>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground">
@@ -1573,30 +1661,86 @@ export function MembershipClient() {
                           : `Balance: ${cultBalance != null ? Number(cultBalance).toLocaleString(undefined, { maximumFractionDigits: 6 }) : "0"} ${tokenSymbol}`
                         : "Connect wallet to see balance"}
                   </p>
-                  {swapDirection === "solToCult" && publicKey && solBalanceSol > 0.01 && (
-                    <Button
-                      className="mt-2"
-                      onClick={() =>
-                        setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))
-                      }
-                      size="sm"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Max
-                    </Button>
-                  )}
-                  {swapDirection === "cultToSol" && wallet && cultBalance != null && Number(cultBalance) > 0 && (
-                    <Button
-                      className="mt-2"
-                      onClick={() => setCultAmount(cultBalance ?? "")}
-                      size="sm"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Max
-                    </Button>
-                  )}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {swapDirection === "solToCult" ? (
+                      <>
+                        <Button
+                          onClick={() => setSolAmount("")}
+                          size="sm"
+                          type="button"
+                          variant="secondary"
+                        >
+                          Reset
+                        </Button>
+                        {[0.1, 0.5, 1].map((n) => (
+                          <Button
+                            key={n}
+                            disabled={!publicKey || solBalanceSol < n}
+                            onClick={() => setSolAmount(String(n))}
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            {n} SOL
+                          </Button>
+                        ))}
+                        {publicKey && solBalanceSol > 0.01 && (
+                          <Button
+                            onClick={() =>
+                              setSolAmount(Math.max(0, solBalanceSol - 0.01).toFixed(6))
+                            }
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            Max
+                          </Button>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          onClick={() => setCultAmount("")}
+                          size="sm"
+                          type="button"
+                          variant="secondary"
+                        >
+                          Reset
+                        </Button>
+                        {[25, 50, 75, 100].map((pct) => (
+                          <Button
+                            key={pct}
+                            disabled={
+                              !wallet ||
+                              cultBalance == null ||
+                              Number(cultBalance) <= 0
+                            }
+                            onClick={() => {
+                              const bal = Number(cultBalance);
+                              if (!Number.isFinite(bal) || bal <= 0) return;
+                              const value = (bal * pct) / 100;
+                              setCultAmount(value.toFixed(6));
+                            }}
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            {pct}%
+                          </Button>
+                        ))}
+                        {wallet && cultBalance != null && Number(cultBalance) > 0 && (
+                          <Button
+                            onClick={() => setCultAmount(cultBalance ?? "")}
+                            size="sm"
+                            type="button"
+                            variant="secondary"
+                          >
+                            Max
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex justify-center">
@@ -1628,8 +1772,18 @@ export function MembershipClient() {
                             ? estimatedSol ?? "—"
                             : "0"}
                     </div>
-                    <div className="flex min-w-[100px] items-center justify-end gap-1 rounded-lg border border-border bg-background px-3 py-2 font-medium">
-                      {swapDirection === "solToCult" ? tokenSymbol : "SOL"}
+                    <div className="flex min-w-[100px] items-center justify-end gap-2 rounded-lg border border-border bg-background px-3 py-2 font-medium">
+                      {swapDirection === "solToCult" ? (
+                        <>
+                          <Image alt={tokenSymbol} height={24} src="/crypto/cult/cult-logo.svg" width={24} />
+                          {tokenSymbol}
+                        </>
+                      ) : (
+                        <>
+                          <Image alt="SOL" height={24} src="/crypto/solana/solanaLogoMark.svg" width={24} />
+                          SOL
+                        </>
+                      )}
                     </div>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground">
@@ -1649,9 +1803,10 @@ export function MembershipClient() {
                   className="w-full"
                   disabled={
                     swapPending ||
-                    (swapDirection === "solToCult"
-                      ? !solAmount.trim() || Number.parseFloat(solAmount) <= 0
-                      : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0)
+                    !!(publicKey &&
+                      (swapDirection === "solToCult"
+                        ? !solAmount.trim() || Number.parseFloat(solAmount) <= 0
+                        : !cultAmount.trim() || Number.parseFloat(cultAmount) <= 0))
                   }
                   onClick={() => {
                     if (!publicKey || !sendTransaction) {
